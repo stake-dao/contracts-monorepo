@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-import "src/interfaces/IStableMaster.sol";
-import "src/accumulator/BaseAccumulator.sol";
+import "src/base/interfaces/IStableMaster.sol";
+import "src/base/accumulator/BaseAccumulator.sol";
 
 /// @title A contract that can claim sanUSDC_EUR rewards, burn them for USDC and mint agEUR to send to LGV4
 /// @author StakeDAO

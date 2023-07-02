@@ -4,9 +4,9 @@ pragma solidity 0.8.7;
 import "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "src/interfaces/ILocker.sol";
-import "src/interfaces/ILiquidityGauge.sol";
-import {ISDTDistributor} from "src/interfaces/ISDTDistributor.sol";
+import "src/base/interfaces/ILocker.sol";
+import "src/base/interfaces/ILiquidityGauge.sol";
+import {ISDTDistributor} from "src/base/interfaces/ISDTDistributor.sol";
 
 /// @title BaseAccumulator
 /// @notice A contract that defines the functions shared by all accumulators

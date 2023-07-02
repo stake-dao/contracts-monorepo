@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-import "src/accumulator/BaseAccumulator.sol";
+import "src/base/accumulator/BaseAccumulator.sol";
 
 /// @title A contract that accumulates rewards and notifies them to the LGV4
 /// @author StakeDAO

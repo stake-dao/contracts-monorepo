@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-import "src/interfaces/IVeCRV.sol";
+import "src/base/interfaces/IVeCRV.sol";
 import "openzeppelin-contracts/token/ERC20/ERC20.sol";
 
 /// @title sdToken

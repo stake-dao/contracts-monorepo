@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.7;
 
-import "src/accumulator/BaseAccumulator.sol";
+import "src/base/accumulator/BaseAccumulator.sol";
 
-/// @title A contract that accumulates APW rewards and notifies them to the LGV4
+/// @title A contract that accumulates BPT rewards and notifies them to the LGV4
 /// @author StakeDAO
-contract ApwineAccumulator is BaseAccumulator {
+contract BlackpoolAccumulator is BaseAccumulator {
     uint256 public lockerFee; // in 10000
 
     address public feeReceiver;
