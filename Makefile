@@ -22,6 +22,9 @@ test-f-%:
 test-c-%:
 	@FOUNDRY_MATCH_CONTRACT=$* make test
 
+test-%:
+	@FOUNDRY_TEST=test/$* make test
+
 coverage:
 	@forge coverage --report lcov
 	@lcov --ignore-errors unused --remove ./lcov.info -o ./lcov.info.pruned "test/*" "script/*"

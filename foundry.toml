@@ -5,7 +5,8 @@ libs = ["lib"]
 
 remappings = [
 "forge-std=lib/forge-std/src/",
-"openzeppelin-contracts/=lib/openzeppelin-contracts/contracts/"
+"openzeppelin-contracts/=lib/openzeppelin-contracts/contracts/",
+"@addressBook=lib/AddressBook/src/",
 ]
 
 ffi = true
