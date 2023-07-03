@@ -106,7 +106,6 @@ contract PendleDepositor {
             IPendleLocker(locker).increaseAmount(uint128(tokenBalance));
         }
 
-
         if (relock) {
             uint128 unlockAt = uint128(block.timestamp + MAXTIME);
             uint128 unlockInWeeks = uint128((unlockAt / WEEK) * WEEK);

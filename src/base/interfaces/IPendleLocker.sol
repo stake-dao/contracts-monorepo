@@ -7,5 +7,4 @@ interface IPendleLocker {
     function increaseAmount(uint128) external;
 
     function increaseUnlockTime(uint128) external;
-
 }
