@@ -4,7 +4,7 @@ pragma solidity 0.8.7;
 import "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import "src/base/interfaces/ITokenMinter.sol";
-import {ILocker} from "src/base/interfaces/ILocker.sol";
+import {IPendleLocker} from "src/base/interfaces/IPendleLocker.sol";
 
 import "src/base/interfaces/ISdToken.sol";
 import "src/base/interfaces/ILiquidityGauge.sol";
@@ -102,9 +102,10 @@ contract PendleDepositor {
         if (tokenBalance > 0) {
             IERC20(token).safeTransfer(locker, tokenBalance);
             emit TokenLocked(msg.sender, tokenBalance);
+
+            IPendleLocker(locker).increaseAmount(uint128(tokenBalance));
         }
 
-        ILocker(locker).increaseAmount(uint128(tokenBalance));
 
         if (relock) {
             uint128 unlockAt = uint128(block.timestamp + MAXTIME);
@@ -112,7 +113,7 @@ contract PendleDepositor {
             // it means that a 1 week + at least 1 second has been passed
             // since last increased unlock time
             if (unlockInWeeks - unlockTime > 1) {
-                ILocker(locker).increaseUnlockTime(unlockInWeeks);
+                IPendleLocker(locker).increaseUnlockTime(unlockInWeeks);
                 unlockTime = unlockInWeeks;
             }
         }
@@ -141,9 +142,10 @@ contract PendleDepositor {
         require(_amount > 0, "!>0");
         require(_user != address(0), "!user");
 
+        IERC20(token).safeTransferFrom(msg.sender, address(this), _amount);
+
         // If User chooses to lock Token
         if (_lock) {
-            IERC20(token).safeTransferFrom(msg.sender, locker, _amount);
             _lockToken();
 
             if (incentiveToken > 0) {
@@ -152,8 +154,6 @@ contract PendleDepositor {
                 incentiveToken = 0;
             }
         } else {
-            //move tokens here
-            IERC20(token).safeTransferFrom(msg.sender, address(this), _amount);
             //defer lock cost to another user
             uint256 callIncentive = (_amount * lockIncentive) / FEE_DENOMINATOR;
             _amount = _amount - callIncentive;

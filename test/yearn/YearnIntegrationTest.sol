@@ -46,8 +46,6 @@ contract YearnIntegrationTest is Test {
 
         address liquidityGaugeImpl = vyperDeployer.deployContract("src/base/staking/LiquidityGaugeV4.vy");
 
-        console.log("LiquidityGaugeV4 deployed at: %s", liquidityGaugeImpl);
-
         // Deploy LiquidityGauge
         liquidityGauge = ILiquidityGauge(
             address(

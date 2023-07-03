@@ -8,6 +8,8 @@ interface ILocker {
 
     function increaseAmount(uint256) external;
 
+    function increaseAmount(uint128) external;
+
     function increaseUnlockTime(uint256) external;
 
     function release() external;
