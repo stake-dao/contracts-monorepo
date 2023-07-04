@@ -73,24 +73,30 @@ contract PendleAccumulator {
     /// @notice Claims rewards from the locker and notify all to the LGV4
     function claimAndNotifyAll() external {
         if (locker == address(0)) revert ZERO_ADDRESS();
+
         uint256 currentWeek = block.timestamp * 1 weeks / 1 weeks;
+
         // reward for 1 months
         address[] memory pools = new address[](1);
         pools[0] = VE_PENDLE;
+
         PendleLocker(locker).claimRewards(address(this), pools);
 
         uint256 claimed = address(this).balance;
         if (claimed == 0) revert NO_REWARD();
         // Wrap Eth to WETH
         IWETH(WETH).deposit{value: claimed}();
+
         // split the reward in 4 weekly periods
         // charge fees once from the whole month reward
         uint256 gaugeAmount = _chargeFee(WETH, claimed);
         uint256 weekAmount = gaugeAmount / 4;
+
         rewards[currentWeek] += weekAmount;
         rewards[currentWeek + 1 weeks] += weekAmount;
         rewards[currentWeek + 2 weeks] += weekAmount;
         rewards[currentWeek + 3 weeks] += weekAmount;
+
         _notifyReward(WETH);
         _distributeSDT();
     }
@@ -106,16 +112,20 @@ contract PendleAccumulator {
 
         uint256 claimed = address(this).balance;
         if (claimed == 0) revert NO_REWARD();
+
         // Wrap Eth to WETH
         IWETH(WETH).deposit{value: claimed}();
+
         // split the reward in 4 weekly periods
         // charge fees once from the whole month reward
         uint256 gaugeAmount = _chargeFee(WETH, claimed);
         uint256 weekAmount = gaugeAmount / 4;
+
         rewards[currentWeek] += weekAmount;
         rewards[currentWeek + 1 weeks] += weekAmount;
         rewards[currentWeek + 2 weeks] += weekAmount;
         rewards[currentWeek + 3 weeks] += weekAmount;
+
         _notifyReward(WETH);
         _distributeSDT();
     }
@@ -123,18 +133,25 @@ contract PendleAccumulator {
     /// @notice Claims rewards for the voters and send to a recipient
     function claimForVoters(address[] calldata pools) external {
         if (locker == address(0)) revert ZERO_ADDRESS();
+
         for (uint256 i; i < pools.length;) {
             if (pools[i] == VE_PENDLE) revert WRONG_CLAIM();
             unchecked {
                 ++i;
             }
         }
+
         PendleLocker(locker).claimRewards(address(this), pools);
-        if (address(this).balance == 0) revert NO_REWARD();
+
+        uint256 claimed = address(this).balance;
+        if (claimed == 0) revert NO_REWARD();
+
         // Wrap Eth to WETH
-        IWETH(WETH).deposit{value: address(this).balance}();
-        uint256 votesAmount = _chargeFee(WETH, address(this).balance);
+        IWETH(WETH).deposit{value: claimed}();
+
+        uint256 votesAmount = _chargeFee(WETH, claimed);
         IERC20(WETH).transfer(votesRewardRecipient, votesAmount);
+
         _distributeSDT();
     }
 
