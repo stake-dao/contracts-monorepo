@@ -7,11 +7,11 @@ import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {PendleLocker} from "src/pendle/locker/PendleLocker.sol";
 import {ISDTDistributor} from "src/base/interfaces/ISDTDistributor.sol";
 
-interface IWeth {
+interface IWETH {
     function deposit() external payable;
 }
 
-/// @title A contract that accumulates PENDLE rewards and notifies them to the LGV4
+/// @title A contract that accumulates ETH rewards and notifies them to the LGV4
 /// @author StakeDAO
 contract PendleAccumulator {
     error FEE_TOO_HIGH();
@@ -38,19 +38,24 @@ contract PendleAccumulator {
     address public gauge;
     address public sdtDistributor;
     uint256 public claimerFee;
+
     mapping(uint256 => uint256) rewards; // period -> reward amount
 
-    event DaoRecipientSet(address _old, address _new);
-    event BribeRecipientSet(address _old, address _new);
-    event VeSdtFeeProxySet(address _old, address _new);
+    /// @notice If set, the rewards will be distributed to all the users of the gauge
+    bool public distributeAllRewards;
+
     event DaoFeeSet(uint256 _old, uint256 _new);
     event BribeFeeSet(uint256 _old, uint256 _new);
-    event VeSdtFeeProxyFeeSet(uint256 _old, uint256 _new);
-    event LockerSet(address oldLocker, address newLocker);
-    event GovernanceSet(address oldGov, address newGov);
-    event SdtDistributorUpdated(address oldDistributor, address newDistributor);
-    event GaugeSet(address oldGauge, address newGauge);
     event ERC20Rescued(address token, uint256 amount);
+    event DaoRecipientSet(address _old, address _new);
+    event VeSdtFeeProxySet(address _old, address _new);
+    event GaugeSet(address oldGauge, address newGauge);
+    event GovernanceSet(address oldGov, address newGov);
+    event BribeRecipientSet(address _old, address _new);
+    event LockerSet(address oldLocker, address newLocker);
+    event VeSdtFeeProxyFeeSet(uint256 _old, uint256 _new);
+    event DistributeAllRewardsSet(bool distributeAllRewards);
+    event SdtDistributorUpdated(address oldDistributor, address newDistributor);
     event RewardNotified(address gauge, address tokenReward, uint256 amountNotified, uint256 claimerFee);
 
     /* ========== CONSTRUCTOR ========== */
@@ -73,12 +78,39 @@ contract PendleAccumulator {
         address[] memory pools = new address[](1);
         pools[0] = VE_PENDLE;
         PendleLocker(locker).claimRewards(address(this), pools);
-        if (address(this).balance == 0) revert NO_REWARD();
+
+        uint256 claimed = address(this).balance;
+        if (claimed == 0) revert NO_REWARD();
         // Wrap Eth to WETH
-        IWeth(WETH).deposit{value: address(this).balance}();
+        IWETH(WETH).deposit{value: claimed}();
         // split the reward in 4 weekly periods
         // charge fees once from the whole month reward
-        uint256 gaugeAmount = _chargeFee(WETH, address(this).balance);
+        uint256 gaugeAmount = _chargeFee(WETH, claimed);
+        uint256 weekAmount = gaugeAmount / 4;
+        rewards[currentWeek] += weekAmount;
+        rewards[currentWeek + 1 weeks] += weekAmount;
+        rewards[currentWeek + 2 weeks] += weekAmount;
+        rewards[currentWeek + 3 weeks] += weekAmount;
+        _notifyReward(WETH);
+        _distributeSDT();
+    }
+
+    function claimAndNotifyAll(address[] calldata pools) external {
+        if (locker == address(0)) revert ZERO_ADDRESS();
+        if (!distributeAllRewards) revert NOT_ALLOWED();
+
+        uint256 currentWeek = block.timestamp * 1 weeks / 1 weeks;
+
+        // reward for 1 months
+        PendleLocker(locker).claimRewards(address(this), pools);
+
+        uint256 claimed = address(this).balance;
+        if (claimed == 0) revert NO_REWARD();
+        // Wrap Eth to WETH
+        IWETH(WETH).deposit{value: claimed}();
+        // split the reward in 4 weekly periods
+        // charge fees once from the whole month reward
+        uint256 gaugeAmount = _chargeFee(WETH, claimed);
         uint256 weekAmount = gaugeAmount / 4;
         rewards[currentWeek] += weekAmount;
         rewards[currentWeek + 1 weeks] += weekAmount;
@@ -100,7 +132,7 @@ contract PendleAccumulator {
         PendleLocker(locker).claimRewards(address(this), pools);
         if (address(this).balance == 0) revert NO_REWARD();
         // Wrap Eth to WETH
-        IWeth(WETH).deposit{value: address(this).balance}();
+        IWETH(WETH).deposit{value: address(this).balance}();
         uint256 votesAmount = _chargeFee(WETH, address(this).balance);
         IERC20(WETH).transfer(votesRewardRecipient, votesAmount);
         _distributeSDT();
@@ -157,7 +189,9 @@ contract PendleAccumulator {
         } else {
             amountToNotify = IERC20(_tokenReward).balanceOf(address(this));
         }
+
         if (amountToNotify == 0) revert NO_REWARD();
+
         if (ILiquidityGauge(gauge).reward_data(_tokenReward).distributor == address(this)) {
             uint256 balanceBefore = IERC20(_tokenReward).balanceOf(address(this));
             uint256 claimerReward = (amountToNotify * claimerFee) / 10_000;
@@ -249,6 +283,11 @@ contract PendleAccumulator {
 
         emit SdtDistributorUpdated(sdtDistributor, _sdtDistributor);
         sdtDistributor = _sdtDistributor;
+    }
+
+    function setDistributeAllRewards(bool _distributeAllRewards) external {
+        if (msg.sender != governance) revert NOT_ALLOWED();
+        emit DistributeAllRewardsSet(distributeAllRewards = _distributeAllRewards);
     }
 
     /// @notice Allows the governance to set the new governance
