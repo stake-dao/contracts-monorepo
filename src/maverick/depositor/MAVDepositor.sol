@@ -108,17 +108,13 @@ contract MAVDepositor {
         /// If _lock is true, lock tokens in the locker contract.
         if (_lock) {
             /// Transfer tokens to the locker contract and lock them.
+            _amount += incentiveToken;
             IERC20(token).safeTransferFrom(msg.sender, locker, _amount);
 
             /// Lock the amount sent + incentiveToken.
-            _lockToken(_amount + incentiveToken);
+            _lockToken(_amount);
 
-            if (incentiveToken > 0) {
-                /// Add incentiveToken to _amount and reset incentiveToken.
-                _amount = _amount + incentiveToken;
-
-                incentiveToken = 0;
-            }
+            incentiveToken = 0;
         } else {
             /// Transfer tokens to this contract
             IERC20(token).safeTransferFrom(msg.sender, address(this), _amount);
@@ -153,7 +149,12 @@ contract MAVDepositor {
     /// @dev The contract must have Token to lock
     function lockToken() external {
         uint256 tokenBalance = IERC20(token).balanceOf(address(this));
-        _lockToken(tokenBalance);
+
+        if (tokenBalance > 0) {
+            /// Transfer tokens to the locker contract and lock them.
+            IERC20(token).safeTransfer(locker, tokenBalance);
+            _lockToken(tokenBalance);
+        }
 
         /// If there is incentive available give it to the user calling lockToken.
         if (incentiveToken > 0) {
@@ -170,8 +171,6 @@ contract MAVDepositor {
     function _lockToken(uint256 _amount) internal {
         // If there is Token available in the contract transfer it to the locker
         if (_amount > 0) {
-            IERC20(token).safeTransfer(locker, _amount);
-
             ILocker(locker).increaseLock(_amount, MIN_LOCK_DURATION);
             emit TokenLocked(msg.sender, _amount);
         }
