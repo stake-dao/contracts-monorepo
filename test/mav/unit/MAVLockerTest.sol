@@ -114,6 +114,21 @@ contract MAVLockerTest is Test {
         assertEq(locker.depositor(), newDepositor);
     }
 
+    function test_onlyGovernance() public {
+        vm.startPrank(address(0x123));
+
+        vm.expectRevert();
+        locker.execute(address(token), 0, abi.encodeWithSignature("approve(address,uint256)", address(veToken), type(uint256).max));
+
+        vm.expectRevert();
+        locker.setDepositor(address(0x123));
+
+        vm.expectRevert();
+        locker.transferGovernance(address(0x123));
+
+        vm.stopPrank();
+    }
+
     function test_execute() public {
         /// Create a lock using execute function.
         (uint256 expectedBalance,) = veToken.previewPoints(100e18, MAX_LOCK_DURATION);
