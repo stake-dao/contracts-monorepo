@@ -19,6 +19,9 @@ contract MAVLocker {
     /// @notice Address of the governance contract.
     address public governance;
 
+    /// @notice Address of the future governance contract.
+    address public futureGovernance;
+
     /// @notice Address of the token being locked.
     address public immutable token;
 
@@ -134,6 +137,28 @@ contract MAVLocker {
     ////////////////////////////////////////////////////////////////
     /// --- GOVERNANCE PARAMETERS
     ///////////////////////////////////////////////////////////////
+
+    /// @notice Transfer the governance to a new address.
+    /// @param _governance Address of the new governance.
+    function transferGovernance(address _governance) external onlyGovernance {
+        futureGovernance = _governance;
+    }
+
+    /// @notice Accept the governance transfer.
+    function acceptGovernance() external {
+        if (msg.sender != futureGovernance) revert GOVERNANCE();
+
+        governance = msg.sender;
+        emit GovernanceChanged(msg.sender);
+    }
+
+    /// @notice Change the depositor address.
+    /// @param _depositor Address of the new depositor.
+    function setDepositor(address _depositor) external onlyGovernance {
+        depositor = _depositor;
+        emit DepositorChanged(_depositor);
+    }
+
 
     /// @notice Execute an arbitrary transaction as the governance.
     /// @param to Address to send the transaction to.

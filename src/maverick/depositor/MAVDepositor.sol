@@ -59,7 +59,7 @@ contract MAVDepositor {
     /// @param amount Amount of tokens deposited.
     /// @param lock Whether the tokens are locked.
     /// @param stake Whether the sdToken is staked in the gauge.
-    event Deposit(address indexed caller, address indexed user, uint256 amount, bool lock, bool stake);
+    event Deposited(address indexed caller, address indexed user, uint256 amount, bool lock, bool stake);
 
     /// @notice Event emitted when incentive tokens are received.
     /// @param caller Address of the caller.
@@ -149,6 +149,7 @@ contract MAVDepositor {
             /// Mint sdToken to _user.
             ITokenMinter(minter).mint(_user, _amount);
         }
+        emit Deposited(msg.sender, _user, _amount, _lock, _stake);
     }
 
     /// @notice Lock tokens held by the contract
@@ -185,6 +186,51 @@ contract MAVDepositor {
 
         if (relock) {
             ILocker(locker).increaseLock(0, MAX_LOCK_DURATION);
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////
+    /// --- GOVERNANCE PARAMETERS
+    ///////////////////////////////////////////////////////////////
+
+    /// @notice Set the new governance
+    /// @param _governance governance address
+    function setGovernance(address _governance) external {
+        require(msg.sender == governance, "!auth");
+        governance = _governance;
+        emit GovernanceChanged(_governance);
+    }
+
+    /// @notice Set the new operator for minting sdToken
+    /// @param _minter operator minter address
+    function setSdTokenMinterOperator(address _minter) external {
+        require(msg.sender == governance, "!auth");
+        ISdTokenV2(minter).setMinterOperator(_minter);
+        emit SdTokenOperatorChanged(_minter);
+    }
+
+    /// @notice Enable the relock or not
+    /// @param _relock relock status
+    function setRelock(bool _relock) external {
+        require(msg.sender == governance, "!auth");
+        relock = _relock;
+    }
+
+    /// @notice Set the gauge to deposit token yielded
+    /// @param _gauge gauge address
+    function setGauge(address _gauge) external {
+        require(msg.sender == governance, "!auth");
+        gauge = _gauge;
+    }
+
+    /// @notice set the fees for locking incentive
+    /// @param _lockIncentive contract must have tokens to lock
+    function setFees(uint256 _lockIncentive) external {
+        require(msg.sender == governance, "!auth");
+
+        if (_lockIncentive >= 0 && _lockIncentive <= 30) {
+            lockIncentive = _lockIncentive;
+            emit FeesChanged(_lockIncentive);
         }
     }
 }
