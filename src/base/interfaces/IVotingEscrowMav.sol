@@ -11,4 +11,6 @@ interface IVotingEscrowMav {
     function unstake(uint256 lockupId) external;
 
     function extend(uint256 lockupId, uint256 duration, uint256 amount, bool doDelegation) external;
+
+    function balanceOf(address account) external view returns (uint256);
 }
