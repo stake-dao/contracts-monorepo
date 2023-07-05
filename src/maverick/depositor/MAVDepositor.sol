@@ -2,6 +2,7 @@
 pragma solidity 0.8.20;
 
 import "src/base/interfaces/ILocker.sol";
+import "src/base/interfaces/ISdTokenV2.sol";
 import "src/base/interfaces/ITokenMinter.sol";
 import "src/base/interfaces/ILiquidityGauge.sol";
 
@@ -46,6 +47,9 @@ contract MAVDepositor {
     /// @notice Address of the governance.
     address public governance;
 
+    /// @notice Address of the future governance contract.
+    address public futureGovernance;
+
     /// @notice Parameters to control lock duration.
     bool public relock = true;
 
@@ -81,11 +85,23 @@ contract MAVDepositor {
     /// @notice Event emitted Incentive percent is changed.
     event FeesChanged(uint256 newFee);
 
+    /// @notice Throws if caller is not the governance.
+    error GOVERNANCE();
+
     /// @notice Throws if the deposit amount is zero.
     error AMOUNT_ZERO();
 
     /// @notice Throws if the address is zero.
     error ADDRESS_ZERO();
+
+    ////////////////////////////////////////////////////////////////
+    /// --- MODIFIERS
+    ///////////////////////////////////////////////////////////////
+
+    modifier onlyGovernance() {
+        if (msg.sender != governance) revert GOVERNANCE();
+        _;
+    }
 
     constructor(address _token, address _locker, address _minter, address _gauge) {
         governance = msg.sender;
@@ -193,44 +209,44 @@ contract MAVDepositor {
     /// --- GOVERNANCE PARAMETERS
     ///////////////////////////////////////////////////////////////
 
-    /// @notice Set the new governance
-    /// @param _governance governance address
-    function setGovernance(address _governance) external {
-        require(msg.sender == governance, "!auth");
-        governance = _governance;
-        emit GovernanceChanged(_governance);
+    /// @notice Transfer the governance to a new address.
+    /// @param _governance Address of the new governance.
+    function transferGovernance(address _governance) external onlyGovernance {
+        futureGovernance = _governance;
+    }
+
+    /// @notice Accept the governance transfer.
+    function acceptGovernance() external {
+        if (msg.sender != futureGovernance) revert GOVERNANCE();
+
+        governance = msg.sender;
+        emit GovernanceChanged(msg.sender);
     }
 
     /// @notice Set the new operator for minting sdToken
     /// @param _minter operator minter address
-    function setSdTokenMinterOperator(address _minter) external {
-        require(msg.sender == governance, "!auth");
+    function setSdTokenMinterOperator(address _minter) external onlyGovernance {
         ISdTokenV2(minter).setMinterOperator(_minter);
         emit SdTokenOperatorChanged(_minter);
     }
 
     /// @notice Enable the relock or not
     /// @param _relock relock status
-    function setRelock(bool _relock) external {
-        require(msg.sender == governance, "!auth");
+    function setRelock(bool _relock) external onlyGovernance {
         relock = _relock;
     }
 
-    /// @notice Set the gauge to deposit token yielded
+    /// @notice Set the gauge to deposit sdToken
     /// @param _gauge gauge address
-    function setGauge(address _gauge) external {
-        require(msg.sender == governance, "!auth");
+    function setGauge(address _gauge) external onlyGovernance {
         gauge = _gauge;
     }
 
-    /// @notice set the fees for locking incentive
-    /// @param _lockIncentive contract must have tokens to lock
-    function setFees(uint256 _lockIncentive) external {
-        require(msg.sender == governance, "!auth");
-
+    /// @notice Set the percentage of the lock incentive
+    /// @param _lockIncentive Percentage of the lock incentive
+    function setFees(uint256 _lockIncentive) external onlyGovernance {
         if (_lockIncentive >= 0 && _lockIncentive <= 30) {
-            lockIncentive = _lockIncentive;
-            emit FeesChanged(_lockIncentive);
+            emit FeesChanged(lockIncentivePercent = _lockIncentive);
         }
     }
 }

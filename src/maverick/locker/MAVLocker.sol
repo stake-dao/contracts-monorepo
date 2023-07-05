@@ -159,7 +159,6 @@ contract MAVLocker {
         emit DepositorChanged(_depositor);
     }
 
-
     /// @notice Execute an arbitrary transaction as the governance.
     /// @param to Address to send the transaction to.
     /// @param value Amount of ETH to send with the transaction.
