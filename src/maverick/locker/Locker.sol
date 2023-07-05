@@ -1,62 +1,143 @@
-// SPDX-License-Identifier: MIT
-pragma solidity 0.8.7;
+// SPDX-License-Identifier: AGPL-3.0-only
+pragma solidity 0.8.20;
 
 import "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
+import {IVotingEscrowMav} from "src/base/interfaces/IVotingEscrowMav.sol";
 
-/// @title Maverick Locker
-/// @author StakeDAO
+/// @title  Locker
+/// @notice Locker contract for locking tokens for a period of time
+/// @author Stake DAO
+/// @custom:contact contact@stakedao.org
 contract Locker {
     using SafeERC20 for IERC20;
 
-    /* ========== STATE VARIABLES ========== */
-    address public governance;
+    /// @notice Address of the depositor which will mint sdTokens.
     address public depositor;
-    address public accumulator;
-    address public rewardPool;
 
+    /// @notice Address of the governance contract.
+    address public governance;
+
+    /// @notice Address of the token being locked.
     address public immutable token;
+
+    /// @notice Address of the Voting Escrow contract.
     address public immutable veToken;
 
-    /* ========== EVENTS ========== */
-    event LockCreated(address indexed user, uint256 value, uint256 duration);
-    event TokenClaimed(address indexed user, uint256 value);
-    event VotedOnGaugeWeight(address indexed _gauge, uint256 _weight);
+    ////////////////////////////////////////////////////////////////
+    /// --- EVENTS & ERRORS
+    ///////////////////////////////////////////////////////////////
+
+    /// @notice Event emitted when tokens are released from the locker.
+    /// @param user Address who released the tokens.
+    /// @param value Amount of tokens released.
     event Released(address indexed user, uint256 value);
+
+    /// @notice Event emitted when a lock is created.
+    /// @param value Amount of tokens locked.
+    /// @param duration Duration of the lock.
+    event LockCreated(uint256 value, uint256 duration);
+
+    /// @notice Event emitted when a lock is increased.
+    /// @param value Amount of tokens locked.
+    /// @param duration Duration of the lock.
+    event LockIncreased(uint256 value, uint256 duration);
+
+    /// @notice Event emitted when the depositor is changed.
+    /// @param newDepositor Address of the new depositor.
+    event DepositorChanged(address indexed newDepositor);
+
+    /// @notice Event emitted when the governance is changed.
     event GovernanceChanged(address indexed newGovernance);
-    event YFIDepositorChanged(address indexed newYearnDepositor);
-    event AccumulatorChanged(address indexed newAccumulator);
-    event RewardPoolChanged(address indexed newRewardPool);
 
-    /* ========== CONSTRUCTOR ========== */
-    constructor(address _governance, address _accumulator, address _token, address _veToken, address _rewardPool) {
-        governance = _governance;
-        accumulator = _accumulator;
-        token = _token;
-        veToken = _veToken;
-        rewardPool = _rewardPool;
-    }
+    /// @notice Throws if caller is not the governance.
+    error GOVERNANCE();
 
-    /* ========== MODIFIERS ========== */
+    /// @notice Throws if caller is not the governance or depositor.
+    error GOVERNANCE_OR_DEPOSITOR();
+
+    /// @notice Throws if a lock already exists for the contract.
+    error LOCK_ALREADY_EXISTS();
+
+    ////////////////////////////////////////////////////////////////
+    /// --- MODIFIERS
+    ///////////////////////////////////////////////////////////////
+
     modifier onlyGovernance() {
-        require(msg.sender == governance, "!gov");
-        _;
-    }
-
-    modifier onlyGovernanceOrAcc() {
-        require(msg.sender == governance || msg.sender == accumulator, "!(gov||acc)");
+        if (msg.sender != governance) revert GOVERNANCE();
         _;
     }
 
     modifier onlyGovernanceOrDepositor() {
-        require(msg.sender == governance || msg.sender == depositor, "!(gov||YearnDepositor)");
+        if (msg.sender != governance && msg.sender != depositor) revert GOVERNANCE_OR_DEPOSITOR();
         _;
     }
 
-    /// @notice execute a function
-    /// @param to Address to sent the value to
-    /// @param value Value to be sent
-    /// @param data Call function data
+    constructor(address _governance, address _token, address _veToken) {
+        token = _token;
+        veToken = _veToken;
+        governance = _governance;
+    }
+
+    function name() external pure returns (string memory) {
+        return "MAV Locker";
+    }
+
+    ////////////////////////////////////////////////////////////////
+    /// --- LOCKER MANAGEMENT
+    ///////////////////////////////////////////////////////////////
+
+    /// @notice Create a lock for the contract on the Voting Escrow contract.
+    /// @param _value Amount of tokens to lock
+    /// @param _duration Duration of the lock
+    function createLock(uint256 _value, uint256 _duration) external onlyGovernance {
+        // You can have multiple locks, but we don't want to have multiple locks for the same contract.
+        uint256 _locks = IVotingEscrowMav(veToken).lockupCount(address(this));
+        if (_locks > 0) revert LOCK_ALREADY_EXISTS();
+
+        _approveIfNeeded();
+        IVotingEscrowMav(veToken).stake(_value, _duration, address(this));
+
+        emit LockCreated(_value, _duration);
+    }
+
+    /// @notice Increase the lock amount or duration for the contract on the Voting Escrow contract.
+    /// @param _value Amount of tokens to lock
+    /// @param _duration Duration of the lock
+    function increaseLock(uint256 _value, uint256 _duration) external onlyGovernanceOrDepositor {
+        _approveIfNeeded();
+        IVotingEscrowMav(veToken).extend(0, _duration, _value, false);
+
+        emit LockIncreased(_value, _duration);
+    }
+
+    /// @notice Release the tokens from the Voting Escrow contract when the lock expires.
+    /// @param _recipient Address to send the tokens to
+    function release(address _recipient) external onlyGovernance {
+        IVotingEscrowMav(veToken).unstake(0);
+
+        uint256 _balance = IERC20(token).balanceOf(address(this));
+        IERC20(token).safeTransfer(_recipient, _balance);
+
+        emit Released(msg.sender, IERC20(token).balanceOf(address(this)));
+    }
+
+    /// @dev Helper function to approve the Voting Escrow contract to spend the token
+    function _approveIfNeeded() internal {
+        uint256 _allowance = IERC20(token).allowance(address(this), veToken);
+        if (_allowance == 0) {
+            IERC20(token).safeApprove(veToken, type(uint256).max);
+        }
+    }
+
+    ////////////////////////////////////////////////////////////////
+    /// --- GOVERNANCE PARAMETERS
+    ///////////////////////////////////////////////////////////////
+
+    /// @notice Execute an arbitrary transaction as the governance.
+    /// @param to Address to send the transaction to.
+    /// @param value Amount of ETH to send with the transaction.
+    /// @param data Encoded data of the transaction.
     function execute(address to, uint256 value, bytes calldata data)
         external
         onlyGovernance
@@ -65,4 +146,6 @@ contract Locker {
         (bool success, bytes memory result) = to.call{value: value}(data);
         return (success, result);
     }
+
+    receive() external payable {}
 }
