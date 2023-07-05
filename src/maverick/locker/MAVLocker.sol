@@ -5,11 +5,12 @@ import "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import {IVotingEscrowMav} from "src/base/interfaces/IVotingEscrowMav.sol";
 
-/// @title  Locker
+/// @title  MAVLocker
 /// @notice Locker contract for locking tokens for a period of time
+/// @dev Adapted for Maverick Voting Escrow.
 /// @author Stake DAO
 /// @custom:contact contact@stakedao.org
-contract Locker {
+contract MAVLocker {
     using SafeERC20 for IERC20;
 
     /// @notice Address of the depositor which will mint sdTokens.
@@ -140,6 +141,7 @@ contract Locker {
     /// @param data Encoded data of the transaction.
     function execute(address to, uint256 value, bytes calldata data)
         external
+        payable
         onlyGovernance
         returns (bool, bytes memory)
     {
