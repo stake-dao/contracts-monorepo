@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.20;
 
 import "forge-std/Vm.sol";
@@ -118,7 +118,9 @@ contract MAVLockerTest is Test {
         vm.startPrank(address(0x123));
 
         vm.expectRevert(MAVLocker.GOVERNANCE.selector);
-        locker.execute(address(token), 0, abi.encodeWithSignature("approve(address,uint256)", address(veToken), type(uint256).max));
+        locker.execute(
+            address(token), 0, abi.encodeWithSignature("approve(address,uint256)", address(veToken), type(uint256).max)
+        );
 
         vm.expectRevert(MAVLocker.GOVERNANCE.selector);
         locker.setDepositor(address(0x123));
@@ -143,9 +145,7 @@ contract MAVLockerTest is Test {
         (uint256 expectedBalance,) = veToken.previewPoints(100e18, MAX_LOCK_DURATION);
 
         locker.execute(
-            address(token),
-            0,
-            abi.encodeWithSignature("approve(address,uint256)", address(veToken), type(uint256).max)
+            address(token), 0, abi.encodeWithSignature("approve(address,uint256)", address(veToken), type(uint256).max)
         );
 
         locker.execute(
@@ -156,5 +156,4 @@ contract MAVLockerTest is Test {
 
         assertEq(veToken.balanceOf(address(locker)), expectedBalance);
     }
-
 }
