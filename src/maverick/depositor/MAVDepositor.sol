@@ -59,7 +59,7 @@ contract MAVDepositor {
     /// @param amount Amount of tokens deposited.
     /// @param lock Whether the tokens are locked.
     /// @param stake Whether the sdToken is staked in the gauge.
-    event Deposited(address indexed caller, address indexed user, uint256 amount, bool lock, bool stake);
+    event Deposit(address indexed caller, address indexed user, uint256 amount, bool lock, bool stake);
 
     /// @notice Event emitted when incentive tokens are received.
     /// @param caller Address of the caller.
@@ -107,14 +107,20 @@ contract MAVDepositor {
 
         /// If _lock is true, lock tokens in the locker contract.
         if (_lock) {
+            /// If an incentive is available, add it to the amount.
+            if (incentiveToken > 0) {
+                _amount += incentiveToken;
+
+                incentiveToken = 0;
+
+                emit IncentiveReceived(msg.sender, incentiveToken);
+            }
+
             /// Transfer tokens to the locker contract and lock them.
-            _amount += incentiveToken;
             IERC20(token).safeTransferFrom(msg.sender, locker, _amount);
 
             /// Lock the amount sent + incentiveToken.
             _lockToken(_amount);
-
-            incentiveToken = 0;
         } else {
             /// Transfer tokens to this contract
             IERC20(token).safeTransferFrom(msg.sender, address(this), _amount);
@@ -160,6 +166,8 @@ contract MAVDepositor {
         if (incentiveToken > 0) {
             /// Mint incentiveToken to msg.sender.
             ITokenMinter(minter).mint(msg.sender, incentiveToken);
+
+            emit IncentiveReceived(msg.sender, incentiveToken);
 
             /// Reset incentiveToken.
             incentiveToken = 0;
