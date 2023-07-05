@@ -117,14 +117,23 @@ contract MAVLockerTest is Test {
     function test_onlyGovernance() public {
         vm.startPrank(address(0x123));
 
-        vm.expectRevert();
+        vm.expectRevert(MAVLocker.GOVERNANCE.selector);
         locker.execute(address(token), 0, abi.encodeWithSignature("approve(address,uint256)", address(veToken), type(uint256).max));
 
-        vm.expectRevert();
+        vm.expectRevert(MAVLocker.GOVERNANCE.selector);
         locker.setDepositor(address(0x123));
 
-        vm.expectRevert();
+        vm.expectRevert(MAVLocker.GOVERNANCE.selector);
         locker.transferGovernance(address(0x123));
+
+        vm.expectRevert(MAVLocker.GOVERNANCE.selector);
+        locker.createLock(100e18, MAX_LOCK_DURATION);
+
+        vm.expectRevert(MAVLocker.GOVERNANCE_OR_DEPOSITOR.selector);
+        locker.increaseLock(100e18, MAX_LOCK_DURATION);
+
+        vm.expectRevert(MAVLocker.GOVERNANCE.selector);
+        locker.release(address(this));
 
         vm.stopPrank();
     }
