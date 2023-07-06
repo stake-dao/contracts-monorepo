@@ -147,4 +147,18 @@ contract MAVLockerIntegrationTest is Test {
         assertEq(veToken.balanceOf(address(locker)), expectedBalance);
     }
 
+    function test_transferGovernance() public {
+        address newGovernance = address(0x123);
+
+        depositor.transferGovernance(newGovernance);
+
+        assertEq(depositor.governance(), address(this));
+        assertEq(depositor.futureGovernance(), newGovernance);
+
+        vm.prank(newGovernance);
+        depositor.acceptGovernance();
+
+        assertEq(depositor.governance(), newGovernance);
+        assertEq(depositor.futureGovernance(), newGovernance);
+    }
 }
