@@ -39,7 +39,7 @@ contract MAVDepositor {
     uint256 public lockIncentivePercent = 10;
 
     /// @notice Incentive accrued in token to users who spend gas to increase lock.
-    uint256 public incentiveToken = 0;
+    uint256 public incentiveToken;
 
     /// @notice Gauge to deposit sdToken into.
     address public gauge;
