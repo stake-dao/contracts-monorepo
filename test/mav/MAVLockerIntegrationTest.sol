@@ -139,7 +139,7 @@ contract MAVLockerIntegrationTest is Test {
         depositor.lockToken();
 
         assertEq(depositor.incentiveToken(), 0);
-        assertEq(token.balanceOf(address(depositor)), 0); 
+        assertEq(token.balanceOf(address(depositor)), 0);
         assertEq(liquidityGauge.balanceOf(address(_random)), 0);
         assertEq(_sdToken.balanceOf(address(_random)), expectedIncentiveAmount);
 

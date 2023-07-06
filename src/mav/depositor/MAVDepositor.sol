@@ -119,7 +119,6 @@ contract MAVDepositor {
     /// @param _stake Whether to stake the sdToken in the gauge.
     /// @param _user Address of the user to receive the sdToken.
     function deposit(uint256 _amount, bool _lock, bool _stake, address _user) public {
-        if (_amount == 0) revert AMOUNT_ZERO();
         if (_user == address(0)) revert ADDRESS_ZERO();
 
         /// If _lock is true, lock tokens in the locker contract.
