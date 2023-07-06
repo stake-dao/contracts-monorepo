@@ -50,9 +50,6 @@ contract MAVDepositor {
     /// @notice Address of the future governance contract.
     address public futureGovernance;
 
-    /// @notice Parameters to control lock duration.
-    bool public relock = true;
-
     ////////////////////////////////////////////////////////////////
     /// --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
@@ -196,11 +193,7 @@ contract MAVDepositor {
     function _lockToken(uint256 _amount) internal {
         // If there is Token available in the contract transfer it to the locker
         if (_amount > 0) {
-            if (relock) {
-                ILocker(locker).increaseLock(_amount, MAX_LOCK_DURATION);
-            } else {
-                ILocker(locker).increaseLock(_amount, MIN_LOCK_DURATION);
-            }
+            ILocker(locker).increaseLock(_amount, MAX_LOCK_DURATION);
             emit TokenLocked(msg.sender, _amount);
         }
     }
@@ -228,12 +221,6 @@ contract MAVDepositor {
     function setSdTokenMinterOperator(address _minter) external onlyGovernance {
         ISdTokenV2(minter).setMinterOperator(_minter);
         emit SdTokenOperatorChanged(_minter);
-    }
-
-    /// @notice Enable the relock or not
-    /// @param _relock relock status
-    function setRelock(bool _relock) external onlyGovernance {
-        relock = _relock;
     }
 
     /// @notice Set the gauge to deposit sdToken

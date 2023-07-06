@@ -69,9 +69,6 @@ contract MAVLockerIntegrationTest is Test {
         deal(address(token), address(locker), amount);
 
         locker.createLock(amount, MAX_LOCK_DURATION);
-
-        /// Skip 1 seconds to avoid depositing in the same block as locking.
-        skip(1);
     }
 
     function test_initialization() public {
@@ -84,6 +81,9 @@ contract MAVLockerIntegrationTest is Test {
     }
 
     function test_depositAndMint() public {
+        /// Skip 1 seconds to avoid depositing in the same block as locking.
+        skip(1);
+
         (uint256 expectedBalance,) = veToken.previewPoints(200e18, MAX_LOCK_DURATION);
 
         token.approve(address(depositor), amount);
@@ -96,6 +96,9 @@ contract MAVLockerIntegrationTest is Test {
     }
 
     function test_depositAndStake() public {
+        /// Skip 1 seconds to avoid depositing in the same block as locking.
+        skip(1);
+
         (uint256 expectedBalance,) = veToken.previewPoints(200e18, MAX_LOCK_DURATION);
 
         token.approve(address(depositor), amount);
@@ -105,5 +108,23 @@ contract MAVLockerIntegrationTest is Test {
         assertEq(token.balanceOf(address(depositor)), 0);
         assertEq(liquidityGauge.balanceOf(address(this)), amount);
         assertEq(veToken.balanceOf(address(locker)), expectedBalance);
+        assertEq(_sdToken.balanceOf(address(liquidityGauge)), amount);
+    }
+
+    function test_depositAndStakeWithoutLock() public {
+        (uint256 expectedBalance,) = veToken.previewPoints(amount, MAX_LOCK_DURATION);
+
+        uint256 expectedIncentiveAmount = amount * 10 / 10_000;
+        uint256 expectedStakedBalance = amount - expectedIncentiveAmount;
+
+        token.approve(address(depositor), amount);
+        depositor.deposit(amount, false, true, address(this));
+
+        assertEq(_sdToken.balanceOf(address(this)), 0);
+        assertEq(token.balanceOf(address(depositor)), amount);
+        assertEq(veToken.balanceOf(address(locker)), expectedBalance);
+        assertEq(depositor.incentiveToken(), expectedIncentiveAmount);
+        assertEq(liquidityGauge.balanceOf(address(this)), expectedStakedBalance);
+        assertEq(_sdToken.balanceOf(address(liquidityGauge)), expectedStakedBalance);
     }
 }
