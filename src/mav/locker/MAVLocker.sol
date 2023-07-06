@@ -51,6 +51,9 @@ contract MAVLocker {
     /// @param newDepositor Address of the new depositor.
     event DepositorChanged(address indexed newDepositor);
 
+    /// @notice Event emitted when a new governance is proposed.
+    event GovernanceProposed(address indexed newGovernance);
+
     /// @notice Event emitted when the governance is changed.
     event GovernanceChanged(address indexed newGovernance);
 
@@ -131,22 +134,19 @@ contract MAVLocker {
     /// @notice Transfer the governance to a new address.
     /// @param _governance Address of the new governance.
     function transferGovernance(address _governance) external onlyGovernance {
-        futureGovernance = _governance;
+        emit GovernanceProposed(futureGovernance = _governance);
     }
 
     /// @notice Accept the governance transfer.
     function acceptGovernance() external {
         if (msg.sender != futureGovernance) revert GOVERNANCE();
-
-        governance = msg.sender;
-        emit GovernanceChanged(msg.sender);
+        emit GovernanceChanged(governance = msg.sender);
     }
 
     /// @notice Change the depositor address.
     /// @param _depositor Address of the new depositor.
     function setDepositor(address _depositor) external onlyGovernance {
-        depositor = _depositor;
-        emit DepositorChanged(_depositor);
+        emit DepositorChanged(depositor = _depositor);
     }
 
     /// @notice Execute an arbitrary transaction as the governance.

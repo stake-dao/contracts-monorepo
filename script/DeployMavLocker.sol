@@ -68,17 +68,16 @@ contract DeployMavLocker is Script, Test {
         _sdToken.setOperator(address(depositor));
         locker.setDepositor(address(depositor));
 
-        if(locker.token() != address(token)) revert();
-        if(locker.veToken() != address(veToken)) revert();
-        if(locker.depositor() != address(depositor)) revert();
-        if(locker.governance() != address(deployer)) revert();
+        if (locker.token() != address(token)) revert();
+        if (locker.veToken() != address(veToken)) revert();
+        if (locker.depositor() != address(depositor)) revert();
+        if (locker.governance() != address(deployer)) revert();
 
-
-        if(depositor.token() != address(token)) revert();
-        if(depositor.locker() != address(locker)) revert();
-        if(depositor.minter() != address(_sdToken)) revert();
-        if(depositor.governance() != address(deployer)) revert();
-        if(depositor.gauge() != address(liquidityGauge)) revert();
+        if (depositor.token() != address(token)) revert();
+        if (depositor.locker() != address(locker)) revert();
+        if (depositor.minter() != address(_sdToken)) revert();
+        if (depositor.governance() != address(deployer)) revert();
+        if (depositor.gauge() != address(liquidityGauge)) revert();
 
         vm.stopBroadcast();
     }
