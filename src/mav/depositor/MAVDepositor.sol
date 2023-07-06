@@ -107,6 +107,9 @@ contract MAVDepositor {
         gauge = _gauge;
         minter = _minter;
         locker = _locker;
+
+        /// Approve sdToken to gauge.
+        IERC20(minter).safeApprove(gauge, type(uint256).max);
     }
 
     ////////////////////////////////////////////////////////////////
@@ -130,7 +133,7 @@ contract MAVDepositor {
         /// If _lock is true, lock tokens in the locker contract.
         if (_lock) {
             /// If an incentive is available, add it to the amount.
-            if (incentiveToken > 0) {
+            if (incentiveToken != 0) {
                 _amount += incentiveToken;
 
                 incentiveToken = 0;
@@ -161,10 +164,6 @@ contract MAVDepositor {
             /// Mint sdToken to this contract.
             ITokenMinter(minter).mint(address(this), _amount);
 
-            /// Approve sdToken to gauge.
-            IERC20(minter).safeApprove(gauge, 0);
-            IERC20(minter).safeApprove(gauge, _amount);
-
             /// Deposit sdToken into gauge for _user.
             ILiquidityGauge(gauge).deposit(_amount, _user);
         } else {
@@ -179,14 +178,14 @@ contract MAVDepositor {
     function lockToken() external {
         uint256 tokenBalance = IERC20(token).balanceOf(address(this));
 
-        if (tokenBalance > 0) {
+        if (tokenBalance != 0) {
             /// Transfer tokens to the locker contract and lock them.
             IERC20(token).safeTransfer(locker, tokenBalance);
             _lockToken(tokenBalance);
         }
 
         /// If there is incentive available give it to the user calling lockToken.
-        if (incentiveToken > 0) {
+        if (incentiveToken != 0) {
             /// Mint incentiveToken to msg.sender.
             ITokenMinter(minter).mint(msg.sender, incentiveToken);
 
@@ -201,7 +200,7 @@ contract MAVDepositor {
     /// @dev The contract must have tokens to lock
     function _lockToken(uint256 _amount) internal {
         // If there is Token available in the contract transfer it to the locker
-        if (_amount > 0) {
+        if (_amount != 0) {
             ILocker(locker).increaseLock(_amount, MAX_LOCK_DURATION);
             emit TokenLocked(msg.sender, _amount);
         }
@@ -236,6 +235,9 @@ contract MAVDepositor {
     /// @param _gauge gauge address
     function setGauge(address _gauge) external onlyGovernance {
         gauge = _gauge;
+
+        /// Approve sdToken to gauge.
+        IERC20(minter).safeApprove(gauge, type(uint256).max);
     }
 
     /// @notice Set the percentage of the lock incentive
