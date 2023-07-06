@@ -144,11 +144,11 @@ contract MAVDepositor {
             /// Compute call incentive and add to incentiveToken
             uint256 callIncentive = (_amount * lockIncentivePercent) / DENOMINATOR;
 
+            /// Subtract call incentive from _amount
+            _amount -= callIncentive;
+
             /// Add call incentive to incentiveToken
             incentiveToken += callIncentive;
-
-            /// Subtract call incentive from _amount
-            _amount = _amount - callIncentive;
         }
 
         if (_stake && gauge != address(0)) {

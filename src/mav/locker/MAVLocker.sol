@@ -99,7 +99,7 @@ contract MAVLocker {
         uint256 _locks = IVotingEscrowMav(veToken).lockupCount(address(this));
         if (_locks > 0) revert LOCK_ALREADY_EXISTS();
 
-        _approveIfNeeded();
+        IERC20(token).safeApprove(veToken, type(uint256).max);
         IVotingEscrowMav(veToken).stake(_value, _duration, address(this));
 
         emit LockCreated(_value, _duration);
@@ -109,9 +109,7 @@ contract MAVLocker {
     /// @param _value Amount of tokens to lock
     /// @param _duration Duration of the lock
     function increaseLock(uint256 _value, uint256 _duration) external onlyGovernanceOrDepositor {
-        _approveIfNeeded();
         IVotingEscrowMav(veToken).extend(0, _duration, _value, false);
-
         emit LockIncreased(_value, _duration);
     }
 
@@ -124,14 +122,6 @@ contract MAVLocker {
         IERC20(token).safeTransfer(_recipient, _balance);
 
         emit Released(msg.sender, IERC20(token).balanceOf(address(this)));
-    }
-
-    /// @dev Helper function to approve the Voting Escrow contract to spend the token
-    function _approveIfNeeded() internal {
-        uint256 _allowance = IERC20(token).allowance(address(this), veToken);
-        if (_allowance == 0) {
-            IERC20(token).safeApprove(veToken, type(uint256).max);
-        }
     }
 
     ////////////////////////////////////////////////////////////////
