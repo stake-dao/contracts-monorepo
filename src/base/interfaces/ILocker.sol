@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity >=0.8.7;
+pragma solidity ^0.8.7;
 
 interface ILocker {
     function createLock(uint256, uint256) external;
