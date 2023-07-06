@@ -126,5 +126,25 @@ contract MAVLockerIntegrationTest is Test {
         assertEq(depositor.incentiveToken(), expectedIncentiveAmount);
         assertEq(liquidityGauge.balanceOf(address(this)), expectedStakedBalance);
         assertEq(_sdToken.balanceOf(address(liquidityGauge)), expectedStakedBalance);
+
+        address _random = address(0x123);
+
+        assertEq(_sdToken.balanceOf(address(_random)), 0);
+        assertEq(liquidityGauge.balanceOf(address(_random)), 0);
+
+        /// Skip 1 seconds to avoid depositing in the same block as locking.
+        skip(1);
+
+        vm.prank(_random);
+        depositor.lockToken();
+
+        assertEq(depositor.incentiveToken(), 0);
+        assertEq(token.balanceOf(address(depositor)), 0); 
+        assertEq(liquidityGauge.balanceOf(address(_random)), 0);
+        assertEq(_sdToken.balanceOf(address(_random)), expectedIncentiveAmount);
+
+        (expectedBalance,) = veToken.previewPoints(200e18, MAX_LOCK_DURATION);
+        assertEq(veToken.balanceOf(address(locker)), expectedBalance);
     }
+
 }
