@@ -109,6 +109,10 @@ contract MAVDepositor {
         locker = _locker;
     }
 
+    ////////////////////////////////////////////////////////////////
+    /// --- DEPOSIT & LOCK
+    ///////////////////////////////////////////////////////////////
+
     /// @notice Deposit tokens, and receive sdToken or sdTokenGauge in return.
     /// @param _amount Amount of tokens to deposit.
     /// @param _lock Whether to lock the tokens in the locker contract.
