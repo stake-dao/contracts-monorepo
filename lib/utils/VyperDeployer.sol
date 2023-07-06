@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.7;
+pragma solidity >=0.8.7;
 
 ///@notice This cheat codes interface is named _CheatCodes so you can use the CheatCodes interface in other testing files without errors
 interface _CheatCodes {
