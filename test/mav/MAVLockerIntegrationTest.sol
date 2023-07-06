@@ -12,7 +12,6 @@ import "src/mav/depositor/MAVDepositor.sol";
 import {sdToken} from "src/base/token/sdToken.sol";
 import {AddressBook} from "@addressBook/AddressBook.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
-
 import {TransparentUpgradeableProxy} from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract MAVLockerIntegrationTest is Test {
@@ -28,6 +27,8 @@ contract MAVLockerIntegrationTest is Test {
     sdToken internal _sdToken;
     MAVDepositor private depositor;
     ILiquidityGauge internal liquidityGauge;
+
+    uint256 private constant amount = 100e18;
 
     function setUp() public virtual {
         token = IERC20(AddressBook.MAV);
@@ -61,10 +62,16 @@ contract MAVLockerIntegrationTest is Test {
         locker.setDepositor(address(depositor));
         _sdToken.setOperator(address(depositor));
 
-        // Mint MAV to the MAVLocker contract
-        deal(address(token), address(locker), 100e18);
+        // Mint MAV for testing.
+        deal(address(token), address(this), amount);
 
-        locker.createLock(100e18, MAX_LOCK_DURATION);
+        // Mint MAV to the MAVLocker contract
+        deal(address(token), address(locker), amount);
+
+        locker.createLock(amount, MAX_LOCK_DURATION);
+
+        /// Skip 1 seconds to avoid depositing in the same block as locking.
+        skip(1);
     }
 
     function test_initialization() public {
@@ -74,5 +81,29 @@ contract MAVLockerIntegrationTest is Test {
 
         assertEq(depositor.minter(), address(_sdToken));
         assertEq(depositor.gauge(), address(liquidityGauge));
+    }
+
+    function test_depositAndMint() public {
+        (uint256 expectedBalance,) = veToken.previewPoints(200e18, MAX_LOCK_DURATION);
+
+        token.approve(address(depositor), amount);
+        depositor.deposit(amount, true, false, address(this));
+
+        assertEq(token.balanceOf(address(depositor)), 0);
+        assertEq(_sdToken.balanceOf(address(this)), amount);
+        assertEq(liquidityGauge.balanceOf(address(this)), 0);
+        assertEq(veToken.balanceOf(address(locker)), expectedBalance);
+    }
+
+    function test_depositAndStake() public {
+        (uint256 expectedBalance,) = veToken.previewPoints(200e18, MAX_LOCK_DURATION);
+
+        token.approve(address(depositor), amount);
+        depositor.deposit(amount, true, true, address(this));
+
+        assertEq(_sdToken.balanceOf(address(this)), 0);
+        assertEq(token.balanceOf(address(depositor)), 0);
+        assertEq(liquidityGauge.balanceOf(address(this)), amount);
+        assertEq(veToken.balanceOf(address(locker)), expectedBalance);
     }
 }

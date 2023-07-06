@@ -196,12 +196,12 @@ contract MAVDepositor {
     function _lockToken(uint256 _amount) internal {
         // If there is Token available in the contract transfer it to the locker
         if (_amount > 0) {
-            ILocker(locker).increaseLock(_amount, MIN_LOCK_DURATION);
+            if (relock) {
+                ILocker(locker).increaseLock(_amount, MAX_LOCK_DURATION);
+            } else {
+                ILocker(locker).increaseLock(_amount, MIN_LOCK_DURATION);
+            }
             emit TokenLocked(msg.sender, _amount);
-        }
-
-        if (relock) {
-            ILocker(locker).increaseLock(0, MAX_LOCK_DURATION);
         }
     }
 
