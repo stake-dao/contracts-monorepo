@@ -118,6 +118,11 @@ contract MAVDepositor {
     /// @param _lock Whether to lock the tokens in the locker contract.
     /// @param _stake Whether to stake the sdToken in the gauge.
     /// @param _user Address of the user to receive the sdToken.
+    /// @dev If the lock is true, the tokens are directly sent to the locker and increase the lock amount as veMAV.
+    /// If the lock is false, the tokens are sent to this contract until someone locks them. A small percent of the deposit
+    /// is used to incentivize users to lock the tokens.
+    /// If the stake is true, the sdToken is staked in the gauge that distributes rewards. If the stake is false, the sdToken
+    /// is sent to the user.
     function deposit(uint256 _amount, bool _lock, bool _stake, address _user) public {
         if (_amount == 0) revert AMOUNT_ZERO();
         if (_user == address(0)) revert ADDRESS_ZERO();
