@@ -84,7 +84,7 @@ contract MAVLockerIntegrationTest is Test {
         /// Skip 1 seconds to avoid depositing in the same block as locking.
         skip(1);
 
-        (uint256 expectedBalance,) = veToken.previewPoints(200e18, MAX_LOCK_DURATION);
+        assertEq(token.balanceOf(address(depositor)), 0);
 
         token.approve(address(depositor), amount);
         depositor.deposit(amount, true, false, address(this));
@@ -92,6 +92,8 @@ contract MAVLockerIntegrationTest is Test {
         assertEq(token.balanceOf(address(depositor)), 0);
         assertEq(_sdToken.balanceOf(address(this)), amount);
         assertEq(liquidityGauge.balanceOf(address(this)), 0);
+
+        (uint256 expectedBalance,) = veToken.previewPoints(200e18, MAX_LOCK_DURATION);
         assertEq(veToken.balanceOf(address(locker)), expectedBalance);
     }
 
@@ -144,6 +146,48 @@ contract MAVLockerIntegrationTest is Test {
         assertEq(_sdToken.balanceOf(address(_random)), expectedIncentiveAmount);
 
         (expectedBalance,) = veToken.previewPoints(200e18, MAX_LOCK_DURATION);
+        assertEq(veToken.balanceOf(address(locker)), expectedBalance);
+    }
+
+    function test_depositAndStakeWithoutLockThenDepositWith() public {
+        (uint256 expectedBalance,) = veToken.previewPoints(amount, MAX_LOCK_DURATION);
+
+        uint256 expectedIncentiveAmount = amount * 10 / 10_000;
+        uint256 expectedStakedBalance = amount - expectedIncentiveAmount;
+
+        token.approve(address(depositor), amount);
+        depositor.deposit(amount, false, true, address(this));
+
+        assertEq(_sdToken.balanceOf(address(this)), 0);
+        assertEq(token.balanceOf(address(depositor)), amount);
+        assertEq(veToken.balanceOf(address(locker)), expectedBalance);
+        assertEq(depositor.incentiveToken(), expectedIncentiveAmount);
+        assertEq(liquidityGauge.balanceOf(address(this)), expectedStakedBalance);
+        assertEq(_sdToken.balanceOf(address(liquidityGauge)), expectedStakedBalance);
+
+        address _random = address(0x123);
+
+        assertEq(_sdToken.balanceOf(address(_random)), 0);
+        assertEq(liquidityGauge.balanceOf(address(_random)), 0);
+
+        skip(1);
+
+        deal(address(token), _random, amount);
+        vm.startPrank(_random);
+
+        token.approve(address(depositor), amount);
+        depositor.deposit(amount, true, true, _random);
+
+        vm.stopPrank();
+
+        assertEq(depositor.incentiveToken(), 0);
+        assertEq(token.balanceOf(address(depositor)), 0);
+
+        assertEq(liquidityGauge.balanceOf(address(_random)), amount + expectedIncentiveAmount);
+        assertEq(_sdToken.balanceOf(address(_random)), 0);
+
+        /// Skip 1 seconds to avoid depositing in the same block as locking.
+        (expectedBalance,) = veToken.previewPoints(300e18, MAX_LOCK_DURATION);
         assertEq(veToken.balanceOf(address(locker)), expectedBalance);
     }
 

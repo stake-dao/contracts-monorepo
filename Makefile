@@ -42,6 +42,6 @@ run-%:
 	@forge script script/$*.sol --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY)
 
 deploy-%:
-	@forge script script/$*.sol --broadcast --slow -vvvvv --verify --private-key ${PRIVATE_KEY}
+	@forge script script/$*.sol --broadcast --slow -vvvvv --verify --private-key ${PRIVATE_KEY} --resume
 
 .PHONY: test coverage
