@@ -205,4 +205,12 @@ contract MAVLockerIntegrationTest is Test {
         assertEq(depositor.governance(), newGovernance);
         assertEq(depositor.futureGovernance(), newGovernance);
     }
+
+    function test_transferOperator() public {
+        address newOperator = address(0x123);
+        assertEq(_sdToken.operator(), address(depositor));
+
+        depositor.setSdTokenMinterOperator(newOperator);
+        assertEq(_sdToken.operator(), address(newOperator));
+    }
 }

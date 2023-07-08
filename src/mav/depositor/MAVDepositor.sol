@@ -2,7 +2,7 @@
 pragma solidity 0.8.20;
 
 import "src/base/interfaces/ILocker.sol";
-import "src/base/interfaces/ISdTokenV2.sol";
+import "src/base/interfaces/ISdToken.sol";
 import "src/base/interfaces/ITokenMinter.sol";
 import "src/base/interfaces/ILiquidityGauge.sol";
 
@@ -233,7 +233,7 @@ contract MAVDepositor {
     /// @notice Set the new operator for minting sdToken
     /// @param _minter operator minter address
     function setSdTokenMinterOperator(address _minter) external onlyGovernance {
-        ISdTokenV2(minter).setMinterOperator(_minter);
+        ISdToken(minter).setOperator(_minter);
         emit SdTokenOperatorChanged(_minter);
     }
 
