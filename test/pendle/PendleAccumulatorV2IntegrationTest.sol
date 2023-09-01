@@ -105,19 +105,17 @@ contract PendleAccumulatorV2IntegrationTest is Test {
         uint256 bribePart = WETH.balanceOf(bribeRecipient);
         uint256 veSdtFeePart = WETH.balanceOf(veSdtFeeProxy);
         uint256 gaugePart = WETH.balanceOf(address(liquidityGauge));
-        uint256 claimerPart = WETH.balanceOf(address(this));
 
-        /// WETH is distributed over 4 weeks so Accumulator.
+        /// WETH is distributed over 4 weeks to Accumulator.
         uint256 remaining = WETH.balanceOf(address(pendleAccumulator));
 
-        uint256 total = daoPart + bribePart + gaugePart + veSdtFeePart + remaining;
+        uint256 firstWeekTotal = (remaining / 3 * 4) - remaining;
 
-        assertEq(total * pendleAccumulator.daoFee() / 10_000, daoPart);
-        assertEq(total * pendleAccumulator.bribeFee() / 10_000, bribePart);
-        assertEq(total * pendleAccumulator.veSdtFeeProxyFee() / 10_000, veSdtFeePart);
-        assertEq(total * pendleAccumulator.claimerFee() / 10_000, claimerPart);
+        assertEq(firstWeekTotal * pendleAccumulator.daoFee() / 10_000, daoPart);
+        assertEq(firstWeekTotal * pendleAccumulator.bribeFee() / 10_000, bribePart);
+        assertEq(firstWeekTotal * pendleAccumulator.veSdtFeeProxyFee() / 10_000, veSdtFeePart);
 
-        assertEq(WETH.balanceOf(address(liquidityGauge)), remaining / 3); // One week has already been distributed to the gauge so we have 3 weeks left.
+        assertEq(WETH.balanceOf(address(liquidityGauge)) + daoPart + bribePart + veSdtFeePart, remaining / 3); // One week has already been distributed to the gauge so we have 3 weeks left.
     }
 
     function testDistributeAllRewardsOff() public {
@@ -176,14 +174,13 @@ contract PendleAccumulatorV2IntegrationTest is Test {
 
         /// WETH is distributed over 4 weeks so Accumulator.
         uint256 remaining = WETH.balanceOf(address(pendleAccumulator));
+        uint256 firstWeekTotal = (remaining / 3 * 4) - remaining;
 
-        uint256 total = daoPart + bribePart + gaugePart + veSdtFeePart + remaining;
+        assertEq(firstWeekTotal * pendleAccumulator.daoFee() / 10_000, daoPart);
+        assertEq(firstWeekTotal * pendleAccumulator.bribeFee() / 10_000, bribePart);
+        assertEq(firstWeekTotal * pendleAccumulator.veSdtFeeProxyFee() / 10_000, veSdtFeePart);
 
-        assertEq(total * pendleAccumulator.daoFee() / 10_000, daoPart);
-        assertEq(total * pendleAccumulator.bribeFee() / 10_000, bribePart);
-        assertEq(total * pendleAccumulator.veSdtFeeProxyFee() / 10_000, veSdtFeePart);
-
-        assertEq(WETH.balanceOf(address(liquidityGauge)), remaining / 3); // One week has already been distributed to the gauge so we have 3 weeks left.
+        assertEq(WETH.balanceOf(address(liquidityGauge)) + daoPart + bribePart + veSdtFeePart, remaining / 3); // One week has already been distributed to the gauge so we have 3 weeks left.
     }
 
     function testAccumulatorRewardsWithClaimerFees() public {
