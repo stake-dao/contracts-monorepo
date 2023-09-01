@@ -94,7 +94,8 @@ contract PendleAccumulatorV2 {
         /// check if there is any eth to claim for the vePENDLe pool
         if (rewardsClaimable[0] == 1) revert NO_REWARD();
         // reward for 1 months, split the reward in 4 weekly periods
-        _claimReward(pools);
+        // charge fees once for the entire month
+        _chargeFee(WETH, _claimReward(pools));
         periodsToNotify += 4;
 
         _notifyReward(WETH);
@@ -112,7 +113,7 @@ contract PendleAccumulatorV2 {
             }
         }
         // send the reward to the recipient if it is not to distribute
-        uint256 netReward = _claimReward(_pools);
+        uint256 netReward = _chargeFee(WETH, _claimReward(_pools));
         if (!distributeVotersRewards) {
             IERC20(WETH).transfer(votesRewardRecipient, netReward);
         }
@@ -126,21 +127,23 @@ contract PendleAccumulatorV2 {
         address[] memory vePendlePool = new address[](1);
         vePendlePool[0] = VE_PENDLE;
         // Check if there is any reward for vePENDLE pool and add it to _pools
-        uint256[] memory rewardsClaimable = IPendleFeeDistributor(PENDLE_FEE_D).getProtocolClaimables(address(locker), vePendlePool);
-        if (rewardsClaimable[0] > 1) {
+        uint256[] memory vePendleRewardsClaimable = IPendleFeeDistributor(PENDLE_FEE_D).getProtocolClaimables(address(locker), vePendlePool);
+        if (vePendleRewardsClaimable[0] > 1) {
             // it shadows the input params
             address[] memory _pools = new address[](_pools.length + 1);
             _pools[_pools.length - 1] = VE_PENDLE;
             // increase reward period only if there is reward for vePENDLE pool
             periodsToNotify += 4;
         } 
-        uint256 rewardClaimed = _claimReward(_pools);
-        // -1 because pendle represent a zero amount claimable as 1
-        uint256 votersReward = rewardClaimed - rewardsClaimable[0] - 1;
+        uint256 totalReward = _claimReward(_pools);
+        _chargeFee(WETH, totalReward);
 
         if (!distributeVotersRewards) {
-            uint256 netPercentage = 10_000 - daoFee + bribeFee + veSdtFeeProxyFee;
-            IERC20(WETH).transfer(votesRewardRecipient, netPercentage * votersReward / 10_000);
+            // -1 because pendle represent a zero amount claimable as 1
+            uint256 votersTotalReward = totalReward - vePendleRewardsClaimable[0] - 1;
+            uint256 netPercentage = 10_000 - (daoFee + bribeFee + veSdtFeeProxyFee);
+            uint256 votersNetReward = votersTotalReward * netPercentage / 10_000;
+            IERC20(WETH).transfer(votesRewardRecipient, votersNetReward);
         } else {
             _notifyReward(WETH);
         }
@@ -152,6 +155,19 @@ contract PendleAccumulatorV2 {
     /// @param _token token to notify as reward
     function notifyReward(address _token) external {
         _notifyReward(_token);
+        _distributeSDT();
+    }
+
+    /// @notice Notify the rewards already claimed for the current period
+    /// @param _tokens tokens to notify as reward
+    function notifyRewards(address[] memory _tokens) external {
+        uint256 tokensLength = _tokens.length;
+        for (uint256 i; i < tokensLength;) {
+            _notifyReward(_tokens[i]);
+            unchecked {
+                ++i;
+            }
+        }
         _distributeSDT();
     }
 
@@ -230,7 +246,6 @@ contract PendleAccumulatorV2 {
         }
 
         if (amountToNotify == 0) revert NO_REWARD();
-        amountToNotify = _chargeFee(_tokenReward, amountToNotify);
 
         if (claimerFee > 0) {
             uint256 claimerReward = (amountToNotify * claimerFee) / 10_000;
@@ -331,7 +346,10 @@ contract PendleAccumulatorV2 {
         sdtDistributor = _sdtDistributor;
     }
 
-    function setDistributeAllRewards(bool _distributeVotersRewards) external {
+    /// @notice Set distribute voter rewards to true/false
+    /// @dev Can be called only by the governance
+    /// @param _distributeVotersRewards enable/disable reward distribution
+    function setDistributeVotersRewards(bool _distributeVotersRewards) external {
         if (msg.sender != governance) revert NOT_ALLOWED();
         emit DistributeVotersRewardsSet(distributeVotersRewards = _distributeVotersRewards);
     }
@@ -356,6 +374,9 @@ contract PendleAccumulatorV2 {
         locker = _locker;
     }
 
+    /// @notice Toggle the allowance to pull tokens from the contract
+    /// @dev Can be called only by the governance
+    /// @param _user user to toggle
     function togglePullAllowance(address _user) external {
         if (msg.sender != governance) revert NOT_ALLOWED();
         canPullTokens[_user] = canPullTokens[_user] == 0 ? 1 : 0;
