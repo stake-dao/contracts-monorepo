@@ -201,12 +201,6 @@ contract PendleAccumulatorV2 {
             IERC20(_token).transfer(veSdtFeeProxy, veSdtFeeProxyAmount);
             gaugeAmount -= veSdtFeeProxyAmount;
         }
-        // claimerFee part
-        // if (claimerFee > 0) {
-        //     uint256 claimerFeeAmount = (_amount * claimerFee) / 10_000;
-        //     IERC20(_token).transfer(msg.sender, claimerFeeAmount);
-        //     gaugeAmount -= claimerFeeAmount;
-        // }
         return gaugeAmount;
     }
 
@@ -234,10 +228,12 @@ contract PendleAccumulatorV2 {
         if (amountToNotify == 0) revert NO_REWARD();
 
         if (ILiquidityGauge(gauge).reward_data(_tokenReward).distributor != address(this)) revert NOT_DISTRIBUTOR();
-        //uint256 balanceBefore = IERC20(_tokenReward).balanceOf(address(this));
-        uint256 claimerReward = (amountToNotify * claimerFee) / 10_000;
-        IERC20(_tokenReward).transfer(msg.sender, claimerReward);
-        amountToNotify -= claimerReward;
+
+        if (claimerFee > 0) {
+            uint256 claimerReward = (amountToNotify * claimerFee) / 10_000;
+            IERC20(_tokenReward).transfer(msg.sender, claimerReward);
+            amountToNotify -= claimerReward;
+        }
         
         IERC20(_tokenReward).approve(gauge, amountToNotify);
         ILiquidityGauge(gauge).deposit_reward_token(_tokenReward, amountToNotify);
