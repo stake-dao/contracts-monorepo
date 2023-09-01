@@ -121,7 +121,7 @@ contract PendleAccumulatorV2IntegrationTest is Test {
     }
 
     function testDistributeAllRewardsOff() public {
-        assertFalse(pendleAccumulator.distributeAllRewards());
+        assertFalse(pendleAccumulator.distributeVotersRewards());
 
         address[] memory pools = new address[](6);
         pools[0] = address(vePENDLE);
@@ -136,17 +136,17 @@ contract PendleAccumulatorV2IntegrationTest is Test {
     }
 
     function testDistributeAllRewardsOnOnlyGovernance() public {
-        assertFalse(pendleAccumulator.distributeAllRewards());
+        assertFalse(pendleAccumulator.distributeVotersRewards());
 
         vm.expectRevert(PendleAccumulatorV2.NOT_ALLOWED.selector);
         vm.prank(address(0xBEEF));
         pendleAccumulator.setDistributeAllRewards(true);
 
-        assertFalse(pendleAccumulator.distributeAllRewards());
+        assertFalse(pendleAccumulator.distributeVotersRewards());
     }
 
     function testDistributeRewardsForVoter() public {
-        assertFalse(pendleAccumulator.distributeAllRewards());
+        assertFalse(pendleAccumulator.distributeVotersRewards());
 
         address[] memory pools = new address[](6);
         pools[0] = address(vePENDLE);

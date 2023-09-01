@@ -5,6 +5,7 @@ import "src/base/interfaces/ILiquidityGauge.sol";
 import "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {PendleLocker} from "src/pendle/locker/PendleLocker.sol";
+import {IPendleFeeDistributor} from "src/base/interfaces/IPendleFeeDistributor.sol";
 import {ISDTDistributor} from "src/base/interfaces/ISDTDistributor.sol";
 
 interface IWETH {
@@ -28,6 +29,7 @@ contract PendleAccumulatorV2 {
 
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant VE_PENDLE = 0x4f30A9D41B80ecC5B94306AB4364951AE3170210;
+    address public constant PENDLE_FEE_D = 0x8C237520a8E14D658170A633D96F8e80764433b9;
 
     // fee recipients
     address public bribeRecipient;
@@ -49,8 +51,8 @@ contract PendleAccumulatorV2 {
     mapping(uint256 => uint256) public rewards; // period -> reward amount
     mapping(address => uint256) public canPullTokens;
 
-    /// @notice If set, the rewards will be distributed to all the users of the gauge
-    bool public distributeAllRewards;
+    /// @notice If set, the voters rewards will be distributed to the gauge
+    bool public distributeVotersRewards;
 
     // Events
     event BribeFeeSet(uint256 _old, uint256 _new);
@@ -58,7 +60,7 @@ contract PendleAccumulatorV2 {
     event ClaimerFeeSet(uint256 _old, uint256 _new);
     event DaoFeeSet(uint256 _old, uint256 _new);
     event DaoRecipientSet(address _old, address _new);
-    event DistributeAllRewardsSet(bool _distributeAllRewards);
+    event DistributeVotersRewardsSet(bool _distributeAllRewards);
     event ERC20Rescued(address _token, uint256 _amount);
     event GaugeSet(address _old, address _new);
     event GovernanceSet(address _old, address _new);
@@ -86,14 +88,13 @@ contract PendleAccumulatorV2 {
     /* ========== MUTATIVE FUNCTIONS ========== */
     /// @notice Claims Eth rewards via the locker, wrap to WETH and notify it to the LGV4
     function claimForVePendle() external {
-
-        // reward for 1 months
         address[] memory pools = new address[](1);
         pools[0] = VE_PENDLE;
-
-        // split the reward in 4 weekly periods
-        // charge fees once from the whole month reward
-        _chargeFee(WETH, _claimReward(pools));
+        uint256[] memory rewardsClaimable = IPendleFeeDistributor(PENDLE_FEE_D).getProtocolClaimables(address(locker), pools);
+        /// check if there is any eth to claim for the vePENDLe pool
+        if (rewardsClaimable[0] == 1) revert NO_REWARD();
+        // reward for 1 months, split the reward in 4 weekly periods
+        _claimReward(pools);
         periodsToNotify += 4;
 
         _notifyReward(WETH);
@@ -111,33 +112,39 @@ contract PendleAccumulatorV2 {
             }
         }
         // send the reward to the recipient if it is not to distribute
-        if (!distributeAllRewards) {
-            IERC20(WETH).transfer(votesRewardRecipient, _chargeFee(WETH, _claimReward(_pools)));
+        uint256 netReward = _claimReward(_pools);
+        if (!distributeVotersRewards) {
+            IERC20(WETH).transfer(votesRewardRecipient, netReward);
         }
 
         _distributeSDT();
     }
 
-    function claimForAll(address[] calldata _pools) external {
-        // Claim for vePE
-        // reward for 1 months
-        address[] memory vePool = new address[](1);
-        vePool[0] = VE_PENDLE;
+    /// @notice Claims rewards for voters and/or vePendle
+    /// @param _pools pools to claim for 
+    function claimForAll(address[] memory _pools) external {
+        address[] memory vePendlePool = new address[](1);
+        vePendlePool[0] = VE_PENDLE;
+        // Check if there is any reward for vePENDLE pool and add it to _pools
+        uint256[] memory rewardsClaimable = IPendleFeeDistributor(PENDLE_FEE_D).getProtocolClaimables(address(locker), vePendlePool);
+        if (rewardsClaimable[0] > 1) {
+            // it shadows the input params
+            address[] memory _pools = new address[](_pools.length + 1);
+            _pools[_pools.length - 1] = VE_PENDLE;
+            // increase reward period only if there is reward for vePENDLE pool
+            periodsToNotify += 4;
+        } 
+        uint256 rewardClaimed = _claimReward(_pools);
+        // -1 because pendle represent a zero amount claimable as 1
+        uint256 votersReward = rewardClaimed - rewardsClaimable[0] - 1;
 
-        // split the reward in 4 weekly periods
-        // charge fees once from the whole month reward
-        uint256 vePendleReward = _claimReward(vePool);
-        uint256 votersReward = _claimReward(_pools);
-        periodsToNotify += 4;
-
-        _chargeFee(WETH, vePendleReward + votersReward);
-        uint256 netPercentage = 10_000 - daoFee + bribeFee + veSdtFeeProxyFee + claimerFee;
-        if (!distributeAllRewards) {
+        if (!distributeVotersRewards) {
+            uint256 netPercentage = 10_000 - daoFee + bribeFee + veSdtFeeProxyFee;
             IERC20(WETH).transfer(votesRewardRecipient, netPercentage * votersReward / 10_000);
         } else {
             _notifyReward(WETH);
         }
-        
+
         _distributeSDT();
     } 
 
@@ -165,14 +172,11 @@ contract PendleAccumulatorV2 {
 
     /// @notice Claim reward for the pools
     /// @param _pools pools to claim the rewards
-    function _claimReward(address[] memory _pools) internal returns (uint256 claimed) {
-        uint256 balanceBefore = address(this).balance;
-
+    function _claimReward(address[] memory _pools) internal returns(uint256 claimed) {
         PendleLocker(locker).claimRewards(address(this), _pools);
 
-        claimed = address(this).balance - balanceBefore;
-        if (claimed == 0) revert NO_REWARD();
         // Wrap Eth to WETH
+        claimed = address(this).balance;
         IWETH(WETH).deposit{value: claimed}();
     }
 
@@ -226,8 +230,7 @@ contract PendleAccumulatorV2 {
         }
 
         if (amountToNotify == 0) revert NO_REWARD();
-
-        if (ILiquidityGauge(gauge).reward_data(_tokenReward).distributor != address(this)) revert NOT_DISTRIBUTOR();
+        amountToNotify = _chargeFee(_tokenReward, amountToNotify);
 
         if (claimerFee > 0) {
             uint256 claimerReward = (amountToNotify * claimerFee) / 10_000;
@@ -328,9 +331,9 @@ contract PendleAccumulatorV2 {
         sdtDistributor = _sdtDistributor;
     }
 
-    function setDistributeAllRewards(bool _distributeAllRewards) external {
+    function setDistributeAllRewards(bool _distributeVotersRewards) external {
         if (msg.sender != governance) revert NOT_ALLOWED();
-        emit DistributeAllRewardsSet(distributeAllRewards = _distributeAllRewards);
+        emit DistributeVotersRewardsSet(distributeVotersRewards = _distributeVotersRewards);
     }
 
     /// @notice Allows the governance to set the new governance
@@ -352,15 +355,6 @@ contract PendleAccumulatorV2 {
         emit LockerSet(locker, _locker);
         locker = _locker;
     }
-
-    // /// @notice Allows the governance to set the claimer fee
-    // /// @dev Can be called only by the governance
-    // /// @param _claimerFee claimer fee
-    // function setClaimerFee(uint256 _claimerFee) external {
-    //     if (msg.sender != governance) revert NOT_ALLOWED();
-    //     if (_claimerFee > 10_000) revert FEE_TOO_HIGH();
-    //     claimerFee = _claimerFee;
-    // }
 
     function togglePullAllowance(address _user) external {
         if (msg.sender != governance) revert NOT_ALLOWED();
