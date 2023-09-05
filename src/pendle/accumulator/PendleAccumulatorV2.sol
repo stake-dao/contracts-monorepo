@@ -33,11 +33,11 @@ contract PendleAccumulatorV2 {
     address public constant PENDLE_FEE_D = 0x8C237520a8E14D658170A633D96F8e80764433b9;
 
     // fee recipients
-    address public bribeRecipient;
+    address public bountyRecipient;
     address public daoRecipient;
     address public veSdtFeeProxy;
     address public votesRewardRecipient;
-    uint256 public bribeFee;
+    uint256 public bountyFee;
     uint256 public daoFee;
     uint256 public veSdtFeeProxyFee;
     uint256 public claimerFee;
@@ -56,8 +56,8 @@ contract PendleAccumulatorV2 {
     bool public distributeVotersRewards;
 
     // Events
-    event BribeFeeSet(uint256 _old, uint256 _new);
-    event BribeRecipientSet(address _old, address _new);
+    event BountyFeeSet(uint256 _old, uint256 _new);
+    event BountyRecipientSet(address _old, address _new);
     event ClaimerFeeSet(uint256 _old, uint256 _new);
     event DaoFeeSet(uint256 _old, uint256 _new);
     event DaoRecipientSet(address _old, address _new);
@@ -75,15 +75,15 @@ contract PendleAccumulatorV2 {
     constructor(
         address _governance,
         address _daoRecipient, 
-        address _bribeRecipient, 
+        address _bountyRecipient, 
         address _veSdtFeeProxy
     ) {
         governance = _governance;
         daoRecipient = _daoRecipient;
-        bribeRecipient = _bribeRecipient;
+        bountyRecipient = _bountyRecipient;
         veSdtFeeProxy = _veSdtFeeProxy;
         daoFee = 500; // 5%
-        bribeFee = 1000; // 10%
+        bountyFee = 1000; // 10%
     }
 
     /* ========== MUTATIVE FUNCTIONS ========== */
@@ -142,7 +142,7 @@ contract PendleAccumulatorV2 {
         if (!distributeVotersRewards) {
             // -1 because pendle represent a zero amount claimable as 1
             uint256 votersTotalReward = totalReward - vePendleRewardsClaimable[0] - 1;
-            uint256 netPercentage = 10_000 - (daoFee + bribeFee + veSdtFeeProxyFee);
+            uint256 netPercentage = 10_000 - (daoFee + bountyFee + veSdtFeeProxyFee);
             uint256 votersNetReward = votersTotalReward * netPercentage / 10_000;
             IERC20(WETH).transfer(votesRewardRecipient, votersNetReward);
         }
@@ -197,7 +197,7 @@ contract PendleAccumulatorV2 {
         IWETH(WETH).deposit{value: claimed}();
     }
 
-    /// @notice Reserve fees for dao, bribe and veSdtFeeProxy
+    /// @notice Reserve fees for dao, bounty and veSdtFeeProxy
     /// @param _token toke to charge fee 
     /// @param _amount amount to charge fees
     function _chargeFee(address _token, uint256 _amount) internal returns (uint256) {
@@ -209,11 +209,11 @@ contract PendleAccumulatorV2 {
             gaugeAmount -= daoAmount;
         }
 
-        // bribe part
-        if (bribeFee > 0) {
-            uint256 bribeAmount = (_amount * bribeFee) / 10_000;
-            IERC20(_token).transfer(bribeRecipient, bribeAmount);
-            gaugeAmount -= bribeAmount;
+        // bounty part
+        if (bountyFee > 0) {
+            uint256 bountyAmount = (_amount * bountyFee) / 10_000;
+            IERC20(_token).transfer(bountyRecipient, bountyAmount);
+            gaugeAmount -= bountyAmount;
         }
 
         // veSDTFeeProxy part
@@ -270,13 +270,13 @@ contract PendleAccumulatorV2 {
         daoRecipient = _daoRecipient;
     }
 
-    /// @notice Set Bribe recipient
-    /// @param _bribeRecipient recipient address
-    function setBribeRecipient(address _bribeRecipient) external {
+    /// @notice Set Bounty recipient
+    /// @param _bountyRecipient recipient address
+    function setBountyRecipient(address _bountyRecipient) external {
         if (msg.sender != governance) revert NOT_ALLOWED();
-        if (_bribeRecipient == address(0)) revert ZERO_ADDRESS();
-        emit BribeRecipientSet(bribeRecipient, _bribeRecipient);
-        bribeRecipient = _bribeRecipient;
+        if (_bountyRecipient == address(0)) revert ZERO_ADDRESS();
+        emit BountyRecipientSet(bountyRecipient, _bountyRecipient);
+        bountyRecipient = _bountyRecipient;
     }
 
     /// @notice Set VeSdtFeeProxy
@@ -292,27 +292,27 @@ contract PendleAccumulatorV2 {
     /// @param _daoFee fee (100 = 1%)
     function setDaoFee(uint256 _daoFee) external {
         if (msg.sender != governance) revert NOT_ALLOWED();
-        if (_daoFee > 10_000 || _daoFee + bribeFee + veSdtFeeProxyFee + claimerFee > 10_000) {
+        if (_daoFee > 10_000 || _daoFee + bountyFee + veSdtFeeProxyFee + claimerFee > 10_000) {
             revert FEE_TOO_HIGH();
         }
         emit DaoFeeSet(daoFee, _daoFee);
         daoFee = _daoFee;
     }
 
-    /// @notice Set fees reserved to bribes at every claim
-    /// @param _bribeFee fee (100 = 1%)
-    function setBribeFee(uint256 _bribeFee) external {
+    /// @notice Set fees reserved to bounty at every claim
+    /// @param _bountyFee fee (100 = 1%)
+    function setBountyFee(uint256 _bountyFee) external {
         if (msg.sender != governance) revert NOT_ALLOWED();
-        if (_bribeFee > 10_000 || _bribeFee + daoFee + veSdtFeeProxyFee + claimerFee > 10_000) revert FEE_TOO_HIGH();
-        emit BribeFeeSet(bribeFee, _bribeFee);
-        bribeFee = _bribeFee;
+        if (_bountyFee > 10_000 || _bountyFee + daoFee + veSdtFeeProxyFee + claimerFee > 10_000) revert FEE_TOO_HIGH();
+        emit BountyFeeSet(bountyFee, _bountyFee);
+        bountyFee = _bountyFee;
     }
 
-    /// @notice Set fees reserved to bribes at every claim
+    /// @notice Set fees reserved to VeSdtFeeProxy at every claim
     /// @param _veSdtFeeProxyFee fee (100 = 1%)
     function setVeSdtFeeProxyFee(uint256 _veSdtFeeProxyFee) external {
         if (msg.sender != governance) revert NOT_ALLOWED();
-        if (_veSdtFeeProxyFee > 10_000 || _veSdtFeeProxyFee + daoFee + bribeFee + claimerFee > 10_000) revert FEE_TOO_HIGH();
+        if (_veSdtFeeProxyFee > 10_000 || _veSdtFeeProxyFee + daoFee + bountyFee + claimerFee > 10_000) revert FEE_TOO_HIGH();
         emit VeSdtFeeProxyFeeSet(veSdtFeeProxyFee, _veSdtFeeProxyFee);
         veSdtFeeProxyFee = _veSdtFeeProxyFee;
     }

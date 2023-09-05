@@ -46,7 +46,7 @@ contract PendleAccumulatorV2IntegrationTest is Test {
     VeSDTFeePendleProxy internal veSdtFeePendleProxy = VeSDTFeePendleProxy(AddressBook.VE_SDT_PENDLE_FEE_PROXY);
 
     address public daoRecipient = makeAddr("dao");
-    address public bribeRecipient = makeAddr("bribe");
+    address public bountyRecipient = makeAddr("bounty");
     address public veSdtFeeProxy = makeAddr("feeProxy");
     address public bot = makeAddr("bot");
 
@@ -73,12 +73,9 @@ contract PendleAccumulatorV2IntegrationTest is Test {
         pendleAccumulator = new PendleAccumulatorV2( 
             address(this),
             daoRecipient,
-            bribeRecipient,
+            bountyRecipient,
             address(veSdtFeePendleProxy)
             );
-
-        // Setters
-        pendleAccumulator.setLocker(address(pendleLocker));
 
         vm.prank(pendleLocker.governance());
         pendleLocker.setAccumulator(address(pendleAccumulator));
@@ -93,8 +90,8 @@ contract PendleAccumulatorV2IntegrationTest is Test {
     function testAccumulatorRewards() public {
         //Check Dao recipient
         assertEq(WETH.balanceOf(daoRecipient), 0);
-        //// Check Bribe recipient23
-        assertEq(WETH.balanceOf(bribeRecipient), 0);
+        //// Check Bounty recipient
+        assertEq(WETH.balanceOf(bountyRecipient), 0);
         //// Check VeSdtFeeProxy
         assertEq(WETH.balanceOf(address(veSdtFeeProxy)), 0);
         //// Check lgv4
@@ -103,7 +100,7 @@ contract PendleAccumulatorV2IntegrationTest is Test {
         pendleAccumulator.claimForVePendle();
 
         uint256 daoPart = WETH.balanceOf(daoRecipient);
-        uint256 bribePart = WETH.balanceOf(bribeRecipient);
+        uint256 bountyPart = WETH.balanceOf(bountyRecipient);
         uint256 veSdtFeePart = WETH.balanceOf(veSdtFeeProxy);
         uint256 gaugePart = WETH.balanceOf(address(liquidityGauge));
         uint256 claimerPart = WETH.balanceOf(address(this));
@@ -111,11 +108,11 @@ contract PendleAccumulatorV2IntegrationTest is Test {
         /// WETH is distributed over 4 weeks to Accumulator.
         uint256 remaining = WETH.balanceOf(address(pendleAccumulator));
 
-        uint256 total = claimerPart + daoPart + bribePart + gaugePart + veSdtFeePart + remaining;
+        uint256 total = claimerPart + daoPart + bountyPart + gaugePart + veSdtFeePart + remaining;
 
         assertEq(total * pendleAccumulator.claimerFee() / 10_000, claimerPart);
         assertEq(total * pendleAccumulator.daoFee() / 10_000, daoPart);
-        assertEq(total * pendleAccumulator.bribeFee() / 10_000, bribePart);
+        assertEq(total * pendleAccumulator.bountyFee() / 10_000, bountyPart);
         assertEq(total * pendleAccumulator.veSdtFeeProxyFee() / 10_000, veSdtFeePart);
 
         assertEq(WETH.balanceOf(address(liquidityGauge)), remaining / 3); // One week has already been distributed to the gauge so we have 3 weeks left.
@@ -161,8 +158,8 @@ contract PendleAccumulatorV2IntegrationTest is Test {
 
         //Check Dao recipient
         assertEq(WETH.balanceOf(daoRecipient), 0);
-        //// Check Bribe recipient23
-        assertEq(WETH.balanceOf(bribeRecipient), 0);
+        //// Check Bounty recipient
+        assertEq(WETH.balanceOf(bountyRecipient), 0);
         //// Check VeSdtFeeProxy
         assertEq(WETH.balanceOf(address(veSdtFeeProxy)), 0);
         //// Check lgv4
@@ -171,7 +168,7 @@ contract PendleAccumulatorV2IntegrationTest is Test {
         pendleAccumulator.claimForAll(pools);
 
         uint256 daoPart = WETH.balanceOf(daoRecipient);
-        uint256 bribePart = WETH.balanceOf(bribeRecipient);
+        uint256 bountyPart = WETH.balanceOf(bountyRecipient);
         uint256 veSdtFeePart = WETH.balanceOf(veSdtFeeProxy);
         uint256 gaugePart = WETH.balanceOf(address(liquidityGauge));
         uint256 claimerPart = WETH.balanceOf(address(this));
@@ -179,11 +176,11 @@ contract PendleAccumulatorV2IntegrationTest is Test {
         /// WETH is distributed over 4 weeks so Accumulator.
         uint256 remaining = WETH.balanceOf(address(pendleAccumulator));
 
-        uint256 total = claimerPart + daoPart + bribePart + gaugePart + veSdtFeePart + remaining;
+        uint256 total = claimerPart + daoPart + bountyPart + gaugePart + veSdtFeePart + remaining;
 
         assertEq(total * pendleAccumulator.claimerFee() / 10_000, claimerPart);
         assertEq(total * pendleAccumulator.daoFee() / 10_000, daoPart);
-        assertEq(total * pendleAccumulator.bribeFee() / 10_000, bribePart);
+        assertEq(total * pendleAccumulator.bountyFee() / 10_000, bountyPart);
         assertEq(total * pendleAccumulator.veSdtFeeProxyFee() / 10_000, veSdtFeePart);
 
         assertEq(WETH.balanceOf(address(liquidityGauge)), remaining / 3); // One week has already been distributed to the gauge so we have 3 weeks left.
