@@ -48,6 +48,7 @@ contract PendleAccumulatorV2IntegrationTest is Test {
     address public daoRecipient = makeAddr("dao");
     address public bribeRecipient = makeAddr("bribe");
     address public veSdtFeeProxy = makeAddr("feeProxy");
+    address public bot = makeAddr("bot");
 
     // Helper
     uint128 internal constant amount = 100e18;
@@ -201,5 +202,65 @@ contract PendleAccumulatorV2IntegrationTest is Test {
             (claimerBalanceEarned + WETH.balanceOf(address(liquidityGauge))) * pendleAccumulator.claimerFee() / 10_000,
             claimerBalanceEarned
         );
+    }
+
+    function testPushTokens() public {  
+        uint256 amountToPush = 10e18;
+        deal(address(WETH), address(pendleAccumulator), amountToPush);
+        pendleAccumulator.togglePullAllowance(bot);
+        
+        address[] memory tokens = new address[](1);
+        tokens[0] = address(WETH);
+        uint256[] memory amountsToPush = new uint256[](1);
+        amountsToPush[0] = amountToPush;
+        uint256 balanceBeforePull = WETH.balanceOf(bot);
+        vm.prank(bot);
+        pendleAccumulator.pullTokens(tokens, amountsToPush);
+        uint256 balanceAfterPull = WETH.balanceOf(bot);
+        assertEq(balanceAfterPull - balanceBeforePull, amountToPush);
+        pendleAccumulator.togglePullAllowance(bot);
+        vm.prank(bot);
+        vm.expectRevert(PendleAccumulatorV2.NOT_ALLOWED_TO_PULL.selector);
+        pendleAccumulator.pullTokens(tokens, amountsToPush); 
+    }
+
+    function testPeriodsToNotify() public {
+        address[] memory pools = new address[](6);
+        pools[0] = address(vePENDLE);
+        pools[1] = POOL_1;
+        pools[2] = POOL_2;
+        pools[3] = POOL_3;
+        pools[4] = POOL_4;
+        pools[5] = POOL_5;
+
+        pendleAccumulator.claimForAll(pools);
+        uint256 periodsToNotify = pendleAccumulator.periodsToNotify();
+        assertEq(periodsToNotify, 3);
+        vm.expectRevert(PendleAccumulatorV2.NO_BALANCE.selector);
+        pendleAccumulator.claimForAll(pools);
+
+        // fork block number is on tuesday
+        // skipping 2 days to trigger the new notify
+        skip(2 days);
+
+        pendleAccumulator.notifyReward(address(WETH));
+        periodsToNotify = pendleAccumulator.periodsToNotify();
+        assertEq(periodsToNotify, 2);
+
+        skip(7 days);
+
+        pendleAccumulator.notifyReward(address(WETH));
+        periodsToNotify = pendleAccumulator.periodsToNotify();
+        assertEq(periodsToNotify, 1);
+
+        skip(7 days);
+
+        pendleAccumulator.notifyReward(address(WETH));
+        periodsToNotify = pendleAccumulator.periodsToNotify();
+        assertEq(periodsToNotify, 0);
+
+        uint256 accBalance = WETH.balanceOf(address(pendleAccumulator));
+        assertEq(accBalance, 0);
+
     }
 }

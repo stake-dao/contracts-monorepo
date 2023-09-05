@@ -21,6 +21,7 @@ contract PendleAccumulatorV2 {
     error NOT_ALLOWED();
     error ZERO_ADDRESS();
     error WRONG_CLAIM();
+    error NO_BALANCE();
     error NO_REWARD();
     error NOT_ALLOWED_TO_PULL();
     error NOT_DISTRIBUTOR();
@@ -144,9 +145,8 @@ contract PendleAccumulatorV2 {
             uint256 netPercentage = 10_000 - (daoFee + bribeFee + veSdtFeeProxyFee);
             uint256 votersNetReward = votersTotalReward * netPercentage / 10_000;
             IERC20(WETH).transfer(votesRewardRecipient, votersNetReward);
-        } else {
-            _notifyReward(WETH);
         }
+        _notifyReward(WETH);
 
         _distributeSDT();
     } 
@@ -193,6 +193,7 @@ contract PendleAccumulatorV2 {
 
         // Wrap Eth to WETH
         claimed = address(this).balance;
+        if (claimed == 0) revert NO_BALANCE();
         IWETH(WETH).deposit{value: claimed}();
     }
 
@@ -240,7 +241,7 @@ contract PendleAccumulatorV2 {
             if (rewards[currentWeek] != 0) revert ONGOING_REWARD();
             amountToNotify = IERC20(WETH).balanceOf(address(this)) / periodsToNotify;
             rewards[currentWeek] = amountToNotify;
-            periodsToNotify--;
+            periodsToNotify -= 1;
         } else {
             amountToNotify = IERC20(_tokenReward).balanceOf(address(this));
         }
