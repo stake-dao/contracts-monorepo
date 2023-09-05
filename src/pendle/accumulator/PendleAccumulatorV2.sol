@@ -18,16 +18,14 @@ contract PendleAccumulatorV2 {
     // Errors
     error DIFFERENT_LENGTH();
     error FEE_TOO_HIGH();
-    error NOT_ALLOWED();
-    error ZERO_ADDRESS();
-    error WRONG_CLAIM();
     error NO_BALANCE();
     error NO_REWARD();
+    error NOT_ALLOWED();
     error NOT_ALLOWED_TO_PULL();
-    error NOT_DISTRIBUTOR();
-    error ONGOING_PERIOD();
     error ONGOING_REWARD();
-
+    error WRONG_CLAIM();
+    error ZERO_ADDRESS();
+    
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
     address public constant VE_PENDLE = 0x4f30A9D41B80ecC5B94306AB4364951AE3170210;
     address public constant PENDLE_FEE_D = 0x8C237520a8E14D658170A633D96F8e80764433b9;
@@ -47,6 +45,7 @@ contract PendleAccumulatorV2 {
     address public gauge = 0x50DC9aE51f78C593d4138263da7088A973b8184E;
     address public sdtDistributor;
     
+    /// @notice weth rewards period to notify
     uint256 public periodsToNotify;
 
     mapping(uint256 => uint256) public rewards; // period -> reward amount
@@ -125,27 +124,33 @@ contract PendleAccumulatorV2 {
     /// @notice Claims rewards for voters and/or vePendle
     /// @param _pools pools to claim for 
     function claimForAll(address[] memory _pools) external {
-        address[] memory vePendlePool = new address[](1);
-        vePendlePool[0] = VE_PENDLE;
-        // Check if there is any reward for vePENDLE pool and add it to _pools
-        uint256[] memory vePendleRewardsClaimable = IPendleFeeDistributor(PENDLE_FEE_D).getProtocolClaimables(address(locker), vePendlePool);
-        if (vePendleRewardsClaimable[0] > 1) {
-            // it shadows the input params
-            address[] memory _pools = new address[](_pools.length + 1);
-            _pools[_pools.length - 1] = VE_PENDLE;
-            // increase reward period only if there is reward for vePENDLE pool
-            periodsToNotify += 4;
-        } 
+        uint256 poolsLength = _pools.length;
+        uint256 vePendleRewardClaimable;
+        for (uint256 i; i < poolsLength;) {
+            if (_pools[i] == VE_PENDLE) {
+                // Check if there is any reward for vePENDLE pool and add it to _pools
+                address[] memory vePendlePool = new address[](1);
+                vePendlePool[0] = VE_PENDLE;
+                vePendleRewardClaimable = IPendleFeeDistributor(PENDLE_FEE_D).getProtocolClaimables(address(locker), vePendlePool)[0];
+                if (vePendleRewardClaimable > 1) {
+                    periodsToNotify += 4;
+                }
+                break;
+            }
+            unchecked {
+                ++i;
+            }
+        }
         uint256 totalReward = _claimReward(_pools);
-        _chargeFee(WETH, totalReward);
-
+        
         if (!distributeVotersRewards) {
             // -1 because pendle represent a zero amount claimable as 1
-            uint256 votersTotalReward = totalReward - vePendleRewardsClaimable[0] - 1;
-            uint256 netPercentage = 10_000 - (daoFee + bountyFee + veSdtFeeProxyFee);
-            uint256 votersNetReward = votersTotalReward * netPercentage / 10_000;
-            IERC20(WETH).transfer(votesRewardRecipient, votersNetReward);
+            uint256 votersTotalReward = totalReward - vePendleRewardClaimable - 1;
+            // transfer the amount without charging fees
+            IERC20(WETH).transfer(votesRewardRecipient, votersTotalReward);
+            totalReward -= votersTotalReward;
         }
+        _chargeFee(WETH, totalReward);
         _notifyReward(WETH);
 
         _distributeSDT();
