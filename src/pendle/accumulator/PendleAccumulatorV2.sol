@@ -95,7 +95,7 @@ contract PendleAccumulatorV2 {
         if (rewardsClaimable[0] == 1) revert NO_REWARD();
         // reward for 1 months, split the reward in 4 weekly periods
         // charge fees once for the entire month
-        _chargeFee(WETH, _claimReward(pools));
+        _chargeFee(_claimReward(pools));
         periodsToNotify += 4;
 
         _notifyReward(WETH);
@@ -113,7 +113,7 @@ contract PendleAccumulatorV2 {
             }
         }
         // send the reward to the recipient if it is not to distribute
-        uint256 netReward = _chargeFee(WETH, _claimReward(_pools));
+        uint256 netReward = _chargeFee(_claimReward(_pools));
         if (!distributeVotersRewards) {
             IERC20(WETH).transfer(votesRewardRecipient, netReward);
         }
@@ -129,9 +129,7 @@ contract PendleAccumulatorV2 {
         for (uint256 i; i < poolsLength;) {
             if (_pools[i] == VE_PENDLE) {
                 // Check if there is any reward for vePENDLE pool and add it to _pools
-                address[] memory vePendlePool = new address[](1);
-                vePendlePool[0] = VE_PENDLE;
-                vePendleRewardClaimable = IPendleFeeDistributor(PENDLE_FEE_D).getProtocolClaimables(address(locker), vePendlePool)[0];
+                vePendleRewardClaimable = IPendleFeeDistributor(PENDLE_FEE_D).getProtocolClaimables(address(locker), _pools)[i];
                 if (vePendleRewardClaimable > 1) {
                     periodsToNotify += 4;
                 }
@@ -150,7 +148,7 @@ contract PendleAccumulatorV2 {
             IERC20(WETH).transfer(votesRewardRecipient, votersTotalReward);
             totalReward -= votersTotalReward;
         }
-        _chargeFee(WETH, totalReward);
+        _chargeFee(totalReward);
         _notifyReward(WETH);
 
         _distributeSDT();
@@ -203,28 +201,27 @@ contract PendleAccumulatorV2 {
     }
 
     /// @notice Reserve fees for dao, bounty and veSdtFeeProxy
-    /// @param _token toke to charge fee 
     /// @param _amount amount to charge fees
-    function _chargeFee(address _token, uint256 _amount) internal returns (uint256) {
+    function _chargeFee(uint256 _amount) internal returns (uint256) {
         uint256 gaugeAmount = _amount;
         // dao part
         if (daoFee > 0) {
             uint256 daoAmount = (_amount * daoFee) / 10_000;
-            IERC20(_token).transfer(daoRecipient, daoAmount);
+            IERC20(WETH).transfer(daoRecipient, daoAmount);
             gaugeAmount -= daoAmount;
         }
 
         // bounty part
         if (bountyFee > 0) {
             uint256 bountyAmount = (_amount * bountyFee) / 10_000;
-            IERC20(_token).transfer(bountyRecipient, bountyAmount);
+            IERC20(WETH).transfer(bountyRecipient, bountyAmount);
             gaugeAmount -= bountyAmount;
         }
 
         // veSDTFeeProxy part
         if (veSdtFeeProxyFee > 0) {
             uint256 veSdtFeeProxyAmount = (_amount * veSdtFeeProxyFee) / 10_000;
-            IERC20(_token).transfer(veSdtFeeProxy, veSdtFeeProxyAmount);
+            IERC20(WETH).transfer(veSdtFeeProxy, veSdtFeeProxyAmount);
             gaugeAmount -= veSdtFeeProxyAmount;
         }
         return gaugeAmount;
