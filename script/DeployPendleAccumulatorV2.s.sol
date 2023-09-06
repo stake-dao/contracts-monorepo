@@ -12,6 +12,7 @@ contract DeployPendleAccumulatorV2 is Script, Test {
     address public daoRecipient = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
     address public bountyRecipient = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
     address public pendleVeSdtFeeProxy = 0x12992595328E52267c95e45B1a97014D6Ddf8683;
+    address public votersRewardRecipient = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
 
     PendleAccumulatorV2 public accumulator;
 
@@ -21,7 +22,8 @@ contract DeployPendleAccumulatorV2 is Script, Test {
             deployer, 
             daoRecipient, 
             bountyRecipient, 
-            pendleVeSdtFeeProxy
+            pendleVeSdtFeeProxy,
+            votersRewardRecipient
         );
         vm.stopBroadcast();
     }

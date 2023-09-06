@@ -22,6 +22,7 @@ contract PendleAccumulatorV2 {
     error NO_REWARD();
     error NOT_ALLOWED();
     error NOT_ALLOWED_TO_PULL();
+    error NOT_CLAIMED_ALL();
     error ONGOING_REWARD();
     error WRONG_CLAIM();
     error ZERO_ADDRESS();
@@ -75,12 +76,14 @@ contract PendleAccumulatorV2 {
         address _governance,
         address _daoRecipient, 
         address _bountyRecipient, 
-        address _veSdtFeeProxy
+        address _veSdtFeeProxy,
+        address _votesRewardRecipient
     ) {
         governance = _governance;
         daoRecipient = _daoRecipient;
         bountyRecipient = _bountyRecipient;
         veSdtFeeProxy = _veSdtFeeProxy;
+        votesRewardRecipient = _votesRewardRecipient;
         daoFee = 500; // 5%
         bountyFee = 1000; // 10%
     }
@@ -92,14 +95,11 @@ contract PendleAccumulatorV2 {
         pools[0] = VE_PENDLE;
         uint256[] memory rewardsClaimable = IPendleFeeDistributor(PENDLE_FEE_D).getProtocolClaimables(address(locker), pools);
         /// check if there is any eth to claim for the vePENDLe pool
-        if (rewardsClaimable[0] == 1) revert NO_REWARD();
+        if (rewardsClaimable[0] == 0) revert NO_REWARD();
         // reward for 1 months, split the reward in 4 weekly periods
         // charge fees once for the entire month
         _chargeFee(_claimReward(pools));
         periodsToNotify += 4;
-
-        _notifyReward(WETH);
-        _distributeSDT();
     }
 
     /// @notice Claims rewards for the voters and send to a recipient
@@ -117,38 +117,30 @@ contract PendleAccumulatorV2 {
         if (!distributeVotersRewards) {
             IERC20(WETH).transfer(votesRewardRecipient, netReward);
         }
-
-        _distributeSDT();
     }
 
-    /// @notice Claims rewards for voters and/or vePendle
+    /// @notice Claims rewards for voters and vePendle (all rewarded pools need to be included)
     /// @param _pools pools to claim for 
     function claimForAll(address[] memory _pools) external {
-        uint256 poolsLength = _pools.length;
-        uint256 vePendleRewardClaimable;
-        for (uint256 i; i < poolsLength;) {
-            if (_pools[i] == VE_PENDLE) {
-                // Check if there is any reward for vePENDLE pool and add it to _pools
-                vePendleRewardClaimable = IPendleFeeDistributor(PENDLE_FEE_D).getProtocolClaimables(address(locker), _pools)[i];
-                if (vePendleRewardClaimable > 1) {
-                    periodsToNotify += 4;
-                }
-                break;
-            }
-            unchecked {
-                ++i;
-            }
-        }
+        uint256 totalAccrued = IPendleFeeDistributor(PENDLE_FEE_D).getProtocolTotalAccrued(address(locker));
+        uint256 claimed = IPendleFeeDistributor(PENDLE_FEE_D).claimed(address(locker));
+
         uint256 totalReward = _claimReward(_pools);
+        if (totalReward  + _pools.length != totalAccrued - claimed) revert NOT_CLAIMED_ALL();
+        periodsToNotify += 4;
         
         if (!distributeVotersRewards) {
-            // -1 because pendle represent a zero amount claimable as 1
-            uint256 votersTotalReward = totalReward - vePendleRewardClaimable - 1;
+            address[] memory vePendlePool = new address[](1);
+            vePendlePool[0] = VE_PENDLE;
+            uint256 vePendleRewardClaimable = IPendleFeeDistributor(PENDLE_FEE_D).getProtocolClaimables(address(locker), vePendlePool)[0];
+            uint256 votersTotalReward = totalReward - vePendleRewardClaimable;
             // transfer the amount without charging fees
             IERC20(WETH).transfer(votesRewardRecipient, votersTotalReward);
             totalReward -= votersTotalReward;
         }
-        _chargeFee(totalReward);
+        if (totalReward != 0) {
+            _chargeFee(totalReward);
+        }
         _notifyReward(WETH);
 
         _distributeSDT();
@@ -238,7 +230,7 @@ contract PendleAccumulatorV2 {
     /// @param _tokenReward token to notify
     function _notifyReward(address _tokenReward) internal {
         uint256 amountToNotify;
-        if (_tokenReward == WETH) {
+        if (_tokenReward == WETH && periodsToNotify != 0) {
             uint256 currentWeek = block.timestamp * 1 weeks / 1 weeks;
             if (rewards[currentWeek] != 0) revert ONGOING_REWARD();
             amountToNotify = IERC20(WETH).balanceOf(address(this)) / periodsToNotify;
@@ -248,19 +240,18 @@ contract PendleAccumulatorV2 {
             amountToNotify = IERC20(_tokenReward).balanceOf(address(this));
         }
 
-        if (amountToNotify == 0) revert NO_REWARD();
-
-        if (claimerFee > 0) {
-            uint256 claimerReward = (amountToNotify * claimerFee) / 10_000;
-            IERC20(_tokenReward).transfer(msg.sender, claimerReward);
-            amountToNotify -= claimerReward;
+        if (amountToNotify != 0) {
+            if (claimerFee > 0) {
+                uint256 claimerReward = (amountToNotify * claimerFee) / 10_000;
+                IERC20(_tokenReward).transfer(msg.sender, claimerReward);
+                amountToNotify -= claimerReward;
+            }
+            
+            IERC20(_tokenReward).approve(gauge, amountToNotify);
+            ILiquidityGauge(gauge).deposit_reward_token(_tokenReward, amountToNotify);
+            
+            emit RewardNotified(gauge, _tokenReward, amountToNotify);
         }
-        
-        IERC20(_tokenReward).approve(gauge, amountToNotify);
-        ILiquidityGauge(gauge).deposit_reward_token(_tokenReward, amountToNotify);
-
-        emit RewardNotified(gauge, _tokenReward, amountToNotify);
-
     }
 
     /// @notice Set DAO recipient
