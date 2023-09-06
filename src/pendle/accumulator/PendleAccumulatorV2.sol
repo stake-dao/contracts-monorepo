@@ -197,39 +197,34 @@ contract PendleAccumulatorV2 {
     /// @notice Claim reward for the pools
     /// @param _pools pools to claim the rewards
     function _claimReward(address[] memory _pools) internal returns(uint256 claimed) {
+        uint256 balanceBefore = address(this).balance;
         PendleLocker(locker).claimRewards(address(this), _pools);
-
         // Wrap Eth to WETH
-        claimed = address(this).balance;
+        claimed = address(this).balance - balanceBefore;
         if (claimed == 0) revert NO_BALANCE();
-        IWETH(WETH).deposit{value: claimed}();
+        IWETH(WETH).deposit{value: address(this).balance}();
     }
 
     /// @notice Reserve fees for dao, bounty and veSdtFeeProxy
     /// @param _amount amount to charge fees
-    function _chargeFee(uint256 _amount) internal returns (uint256) {
-        uint256 gaugeAmount = _amount;
+    function _chargeFee(uint256 _amount) internal {
         // dao part
         if (daoFee > 0) {
             uint256 daoAmount = (_amount * daoFee) / 10_000;
             IERC20(WETH).transfer(daoRecipient, daoAmount);
-            gaugeAmount -= daoAmount;
         }
 
         // bounty part
         if (bountyFee > 0) {
             uint256 bountyAmount = (_amount * bountyFee) / 10_000;
             IERC20(WETH).transfer(bountyRecipient, bountyAmount);
-            gaugeAmount -= bountyAmount;
         }
 
         // veSDTFeeProxy part
         if (veSdtFeeProxyFee > 0) {
             uint256 veSdtFeeProxyAmount = (_amount * veSdtFeeProxyFee) / 10_000;
             IERC20(WETH).transfer(veSdtFeeProxy, veSdtFeeProxyAmount);
-            gaugeAmount -= veSdtFeeProxyAmount;
         }
-        return gaugeAmount;
     }
 
     /// @notice Distribute SDT if there is any
