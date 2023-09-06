@@ -46,6 +46,7 @@ contract PendleAccumulatorV2 {
     address public gauge = 0x50DC9aE51f78C593d4138263da7088A973b8184E;
     address public sdtDistributor;
     
+    uint256 public periodsToAdd = 4;
     /// @notice weth rewards period to notify
     uint256 public periodsToNotify;
 
@@ -66,6 +67,7 @@ contract PendleAccumulatorV2 {
     event GaugeSet(address _old, address _new);
     event GovernanceSet(address _old, address _new);
     event LockerSet(address _old, address _new);
+    event PeriodsToAddSet(uint256 _old, uint256 _new);
     event RewardNotified(address _gauge, address _tokenReward, uint256 _amountNotified);
     event SdtDistributorUpdated(address _old, address _new);
     event VeSdtFeeProxyFeeSet(uint256 _old, uint256 _new);
@@ -96,10 +98,10 @@ contract PendleAccumulatorV2 {
         uint256[] memory rewardsClaimable = IPendleFeeDistributor(PENDLE_FEE_D).getProtocolClaimables(address(locker), pools);
         /// check if there is any eth to claim for the vePENDLe pool
         if (rewardsClaimable[0] == 0) revert NO_REWARD();
-        // reward for 1 months, split the reward in 4 weekly periods
+        // reward for 1 months, split the reward in periodsToAdd
         // charge fees once for the entire month
         _chargeFee(_claimReward(pools));
-        periodsToNotify += 4;
+        periodsToNotify += periodsToAdd;
     }
 
     /// @notice Claims rewards for the voters and send to a recipient
@@ -138,7 +140,7 @@ contract PendleAccumulatorV2 {
 
         uint256 totalReward = _claimReward(_pools);
         if (totalReward  + _pools.length != totalAccrued - claimed) revert NOT_CLAIMED_ALL();
-        periodsToNotify += 4;
+        periodsToNotify += periodsToAdd;
         
         if (!distributeVotersRewards) {
             address[] memory vePendlePool = new address[](1);
@@ -377,6 +379,15 @@ contract PendleAccumulatorV2 {
         if (_locker == address(0)) revert ZERO_ADDRESS();
         emit LockerSet(locker, _locker);
         locker = _locker;
+    }
+
+    /// @notice Allows the governance to set rewards periods to add
+    /// @dev Can be called only by the governance
+    /// @param _periodsToAdd reward period to add at every ve_pendle claim
+    function setPeriodsToAdd(uint256 _periodsToAdd) external {
+        if (msg.sender != governance) revert NOT_ALLOWED();
+        emit PeriodsToAddSet(periodsToAdd, _periodsToAdd);
+        periodsToAdd = _periodsToAdd;
     }
 
     /// @notice Toggle the allowance to pull tokens from the contract

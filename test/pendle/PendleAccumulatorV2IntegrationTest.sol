@@ -264,6 +264,11 @@ contract PendleAccumulatorV2IntegrationTest is Test {
 
         uint256 accBalance = WETH.balanceOf(address(pendleAccumulator));
         assertEq(accBalance, 0);
+    }
 
+    function testClaimForVePendle() public {
+        pendleAccumulator.claimForVePendle();
+        vm.expectRevert(PendleAccumulatorV2.NO_REWARD.selector);
+        pendleAccumulator.claimForVePendle();
     }
 }
