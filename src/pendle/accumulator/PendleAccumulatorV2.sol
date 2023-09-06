@@ -112,10 +112,21 @@ contract PendleAccumulatorV2 {
                 ++i;
             }
         }
+        address[] memory vePendlePool = new address[](1);
+        vePendlePool[0] = VE_PENDLE;
+        uint256 vePendleRewardClaimable = IPendleFeeDistributor(PENDLE_FEE_D).getProtocolClaimables(address(locker), vePendlePool)[0];
+        uint256 totalAccrued = IPendleFeeDistributor(PENDLE_FEE_D).getProtocolTotalAccrued(address(locker));
+        uint256 claimed = IPendleFeeDistributor(PENDLE_FEE_D).claimed(address(locker));
+        uint256 totalReward = _claimReward(_pools);
+
+        if (totalReward  + _pools.length != totalAccrued - claimed - vePendleRewardClaimable) revert NOT_CLAIMED_ALL();
+
         // send the reward to the recipient if it is not to distribute
-        uint256 netReward = _chargeFee(_claimReward(_pools));
+        // and not charge fees on this
         if (!distributeVotersRewards) {
-            IERC20(WETH).transfer(votesRewardRecipient, netReward);
+            IERC20(WETH).transfer(votesRewardRecipient, totalReward);
+        } else {
+            _chargeFee(totalReward);
         }
     }
 
