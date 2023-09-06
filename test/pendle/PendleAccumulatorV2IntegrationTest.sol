@@ -210,16 +210,17 @@ contract PendleAccumulatorV2IntegrationTest is Test {
         uint256 claimerBalanceEarned = WETH.balanceOf(address(this)) - claimerBalanceBefore;
 
         assertEq(
-            (claimerBalanceEarned + WETH.balanceOf(address(liquidityGauge)) - gaugeBalanceBefore) * pendleAccumulator.claimerFee() / 10_000,
+            (claimerBalanceEarned + WETH.balanceOf(address(liquidityGauge)) - gaugeBalanceBefore)
+                * pendleAccumulator.claimerFee() / 10_000,
             claimerBalanceEarned
         );
     }
 
-    function testPushTokens() public {  
+    function testPushTokens() public {
         uint256 amountToPush = 10e18;
         deal(address(WETH), address(pendleAccumulator), amountToPush);
         pendleAccumulator.togglePullAllowance(bot);
-        
+
         address[] memory tokens = new address[](1);
         tokens[0] = address(WETH);
         uint256[] memory amountsToPush = new uint256[](1);
@@ -232,7 +233,7 @@ contract PendleAccumulatorV2IntegrationTest is Test {
         pendleAccumulator.togglePullAllowance(bot);
         vm.prank(bot);
         vm.expectRevert(PendleAccumulatorV2.NOT_ALLOWED_TO_PULL.selector);
-        pendleAccumulator.pullTokens(tokens, amountsToPush); 
+        pendleAccumulator.pullTokens(tokens, amountsToPush);
     }
 
     function testPeriodsToNotify() public {

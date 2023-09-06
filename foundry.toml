@@ -5,10 +5,11 @@ libs = ["lib"]
 verbosity = 3
 
 remappings = [
-"forge-std=lib/forge-std/src/",
-"openzeppelin-contracts/=lib/openzeppelin-contracts/contracts/",
-"@addressBook=lib/AddressBook/src/",
 "utils=lib/utils/",
+"solady=lib/solady/",
+"forge-std=lib/forge-std/src/",
+"@addressBook=lib/AddressBook/src/",
+"openzeppelin-contracts/=lib/openzeppelin-contracts/contracts/",
 ]
 
 ffi = true

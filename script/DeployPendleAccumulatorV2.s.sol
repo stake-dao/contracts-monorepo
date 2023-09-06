@@ -7,7 +7,6 @@ import "forge-std/Script.sol";
 import {PendleAccumulatorV2} from "src/pendle/accumulator/PendleAccumulatorV2.sol";
 
 contract DeployPendleAccumulatorV2 is Script, Test {
-
     address public deployer = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
     address public daoRecipient = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
     address public bountyRecipient = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
