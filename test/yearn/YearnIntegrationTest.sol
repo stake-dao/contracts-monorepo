@@ -142,6 +142,7 @@ contract YearnIntegrationTest is Test {
 
         vm.warp(block.timestamp + 2 weeks);
         rewardPool.checkpoint_token();
+        rewardPool.checkpoint_total_supply();
 
         assertEq(YFI.balanceOf(address(liquidityGauge)), 0);
         yearnAccumulator.claimAndNotifyAll();

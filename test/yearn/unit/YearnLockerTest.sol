@@ -89,6 +89,7 @@ contract YearnLockerTest is Test {
         // Fill the Reward Pool with YFI.
         deal(address(YFI), address(rewardPool), 200e18);
         rewardPool.checkpoint_token();
+        rewardPool.checkpoint_total_supply();
 
         vm.warp(block.timestamp + 10 days); //extend 10 days
 

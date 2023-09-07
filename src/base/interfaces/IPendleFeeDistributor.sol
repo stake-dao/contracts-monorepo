@@ -48,4 +48,6 @@ interface IPendleFeeDistributor {
     ///@notice Returns the lifetime totalAccrued fees for protocols. This function is only available
     ///if the Pendle team has specifically set up the data.
     function getProtocolTotalAccrued(address user) external view returns (uint256);
+
+    function claimed(address user) external view returns (uint256);
 }
