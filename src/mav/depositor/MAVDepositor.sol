@@ -2,7 +2,7 @@
 pragma solidity 0.8.20;
 
 import "src/base/interfaces/ILocker.sol";
-import "src/base/interfaces/ISdTokenV2.sol";
+import "src/base/interfaces/ISdToken.sol";
 import "src/base/interfaces/ITokenMinter.sol";
 import "src/base/interfaces/ILiquidityGauge.sol";
 
@@ -132,6 +132,16 @@ contract MAVDepositor {
 
         /// If _lock is true, lock tokens in the locker contract.
         if (_lock) {
+            /// Transfer tokens to this contract
+            IERC20(token).safeTransferFrom(msg.sender, address(locker), _amount);
+
+            /// Transfer the balance
+            uint256 balance = IERC20(token).balanceOf(address(this));
+            IERC20(token).safeTransfer(locker, balance);
+
+            /// Lock the amount sent + balance of the contract.
+            _lockToken(balance + _amount);
+
             /// If an incentive is available, add it to the amount.
             if (incentiveToken != 0) {
                 _amount += incentiveToken;
@@ -140,14 +150,8 @@ contract MAVDepositor {
 
                 emit IncentiveReceived(msg.sender, incentiveToken);
             }
-
-            /// Transfer tokens to the locker contract and lock them.
-            IERC20(token).safeTransferFrom(msg.sender, locker, _amount);
-
-            /// Lock the amount sent + incentiveToken.
-            _lockToken(_amount);
         } else {
-            /// Transfer tokens to this contract
+            /// Transfer tokens to the locker contract and lock them.
             IERC20(token).safeTransferFrom(msg.sender, address(this), _amount);
 
             /// Compute call incentive and add to incentiveToken
@@ -201,7 +205,9 @@ contract MAVDepositor {
     function _lockToken(uint256 _amount) internal {
         // If there is Token available in the contract transfer it to the locker
         if (_amount != 0) {
+            /// Increase the lock.
             ILocker(locker).increaseLock(_amount, MAX_LOCK_DURATION);
+
             emit TokenLocked(msg.sender, _amount);
         }
     }
@@ -227,7 +233,7 @@ contract MAVDepositor {
     /// @notice Set the new operator for minting sdToken
     /// @param _minter operator minter address
     function setSdTokenMinterOperator(address _minter) external onlyGovernance {
-        ISdTokenV2(minter).setMinterOperator(_minter);
+        ISdToken(minter).setOperator(_minter);
         emit SdTokenOperatorChanged(_minter);
     }
 

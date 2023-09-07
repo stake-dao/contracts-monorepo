@@ -5,4 +5,6 @@ interface IRewardPool {
     function claim(address user, bool relock) external returns (uint256);
 
     function checkpoint_token() external;
+
+    function checkpoint_total_supply() external;
 }
