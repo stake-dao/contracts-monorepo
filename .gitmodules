@@ -13,3 +13,6 @@
 [submodule "lib/AddressBook"]
 	path = lib/AddressBook
 	url = https://github.com/StakeDAO/AddressBook
+[submodule "lib/solidity-examples"]
+	path = lib/solidity-examples
+	url = https://github.com/LayerZero-Labs/solidity-examples
