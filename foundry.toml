@@ -9,7 +9,9 @@ remappings = [
 "solady=lib/solady/",
 "forge-std=lib/forge-std/src/",
 "@addressBook=lib/AddressBook/src/",
+"@openzeppelin=lib/openzeppelin-contracts/",
 "openzeppelin-contracts/=lib/openzeppelin-contracts/contracts/",
+"solidity-examples/=lib/solidity-examples/contracts/"
 ]
 
 ffi = true
