@@ -8,7 +8,7 @@ import "utils/VyperDeployer.sol";
 
 import "src/mav/depositor/MAVDepositor.sol";
 
-import {sdMAVOft} from "src/mav/token/sdMAVOft.sol";
+import {sdMAV} from "src/mav/token/sdMAV.sol";
 import {AddressBook} from "@addressBook/AddressBook.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
@@ -16,7 +16,7 @@ import {TransparentUpgradeableProxy} from "openzeppelin-contracts/proxy/transpar
 
 contract SdMavOftIntegrationTest is Test {
     VyperDeployer vyperDeployer = new VyperDeployer();
-    sdMAVOft public sdMav;
+    sdMAV public sdMav;
     MAVDepositor public depositor;
     ILiquidityGauge internal liquidityGauge;
     ILocker internal locker = ILocker(0xdBD6170396ECE3DCd51195950A2dF7F7635F9e38);
@@ -27,7 +27,7 @@ contract SdMavOftIntegrationTest is Test {
     address public mavHolder = 0xb229fF45b62b3A01918893C34349cA8aC0f0A576;
 
     function setUp() public virtual {
-        sdMav = new sdMAVOft("Stake DAO MAV", "sdMAV", lzEndpoint);
+        sdMav = new sdMAV("Stake DAO MAV", "sdMAV", lzEndpoint);
 
         address liquidityGaugeImpl = vyperDeployer.deployContract("src/base/staking/LiquidityGaugeV4.vy");
 

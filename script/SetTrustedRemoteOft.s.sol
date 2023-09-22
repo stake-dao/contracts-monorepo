@@ -4,15 +4,15 @@ pragma solidity 0.8.7;
 import "forge-std/Test.sol";
 import "forge-std/Script.sol";
 
-import {sdMAVOft} from "src/mav/token/sdMAVOft.sol";
+import {sdMAV} from "src/mav/token/sdMAV.sol";
 
 abstract contract SetTrustedRemoteOft is Script, Test {
     address public deployer = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
     // hardcode the addresses before using the scripts 
-    sdMAVOft public sdMavOftEth;
-    sdMAVOft public sdMavOftBase; 
-    sdMAVOft public sdMavOftBnb;
-    sdMAVOft public sdMavOftZkSync;
+    sdMAV public sdMavOftEth;
+    sdMAV public sdMavOftBase; 
+    sdMAV public sdMavOftBnb;
+    sdMAV public sdMavOftZkSync;
 
     uint8 ethereumChainId = 101;
     uint8 baseChainId = 184;
