@@ -7,7 +7,7 @@ import {OFT} from "solidity-examples/token/oft/OFT.sol";
 /// @author StakeDAO
 /// @notice A token that represents the Token deposited by a user into the Depositor
 /// @dev Minting & Burning was modified to be used by the operator
-contract sdMAVOft is OFT {
+contract sdMAV is OFT {
 
     error ONLY_OPERATOR();
 
