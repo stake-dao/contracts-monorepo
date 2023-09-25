@@ -7,7 +7,6 @@ import {SafeERC20} from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol"
 
 /// @title  FXNLocker
 /// @notice Locker contract for locking tokens for a period of time
-/// @dev Adapted for Maverick Voting Escrow.
 /// @author Stake DAO
 /// @custom:contact contact@stakedao.org
 contract FXNLocker {
