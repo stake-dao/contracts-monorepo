@@ -109,24 +109,24 @@ contract FXNLockerTest is Test {
     function test_onlyGovernance() public {
         vm.startPrank(address(0x123));
 
-        vm.expectRevert(FXNLocker.GOVERNANCE.selector);
+        vm.expectRevert(VeCRVLocker.GOVERNANCE.selector);
         locker.execute(
             address(token), 0, abi.encodeWithSignature("approve(address,uint256)", address(veToken), type(uint256).max)
         );
 
-        vm.expectRevert(FXNLocker.GOVERNANCE.selector);
+        vm.expectRevert(VeCRVLocker.GOVERNANCE.selector);
         locker.setDepositor(address(0x123));
 
-        vm.expectRevert(FXNLocker.GOVERNANCE.selector);
+        vm.expectRevert(VeCRVLocker.GOVERNANCE.selector);
         locker.transferGovernance(address(0x123));
 
-        vm.expectRevert(FXNLocker.GOVERNANCE.selector);
+        vm.expectRevert(VeCRVLocker.GOVERNANCE.selector);
         locker.createLock(100e18, block.timestamp + MAX_LOCK_DURATION);
 
-        vm.expectRevert(FXNLocker.GOVERNANCE_OR_DEPOSITOR.selector);
+        vm.expectRevert(VeCRVLocker.GOVERNANCE_OR_DEPOSITOR.selector);
         locker.increaseLock(100e18, block.timestamp + MAX_LOCK_DURATION);
 
-        vm.expectRevert(FXNLocker.GOVERNANCE.selector);
+        vm.expectRevert(VeCRVLocker.GOVERNANCE.selector);
         locker.release(address(this));
 
         vm.stopPrank();
