@@ -131,7 +131,7 @@ contract FXNLocker {
         uint256 _balance = IERC20(token).balanceOf(address(this));
         IERC20(token).safeTransfer(_recipient, _balance);
 
-        emit Released(msg.sender, IERC20(token).balanceOf(address(this)));
+        emit Released(msg.sender, _balance);
     }
 
     ////////////////////////////////////////////////////////////////
