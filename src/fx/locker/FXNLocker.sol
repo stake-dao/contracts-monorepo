@@ -63,9 +63,6 @@ contract FXNLocker {
     /// @notice Throws if caller is not the governance or depositor.
     error GOVERNANCE_OR_DEPOSITOR();
 
-    /// @notice Throws if a lock already exists for the contract.
-    error LOCK_ALREADY_EXISTS();
-
     ////////////////////////////////////////////////////////////////
     /// --- MODIFIERS
     ///////////////////////////////////////////////////////////////
