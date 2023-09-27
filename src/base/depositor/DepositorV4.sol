@@ -120,7 +120,7 @@ abstract contract Depositor {
     /// @param _lock Whether to lock the tokens in the locker contract.
     /// @param _stake Whether to stake the sdToken in the gauge.
     /// @param _user Address of the user to receive the sdToken.
-    /// @dev If the lock is true, the tokens are directly sent to the locker and increase the lock amount as veMAV.
+    /// @dev If the lock is true, the tokens are directly sent to the locker and increase the lock amount as veToken.
     /// If the lock is false, the tokens are sent to this contract until someone locks them. A small percent of the deposit
     /// is used to incentivize users to lock the tokens.
     /// If the stake is true, the sdToken is staked in the gauge that distributes rewards. If the stake is false, the sdToken
