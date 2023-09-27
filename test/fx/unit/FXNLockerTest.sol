@@ -11,6 +11,10 @@ import {IVeToken} from "src/base/interfaces/IVeToken.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {ISmartWalletChecker} from "src/base/interfaces/ISmartWalletChecker.sol";
 
+interface ILido {
+    function submit(address _referral) external payable;
+}
+
 contract FXNLockerTest is Test {
     uint256 private constant MIN_LOCK_DURATION = 1 weeks;
     uint256 private constant MAX_LOCK_DURATION = 4 * 365 days;
@@ -20,10 +24,13 @@ contract FXNLockerTest is Test {
     IVeToken private veToken;
 
     function setUp() public virtual {
+        vm.rollFork({blockNumber: 18_227_675});
+
         token = IERC20(AddressBook.FXN);
         veToken = IVeToken(AddressBook.VE_FXN);
 
         locker = new FXNLocker(address(this), address(token), address(veToken));
+
 
         // Whitelist the locker contract
         vm.prank(ISmartWalletChecker(AddressBook.FXN_SMART_WALLET_CHECKER).owner());
@@ -55,6 +62,27 @@ contract FXNLockerTest is Test {
         locker.increaseLock(100e18, block.timestamp + MAX_LOCK_DURATION);
 
         assertApproxEqRel(veToken.balanceOf(address(locker)), 200e18, 5e15);
+    }
+
+    function test_claimRewards() public {
+        locker.createLock(100e18, block.timestamp + MAX_LOCK_DURATION);
+
+        skip(7 days);
+
+        /// stETH.
+        address _rewardToken = IFeeDistributor(AddressBook.FXN_FEE_DISTRIBUTOR).token();
+
+        /// Deal to Fee Distributor.
+        ILido(_rewardToken).submit{value: 100e18}(address(this));
+        IERC20(_rewardToken).transfer(AddressBook.FXN_FEE_DISTRIBUTOR, 100e18);
+
+        IFeeDistributor(AddressBook.FXN_FEE_DISTRIBUTOR).checkpoint_token();
+
+        skip (7 days);
+
+        locker.claimRewards(AddressBook.FXN_FEE_DISTRIBUTOR, _rewardToken, address(this));
+
+        assertApproxEqRel(IERC20(_rewardToken).balanceOf(address(this)), 100e18, 1e15);
     }
 
     function test_release() public {
@@ -106,6 +134,14 @@ contract FXNLockerTest is Test {
         assertEq(locker.depositor(), newDepositor);
     }
 
+    function test_setAccumulator() public {
+        address newAccumulator = address(0x123);
+        assertEq(locker.accumulator(), address(0));
+
+        locker.setAccumulator(newAccumulator);
+        assertEq(locker.accumulator(), newAccumulator);
+    }
+
     function test_onlyGovernance() public {
         vm.startPrank(address(0x123));
 
@@ -144,5 +180,8 @@ contract FXNLockerTest is Test {
         );
 
         assertApproxEqRel(veToken.balanceOf(address(locker)), 100e18, 5e15);
+    }
+
+      function _dealSteth(uint256 _amount) internal {
     }
 }

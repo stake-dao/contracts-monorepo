@@ -139,6 +139,7 @@ abstract contract VeCRVLocker {
     /// @param _recipient Address to send the tokens to.
     function claimRewards(address _feeDistributor, address _token, address _recipient)
         external
+        virtual
         onlyGovernanceOrAccumulator
     {
         uint256 claimed = IFeeDistributor(_feeDistributor).claim();
