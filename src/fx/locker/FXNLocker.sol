@@ -10,7 +10,7 @@ import "src/base/locker/VeCRVLocker.sol";
 contract FXNLocker is VeCRVLocker {
     constructor(address _depositor, address _token, address _veToken) VeCRVLocker(_depositor, _token, _veToken) {}
 
-    function name() public override pure returns (string memory) {
+    function name() public pure override returns (string memory) {
         return "FXN Locker";
     }
 }

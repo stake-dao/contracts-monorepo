@@ -3,6 +3,7 @@ pragma solidity 0.8.20;
 
 import {IVeToken} from "src/base/interfaces/IVeToken.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import {IFeeDistributor} from "src/base/interfaces/IFeeDistributor.sol";
 import {SafeERC20} from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title  VeCRVLocker
@@ -14,6 +15,9 @@ abstract contract VeCRVLocker {
 
     /// @notice Address of the depositor which will mint sdTokens.
     address public depositor;
+
+    /// @notice Address of the accumulator which will accumulate rewards.
+    address public accumulator;
 
     /// @notice Address of the governance contract.
     address public governance;
@@ -50,6 +54,10 @@ abstract contract VeCRVLocker {
     /// @param newDepositor Address of the new depositor.
     event DepositorChanged(address indexed newDepositor);
 
+    /// @notice Event emitted when the accumulator is changed.
+    /// @param newAccumulator Address of the new accumulator.
+    event AccumulatorChanged(address indexed newAccumulator);
+
     /// @notice Event emitted when a new governance is proposed.
     event GovernanceProposed(address indexed newGovernance);
 
@@ -76,12 +84,16 @@ abstract contract VeCRVLocker {
         _;
     }
 
+    modifier onlyGovernanceOrAccumulator() {
+        if (msg.sender != governance && msg.sender != accumulator) revert GOVERNANCE_OR_DEPOSITOR();
+        _;
+    }
+
     constructor(address _governance, address _token, address _veToken) {
         token = _token;
         veToken = _veToken;
         governance = _governance;
     }
-
 
     /// @dev Returns the name of the locker.
     function name() public pure virtual returns (string memory) {
@@ -121,6 +133,17 @@ abstract contract VeCRVLocker {
         emit LockIncreased(_value, _unlockTime);
     }
 
+    function claimRewards(address _feeDistributor, address _token, address _recipient)
+        external
+        onlyGovernanceOrAccumulator
+    {
+        uint256 claimed = IFeeDistributor(_feeDistributor).claim();
+
+        if (_recipient != address(0)) {
+            IERC20(_token).safeTransfer(_recipient, claimed);
+        }
+    }
+
     /// @notice Release the tokens from the Voting Escrow contract when the lock expires.
     /// @param _recipient Address to send the tokens to
     function release(address _recipient) external virtual onlyGovernance {
@@ -152,6 +175,10 @@ abstract contract VeCRVLocker {
     /// @param _depositor Address of the new depositor.
     function setDepositor(address _depositor) external onlyGovernance {
         emit DepositorChanged(depositor = _depositor);
+    }
+
+    function setAccumulator(address _accumulator) external onlyGovernance {
+        emit AccumulatorChanged(accumulator = _accumulator);
     }
 
     /// @notice Execute an arbitrary transaction as the governance.
