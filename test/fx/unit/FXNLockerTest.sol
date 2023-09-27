@@ -31,7 +31,6 @@ contract FXNLockerTest is Test {
 
         locker = new FXNLocker(address(this), address(token), address(veToken));
 
-
         // Whitelist the locker contract
         vm.prank(ISmartWalletChecker(AddressBook.FXN_SMART_WALLET_CHECKER).owner());
         ISmartWalletChecker(AddressBook.FXN_SMART_WALLET_CHECKER).approveWallet(address(locker));
@@ -78,7 +77,7 @@ contract FXNLockerTest is Test {
 
         IFeeDistributor(AddressBook.FXN_FEE_DISTRIBUTOR).checkpoint_token();
 
-        skip (7 days);
+        skip(7 days);
 
         locker.claimRewards(AddressBook.FXN_FEE_DISTRIBUTOR, _rewardToken, address(this));
 

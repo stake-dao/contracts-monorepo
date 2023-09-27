@@ -9,6 +9,6 @@ import "src/base/depositor/DepositorV4.sol";
 /// @custom:contact contact@stakedao.org
 contract FXNDepositor is Depositor {
     constructor(address _token, address _locker, address _minter, address _gauge)
-        Depositor(_token, _locker, _minter, _gauge)
+        Depositor(_token, _locker, _minter, _gauge, 1 weeks, 4 * 365 days)
     {}
 }

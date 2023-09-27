@@ -20,10 +20,10 @@ abstract contract Depositor {
     uint256 public constant DENOMINATOR = 10_000;
 
     /// @notice Minimum lock duration.
-    uint256 private constant MIN_LOCK_DURATION = 1 weeks;
+    uint256 private immutable MIN_LOCK_DURATION;
 
     /// @notice Maximum lock duration.
-    uint256 private constant MAX_LOCK_DURATION = 4 * 365 days;
+    uint256 private immutable MAX_LOCK_DURATION;
 
     /// @notice Address of the token to be locked.
     address public immutable token;
@@ -99,13 +99,23 @@ abstract contract Depositor {
         _;
     }
 
-    constructor(address _token, address _locker, address _minter, address _gauge) {
+    constructor(
+        address _token,
+        address _locker,
+        address _minter,
+        address _gauge,
+        uint256 _minLockDuration,
+        uint256 _maxLockDuration
+    ) {
         governance = msg.sender;
 
         token = _token;
         gauge = _gauge;
         minter = _minter;
         locker = _locker;
+
+        MIN_LOCK_DURATION = _minLockDuration;
+        MAX_LOCK_DURATION = _maxLockDuration;
 
         /// Approve sdToken to gauge.
         IERC20(minter).safeApprove(gauge, type(uint256).max);
