@@ -19,9 +19,6 @@ abstract contract Depositor {
     /// @notice Denominator for fixed point math.
     uint256 public constant DENOMINATOR = 10_000;
 
-    /// @notice Minimum lock duration.
-    uint256 private immutable MIN_LOCK_DURATION;
-
     /// @notice Maximum lock duration.
     uint256 private immutable MAX_LOCK_DURATION;
 
@@ -99,14 +96,7 @@ abstract contract Depositor {
         _;
     }
 
-    constructor(
-        address _token,
-        address _locker,
-        address _minter,
-        address _gauge,
-        uint256 _minLockDuration,
-        uint256 _maxLockDuration
-    ) {
+    constructor(address _token, address _locker, address _minter, address _gauge, uint256 _maxLockDuration) {
         governance = msg.sender;
 
         token = _token;
@@ -114,7 +104,6 @@ abstract contract Depositor {
         minter = _minter;
         locker = _locker;
 
-        MIN_LOCK_DURATION = _minLockDuration;
         MAX_LOCK_DURATION = _maxLockDuration;
 
         /// Approve sdToken to gauge.
