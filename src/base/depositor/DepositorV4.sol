@@ -145,9 +145,9 @@ abstract contract Depositor {
             if (incentiveToken != 0) {
                 _amount += incentiveToken;
 
-                incentiveToken = 0;
-
                 emit IncentiveReceived(msg.sender, incentiveToken);
+
+                incentiveToken = 0;
             }
         } else {
             /// Transfer tokens to the locker contract and lock them.
