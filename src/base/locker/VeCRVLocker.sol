@@ -133,6 +133,10 @@ abstract contract VeCRVLocker {
         emit LockIncreased(_value, _unlockTime);
     }
 
+    /// @notice Claim the rewards from the fee distributor.
+    /// @param _feeDistributor Address of the fee distributor.
+    /// @param _token Address of the token to claim.
+    /// @param _recipient Address to send the tokens to.
     function claimRewards(address _feeDistributor, address _token, address _recipient)
         external
         onlyGovernanceOrAccumulator
