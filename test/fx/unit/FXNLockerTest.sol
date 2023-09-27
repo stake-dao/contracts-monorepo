@@ -181,7 +181,4 @@ contract FXNLockerTest is Test {
 
         assertApproxEqRel(veToken.balanceOf(address(locker)), 100e18, 5e15);
     }
-
-      function _dealSteth(uint256 _amount) internal {
-    }
 }
