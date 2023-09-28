@@ -204,7 +204,7 @@ contract PendleAccumulatorV2 {
 
     /// @notice Claim reward for the pools
     /// @param _pools pools to claim the rewards
-    function _claimReward(address[] memory _pools) internal returns(uint256 claimed) {
+    function _claimReward(address[] memory _pools) internal returns (uint256 claimed) {
         uint256 balanceBefore = address(this).balance;
         PendleLocker(locker).claimRewards(address(this), _pools);
         // Wrap Eth to WETH
