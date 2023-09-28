@@ -11,6 +11,7 @@ import "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title Depositor
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return
+/// @dev Adapted for veCRV like Locker.
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
 abstract contract Depositor {
@@ -49,6 +50,11 @@ abstract contract Depositor {
     ////////////////////////////////////////////////////////////////
     /// --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
+
+    /// @notice Event emitted when a lock is created.
+    /// @param amount Amount of tokens locked.
+    /// @param duration Duration of the lock.
+    event CreateLock(uint256 amount, uint256 duration);
 
     /// @notice Event emitted when tokens are deposited.
     /// @param caller Address of the caller.
@@ -114,6 +120,21 @@ abstract contract Depositor {
     /// --- DEPOSIT & LOCK
     ///////////////////////////////////////////////////////////////
 
+    /// @notice Initiate a lock in the Locker contract.
+    /// @param _amount Amount of tokens to lock.
+    function createLock(uint256 _amount) external {
+        /// Transfer tokens to this contract
+        IERC20(token).safeTransferFrom(msg.sender, address(locker), _amount);
+
+        /// Can be called only once.
+        ILocker(locker).createLock(_amount, block.timestamp + MAX_LOCK_DURATION);
+
+        /// Mint sdToken to msg.sender.
+        ITokenMinter(minter).mint(msg.sender, _amount);
+
+        emit CreateLock(_amount, block.timestamp + MAX_LOCK_DURATION);
+    }
+
     /// @notice Deposit tokens, and receive sdToken or sdTokenGauge in return.
     /// @param _amount Amount of tokens to deposit.
     /// @param _lock Whether to lock the tokens in the locker contract.
@@ -162,7 +183,7 @@ abstract contract Depositor {
             incentiveToken += callIncentive;
         }
 
-        if (_stake && gauge != address(0)) {
+        if (_stake) {
             /// Mint sdToken to this contract.
             ITokenMinter(minter).mint(address(this), _amount);
 

@@ -63,6 +63,33 @@ contract FXNLockerTest is Test {
         assertApproxEqRel(veToken.balanceOf(address(locker)), 200e18, 5e15);
     }
 
+    function test_increaseAmountWithoutIncreaseTime() public {
+        locker.createLock(100e18, block.timestamp + MAX_LOCK_DURATION);
+
+        uint256 _end = IVeToken(veToken).locked__end(address(locker));
+
+        deal(address(token), address(locker), 100e18);
+        locker.increaseLock(100e18, block.timestamp + MAX_LOCK_DURATION);
+
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 200e18, 5e15);
+
+        uint256 _newEnd = IVeToken(veToken).locked__end(address(locker));
+        assertEq(_newEnd, _end);
+    }
+
+    function test_increaseUnlockTime() public {
+        locker.createLock(100e18, block.timestamp + MAX_LOCK_DURATION);
+
+        uint256 _end = IVeToken(veToken).locked__end(address(locker));
+
+        skip(14 days);
+
+        locker.increaseLock(0, block.timestamp + MAX_LOCK_DURATION);
+
+        uint256 _newEnd = IVeToken(veToken).locked__end(address(locker));
+        assertEq(_newEnd, _end + 14 days);
+    }
+
     function test_claimRewards() public {
         locker.createLock(100e18, block.timestamp + MAX_LOCK_DURATION);
 
@@ -74,13 +101,12 @@ contract FXNLockerTest is Test {
         /// Deal to Fee Distributor.
         ILido(_rewardToken).submit{value: 100e18}(address(this));
         IERC20(_rewardToken).transfer(AddressBook.FXN_FEE_DISTRIBUTOR, 100e18);
+        assertEq(IERC20(_rewardToken).balanceOf(address(this)), 0);
 
         IFeeDistributor(AddressBook.FXN_FEE_DISTRIBUTOR).checkpoint_token();
-
         skip(7 days);
 
         locker.claimRewards(AddressBook.FXN_FEE_DISTRIBUTOR, _rewardToken, address(this));
-
         assertApproxEqRel(IERC20(_rewardToken).balanceOf(address(this)), 100e18, 1e15);
     }
 
@@ -155,7 +181,7 @@ contract FXNLockerTest is Test {
         vm.expectRevert(VeCRVLocker.GOVERNANCE.selector);
         locker.transferGovernance(address(0x123));
 
-        vm.expectRevert(VeCRVLocker.GOVERNANCE.selector);
+        vm.expectRevert(VeCRVLocker.GOVERNANCE_OR_DEPOSITOR.selector);
         locker.createLock(100e18, block.timestamp + MAX_LOCK_DURATION);
 
         vm.expectRevert(VeCRVLocker.GOVERNANCE_OR_DEPOSITOR.selector);

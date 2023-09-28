@@ -61,8 +61,8 @@ contract DeployMavLocker is Script, Test {
 
         /// Lock and Mint 1 MAV for sdMAV
         token.transfer(address(locker), 1e18);
-        locker.createLock(1e18, MAX_LOCK_DURATION);
 
+        locker.createLock(1e18, MAX_LOCK_DURATION);
         _sdToken.mint(deployer, 1e18);
 
         _sdToken.setOperator(address(depositor));

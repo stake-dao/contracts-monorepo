@@ -68,13 +68,16 @@ contract FXNLockerIntegrationTest is Test {
         locker.setDepositor(address(depositor));
         _sdToken.setOperator(address(depositor));
 
-        // Mint MAV for testing.
         deal(address(token), address(this), amount);
 
-        // Mint MAV to the FXNLocker contract
-        deal(address(token), address(locker), amount);
+        vm.startPrank(address(0xBEEF));
+        // Mint FXN.
+        deal(address(token), address(0xBEEF), amount);
+        IERC20(address(token)).approve(address(depositor), amount);
 
-        locker.createLock(amount, block.timestamp + MAX_LOCK_DURATION);
+        depositor.createLock(amount);
+
+        vm.stopPrank();
     }
 
     function test_initialization() public {
@@ -84,6 +87,15 @@ contract FXNLockerIntegrationTest is Test {
 
         assertEq(depositor.minter(), address(_sdToken));
         assertEq(depositor.gauge(), address(liquidityGauge));
+    }
+
+    function test_createLockOnlyOnce() public {
+        // Mint FXN.
+        deal(address(token), address(this), amount);
+        IERC20(address(token)).approve(address(depositor), amount);
+
+        vm.expectRevert();
+        depositor.createLock(amount);
     }
 
     function test_depositAndMint() public {

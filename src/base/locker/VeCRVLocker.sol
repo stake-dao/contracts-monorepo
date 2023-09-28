@@ -107,7 +107,7 @@ abstract contract VeCRVLocker {
     /// @notice Create a lock for the contract on the Voting Escrow contract.
     /// @param _value Amount of tokens to lock
     /// @param _unlockTime Duration of the lock
-    function createLock(uint256 _value, uint256 _unlockTime) external virtual onlyGovernance {
+    function createLock(uint256 _value, uint256 _unlockTime) external virtual onlyGovernanceOrDepositor {
         IERC20(token).safeApprove(veToken, type(uint256).max);
         IVeToken(veToken).create_lock(_value, _unlockTime);
 
