@@ -8,9 +8,9 @@ import {sdMAV} from "src/mav/token/sdMAV.sol";
 
 abstract contract SetTrustedRemoteOft is Script, Test {
     address public deployer = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
-    // hardcode the addresses before using the scripts 
+    // hardcode the addresses before using the scripts
     sdMAV public sdMavOftEth;
-    sdMAV public sdMavOftBase; 
+    sdMAV public sdMavOftBase;
     sdMAV public sdMavOftBnb;
     sdMAV public sdMavOftZkSync;
 
@@ -35,7 +35,7 @@ abstract contract SetTrustedRemoteOft is Script, Test {
         vm.selectFork(forkId);
         vm.startBroadcast(deployer);
         bytes32 rpcAliasHash = keccak256(abi.encodePacked((rpcAlias)));
-        
+
         if (keccak256(abi.encodePacked("ethereum")) == rpcAliasHash) {
             sdMavOftEth.setTrustedRemoteAddress(184, sdMavOftBaseBytes);
             sdMavOftEth.setTrustedRemoteAddress(102, sdMavOftBnbBytes);
@@ -61,6 +61,9 @@ abstract contract SetTrustedRemoteOft is Script, Test {
 }
 
 contract SetTrustedRemoteOfEthereum is SetTrustedRemoteOft("ethereum") {}
+
 contract SetTrustedRemoteOfBase is SetTrustedRemoteOft("base") {}
+
 contract SetTrustedRemoteBnb is SetTrustedRemoteOft("bnb") {}
+
 contract SetTrustedRemoteZkSync is SetTrustedRemoteOft("zkSync") {}

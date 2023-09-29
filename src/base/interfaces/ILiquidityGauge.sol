@@ -60,5 +60,5 @@ interface ILiquidityGauge {
         address distributor
     ) external;
 
-    function totalSupply() external returns(uint256);
+    function totalSupply() external returns (uint256);
 }

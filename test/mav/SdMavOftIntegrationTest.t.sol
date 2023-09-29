@@ -66,19 +66,19 @@ contract SdMavOftIntegrationTest is Test {
         // deposit the whole amount into the depositor to obtain sdMAV-gauge token
         sdMav.approve(address(liquidityGauge), amountToMint);
         liquidityGauge.deposit(amountToMint, address(this));
-        
+
         // transfer gauge token to a recipient
         IERC20(address(liquidityGauge)).transfer(deployer, amountToMint);
-        
+
         // set the depositor as token operator
         sdMav.setOperator(address(depositor));
-        
+
         // deposit token
         vm.startPrank(mavHolder);
         uint256 amountToDeposit = 1000e18;
         IERC20(MAV).approve(address(depositor), amountToDeposit);
         depositor.deposit(amountToDeposit, true, true, mavHolder);
-        
+
         uint256 gaugeBalance = liquidityGauge.totalSupply();
         assertEq(gaugeBalance, amountToMint + amountToDeposit);
     }

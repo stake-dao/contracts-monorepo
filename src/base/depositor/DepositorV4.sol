@@ -21,7 +21,7 @@ abstract contract Depositor {
     uint256 public constant DENOMINATOR = 10_000;
 
     /// @notice Maximum lock duration.
-    uint256 private immutable MAX_LOCK_DURATION;
+    uint256 public immutable MAX_LOCK_DURATION;
 
     /// @notice Address of the token to be locked.
     address public immutable token;
