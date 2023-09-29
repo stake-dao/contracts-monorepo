@@ -201,6 +201,43 @@ contract FXNLockerIntegrationTest is Test {
         assertApproxEqRel(veToken.balanceOf(address(locker)), 300e18, 5e15);
     }
 
+    function test_depositAndStakeWithoutLockIncentivePercent() public {
+        depositor.setFees(0);
+
+        token.approve(address(depositor), amount);
+        depositor.deposit(amount, false, true, address(this));
+
+        assertEq(_sdToken.balanceOf(address(this)), 0);
+        assertEq(token.balanceOf(address(depositor)), amount);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), amount, 5e15);
+        assertEq(depositor.incentiveToken(), 0);
+        assertEq(liquidityGauge.balanceOf(address(this)), amount);
+        assertEq(_sdToken.balanceOf(address(liquidityGauge)), amount);
+
+        address _random = address(0x123);
+
+        assertEq(_sdToken.balanceOf(address(_random)), 0);
+        assertEq(liquidityGauge.balanceOf(address(_random)), 0);
+
+        skip(1);
+
+        deal(address(token), _random, amount);
+        vm.startPrank(_random);
+
+        token.approve(address(depositor), amount);
+        depositor.deposit(amount, true, true, _random);
+
+        vm.stopPrank();
+
+        assertEq(depositor.incentiveToken(), 0);
+        assertEq(token.balanceOf(address(depositor)), 0);
+
+        assertEq(liquidityGauge.balanceOf(address(_random)), amount);
+        assertEq(_sdToken.balanceOf(address(_random)), 0);
+
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 300e18, 5e15);
+    }
+
     function test_transferGovernance() public {
         address newGovernance = address(0x123);
 
