@@ -122,7 +122,7 @@ abstract contract Depositor {
 
     /// @notice Initiate a lock in the Locker contract.
     /// @param _amount Amount of tokens to lock.
-    function createLock(uint256 _amount) external {
+    function createLock(uint256 _amount) external virtual {
         /// Transfer tokens to this contract
         IERC20(token).safeTransferFrom(msg.sender, address(locker), _amount);
 
@@ -221,7 +221,7 @@ abstract contract Depositor {
 
     /// @notice Locks the tokens held by the contract
     /// @dev The contract must have tokens to lock
-    function _lockToken(uint256 _amount) internal {
+    function _lockToken(uint256 _amount) internal virtual {
         // If there is Token available in the contract transfer it to the locker
         if (_amount != 0) {
             /// Increase the lock.
