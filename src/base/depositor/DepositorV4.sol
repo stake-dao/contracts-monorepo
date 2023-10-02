@@ -156,7 +156,10 @@ abstract contract Depositor {
 
             /// Transfer the balance
             uint256 balance = IERC20(token).balanceOf(address(this));
-            IERC20(token).safeTransfer(locker, balance);
+
+            if (balance != 0) {
+                IERC20(token).safeTransfer(locker, balance);
+            }
 
             /// Lock the amount sent + balance of the contract.
             _lockToken(balance + _amount);
