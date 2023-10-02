@@ -152,7 +152,7 @@ abstract contract Depositor {
         /// If _lock is true, lock tokens in the locker contract.
         if (_lock) {
             /// Transfer tokens to this contract
-            IERC20(token).safeTransferFrom(msg.sender, address(locker), _amount);
+            IERC20(token).safeTransferFrom(msg.sender, locker, _amount);
 
             /// Transfer the balance
             uint256 balance = IERC20(token).balanceOf(address(this));
