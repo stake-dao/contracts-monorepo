@@ -1,66 +1,83 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.19;
+pragma solidity 0.8.20;
 
 import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import "utils/VyperDeployer.sol";
 
-import "src/mav/locker/MAVLocker.sol";
-import "src/mav/depositor/MAVDepositor.sol";
+import "src/fx/locker/FXNLocker.sol";
+import "src/fx/depositor/FXNDepositor.sol";
 
 import {sdToken} from "src/base/token/sdToken.sol";
 import {AddressBook} from "@addressBook/AddressBook.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
+import {ISmartWalletChecker} from "src/base/interfaces/ISmartWalletChecker.sol";
+import {TransparentUpgradeableProxy} from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-contract MAVLockerIntegrationTest is Test {
+contract FXNLockerIntegrationTest is Test {
     VyperDeployer vyperDeployer = new VyperDeployer();
 
     uint256 private constant MIN_LOCK_DURATION = 1 weeks;
     uint256 private constant MAX_LOCK_DURATION = 4 * 365 days;
 
     IERC20 private token;
-    MAVLocker private locker;
-    IVotingEscrowMav private veToken;
+    FXNLocker private locker;
+    IVeToken private veToken;
 
     sdToken internal _sdToken;
-    MAVDepositor private depositor;
+    FXNDepositor private depositor;
     ILiquidityGauge internal liquidityGauge;
 
     uint256 private constant amount = 100e18;
 
     function setUp() public virtual {
-        token = IERC20(AddressBook.MAV);
-        veToken = IVotingEscrowMav(AddressBook.VE_MAV);
-        _sdToken = new sdToken("Stake DAO MAV", "sdMAV");
+        token = IERC20(AddressBook.FXN);
+        veToken = IVeToken(AddressBook.VE_FXN);
+        _sdToken = new sdToken("Stake DAO FXN", "sdFXN");
 
-        address liquidityGaugeImpl = vyperDeployer.deployContract(
-            "src/base/staking/LiquidityGaugeV4Native.vy",
-            abi.encode(
+        address liquidityGaugeImpl = vyperDeployer.deployContract("src/base/staking/LiquidityGaugeV4.vy");
+
+        // Deploy LiquidityGauge
+        liquidityGauge = ILiquidityGauge(
+            address(
+                new TransparentUpgradeableProxy(
+                liquidityGaugeImpl,
+                AddressBook.PROXY_ADMIN,
+                abi.encodeWithSignature(
+                "initialize(address,address,address,address,address,address)",
                 address(_sdToken),
                 address(this),
                 AddressBook.SDT,
                 AddressBook.VE_SDT,
                 AddressBook.VE_SDT_BOOST_PROXY,
                 AddressBook.SDT_DISTRIBUTOR
+                )
+                )
             )
         );
 
-        liquidityGauge = ILiquidityGauge(liquidityGaugeImpl);
+        locker = new FXNLocker(address(this), address(token), address(veToken));
 
-        locker = new MAVLocker(address(this), address(token), address(veToken));
-        depositor = new MAVDepositor(address(token), address(locker), address(_sdToken), address(liquidityGauge));
+        // Whitelist the locker contract
+        vm.prank(ISmartWalletChecker(AddressBook.FXN_SMART_WALLET_CHECKER).owner());
+        ISmartWalletChecker(AddressBook.FXN_SMART_WALLET_CHECKER).approveWallet(address(locker));
+
+        depositor = new FXNDepositor(address(token), address(locker), address(_sdToken), address(liquidityGauge));
 
         locker.setDepositor(address(depositor));
         _sdToken.setOperator(address(depositor));
 
-        // Mint MAV for testing.
         deal(address(token), address(this), amount);
 
-        // Mint MAV to the MAVLocker contract
-        deal(address(token), address(locker), amount);
+        vm.startPrank(address(0xBEEF));
+        // Mint FXN.
+        deal(address(token), address(0xBEEF), amount);
+        IERC20(address(token)).approve(address(depositor), amount);
 
-        locker.createLock(amount, MAX_LOCK_DURATION);
+        depositor.createLock(amount);
+
+        vm.stopPrank();
     }
 
     function test_initialization() public {
@@ -73,6 +90,7 @@ contract MAVLockerIntegrationTest is Test {
     }
 
     function test_createLockOnlyOnce() public {
+        // Mint FXN.
         deal(address(token), address(this), amount);
         IERC20(address(token)).approve(address(depositor), amount);
 
@@ -93,15 +111,12 @@ contract MAVLockerIntegrationTest is Test {
         assertEq(_sdToken.balanceOf(address(this)), amount);
         assertEq(liquidityGauge.balanceOf(address(this)), 0);
 
-        (uint256 expectedBalance,) = veToken.previewPoints(200e18, MAX_LOCK_DURATION);
-        assertEq(veToken.balanceOf(address(locker)), expectedBalance);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 200e18, 5e15);
     }
 
     function test_depositAndStake() public {
         /// Skip 1 seconds to avoid depositing in the same block as locking.
         skip(1);
-
-        (uint256 expectedBalance,) = veToken.previewPoints(200e18, MAX_LOCK_DURATION);
 
         token.approve(address(depositor), amount);
         depositor.deposit(amount, true, true, address(this));
@@ -109,13 +124,12 @@ contract MAVLockerIntegrationTest is Test {
         assertEq(_sdToken.balanceOf(address(this)), 0);
         assertEq(token.balanceOf(address(depositor)), 0);
         assertEq(liquidityGauge.balanceOf(address(this)), amount);
-        assertEq(veToken.balanceOf(address(locker)), expectedBalance);
         assertEq(_sdToken.balanceOf(address(liquidityGauge)), amount);
+
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 200e18, 5e15);
     }
 
     function test_depositAndStakeWithoutLock() public {
-        (uint256 expectedBalance,) = veToken.previewPoints(amount, MAX_LOCK_DURATION);
-
         uint256 expectedIncentiveAmount = amount * 10 / 10_000;
         uint256 expectedStakedBalance = amount - expectedIncentiveAmount;
 
@@ -124,8 +138,9 @@ contract MAVLockerIntegrationTest is Test {
 
         assertEq(_sdToken.balanceOf(address(this)), 0);
         assertEq(token.balanceOf(address(depositor)), amount);
-        assertEq(veToken.balanceOf(address(locker)), expectedBalance);
+
         assertEq(depositor.incentiveToken(), expectedIncentiveAmount);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), amount, 5e15);
         assertEq(liquidityGauge.balanceOf(address(this)), expectedStakedBalance);
         assertEq(_sdToken.balanceOf(address(liquidityGauge)), expectedStakedBalance);
 
@@ -145,13 +160,10 @@ contract MAVLockerIntegrationTest is Test {
         assertEq(liquidityGauge.balanceOf(address(_random)), 0);
         assertEq(_sdToken.balanceOf(address(_random)), expectedIncentiveAmount);
 
-        (expectedBalance,) = veToken.previewPoints(200e18, MAX_LOCK_DURATION);
-        assertEq(veToken.balanceOf(address(locker)), expectedBalance);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 200e18, 5e15);
     }
 
     function test_depositAndStakeWithoutLockThenDepositWith() public {
-        (uint256 expectedBalance,) = veToken.previewPoints(amount, MAX_LOCK_DURATION);
-
         uint256 expectedIncentiveAmount = amount * 10 / 10_000;
         uint256 expectedStakedBalance = amount - expectedIncentiveAmount;
 
@@ -160,7 +172,7 @@ contract MAVLockerIntegrationTest is Test {
 
         assertEq(_sdToken.balanceOf(address(this)), 0);
         assertEq(token.balanceOf(address(depositor)), amount);
-        assertEq(veToken.balanceOf(address(locker)), expectedBalance);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), amount, 5e15);
         assertEq(depositor.incentiveToken(), expectedIncentiveAmount);
         assertEq(liquidityGauge.balanceOf(address(this)), expectedStakedBalance);
         assertEq(_sdToken.balanceOf(address(liquidityGauge)), expectedStakedBalance);
@@ -186,9 +198,44 @@ contract MAVLockerIntegrationTest is Test {
         assertEq(liquidityGauge.balanceOf(address(_random)), amount + expectedIncentiveAmount);
         assertEq(_sdToken.balanceOf(address(_random)), 0);
 
-        /// Skip 1 seconds to avoid depositing in the same block as locking.
-        (expectedBalance,) = veToken.previewPoints(300e18, MAX_LOCK_DURATION);
-        assertEq(veToken.balanceOf(address(locker)), expectedBalance);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 300e18, 5e15);
+    }
+
+    function test_depositAndStakeWithoutLockIncentivePercent() public {
+        depositor.setFees(0);
+
+        token.approve(address(depositor), amount);
+        depositor.deposit(amount, false, true, address(this));
+
+        assertEq(_sdToken.balanceOf(address(this)), 0);
+        assertEq(token.balanceOf(address(depositor)), amount);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), amount, 5e15);
+        assertEq(depositor.incentiveToken(), 0);
+        assertEq(liquidityGauge.balanceOf(address(this)), amount);
+        assertEq(_sdToken.balanceOf(address(liquidityGauge)), amount);
+
+        address _random = address(0x123);
+
+        assertEq(_sdToken.balanceOf(address(_random)), 0);
+        assertEq(liquidityGauge.balanceOf(address(_random)), 0);
+
+        skip(1);
+
+        deal(address(token), _random, amount);
+        vm.startPrank(_random);
+
+        token.approve(address(depositor), amount);
+        depositor.deposit(amount, true, true, _random);
+
+        vm.stopPrank();
+
+        assertEq(depositor.incentiveToken(), 0);
+        assertEq(token.balanceOf(address(depositor)), 0);
+
+        assertEq(liquidityGauge.balanceOf(address(_random)), amount);
+        assertEq(_sdToken.balanceOf(address(_random)), 0);
+
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 300e18, 5e15);
     }
 
     function test_transferGovernance() public {

@@ -14,7 +14,7 @@ install:
 	forge install
 
 test:
-	@forge test
+	@forge test --gas-report
 
 test-f-%:
 	@FOUNDRY_MATCH_TEST=$* make test
@@ -36,12 +36,12 @@ coverage-html:
 	@rm ./lcov.info*
 
 simulate-%:
-	@forge script script/$*.sol -vvvvv
+	@forge script script/$*.s.sol -vvvvv
 
 run-%:
-	@forge script script/$*.sol --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY)
+	@forge script script/$*.s.sol --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY)
 
 deploy-%:
-	@forge script script/$*.sol --broadcast --slow -vvvvv --verify --private-key ${PRIVATE_KEY} --resume
+	@forge script script/$*.s.sol --broadcast --slow -vvvvv --verify --private-key ${PRIVATE_KEY}
 
 .PHONY: test coverage

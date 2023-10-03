@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.7;
+pragma solidity ^0.8.7;
 
 interface IFeeDistributor {
     function claim() external returns (uint256);
+
+    function token() external view returns (address);
 
     function checkpoint_token() external;
 
