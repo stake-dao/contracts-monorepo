@@ -12,7 +12,6 @@ import "src/mav/depositor/MAVDepositor.sol";
 import {sdToken} from "src/base/token/sdToken.sol";
 import {AddressBook} from "@addressBook/AddressBook.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
-import {TransparentUpgradeableProxy} from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract MAVLockerIntegrationTest is Test {
     VyperDeployer vyperDeployer = new VyperDeployer();
@@ -35,26 +34,19 @@ contract MAVLockerIntegrationTest is Test {
         veToken = IVotingEscrowMav(AddressBook.VE_MAV);
         _sdToken = new sdToken("Stake DAO MAV", "sdMAV");
 
-        address liquidityGaugeImpl = vyperDeployer.deployContract("src/base/staking/LiquidityGaugeV4.vy");
-
-        // Deploy LiquidityGauge
-        liquidityGauge = ILiquidityGauge(
-            address(
-                new TransparentUpgradeableProxy(
-                liquidityGaugeImpl,
-                AddressBook.PROXY_ADMIN,
-                abi.encodeWithSignature(
-                "initialize(address,address,address,address,address,address)",
+        address liquidityGaugeImpl = vyperDeployer.deployContract(
+            "src/base/staking/LiquidityGaugeV4.vy",
+            abi.encode(
                 address(_sdToken),
                 address(this),
                 AddressBook.SDT,
                 AddressBook.VE_SDT,
                 AddressBook.VE_SDT_BOOST_PROXY,
                 AddressBook.SDT_DISTRIBUTOR
-                )
-                )
             )
         );
+
+        liquidityGauge = ILiquidityGauge(liquidityGaugeImpl);
 
         locker = new MAVLocker(address(this), address(token), address(veToken));
         depositor = new MAVDepositor(address(token), address(locker), address(_sdToken), address(liquidityGauge));

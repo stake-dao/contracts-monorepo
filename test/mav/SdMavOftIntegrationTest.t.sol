@@ -29,23 +29,16 @@ contract SdMavOftIntegrationTest is Test {
     function setUp() public virtual {
         sdMav = new sdMAV("Stake DAO MAV", "sdMAV", lzEndpoint);
 
-        address liquidityGaugeImpl = vyperDeployer.deployContract("src/base/staking/LiquidityGaugeV4.vy");
-
-        // Deploy LiquidityGauge
         liquidityGauge = ILiquidityGauge(
-            address(
-                new TransparentUpgradeableProxy(
-                liquidityGaugeImpl,
-                AddressBook.PROXY_ADMIN,
-                abi.encodeWithSignature(
-                "initialize(address,address,address,address,address,address)",
-                address(sdMav),
-                address(this),
-                AddressBook.SDT,
-                AddressBook.VE_SDT,
-                AddressBook.VE_SDT_BOOST_PROXY,
-                AddressBook.SDT_DISTRIBUTOR
-                )
+            vyperDeployer.deployContract(
+                "src/base/staking/LiquidityGaugeV4.vy",
+                abi.encode(
+                    address(sdMav),
+                    address(this),
+                    AddressBook.SDT,
+                    AddressBook.VE_SDT,
+                    AddressBook.VE_SDT_BOOST_PROXY,
+                    AddressBook.SDT_DISTRIBUTOR
                 )
             )
         );
