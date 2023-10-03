@@ -72,6 +72,14 @@ contract MAVLockerIntegrationTest is Test {
         assertEq(depositor.gauge(), address(liquidityGauge));
     }
 
+     function test_createLockOnlyOnce() public {
+        deal(address(token), address(this), amount);
+        IERC20(address(token)).approve(address(depositor), amount);
+
+        vm.expectRevert();
+        depositor.createLock(amount);
+    }
+
     function test_depositAndMint() public {
         /// Skip 1 seconds to avoid depositing in the same block as locking.
         skip(1);

@@ -57,7 +57,6 @@ contract DeployMigratedMAV is Script, Test {
 
         liquidityGauge.set_claimer(claimer);
 
-        /// Salt for CREATE2
         depositor = new MAVDepositor(address(token), address(locker), address(_sdToken), address(liquidityGauge));
         locker.setDepositor(address(depositor));
 

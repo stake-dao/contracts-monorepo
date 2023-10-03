@@ -24,7 +24,6 @@ contract SdMavOftIntegrationTest is Test {
     address public constant MAV = AddressBook.MAV;
 
     address public deployer = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
-    address public mavHolder = 0xb229fF45b62b3A01918893C34349cA8aC0f0A576;
 
     function setUp() public virtual {
         sdMav = new sdMAV("Stake DAO MAV", "sdMAV", lzEndpoint);
@@ -67,10 +66,13 @@ contract SdMavOftIntegrationTest is Test {
         sdMav.setOperator(address(depositor));
 
         // deposit token
-        vm.startPrank(mavHolder);
+        vm.startPrank(address(0xBEEF));
+
         uint256 amountToDeposit = 1000e18;
+        deal(address(MAV), address(0xBEEF), amountToDeposit);
+
         IERC20(MAV).approve(address(depositor), amountToDeposit);
-        depositor.deposit(amountToDeposit, true, true, mavHolder);
+        depositor.deposit(amountToDeposit, true, true, address(0xBEEF));
 
         uint256 gaugeBalance = liquidityGauge.totalSupply();
         assertEq(gaugeBalance, amountToMint + amountToDeposit);
