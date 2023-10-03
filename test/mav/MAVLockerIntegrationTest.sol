@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.20;
+pragma solidity ^0.8.19;
 
 import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
@@ -72,7 +72,7 @@ contract MAVLockerIntegrationTest is Test {
         assertEq(depositor.gauge(), address(liquidityGauge));
     }
 
-     function test_createLockOnlyOnce() public {
+    function test_createLockOnlyOnce() public {
         deal(address(token), address(this), amount);
         IERC20(address(token)).approve(address(depositor), amount);
 
