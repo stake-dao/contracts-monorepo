@@ -35,7 +35,7 @@ contract MAVLockerIntegrationTest is Test {
         _sdToken = new sdToken("Stake DAO MAV", "sdMAV");
 
         address liquidityGaugeImpl = vyperDeployer.deployContract(
-            "src/base/staking/LiquidityGaugeV4.vy",
+            "src/base/staking/LiquidityGaugeV4Native.vy",
             abi.encode(
                 address(_sdToken),
                 address(this),

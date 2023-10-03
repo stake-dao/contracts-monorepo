@@ -31,7 +31,7 @@ contract SdMavOftIntegrationTest is Test {
 
         liquidityGauge = ILiquidityGauge(
             vyperDeployer.deployContract(
-                "src/base/staking/LiquidityGaugeV4.vy",
+                "src/base/staking/LiquidityGaugeV4Native.vy",
                 abi.encode(
                     address(sdMav),
                     address(this),
