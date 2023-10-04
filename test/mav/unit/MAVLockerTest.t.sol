@@ -45,7 +45,6 @@ abstract contract MAVLockerTest is Test {
     }
 
     function test_initialization() public {
-        emit log_string(vm.envString("RPC_URL_MAINNET"));
         assertEq(locker.name(), "MAV Locker");
         assertEq(locker.token(), address(token));
         assertEq(locker.veToken(), address(veToken));
