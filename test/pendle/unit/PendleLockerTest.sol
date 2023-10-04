@@ -20,6 +20,8 @@ contract PendleLockerTest is Test {
     sdToken internal sdPendle;
 
     function setUp() public virtual {
+        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"));
+        vm.selectFork(forkId);
         PENDLE = IERC20(AddressBook.PENDLE);
         vePendle = IVePendle(AddressBook.VE_PENDLE);
 

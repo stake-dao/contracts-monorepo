@@ -15,7 +15,6 @@ import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {TransparentUpgradeableProxy} from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract SdMavOftIntegrationTest is Test {
-    VyperDeployer vyperDeployer = new VyperDeployer();
     sdMAV public sdMav;
     MAVDepositor public depositor;
     ILiquidityGauge internal liquidityGauge;
@@ -26,6 +25,9 @@ contract SdMavOftIntegrationTest is Test {
     address public deployer = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
 
     function setUp() public virtual {
+        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"));
+        vm.selectFork(forkId);
+        VyperDeployer vyperDeployer = new VyperDeployer();
         sdMav = new sdMAV("Stake DAO MAV", "sdMAV", lzEndpoint);
 
         liquidityGauge = ILiquidityGauge(

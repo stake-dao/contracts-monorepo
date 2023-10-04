@@ -28,8 +28,6 @@ interface IFraxLP {
 }
 
 contract PendleIntegrationTest is Test {
-    VyperDeployer vyperDeployer = new VyperDeployer();
-
     address public constant SD_FRAX_3CRV = 0x5af15DA84A4a6EDf2d9FA6720De921E1026E37b7;
 
     // External Contracts
@@ -61,6 +59,9 @@ contract PendleIntegrationTest is Test {
     address public constant WETH_FRAX_LP = 0x31351Bf3fba544863FBff44DDC27bA880916A199;
 
     function setUp() public virtual {
+        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"));
+        vm.selectFork(forkId);
+        VyperDeployer vyperDeployer = new VyperDeployer();
         sdPendle = new sdToken("Stake DAO PENDLE", "sdPENDLE");
 
         address liquidityGaugeImpl = vyperDeployer.deployContract("src/base/staking/LiquidityGaugeV4.vy");

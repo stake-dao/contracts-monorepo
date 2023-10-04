@@ -16,8 +16,6 @@ import {ISmartWalletChecker} from "src/base/interfaces/ISmartWalletChecker.sol";
 import {TransparentUpgradeableProxy} from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract FXNLockerIntegrationTest is Test {
-    VyperDeployer vyperDeployer = new VyperDeployer();
-
     uint256 private constant MIN_LOCK_DURATION = 1 weeks;
     uint256 private constant MAX_LOCK_DURATION = 4 * 365 days;
 
@@ -32,6 +30,9 @@ contract FXNLockerIntegrationTest is Test {
     uint256 private constant amount = 100e18;
 
     function setUp() public virtual {
+        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"));
+        vm.selectFork(forkId);
+        VyperDeployer vyperDeployer = new VyperDeployer();
         token = IERC20(AddressBook.FXN);
         veToken = IVeToken(AddressBook.VE_FXN);
         _sdToken = new sdToken("Stake DAO FXN", "sdFXN");

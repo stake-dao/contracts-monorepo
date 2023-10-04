@@ -14,8 +14,6 @@ import {AddressBook} from "@addressBook/AddressBook.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 
 contract MAVLockerIntegrationTest is Test {
-    VyperDeployer vyperDeployer = new VyperDeployer();
-
     uint256 private constant MIN_LOCK_DURATION = 1 weeks;
     uint256 private constant MAX_LOCK_DURATION = 4 * 365 days;
 
@@ -30,6 +28,9 @@ contract MAVLockerIntegrationTest is Test {
     uint256 private constant amount = 100e18;
 
     function setUp() public virtual {
+        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"), 18277719);
+        vm.selectFork(forkId);
+        VyperDeployer vyperDeployer = new VyperDeployer();
         token = IERC20(AddressBook.MAV);
         veToken = IVotingEscrowMav(AddressBook.VE_MAV);
         _sdToken = new sdToken("Stake DAO MAV", "sdMAV");
