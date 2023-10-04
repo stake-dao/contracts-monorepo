@@ -14,7 +14,7 @@ import "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 /// @dev Adapted for veCRV like Locker.
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-abstract contract Depositor {
+abstract contract DepositorV4 {
     using SafeERC20 for IERC20;
 
     /// @notice Denominator for fixed point math.

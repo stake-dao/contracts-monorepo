@@ -13,7 +13,15 @@ import {sdToken} from "src/base/token/sdToken.sol";
 import {AddressBook} from "@addressBook/AddressBook.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 
-contract MAVLockerIntegrationTest is Test {
+address constant MAV_ETH = AddressBook.MAV;
+address constant MAV_BASE = 0x64b88c73A5DfA78D1713fE1b4c69a22d7E0faAa7;
+address constant MAV_BNB = 0xd691d9a68C887BDF34DA8c36f63487333ACfD103;
+
+address constant VE_MAV_ETH = AddressBook.VE_MAV;
+address constant VE_MAV_BASE = 0xFcCB5263148fbF11d58433aF6FeeFF0Cc49E0EA5;
+address constant VE_MAV_BNB = 0xE6108f1869d37E5076a56168C66A1607EdB10819;
+
+abstract contract MAVLockerIntegrationTest is Test {
     uint256 private constant MIN_LOCK_DURATION = 1 weeks;
     uint256 private constant MAX_LOCK_DURATION = 4 * 365 days;
 
@@ -27,15 +35,25 @@ contract MAVLockerIntegrationTest is Test {
 
     uint256 private constant amount = 100e18;
 
+    string private rpcAlias;
+    uint256 private forkBlock;
+
+    constructor(address _token, address _veToken, string memory _rpcAlias, uint256 _forkBlock) {
+        rpcAlias = _rpcAlias;
+        token = IERC20(_token);
+        veToken = IVotingEscrowMav(_veToken);
+        forkBlock = _forkBlock;
+    }
+
     function setUp() public virtual {
-        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"), 18277719);
+        uint256 forkId = vm.createFork(vm.rpcUrl(rpcAlias), forkBlock);
         vm.selectFork(forkId);
         VyperDeployer vyperDeployer = new VyperDeployer();
-        token = IERC20(AddressBook.MAV);
-        veToken = IVotingEscrowMav(AddressBook.VE_MAV);
         _sdToken = new sdToken("Stake DAO MAV", "sdMAV");
 
-        address liquidityGaugeImpl = vyperDeployer.deployContract(
+        address liquidityGaugeImpl;
+        if (keccak256(abi.encodePacked(rpcAlias)) == keccak256(abi.encodePacked("ethereum"))) {
+            liquidityGaugeImpl = vyperDeployer.deployContract(
             "src/base/staking/LiquidityGaugeV4Native.vy",
             abi.encode(
                 address(_sdToken),
@@ -44,9 +62,16 @@ contract MAVLockerIntegrationTest is Test {
                 AddressBook.VE_SDT,
                 AddressBook.VE_SDT_BOOST_PROXY,
                 AddressBook.SDT_DISTRIBUTOR
-            )
-        );
-
+            ));
+        } else {
+            liquidityGaugeImpl = vyperDeployer.deployContract(
+            "src/base/staking/LiquidityGaugeV4XChain.vy",
+            abi.encode(
+                address(_sdToken),
+                address(this)
+            ));
+        }
+        
         liquidityGauge = ILiquidityGauge(liquidityGaugeImpl);
 
         locker = new MAVLocker(address(this), address(token), address(veToken));
@@ -215,3 +240,7 @@ contract MAVLockerIntegrationTest is Test {
         assertEq(_sdToken.operator(), address(newOperator));
     }
 }
+
+contract MAVLockerIntegrationTestEth is MAVLockerIntegrationTest(MAV_ETH, VE_MAV_ETH, "ethereum", 18277719) {}
+contract MAVLockerIntegrationTestBase is MAVLockerIntegrationTest(MAV_BASE, VE_MAV_BASE, "base", 4821075) {}
+contract MAVLockerIntegrationTestBnb is MAVLockerIntegrationTest(MAV_BNB, VE_MAV_BNB, "bnb", 32311843) {}

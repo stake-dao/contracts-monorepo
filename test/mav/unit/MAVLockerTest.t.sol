@@ -13,12 +13,10 @@ import {IVotingEscrowMav} from "src/base/interfaces/IVotingEscrowMav.sol";
 address constant MAV_ETH = AddressBook.MAV;
 address constant MAV_BASE = 0x64b88c73A5DfA78D1713fE1b4c69a22d7E0faAa7;
 address constant MAV_BNB = 0xd691d9a68C887BDF34DA8c36f63487333ACfD103;
-address constant MAV_ZKSYNC = 0x787c09494Ec8Bcb24DcAf8659E7d5D69979eE508; 
 
 address constant VE_MAV_ETH = AddressBook.VE_MAV;
 address constant VE_MAV_BASE = 0xFcCB5263148fbF11d58433aF6FeeFF0Cc49E0EA5;
 address constant VE_MAV_BNB = 0xE6108f1869d37E5076a56168C66A1607EdB10819;
-address constant VE_MAV_ZKSYNC = 0x7EDcB053d4598a145DdaF5260cf89A32263a2807;
 
 abstract contract MAVLockerTest is Test {
     uint256 private constant MIN_LOCK_DURATION = 1 weeks;

@@ -8,9 +8,9 @@ import "src/base/depositor/DepositorV4.sol";
 /// @dev Adapted for Maverick Voting Escrow.
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-contract MAVDepositor is Depositor {
+contract MAVDepositor is DepositorV4 {
     constructor(address _token, address _locker, address _minter, address _gauge)
-        Depositor(_token, _locker, _minter, _gauge, 4 * 365 days)
+        DepositorV4(_token, _locker, _minter, _gauge, 4 * 365 days)
     {}
 
     function _lockToken(uint256 _amount) internal override {
