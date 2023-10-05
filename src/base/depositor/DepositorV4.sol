@@ -185,8 +185,8 @@ abstract contract DepositorV4 {
             /// Add call incentive to incentiveToken
             incentiveToken += callIncentive;
         }
-
-        if (_stake) {
+        // Mint sdtoken to the user if the gauge is not set
+        if (_stake && gauge != address(0)) {
             /// Mint sdToken to this contract.
             ITokenMinter(minter).mint(address(this), _amount);
 
@@ -263,9 +263,10 @@ abstract contract DepositorV4 {
     /// @param _gauge gauge address
     function setGauge(address _gauge) external onlyGovernance {
         gauge = _gauge;
-
-        /// Approve sdToken to gauge.
-        IERC20(minter).safeApprove(gauge, type(uint256).max);
+        if (_gauge != address(0)) {
+            /// Approve sdToken to gauge.
+            IERC20(minter).safeApprove(gauge, type(uint256).max);
+        }  
     }
 
     /// @notice Set the percentage of the lock incentive

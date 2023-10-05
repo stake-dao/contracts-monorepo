@@ -139,6 +139,22 @@ abstract contract MAVLockerIntegrationTest is Test {
         assertEq(_sdToken.balanceOf(address(liquidityGauge)), amount);
     }
 
+    function test_depositAndStakeWithoutGauge() public {
+        // set gauge to zero address in depositor
+        depositor.setGauge(address(0));
+        /// Skip 1 seconds to avoid depositing in the same block as locking.
+        skip(1);
+
+        (uint256 expectedBalance,) = veToken.previewPoints(200e18, MAX_LOCK_DURATION);
+
+        token.approve(address(depositor), amount);
+        depositor.deposit(amount, true, true, address(this));
+
+        assertEq(_sdToken.balanceOf(address(this)), amount);
+        assertEq(token.balanceOf(address(depositor)), 0);
+        assertEq(veToken.balanceOf(address(locker)), expectedBalance);
+    }
+
     function test_depositAndStakeWithoutLock() public {
         (uint256 expectedBalance,) = veToken.previewPoints(amount, MAX_LOCK_DURATION);
 
