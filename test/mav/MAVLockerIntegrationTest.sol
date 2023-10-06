@@ -38,6 +38,8 @@ abstract contract MAVLockerIntegrationTest is Test {
     string private rpcAlias;
     uint256 private forkBlock;
 
+    address public deployer = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
+
     constructor(address _token, address _veToken, string memory _rpcAlias, uint256 _forkBlock) {
         rpcAlias = _rpcAlias;
         token = IERC20(_token);
@@ -84,9 +86,13 @@ abstract contract MAVLockerIntegrationTest is Test {
         deal(address(token), address(this), amount);
 
         // Mint MAV to the MAVLocker contract
-        deal(address(token), address(locker), amount);
+        deal(address(token), address(this), amount);
+        deal(address(token), deployer, amount);
 
-        locker.createLock(amount, MAX_LOCK_DURATION);
+        vm.startPrank(deployer);
+        IERC20(token).approve(address(depositor), amount);
+        depositor.createLock(amount);
+        vm.stopPrank();
     }
 
     function test_initialization() public {

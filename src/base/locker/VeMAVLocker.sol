@@ -98,7 +98,7 @@ abstract contract VeMAVLocker {
     /// @notice Create a lock for the contract on the Voting Escrow contract.
     /// @param _value Amount of tokens to lock
     /// @param _duration Duration of the lock
-    function createLock(uint256 _value, uint256 _duration) external onlyGovernance {
+    function createLock(uint256 _value, uint256 _duration) external onlyGovernanceOrDepositor {
         // You can have multiple locks, but we don't want to have multiple locks for the same contract.
         uint256 _locks = IVotingEscrowMav(veToken).lockupCount(address(this));
         if (_locks > 0) revert LOCK_ALREADY_EXISTS();

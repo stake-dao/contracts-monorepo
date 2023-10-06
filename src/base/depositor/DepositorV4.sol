@@ -113,7 +113,9 @@ abstract contract DepositorV4 {
         MAX_LOCK_DURATION = _maxLockDuration;
 
         /// Approve sdToken to gauge.
-        IERC20(minter).safeApprove(gauge, type(uint256).max);
+        if (gauge != address(0)) {
+            IERC20(minter).safeApprove(gauge, type(uint256).max);
+        }   
     }
 
     ////////////////////////////////////////////////////////////////
