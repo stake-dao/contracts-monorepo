@@ -142,7 +142,7 @@ abstract contract MAVLockerTest is Test {
         vm.expectRevert(VeMAVLocker.GOVERNANCE.selector);
         locker.transferGovernance(address(0x123));
 
-        vm.expectRevert(VeMAVLocker.GOVERNANCE.selector);
+        vm.expectRevert(VeMAVLocker.GOVERNANCE_OR_DEPOSITOR.selector);
         locker.createLock(100e18, MAX_LOCK_DURATION);
 
         vm.expectRevert(VeMAVLocker.GOVERNANCE_OR_DEPOSITOR.selector);
