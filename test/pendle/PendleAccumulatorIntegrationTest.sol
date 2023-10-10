@@ -28,8 +28,6 @@ interface IFraxLP {
 }
 
 contract PendleAccumulatorIntegrationTest is Test {
-    VyperDeployer vyperDeployer = new VyperDeployer();
-
     address public constant SD_FRAX_3CRV = 0x5af15DA84A4a6EDf2d9FA6720De921E1026E37b7;
 
     // External Contracts
@@ -66,7 +64,8 @@ contract PendleAccumulatorIntegrationTest is Test {
     address public constant POOL_5 = 0x7D49E5Adc0EAAD9C027857767638613253eF125f;
 
     function setUp() public virtual {
-        vm.rollFork(17621271);
+        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"), 17621271);
+        vm.selectFork(forkId);
 
         // Deploy Accumulator Contract
         pendleAccumulator = new PendleAccumulator( 

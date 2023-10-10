@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.20;
+pragma solidity ^0.8.19;
 
 import "src/base/interfaces/ILocker.sol";
 import "src/base/interfaces/ISdToken.sol";
@@ -14,14 +14,14 @@ import "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 /// @dev Adapted for veCRV like Locker.
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-abstract contract Depositor {
+abstract contract DepositorV4 {
     using SafeERC20 for IERC20;
 
     /// @notice Denominator for fixed point math.
     uint256 public constant DENOMINATOR = 10_000;
 
     /// @notice Maximum lock duration.
-    uint256 private immutable MAX_LOCK_DURATION;
+    uint256 public immutable MAX_LOCK_DURATION;
 
     /// @notice Address of the token to be locked.
     address public immutable token;
@@ -113,7 +113,9 @@ abstract contract Depositor {
         MAX_LOCK_DURATION = _maxLockDuration;
 
         /// Approve sdToken to gauge.
-        IERC20(minter).safeApprove(gauge, type(uint256).max);
+        if (gauge != address(0)) {
+            IERC20(minter).safeApprove(gauge, type(uint256).max);
+        }   
     }
 
     ////////////////////////////////////////////////////////////////
@@ -122,7 +124,7 @@ abstract contract Depositor {
 
     /// @notice Initiate a lock in the Locker contract.
     /// @param _amount Amount of tokens to lock.
-    function createLock(uint256 _amount) external {
+    function createLock(uint256 _amount) external virtual {
         /// Transfer tokens to this contract
         IERC20(token).safeTransferFrom(msg.sender, address(locker), _amount);
 
@@ -152,11 +154,14 @@ abstract contract Depositor {
         /// If _lock is true, lock tokens in the locker contract.
         if (_lock) {
             /// Transfer tokens to this contract
-            IERC20(token).safeTransferFrom(msg.sender, address(locker), _amount);
+            IERC20(token).safeTransferFrom(msg.sender, locker, _amount);
 
             /// Transfer the balance
             uint256 balance = IERC20(token).balanceOf(address(this));
-            IERC20(token).safeTransfer(locker, balance);
+
+            if (balance != 0) {
+                IERC20(token).safeTransfer(locker, balance);
+            }
 
             /// Lock the amount sent + balance of the contract.
             _lockToken(balance + _amount);
@@ -182,8 +187,8 @@ abstract contract Depositor {
             /// Add call incentive to incentiveToken
             incentiveToken += callIncentive;
         }
-
-        if (_stake) {
+        // Mint sdtoken to the user if the gauge is not set
+        if (_stake && gauge != address(0)) {
             /// Mint sdToken to this contract.
             ITokenMinter(minter).mint(address(this), _amount);
 
@@ -221,7 +226,7 @@ abstract contract Depositor {
 
     /// @notice Locks the tokens held by the contract
     /// @dev The contract must have tokens to lock
-    function _lockToken(uint256 _amount) internal {
+    function _lockToken(uint256 _amount) internal virtual {
         // If there is Token available in the contract transfer it to the locker
         if (_amount != 0) {
             /// Increase the lock.
@@ -260,9 +265,10 @@ abstract contract Depositor {
     /// @param _gauge gauge address
     function setGauge(address _gauge) external onlyGovernance {
         gauge = _gauge;
-
-        /// Approve sdToken to gauge.
-        IERC20(minter).safeApprove(gauge, type(uint256).max);
+        if (_gauge != address(0)) {
+            /// Approve sdToken to gauge.
+            IERC20(minter).safeApprove(gauge, type(uint256).max);
+        }  
     }
 
     /// @notice Set the percentage of the lock incentive

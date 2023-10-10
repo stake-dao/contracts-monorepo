@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.20;
+pragma solidity ^0.8.19;
 
 import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
@@ -12,11 +12,16 @@ import "src/mav/depositor/MAVDepositor.sol";
 import {sdToken} from "src/base/token/sdToken.sol";
 import {AddressBook} from "@addressBook/AddressBook.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
-import {TransparentUpgradeableProxy} from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-contract MAVLockerIntegrationTest is Test {
-    VyperDeployer vyperDeployer = new VyperDeployer();
+address constant MAV_ETH = AddressBook.MAV;
+address constant MAV_BASE = 0x64b88c73A5DfA78D1713fE1b4c69a22d7E0faAa7;
+address constant MAV_BNB = 0xd691d9a68C887BDF34DA8c36f63487333ACfD103;
 
+address constant VE_MAV_ETH = AddressBook.VE_MAV;
+address constant VE_MAV_BASE = 0xFcCB5263148fbF11d58433aF6FeeFF0Cc49E0EA5;
+address constant VE_MAV_BNB = 0xE6108f1869d37E5076a56168C66A1607EdB10819;
+
+abstract contract MAVLockerIntegrationTest is Test {
     uint256 private constant MIN_LOCK_DURATION = 1 weeks;
     uint256 private constant MAX_LOCK_DURATION = 4 * 365 days;
 
@@ -30,31 +35,46 @@ contract MAVLockerIntegrationTest is Test {
 
     uint256 private constant amount = 100e18;
 
+    string private rpcAlias;
+    uint256 private forkBlock;
+
+    address public deployer = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
+
+    constructor(address _token, address _veToken, string memory _rpcAlias, uint256 _forkBlock) {
+        rpcAlias = _rpcAlias;
+        token = IERC20(_token);
+        veToken = IVotingEscrowMav(_veToken);
+        forkBlock = _forkBlock;
+    }
+
     function setUp() public virtual {
-        token = IERC20(AddressBook.MAV);
-        veToken = IVotingEscrowMav(AddressBook.VE_MAV);
+        uint256 forkId = vm.createFork(vm.rpcUrl(rpcAlias), forkBlock);
+        vm.selectFork(forkId);
+        VyperDeployer vyperDeployer = new VyperDeployer();
         _sdToken = new sdToken("Stake DAO MAV", "sdMAV");
 
-        address liquidityGaugeImpl = vyperDeployer.deployContract("src/base/staking/LiquidityGaugeV4.vy");
-
-        // Deploy LiquidityGauge
-        liquidityGauge = ILiquidityGauge(
-            address(
-                new TransparentUpgradeableProxy(
-                liquidityGaugeImpl,
-                AddressBook.PROXY_ADMIN,
-                abi.encodeWithSignature(
-                "initialize(address,address,address,address,address,address)",
+        address liquidityGaugeImpl;
+        if (keccak256(abi.encodePacked(rpcAlias)) == keccak256(abi.encodePacked("ethereum"))) {
+            liquidityGaugeImpl = vyperDeployer.deployContract(
+            "src/base/staking/LiquidityGaugeV4Native.vy",
+            abi.encode(
                 address(_sdToken),
                 address(this),
                 AddressBook.SDT,
                 AddressBook.VE_SDT,
                 AddressBook.VE_SDT_BOOST_PROXY,
                 AddressBook.SDT_DISTRIBUTOR
-                )
-                )
-            )
-        );
+            ));
+        } else {
+            liquidityGaugeImpl = vyperDeployer.deployContract(
+            "src/base/staking/LiquidityGaugeV4XChain.vy",
+            abi.encode(
+                address(_sdToken),
+                address(this)
+            ));
+        }
+        
+        liquidityGauge = ILiquidityGauge(liquidityGaugeImpl);
 
         locker = new MAVLocker(address(this), address(token), address(veToken));
         depositor = new MAVDepositor(address(token), address(locker), address(_sdToken), address(liquidityGauge));
@@ -66,9 +86,13 @@ contract MAVLockerIntegrationTest is Test {
         deal(address(token), address(this), amount);
 
         // Mint MAV to the MAVLocker contract
-        deal(address(token), address(locker), amount);
+        deal(address(token), address(this), amount);
+        deal(address(token), deployer, amount);
 
-        locker.createLock(amount, MAX_LOCK_DURATION);
+        vm.startPrank(deployer);
+        IERC20(token).approve(address(depositor), amount);
+        depositor.createLock(amount);
+        vm.stopPrank();
     }
 
     function test_initialization() public {
@@ -78,6 +102,14 @@ contract MAVLockerIntegrationTest is Test {
 
         assertEq(depositor.minter(), address(_sdToken));
         assertEq(depositor.gauge(), address(liquidityGauge));
+    }
+
+    function test_createLockOnlyOnce() public {
+        deal(address(token), address(this), amount);
+        IERC20(address(token)).approve(address(depositor), amount);
+
+        vm.expectRevert();
+        depositor.createLock(amount);
     }
 
     function test_depositAndMint() public {
@@ -111,6 +143,22 @@ contract MAVLockerIntegrationTest is Test {
         assertEq(liquidityGauge.balanceOf(address(this)), amount);
         assertEq(veToken.balanceOf(address(locker)), expectedBalance);
         assertEq(_sdToken.balanceOf(address(liquidityGauge)), amount);
+    }
+
+    function test_depositAndStakeWithoutGauge() public {
+        // set gauge to zero address in depositor
+        depositor.setGauge(address(0));
+        /// Skip 1 seconds to avoid depositing in the same block as locking.
+        skip(1);
+
+        (uint256 expectedBalance,) = veToken.previewPoints(200e18, MAX_LOCK_DURATION);
+
+        token.approve(address(depositor), amount);
+        depositor.deposit(amount, true, true, address(this));
+
+        assertEq(_sdToken.balanceOf(address(this)), amount);
+        assertEq(token.balanceOf(address(depositor)), 0);
+        assertEq(veToken.balanceOf(address(locker)), expectedBalance);
     }
 
     function test_depositAndStakeWithoutLock() public {
@@ -214,3 +262,7 @@ contract MAVLockerIntegrationTest is Test {
         assertEq(_sdToken.operator(), address(newOperator));
     }
 }
+
+contract MAVLockerIntegrationTestEth is MAVLockerIntegrationTest(MAV_ETH, VE_MAV_ETH, "ethereum", 18277719) {}
+contract MAVLockerIntegrationTestBase is MAVLockerIntegrationTest(MAV_BASE, VE_MAV_BASE, "base", 4821075) {}
+contract MAVLockerIntegrationTestBnb is MAVLockerIntegrationTest(MAV_BNB, VE_MAV_BNB, "bnb", 32311843) {}

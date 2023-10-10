@@ -28,6 +28,8 @@ interface ILocker {
 
     function setAngleDepositor(address) external;
 
+    function setDepositor(address) external;
+
     function setFxsDepositor(address) external;
 
     function setYieldDistributor(address) external;

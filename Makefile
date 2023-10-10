@@ -3,7 +3,6 @@
 .EXPORT_ALL_VARIABLES:
 MAKEFLAGS += --no-print-directory
 ETHERSCAN_API_KEY=$(ETHERSCAN_KEY)
-FOUNDRY_ETH_RPC_URL=$(RPC_URL_MAINNET)
 
 default:
 	forge fmt && forge build
@@ -36,12 +35,12 @@ coverage-html:
 	@rm ./lcov.info*
 
 simulate-%:
-	@forge script script/$*.sol -vvvvv
+	@forge script script/$*.s.sol -vvvvv
 
 run-%:
-	@forge script script/$*.sol --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY)
+	@forge script script/$*.s.sol --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY)
 
 deploy-%:
-	@forge script script/$*.sol --broadcast --slow -vvvvv --verify --private-key ${PRIVATE_KEY} --resume
+	@forge script script/$*.s.sol --broadcast --slow -vvvvv --verify --private-key ${PRIVATE_KEY}
 
 .PHONY: test coverage

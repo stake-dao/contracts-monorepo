@@ -7,8 +7,8 @@ import "src/base/depositor/DepositorV4.sol";
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-contract FXNDepositor is Depositor {
+contract FXNDepositor is DepositorV4 {
     constructor(address _token, address _locker, address _minter, address _gauge)
-        Depositor(_token, _locker, _minter, _gauge, 4 * 365 days)
+        DepositorV4(_token, _locker, _minter, _gauge, 4 * 365 days)
     {}
 }

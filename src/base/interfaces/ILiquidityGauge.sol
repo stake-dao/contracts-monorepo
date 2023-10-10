@@ -59,4 +59,6 @@ interface ILiquidityGauge {
         address veBoost_proxy,
         address distributor
     ) external;
+
+    function totalSupply() external returns (uint256);
 }

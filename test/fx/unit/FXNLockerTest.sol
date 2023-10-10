@@ -24,7 +24,8 @@ contract FXNLockerTest is Test {
     IVeToken private veToken;
 
     function setUp() public virtual {
-        vm.rollFork({blockNumber: 18_227_675});
+        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"), 18_227_675);
+        vm.selectFork(forkId);
 
         token = IERC20(AddressBook.FXN);
         veToken = IVeToken(AddressBook.VE_FXN);

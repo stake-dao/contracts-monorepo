@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.20;
+pragma solidity ^0.8.19;
 
 import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
@@ -10,18 +10,32 @@ import {AddressBook} from "@addressBook/AddressBook.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {IVotingEscrowMav} from "src/base/interfaces/IVotingEscrowMav.sol";
 
-contract MAVLockerTest is Test {
+address constant MAV_ETH = AddressBook.MAV;
+address constant MAV_BASE = 0x64b88c73A5DfA78D1713fE1b4c69a22d7E0faAa7;
+address constant MAV_BNB = 0xd691d9a68C887BDF34DA8c36f63487333ACfD103;
+
+address constant VE_MAV_ETH = AddressBook.VE_MAV;
+address constant VE_MAV_BASE = 0xFcCB5263148fbF11d58433aF6FeeFF0Cc49E0EA5;
+address constant VE_MAV_BNB = 0xE6108f1869d37E5076a56168C66A1607EdB10819;
+
+abstract contract MAVLockerTest is Test {
     uint256 private constant MIN_LOCK_DURATION = 1 weeks;
     uint256 private constant MAX_LOCK_DURATION = 4 * 365 days;
 
     IERC20 private token;
     MAVLocker private locker;
     IVotingEscrowMav private veToken;
+    string private chainAlias;
+
+    constructor(address _mav, address _veMav, string memory _chainAlias) {
+        token = IERC20(_mav);
+        veToken = IVotingEscrowMav(_veMav);
+        chainAlias = _chainAlias;
+    }
 
     function setUp() public virtual {
-        token = IERC20(AddressBook.MAV);
-        veToken = IVotingEscrowMav(AddressBook.VE_MAV);
-
+        uint256 forkId = vm.createFork(vm.rpcUrl(chainAlias));
+        vm.selectFork(forkId);
         locker = new MAVLocker(address(this), address(token), address(veToken));
 
         // Mint MAV to the MAVLocker contract
@@ -44,7 +58,7 @@ contract MAVLockerTest is Test {
     function test_createMultipleLocksRevert() public {
         locker.createLock(100e18, MAX_LOCK_DURATION);
 
-        vm.expectRevert(MAVLocker.LOCK_ALREADY_EXISTS.selector);
+        vm.expectRevert(VeMAVLocker.LOCK_ALREADY_EXISTS.selector);
         locker.createLock(100e18, MAX_LOCK_DURATION);
     }
 
@@ -117,24 +131,24 @@ contract MAVLockerTest is Test {
     function test_onlyGovernance() public {
         vm.startPrank(address(0x123));
 
-        vm.expectRevert(MAVLocker.GOVERNANCE.selector);
+        vm.expectRevert(VeMAVLocker.GOVERNANCE.selector);
         locker.execute(
             address(token), 0, abi.encodeWithSignature("approve(address,uint256)", address(veToken), type(uint256).max)
         );
 
-        vm.expectRevert(MAVLocker.GOVERNANCE.selector);
+        vm.expectRevert(VeMAVLocker.GOVERNANCE.selector);
         locker.setDepositor(address(0x123));
 
-        vm.expectRevert(MAVLocker.GOVERNANCE.selector);
+        vm.expectRevert(VeMAVLocker.GOVERNANCE.selector);
         locker.transferGovernance(address(0x123));
 
-        vm.expectRevert(MAVLocker.GOVERNANCE.selector);
+        vm.expectRevert(VeMAVLocker.GOVERNANCE_OR_DEPOSITOR.selector);
         locker.createLock(100e18, MAX_LOCK_DURATION);
 
-        vm.expectRevert(MAVLocker.GOVERNANCE_OR_DEPOSITOR.selector);
+        vm.expectRevert(VeMAVLocker.GOVERNANCE_OR_DEPOSITOR.selector);
         locker.increaseLock(100e18, MAX_LOCK_DURATION);
 
-        vm.expectRevert(MAVLocker.GOVERNANCE.selector);
+        vm.expectRevert(VeMAVLocker.GOVERNANCE.selector);
         locker.release(address(this));
 
         vm.stopPrank();
@@ -157,3 +171,7 @@ contract MAVLockerTest is Test {
         assertEq(veToken.balanceOf(address(locker)), expectedBalance);
     }
 }
+
+contract MAVLockerTestEth is MAVLockerTest(MAV_ETH, VE_MAV_ETH, "ethereum") {}
+contract MAVLockerTestBase is MAVLockerTest(MAV_BASE, VE_MAV_BASE, "base") {}
+contract MAVLockerTestBnb is MAVLockerTest(MAV_BNB, VE_MAV_BNB, "bnb") {}

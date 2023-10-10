@@ -1,6 +1,6 @@
 # @version 0.2.16
 """
-@title Liquidity Gauge v4
+@title Liquidity Gauge v4 XChain
 @author StakeDAO Protocol
 @license MIT
 """
@@ -13,19 +13,17 @@
 
 from vyper.interfaces import ERC20
 
-implements: ERC20
-
-interface VotingEscrow:
-    def user_point_epoch(addr: address) -> uint256: view
-    def user_point_history__ts(addr: address, epoch: uint256) -> uint256: view
-
-interface VotingEscrowBoost:
-    def adjusted_balance_of(_account: address) -> uint256: view
+implements: ERC20                
 
 interface ERC20Extended:
     def symbol() -> String[26]: view
     def decimals() -> uint256: view
 
+event CommitOwnership:
+    admin: address
+
+event ApplyOwnership:
+    admin: address
 
 event Deposit:
     provider: indexed(address)
@@ -34,19 +32,6 @@ event Deposit:
 event Withdraw:
     provider: indexed(address)
     value: uint256
-
-event UpdateLiquidityLimit:
-    user: address
-    original_balance: uint256
-    original_supply: uint256
-    working_balance: uint256
-    working_supply: uint256
-
-event CommitOwnership:
-    admin: address
-
-event ApplyOwnership:
-    admin: address
 
 event Transfer:
     _from: indexed(address)
@@ -70,14 +55,11 @@ struct Reward:
     last_update: uint256
     integral: uint256
 
-
 MAX_REWARDS: constant(uint256) = 8
 TOKENLESS_PRODUCTION: constant(uint256) = 40
 WEEK: constant(uint256) = 604800
 
-SDT: public(address)
-voting_escrow: public(address)
-veBoost_proxy: public(address)
+GOVERNANCE: constant(String[100]) = "GOVERNANCE"
 
 staking_token: public(address)
 decimal_staking_token: public(uint256)
@@ -88,9 +70,6 @@ allowance: public(HashMap[address, HashMap[address, uint256]])
 
 name: public(String[64])
 symbol: public(String[32])
-
-working_balances: public(HashMap[address, uint256])
-working_supply: public(uint256)
 
 integrate_checkpoint_of: public(HashMap[address, uint256])
 
@@ -116,33 +95,18 @@ claimer: public(address)
 initialized: public(bool)
 
 @external
-def __init__():
-    """
-    @notice Contract constructor
-    @dev The contract has an initializer to prevent the take over of the implementation
-    """
-    assert self.initialized == False #dev: contract is already initialized
-    self.initialized = True
-
-@external
-def initialize(_staking_token: address, _admin: address, _SDT: address, _voting_escrow: address, _veBoost_proxy: address, _distributor: address):
+def __init__(_staking_token: address, _admin: address):
     """
     @notice Contract initializer
     @param _staking_token Liquidity Pool contract address
-    @param _admin Admin who can kill the gauge
-    @param _SDT Address of the SDT token
-    @param _voting_escrow Address of the veSDT contract
-    @param _veBoost_proxy Address of the proxy contract used to query veSDT balances and taking into account potential delegations
-    @param _distributor Address of the contract responsible for distributing SDT tokens to this gauge
+    @param _reward_token
+    @param _distributor
     """
     assert self.initialized == False #dev: contract is already initialized
     self.initialized = True
 
+    assert _staking_token != ZERO_ADDRESS
     assert _admin != ZERO_ADDRESS
-    assert _SDT != ZERO_ADDRESS
-    assert _voting_escrow != ZERO_ADDRESS
-    assert _veBoost_proxy != ZERO_ADDRESS
-    assert _distributor != ZERO_ADDRESS
 
     self.admin = _admin
     self.staking_token = _staking_token
@@ -151,15 +115,6 @@ def initialize(_staking_token: address, _admin: address, _SDT: address, _voting_
     symbol: String[26] = ERC20Extended(_staking_token).symbol()
     self.name = concat("Stake DAO ", symbol, " Gauge")
     self.symbol = concat(symbol, "-gauge")
-    self.SDT = _SDT
-    self.voting_escrow = _voting_escrow
-    self.veBoost_proxy = _veBoost_proxy
-
-    # add in all liquidityGauge the SDT reward - the distribution could be null though
-    self.reward_data[_SDT].distributor = _distributor
-    self.reward_tokens[0] = _SDT
-    self.reward_count = 1
-    
 
 @view
 @external
@@ -171,34 +126,6 @@ def decimals() -> uint256:
     """
     return self.decimal_staking_token
 
-
-@internal
-def _update_liquidity_limit(addr: address, l: uint256, L: uint256):
-    """
-    @notice Calculate limits which depend on the amount of SDT token per-user.
-            Effectively it calculates working balances to apply amplification
-            of SDT production by SDT
-    @param addr User address
-    @param l User's amount of liquidity (LP tokens)
-    @param L Total amount of liquidity (LP tokens)
-    """
-    # To be called after totalSupply is updated
-    voting_balance: uint256 = VotingEscrowBoost(self.veBoost_proxy).adjusted_balance_of(addr)
-    voting_total: uint256 = ERC20(self.voting_escrow).totalSupply()
-
-    lim: uint256 = l * TOKENLESS_PRODUCTION / 100
-    if voting_total > 0:
-        lim += L * voting_balance / voting_total * (100 - TOKENLESS_PRODUCTION) / 100
-
-    lim = min(l, lim)
-    old_bal: uint256 = self.working_balances[addr]
-    self.working_balances[addr] = lim
-    _working_supply: uint256 = self.working_supply + lim - old_bal
-    self.working_supply = _working_supply
-
-    log UpdateLiquidityLimit(addr, l, L, lim, _working_supply)
-
-
 @internal
 def _checkpoint_reward(_user: address, token: address, _total_supply: uint256, _user_balance: uint256, _claim: bool, receiver: address):
     """
@@ -206,9 +133,6 @@ def _checkpoint_reward(_user: address, token: address, _total_supply: uint256, _
     """
     total_supply: uint256 = _total_supply
     user_balance: uint256 = _user_balance
-    if token == self.SDT : 
-        total_supply = self.working_supply
-        user_balance = self.working_balances[_user]
 
     integral: uint256 = self.reward_data[token].integral
     last_update: uint256 = min(block.timestamp, self.reward_data[token].period_finish)
@@ -246,12 +170,9 @@ def _checkpoint_reward(_user: address, token: address, _total_supply: uint256, _
                 self.claim_data[_user][token] = total_claimed + total_claimable
             elif new_claimable > 0:
                 self.claim_data[_user][token] = total_claimed + shift(total_claimable, 128)
-    
-    if token == self.SDT : 
-        self.integrate_checkpoint_of[_user] = block.timestamp
                 
 @internal
-def _checkpoint_rewards(_user: address, _total_supply: uint256, _claim: bool, _receiver: address, _only_checkpoint:bool = False):
+def _checkpoint_rewards(_user: address, _total_supply: uint256, _claim: bool, _receiver: address):
     """
     @notice Claim pending rewards and checkpoint rewards for a user
     """
@@ -267,28 +188,12 @@ def _checkpoint_rewards(_user: address, _total_supply: uint256, _claim: bool, _r
                 # if no default receiver is set, direct claims to the user
                 receiver = _user
 
-    if _only_checkpoint:
-        self._checkpoint_reward(_user, self.SDT, _total_supply, user_balance, False, receiver)
-    else:
-        reward_count: uint256 = self.reward_count
-        for i in range(MAX_REWARDS):
-            if i == reward_count:
-                break
-            token: address = self.reward_tokens[i]
-            self._checkpoint_reward(_user, token, _total_supply, user_balance, _claim, receiver)
-
-@external
-def user_checkpoint(addr: address) -> bool:
-    """
-    @notice Record a checkpoint for `addr`
-    @param addr User address
-    @return bool success
-    """
-    assert msg.sender == addr  # dev: unauthorized
-    total_supply: uint256 = self.totalSupply
-    self._checkpoint_rewards(addr, total_supply, False, ZERO_ADDRESS, True)
-    self._update_liquidity_limit(addr, self.balanceOf[addr], total_supply)
-    return True
+    reward_count: uint256 = self.reward_count
+    for i in range(MAX_REWARDS):
+        if i == reward_count:
+            break
+        token: address = self.reward_tokens[i]
+        self._checkpoint_reward(_user, token, _total_supply, user_balance, _claim, receiver)
 
 @view
 @external
@@ -314,9 +219,6 @@ def claimable_reward(_user: address, _reward_token: address) -> uint256:
     integral: uint256 = self.reward_data[_reward_token].integral
     total_supply: uint256 = self.totalSupply
     user_balance: uint256 = self.balanceOf[_user]
-    if _reward_token == self.SDT: 
-        total_supply = self.working_supply
-        user_balance = self.working_balances[_user]
         
     if total_supply != 0:
         last_update: uint256 = min(block.timestamp, self.reward_data[_reward_token].period_finish)
@@ -337,7 +239,6 @@ def set_rewards_receiver(_receiver: address):
     @param _receiver Receiver address for any rewards claimed via `claim_rewards`
     """
     self.rewards_receiver[msg.sender] = _receiver
-
 
 @external
 @nonreentrant('lock')
@@ -368,29 +269,6 @@ def claim_rewards_for(_addr: address, _receiver: address):
         assert _receiver == self.claimer # dev: if the receiver is not the user it needs to be the claimer
     self._checkpoint_rewards(_addr, self.totalSupply, True, _receiver)
 
-
-@external
-def kick(addr: address):
-    """
-    @notice Kick `addr` for abusing their boost
-    @dev Only if either they had another voting event, or their voting escrow lock expired
-    @param addr Address to kick
-    """
-    t_last: uint256 = self.integrate_checkpoint_of[addr]
-    t_ve: uint256 = VotingEscrow(self.voting_escrow).user_point_history__ts(
-        addr, VotingEscrow(self.voting_escrow).user_point_epoch(addr)
-    )
-    _balance: uint256 = self.balanceOf[addr]
-
-    assert ERC20(self.voting_escrow).balanceOf(addr) == 0 or t_ve > t_last # dev: kick not allowed
-    assert self.working_balances[addr] > _balance * TOKENLESS_PRODUCTION / 100  # dev: kick not needed
-
-    total_supply: uint256 = self.totalSupply
-    self._checkpoint_rewards(addr, total_supply, False, ZERO_ADDRESS, True)
-
-    self._update_liquidity_limit(addr, self.balanceOf[addr], total_supply)
-
-
 @external
 @nonreentrant('lock')
 def deposit(_value: uint256, _addr: address = msg.sender, _claim_rewards: bool = False):
@@ -402,7 +280,7 @@ def deposit(_value: uint256, _addr: address = msg.sender, _claim_rewards: bool =
     """
     total_supply: uint256 = self.totalSupply
 
-    if _value != 0:
+    if _value != 0:  
         is_rewards: bool = self.reward_count != 0
         if is_rewards:
             self._checkpoint_rewards(_addr, total_supply, _claim_rewards, ZERO_ADDRESS)
@@ -412,11 +290,9 @@ def deposit(_value: uint256, _addr: address = msg.sender, _claim_rewards: bool =
         self.balanceOf[_addr] = new_balance
         self.totalSupply = total_supply
 
-        self._update_liquidity_limit(_addr, new_balance, total_supply)
-
         ERC20(self.staking_token).transferFrom(msg.sender, self, _value)
     else:
-        self._checkpoint_rewards(_addr, total_supply, False, ZERO_ADDRESS, True)
+        self._checkpoint_rewards(_addr, total_supply, False, ZERO_ADDRESS)
 
     log Deposit(_addr, _value)
     log Transfer(ZERO_ADDRESS, _addr, _value)
@@ -424,7 +300,7 @@ def deposit(_value: uint256, _addr: address = msg.sender, _claim_rewards: bool =
 
 @external
 @nonreentrant('lock')
-def withdraw(_value: uint256, _claim_rewards: bool = False):
+def withdraw(_value: uint256, _addr: address, _claim_rewards: bool = False):
     """
     @notice Withdraw `_value` LP tokens
     @dev Withdrawing also claims pending reward tokens
@@ -435,20 +311,18 @@ def withdraw(_value: uint256, _claim_rewards: bool = False):
     if _value != 0:
         is_rewards: bool = self.reward_count != 0
         if is_rewards:
-            self._checkpoint_rewards(msg.sender, total_supply, _claim_rewards, ZERO_ADDRESS)
+            self._checkpoint_rewards(_addr, total_supply, _claim_rewards, ZERO_ADDRESS)
 
         total_supply -= _value
-        new_balance: uint256 = self.balanceOf[msg.sender] - _value
-        self.balanceOf[msg.sender] = new_balance
+        new_balance: uint256 = self.balanceOf[_addr] - _value
+        self.balanceOf[_addr] = new_balance
         self.totalSupply = total_supply
-
-        self._update_liquidity_limit(msg.sender, new_balance, total_supply)
 
         ERC20(self.staking_token).transfer(msg.sender, _value)
     else:
-        self._checkpoint_rewards(msg.sender, total_supply, False, ZERO_ADDRESS, True)
+        self._checkpoint_rewards(_addr, total_supply, False, ZERO_ADDRESS)
 
-    log Withdraw(msg.sender, _value)
+    log Withdraw(_addr, _value)
     log Transfer(msg.sender, ZERO_ADDRESS, _value)
 
 
@@ -462,16 +336,14 @@ def _transfer(_from: address, _to: address, _value: uint256):
             self._checkpoint_rewards(_from, total_supply, False, ZERO_ADDRESS)
         new_balance: uint256 = self.balanceOf[_from] - _value
         self.balanceOf[_from] = new_balance
-        self._update_liquidity_limit(_from, new_balance, total_supply)
 
         if is_rewards:
             self._checkpoint_rewards(_to, total_supply, False, ZERO_ADDRESS)
         new_balance = self.balanceOf[_to] + _value
         self.balanceOf[_to] = new_balance
-        self._update_liquidity_limit(_to, new_balance, total_supply)
     else:
-        self._checkpoint_rewards(_from, total_supply, False, ZERO_ADDRESS, True)
-        self._checkpoint_rewards(_to, total_supply, False, ZERO_ADDRESS, True)
+        self._checkpoint_rewards(_from, total_supply, False, ZERO_ADDRESS)
+        self._checkpoint_rewards(_to, total_supply, False, ZERO_ADDRESS)
 
     log Transfer(_from, _to, _value)
 
@@ -569,7 +441,8 @@ def add_reward(_reward_token: address, _distributor: address):
     """
     @notice Set the active reward contract
     """
-    assert msg.sender == self.admin  # dev: only owner
+    admin: address = self.admin
+    assert msg.sender == admin  # dev: only owner
     assert _reward_token != ZERO_ADDRESS
 
     reward_count: uint256 = self.reward_count
@@ -583,8 +456,8 @@ def add_reward(_reward_token: address, _distributor: address):
 @external
 def set_reward_distributor(_reward_token: address, _distributor: address):
     current_distributor: address = self.reward_data[_reward_token].distributor
-
-    assert msg.sender == current_distributor or msg.sender == self.admin
+    admin: address = self.admin
+    assert msg.sender == current_distributor or msg.sender == admin
     assert current_distributor != ZERO_ADDRESS
     assert _distributor != ZERO_ADDRESS
 
@@ -592,7 +465,8 @@ def set_reward_distributor(_reward_token: address, _distributor: address):
 
 @external
 def set_claimer(_claimer: address):
-    assert msg.sender == self.admin
+    admin: address = self.admin
+    assert msg.sender == admin
     assert _claimer != ZERO_ADDRESS
 
     self.claimer = _claimer

@@ -8,7 +8,7 @@ import "src/base/locker/VeCRVLocker.sol";
 /// @author Stake DAO
 /// @custom:contact contact@stakedao.org
 contract FXNLocker is VeCRVLocker {
-    constructor(address _depositor, address _token, address _veToken) VeCRVLocker(_depositor, _token, _veToken) {}
+    constructor(address _governance, address _token, address _veToken) VeCRVLocker(_governance, _token, _veToken) {}
 
     function name() public pure override returns (string memory) {
         return "FXN Locker";
