@@ -21,7 +21,6 @@ address constant SD_MAV_BNB = 0x75289388d50364c3013583d97bd70cED0e183e32;
 
 abstract contract DeployMAVLLSidechain is Script, Test {
     address public deployer = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
-    address public mavTokenEth = 0x7448c7456a97769F6cD04F1E83A4a23cCdC46aBD;
     address private veToken;
 
     IERC20 private token;
