@@ -3,7 +3,6 @@
 .EXPORT_ALL_VARIABLES:
 MAKEFLAGS += --no-print-directory
 ETHERSCAN_API_KEY=$(ETHERSCAN_KEY)
-FOUNDRY_ETH_RPC_URL=$(RPC_URL_MAINNET)
 
 default:
 	forge fmt && forge build

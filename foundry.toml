@@ -24,4 +24,3 @@ optimizers_runs = 200
 base = "https://mainnet.base.org"
 ethereum = "https://eth.llamarpc.com"
 bnb = "https://binance.llamarpc.com"
-zkSync = "https://mainnet.era.zksync.io"

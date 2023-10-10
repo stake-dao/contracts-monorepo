@@ -9,7 +9,6 @@ on:
 
 env:
   FOUNDRY_PROFILE: ci
-  FOUNDRY_ETH_RPC_URL: https://mainnet.infura.io/v3/${{secrets.INFURA_KEY}}
 
 jobs:
   check:

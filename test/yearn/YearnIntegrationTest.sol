@@ -23,8 +23,6 @@ import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {TransparentUpgradeableProxy} from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 contract YearnIntegrationTest is Test {
-    VyperDeployer vyperDeployer = new VyperDeployer();
-
     // External Contracts
     IRewardPool internal rewardPool = IRewardPool(AddressBook.YFI_REWARD_POOL);
     YearnLocker internal yearnLocker;
@@ -42,6 +40,9 @@ contract YearnIntegrationTest is Test {
     uint256 internal constant amount = 100e18;
 
     function setUp() public {
+        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"));
+        vm.selectFork(forkId);
+        VyperDeployer vyperDeployer = new VyperDeployer();
         sdYFI = new sdToken("Stake DAO YFI", "sdYFI");
 
         address liquidityGaugeImpl = vyperDeployer.deployContract("src/base/staking/LiquidityGaugeV4.vy");

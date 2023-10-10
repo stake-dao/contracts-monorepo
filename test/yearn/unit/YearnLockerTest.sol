@@ -19,6 +19,8 @@ contract YearnLockerTest is Test {
     YearnLocker internal yearnLocker;
 
     function setUp() public virtual {
+        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"));
+        vm.selectFork(forkId);
         YFI = IERC20(AddressBook.YFI);
         veYFI = IVeYFI(AddressBook.VE_YFI);
         rewardPool = IRewardPool(AddressBook.YFI_REWARD_POOL);

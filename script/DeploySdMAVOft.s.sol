@@ -40,5 +40,3 @@ contract DeploySdMAVOftEth is DeploySdMAVOft(LZ_ENDPOINT_ETH, "ethereum") {}
 contract DeploySdMAVOftBase is DeploySdMAVOft(LZ_ENDPOINT_BASE, "base") {}
 
 contract DeploySdMAVOftBnb is DeploySdMAVOft(LZ_ENDPOINT_BNB, "bnb") {}
-
-contract DeploySdMAVOftZkSync is DeploySdMAVOft(LZ_ENDPOINT_ZKSYNC, "zkSync") {}
