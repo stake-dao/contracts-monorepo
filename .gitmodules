@@ -10,3 +10,6 @@
 [submodule "lib/AddressBook"]
 	path = lib/AddressBook
 	url = https://github.com/StakeDAO/AddressBook
+[submodule "lib/solmate"]
+	path = lib/solmate
+	url = https://github.com/transmissions11/solmate
