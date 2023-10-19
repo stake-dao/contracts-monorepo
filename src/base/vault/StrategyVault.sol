@@ -29,7 +29,7 @@ contract StrategyVault is ERC20Upgradeable {
     event Withdraw(address _depositor, uint256 _amount);
 
     function init(
-        ERC20Upgradeable _token,
+        address _token,
         address _governance,
         string memory name_,
         string memory symbol_,
@@ -37,7 +37,7 @@ contract StrategyVault is ERC20Upgradeable {
         address _locker
     ) public initializer {
         __ERC20_init(name_, symbol_);
-        token = _token;
+        token = ERC20Upgradeable(_token);
         governance = _governance;
         strategy = IStrategy(_strategy);
         locker = _locker;

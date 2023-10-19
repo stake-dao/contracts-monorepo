@@ -12,7 +12,6 @@ import {YearnStrategy} from "src/yearn/strategy/YearnStrategy.sol";
 import {StrategyVault} from "src/base/vault/StrategyVault.sol";
 
 contract YearnStrategyTest is Test {
-
     YearnStrategy public strategy;
     StrategyVault public vault;
     address public locker;
