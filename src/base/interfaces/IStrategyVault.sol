@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 interface IStrategyVault {
-    function init(address _lp, address _governance, string memory name, string memory symbol, address strategy)
+    function init(address _lp, address _governance, string memory name, string memory symbol, address strategy, address locker)
         external;
 
     function setGovernance(address _governance) external;

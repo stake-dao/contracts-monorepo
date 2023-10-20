@@ -6,9 +6,11 @@ interface IStrategy {
 
     function gauges(address _lp) external view returns (address);
 
+    function locker() external view returns(address);
+
     function protocolFeesPercent() external view returns (uint256);
 
-    function rewardDistributor(address _gauge) external view returns (address);
+    function rewardDistributors(address _gauge) external view returns (address);
 
     function setGauge(address _lp, address _gauge) external;
 

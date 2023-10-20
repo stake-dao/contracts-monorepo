@@ -43,7 +43,7 @@ abstract contract VaultFactory {
         // check if the gauge is valid
         if (!_isValidGauge(_gauge)) revert INVALID_GAUGE();
         // check if the lp has been already used to clone a vault
-        if (strategy.rewardDistributor(_gauge) != address(0)) revert GAUGE_ALREADY_USED();
+        if (strategy.rewardDistributors(_gauge) != address(0)) revert GAUGE_ALREADY_USED();
 
         address lp = _getGaugeLp(_gauge);
 
@@ -72,15 +72,15 @@ abstract contract VaultFactory {
 
     function _addRewardToGauge() internal virtual {}
 
-    function _isValidGauge(address _gauge) internal virtual returns (bool) {
+    function _isValidGauge(address _gauge) internal virtual view returns (bool) {
         return true;
     }
 
-    function _getGaugeLp(address _gauge) internal virtual returns (address lp) {
+    function _getGaugeLp(address _gauge) internal virtual view returns (address lp) {
         lp = ILiquidityGaugeStrat(_gauge).lp_token();
     }
 
-    function _getNameAndSymbol(address _lp) internal virtual returns (string memory name, string memory symbol) {
+    function _getNameAndSymbol(address _lp) internal virtual view returns (string memory name, string memory symbol) {
         name = ERC20Upgradeable(_lp).name();
         symbol = ERC20Upgradeable(_lp).name();
     }
@@ -101,7 +101,7 @@ abstract contract VaultFactory {
         string memory _symbol
     ) internal virtual returns (IStrategyVault deployed) {
         deployed = _cloneVault(_impl, _lpToken, keccak256(abi.encodePacked(_governance, _name, _symbol, strategy)));
-        deployed.init(_lpToken, address(this), _name, _symbol, address(strategy));
+        deployed.init(_lpToken, address(this), _name, _symbol, address(strategy), strategy.locker());
     }
 
     /**

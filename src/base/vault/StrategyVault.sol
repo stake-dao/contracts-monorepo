@@ -13,20 +13,22 @@ contract StrategyVault is ERC20Upgradeable {
     using AddressUpgradeable for address;
 
     error GAUGE_NOT_SET();
-    error NOT_ALLOWED();
+    error GOVERNANCE();
+    error FUTURE_GOVERNANCE();
     error NOT_ENOUGH_STAKED();
 
     address public locker;
     ERC20Upgradeable public token;
     address public governance;
+    address public futureGovernance;
     ILiquidityGaugeStrat public liquidityGauge;
     IStrategy public strategy;
 
-    event Deposit(address _depositor, uint256 _amount);
-    event GovernanceSet(address _oldG, address _newG);
-    event LiquidityGaugeSet(address _oldLg, address _newLg);
-    event StrategySet(address _oldS, address _newS);
-    event Withdraw(address _depositor, uint256 _amount);
+    event Deposit(address _staker, uint256 _amount);
+    event GovernanceChanged(address _gov);
+    event LiquidityGaugeChanged(address _lg);
+    event StrategySet(address _strategy);
+    event Withdraw(address _staker, uint256 _amount);
 
     function init(
         address _token,
@@ -43,7 +45,7 @@ contract StrategyVault is ERC20Upgradeable {
         locker = _locker;
     }
 
-    /// @notice function to deposit pendle lpt tokens
+    /// @notice function to deposit lp tokens
     /// @param _staker address to deposit for
     /// @param _amount amount to deposit
     function deposit(address _staker, uint256 _amount) external {
@@ -56,7 +58,7 @@ contract StrategyVault is ERC20Upgradeable {
         emit Deposit(_staker, _amount);
     }
 
-    /// @notice function to withdraw pendle lpt tokens
+    /// @notice function to withdraw lp tokens
     /// @param _amount amount to withdraw
     function withdraw(uint256 _amount) public {
         uint256 userAmount = liquidityGauge.balanceOf(msg.sender);
@@ -68,35 +70,40 @@ contract StrategyVault is ERC20Upgradeable {
         emit Withdraw(msg.sender, _amount);
     }
 
-    /// @notice function to withdraw all user's pendle lpt tokens deposited
+    /// @notice function to withdraw all user's lp tokens deposited
     function withdrawAll() external {
         withdraw(liquidityGauge.balanceOf(msg.sender));
-    }
-
-    /// @notice function to set the governance
-    /// @param _governance governance address
-    function setGovernance(address _governance) external {
-        if (msg.sender != governance) revert NOT_ALLOWED();
-        emit GovernanceSet(governance, _governance);
-        governance = _governance;
     }
 
     /// @notice function to set the liquidity gauge
     /// @param _liquidityGauge gauge address
     function setLiquidityGauge(address _liquidityGauge) external {
-        if (msg.sender != governance) revert NOT_ALLOWED();
+        if (msg.sender != governance) revert GOVERNANCE();
         // it will do an infinite approve to deposit token from here
         ERC20Upgradeable(address(this)).approve(_liquidityGauge, type(uint256).max);
-        emit LiquidityGaugeSet(address(liquidityGauge), _liquidityGauge);
-        liquidityGauge = ILiquidityGaugeStrat(_liquidityGauge);
+        emit LiquidityGaugeChanged(address(liquidityGauge = ILiquidityGaugeStrat(_liquidityGauge)));
     }
 
     /// @notice function to set the strategy
     /// @param _strategy strategy address
     function setStrategy(address _strategy) external {
-        if (msg.sender != governance) revert NOT_ALLOWED();
-        emit StrategySet(address(strategy), _strategy);
-        strategy = IStrategy(_strategy);
+        if (msg.sender != governance) revert GOVERNANCE();
+        emit StrategySet(address(strategy = IStrategy(_strategy)));
+    }
+
+    /// @notice Transfer the governance to a new address.
+    /// @param _governance Address of the new governance.
+    function transferGovernance(address _governance) external {
+        if (msg.sender != governance) revert GOVERNANCE();
+        futureGovernance = _governance;
+    }
+
+    /// @notice Accept the governance transfer.
+    function acceptGovernance() external {
+        if (msg.sender != futureGovernance) revert FUTURE_GOVERNANCE();
+
+        governance = msg.sender;
+        emit GovernanceChanged(msg.sender);
     }
 
     /// @notice function to get the sdToken decimals

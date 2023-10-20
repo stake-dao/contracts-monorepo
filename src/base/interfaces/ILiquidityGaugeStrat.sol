@@ -2,6 +2,8 @@
 pragma solidity 0.8.19;
 
 interface ILiquidityGaugeStrat {
+    function asset() external view returns(address);
+
     // solhint-disable-next-line
     function add_reward(address _token, address _distributor) external;
 
@@ -30,7 +32,7 @@ interface ILiquidityGaugeStrat {
     ) external;
 
     // solhint-disable-next-line
-    function lp_token() external returns (address);
+    function lp_token() external view returns (address);
 
     // solhint-disable-next-line
     function reward_tokens(uint256 _i) external view returns (address);

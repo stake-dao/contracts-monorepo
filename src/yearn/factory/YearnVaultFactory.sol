@@ -24,15 +24,19 @@ contract YearnVaultFactory is VaultFactory {
         // deploy Vault + Gauge
         super.cloneAndInit(_gauge);
         // deploy RewardReceiver
-        address sdGauge = strategy.rewardDistributor(_gauge);
-        RewardReceiverSingleToken rewardReceiver =
-            new RewardReceiverSingleToken(rewardToken, sdGauge,  address(strategy));
-        ILiquidityGaugeStrat(sdGauge).add_reward(rewardToken, address(rewardReceiver));
+        // address sdGauge = strategy.rewardDistributor(_gauge);
+        // RewardReceiverSingleToken rewardReceiver =
+        //     new RewardReceiverSingleToken(rewardToken, sdGauge,  address(strategy));
+        // ILiquidityGaugeStrat(sdGauge).add_reward(rewardToken, address(rewardReceiver));
     }
 
-    function _isValidGauge(address _gauge) internal override returns (bool valid) {
-        // check if the gauge has been added into the yearn gc
-        uint256 weight = IGaugeController(GAUGE_CONTROLLER).get_gauge_weight(_gauge);
-        if (weight > 0) valid = true;
+    function _getGaugeLp(address _gauge) internal override view returns(address lp) {
+        lp = ILiquidityGaugeStrat(_gauge).asset();
     }
+
+    // function _isValidGauge(address _gauge) internal override returns (bool valid) {
+    //     // check if the gauge has been added into the yearn gc
+    //     uint256 weight = IGaugeController(GAUGE_CONTROLLER).get_gauge_weight(_gauge);
+    //     if (weight > 0) valid = true;
+    // }
 }
