@@ -122,6 +122,15 @@ abstract contract Strategy is UUPSUpgradeable {
         rewardToken = _rewardToken;
     }
 
+    function initialize(
+        address owner
+    ) external {
+        if(governance != address(0)) revert GOVERNANCE();
+
+        governance = owner;
+        SDTDistributor = 0x9C99dffC1De1AfF7E7C1F36fCdD49063A281e18C;
+    }
+
     //////////////////////////////////////////////////////
     /// --- MODIFIERS
     //////////////////////////////////////////////////////
@@ -599,7 +608,7 @@ abstract contract Strategy is UUPSUpgradeable {
         return (success, result);
     }
 
-    receive() external payable {}
-
     function _authorizeUpgrade(address newImplementation) internal override onlyGovernance {}
+
+    receive() external payable {}
 }
