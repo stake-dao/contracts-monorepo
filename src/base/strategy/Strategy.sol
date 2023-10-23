@@ -2,18 +2,19 @@
 pragma solidity 0.8.19;
 
 import {ERC20} from "solmate/tokens/ERC20.sol";
+import {UUPSUpgradeable} from "solady/utils/UUPSUpgradeable.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 
-import {ILocker} from "src/base/interfaces/ILocker.sol";
-import {SafeExecute} from "src/base/libraries/SafeExecute.sol";
-import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
-import {ISDTDistributor} from "src/base/interfaces/ISDTDistributor.sol";
+import {ILocker} from "src/interfaces/ILocker.sol";
+import {SafeExecute} from "src/libraries/SafeExecute.sol";
+import {ILiquidityGauge} from "src/interfaces/ILiquidityGauge.sol";
+import {ISdtDistributorV2} from "src/interfaces/ISdtDistributorV2.sol";
 
 /// @title Strategy
 /// @author Stake DAO
 /// @notice Strategy Proxy Contract to interact with Stake DAO Locker.
-abstract contract Strategy {
+abstract contract Strategy is UUPSUpgradeable {
     using SafeExecute for ILocker;
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
@@ -181,7 +182,7 @@ abstract contract Strategy {
     /// @param _token Address of LP token to deposit
     /// @param gauge Address of Liqudity gauge corresponding to LP token
     /// @param amount Amount of LP token to deposit
-    function _depositIntoLocker(address _token, address gauge, uint256 amount) internal virtual  {
+    function _depositIntoLocker(address _token, address gauge, uint256 amount) internal virtual {
         ERC20(_token).safeTransfer(address(locker), amount);
 
         // Locker deposit token
@@ -231,7 +232,7 @@ abstract contract Strategy {
         /// 2. Distribute SDT
         // Distribute SDT to the related gauge
         if (_distributeSDT) {
-            ISDTDistributor(SDTDistributor).distribute(rewardDistributor);
+            ISdtDistributorV2(SDTDistributor).distribute(rewardDistributor);
         }
 
         /// 3. Check for additional rewards from the Locker.
@@ -520,6 +521,13 @@ abstract contract Strategy {
         accumulator = newAccumulator;
     }
 
+    /// @notice Set Factory address.
+    /// @param _factory Address of new Accumulator
+    function setFactory(address _factory) external onlyGovernance {
+        if (_factory == address(0)) revert ADDRESS_NULL();
+        factory = _factory;
+    }
+
     /// @notice Set new RewardToken FeeDistributor new address
     /// @param newCurveRewardToken Address of new Accumulator
     function setFeeRewardToken(address newCurveRewardToken) external onlyGovernance {
@@ -592,4 +600,6 @@ abstract contract Strategy {
     }
 
     receive() external payable {}
+
+    function _authorizeUpgrade(address newImplementation) internal override onlyGovernance {}
 }
