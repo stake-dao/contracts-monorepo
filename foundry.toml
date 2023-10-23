@@ -7,6 +7,7 @@ libs = ["lib"]
 
 remappings = [
 "utils=lib/utils/",
+"solady=lib/solady/src/",
 "forge-std=lib/forge-std/src/",
 "addressBook=lib/AddressBook/src/",
 "@openzeppelin=lib/openzeppelin-contracts/",
