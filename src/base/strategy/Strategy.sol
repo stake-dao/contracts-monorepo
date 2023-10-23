@@ -7,7 +7,7 @@ import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
 
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {SafeExecute} from "src/base/libraries/SafeExecute.sol";
-import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
+import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {ISDTDistributor} from "src/base/interfaces/ISDTDistributor.sol";
 
 /// @title Strategy
@@ -181,7 +181,7 @@ abstract contract Strategy {
     /// @param _token Address of LP token to deposit
     /// @param gauge Address of Liqudity gauge corresponding to LP token
     /// @param amount Amount of LP token to deposit
-    function _depositIntoLocker(address _token, address gauge, uint256 amount) internal {
+    function _depositIntoLocker(address _token, address gauge, uint256 amount) internal virtual  {
         ERC20(_token).safeTransfer(address(locker), amount);
 
         // Locker deposit token
@@ -192,7 +192,7 @@ abstract contract Strategy {
     /// @param _asset Address of LP token to withdraw
     /// @param gauge Address of Liqudity gauge corresponding to LP token
     /// @param amount Amount of LP token to withdraw
-    function _withdrawFromLocker(address _asset, address gauge, uint256 amount) internal {
+    function _withdrawFromLocker(address _asset, address gauge, uint256 amount) internal virtual {
         /// Withdraw from the Gauge trough the Locker.
         locker.execute(gauge, 0, abi.encodeWithSignature("withdraw(uint256)", amount));
 
@@ -217,7 +217,7 @@ abstract contract Strategy {
         _transferFromLocker(feeRewardToken, accumulator, _claimed);
     }
 
-    function claim(address _asset) public virtual {
+    function harvest(address _asset, bool _distributeSDT, bool _claimExtra) public virtual {
         /// Get the gauge address.
         address gauge = gauges[_asset];
         if (gauge == address(0)) revert ADDRESS_NULL();
@@ -230,12 +230,16 @@ abstract contract Strategy {
 
         /// 2. Distribute SDT
         // Distribute SDT to the related gauge
-        ISDTDistributor(SDTDistributor).distribute(rewardDistributor);
+        if (_distributeSDT) {
+            ISDTDistributor(SDTDistributor).distribute(rewardDistributor);
+        }
 
         /// 3. Check for additional rewards from the Locker.
         /// If there's the `rewardToken` as extra reward, we add it to the `_claimed` amount in order to distribute it only
         /// once.
-        _claimed += _claimExtraRewards(gauge, rewardDistributor);
+        if (_claimExtra) {
+            _claimed += _claimExtraRewards(gauge, rewardDistributor);
+        }
 
         /// 4. Take Fees from _claimed amount.
         _claimed = _chargeProtocolFees(_claimed);
@@ -244,7 +248,7 @@ abstract contract Strategy {
         _claimed = _distributeClaimIncentive(_claimed);
 
         /// 5. Distribute the rewardToken.
-        ILiquidityGaugeStrat(rewardDistributor).deposit_reward_token(rewardToken, _claimed);
+        ILiquidityGauge(rewardDistributor).deposit_reward_token(rewardToken, _claimed);
     }
 
     //////////////////////////////////////////////////////
@@ -275,6 +279,7 @@ abstract contract Strategy {
 
     function _distributeClaimIncentive(uint256 _amount) internal returns (uint256) {
         if (_amount == 0) return 0;
+        if (claimIncentiveFee == 0) return _amount;
 
         uint256 _claimerIncentive = _amount.mulDivDown(claimIncentiveFee, DENOMINATOR);
 
@@ -336,16 +341,16 @@ abstract contract Strategy {
         virtual
         returns (uint256 _rewardTokenClaimed)
     {
-        if (lGaugeType[_gauge] > 0 || ILiquidityGaugeStrat(_gauge).reward_tokens(0) == address(0)) return 0;
+        if (lGaugeType[_gauge] > 0) return 0;
 
         // Cache the reward tokens and their balance before locker
         address[8] memory _extraRewardTokens;
         uint256[8] memory _snapshotLockerRewardBalances;
 
-        uint256 i;
+        uint8 i;
         for (i; i < 8;) {
             // Get reward token
-            address _extraRewardToken = ILiquidityGaugeStrat(_gauge).reward_tokens(i);
+            address _extraRewardToken = ILiquidityGauge(_gauge).reward_tokens(i);
             if (_extraRewardToken == address(0)) break;
 
             // Add the reward token address on the array
@@ -364,7 +369,7 @@ abstract contract Strategy {
                 _gauge, 0, abi.encodeWithSignature("claim_rewards(address,address)", address(locker), address(this))
             )
         ) {
-            ILiquidityGaugeStrat(_gauge).claim_rewards(address(locker));
+            ILiquidityGauge(_gauge).claim_rewards(address(locker));
             isTransferNeeded = true;
         }
 
@@ -389,7 +394,7 @@ abstract contract Strategy {
                 _claimed = ERC20(_extraRewardToken).balanceOf(address(this));
                 if (_claimed != 0) {
                     // Distribute the extra reward token.
-                    ILiquidityGaugeStrat(_rewardDistributor).deposit_reward_token(_extraRewardToken, _claimed);
+                    ILiquidityGauge(_rewardDistributor).deposit_reward_token(_extraRewardToken, _claimed);
                 }
             }
 
@@ -408,7 +413,7 @@ abstract contract Strategy {
         address gauge = gauges[_asset];
         if (gauge == address(0)) revert ADDRESS_NULL();
 
-        return ILiquidityGaugeStrat(gauge).balanceOf(address(locker));
+        return ILiquidityGauge(gauge).balanceOf(address(locker));
     }
 
     //////////////////////////////////////////////////////
@@ -422,29 +427,6 @@ abstract contract Strategy {
     //////////////////////////////////////////////////////
     /// --- LOCKER HELPER FUNCTIONS
     //////////////////////////////////////////////////////
-
-    /// @notice Increase token amount locked
-    /// @param value Amount of token to lock
-    function increaseAmount(uint256 value) external virtual onlyGovernance {
-        locker.increaseAmount(value);
-    }
-
-    /// @notice Extend unlock time on the locker
-    /// @param unlock_time New epoch time for unlocking
-    function increaseUnlockTime(uint256 unlock_time) external virtual onlyGovernance {
-        locker.execute(veToken, 0, abi.encodeWithSignature("increase_unlock_time(uint256)", unlock_time));
-    }
-
-    /// @notice Release all token locked
-    function release() external onlyGovernance {
-        locker.release();
-    }
-
-    /// @notice Set the governance address
-    /// @param _governance Address of the new governance
-    function transferLockerGovernance(address _governance) external virtual onlyGovernance {
-        locker.setGovernance(_governance);
-    }
 
     /// @notice Transfer the governance to a new address.
     /// @param _governance Address of the new governance.
@@ -460,13 +442,6 @@ abstract contract Strategy {
         emit GovernanceChanged(msg.sender);
     }
 
-    /// @notice Set the strategy address
-    /// @dev Calling this function will disable the current strategy.
-    /// @param _strategy Address of the new strategy
-    function transferLockerStrategy(address _strategy) external virtual onlyGovernance {
-        locker.setStrategy(_strategy);
-    }
-
     //////////////////////////////////////////////////////
     /// --- MIGRATION LOGIC
     //////////////////////////////////////////////////////
@@ -474,7 +449,7 @@ abstract contract Strategy {
     /// @notice Migrate LP token from the locker to the vault
     /// @dev Only callable by the vault
     /// @param _asset Address of LP token to migrate
-    function migrateLP(address _asset) external onlyVault {
+    function migrateLP(address _asset) public virtual onlyVault {
         // Get gauge address
         address gauge = gauges[_asset];
         if (gauge == address(0)) revert ADDRESS_NULL();
@@ -569,8 +544,15 @@ abstract contract Strategy {
     /// @notice Update protocol fees.
     /// @param _protocolFee New protocol fee.
     function updateProtocolFee(uint256 _protocolFee) external onlyGovernance {
-        if (_protocolFee > DENOMINATOR) revert FEE_TOO_HIGH();
+        if (claimIncentiveFee + _protocolFee > DENOMINATOR) revert FEE_TOO_HIGH();
         protocolFeesPercent = _protocolFee;
+    }
+
+    /// @notice Update claimIncentive fees.
+    /// @param _claimIncentiveFee New Claim Incentive Fees
+    function updateClaimIncentiveFee(uint256 _claimIncentiveFee) external onlyGovernance {
+        if (protocolFeesPercent + _claimIncentiveFee > DENOMINATOR) revert FEE_TOO_HIGH();
+        claimIncentiveFee = _claimIncentiveFee;
     }
 
     //////////////////////////////////////////////////////
@@ -590,7 +572,7 @@ abstract contract Strategy {
         ERC20(extraRewardToken).safeApprove(_rewardDistributor, type(uint256).max);
 
         /// Add it to the Gauge with Distributor as this contract.
-        ILiquidityGaugeStrat(_rewardDistributor).add_reward(extraRewardToken, address(this));
+        ILiquidityGauge(_rewardDistributor).add_reward(extraRewardToken, address(this));
     }
 
     /// @notice Execute a function

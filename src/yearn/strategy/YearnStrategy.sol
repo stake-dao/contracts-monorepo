@@ -13,7 +13,7 @@ contract YearnStrategy is Strategy {
         Strategy(_owner, _locker, _veToken, _rewardToken, _minter)
     {}
 
-    function claim(address _asset) public override {
+    function harvest(address _asset, bool _distributeSDT, bool _claimExtra) public override {
         /// Get the gauge address.
         address gauge = gauges[_asset];
         if (gauge == address(0)) revert ADDRESS_NULL();
@@ -29,14 +29,6 @@ contract YearnStrategy is Strategy {
         /// 2. Distribute SDT
         // Distribute SDT to the related gauge
         ISDTDistributor(SDTDistributor).distribute(rewardDistributor);
-    }
-
-    function increaseUnlockTime(uint256 _value) external override onlyGovernance {
-        locker.increaseUnlockTime(_value);
-    }
-
-    function release(address _recipient) external onlyGovernance {
-        locker.release(_recipient);
     }
 
     /// @notice Internal implementation of native reward claim compatible with FeeDistributor.vy like contracts.
