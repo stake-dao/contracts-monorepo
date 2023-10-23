@@ -124,7 +124,7 @@ abstract contract Strategy is UUPSUpgradeable {
 
     function initialize(
         address owner
-    ) external {
+    ) external virtual {
         if(governance != address(0)) revert GOVERNANCE();
 
         governance = owner;
