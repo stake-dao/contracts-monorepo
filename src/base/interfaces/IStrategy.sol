@@ -2,6 +2,8 @@
 pragma solidity 0.8.19;
 
 interface IStrategy {
+    function deposit(address _token, uint256 _amount) external;
+
     function feeReceiver() external view returns (address);
 
     function gauges(address _lp) external view returns (address);
@@ -18,5 +20,5 @@ interface IStrategy {
 
     function toggleVault(address _vault) external;
 
-    function withdraw(address _token, uint256 _amount, address _to) external;
+    function withdraw(address _token, uint256 _amount) external;
 }

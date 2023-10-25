@@ -1,10 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.19;
 
-import "src/base/factory/VaultFactory.sol";
-import "src/base/vault/StrategyVault.sol";
-import "src/base/RewardReceiverSingleToken.sol";
-import "src/base/interfaces/IGaugeController.sol";
+import {VaultFactory} from "src/base/factory/VaultFactory.sol";
+import {StrategyVaultImpl} from "src/base/vault/StrategyVaultImpl.sol";
+import {RewardReceiverSingleToken} from "src/base/RewardReceiverSingleToken.sol";
+import {IGaugeController} from "src/base/interfaces/IGaugeController.sol";
+import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
 
 /**
  * @title Factory contract used to create new yearn LP vaults
@@ -15,19 +16,18 @@ contract YearnVaultFactory is VaultFactory {
 
     event RewardReceiverDeployed(address _deployed);
 
-    constructor(address _strategy, address _sdtDistributor) VaultFactory(_strategy, _sdtDistributor, address(0)) {
-        StrategyVault vault = new StrategyVault();
-        vaultImpl = address(vault);
-    }
+    constructor(address _strategy, address _sdtDistributor, address _vaultImpl, address _gaugeImpl) VaultFactory(_strategy, _sdtDistributor, _vaultImpl, _gaugeImpl) {}
 
     function cloneAndInit(address _gauge) public override {
         // deploy Vault + Gauge
         super.cloneAndInit(_gauge);
         // deploy RewardReceiver
-        // address sdGauge = strategy.rewardDistributor(_gauge);
-        // RewardReceiverSingleToken rewardReceiver =
-        //     new RewardReceiverSingleToken(rewardToken, sdGauge,  address(strategy));
-        // ILiquidityGaugeStrat(sdGauge).add_reward(rewardToken, address(rewardReceiver));
+        ILiquidityGaugeStrat sdGauge = ILiquidityGaugeStrat(strategy.rewardDistributors(_gauge));
+         RewardReceiverSingleToken rewardReceiver =
+            new RewardReceiverSingleToken(rewardToken, address(sdGauge),  address(strategy));
+        sdGauge.add_reward(rewardToken, address(rewardReceiver));
+        sdGauge.commit_transfer_ownership(GOVERNANCE);
+
     }
 
     function _getGaugeLp(address _gauge) internal override view returns(address lp) {

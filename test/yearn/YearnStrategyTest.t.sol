@@ -9,9 +9,10 @@ import "utils/VyperDeployer.sol";
 
 import {AddressBook} from "addressBook/AddressBook.sol";
 import {YearnStrategy} from "src/yearn/strategy/YearnStrategy.sol";
-import {StrategyVault} from "src/base/vault/StrategyVault.sol";
+import {StrategyVaultImpl} from "src/base/vault/StrategyVaultImpl.sol";
 import {YearnVaultFactory} from "src/yearn/factory/YearnVaultFactory.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import {ILocker} from "src/base/interfaces/ILocker.sol";
 
 interface ICurvePool {
     function exchange_underlying(uint256, uint256, uint256, uint256) external payable;
@@ -25,10 +26,11 @@ interface IDyfiOption {
 contract YearnStrategyTest is Test {
     YearnVaultFactory public factory;
     YearnStrategy public strategy;
-    StrategyVault public vault;
-    address public locker;
+    StrategyVaultImpl public vault;
+    ILocker public locker;
     address public veToken;
     address public constant DYFI = 0x41252E8691e964f7DE35156B68493bAb6797a275;
+    address public constant LOCKER_GOV = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
     address public sdYFI;
     address public sdtDistributor;
 
@@ -42,24 +44,33 @@ contract YearnStrategyTest is Test {
     address public constant DYFIETH_POOL = 0x8aC64Ba8E440cE5c2d08688f4020698b1826152E;
     address public constant DYFI_OPTION = 0x2fBa208E1B2106d40DaA472Cb7AE0c6C7EFc0224;
 
+    address public constant GAUGE_IMPL = 0x3Dc56D46F0Bd13655EfB29594a2e44534c453BF9;
+
     function setUp() public {
         uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"));
         vm.selectFork(forkId);
 
-        locker = AddressBook.YFI_LOCKER;
+        locker = ILocker(AddressBook.YFI_LOCKER);
         veToken = AddressBook.VE_YFI;
         sdYFI = AddressBook.SD_YFI;
         sdtDistributor = AddressBook.SDT_DISTRIBUTOR_STRAT;
+        strategy = new YearnStrategy(address(this), address(locker), veToken, DYFI, sdYFI);
 
-        strategy = new YearnStrategy(address(this), locker, veToken, DYFI, sdYFI);
+        vault = new StrategyVaultImpl();
+        factory = new YearnVaultFactory(address(strategy), sdtDistributor, address(vault), GAUGE_IMPL);
 
-        factory = new YearnVaultFactory(address(strategy), sdtDistributor);
+        strategy.setFactory(address(factory));
+        vm.prank(LOCKER_GOV);
+        locker.setGovernance(address(strategy));
 
         deal(address(this), 3e18);
     }
 
     function testCloneVault() external {
+        vm.recordLogs();
         factory.cloneAndInit(YEARN_GAUGE_1);
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        assertEq(entries.length, 10);
     }
 
     // function testReedem() external {
