@@ -54,7 +54,7 @@ abstract contract VaultFactory {
 
         // deploy gauge
         address fakeVault = SDT;
-        ILiquidityGaugeStrat sdGauge = _cloneAndInitGauge(gaugeImpl, address(fakeVault), GOVERNANCE, tokenName);
+        ILiquidityGaugeStrat sdGauge = _cloneAndInitGauge(gaugeImpl, address(fakeVault), GOVERNANCE, tokenSymbol);
         // deploy vault
         IStrategyVault vault = _cloneAndInitVault(
             vaultImpl,
@@ -91,7 +91,7 @@ abstract contract VaultFactory {
 
     function _getNameAndSymbol(address _lp) internal virtual view returns (string memory name, string memory symbol) {
         name = ERC20(_lp).name();
-        symbol = ERC20(_lp).name();
+        symbol = ERC20(_lp).symbol();
     }
 
     /**
@@ -111,10 +111,10 @@ abstract contract VaultFactory {
         string memory _symbol
     ) internal virtual returns (IStrategyVault deployed) {
         bytes memory data = abi.encodePacked(
-            _lpToken, address(this), address(strategy), strategy.locker(), _lg, keeperFee, _name, _symbol
+            _lpToken, address(strategy), _lg
         );
         deployed = _cloneVault(_impl, _lpToken, keccak256(abi.encodePacked(_governance, _name, _symbol, strategy)), data);
-        deployed.init();
+        deployed.initialize();
     }
 
     /**

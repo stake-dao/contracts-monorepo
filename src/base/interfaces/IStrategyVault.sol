@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 interface IStrategyVault {
-    function init() external;
+    function initialize() external;
 
     function transferGovernance(address _governance) external;
 
