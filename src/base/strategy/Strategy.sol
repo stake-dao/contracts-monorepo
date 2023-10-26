@@ -597,12 +597,14 @@ abstract contract Strategy is UUPSUpgradeable {
     /// @notice Allow a module to interact with the `execute` function.
     /// @dev excodesize can be bypassed but whitelist should go through governance.
     function allowAddress(address _address) external onlyGovernance {
-        if(_address == address(0)) revert ADDRESS_NULL();
+        if (_address == address(0)) revert ADDRESS_NULL();
 
         /// Check if the address is a contract.
-        int size;
-        assembly { size := extcodesize(_address) }
-        if(size == 0) revert NOT_CONTRACT();
+        int256 size;
+        assembly {
+            size := extcodesize(_address)
+        }
+        if (size == 0) revert NOT_CONTRACT();
 
         allowed[_address] = true;
     }

@@ -6,6 +6,7 @@ import {StrategyVaultImpl} from "src/base/vault/StrategyVaultImpl.sol";
 import {RewardReceiverSingleToken} from "src/base/RewardReceiverSingleToken.sol";
 import {IGaugeController} from "src/base/interfaces/IGaugeController.sol";
 import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
+import {IYearnGauge} from "src/base/interfaces/IYearnGauge.sol";
 
 /**
  * @title Factory contract used to create new yearn LP vaults
@@ -15,6 +16,8 @@ contract YearnVaultFactory is PoolFactory {
 
     event RewardReceiverDeployed(address _deployed, address _sdGauge);
 
+    error CALL_FAILED();
+
     constructor(address _strategy, address _vaultImpl, address _gaugeImpl) PoolFactory(_strategy, address(0x41252E8691e964f7DE35156B68493bAb6797a275), _vaultImpl, _gaugeImpl) {
     }
 
@@ -22,10 +25,18 @@ contract YearnVaultFactory is PoolFactory {
         // deploy Vault + Gauge
         (_vault, _rewardDistributor) = super.create(_gauge);
         // deploy RewardReceiver
-        ILiquidityGaugeStrat sdGauge = ILiquidityGaugeStrat(_rewardDistributor);// ILiquidityGaugeStrat(strategy.rewardDistributors(_gauge));
-        RewardReceiverSingleToken rewardReceiver =
-            new RewardReceiverSingleToken(rewardToken, address(sdGauge),  address(strategy));
-        emit RewardReceiverDeployed(address(rewardReceiver), address(sdGauge));
+        RewardReceiverSingleToken rewardReceiver = new RewardReceiverSingleToken(rewardToken, address(strategy));
+
+        // set reward receiver in yearn gauge via locker
+        bytes memory data = abi.encodeWithSignature("setRecipient(address)", address(rewardReceiver));
+        bytes memory lockerData = abi.encodeWithSignature("execute(address,uint256,bytes)", _gauge, 0, data);
+        (bool success,) = strategy.execute(strategy.locker(), 0, lockerData);
+        if (!success) revert CALL_FAILED();
+
+        // set reward receiver in strategy
+        strategy.setRewardReceiver(_gauge, address(rewardReceiver));
+
+        emit RewardReceiverDeployed(address(rewardReceiver), _rewardDistributor);
     }
 
     function _getGaugeStakingToken(address _gauge) internal override view returns(address lp) {

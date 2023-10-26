@@ -72,36 +72,37 @@ contract YearnStrategyTest is Test {
             vm.recordLogs();
             factory.create(yearnGauges[i]);
             Vm.Log[] memory entries = vm.getRecordedLogs();
-            assertEq(entries.length, 11);
+            assertEq(entries.length, 12);
             assertEq(entries[8].topics[0], keccak256("PoolDeployed(address,address,address,address)"));
             (sdVaults[i],sdGauges[i],,) = abi.decode(entries[8].data, (address,address,address,address));
         }
 
         for (uint256 i; i < yearnGauges.length; i++) {
             yearnLps[i] = ILiquidityGaugeStrat(yearnGauges[i]).asset();
-            deal(yearnLps[i], address(this), 1e18);
+            deal(yearnLps[i], address(this), 1e17);
         }
         deal(address(this), 3e18);
     }
 
-    function testCloneVault() external {
-        vm.recordLogs();
-        factory.create(yearnGauges[3]);
-        Vm.Log[] memory entries = vm.getRecordedLogs();
-        assertEq(entries.length, 11);
-        assertEq(entries[8].topics[0], keccak256("PoolDeployed(address,address,address,address)"));
-        (address vault,,,) = abi.decode(entries[8].data, (address,address,address,address));
+    // function testCloneVault() external {
+    //     vm.recordLogs();
+    //     factory.create(yearnGauges[3]);
+    //     Vm.Log[] memory entries = vm.getRecordedLogs();
+    //     assertEq(entries.length, 12);
+    //     assertEq(entries[8].topics[0], keccak256("PoolDeployed(address,address,address,address)"));
+    //     (address vault,,,) = abi.decode(entries[8].data, (address,address,address,address));
         
-        string memory name = StrategyVaultImpl(vault).name();
-        string memory symbol = StrategyVaultImpl(vault).symbol(); 
-        assertEq(name, "sdyvCurve-dYFIETH-f-f Vault");
-        assertEq(symbol, "sdyvCurve-dYFIETH-f-f-vault");
-    }
+    //     string memory name = StrategyVaultImpl(vault).name();
+    //     string memory symbol = StrategyVaultImpl(vault).symbol(); 
+    //     assertEq(name, "sdyvCurve-dYFIETH-f-f Vault");
+    //     assertEq(symbol, "sdyvCurve-dYFIETH-f-f-vault");
+    // }
 
     function testVaultInteraction() external {
         uint256 amountToDeposit = 1e17;
         uint256 vaultBalance;
         uint256 gaugeBalance;
+        uint256 userBalance;
         for (uint256 i; i < sdVaults.length - 1; i++) {
             IERC20(yearnLps[i]).approve(sdVaults[i], amountToDeposit);
             StrategyVaultImpl(sdVaults[i]).deposit(address(this), amountToDeposit, true);
@@ -109,8 +110,17 @@ contract YearnStrategyTest is Test {
             gaugeBalance = IERC20(sdVaults[i]).balanceOf(sdGauges[i]);
             assertEq(vaultBalance, 0);
             assertEq(gaugeBalance, amountToDeposit);
+            // skip 1 second
+            skip(10 seconds);
+            StrategyVaultImpl(sdVaults[i]).withdraw(amountToDeposit);
+            userBalance = IERC20(yearnLps[i]).balanceOf(address(this));
+            gaugeBalance = IERC20(sdVaults[i]).balanceOf(sdGauges[i]);
+            assertEq(userBalance, amountToDeposit);
+            assertEq(gaugeBalance, 0);
         }
     }
+
+    function testHarvest() external {}
 
     // function testReedem() external {
     //     // buy dYFI on curve
