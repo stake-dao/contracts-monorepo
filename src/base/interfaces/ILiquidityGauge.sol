@@ -45,6 +45,8 @@ interface ILiquidityGauge {
 
     function admin() external view returns (address);
 
+    function lp_token() external view returns(address);
+
     function set_reward_distributor(address _rewardToken, address _newDistrib) external;
 
     function initialize(

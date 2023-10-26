@@ -2,14 +2,14 @@
 pragma solidity 0.8.19;
 
 import {ERC20} from "solmate/tokens/ERC20.sol";
+import {UUPSUpgradeable} from "solady/utils/UUPSUpgradeable.sol";
 import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
-import {UUPSUpgradeable} from "lib/solady/src/utils/UUPSUpgradeable.sol";
 
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {SafeExecute} from "src/base/libraries/SafeExecute.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
-import {ISDTDistributor} from "src/base/interfaces/ISdtDistributor.sol";
+import {ISdtDistributorV2} from "src/base/interfaces/ISdtDistributorV2.sol";
 
 /// @title Strategy
 /// @author Stake DAO
@@ -97,6 +97,9 @@ abstract contract Strategy is UUPSUpgradeable {
     /// @notice Error emitted when input address is null
     error ADDRESS_NULL();
 
+    /// @notice Error emitted when low level call failed
+    error LOW_LEVEL_CALL_FAILED();
+
     /// @notice Error emitted when sum of fees is above 100%
     error FEE_TOO_HIGH();
 
@@ -108,6 +111,9 @@ abstract contract Strategy is UUPSUpgradeable {
 
     /// @notice Error emitted when auth failed
     error GOVERNANCE_OR_FACTORY();
+
+    /// @notice Error emitted when trying to allow an EOA.
+    error NOT_CONTRACT();
 
     //////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
@@ -122,10 +128,8 @@ abstract contract Strategy is UUPSUpgradeable {
         rewardToken = _rewardToken;
     }
 
-    function initialize(
-        address owner
-    ) external virtual {
-        if(governance != address(0)) revert GOVERNANCE();
+    function initialize(address owner) external virtual {
+        if (governance != address(0)) revert GOVERNANCE();
 
         governance = owner;
         SDTDistributor = 0x9C99dffC1De1AfF7E7C1F36fCdD49063A281e18C;
@@ -241,7 +245,7 @@ abstract contract Strategy is UUPSUpgradeable {
         /// 2. Distribute SDT
         // Distribute SDT to the related gauge
         if (_distributeSDT) {
-            ISDTDistributor(SDTDistributor).distribute(rewardDistributor);
+            ISdtDistributorV2(SDTDistributor).distribute(rewardDistributor);
         }
 
         /// 3. Check for additional rewards from the Locker.
@@ -268,6 +272,7 @@ abstract contract Strategy is UUPSUpgradeable {
     /// @notice Claim protocol fees and send them to the fee receiver.
     function claimProtocolFees() external {
         if (feesAccrued == 0) return;
+        if (feeReceiver == address(0)) revert ADDRESS_NULL();
 
         uint256 _feesAccrued = feesAccrued;
         feesAccrued = 0;
@@ -519,6 +524,16 @@ abstract contract Strategy is UUPSUpgradeable {
         ERC20(rewardToken).safeApprove(rewardDistributor, type(uint256).max);
     }
 
+    /// @notice Accept Reward Distrbutor Ownership
+    /// @dev Gauge need to call this function to accept ownership of the rewardDistributor because ownership is transfered in two steps.
+    /// @param rewardDistributor Address of rewardDistributor
+    function acceptRewardDistributorOwnership(address rewardDistributor) external onlyGovernanceOrFactory {
+        if (rewardDistributor == address(0)) revert ADDRESS_NULL();
+
+        (bool success,) = address(rewardDistributor).call(abi.encodeWithSignature("accept_transfer_ownership()"));
+        if (!success) revert LOW_LEVEL_CALL_FAILED();
+    }
+
     //////////////////////////////////////////////////////
     /// --- GOVERNANCE STRATEGY SETTERS
     //////////////////////////////////////////////////////
@@ -534,7 +549,14 @@ abstract contract Strategy is UUPSUpgradeable {
     /// @param _factory Address of new Accumulator
     function setFactory(address _factory) external onlyGovernance {
         if (_factory == address(0)) revert ADDRESS_NULL();
+
+        /// Remove allocation for the old factory.
+        allowed[factory] = false;
+
         factory = _factory;
+
+        /// Allow the factory to interact with this contract.
+        allowed[_factory] = true;
     }
 
     /// @notice Set new RewardToken FeeDistributor new address
@@ -570,6 +592,23 @@ abstract contract Strategy is UUPSUpgradeable {
     function updateClaimIncentiveFee(uint256 _claimIncentiveFee) external onlyGovernance {
         if (protocolFeesPercent + _claimIncentiveFee > DENOMINATOR) revert FEE_TOO_HIGH();
         claimIncentiveFee = _claimIncentiveFee;
+    }
+
+    /// @notice Allow a module to interact with the `execute` function.
+    /// @dev excodesize can be bypassed but whitelist should go through governance.
+    function allowAddress(address _address) external onlyGovernance {
+        if(_address == address(0)) revert ADDRESS_NULL();
+
+        /// Check if the address is a contract.
+        int size;
+        assembly { size := extcodesize(_address) }
+        if(size == 0) revert NOT_CONTRACT();
+
+        allowed[_address] = true;
+    }
+
+    function disallowAddress(address _address) external onlyGovernance {
+        allowed[_address] = false;
     }
 
     //////////////////////////////////////////////////////

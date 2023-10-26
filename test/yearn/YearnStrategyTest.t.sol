@@ -13,6 +13,7 @@ import {StrategyVaultImpl} from "src/base/vault/StrategyVaultImpl.sol";
 import {YearnVaultFactory} from "src/yearn/factory/YearnVaultFactory.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
+import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
 
 interface ICurvePool {
     function exchange_underlying(uint256, uint256, uint256, uint256) external payable;
@@ -41,19 +42,14 @@ contract YearnStrategyTest is Test {
         0x28da6dE3e804bDdF0aD237CFA6048f2930D0b4Dc // dYFIETH
     ];
 
-    // address public constant YEARN_GAUGE_1 = 0x81d93531720d86f0491DeE7D03f30b3b5aC24e59; // yETh
-    // address public constant YEARN_LP_1 = 0x58900d761Ae3765B75DDFc235c1536B527F25d8F;
-    // address public constant YEARN_GAUGE_2 = 0x7Fd8Af959B54A677a1D8F92265Bd0714274C56a3; // YFI-ETH
-    // address public constant YEARN_LP_2 = 0x790a60024bC3aea28385b60480f15a0771f26D09;
-    // address public constant YEARN_GAUGE_3 = 0x107717C98C8125A94D3d2Cc82b86a1b705f3A27C; // yCRV
-    // address public constant YEARN_LP_3 = 0x6E9455D109202b426169F0d8f01A3332DAE160f3;
+    address[] public yearnLps = new address[](yearnGauges.length);
+    address[] public sdVaults = new address[](yearnGauges.length);
+    address[] public sdGauges = new address[](yearnGauges.length);
 
     address public constant DYFIETH_POOL = 0x8aC64Ba8E440cE5c2d08688f4020698b1826152E;
     address public constant DYFI_OPTION = 0x2fBa208E1B2106d40DaA472Cb7AE0c6C7EFc0224;
 
     address public constant GAUGE_IMPL = 0x3Dc56D46F0Bd13655EfB29594a2e44534c453BF9;
-
-    address[] public sdVaults = new address[](yearnGauges.length);
 
     function setUp() public {
         uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"));
@@ -66,36 +62,54 @@ contract YearnStrategyTest is Test {
         strategy = new YearnStrategy(address(this), address(locker), veToken, DYFI, sdYFI);
 
         vaultImpl = new StrategyVaultImpl();
-        factory = new YearnVaultFactory(address(strategy), sdtDistributor, address(vaultImpl), GAUGE_IMPL);
+        factory = new YearnVaultFactory(address(strategy), address(vaultImpl), GAUGE_IMPL);
 
         strategy.setFactory(address(factory));
         vm.prank(LOCKER_GOV);
         locker.setGovernance(address(strategy));
 
-        deal(address(this), 3e18);
-
         for (uint256 i; i < yearnGauges.length - 1; i++) {
             vm.recordLogs();
-            factory.cloneAndInit(yearnGauges[i]);
+            factory.create(yearnGauges[i]);
             Vm.Log[] memory entries = vm.getRecordedLogs();
-            assertEq(entries.length, 10);
-            assertEq(entries[1].topics[0], keccak256("VaultDeployed(address,address,address)"));
-            (sdVaults[i],,) = abi.decode(entries[1].data, (address,address,address));
+            assertEq(entries.length, 11);
+            assertEq(entries[8].topics[0], keccak256("PoolDeployed(address,address,address,address)"));
+            (sdVaults[i],sdGauges[i],,) = abi.decode(entries[8].data, (address,address,address,address));
         }
+
+        for (uint256 i; i < yearnGauges.length; i++) {
+            yearnLps[i] = ILiquidityGaugeStrat(yearnGauges[i]).asset();
+            deal(yearnLps[i], address(this), 1e18);
+        }
+        deal(address(this), 3e18);
     }
 
     function testCloneVault() external {
         vm.recordLogs();
-        factory.cloneAndInit(yearnGauges[3]);
+        factory.create(yearnGauges[3]);
         Vm.Log[] memory entries = vm.getRecordedLogs();
-        assertEq(entries.length, 10);
-        assertEq(entries[1].topics[0], keccak256("VaultDeployed(address,address,address)"));
-        (address vault,,) = abi.decode(entries[1].data, (address,address,address));
+        assertEq(entries.length, 11);
+        assertEq(entries[8].topics[0], keccak256("PoolDeployed(address,address,address,address)"));
+        (address vault,,,) = abi.decode(entries[8].data, (address,address,address,address));
         
         string memory name = StrategyVaultImpl(vault).name();
         string memory symbol = StrategyVaultImpl(vault).symbol(); 
         assertEq(name, "sdyvCurve-dYFIETH-f-f Vault");
         assertEq(symbol, "sdyvCurve-dYFIETH-f-f-vault");
+    }
+
+    function testVaultInteraction() external {
+        uint256 amountToDeposit = 1e17;
+        uint256 vaultBalance;
+        uint256 gaugeBalance;
+        for (uint256 i; i < sdVaults.length - 1; i++) {
+            IERC20(yearnLps[i]).approve(sdVaults[i], amountToDeposit);
+            StrategyVaultImpl(sdVaults[i]).deposit(address(this), amountToDeposit, true);
+            vaultBalance = IERC20(yearnLps[i]).balanceOf(sdVaults[i]);
+            gaugeBalance = IERC20(sdVaults[i]).balanceOf(sdGauges[i]);
+            assertEq(vaultBalance, 0);
+            assertEq(gaugeBalance, amountToDeposit);
+        }
     }
 
     // function testReedem() external {
