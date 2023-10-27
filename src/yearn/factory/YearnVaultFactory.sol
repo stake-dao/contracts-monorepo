@@ -44,15 +44,11 @@ contract YearnVaultFactory is PoolFactory {
         lp = ILiquidityGaugeStrat(_gauge).asset();
     }
 
-    function _isValidGauge(address _gauge) internal view override returns (bool) {
-        return true;
-    }
-
     function _addExtraRewards(address _gauge) internal override {}
 
-    // function _isValidGauge(address _gauge) internal override returns (bool valid) {
-    //     // check if the gauge has been added into the yearn gc
-    //     uint256 weight = IGaugeController(GAUGE_CONTROLLER).get_gauge_weight(_gauge);
-    //     if (weight > 0) valid = true;
-    // }
+    function _isValidGauge(address _gauge) internal view override returns (bool valid) {
+        // check if the gauge has been added into the yearn gc
+        uint256 weight = IGaugeController(GAUGE_CONTROLLER).get_gauge_weight(_gauge);
+        if (weight > 0) valid = true;
+    }
 }

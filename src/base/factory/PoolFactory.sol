@@ -55,6 +55,11 @@ abstract contract PoolFactory {
     /// @notice Emitted when a new pool is deployed.
     event PoolDeployed(address vault, address rewardDistributor, address token, address gauge);
 
+    /// @notice Constructor.
+    /// @param _strategy Address of the strategy contract. This contract should have the ability to add new reward tokens.
+    /// @param _rewardToken Address of the main reward token.
+    /// @param _vaultImplementation Address of the staking deposit implementation. Main entry point.
+    /// @param _liquidityGaugeImplementation Address of the liquidity gauge implementation.
     constructor(
         address _strategy,
         address _rewardToken,
@@ -68,25 +73,36 @@ abstract contract PoolFactory {
     }
 
     /// @notice Add new staking gauge to Stake DAO Locker.
+    /// @param _gauge Address of the liquidity gauge.
+    /// @return vault Address of the staking deposit.
+    /// @return rewardDistributor Address of the reward distributor to claim rewards.
     function create(address _gauge) public virtual returns (address vault, address rewardDistributor) {
-        // check if the gauge is valid
+        /// Perform checks on the gauge to make sure it's valid and can be used.
         if (!_isValidGauge(_gauge)) revert INVALID_GAUGE();
-        // check if the lp has been already used to clone a vault
+
+        /// Perform checks on the strategy to make sure it's not already used.
         if (strategy.rewardDistributors(_gauge) != address(0)) revert GAUGE_ALREADY_USED();
 
+        /// Retrieve the staking token.
         address lp = _getGaugeStakingToken(_gauge);
 
-        /// Clone the liquidity gauge.
+        /// Clone the Reward Distributor.
         rewardDistributor = LibClone.clone(liquidityGaugeImplementation);
 
-        /// Clone the vault.
+        /// We use the LP token and the gauge address as salt to generate the vault address.
         bytes32 salt = keccak256(abi.encodePacked(lp, _gauge));
+
+        /// We use CWIA setup. We encode the LP token, the strategy address and the reward distributor address as data
+        /// to be passed as immutable args to the vault.
         bytes memory vaultData = abi.encodePacked(lp, address(strategy), rewardDistributor);
 
+        /// Clone the Vault.
         vault = vaultImplementation.cloneDeterministic(vaultData, salt);
 
-        /// Initialize RewardDistributor.
+        /// Retrieve the symbol to be used on the reward distributor.
         (, string memory _symbol) = _getNameAndSymbol(lp);
+
+        /// Initialize the Reward Distributor.
         ISDLiquidityGauge(rewardDistributor).initialize(
             vault, address(this), SDT, VESDT, VE_BOOST_PROXY, SDT_DISTRIBUTOR, vault, _symbol
         );
@@ -94,12 +110,16 @@ abstract contract PoolFactory {
         /// Initialize Vault.
         IStrategyVault(vault).initialize();
 
-        /// Initialize vault and reward distributor in strategy.
+        /// Allow the vault to stake the LP token in the locker trough the strategy.
         strategy.toggleVault(vault);
+
+        /// Map in the strategy the staking token to it's corresponding gauge.
         strategy.setGauge(lp, _gauge);
+
+        /// Map the gauge to the reward distributor that should receive the rewards.
         strategy.setRewardDistributor(_gauge, rewardDistributor);
 
-        /// We first add the reward token.
+        /// Add the reward token to the reward distributor.
         _addRewardToken(rewardDistributor);
 
         /// Set ClaimHelper as claimer.
@@ -111,33 +131,50 @@ abstract contract PoolFactory {
         /// Accept ownership of the reward distributor.
         strategy.acceptRewardDistributorOwnership(rewardDistributor);
 
-        /// Add extra rewards.
+        /// Add extra rewards if any.
         _addExtraRewards(_gauge);
 
         emit PoolDeployed(vault, rewardDistributor, lp, _gauge);
     }
 
+    /// @notice Add the main reward token to the reward distributor.
+    /// @param rewardDistributor Address of the reward distributor.
     function _addRewardToken(address rewardDistributor) internal virtual {
+        /// The strategy should claim through the locker the reward token,
+        /// and distribute it to the reward distributor every harvest.
         ISDLiquidityGauge(rewardDistributor).add_reward(rewardToken, address(strategy));
     }
 
+    /// @notice Add extra reward tokens to the reward distributor.
+    /// @param _gauge Address of the liquidity gauge.
     function _addExtraRewards(address _gauge) internal virtual {
-        // view function called only to recognize the gauge type
+        /// Check if the gauge supports extra rewards.
+        /// This function is not supported on all gauges, depending on when they were deployed.
         bytes memory data = abi.encodeWithSignature("reward_tokens(uint256)", 0);
+
+        /// Hence the call to the function is wrapped in a try catch.
         (bool success,) = _gauge.call(data);
         if (!success) {
-            /// Means that the gauge doesn't support extra rewards.
+            /// If it fails, we set the LGtype to 1 to indicate that the gauge doesn't support extra rewards.
+            /// So the harvest would skip the extra rewards.
             strategy.setLGtype(_gauge, 1);
 
             return;
         }
 
+        /// Loop through the extra reward tokens.
+        /// 8 is the maximum number of extra reward tokens supported by the gauges.
         for (uint8 i = 0; i < 8;) {
-            // Get reward token
+            /// Get the extra reward token address.
             address _extraRewardToken = ISDLiquidityGauge(_gauge).reward_tokens(i);
+
+            /// If the address is 0, it means there are no more extra reward tokens.
             if (_extraRewardToken == address(0)) break;
 
+            /// Performs checks on the extra reward token.
+            /// Checks like if the token is also an lp token that can be staked in the locker, these tokens are not supported.
             if (_isValidToken(_extraRewardToken)) {
+                /// Then we add the extra reward token to the reward distributor through the strategy.
                 strategy.addRewardToken(_gauge, _extraRewardToken);
             }
 
@@ -147,14 +184,20 @@ abstract contract PoolFactory {
         }
     }
 
+    /// @notice Perform checks on the gauge to make sure it's valid and can be used.
     function _isValidGauge(address _gauge) internal view virtual returns (bool) {}
 
+    /// @notice Perform checks on the token to make sure it's valid and can be used.
     function _isValidToken(address _token) internal view virtual returns (bool) {}
 
+    /// @notice Retrieve the staking token from the gauge.
+    /// @param _gauge Address of the liquidity gauge.
     function _getGaugeStakingToken(address _gauge) internal view virtual returns (address lp) {
         lp = ILiquidityGauge(_gauge).lp_token();
     }
 
+    /// @notice Retrieve the name and symbol of the staking token.
+    /// @param _lp Address of the staking token.
     function _getNameAndSymbol(address _lp) internal view virtual returns (string memory name, string memory symbol) {
         name = ERC20(_lp).name();
         symbol = ERC20(_lp).symbol();

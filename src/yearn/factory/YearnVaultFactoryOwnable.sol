@@ -12,7 +12,6 @@ import {IYearnGauge} from "src/base/interfaces/IYearnGauge.sol";
  * @title Factory contract used to create new yearn LP vaults
  */
 contract YearnVaultFactoryOwnable is PoolFactory {
-    address public constant GAUGE_CONTROLLER = 0x41252E8691e964f7DE35156B68493bAb6797a275; // to change
     address public governance;
     address public futureGovernance;
 
@@ -66,7 +65,7 @@ contract YearnVaultFactoryOwnable is PoolFactory {
         lp = ILiquidityGaugeStrat(_gauge).asset();
     }
 
-    function _isValidGauge(address _gauge) internal view override returns (bool) {
+    function _isValidGauge(address _gauge) internal pure override returns (bool) {
         return true;
     }
 

@@ -10,7 +10,7 @@ import "utils/VyperDeployer.sol";
 import {AddressBook} from "addressBook/AddressBook.sol";
 import {YearnStrategy} from "src/yearn/strategy/YearnStrategy.sol";
 import {StrategyVaultImpl} from "src/base/vault/StrategyVaultImpl.sol";
-import {YearnVaultFactory} from "src/yearn/factory/YearnVaultFactory.sol";
+import {YearnVaultFactoryOwnable} from "src/yearn/factory/YearnVaultFactoryOwnable.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
@@ -26,12 +26,13 @@ interface IDyfiOption {
 }
 
 contract YearnStrategyTest is Test {
-    YearnVaultFactory public factory;
+    YearnVaultFactoryOwnable public factory;
     YearnStrategy public strategy;
     StrategyVaultImpl public vaultImpl;
     ILocker public locker;
     address public veToken;
     address public constant DYFI = 0x41252E8691e964f7DE35156B68493bAb6797a275;
+    address public constant YFI_REWARD_POOL = 0xb287a1964AEE422911c7b8409f5E5A273c1412fA;
     address public constant DYFI_REWARD_POOL = 0x2391Fc8f5E417526338F5aa3968b1851C16D894E;
     address public constant LOCKER_GOV = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
     address public sdYFI;
@@ -64,7 +65,7 @@ contract YearnStrategyTest is Test {
         strategy = new YearnStrategy(address(this), address(locker), veToken, DYFI, sdYFI);
 
         vaultImpl = new StrategyVaultImpl();
-        factory = new YearnVaultFactory(address(strategy), address(vaultImpl), GAUGE_IMPL);
+        factory = new YearnVaultFactoryOwnable(address(strategy), address(vaultImpl), GAUGE_IMPL);
 
         strategy.setFactory(address(factory));
         strategy.setAccumulator(YEARN_ACC);
@@ -142,8 +143,8 @@ contract YearnStrategyTest is Test {
     }
 
     function testClaimNativeRewards() external {
-        IYearnRewardPool(DYFI_REWARD_POOL).checkpoint_token();
-        IYearnRewardPool(DYFI_REWARD_POOL).checkpoint_total_supply();
+        IYearnRewardPool(YFI_REWARD_POOL).checkpoint_token();
+        IYearnRewardPool(YFI_REWARD_POOL).checkpoint_total_supply();
         uint256 accRewardBalance = IERC20(yfi).balanceOf(YEARN_ACC);
         assertEq(accRewardBalance, 0);
         strategy.claimNativeRewards();

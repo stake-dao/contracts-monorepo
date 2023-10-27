@@ -12,6 +12,7 @@ import {ERC20} from "solmate/tokens/ERC20.sol";
 /// @notice Deposit/Withdraw in yearn gauges
 contract YearnStrategy is Strategy {
     address public constant DYFI_REWARD_POOL = 0x2391Fc8f5E417526338F5aa3968b1851C16D894E;
+    address public constant YFI = 0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e;
     mapping(address => address) public rewardReceivers; // sdGauge -> rewardReceiver
 
     constructor(address _owner, address _locker, address _veToken, address _rewardToken, address _minter)
@@ -46,7 +47,7 @@ contract YearnStrategy is Strategy {
 
     /// @notice Internal implementation of native reward claim compatible with FeeDistributor.vy like contracts.
     function _claimNativeRewards() internal override {
-        locker.claimRewards(rewardToken, accumulator);
+        locker.claimRewards(YFI, accumulator);
     }
 
     function _withdrawFromLocker(address _asset, address _gauge, uint256 _amount) internal override {

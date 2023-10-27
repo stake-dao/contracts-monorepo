@@ -3,5 +3,5 @@ pragma solidity 0.8.19;
 
 interface IGaugeController {
     // solhint-disable-next-line
-    function get_gauge_weight(address _gauge) external returns (uint256);
+    function get_gauge_weight(address _gauge) external view returns (uint256);
 }
