@@ -29,10 +29,6 @@ contract YearnStrategy is Strategy {
         _transferFromLocker(rewardToken, accumulator, ERC20(rewardToken).balanceOf(address(locker)));
     }
 
-    function claimNativeRewards() external override {
-        _claimNativeRewards();
-    }
-
     function _claimRewardToken(address _gauge) internal override returns (uint256 _claimed) {
         // claim the reward from the yearn gauge
         IYearnGauge(_gauge).getReward(address(locker));

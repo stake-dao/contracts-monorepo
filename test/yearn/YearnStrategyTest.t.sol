@@ -49,14 +49,11 @@ contract YearnStrategyTest is Test {
     address[] public sdVaults = new address[](yearnGauges.length);
     address[] public sdGauges = new address[](yearnGauges.length);
 
-    //address public constant DYFIETH_POOL = 0x8aC64Ba8E440cE5c2d08688f4020698b1826152E;
-    //address public constant DYFI_OPTION = 0x2fBa208E1B2106d40DaA472Cb7AE0c6C7EFc0224;
-
     address public constant GAUGE_IMPL = 0x3Dc56D46F0Bd13655EfB29594a2e44534c453BF9;
     address public constant YEARN_ACC = 0x8b65438178CD4EF67b0177135dE84Fe7E3C30ec3;
 
     function setUp() public {
-        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"), 18430190);
+        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"), 18431190);
         vm.selectFork(forkId);
 
         locker = ILocker(AddressBook.YFI_LOCKER);
@@ -78,9 +75,9 @@ contract YearnStrategyTest is Test {
             vm.recordLogs();
             factory.create(yearnGauges[i]);
             Vm.Log[] memory entries = vm.getRecordedLogs();
-            assertEq(entries.length, 12);
-            assertEq(entries[8].topics[0], keccak256("PoolDeployed(address,address,address,address)"));
-            (sdVaults[i], sdGauges[i],,) = abi.decode(entries[8].data, (address, address, address, address));
+            assertEq(entries.length, 11);
+            assertEq(entries[7].topics[0], keccak256("PoolDeployed(address,address,address,address)"));
+            (sdVaults[i], sdGauges[i],,) = abi.decode(entries[7].data, (address, address, address, address));
         }
 
         for (uint256 i; i < yearnGauges.length; i++) {
@@ -94,9 +91,9 @@ contract YearnStrategyTest is Test {
         vm.recordLogs();
         factory.create(yearnGauges[3]);
         Vm.Log[] memory entries = vm.getRecordedLogs();
-        assertEq(entries.length, 12);
-        assertEq(entries[8].topics[0], keccak256("PoolDeployed(address,address,address,address)"));
-        (address vault,,,) = abi.decode(entries[8].data, (address, address, address, address));
+        assertEq(entries.length, 11);
+        assertEq(entries[7].topics[0], keccak256("PoolDeployed(address,address,address,address)"));
+        (address vault,,,) = abi.decode(entries[7].data, (address, address, address, address));
 
         string memory name = StrategyVaultImpl(vault).name();
         string memory symbol = StrategyVaultImpl(vault).symbol();
@@ -155,6 +152,12 @@ contract YearnStrategyTest is Test {
     }
 
     function testClaimDyfiRewards() external {
+        IYearnRewardPool(DYFI_REWARD_POOL).checkpoint_token();
+        IYearnRewardPool(DYFI_REWARD_POOL).checkpoint_total_supply();
+        uint256 accRewardBalance = IERC20(DYFI).balanceOf(YEARN_ACC);
+        assertEq(accRewardBalance, 0);
         strategy.claimDYfiRewardPool();
+        accRewardBalance = IERC20(DYFI).balanceOf(YEARN_ACC);
+        assertGt(accRewardBalance, 0);
     }
 }

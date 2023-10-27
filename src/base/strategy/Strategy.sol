@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {ERC20} from "solmate/tokens/ERC20.sol";
+import {ERC20} from "solady/tokens/ERC20.sol";
 import {UUPSUpgradeable} from "solady/utils/UUPSUpgradeable.sol";
-import {SafeTransferLib} from "solmate/utils/SafeTransferLib.sol";
-import {FixedPointMathLib} from "solmate/utils/FixedPointMathLib.sol";
+import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
+import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
 
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {SafeExecute} from "src/base/libraries/SafeExecute.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
-import {ISdtDistributorV2} from "src/base/interfaces/ISdtDistributorV2.sol";
+import {ISDTDistributor} from "src/base/interfaces/ISDTDistributor.sol";
 
 /// @title Strategy
 /// @author Stake DAO
@@ -42,15 +42,12 @@ abstract contract Strategy is UUPSUpgradeable {
     address public futureGovernance;
 
     /// @notice Interface for Stake DAO token Accumulator
-    //address public accumulator = 0xa44bFD194Fd7185ebecEcE4F7fA87a47DaA01c6A;
     address public accumulator;
 
     /// @notice Curve DAO token Fee Distributor
-    //address public feeDistributor = 0xA464e6DCda8AC41e03616F95f4BC98a13b8922Dc;
     address public feeDistributor;
 
     /// @notice Reward Token for veCRV holders.
-    /// address public feeRewardToken = 0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490;
     address public feeRewardToken;
 
     /// @notice Stake DAO SDT Distributor
@@ -169,7 +166,7 @@ abstract contract Strategy is UUPSUpgradeable {
     /// @param amount Amount of LP token to deposit
     function deposit(address _token, uint256 amount) external onlyVault {
         // Transfer the token to this contract
-        ERC20(_token).safeTransferFrom(msg.sender, address(this), amount);
+        SafeTransferLib.safeTransferFrom(_token, msg.sender, address(this), amount);
 
         // Do the deposit process
         _deposit(_token, amount);
@@ -184,7 +181,7 @@ abstract contract Strategy is UUPSUpgradeable {
         _withdraw(_token, amount);
 
         // Transfer the token to the user
-        ERC20(_token).safeTransfer(msg.sender, amount);
+        SafeTransferLib.safeTransfer(_token, msg.sender, amount);
     }
 
     //////////////////////////////////////////////////////
@@ -196,7 +193,7 @@ abstract contract Strategy is UUPSUpgradeable {
     /// @param gauge Address of Liqudity gauge corresponding to LP token
     /// @param amount Amount of LP token to deposit
     function _depositIntoLocker(address _token, address gauge, uint256 amount) internal virtual {
-        ERC20(_token).safeTransfer(address(locker), amount);
+        SafeTransferLib.safeTransfer(_token, address(locker), amount);
 
         // Locker deposit token
         locker.execute(gauge, 0, abi.encodeWithSignature("deposit(uint256)", amount));
@@ -219,16 +216,9 @@ abstract contract Strategy is UUPSUpgradeable {
     //////////////////////////////////////////////////////
 
     /// @notice Claim `FeeRewardToken` from the Fee Distributor and send it to the Accumulator contract.
-    function claimNativeRewards() external virtual {
+    function claimNativeRewards() external {
         /// Claim from the Fee Distributor.
         _claimNativeRewards();
-
-        /// Check if there is something to send.
-        uint256 _claimed = ERC20(feeRewardToken).balanceOf(address(locker));
-        if (_claimed == 0) return;
-
-        /// Transfer the rewards to the Accumulator contract.
-        _transferFromLocker(feeRewardToken, accumulator, _claimed);
     }
 
     function harvest(address _asset, bool _distributeSDT, bool _claimExtra) public virtual {
@@ -245,7 +235,7 @@ abstract contract Strategy is UUPSUpgradeable {
         /// 2. Distribute SDT
         // Distribute SDT to the related gauge
         if (_distributeSDT) {
-            ISdtDistributorV2(SDTDistributor).distribute(rewardDistributor);
+            ISDTDistributor(SDTDistributor).distribute(rewardDistributor);
         }
 
         /// 3. Check for additional rewards from the Locker.
@@ -277,7 +267,7 @@ abstract contract Strategy is UUPSUpgradeable {
         uint256 _feesAccrued = feesAccrued;
         feesAccrued = 0;
 
-        ERC20(rewardToken).safeTransfer(feeReceiver, _feesAccrued);
+        SafeTransferLib.safeTransfer(rewardToken, feeReceiver, _feesAccrued);
     }
 
     /// @notice Internal function to charge protocol fees from `rewardToken` claimed by the locker.
@@ -286,7 +276,7 @@ abstract contract Strategy is UUPSUpgradeable {
         if (_amount == 0) return 0;
         if (protocolFeesPercent == 0) return _amount;
 
-        uint256 _feeAccrued = _amount.mulDivDown(protocolFeesPercent, DENOMINATOR);
+        uint256 _feeAccrued = _amount.mulDiv(protocolFeesPercent, DENOMINATOR);
         feesAccrued += _feeAccrued;
 
         return _amount -= _feeAccrued;
@@ -296,9 +286,9 @@ abstract contract Strategy is UUPSUpgradeable {
         if (_amount == 0) return 0;
         if (claimIncentiveFee == 0) return _amount;
 
-        uint256 _claimerIncentive = _amount.mulDivDown(claimIncentiveFee, DENOMINATOR);
+        uint256 _claimerIncentive = _amount.mulDiv(claimIncentiveFee, DENOMINATOR);
 
-        ERC20(rewardToken).safeTransfer(msg.sender, _claimerIncentive);
+        SafeTransferLib.safeTransfer(rewardToken, msg.sender, _claimerIncentive);
 
         return _amount - _claimerIncentive;
     }
@@ -335,6 +325,13 @@ abstract contract Strategy is UUPSUpgradeable {
     /// @notice Internal implementation of native reward claim compatible with FeeDistributor.vy like contracts.
     function _claimNativeRewards() internal virtual {
         locker.execute(feeDistributor, 0, abi.encodeWithSignature("claim()"));
+
+        /// Check if there is something to send.
+        uint256 _claimed = ERC20(feeRewardToken).balanceOf(address(locker));
+        if (_claimed == 0) return;
+
+        /// Transfer the rewards to the Accumulator contract.
+        _transferFromLocker(feeRewardToken, accumulator, _claimed);
     }
 
     function _claimRewardToken(address _gauge) internal virtual returns (uint256 _claimed) {
@@ -436,7 +433,7 @@ abstract contract Strategy is UUPSUpgradeable {
     //////////////////////////////////////////////////////
 
     function _transferFromLocker(address _asset, address _recipient, uint256 _amount) internal {
-        locker.execute(_asset, 0, abi.encodeWithSignature("transfer(address,uint256)", _recipient, _amount));
+        locker.safeExecute(_asset, 0, abi.encodeWithSignature("transfer(address,uint256)", _recipient, _amount));
     }
 
     //////////////////////////////////////////////////////
@@ -473,7 +470,7 @@ abstract contract Strategy is UUPSUpgradeable {
         uint256 amount = ERC20(gauge).balanceOf(address(locker));
 
         // Locker withdraw all from the gauge
-        locker.execute(gauge, 0, abi.encodeWithSignature("withdraw(uint256)", amount));
+        locker.safeExecute(gauge, 0, abi.encodeWithSignature("withdraw(uint256)", amount));
 
         // Locker transfer the LP token to the vault
         _transferFromLocker(_asset, msg.sender, amount);
@@ -500,8 +497,8 @@ abstract contract Strategy is UUPSUpgradeable {
         gauges[token] = gauge;
 
         /// Approve trough the locker.
-        locker.execute(token, 0, abi.encodeWithSignature("approve(address,uint256)", gauge, 0));
-        locker.execute(token, 0, abi.encodeWithSignature("approve(address,uint256)", gauge, type(uint256).max));
+        locker.safeExecute(token, 0, abi.encodeWithSignature("approve(address,uint256)", gauge, 0));
+        locker.safeExecute(token, 0, abi.encodeWithSignature("approve(address,uint256)", gauge, type(uint256).max));
     }
 
     /// @notice Set type for a Liquidity gauge
@@ -520,8 +517,7 @@ abstract contract Strategy is UUPSUpgradeable {
         rewardDistributors[gauge] = rewardDistributor;
 
         /// Approve the rewardDistributor to spend token.
-        ERC20(rewardToken).safeApprove(rewardDistributor, 0);
-        ERC20(rewardToken).safeApprove(rewardDistributor, type(uint256).max);
+        SafeTransferLib.safeApproveWithRetry(rewardToken, rewardDistributor, type(uint256).max);
     }
 
     /// @notice Accept Reward Distrbutor Ownership
@@ -580,6 +576,13 @@ abstract contract Strategy is UUPSUpgradeable {
         SDTDistributor = newSdtDistributor;
     }
 
+    /// @notice Update fee receiver
+    /// @param _feeReceiver New fee receiver.
+    function setFeeReceiver(address _feeReceiver) external onlyGovernance {
+        if (_feeReceiver == address(0)) revert ADDRESS_NULL();
+        feeReceiver = _feeReceiver;
+    }
+
     /// @notice Update protocol fees.
     /// @param _protocolFee New protocol fee.
     function updateProtocolFee(uint256 _protocolFee) external onlyGovernance {
@@ -627,7 +630,7 @@ abstract contract Strategy is UUPSUpgradeable {
         address _rewardDistributor = rewardDistributors[gauge];
 
         /// Approve the rewardDistributor to spend token.
-        ERC20(extraRewardToken).safeApprove(_rewardDistributor, type(uint256).max);
+        SafeTransferLib.safeApproveWithRetry(extraRewardToken, _rewardDistributor, type(uint256).max);
 
         /// Add it to the Gauge with Distributor as this contract.
         ILiquidityGauge(_rewardDistributor).add_reward(extraRewardToken, address(this));
