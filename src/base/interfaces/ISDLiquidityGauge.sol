@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 interface ISDLiquidityGauge {
-    function asset() external view returns(address);
+    function asset() external view returns (address);
 
     // solhint-disable-next-line
     function add_reward(address _token, address _distributor) external;

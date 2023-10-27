@@ -18,10 +18,11 @@ contract YearnVaultFactory is PoolFactory {
 
     error CALL_FAILED();
 
-    constructor(address _strategy, address _vaultImpl, address _gaugeImpl) PoolFactory(_strategy, address(0x41252E8691e964f7DE35156B68493bAb6797a275), _vaultImpl, _gaugeImpl) {
-    }
+    constructor(address _strategy, address _vaultImpl, address _gaugeImpl)
+        PoolFactory(_strategy, address(0x41252E8691e964f7DE35156B68493bAb6797a275), _vaultImpl, _gaugeImpl)
+    {}
 
-    function create(address _gauge) public override returns (address _vault, address _rewardDistributor){
+    function create(address _gauge) public override returns (address _vault, address _rewardDistributor) {
         // deploy Vault + Gauge
         (_vault, _rewardDistributor) = super.create(_gauge);
         // deploy RewardReceiver
@@ -39,11 +40,11 @@ contract YearnVaultFactory is PoolFactory {
         emit RewardReceiverDeployed(address(rewardReceiver), _rewardDistributor);
     }
 
-    function _getGaugeStakingToken(address _gauge) internal override view returns(address lp) {
+    function _getGaugeStakingToken(address _gauge) internal view override returns (address lp) {
         lp = ILiquidityGaugeStrat(_gauge).asset();
     }
 
-    function _isValidGauge(address _gauge) internal override view returns(bool) {
+    function _isValidGauge(address _gauge) internal view override returns (bool) {
         return true;
     }
 

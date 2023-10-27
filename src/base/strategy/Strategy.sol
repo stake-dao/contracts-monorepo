@@ -219,9 +219,9 @@ abstract contract Strategy is UUPSUpgradeable {
     //////////////////////////////////////////////////////
 
     /// @notice Claim `FeeRewardToken` from the Fee Distributor and send it to the Accumulator contract.
-    function claimNativeRewards() external {
+    function claimNativeRewards() external virtual {
         /// Claim from the Fee Distributor.
-        _claimNativeRewads();
+        _claimNativeRewards();
 
         /// Check if there is something to send.
         uint256 _claimed = ERC20(feeRewardToken).balanceOf(address(locker));
@@ -333,7 +333,7 @@ abstract contract Strategy is UUPSUpgradeable {
     }
 
     /// @notice Internal implementation of native reward claim compatible with FeeDistributor.vy like contracts.
-    function _claimNativeRewads() internal virtual {
+    function _claimNativeRewards() internal virtual {
         locker.execute(feeDistributor, 0, abi.encodeWithSignature("claim()"));
     }
 

@@ -14,13 +14,14 @@ import {YearnVaultFactory} from "src/yearn/factory/YearnVaultFactory.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
+import {IYearnRewardPool} from "src/base/interfaces/IYearnRewardPool.sol";
 
 interface ICurvePool {
     function exchange_underlying(uint256, uint256, uint256, uint256) external payable;
 }
 
 interface IDyfiOption {
-    function eth_required(uint256) external view returns(uint256);
+    function eth_required(uint256) external view returns (uint256);
     function redeem(uint256) external payable;
 }
 
@@ -31,9 +32,11 @@ contract YearnStrategyTest is Test {
     ILocker public locker;
     address public veToken;
     address public constant DYFI = 0x41252E8691e964f7DE35156B68493bAb6797a275;
+    address public constant DYFI_REWARD_POOL = 0x2391Fc8f5E417526338F5aa3968b1851C16D894E;
     address public constant LOCKER_GOV = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
     address public sdYFI;
     address public sdtDistributor;
+    address public yfi;
 
     address[] public yearnGauges = [
         0x81d93531720d86f0491DeE7D03f30b3b5aC24e59, // yETh
@@ -46,18 +49,20 @@ contract YearnStrategyTest is Test {
     address[] public sdVaults = new address[](yearnGauges.length);
     address[] public sdGauges = new address[](yearnGauges.length);
 
-    address public constant DYFIETH_POOL = 0x8aC64Ba8E440cE5c2d08688f4020698b1826152E;
-    address public constant DYFI_OPTION = 0x2fBa208E1B2106d40DaA472Cb7AE0c6C7EFc0224;
+    //address public constant DYFIETH_POOL = 0x8aC64Ba8E440cE5c2d08688f4020698b1826152E;
+    //address public constant DYFI_OPTION = 0x2fBa208E1B2106d40DaA472Cb7AE0c6C7EFc0224;
 
     address public constant GAUGE_IMPL = 0x3Dc56D46F0Bd13655EfB29594a2e44534c453BF9;
+    address public constant YEARN_ACC = 0x8b65438178CD4EF67b0177135dE84Fe7E3C30ec3;
 
     function setUp() public {
-        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"));
+        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"), 18430190);
         vm.selectFork(forkId);
 
         locker = ILocker(AddressBook.YFI_LOCKER);
         veToken = AddressBook.VE_YFI;
         sdYFI = AddressBook.SD_YFI;
+        yfi = AddressBook.YFI;
         sdtDistributor = AddressBook.SDT_DISTRIBUTOR_STRAT;
         strategy = new YearnStrategy(address(this), address(locker), veToken, DYFI, sdYFI);
 
@@ -65,6 +70,7 @@ contract YearnStrategyTest is Test {
         factory = new YearnVaultFactory(address(strategy), address(vaultImpl), GAUGE_IMPL);
 
         strategy.setFactory(address(factory));
+        strategy.setAccumulator(YEARN_ACC);
         vm.prank(LOCKER_GOV);
         locker.setGovernance(address(strategy));
 
@@ -74,7 +80,7 @@ contract YearnStrategyTest is Test {
             Vm.Log[] memory entries = vm.getRecordedLogs();
             assertEq(entries.length, 12);
             assertEq(entries[8].topics[0], keccak256("PoolDeployed(address,address,address,address)"));
-            (sdVaults[i],sdGauges[i],,) = abi.decode(entries[8].data, (address,address,address,address));
+            (sdVaults[i], sdGauges[i],,) = abi.decode(entries[8].data, (address, address, address, address));
         }
 
         for (uint256 i; i < yearnGauges.length; i++) {
@@ -84,19 +90,19 @@ contract YearnStrategyTest is Test {
         deal(address(this), 3e18);
     }
 
-    // function testCloneVault() external {
-    //     vm.recordLogs();
-    //     factory.create(yearnGauges[3]);
-    //     Vm.Log[] memory entries = vm.getRecordedLogs();
-    //     assertEq(entries.length, 12);
-    //     assertEq(entries[8].topics[0], keccak256("PoolDeployed(address,address,address,address)"));
-    //     (address vault,,,) = abi.decode(entries[8].data, (address,address,address,address));
-        
-    //     string memory name = StrategyVaultImpl(vault).name();
-    //     string memory symbol = StrategyVaultImpl(vault).symbol(); 
-    //     assertEq(name, "sdyvCurve-dYFIETH-f-f Vault");
-    //     assertEq(symbol, "sdyvCurve-dYFIETH-f-f-vault");
-    // }
+    function testCloneVault() external {
+        vm.recordLogs();
+        factory.create(yearnGauges[3]);
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        assertEq(entries.length, 12);
+        assertEq(entries[8].topics[0], keccak256("PoolDeployed(address,address,address,address)"));
+        (address vault,,,) = abi.decode(entries[8].data, (address, address, address, address));
+
+        string memory name = StrategyVaultImpl(vault).name();
+        string memory symbol = StrategyVaultImpl(vault).symbol();
+        assertEq(name, "sdyvCurve-dYFIETH-f-f Vault");
+        assertEq(symbol, "sdyvCurve-dYFIETH-f-f-vault");
+    }
 
     function testVaultInteraction() external {
         uint256 amountToDeposit = 1e17;
@@ -120,17 +126,35 @@ contract YearnStrategyTest is Test {
         }
     }
 
-    function testHarvest() external {}
+    function testHarvest() external {
+        uint256 amountToDeposit = 1e17;
+        IERC20(yearnLps[0]).approve(sdVaults[0], amountToDeposit);
+        StrategyVaultImpl(sdVaults[0]).deposit(address(this), amountToDeposit, true);
+        skip(1 days);
+        uint256 gaugeRewardBalance = IERC20(DYFI).balanceOf(sdGauges[0]);
+        assertEq(gaugeRewardBalance, 0);
+        strategy.harvest(yearnLps[0], false, false);
+        gaugeRewardBalance = IERC20(DYFI).balanceOf(sdGauges[0]);
+        assertGt(gaugeRewardBalance, 0);
+        skip(1 days);
+        uint256 userRewardBalance = IERC20(DYFI).balanceOf(address(this));
+        assertEq(userRewardBalance, 0);
+        ILiquidityGaugeStrat(sdGauges[0]).claim_rewards(address(this));
+        userRewardBalance = IERC20(DYFI).balanceOf(address(this));
+        assertGt(userRewardBalance, 0);
+    }
 
-    // function testReedem() external {
-    //     // buy dYFI on curve
-    //     ICurvePool(DYFIETH_POOL).exchange_underlying{value:5e17}(1, 0, 5e17, 0);
-    //     emit log_uint(IERC20(DYFI).balanceOf(address(this)));
-    //     uint256 dYfiBalance = IERC20(DYFI).balanceOf(address(this));
-    //     uint256 ethRequired = IDyfiOption(DYFI_OPTION).eth_required(dYfiBalance);
-    //     IERC20(DYFI).approve(DYFI_OPTION, 1000e18);
-    //     IDyfiOption(DYFI_OPTION).redeem{value:ethRequired}(dYfiBalance);
-    //     uint256 yearnBalance = IERC20(AddressBook.YFI).balanceOf(address(this));
-    //     emit
-    // }
+    function testClaimNativeRewards() external {
+        IYearnRewardPool(DYFI_REWARD_POOL).checkpoint_token();
+        IYearnRewardPool(DYFI_REWARD_POOL).checkpoint_total_supply();
+        uint256 accRewardBalance = IERC20(yfi).balanceOf(YEARN_ACC);
+        assertEq(accRewardBalance, 0);
+        strategy.claimNativeRewards();
+        accRewardBalance = IERC20(yfi).balanceOf(YEARN_ACC);
+        assertGt(accRewardBalance, 0);
+    }
+
+    function testClaimDyfiRewards() external {
+        strategy.claimDYfiRewardPool();
+    }
 }
