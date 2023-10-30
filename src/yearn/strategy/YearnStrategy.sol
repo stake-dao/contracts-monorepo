@@ -1,42 +1,45 @@
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {Strategy} from "src/base/strategy/Strategy.sol";
+import {ERC20} from "solady/tokens/ERC20.sol";
 import {IYearnGauge} from "src/base/interfaces/IYearnGauge.sol";
-import {IYearnRewardPool} from "src/base/interfaces/IYearnRewardPool.sol";
+import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
 import {ISDTDistributor} from "src/base/interfaces/ISDTDistributor.sol";
-import {ERC20} from "solmate/tokens/ERC20.sol";
+import {IYearnRewardPool} from "src/base/interfaces/IYearnRewardPool.sol";
+import {ILocker, SafeExecute, Strategy} from "src/base/strategy/Strategy.sol";
 
 /// @title Yearn Strategy
 /// @author StakeDAO
-/// @notice Deposit/Withdraw in yearn gauges
+/// @notice Deposit/Withdraw in Yearn Gauges.
 contract YearnStrategy is Strategy {
+    using SafeExecute for ILocker;
+
+    /// @notice Reward Pool Contract to distribute DYFI.
     address public constant DYFI_REWARD_POOL = 0x2391Fc8f5E417526338F5aa3968b1851C16D894E;
-    address public constant YFI = 0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e;
-    mapping(address => address) public rewardReceivers; // sdGauge -> rewardReceiver
+
+    /// @notice Mapping of Reward Distributors to Reward Receivers.
+    mapping(address => address) public rewardReceivers;
 
     constructor(address _owner, address _locker, address _veToken, address _rewardToken, address _minter)
         Strategy(_owner, _locker, _veToken, _rewardToken, _minter)
     {}
 
-    function setRewardReceiver(address _gauge, address _rewardReceiver) external onlyGovernanceOrAllowed {
-        rewardReceivers[_gauge] = _rewardReceiver;
-    }
-
     function claimDYfiRewardPool() external {
-        // claim dYFI reward, locker receive it
+        /// Claim dYFI reward, locker receive it.
         IYearnRewardPool(DYFI_REWARD_POOL).claim(address(locker));
-        // transfer the whole dYFI locker's amount to the acc
+        /// Transfer the whole dYFI locker's amount to the acc.
         _transferFromLocker(rewardToken, accumulator, ERC20(rewardToken).balanceOf(address(locker)));
     }
 
     function _claimRewardToken(address _gauge) internal override returns (uint256 _claimed) {
-        // claim the reward from the yearn gauge
+        /// Claim the reward from the yearn gauge.
         IYearnGauge(_gauge).getReward(address(locker));
-        // transfer the whole balance here from the reward recipient
+
+        /// Transfer the whole balance here from the reward recipient.
         address rewardReceiver = rewardReceivers[_gauge];
         _claimed = ERC20(rewardToken).balanceOf(rewardReceiver);
-        ERC20(rewardToken).transferFrom(rewardReceiver, address(this), _claimed);
+
+        SafeTransferLib.safeTransferFrom(rewardToken, rewardReceiver, address(this), _claimed);
     }
 
     function _claimExtraRewards(address _gauge, address _rewardDistributor)
@@ -47,15 +50,19 @@ contract YearnStrategy is Strategy {
 
     /// @notice Internal implementation of native reward claim compatible with FeeDistributor.vy like contracts.
     function _claimNativeRewards() internal override {
-        locker.claimRewards(YFI, accumulator);
+        locker.claimRewards(feeRewardToken, accumulator);
     }
 
-    function _withdrawFromLocker(address _asset, address _gauge, uint256 _amount) internal override {
+    function _withdrawFromLocker(address, address _gauge, uint256 _amount) internal override {
         /// Withdraw from the Gauge trough the Locker.
-        locker.execute(
+        locker.safeExecute(
             _gauge,
             0,
             abi.encodeWithSignature("withdraw(uint256,address,address)", _amount, address(this), address(locker))
         );
+    }
+
+    function setRewardReceiver(address _gauge, address _rewardReceiver) external onlyGovernanceOrFactory {
+        rewardReceivers[_gauge] = _rewardReceiver;
     }
 }

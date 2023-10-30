@@ -69,6 +69,7 @@ contract YearnStrategyTest is Test {
 
         strategy.setFactory(address(factory));
         strategy.setAccumulator(YEARN_ACC);
+        strategy.setFeeRewardToken(yfi);
         vm.prank(LOCKER_GOV);
         locker.setGovernance(address(strategy));
 

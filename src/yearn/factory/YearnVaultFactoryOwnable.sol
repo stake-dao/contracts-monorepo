@@ -65,9 +65,9 @@ contract YearnVaultFactoryOwnable is PoolFactory {
         lp = ILiquidityGaugeStrat(_gauge).asset();
     }
 
-    function _isValidGauge(address _gauge) internal pure override returns (bool) {
+    function _isValidGauge(address) internal pure override returns (bool) {
         return true;
     }
 
-    function _addExtraRewards(address _gauge) internal override {}
+    function _addExtraRewards(address) internal override {}
 }
