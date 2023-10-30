@@ -2,6 +2,7 @@
 src = "src"
 out = "out"
 libs = ["lib"]
+verbosity = 3
 
 remappings = [
 "utils=lib/utils/",
@@ -13,7 +14,6 @@ remappings = [
 "openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
 ]
 
-ffi = true
 optimizers_runs = 200
 
 [rpc_endpoints]

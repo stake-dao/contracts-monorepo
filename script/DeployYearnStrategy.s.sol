@@ -13,7 +13,6 @@ import {YearnVaultFactoryOwnable} from "src/yearn/factory/YearnVaultFactoryOwnab
 import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
 
 contract DeployYearnStrategy is Script, Test {
-
     YearnStrategy public strategyImpl;
     YearnStrategy public strategy;
 
@@ -31,8 +30,9 @@ contract DeployYearnStrategy is Script, Test {
     function run() public {
         vm.startBroadcast();
 
-        // Deploy strategy impl 
-        strategyImpl = new YearnStrategy(GOVERNANCE, AddressBook.YFI_LOCKER, AddressBook.VE_YFI, DYFI, AddressBook.SD_YFI);
+        // Deploy strategy impl
+        strategyImpl =
+            new YearnStrategy(GOVERNANCE, AddressBook.YFI_LOCKER, AddressBook.VE_YFI, DYFI, AddressBook.SD_YFI);
         // Clone strategy
         address strategyProxy = LibClone.deployERC1967(address(strategyImpl));
         strategy = YearnStrategy(payable(strategyProxy));
