@@ -10,7 +10,7 @@ import {ISDLiquidityGauge} from "src/base/interfaces/ISDLiquidityGauge.sol";
 
 /// @notice Vault implementation for Stake DAO.
 /// @dev Deposit LP tokens to Stake DAO and receive sdGauge tokens as a receipt.
-contract StrategyVaultImpl is ERC20, Clone {
+abstract contract StrategyVaultImpl is ERC20, Clone {
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
 
@@ -45,7 +45,7 @@ contract StrategyVaultImpl is ERC20, Clone {
         return ISDLiquidityGauge(_getArgAddress(40));
     }
 
-    function initialize() external {
+    function initialize() public virtual {
         if (token().allowance(address(this), address(strategy())) != 0) revert ALREADY_INITIALIZED();
 
         SafeTransferLib.safeApproveWithRetry(address(token()), address(strategy()), type(uint256).max);

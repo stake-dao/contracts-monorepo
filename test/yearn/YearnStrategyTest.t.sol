@@ -9,7 +9,7 @@ import "utils/VyperDeployer.sol";
 
 import {AddressBook} from "addressBook/AddressBook.sol";
 import {YearnStrategy} from "src/yearn/strategy/YearnStrategy.sol";
-import {StrategyVaultImpl} from "src/base/vault/StrategyVaultImpl.sol";
+import {YearnStrategyVaultImpl} from "src/yearn/vault/YearnStrategyVaultImpl.sol";
 import {YearnVaultFactoryOwnable} from "src/yearn/factory/YearnVaultFactoryOwnable.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
@@ -28,7 +28,7 @@ interface IDyfiOption {
 contract YearnStrategyTest is Test {
     YearnVaultFactoryOwnable public factory;
     YearnStrategy public strategy;
-    StrategyVaultImpl public vaultImpl;
+    YearnStrategyVaultImpl public vaultImpl;
     ILocker public locker;
     address public veToken;
     address public constant DYFI = 0x41252E8691e964f7DE35156B68493bAb6797a275;
@@ -64,7 +64,7 @@ contract YearnStrategyTest is Test {
         sdtDistributor = AddressBook.SDT_DISTRIBUTOR_STRAT;
         strategy = new YearnStrategy(address(this), address(locker), veToken, DYFI, sdYFI);
 
-        vaultImpl = new StrategyVaultImpl();
+        vaultImpl = new YearnStrategyVaultImpl();
         factory = new YearnVaultFactoryOwnable(address(strategy), address(vaultImpl), GAUGE_IMPL);
 
         strategy.setFactory(address(factory));
@@ -86,6 +86,7 @@ contract YearnStrategyTest is Test {
             deal(yearnLps[i], address(this), 1e17);
         }
         deal(address(this), 3e18);
+        deal(yearnGauges[0], address(this), 1e18);
     }
 
     function testCloneVault() external {
@@ -96,8 +97,8 @@ contract YearnStrategyTest is Test {
         assertEq(entries[7].topics[0], keccak256("PoolDeployed(address,address,address,address)"));
         (address vault,,,) = abi.decode(entries[7].data, (address, address, address, address));
 
-        string memory name = StrategyVaultImpl(vault).name();
-        string memory symbol = StrategyVaultImpl(vault).symbol();
+        string memory name = YearnStrategyVaultImpl(vault).name();
+        string memory symbol = YearnStrategyVaultImpl(vault).symbol();
         assertEq(name, "sdyvCurve-dYFIETH-f-f Vault");
         assertEq(symbol, "sdyvCurve-dYFIETH-f-f-vault");
     }
@@ -109,14 +110,14 @@ contract YearnStrategyTest is Test {
         uint256 userBalance;
         for (uint256 i; i < sdVaults.length - 1; i++) {
             IERC20(yearnLps[i]).approve(sdVaults[i], amountToDeposit);
-            StrategyVaultImpl(sdVaults[i]).deposit(address(this), amountToDeposit, true);
+            YearnStrategyVaultImpl(sdVaults[i]).deposit(address(this), amountToDeposit, true);
             vaultBalance = IERC20(yearnLps[i]).balanceOf(sdVaults[i]);
             gaugeBalance = IERC20(sdVaults[i]).balanceOf(sdGauges[i]);
             assertEq(vaultBalance, 0);
             assertEq(gaugeBalance, amountToDeposit);
             // skip 1 second
             skip(10 seconds);
-            StrategyVaultImpl(sdVaults[i]).withdraw(amountToDeposit);
+            YearnStrategyVaultImpl(sdVaults[i]).withdraw(amountToDeposit);
             userBalance = IERC20(yearnLps[i]).balanceOf(address(this));
             gaugeBalance = IERC20(sdVaults[i]).balanceOf(sdGauges[i]);
             assertEq(userBalance, amountToDeposit);
@@ -124,10 +125,20 @@ contract YearnStrategyTest is Test {
         }
     }
 
+    function testGaugeTokenDeposit() external {
+        uint256 amountToDeposit = 1e18;
+        IERC20(yearnGauges[0]).approve(sdVaults[0], amountToDeposit);
+        assertEq(IERC20(sdGauges[0]).balanceOf(address(this)), 0);
+        assertEq(IERC20(yearnGauges[0]).balanceOf(address(locker)), 0);
+        YearnStrategyVaultImpl(sdVaults[0]).depositGaugeToken(address(this), amountToDeposit);
+        assertEq(IERC20(sdGauges[0]).balanceOf(address(this)), amountToDeposit);
+        assertEq(IERC20(yearnGauges[0]).balanceOf(address(locker)), amountToDeposit);
+    }
+
     function testHarvest() external {
         uint256 amountToDeposit = 1e17;
         IERC20(yearnLps[0]).approve(sdVaults[0], amountToDeposit);
-        StrategyVaultImpl(sdVaults[0]).deposit(address(this), amountToDeposit, true);
+        YearnStrategyVaultImpl(sdVaults[0]).deposit(address(this), amountToDeposit, true);
         skip(1 days);
         uint256 gaugeRewardBalance = IERC20(DYFI).balanceOf(sdGauges[0]);
         assertEq(gaugeRewardBalance, 0);
