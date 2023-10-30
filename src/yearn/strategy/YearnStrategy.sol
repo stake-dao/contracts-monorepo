@@ -20,10 +20,17 @@ contract YearnStrategy is Strategy {
     /// @notice Mapping of Reward Distributors to Reward Receivers.
     mapping(address => address) public rewardReceivers;
 
+    /// @notice Constructor.
+    /// @param _owner Address of the strategy owner.
+    /// @param _locker Address of the locker.
+    /// @param _veToken Address of the veToken.
+    /// @param _rewardToken Address of the reward token.
+    /// @param _minter Address of the minter (sdToken contract).
     constructor(address _owner, address _locker, address _veToken, address _rewardToken, address _minter)
         Strategy(_owner, _locker, _veToken, _rewardToken, _minter)
     {}
 
+    /// @notice Claim DYFI token in the veYFI reward pool
     function claimDYfiRewardPool() external {
         /// Claim dYFI reward, locker receive it.
         IYearnRewardPool(DYFI_REWARD_POOL).claim(address(locker));
@@ -31,6 +38,9 @@ contract YearnStrategy is Strategy {
         _transferFromLocker(rewardToken, accumulator, ERC20(rewardToken).balanceOf(address(locker)));
     }
 
+    /// @notice Claim `rewardToken` allocated for a gauge.
+    /// @param _gauge Address of the liquidity gauge to claim for.
+    /// @return _claimed Number of DYFI claimed
     function _claimRewardToken(address _gauge) internal override returns (uint256 _claimed) {
         /// Claim the reward from the yearn gauge.
         IYearnGauge(_gauge).getReward(address(locker));
@@ -42,17 +52,17 @@ contract YearnStrategy is Strategy {
         SafeTransferLib.safeTransferFrom(rewardToken, rewardReceiver, address(this), _claimed);
     }
 
-    function _claimExtraRewards(address _gauge, address _rewardDistributor)
-        internal
-        override
-        returns (uint256 _claimed)
-    {}
+    /// @notice Claim extra rewards from the locker.
+    function _claimExtraRewards(address, address) internal override returns (uint256) {}
 
     /// @notice Internal implementation of native reward claim compatible with FeeDistributor.vy like contracts.
     function _claimNativeRewards() internal override {
         locker.claimRewards(feeRewardToken, accumulator);
     }
 
+    /// @notice Withdraw from the gauge through the Locker.
+    /// @param _gauge Address of Liqudity gauge corresponding to LP token.
+    /// @param _amount Amount of LP token to withdraw.
     function _withdrawFromLocker(address, address _gauge, uint256 _amount) internal override {
         /// Withdraw from the Gauge trough the Locker.
         locker.safeExecute(

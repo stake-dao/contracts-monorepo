@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import "forge-std/Vm.sol";
+import "solady/utils/LibClone.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
@@ -28,6 +29,7 @@ interface IDyfiOption {
 contract YearnStrategyTest is Test {
     YearnVaultFactoryOwnable public factory;
     YearnStrategy public strategy;
+    YearnStrategy public strategyImpl;
     YearnStrategyVaultImpl public vaultImpl;
     ILocker public locker;
     address public veToken;
@@ -62,7 +64,10 @@ contract YearnStrategyTest is Test {
         sdYFI = AddressBook.SD_YFI;
         yfi = AddressBook.YFI;
         sdtDistributor = AddressBook.SDT_DISTRIBUTOR_STRAT;
-        strategy = new YearnStrategy(address(this), address(locker), veToken, DYFI, sdYFI);
+        strategyImpl = new YearnStrategy(address(this), address(locker), veToken, DYFI, sdYFI);
+        address strategyProxy = LibClone.deployERC1967(address(strategyImpl));
+        strategy = YearnStrategy(payable(strategyProxy));
+        strategy.initialize(address(this));
 
         vaultImpl = new YearnStrategyVaultImpl();
         factory = new YearnVaultFactoryOwnable(address(strategy), address(vaultImpl), GAUGE_IMPL);

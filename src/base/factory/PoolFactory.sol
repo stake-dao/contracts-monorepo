@@ -185,9 +185,11 @@ abstract contract PoolFactory {
     }
 
     /// @notice Perform checks on the gauge to make sure it's valid and can be used.
+    /// @param _gauge Address of the liquidity gauge.
     function _isValidGauge(address _gauge) internal view virtual returns (bool) {}
 
     /// @notice Perform checks on the token to make sure it's valid and can be used.
+    /// @param _token Address of the token.
     function _isValidToken(address _token) internal view virtual returns (bool) {}
 
     /// @notice Retrieve the staking token from the gauge.
