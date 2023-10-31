@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import "forge-std/Test.sol";
+import "test/base/Strategy.t.sol";
 import "solady/utils/LibClone.sol";
 
 import {AddressBook} from "addressBook/AddressBook.sol";
@@ -11,7 +11,7 @@ import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol
 import {YearnStrategyVaultImpl} from "src/yearn/vault/YearnStrategyVaultImpl.sol";
 import {YearnVaultFactoryOwnable} from "src/yearn/factory/YearnVaultFactoryOwnable.sol";
 
-abstract contract YearnStrategyTestBis is Test {
+abstract contract YearnStrategyTestBis is StrategyTest {
     address public immutable gauge;
 
     YearnVaultFactoryOwnable public factory;
@@ -77,8 +77,14 @@ abstract contract YearnStrategyTestBis is Test {
         rewardDistributor = ILiquidityGaugeStrat(_rewardDistributor);
     }
 
-    function test_deployment() public {
-        assertEq(address(vault.strategy()), address(strategy));
-        assertEq(address(vault.token()), ILiquidityGaugeStrat(gauge).asset());
+    function test_deposit(uint128 _amount) public testDeposit(vault, strategy, _amount) {
+        uint256 amount = uint256(_amount);
+        vm.assume(amount != 0);
+
+        deal(address(vault.token()), address(this), amount);
+        vault.token().approve(address(vault), amount);
+
+        /// Deposit with _doEarn = true.
+        vault.deposit(address(this), amount, true);
     }
 }
