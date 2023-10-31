@@ -168,12 +168,11 @@ contract YearnStrategyTest is Test {
         strategy.claimDFYIRewardPool();
 
         assertEq(accDYFIRewardBalance, 0);
-    accDYFIRewardBalance = IERC20(DYFI).balanceOf(YEARN_ACC);
-            assertGt(accDYFIRewardBalance, 0);
+        accDYFIRewardBalance = IERC20(DYFI).balanceOf(YEARN_ACC);
+        assertGt(accDYFIRewardBalance, 0);
     }
 
     function testClaimNativeRewards() external {
-
         IYearnRewardPool(YFI_REWARD_POOL).checkpoint_token();
         IYearnRewardPool(YFI_REWARD_POOL).checkpoint_total_supply();
 
