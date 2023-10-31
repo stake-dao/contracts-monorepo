@@ -20,3 +20,5 @@ docs/
 # coverage
 coverage
 lcov.info
+
+.DS_STORE
