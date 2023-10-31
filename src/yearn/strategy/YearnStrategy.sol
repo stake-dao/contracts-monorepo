@@ -30,14 +30,6 @@ contract YearnStrategy is Strategy {
         Strategy(_owner, _locker, _veToken, _rewardToken, _minter)
     {}
 
-    /// @notice Claim DYFI token in the veYFI reward pool
-    function claimDYfiRewardPool() external {
-        /// Claim dYFI reward, locker receive it.
-        IYearnRewardPool(DYFI_REWARD_POOL).claim(address(locker));
-        /// Transfer the whole dYFI locker's amount to the acc.
-        _transferFromLocker(rewardToken, accumulator, ERC20(rewardToken).balanceOf(address(locker)));
-    }
-
     /// @notice Claim `rewardToken` allocated for a gauge.
     /// @param _gauge Address of the liquidity gauge to claim for.
     /// @return _claimed Number of DYFI claimed
@@ -57,7 +49,14 @@ contract YearnStrategy is Strategy {
 
     /// @notice Internal implementation of native reward claim compatible with FeeDistributor.vy like contracts.
     function _claimNativeRewards() internal override {
+        /// Claim YFI from the YFI reward pool.
         locker.claimRewards(feeRewardToken, accumulator);
+
+        /// Claim dYFI reward from the dYFI reward pool.
+        IYearnRewardPool(DYFI_REWARD_POOL).claim(address(locker));
+
+        /// Transfer the whole dYFI locker's amount to the acc.
+        _transferFromLocker(rewardToken, accumulator, ERC20(rewardToken).balanceOf(address(locker)));
     }
 
     /// @notice Withdraw from the gauge through the Locker.

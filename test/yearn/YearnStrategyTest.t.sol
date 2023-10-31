@@ -160,22 +160,24 @@ contract YearnStrategyTest is Test {
     }
 
     function testClaimNativeRewards() external {
-        IYearnRewardPool(YFI_REWARD_POOL).checkpoint_token();
-        IYearnRewardPool(YFI_REWARD_POOL).checkpoint_total_supply();
-        uint256 accRewardBalance = IERC20(yfi).balanceOf(YEARN_ACC);
-        assertEq(accRewardBalance, 0);
-        strategy.claimNativeRewards();
-        accRewardBalance = IERC20(yfi).balanceOf(YEARN_ACC);
-        assertGt(accRewardBalance, 0);
-    }
-
-    function testClaimDyfiRewards() external {
         IYearnRewardPool(DYFI_REWARD_POOL).checkpoint_token();
         IYearnRewardPool(DYFI_REWARD_POOL).checkpoint_total_supply();
-        uint256 accRewardBalance = IERC20(DYFI).balanceOf(YEARN_ACC);
+
+        IYearnRewardPool(YFI_REWARD_POOL).checkpoint_token();
+        IYearnRewardPool(YFI_REWARD_POOL).checkpoint_total_supply();
+
+        uint256 accRewardBalance = IERC20(yfi).balanceOf(YEARN_ACC);
+        uint256 accDYFIRewardBalance = IERC20(DYFI).balanceOf(YEARN_ACC);
+
         assertEq(accRewardBalance, 0);
-        strategy.claimDYfiRewardPool();
-        accRewardBalance = IERC20(DYFI).balanceOf(YEARN_ACC);
+        assertEq(accDYFIRewardBalance, 0);
+
+        strategy.claimNativeRewards();
+
+        accRewardBalance = IERC20(yfi).balanceOf(YEARN_ACC);
+        accDYFIRewardBalance = IERC20(DYFI).balanceOf(YEARN_ACC);
+
         assertGt(accRewardBalance, 0);
+        assertGt(accDYFIRewardBalance, 0);
     }
 }
