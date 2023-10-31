@@ -16,5 +16,9 @@ remappings = [
 
 optimizers_runs = 200
 
+[etherscan]
+mainnet = { key = "${API_KEY_ETHERSCAN}" }
+
 [rpc_endpoints]
 ethereum = "https://eth.llamarpc.com"
+mainnet = "https://mainnet.infura.io/v3/${API_KEY_INFURA}"
