@@ -8,7 +8,7 @@ import "utils/VyperDeployer.sol";
 
 import {AddressBook} from "addressBook/AddressBook.sol";
 import {YearnStrategy} from "src/yearn/strategy/YearnStrategy.sol";
-import {YearnStrategyVaultImpl} from "src/yearn/vault/YearnStrategyVaultImpl.sol";
+import {GaugeDepositorVault} from "src/base/vault/GaugeDepositorVault.sol";
 import {YearnVaultFactoryOwnable} from "src/yearn/factory/YearnVaultFactoryOwnable.sol";
 import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
 
@@ -16,7 +16,7 @@ contract DeployYearnStrategy is Script, Test {
     YearnStrategy public strategyImpl;
     YearnStrategy public strategy;
 
-    YearnStrategyVaultImpl public vaultImpl;
+    GaugeDepositorVault public vaultImpl;
     ILiquidityGaugeStrat public gaugeImpl;
 
     YearnVaultFactoryOwnable public factory;
@@ -41,7 +41,7 @@ contract DeployYearnStrategy is Script, Test {
         strategy.initialize(DEPLOYER);
 
         // Deploy Vault impl
-        vaultImpl = new YearnStrategyVaultImpl();
+        vaultImpl = new GaugeDepositorVault();
 
         // Deploy LGV4Strat impl
         gaugeImpl = ILiquidityGaugeStrat(vyperDeployer.deployContract("src/base/gauge/LiquidityGaugeV4Strat.vy"));

@@ -5,13 +5,13 @@ import "forge-std/Test.sol";
 import "solady/utils/LibClone.sol";
 
 import "src/base/strategy/Strategy.sol";
-import "src/base/vault/StrategyVaultImpl.sol";
+import "src/base/vault/Vault.sol";
 import {AddressBook} from "addressBook/AddressBook.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {YearnStrategy} from "src/yearn/strategy/YearnStrategy.sol";
 import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
+import {GaugeDepositorVault} from "src/base/vault/GaugeDepositorVault.sol";
 import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
-import {YearnStrategyVaultImpl} from "src/yearn/vault/YearnStrategyVaultImpl.sol";
 import {YearnVaultFactoryOwnable} from "src/yearn/factory/YearnVaultFactoryOwnable.sol";
 
 abstract contract YearnStrategyTestBis is Test {
@@ -23,9 +23,9 @@ abstract contract YearnStrategyTestBis is Test {
 
     YearnStrategy public strategy;
     YearnStrategy public strategyImpl;
-    YearnStrategyVaultImpl public vaultImpl;
+    GaugeDepositorVault public vaultImpl;
 
-    YearnStrategyVaultImpl vault;
+    GaugeDepositorVault vault;
     ILiquidityGaugeStrat rewardDistributor;
 
     ILocker public locker;
@@ -61,7 +61,7 @@ abstract contract YearnStrategyTestBis is Test {
         strategy.initialize(address(this));
 
         /// Deploy Vault Implentation.
-        vaultImpl = new YearnStrategyVaultImpl();
+        vaultImpl = new GaugeDepositorVault();
 
         /// Deploy Factory.
         factory = new YearnVaultFactoryOwnable(address(strategy), address(vaultImpl), GAUGE_IMPL);
@@ -83,7 +83,7 @@ abstract contract YearnStrategyTestBis is Test {
         address _rewardDistributor;
         (_vault, _rewardDistributor) = factory.create(gauge);
 
-        vault = YearnStrategyVaultImpl(_vault);
+        vault = GaugeDepositorVault(_vault);
         rewardDistributor = ILiquidityGaugeStrat(_rewardDistributor);
     }
 

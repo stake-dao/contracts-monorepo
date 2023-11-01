@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+import {Vault} from "src/base/vault/Vault.sol";
 import {PoolFactory} from "src/base/factory/PoolFactory.sol";
 import {IYearnGauge} from "src/base/interfaces/IYearnGauge.sol";
-import {StrategyVaultImpl} from "src/base/vault/StrategyVaultImpl.sol";
 import {IGaugeController} from "src/base/interfaces/IGaugeController.sol";
 import {RewardReceiverSingleToken} from "src/base/RewardReceiverSingleToken.sol";
 import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";

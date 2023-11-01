@@ -12,7 +12,7 @@ import {ISDLiquidityGauge} from "src/base/interfaces/ISDLiquidityGauge.sol";
 /// @title Vault Implementation for Stake DAO.
 /// @notice This contract allows users to deposit LP tokens into Stake DAO and receive sdGauge tokens in return.
 /// @dev Is an ERC20 Token and Clonable.
-contract StrategyVaultImpl is ERC20, Clone {
+contract Vault is ERC20, Clone {
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
 
@@ -55,7 +55,7 @@ contract StrategyVaultImpl is ERC20, Clone {
 
     /// @notice Initializes the contract by setting allowances for the token and liquidity gauge.
     /// @dev Reverts if the contract has already been initialized.
-    function initialize() public virtual {
+    function initialize() external {
         if (token().allowance(address(this), address(strategy())) != 0) revert ALREADY_INITIALIZED();
 
         SafeTransferLib.safeApproveWithRetry(address(token()), address(strategy()), type(uint256).max);

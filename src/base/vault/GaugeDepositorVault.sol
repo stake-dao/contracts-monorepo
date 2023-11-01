@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import "src/base/vault/StrategyVaultImpl.sol";
+import "src/base/vault/Vault.sol";
 
-/// @notice Vault implementation for Stake DAO.
-/// @dev Deposit LP tokens to Stake DAO and receive sdGauge tokens as a receipt.
-contract YearnStrategyVaultImpl is StrategyVaultImpl {
-      /// @notice Deposit the yearn gauge token
+/// @dev Support gauge deposit.
+contract GaugeDepositorVault is Vault {
+    /// @notice Deposit the yearn gauge token
     /// @param _receiver address to deposit for
     /// @param _amount amount to deposit
     function depositGaugeToken(address _receiver, uint256 _amount) external {
