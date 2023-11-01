@@ -8,14 +8,13 @@ import {ISDTDistributor} from "src/base/interfaces/ISDTDistributor.sol";
 import {IYearnRewardPool} from "src/base/interfaces/IYearnRewardPool.sol";
 import {ILocker, SafeExecute, Strategy} from "src/base/strategy/Strategy.sol";
 
-/// @title Yearn Strategy
-/// @author StakeDAO
-/// @notice Deposit/Withdraw in Yearn Gauges.
+/// @notice Main access point of Yearn Locker.
 contract YearnStrategy is Strategy {
     using SafeExecute for ILocker;
 
     /// @notice Reward Pool Contract to distribute DYFI.
-    address public constant DYFI_REWARD_POOL = 0x2391Fc8f5E417526338F5aa3968b1851C16D894E;
+    /// @dev Need to set it at deployment since it's a proxy.
+    address public dyfiRewardPool = 0x2391Fc8f5E417526338F5aa3968b1851C16D894E;
 
     /// @notice Mapping of Reward Distributors to Reward Receivers.
     mapping(address => address) public rewardReceivers;
@@ -32,7 +31,7 @@ contract YearnStrategy is Strategy {
 
     function claimDFYIRewardPool() external {
         /// Claim dYFI reward from the dYFI reward pool.
-        IYearnRewardPool(DYFI_REWARD_POOL).claim(address(locker));
+        IYearnRewardPool(dyfiRewardPool).claim(address(locker));
 
         /// Transfer the whole dYFI locker's amount to the acc.
         _transferFromLocker(rewardToken, accumulator, ERC20(rewardToken).balanceOf(address(locker)));
@@ -81,5 +80,10 @@ contract YearnStrategy is Strategy {
 
         /// Set the reward receiver in the gauge.
         locker.safeExecute(_gauge, 0, abi.encodeWithSignature("setRecipient(address)", address(_rewardReceiver)));
+    }
+
+    /// @notice Set the dYFI reward pool.
+    function setDYFIRewardPool(address _dyfiRewardPool) external onlyGovernanceOrFactory {
+        dyfiRewardPool = _dyfiRewardPool;
     }
 }
