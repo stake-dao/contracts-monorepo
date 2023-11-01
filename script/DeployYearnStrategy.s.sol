@@ -21,27 +21,27 @@ contract DeployYearnStrategy is Script, Test {
 
     YearnVaultFactoryOwnable public factory;
 
-    address public constant GOVERNANCE = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
     address public constant DYFI = 0x41252E8691e964f7DE35156B68493bAb6797a275;
+    address public constant DEPLOYER = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
     address public constant YEARN_ACC = 0x8b65438178CD4EF67b0177135dE84Fe7E3C30ec3; // v2
+    address public constant GOVERNANCE = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
 
     VyperDeployer public vyperDeployer = new VyperDeployer();
 
     function run() public {
-        vm.startBroadcast();
+        vm.startBroadcast(DEPLOYER);
 
         // Deploy strategy impl
         strategyImpl =
-            new YearnStrategy(GOVERNANCE, AddressBook.YFI_LOCKER, AddressBook.VE_YFI, DYFI, AddressBook.SD_YFI);
+            new YearnStrategy(DEPLOYER, AddressBook.YFI_LOCKER, AddressBook.VE_YFI, DYFI, AddressBook.SD_YFI);
         // Clone strategy
         address strategyProxy = LibClone.deployERC1967(address(strategyImpl));
         strategy = YearnStrategy(payable(strategyProxy));
         // Initialize strategy
-        strategy.initialize(GOVERNANCE);
+        strategy.initialize(DEPLOYER);
 
         // Deploy Vault impl
         vaultImpl = new YearnStrategyVaultImpl();
-        vm.stopBroadcast();
 
         // Deploy LGV4Strat impl
         gaugeImpl = ILiquidityGaugeStrat(vyperDeployer.deployContract("src/base/gauge/LiquidityGaugeV4Strat.vy"));
@@ -53,5 +53,13 @@ contract DeployYearnStrategy is Script, Test {
         strategy.setFactory(address(factory));
         strategy.setAccumulator(YEARN_ACC);
         strategy.setFeeRewardToken(AddressBook.YFI);
+
+        strategy.updateProtocolFee(1_500); // 15%
+        strategy.updateClaimIncentiveFee(50); // 0.5%
+
+        // Transfer ownership.
+        strategy.transferGovernance(GOVERNANCE);
+
+        vm.stopBroadcast();
     }
 }

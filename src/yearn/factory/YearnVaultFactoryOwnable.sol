@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-
 import {PoolFactory} from "src/base/factory/PoolFactory.sol";
-import {StrategyVaultImpl} from "src/base/vault/StrategyVaultImpl.sol";
-import {RewardReceiverSingleToken} from "src/base/RewardReceiverSingleToken.sol";
-import {IGaugeController} from "src/base/interfaces/IGaugeController.sol";
-import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
 import {IYearnGauge} from "src/base/interfaces/IYearnGauge.sol";
+import {StrategyVaultImpl} from "src/base/vault/StrategyVaultImpl.sol";
+import {IGaugeController} from "src/base/interfaces/IGaugeController.sol";
+import {RewardReceiverSingleToken} from "src/base/RewardReceiverSingleToken.sol";
+import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
 
- /// @title Factory contract used to create new yearn LP vaults.
+/// @title Factory contract used to create new yearn LP vaults.
 contract YearnVaultFactoryOwnable is PoolFactory {
     /// @notice Governance address
     address public governance;
