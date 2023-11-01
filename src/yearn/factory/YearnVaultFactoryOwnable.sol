@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
+
 import {PoolFactory} from "src/base/factory/PoolFactory.sol";
 import {StrategyVaultImpl} from "src/base/vault/StrategyVaultImpl.sol";
 import {RewardReceiverSingleToken} from "src/base/RewardReceiverSingleToken.sol";
@@ -8,9 +9,7 @@ import {IGaugeController} from "src/base/interfaces/IGaugeController.sol";
 import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
 import {IYearnGauge} from "src/base/interfaces/IYearnGauge.sol";
 
-/**
- * @title Factory contract used to create new yearn LP vaults
- */
+ /// @title Factory contract used to create new yearn LP vaults.
 contract YearnVaultFactoryOwnable is PoolFactory {
     /// @notice Governance address
     address public governance;
@@ -46,18 +45,12 @@ contract YearnVaultFactoryOwnable is PoolFactory {
     /// @return _rewardDistributor Address of the reward distributor to claim rewards.
     function create(address _gauge) public override returns (address _vault, address _rewardDistributor) {
         if (msg.sender != governance) revert NOT_ALLOWED();
-        // deploy Vault + Gauge
+        /// Deploy Vault + Gauge.
         (_vault, _rewardDistributor) = super.create(_gauge);
-        // deploy RewardReceiver
+        /// Deploy RewardReceiver.
         RewardReceiverSingleToken rewardReceiver = new RewardReceiverSingleToken(rewardToken, address(strategy));
 
-        // set reward receiver in yearn gauge via locker
-        bytes memory data = abi.encodeWithSignature("setRecipient(address)", address(rewardReceiver));
-        bytes memory lockerData = abi.encodeWithSignature("execute(address,uint256,bytes)", _gauge, 0, data);
-        (bool success,) = strategy.execute(strategy.locker(), 0, lockerData);
-        if (!success) revert CALL_FAILED();
-
-        // set reward receiver in strategy
+        /// Set reward receiver in strategy.
         strategy.setRewardReceiver(_gauge, address(rewardReceiver));
 
         emit RewardReceiverDeployed(address(rewardReceiver), _rewardDistributor);

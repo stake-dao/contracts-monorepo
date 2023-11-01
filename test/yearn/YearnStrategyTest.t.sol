@@ -75,6 +75,9 @@ contract YearnStrategyTest is Test {
         strategy.setFactory(address(factory));
         strategy.setAccumulator(YEARN_ACC);
         strategy.setFeeRewardToken(yfi);
+        strategy.setFeeDistributor(YFI_REWARD_POOL);
+        strategy.setDYFIRewardPool(DYFI_REWARD_POOL);
+
         vm.prank(LOCKER_GOV);
         locker.setGovernance(address(strategy));
 
@@ -165,7 +168,7 @@ contract YearnStrategyTest is Test {
 
         uint256 accDYFIRewardBalance = IERC20(DYFI).balanceOf(YEARN_ACC);
 
-        strategy.claimDFYIRewardPool();
+        strategy.claimDYFIRewardPool();
 
         assertEq(accDYFIRewardBalance, 0);
         accDYFIRewardBalance = IERC20(DYFI).balanceOf(YEARN_ACC);
