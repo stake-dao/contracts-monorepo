@@ -33,7 +33,7 @@ contract DeployYearnStrategy is Script, Test {
 
         // Deploy strategy impl
         strategyImpl =
-            new YearnStrategy(DEPLOYER, AddressBook.YFI_LOCKER, AddressBook.VE_YFI, DYFI, AddressBook.SD_YFI);
+            new YearnStrategy(GOVERNANCE, AddressBook.YFI_LOCKER, AddressBook.VE_YFI, DYFI, AddressBook.YFI_REWARD_POOL);
         // Clone strategy
         address strategyProxy = LibClone.deployERC1967(address(strategyImpl));
         strategy = YearnStrategy(payable(strategyProxy));
@@ -53,6 +53,7 @@ contract DeployYearnStrategy is Script, Test {
         strategy.setFactory(address(factory));
         strategy.setAccumulator(YEARN_ACC);
         strategy.setFeeRewardToken(AddressBook.YFI);
+        strategy.setFeeDistributor(AddressBook.YFI_REWARD_POOL);
 
         strategy.updateProtocolFee(1_500); // 15%
         strategy.updateClaimIncentiveFee(50); // 0.5%
