@@ -29,7 +29,7 @@ contract YearnStrategy is Strategy {
         Strategy(_owner, _locker, _veToken, _rewardToken, _minter)
     {}
 
-    function claimDFYIRewardPool() external {
+    function claimDYFIRewardPool() external {
         /// Claim dYFI reward from the dYFI reward pool.
         IYearnRewardPool(dyfiRewardPool).claim(address(locker));
 
