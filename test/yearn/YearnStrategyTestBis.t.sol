@@ -12,6 +12,8 @@ import {YearnStrategyVaultImpl} from "src/yearn/vault/YearnStrategyVaultImpl.sol
 import {YearnVaultFactoryOwnable} from "src/yearn/factory/YearnVaultFactoryOwnable.sol";
 
 abstract contract YearnStrategyTestBis is StrategyTest {
+    using FixedPointMathLib for uint256;
+
     address public immutable gauge;
 
     YearnVaultFactoryOwnable public factory;
@@ -64,6 +66,9 @@ abstract contract YearnStrategyTestBis is StrategyTest {
         strategy.setAccumulator(address(0xACC)); // Fake accumulator.
         strategy.setFeeRewardToken(AddressBook.YFI);
 
+        strategy.updateProtocolFee(1_700); // 17%
+        strategy.updateClaimIncentiveFee(100); // 1%
+
         /// Setup Locker.
         vm.prank(locker.governance());
         locker.setGovernance(address(strategy));
@@ -86,5 +91,63 @@ abstract contract YearnStrategyTestBis is StrategyTest {
 
         /// Deposit with _doEarn = true.
         vault.deposit(address(this), amount, true);
+    }
+
+    function test_withdraw(uint128 _amount) public testWithdraw(vault, strategy, _amount) {
+        uint256 amount = uint256(_amount);
+        vm.assume(amount != 0);
+
+        deal(address(vault.token()), address(this), amount);
+        vault.token().approve(address(vault), amount);
+
+        /// Deposit with _doEarn = true.
+        vault.deposit(address(this), amount, true);
+
+        /// Withdraw.
+        vault.withdraw(amount);
+    }
+
+    function test_harvest(uint128 _amount) public {
+        address token = address(vault.token());
+        address rewardToken = strategy.rewardToken();
+
+        uint256 amount = uint256(_amount);
+        vm.assume(amount > 1e18);
+        vm.assume(amount < ILiquidityGauge(gauge).totalSupply());
+
+        deal(address(vault.token()), address(this), amount);
+        vault.token().approve(address(vault), amount);
+
+        /// Deposit with _doEarn = true.
+        vault.deposit(address(this), amount, true);
+
+        skip(7 days);
+
+        uint256 _expectedLockerRewardTokenAmount = _getRewardTokenAmount(strategy);
+        assertGt(_expectedLockerRewardTokenAmount, 0);
+
+        vm.prank(claimer);
+        strategy.harvest(token, false, false);
+
+        uint256 _claimerFee;
+        uint256 _protocolFee;
+
+        /// Compute the fees.
+        _protocolFee = _expectedLockerRewardTokenAmount.mulDiv(17, 100);
+        _claimerFee = _expectedLockerRewardTokenAmount.mulDiv(1, 100);
+
+        _expectedLockerRewardTokenAmount -= (_protocolFee + _claimerFee);
+
+        assertEq(_balanceOf(rewardToken, address(claimer)), _claimerFee);
+
+        assertEq(strategy.feesAccrued(), _protocolFee);
+        assertEq(_balanceOf(rewardToken, address(strategy)), _protocolFee);
+
+        uint256 _balanceRewardToken = _balanceOf(rewardToken, address(rewardDistributor));
+        assertEq(_balanceRewardToken, _expectedLockerRewardTokenAmount);
+    }
+
+    function _getRewardTokenAmount(Strategy) internal override returns (uint256) {
+        return ILiquidityGaugeStrat(gauge).earned(address(strategy.locker()));
     }
 }

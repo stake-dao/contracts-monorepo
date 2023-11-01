@@ -59,34 +59,6 @@ abstract contract StrategyTest is Test {
         assertEq(ILiquidityGauge(rewardDistributor).balanceOf(address(this)), 0);
     }
 
-    modifier _testHarvest(StrategyVaultImpl vault, Strategy strategy) {
-        address rewardToken = strategy.rewardToken();
-        address rewardDistributor = strategy.rewardDistributors(address(strategy.gauges(address(vault.token()))));
-        /// Before the harvest.
-        uint256 _expectedLockerRewardTokenAmount = _getRewardTokenAmount(strategy);
-
-        _;
-
-        uint256 _claimerFee;
-        uint256 _protocolFee;
-
-        /// Compute the fees.
-        _protocolFee = _expectedLockerRewardTokenAmount.mulDiv(17, 100);
-        _expectedLockerRewardTokenAmount -= _protocolFee;
-
-        _claimerFee = _expectedLockerRewardTokenAmount.mulDiv(1, 100);
-        _expectedLockerRewardTokenAmount -= _claimerFee;
-
-        assertEq(_balanceOf(rewardToken, address(claimer)), _claimerFee);
-
-        assertEq(strategy.feesAccrued(), _protocolFee);
-        assertEq(_balanceOf(rewardToken, address(strategy)), _protocolFee);
-
-        uint256 _balanceRewardToken = _balanceOf(rewardToken, address(rewardDistributor));
-
-        assertEq(_balanceRewardToken, _expectedLockerRewardTokenAmount);
-    }
-
     modifier testFeeAccounting(StrategyVaultImpl vault, Strategy strategy) {
         _;
     }

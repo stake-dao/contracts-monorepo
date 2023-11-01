@@ -255,10 +255,7 @@ abstract contract Strategy is UUPSUpgradeable {
         }
 
         /// 4. Take Fees from _claimed amount.
-        claimed = _chargeProtocolFees(claimed);
-
-        /// 5. Distribute Claim Incentive
-        claimed = _distributeClaimIncentive(claimed);
+        claimed -= (_chargeProtocolFees(claimed) + _distributeClaimIncentive(claimed));
 
         /// 5. Distribute the rewardToken.
         ILiquidityGauge(rewardDistributor).deposit_reward_token(rewardToken, claimed);
@@ -288,7 +285,7 @@ abstract contract Strategy is UUPSUpgradeable {
         uint256 _feeAccrued = amount.mulDiv(protocolFeesPercent, DENOMINATOR);
         feesAccrued += _feeAccrued;
 
-        return amount -= _feeAccrued;
+        return _feeAccrued;
     }
 
     /// @notice Distribute claim incentive to the claimer to incentivize claiming.
@@ -301,7 +298,7 @@ abstract contract Strategy is UUPSUpgradeable {
 
         SafeTransferLib.safeTransfer(rewardToken, msg.sender, claimerIncentive);
 
-        return amount - claimerIncentive;
+        return claimerIncentive;
     }
 
     //////////////////////////////////////////////////////
