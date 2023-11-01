@@ -73,7 +73,13 @@ contract YearnStrategy is Strategy {
         );
     }
 
+    /// @notice Update the reward receiver for a gauge.
+    /// @dev Make sure to claim all rewards from the previous receiver before updating.
     function setRewardReceiver(address _gauge, address _rewardReceiver) external onlyGovernanceOrFactory {
+        /// Update the reward receiver.
         rewardReceivers[_gauge] = _rewardReceiver;
+
+        /// Set the reward receiver in the gauge.
+        locker.safeExecute(_gauge, 0, abi.encodeWithSignature("setRecipient(address)", address(_rewardReceiver)));
     }
 }

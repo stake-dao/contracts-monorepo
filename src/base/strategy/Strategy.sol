@@ -279,8 +279,7 @@ abstract contract Strategy is UUPSUpgradeable {
     /// @notice Internal function to charge protocol fees from `rewardToken` claimed by the locker.
     /// @return _amount Amount left after charging protocol fees.
     function _chargeProtocolFees(uint256 amount) internal returns (uint256) {
-        if (amount == 0) return 0;
-        if (protocolFeesPercent == 0) return amount;
+        if (amount == 0 || protocolFeesPercent == 0) return 0;
 
         uint256 _feeAccrued = amount.mulDiv(protocolFeesPercent, DENOMINATOR);
         feesAccrued += _feeAccrued;
@@ -291,8 +290,7 @@ abstract contract Strategy is UUPSUpgradeable {
     /// @notice Distribute claim incentive to the claimer to incentivize claiming.
     /// @return _amount Amount left after distributing claim incentive.
     function _distributeClaimIncentive(uint256 amount) internal returns (uint256) {
-        if (amount == 0) return 0;
-        if (claimIncentiveFee == 0) return amount;
+        if (amount == 0 || claimIncentiveFee == 0) return 0;
 
         uint256 claimerIncentive = amount.mulDiv(claimIncentiveFee, DENOMINATOR);
 
