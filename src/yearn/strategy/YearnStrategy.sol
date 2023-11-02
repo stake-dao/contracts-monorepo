@@ -83,7 +83,7 @@ contract YearnStrategy is Strategy {
     }
 
     /// @notice Set the dYFI reward pool.
-    function setDYFIRewardPool(address _dyfiRewardPool) external onlyGovernanceOrFactory {
+    function setDYFIRewardPool(address _dyfiRewardPool) external onlyGovernance {
         dyfiRewardPool = _dyfiRewardPool;
     }
 }
