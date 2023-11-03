@@ -188,4 +188,11 @@ contract YearnStrategyTest is Test {
         accRewardBalance = IERC20(yfi).balanceOf(YEARN_ACC);
         assertGt(accRewardBalance, 0);
     }
+
+    function testSetLockerGovernanceViaStrategy() external {
+        assertEq(locker.governance(), address(strategy));
+        bytes memory setGovernanceData = abi.encodeWithSignature("setGovernance(address)", address(this));
+        strategy.execute(address(locker), 0, setGovernanceData);
+        assertEq(locker.governance(), address(this));
+    }
 }

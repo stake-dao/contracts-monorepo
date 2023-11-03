@@ -24,7 +24,7 @@ contract YearnStrategy is Strategy {
     /// @param _locker Address of the locker.
     /// @param _veToken Address of the veToken.
     /// @param _rewardToken Address of the reward token.
-    /// @param _minter Address of the minter (sdToken contract).
+    /// @param _minter Address of the platform minter.
     constructor(address _owner, address _locker, address _veToken, address _rewardToken, address _minter)
         Strategy(_owner, _locker, _veToken, _rewardToken, _minter)
     {}

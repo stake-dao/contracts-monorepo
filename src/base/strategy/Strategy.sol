@@ -46,7 +46,7 @@ abstract contract Strategy is UUPSUpgradeable {
     /// @notice Curve DAO token Fee Distributor
     address public feeDistributor;
 
-    /// @notice Reward Token for veCRV holders.
+    /// @notice Reward Token for veToken holders.
     address public feeRewardToken;
 
     /// @notice Stake DAO SDT Distributor
