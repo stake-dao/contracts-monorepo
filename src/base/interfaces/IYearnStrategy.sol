@@ -2,6 +2,7 @@
 pragma solidity 0.8.7;
 
 interface IYearnStrategy {
-    function claimDYfiRewardPool() external;
+    function claimDYFIRewardPool() external;
+    function claimNativeRewards() external;
     function locker() external returns(address);
 }
