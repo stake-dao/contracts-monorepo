@@ -7,21 +7,13 @@ import "forge-std/Test.sol";
 import {AddressBook} from "@addressBook/AddressBook.sol";
 import {YearnAccumulatorV2} from "src/yearn/accumulator/YearnAccumulatorV2.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
+import {IYearnStrategy} from "src/base/interfaces/IYearnStrategy.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 
-contract YearnStrategy {
-    address public locker;
-
-    constructor(address _locker) {
-        locker = _locker;
-    }
-    function claimDYfiRewardPool() external {}
-}
-
 contract YearnAccumulatorV2Test is Test {
     YearnAccumulatorV2 public accumulator;
-    YearnStrategy public strategy; //= new YearnStrategy();
+    IYearnStrategy public strategy = IYearnStrategy(0x1be150a35bb8233d092747eBFDc75FB357c35168);
     address public yfi;
     ILiquidityGauge public sdYfiLG;
     ILocker public yfiLocker;
@@ -29,25 +21,24 @@ contract YearnAccumulatorV2Test is Test {
     address public constant GOV = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
 
     function setUp() public {
-        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"));
+        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"), 18514500);
         vm.selectFork(forkId);
         yfi = AddressBook.YFI;
         sdYfiLG = ILiquidityGauge(AddressBook.GAUGE_SDYFI);
         yfiLocker = ILocker(AddressBook.YFI_LOCKER);
-        strategy = new YearnStrategy(address(yfiLocker));
         accumulator = new YearnAccumulatorV2(address(sdYfiLG), address(strategy), address(this), address(this));
         vm.startPrank(GOV);
         sdYfiLG.add_reward(DYFI, address(accumulator));
         sdYfiLG.set_reward_distributor(yfi, address(accumulator));
-        yfiLocker.setAccumulator(address(accumulator));
+        strategy.setAccumulator(address(accumulator));
         vm.stopPrank();
+        vm.prank(address(strategy));
+        yfiLocker.setAccumulator(address(accumulator));
     }
 
     function testDyfiClaim() external {
-        // simulate the claim
-        deal(DYFI, address(accumulator), 10e18);
         assertEq(IERC20(DYFI).balanceOf(address(sdYfiLG)), 0);
-        // notify Dfyi to the sdDyfi gauge
+        // notify DYFI to the sdDyfi gauge
         accumulator.claimDyfiAndNotifyAll();
         assertEq(IERC20(DYFI).balanceOf(address(accumulator)), 0);
         assertGt(IERC20(DYFI).balanceOf(address(sdYfiLG)), 0);
@@ -55,7 +46,8 @@ contract YearnAccumulatorV2Test is Test {
 
     function testYfiClaim() external {
         assertEq(IERC20(yfi).balanceOf(address(sdYfiLG)), 0);
-        accumulator.claimAndNotifyAll();
+        // notify YFI to the sdDyfi gauge
+        accumulator.claimYfiAndNotifyAll();
         assertEq(IERC20(yfi).balanceOf(address(accumulator)), 0);
         assertGt(IERC20(yfi).balanceOf(address(sdYfiLG)), 0);
     }

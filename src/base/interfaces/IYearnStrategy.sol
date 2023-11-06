@@ -5,4 +5,5 @@ interface IYearnStrategy {
     function claimDYFIRewardPool() external;
     function claimNativeRewards() external;
     function locker() external returns(address);
+    function setAccumulator(address _accumulator) external;
 }
