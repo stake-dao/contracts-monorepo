@@ -35,7 +35,7 @@ coverage-html:
 	@rm ./lcov.info*
 
 simulate-%:
-	@forge script script/$*.s.sol -vvvvv
+	@forge script script/$*.s.sol -vvvvv --fork-url $(RPC_URL_MAINNET)
 
 run-%:
 	@forge script script/$*.s.sol --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY)
