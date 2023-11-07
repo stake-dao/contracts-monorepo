@@ -26,7 +26,7 @@ contract YearnAccumulatorV2Test is Test {
         yfi = AddressBook.YFI;
         sdYfiLG = ILiquidityGauge(AddressBook.GAUGE_SDYFI);
         yfiLocker = ILocker(AddressBook.YFI_LOCKER);
-        accumulator = new YearnAccumulatorV2(address(sdYfiLG), address(strategy), address(this), address(this));
+        accumulator = new YearnAccumulatorV2(address(sdYfiLG), address(yfiLocker), address(this), address(this), address(strategy));
         vm.startPrank(GOV);
         sdYfiLG.add_reward(DYFI, address(accumulator));
         sdYfiLG.set_reward_distributor(yfi, address(accumulator));
@@ -39,7 +39,7 @@ contract YearnAccumulatorV2Test is Test {
     function testDyfiClaim() external {
         assertEq(IERC20(DYFI).balanceOf(address(sdYfiLG)), 0);
         // notify DYFI to the sdDyfi gauge
-        accumulator.claimDyfiAndNotifyAll();
+        accumulator.claimSingleTokenAndNotifyAll(DYFI);
         assertEq(IERC20(DYFI).balanceOf(address(accumulator)), 0);
         assertGt(IERC20(DYFI).balanceOf(address(sdYfiLG)), 0);
     }
@@ -47,7 +47,7 @@ contract YearnAccumulatorV2Test is Test {
     function testYfiClaim() external {
         assertEq(IERC20(yfi).balanceOf(address(sdYfiLG)), 0);
         // notify YFI to the sdDyfi gauge
-        accumulator.claimYfiAndNotifyAll();
+        accumulator.claimSingleTokenAndNotifyAll(yfi);
         assertEq(IERC20(yfi).balanceOf(address(accumulator)), 0);
         assertGt(IERC20(yfi).balanceOf(address(sdYfiLG)), 0);
     }
