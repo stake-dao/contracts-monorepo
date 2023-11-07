@@ -23,6 +23,8 @@ contract YFIDepositor is DepositorV4 {
             /// Increase the amount.
             ILocker(locker).increaseAmount(_amount);
 
+            /// In the case of Yearn, we can lock up to 10 years.
+            /// But we will lock for 4 years and couple months more to avoid decay.
             uint256 _unlockTime = block.timestamp + MAX_LOCK_DURATION;
 
             IVeYFI.LockedBalance memory _lockedBalance = IVeYFI(VE_YFI).locked(address(locker));
