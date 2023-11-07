@@ -8,14 +8,32 @@ import {Accumulator} from "src/base/accumulator/Accumulator.sol";
 /// @title A contract that accumulates YFI and dYFI rewards and notifies them to the LGV4
 /// @author StakeDAO
 contract YearnAccumulatorV2 is Accumulator {
-    error WRONG_TOKEN();
-
+    /// @notice DFYI token address
     address public constant DYFI = 0x41252E8691e964f7DE35156B68493bAb6797a275;
+
+    /// @notice YFI token address
     address public constant YFI = 0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e;
 
+    /// @notice yearn strategy address
     IYearnStrategy public immutable strategy;
 
-    /* ========== CONSTRUCTOR ========== */
+    ////////////////////////////////////////////////////////////////
+    /// --- EVENTS & ERRORS
+    ///////////////////////////////////////////////////////////////
+
+    /// @notice Error emitted when a token not supported is used
+    error WRONG_TOKEN();
+
+    //////////////////////////////////////////////////////
+    /// --- CONSTRUCTOR
+    //////////////////////////////////////////////////////
+
+    /// @notice Constructor
+    /// @param _gauge sd gauge
+    /// @param _locker sd locker
+    /// @param _daoFeeRecipient dao fee recipient
+    /// @param _liquidityFeeRecipient liquidity fee recipient
+    /// @param _strategy strategy
     constructor(
         address _gauge,
         address _locker,
