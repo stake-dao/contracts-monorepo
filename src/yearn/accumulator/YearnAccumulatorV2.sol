@@ -51,7 +51,7 @@ contract YearnAccumulatorV2 is Accumulator {
     //////////////////////////////////////////////////////
 
     /// @notice Claims YFI or DYFI rewards for the locker and notify all to the LGV4
-    function claimSingleTokenAndNotifyAll(address _token) external override {
+    function claimTokenAndNotifyAll(address _token) external override {
         if (_token != YFI && _token != DYFI) revert WRONG_TOKEN();
 
         if (_token == YFI) {

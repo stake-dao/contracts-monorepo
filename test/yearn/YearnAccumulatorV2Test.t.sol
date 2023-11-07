@@ -40,7 +40,7 @@ contract YearnAccumulatorV2Test is Test {
     function testDyfiClaim() external {
         assertEq(IERC20(DYFI).balanceOf(address(sdYfiLG)), 0);
         // notify DYFI to the sdDyfi gauge
-        accumulator.claimSingleTokenAndNotifyAll(DYFI);
+        accumulator.claimTokenAndNotifyAll(DYFI);
         assertEq(IERC20(DYFI).balanceOf(address(accumulator)), 0);
         assertGt(IERC20(DYFI).balanceOf(address(sdYfiLG)), 0);
     }
@@ -48,7 +48,7 @@ contract YearnAccumulatorV2Test is Test {
     function testYfiClaim() external {
         assertEq(IERC20(yfi).balanceOf(address(sdYfiLG)), 0);
         // notify YFI to the sdDyfi gauge
-        accumulator.claimSingleTokenAndNotifyAll(yfi);
+        accumulator.claimTokenAndNotifyAll(yfi);
         assertEq(IERC20(yfi).balanceOf(address(accumulator)), 0);
         assertGt(IERC20(yfi).balanceOf(address(sdYfiLG)), 0);
     }

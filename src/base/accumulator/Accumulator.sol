@@ -135,8 +135,8 @@ abstract contract Accumulator {
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4
     function claimAndNotifyAll() external virtual {}
 
-    /// @notice Claims a single reward token for the locker and notify them to the LGV4
-    function claimSingleTokenAndNotifyAll(address _token) external virtual {}
+    /// @notice Claims a reward token for the locker and notify them to the LGV4
+    function claimTokenAndNotifyAll(address _token) external virtual {}
 
     //////////////////////////////////////////////////////
     /// --- INTERNAL FUNCTIONS
