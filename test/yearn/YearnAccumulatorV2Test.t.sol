@@ -26,7 +26,8 @@ contract YearnAccumulatorV2Test is Test {
         yfi = AddressBook.YFI;
         sdYfiLG = ILiquidityGauge(AddressBook.GAUGE_SDYFI);
         yfiLocker = ILocker(AddressBook.YFI_LOCKER);
-        accumulator = new YearnAccumulatorV2(address(sdYfiLG), address(yfiLocker), address(this), address(this), address(strategy));
+        accumulator =
+        new YearnAccumulatorV2(address(sdYfiLG), address(yfiLocker), address(this), address(this), address(strategy));
         vm.startPrank(GOV);
         sdYfiLG.add_reward(DYFI, address(accumulator));
         sdYfiLG.set_reward_distributor(yfi, address(accumulator));

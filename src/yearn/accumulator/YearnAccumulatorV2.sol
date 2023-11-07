@@ -16,7 +16,13 @@ contract YearnAccumulatorV2 is Accumulator {
     IYearnStrategy public immutable strategy;
 
     /* ========== CONSTRUCTOR ========== */
-    constructor(address _gauge, address _locker, address _daoFeeRecipient, address _liquidityFeeRecipient,  address _strategy) Accumulator(_gauge, _locker, _daoFeeRecipient, _liquidityFeeRecipient) { 
+    constructor(
+        address _gauge,
+        address _locker,
+        address _daoFeeRecipient,
+        address _liquidityFeeRecipient,
+        address _strategy
+    ) Accumulator(_gauge, _locker, _daoFeeRecipient, _liquidityFeeRecipient) {
         strategy = IYearnStrategy(_strategy);
     }
 
@@ -31,7 +37,7 @@ contract YearnAccumulatorV2 is Accumulator {
             strategy.claimDYFIRewardPool();
         }
         uint256 amount = ERC20(_token).balanceOf(address(this));
-        // charge fees 
+        // charge fees
         amount -= _chargeFee(_token, amount);
         // notify YFI or DYFI as reward in sdYFI gauge
         _notifyReward(_token, amount);

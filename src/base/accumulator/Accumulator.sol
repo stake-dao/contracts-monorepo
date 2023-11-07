@@ -10,6 +10,7 @@ import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 /// @author StakeDAO
 abstract contract Accumulator {
     using SafeTransferLib for ERC20;
+
     error GOV();
     error FEE_TOO_HIGH();
     error FUTURE_GOV();
@@ -57,7 +58,7 @@ abstract contract Accumulator {
         locker = _locker;
         daoFeeRecipient = _daoFeeRecipient;
         liquidityFeeRecipient = _liquidityFeeRecipient;
-        
+
         governance = msg.sender;
 
         // default fees
@@ -173,7 +174,7 @@ abstract contract Accumulator {
     }
 
     /// @notice Charge fee for dao, liquidity, claimer
-    function _chargeFee(address _token, uint256 _amount) internal returns(uint256 _charged) {
+    function _chargeFee(address _token, uint256 _amount) internal returns (uint256 _charged) {
         if (daoFee != 0) {
             uint256 daoPart = _amount * daoFee / BASE_FEE;
             SafeTransferLib.safeTransfer(_token, daoFeeRecipient, daoPart);
@@ -189,6 +190,5 @@ abstract contract Accumulator {
             SafeTransferLib.safeTransfer(_token, msg.sender, claimerPart);
             _charged += claimerPart;
         }
-
     }
 }
