@@ -86,4 +86,11 @@ contract YearnAccumulatorV2 is Accumulator {
 
         _distributeSDT();
     }
+
+    /// @notice Notify the whole acc balance of a token
+    /// @param _token token to notify
+    function notifyReward(address _token) public override {
+        if (_token != YFI && _token != DYFI) revert WRONG_TOKEN();
+        super.notifyReward(_token);
+    }
 }

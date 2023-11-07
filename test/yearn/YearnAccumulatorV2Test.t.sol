@@ -8,7 +8,7 @@ import {AddressBook} from "@addressBook/AddressBook.sol";
 import {YearnAccumulatorV2} from "src/yearn/accumulator/YearnAccumulatorV2.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {IYearnStrategy} from "src/base/interfaces/IYearnStrategy.sol";
-import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 
 contract YearnAccumulatorV2Test is Test {
@@ -38,18 +38,26 @@ contract YearnAccumulatorV2Test is Test {
     }
 
     function testDyfiClaim() external {
-        assertEq(IERC20(DYFI).balanceOf(address(sdYfiLG)), 0);
+        assertEq(ERC20(DYFI).balanceOf(address(sdYfiLG)), 0);
         // notify DYFI to the sdDyfi gauge
         accumulator.claimTokenAndNotifyAll(DYFI);
-        assertEq(IERC20(DYFI).balanceOf(address(accumulator)), 0);
-        assertGt(IERC20(DYFI).balanceOf(address(sdYfiLG)), 0);
+        assertEq(ERC20(DYFI).balanceOf(address(accumulator)), 0);
+        assertGt(ERC20(DYFI).balanceOf(address(sdYfiLG)), 0);
     }
 
     function testYfiClaim() external {
-        assertEq(IERC20(yfi).balanceOf(address(sdYfiLG)), 0);
+        assertEq(ERC20(yfi).balanceOf(address(sdYfiLG)), 0);
         // notify YFI to the sdDyfi gauge
         accumulator.claimTokenAndNotifyAll(yfi);
-        assertEq(IERC20(yfi).balanceOf(address(accumulator)), 0);
-        assertGt(IERC20(yfi).balanceOf(address(sdYfiLG)), 0);
+        assertEq(ERC20(yfi).balanceOf(address(accumulator)), 0);
+        assertGt(ERC20(yfi).balanceOf(address(sdYfiLG)), 0);
+    }
+
+    function testNotifyReward() external {
+        uint256 amountToTopUp = 1e18;
+        deal(DYFI, address(accumulator), amountToTopUp);
+        accumulator.notifyReward(DYFI);
+        assertEq(ERC20(DYFI).balanceOf(address(accumulator)), 0);
+        assertGt(ERC20(DYFI).balanceOf(address(sdYfiLG)), 0);
     }
 }

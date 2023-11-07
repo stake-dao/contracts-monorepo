@@ -138,6 +138,18 @@ abstract contract Accumulator {
     /// @notice Claims a reward token for the locker and notify them to the LGV4
     function claimTokenAndNotifyAll(address _token) external virtual {}
 
+    /// @notice Notify the whole acc balance of a token
+    /// @param _token token to notify
+    function notifyReward(address _token) public virtual {
+        uint256 amount = ERC20(_token).balanceOf(address(this));
+        // charge fees
+        amount -= _chargeFee(_token, amount);
+        // notify token as reward in sdYFI gauge
+        _notifyReward(_token, amount);
+        // notify SDT
+        _distributeSDT();
+    }
+
     //////////////////////////////////////////////////////
     /// --- INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////
