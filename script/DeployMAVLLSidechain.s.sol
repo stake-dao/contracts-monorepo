@@ -18,7 +18,6 @@ address constant MAV_BNB = 0xd691d9a68C887BDF34DA8c36f63487333ACfD103;
 address constant VE_MAV_BNB = 0xE6108f1869d37E5076a56168C66A1607EdB10819;
 address constant SD_MAV_BNB = 0x75289388d50364c3013583d97bd70cED0e183e32;
 
-
 abstract contract DeployMAVLLSidechain is Script, Test {
     address public deployer = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
     address private veToken;
@@ -66,4 +65,5 @@ abstract contract DeployMAVLLSidechain is Script, Test {
 }
 
 contract DeployMAVLLBase is DeployMAVLLSidechain(MAV_BASE, VE_MAV_BASE, SD_MAV_BASE, "base") {}
+
 contract DeployMAVLLBnb is DeployMAVLLSidechain(MAV_BNB, VE_MAV_BNB, SD_MAV_BNB, "bnb") {}

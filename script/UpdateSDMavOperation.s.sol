@@ -23,7 +23,7 @@ contract UpdateSDMavOperation is Script, Test {
         vm.startBroadcast(deployer);
 
         _sdToken = sdToken(payable(0x50687515e93C43964733282F9DB8683F80BB02f9));
-        depositor= MAVDepositor(0x177Eaa1A7c26da6Dc84c0cC3F9AE6Fd0A470E7Ec);
+        depositor = MAVDepositor(0x177Eaa1A7c26da6Dc84c0cC3F9AE6Fd0A470E7Ec);
 
         _sdToken.setOperator(address(depositor));
 
