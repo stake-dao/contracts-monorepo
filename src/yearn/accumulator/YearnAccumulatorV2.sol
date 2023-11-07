@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: MIT
-pragma solidity 0.8.7;
+// SPDX-License-Identifier: AGPL-3.0-only
+pragma solidity 0.8.19;
 
 import {IYearnStrategy} from "src/base/interfaces/IYearnStrategy.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
@@ -42,9 +42,14 @@ contract YearnAccumulatorV2 is Accumulator {
         address _strategy
     ) Accumulator(_gauge, _locker, _daoFeeRecipient, _liquidityFeeRecipient) {
         strategy = IYearnStrategy(_strategy);
+        ERC20(YFI).approve(_gauge, type(uint256).max);
+        ERC20(DYFI).approve(_gauge, type(uint256).max);
     }
 
-    /* ========== MUTATIVE FUNCTIONS ========== */
+    //////////////////////////////////////////////////////
+    /// --- MUTATIVE FUNCTIONS
+    //////////////////////////////////////////////////////
+
     /// @notice Claims YFI or DYFI rewards for the locker and notify all to the LGV4
     function claimSingleTokenAndNotifyAll(address _token) external override {
         if (_token != YFI && _token != DYFI) revert WRONG_TOKEN();

@@ -1,5 +1,5 @@
-// SPDX-License-Identifier: MIT
-pragma solidity 0.8.7;
+// SPDX-License-Identifier: AGPL-3.0-only
+pragma solidity 0.8.19;
 
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {ISDTDistributor} from "src/base/interfaces/ISDTDistributor.sol";
@@ -10,8 +10,6 @@ import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 /// @notice Abstract contract used for any accumulator
 /// @author StakeDAO
 abstract contract Accumulator {
-    using SafeTransferLib for ERC20;
-
     /// @notice sd gauge
     address public gauge;
 
@@ -152,19 +150,9 @@ abstract contract Accumulator {
             return;
         }
         if (ILiquidityGauge(gauge).reward_data(_tokenReward).distributor == address(this)) {
-            _approveTokenIfNeeded(_tokenReward, _amount);
             ILiquidityGauge(gauge).deposit_reward_token(_tokenReward, _amount);
 
             emit RewardNotified(gauge, _tokenReward, _amount);
-        }
-    }
-
-    /// @notice Do a max approve if the allowance is not enough
-    /// @param _token token to approve to be spent by the gauge
-    /// @param _amount amount to approve
-    function _approveTokenIfNeeded(address _token, uint256 _amount) internal {
-        if (ERC20(_token).allowance(_token, gauge) < _amount) {
-            SafeTransferLib.safeApprove(_token, gauge, type(uint256).max);
         }
     }
 
@@ -271,7 +259,6 @@ abstract contract Accumulator {
     function rescueERC20(address _token, uint256 _amount, address _recipient) external onlyGov {
         if (_recipient == address(0)) revert ZERO_ADDRESS();
         SafeTransferLib.safeTransfer(_token, _recipient, _amount);
-        //ERC20(_token).safeTransfer(_recipient, _amount);
         emit ERC20Rescued(_token, _amount);
     }
 }
