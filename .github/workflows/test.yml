@@ -9,6 +9,7 @@ on:
 
 env:
   FOUNDRY_PROFILE: ci
+  INFURA_KEY: ${{ secrets.INFURA_KEY }}
 
 jobs:
   check:
