@@ -34,7 +34,8 @@ contract YearnAccumulatorV2Test is Test {
         strategy.setAccumulator(address(accumulator));
         vm.stopPrank();
         vm.prank(address(strategy));
-        yfiLocker.setAccumulator(address(accumulator));
+        // disable the acc actions at locker side
+        yfiLocker.setAccumulator(address(0));
     }
 
     function testDyfiClaim() external {

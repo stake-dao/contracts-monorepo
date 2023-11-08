@@ -59,6 +59,9 @@ abstract contract Accumulator {
     /// @notice Event emitted when the dao fee recipient is set
     event DaoFeeRecipientSet(address daoFeeRecipient);
 
+    /// @notice Event emitted when the fees are charged during reward notify
+    event FeeCharged(uint256 daoPart, uint256 liquidityPart, uint256 claimerPart);
+
     /// @notice Event emitted when an ERC20 token is rescued
     event ERC20Rescued(address token, uint256 amount);
 
@@ -142,9 +145,7 @@ abstract contract Accumulator {
     /// @param _token token to notify
     function notifyReward(address _token) public virtual {
         uint256 amount = ERC20(_token).balanceOf(address(this));
-        // charge fees
-        amount -= _chargeFee(_token, amount);
-        // notify token as reward in sdYFI gauge
+        // notify token as reward in sdToken gauge
         _notifyReward(_token, amount);
         // notify SDT
         _distributeSDT();
@@ -161,11 +162,10 @@ abstract contract Accumulator {
         if (_amount == 0) {
             return;
         }
-        if (ILiquidityGauge(gauge).reward_data(_tokenReward).distributor == address(this)) {
-            ILiquidityGauge(gauge).deposit_reward_token(_tokenReward, _amount);
+        _amount -= _chargeFee(_tokenReward, _amount);
+        ILiquidityGauge(gauge).deposit_reward_token(_tokenReward, _amount);
 
-            emit RewardNotified(gauge, _tokenReward, _amount);
-        }
+        emit RewardNotified(gauge, _tokenReward, _amount);
     }
 
     /// @notice Distribute SDT to the gauge
@@ -179,21 +179,25 @@ abstract contract Accumulator {
     /// @param _token token to charge fee for
     /// @param _amount amount to charge fee for
     function _chargeFee(address _token, uint256 _amount) internal returns (uint256 _charged) {
+        uint256 daoPart;
+        uint256 liquidityPart;
+        uint256 claimerPart;
         if (daoFee != 0) {
-            uint256 daoPart = _amount * daoFee / BASE_FEE;
+            daoPart = _amount * daoFee / BASE_FEE;
             SafeTransferLib.safeTransfer(_token, daoFeeRecipient, daoPart);
             _charged += daoPart;
         }
         if (liquidityFee != 0) {
-            uint256 liquidityPart = _amount * liquidityFee / BASE_FEE;
+            liquidityPart = _amount * liquidityFee / BASE_FEE;
             SafeTransferLib.safeTransfer(_token, liquidityFeeRecipient, liquidityPart);
             _charged += liquidityPart;
         }
         if (claimerFee != 0) {
-            uint256 claimerPart = _amount * liquidityFee / BASE_FEE;
+            claimerPart = _amount * liquidityFee / BASE_FEE;
             SafeTransferLib.safeTransfer(_token, msg.sender, claimerPart);
             _charged += claimerPart;
         }
+        emit FeeCharged(daoPart, liquidityPart, claimerPart);
     }
 
     //////////////////////////////////////////////////////

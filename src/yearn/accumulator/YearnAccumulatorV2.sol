@@ -55,15 +55,17 @@ contract YearnAccumulatorV2 is Accumulator {
         if (_token != YFI && _token != DYFI) revert WRONG_TOKEN();
 
         if (_token == YFI) {
+            // claim YFI reward
             strategy.claimNativeRewards();
         } else {
+            // claim dYFI reward
             strategy.claimDYFIRewardPool();
         }
         uint256 amount = ERC20(_token).balanceOf(address(this));
-        // charge fees
-        amount -= _chargeFee(_token, amount);
+
         // notify YFI or DYFI as reward in sdYFI gauge
         _notifyReward(_token, amount);
+
         // notify SDT
         _distributeSDT();
     }
@@ -78,12 +80,11 @@ contract YearnAccumulatorV2 is Accumulator {
         strategy.claimDYFIRewardPool();
         uint256 dYfiAmount = ERC20(DYFI).balanceOf(address(this));
 
-        yfiAmount -= _chargeFee(YFI, yfiAmount);
-        dYfiAmount -= _chargeFee(DYFI, dYfiAmount);
-
+        // notify YFI and DYFI as reward in sdYFI gauge
         _notifyReward(YFI, yfiAmount);
         _notifyReward(DYFI, dYfiAmount);
 
+        // notify SDT
         _distributeSDT();
     }
 
