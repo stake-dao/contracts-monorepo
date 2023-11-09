@@ -30,7 +30,7 @@ contract YearnAccumulatorV2Test is Test {
         sdYfiLG = ILiquidityGauge(AddressBook.GAUGE_SDYFI);
         yfiLocker = ILocker(AddressBook.YFI_LOCKER);
         accumulator =
-        new YearnAccumulatorV2(address(sdYfiLG), address(yfiLocker), daoFeeRecipient, liquidityFeeRecipient, address(strategy));
+        new YearnAccumulatorV2(address(sdYfiLG), address(yfiLocker), daoFeeRecipient, liquidityFeeRecipient, address(strategy), address(this));
         vm.startPrank(GOV);
         sdYfiLG.add_reward(DYFI, address(accumulator));
         sdYfiLG.set_reward_distributor(yfi, address(accumulator));
@@ -63,6 +63,17 @@ contract YearnAccumulatorV2Test is Test {
         accumulator.notifyReward(DYFI);
         assertEq(ERC20(DYFI).balanceOf(address(accumulator)), 0);
         _checkFeesOnClaim(DYFI);
+    }
+
+    function testTransferGovernance() external {
+        assertEq(accumulator.governance(), address(this));
+        assertEq(accumulator.futureGovernance(), address(0));
+        accumulator.transferGovernance(GOV);
+        assertEq(accumulator.governance(), address(this));
+        assertEq(accumulator.futureGovernance(), GOV);
+        vm.prank(GOV);
+        accumulator.acceptGovernance();
+        assertEq(accumulator.governance(), GOV);
     }
 
     function _checkFeesOnClaim(address _token) internal {

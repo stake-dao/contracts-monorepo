@@ -9,9 +9,8 @@ import {YearnAccumulatorV2} from "src/yearn/accumulator/YearnAccumulatorV2.sol";
 
 contract DeployYearnAccumulatorV2 is Script, Test {
     address public constant DEPLOYER = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
-    address public constant DAO_FEE_RECIPIENT = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
-    address public constant LIQUIDITY_FEE_RECIPIENT = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
     address public constant YEARN_STRATEGY = 0x1be150a35bb8233d092747eBFDc75FB357c35168;
+    address public constant GOV = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
 
     address public sdYfiLG;
     address public yfiLocker;
@@ -23,7 +22,8 @@ contract DeployYearnAccumulatorV2 is Script, Test {
         sdYfiLG = AddressBook.GAUGE_SDYFI;
         yfiLocker = AddressBook.YFI_LOCKER;
         accumulator =
-            new YearnAccumulatorV2(sdYfiLG, yfiLocker, DAO_FEE_RECIPIENT, LIQUIDITY_FEE_RECIPIENT, YEARN_STRATEGY);
+            new YearnAccumulatorV2(sdYfiLG, yfiLocker, GOV, GOV, YEARN_STRATEGY, GOV);
+        assertEq(accumulator.governance(), GOV);
         vm.stopBroadcast();
     }
 }

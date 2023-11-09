@@ -35,13 +35,15 @@ contract YearnAccumulatorV2 is Accumulator {
     /// @param _daoFeeRecipient dao fee recipient
     /// @param _liquidityFeeRecipient liquidity fee recipient
     /// @param _strategy strategy
+    /// @param _governance governance
     constructor(
         address _gauge,
         address _locker,
         address _daoFeeRecipient,
         address _liquidityFeeRecipient,
-        address _strategy
-    ) Accumulator(_gauge, _locker, _daoFeeRecipient, _liquidityFeeRecipient) {
+        address _strategy,
+        address _governance
+    ) Accumulator(_gauge, _locker, _daoFeeRecipient, _liquidityFeeRecipient, _governance) {
         strategy = IYearnStrategy(_strategy);
         ERC20(YFI).approve(_gauge, type(uint256).max);
         ERC20(DYFI).approve(_gauge, type(uint256).max);
