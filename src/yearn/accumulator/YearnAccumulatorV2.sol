@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {IYearnStrategy} from "src/base/interfaces/IYearnStrategy.sol";
-import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {Accumulator} from "src/base/accumulator/Accumulator.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
+import {IYearnStrategy} from "src/base/interfaces/IYearnStrategy.sol";
 
 /// @title A contract that accumulates YFI and dYFI rewards and notifies them to the LGV4
 /// @author StakeDAO
@@ -88,10 +89,17 @@ contract YearnAccumulatorV2 is Accumulator {
         _distributeSDT();
     }
 
-    /// @notice Notify the whole acc balance of a token
-    /// @param _token token to notify
-    function notifyReward(address _token) public override {
-        if (_token != YFI && _token != DYFI) revert WRONG_TOKEN();
-        super.notifyReward(_token);
+    /// @notice Notify the new reward to the LGV4
+    /// @param _tokenReward token to notify
+    /// @param _amount amount to notify
+    function _notifyReward(address _tokenReward, uint256 _amount) internal override {
+        if (_amount == 0) {
+            return;
+        }
+        // charge fees
+        _amount -= _chargeFee(_tokenReward, _amount);
+        ILiquidityGauge(gauge).deposit_reward_token(_tokenReward, _amount);
+
+        emit RewardNotified(gauge, _tokenReward, _amount);
     }
 }

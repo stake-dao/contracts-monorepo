@@ -20,6 +20,9 @@ contract YearnAccumulatorV2Test is Test {
     address public constant DYFI = 0x41252E8691e964f7DE35156B68493bAb6797a275;
     address public constant GOV = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
 
+    address daoFeeRecipient = vm.addr(1);
+    address liquidityFeeRecipient = vm.addr(2);
+
     function setUp() public {
         uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"), 18514500);
         vm.selectFork(forkId);
@@ -27,7 +30,7 @@ contract YearnAccumulatorV2Test is Test {
         sdYfiLG = ILiquidityGauge(AddressBook.GAUGE_SDYFI);
         yfiLocker = ILocker(AddressBook.YFI_LOCKER);
         accumulator =
-        new YearnAccumulatorV2(address(sdYfiLG), address(yfiLocker), address(this), address(this), address(strategy));
+        new YearnAccumulatorV2(address(sdYfiLG), address(yfiLocker), daoFeeRecipient, liquidityFeeRecipient, address(strategy));
         vm.startPrank(GOV);
         sdYfiLG.add_reward(DYFI, address(accumulator));
         sdYfiLG.set_reward_distributor(yfi, address(accumulator));
@@ -43,7 +46,7 @@ contract YearnAccumulatorV2Test is Test {
         // notify DYFI to the sdDyfi gauge
         accumulator.claimTokenAndNotifyAll(DYFI);
         assertEq(ERC20(DYFI).balanceOf(address(accumulator)), 0);
-        assertGt(ERC20(DYFI).balanceOf(address(sdYfiLG)), 0);
+        _checkFeesOnClaim(DYFI);
     }
 
     function testYfiClaim() external {
@@ -51,7 +54,7 @@ contract YearnAccumulatorV2Test is Test {
         // notify YFI to the sdDyfi gauge
         accumulator.claimTokenAndNotifyAll(yfi);
         assertEq(ERC20(yfi).balanceOf(address(accumulator)), 0);
-        assertGt(ERC20(yfi).balanceOf(address(sdYfiLG)), 0);
+        _checkFeesOnClaim(yfi);
     }
 
     function testNotifyReward() external {
@@ -59,6 +62,18 @@ contract YearnAccumulatorV2Test is Test {
         deal(DYFI, address(accumulator), amountToTopUp);
         accumulator.notifyReward(DYFI);
         assertEq(ERC20(DYFI).balanceOf(address(accumulator)), 0);
-        assertGt(ERC20(DYFI).balanceOf(address(sdYfiLG)), 0);
+        _checkFeesOnClaim(DYFI);
+    }
+
+    function _checkFeesOnClaim(address _token) internal {
+        uint256 gaugeBalance = ERC20(_token).balanceOf(address(sdYfiLG));
+        uint256 daoPart = ERC20(_token).balanceOf(daoFeeRecipient);
+        uint256 liquidityPart = ERC20(_token).balanceOf(liquidityFeeRecipient);
+        uint256 claimerPart = ERC20(_token).balanceOf(address(this));
+        emit log_uint(claimerPart);
+        uint256 totalClaimed = gaugeBalance + daoPart + liquidityPart + claimerPart;
+        assertEq(daoPart, totalClaimed * accumulator.daoFee() / 10_000);
+        assertEq(liquidityPart, totalClaimed * accumulator.liquidityFee() / 10_000);
+        assertEq(claimerPart, totalClaimed * accumulator.claimerFee() / 10_000);
     }
 }

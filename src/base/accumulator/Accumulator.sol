@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
+import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {ISDTDistributor} from "src/base/interfaces/ISDTDistributor.sol";
-import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 
 /// @title Accumulator
@@ -128,7 +128,7 @@ abstract contract Accumulator {
         // default fees
         daoFee = 500; // 5%
         liquidityFee = 1_000; // 10%
-        claimerFee = 50; // 0.5%
+        claimerFee = 500; // 0.5%
     }
 
     //////////////////////////////////////////////////////
@@ -162,7 +162,6 @@ abstract contract Accumulator {
         if (_amount == 0) {
             return;
         }
-        _amount -= _chargeFee(_tokenReward, _amount);
         ILiquidityGauge(gauge).deposit_reward_token(_tokenReward, _amount);
 
         emit RewardNotified(gauge, _tokenReward, _amount);
@@ -193,7 +192,7 @@ abstract contract Accumulator {
             _charged += liquidityPart;
         }
         if (claimerFee != 0) {
-            claimerPart = _amount * liquidityFee / BASE_FEE;
+            claimerPart = _amount * claimerFee / BASE_FEE;
             SafeTransferLib.safeTransfer(_token, msg.sender, claimerPart);
             _charged += claimerPart;
         }
