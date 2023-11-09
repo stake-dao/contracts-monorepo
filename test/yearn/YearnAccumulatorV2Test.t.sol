@@ -70,7 +70,6 @@ contract YearnAccumulatorV2Test is Test {
         uint256 daoPart = ERC20(_token).balanceOf(daoFeeRecipient);
         uint256 liquidityPart = ERC20(_token).balanceOf(liquidityFeeRecipient);
         uint256 claimerPart = ERC20(_token).balanceOf(address(this));
-        emit log_uint(claimerPart);
         uint256 totalClaimed = gaugeBalance + daoPart + liquidityPart + claimerPart;
         assertEq(daoPart, totalClaimed * accumulator.daoFee() / 10_000);
         assertEq(liquidityPart, totalClaimed * accumulator.liquidityFee() / 10_000);

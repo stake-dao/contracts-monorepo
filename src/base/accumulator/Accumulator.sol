@@ -128,7 +128,7 @@ abstract contract Accumulator {
         // default fees
         daoFee = 500; // 5%
         liquidityFee = 1_000; // 10%
-        claimerFee = 500; // 0.5%
+        claimerFee = 50; // 0.5%
     }
 
     //////////////////////////////////////////////////////
