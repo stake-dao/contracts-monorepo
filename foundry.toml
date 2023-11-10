@@ -22,4 +22,4 @@ optimizers_runs = 200
 mainnet = { key = "${API_KEY_ETHERSCAN}" }
 
 [rpc_endpoints]
-mainnet = "https://mainnet.infura.io/v3/${API_KEY_INFURA}"
+mainnet = "https://mainnet.infura.io/v3/${INFURA_KEY}"
