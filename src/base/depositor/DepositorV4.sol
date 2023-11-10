@@ -115,7 +115,7 @@ abstract contract DepositorV4 {
         /// Approve sdToken to gauge.
         if (gauge != address(0)) {
             IERC20(minter).safeApprove(gauge, type(uint256).max);
-        }   
+        }
     }
 
     ////////////////////////////////////////////////////////////////
@@ -268,7 +268,7 @@ abstract contract DepositorV4 {
         if (_gauge != address(0)) {
             /// Approve sdToken to gauge.
             IERC20(minter).safeApprove(gauge, type(uint256).max);
-        }  
+        }
     }
 
     /// @notice Set the percentage of the lock incentive

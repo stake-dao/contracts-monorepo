@@ -10,6 +10,7 @@ import "src/base/depositor/DepositorV4.sol";
 /// @custom:contact contact@stakedao.org
 contract MAVDepositor is DepositorV4 {
     using SafeERC20 for IERC20;
+
     constructor(address _token, address _locker, address _minter, address _gauge)
         DepositorV4(_token, _locker, _minter, _gauge, 4 * 365 days)
     {}
@@ -24,7 +25,7 @@ contract MAVDepositor is DepositorV4 {
         }
     }
 
-     /// @notice Initiate a lock in the Locker contract.
+    /// @notice Initiate a lock in the Locker contract.
     /// @param _amount Amount of tokens to lock.
     function createLock(uint256 _amount) external override {
         /// Transfer tokens to this contract
