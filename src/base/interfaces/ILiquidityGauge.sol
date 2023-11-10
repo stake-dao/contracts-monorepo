@@ -5,8 +5,10 @@ interface ILiquidityGauge {
     struct Reward {
         address token;
         address distributor;
+        // solhint-disable-next-line
         uint256 period_finish;
         uint256 rate;
+        // solhint-disable-next-line
         uint256 last_update;
         uint256 integral;
     }
@@ -17,10 +19,8 @@ interface ILiquidityGauge {
     // solhint-disable-next-line
     function claim_rewards_for(address _user, address _recipient) external;
 
+    // solhint-disable-next-line
     function working_balances(address _address) external view returns (uint256);
-
-    // // solhint-disable-next-line
-    // function claim_rewards_for(address _user) external;
 
     // solhint-disable-next-line
     function deposit(uint256 _value, address _addr) external;
@@ -33,29 +33,40 @@ interface ILiquidityGauge {
 
     function balanceOf(address) external returns (uint256);
 
+    // solhint-disable-next-line
     function claimable_reward(address _user, address _reward_token) external view returns (uint256);
 
+    // solhint-disable-next-line
     function claimable_tokens(address _user) external returns (uint256);
 
+    // solhint-disable-next-line
     function user_checkpoint(address _user) external returns (bool);
 
+    // solhint-disable-next-line
     function commit_transfer_ownership(address) external;
 
+    // solhint-disable-next-line
     function claim_rewards(address) external;
 
+    // solhint-disable-next-line
     function add_reward(address, address) external;
 
+    // solhint-disable-next-line
     function set_claimer(address) external;
 
     function admin() external view returns (address);
 
+    // solhint-disable-next-line
     function set_reward_distributor(address _rewardToken, address _newDistrib) external;
 
     function initialize(
+        // solhint-disable-next-line
         address staking_token,
         address admin,
-        address SDT,
+        address sdt,
+        // solhint-disable-next-line
         address voting_escrow,
+        // solhint-disable-next-line
         address veBoost_proxy,
         address distributor
     ) external;

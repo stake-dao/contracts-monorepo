@@ -13,7 +13,7 @@ install:
 	forge install
 
 test:
-	@forge test --gas-report
+	@forge test --mc YFIDepositorIntegrationTest
 
 test-f-%:
 	@FOUNDRY_MATCH_TEST=$* make test
@@ -35,7 +35,7 @@ coverage-html:
 	@rm ./lcov.info*
 
 simulate-%:
-	@forge script script/$*.s.sol -vvvvv
+	@forge script script/$*.s.sol -vvvvv --fork-url $(RPC_URL_MAINNET)
 
 run-%:
 	@forge script script/$*.s.sol --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY)

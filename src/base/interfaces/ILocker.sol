@@ -32,6 +32,8 @@ interface ILocker {
 
     function setFxsDepositor(address) external;
 
+    function setYFIDepositor(address) external;
+
     function setYieldDistributor(address) external;
 
     function setGaugeController(address) external;

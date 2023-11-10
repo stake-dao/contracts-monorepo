@@ -56,24 +56,22 @@ abstract contract MAVLockerIntegrationTest is Test {
         address liquidityGaugeImpl;
         if (keccak256(abi.encodePacked(rpcAlias)) == keccak256(abi.encodePacked("ethereum"))) {
             liquidityGaugeImpl = vyperDeployer.deployContract(
-            "src/base/staking/LiquidityGaugeV4Native.vy",
-            abi.encode(
-                address(_sdToken),
-                address(this),
-                AddressBook.SDT,
-                AddressBook.VE_SDT,
-                AddressBook.VE_SDT_BOOST_PROXY,
-                AddressBook.SDT_DISTRIBUTOR
-            ));
+                "src/base/staking/LiquidityGaugeV4Native.vy",
+                abi.encode(
+                    address(_sdToken),
+                    address(this),
+                    AddressBook.SDT,
+                    AddressBook.VE_SDT,
+                    AddressBook.VE_SDT_BOOST_PROXY,
+                    AddressBook.SDT_DISTRIBUTOR
+                )
+            );
         } else {
             liquidityGaugeImpl = vyperDeployer.deployContract(
-            "src/base/staking/LiquidityGaugeV4XChain.vy",
-            abi.encode(
-                address(_sdToken),
-                address(this)
-            ));
+                "src/base/staking/LiquidityGaugeV4XChain.vy", abi.encode(address(_sdToken), address(this))
+            );
         }
-        
+
         liquidityGauge = ILiquidityGauge(liquidityGaugeImpl);
 
         locker = new MAVLocker(address(this), address(token), address(veToken));
@@ -264,5 +262,7 @@ abstract contract MAVLockerIntegrationTest is Test {
 }
 
 contract MAVLockerIntegrationTestEth is MAVLockerIntegrationTest(MAV_ETH, VE_MAV_ETH, "ethereum", 18277719) {}
+
 contract MAVLockerIntegrationTestBase is MAVLockerIntegrationTest(MAV_BASE, VE_MAV_BASE, "base", 4821075) {}
+
 contract MAVLockerIntegrationTestBnb is MAVLockerIntegrationTest(MAV_BNB, VE_MAV_BNB, "bnb", 32311843) {}
