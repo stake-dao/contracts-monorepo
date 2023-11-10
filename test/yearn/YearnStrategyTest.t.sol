@@ -56,7 +56,7 @@ contract YearnStrategyTest is Test {
     address public constant YEARN_ACC = 0x8b65438178CD4EF67b0177135dE84Fe7E3C30ec3;
 
     function setUp() public {
-        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"), 18431190);
+        uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"), 18431190);
         vm.selectFork(forkId);
 
         locker = ILocker(AddressBook.YFI_LOCKER);
