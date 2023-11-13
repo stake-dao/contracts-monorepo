@@ -17,4 +17,6 @@ interface ILocker {
     function setGovernance(address _gov) external;
 
     function setStrategy(address _strategy) external;
+
+    function governance() external view returns (address);
 }

@@ -1,0 +1,228 @@
+// SPDX-License-Identifier: Unlicense
+pragma solidity 0.8.19;
+
+import "forge-std/Test.sol";
+import "solady/utils/LibClone.sol";
+
+import "src/base/strategy/Strategy.sol";
+import "src/base/vault/Vault.sol";
+import {AddressBook} from "addressBook/AddressBook.sol";
+import {ILocker} from "src/base/interfaces/ILocker.sol";
+import {YearnStrategy} from "src/yearn/strategy/YearnStrategy.sol";
+import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
+import {GaugeDepositorVault} from "src/base/vault/GaugeDepositorVault.sol";
+import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
+import {YearnVaultFactoryOwnable} from "src/yearn/factory/YearnVaultFactoryOwnable.sol";
+
+abstract contract YearnStrategyTestBis is Test {
+    using FixedPointMathLib for uint256;
+
+    address public immutable gauge;
+
+    YearnVaultFactoryOwnable public factory;
+
+    YearnStrategy public strategy;
+    YearnStrategy public strategyImpl;
+    GaugeDepositorVault public vaultImpl;
+
+    GaugeDepositorVault vault;
+    ILiquidityGaugeStrat rewardDistributor;
+
+    ILocker public locker;
+    address public veToken;
+    address public sdtDistributor;
+
+    address public constant DYFI = 0x41252E8691e964f7DE35156B68493bAb6797a275;
+    address public constant YFI_REWARD_POOL = 0xb287a1964AEE422911c7b8409f5E5A273c1412fA;
+    address public constant DYFI_REWARD_POOL = 0x2391Fc8f5E417526338F5aa3968b1851C16D894E;
+
+    address public constant GAUGE_IMPL = 0x3Dc56D46F0Bd13655EfB29594a2e44534c453BF9;
+
+    address public constant claimer = address(0xBEEC);
+
+    constructor(address _gauge) {
+        gauge = _gauge;
+    }
+
+    function setUp() public {
+        vm.createSelectFork(vm.rpcUrl("mainnet"), 18_472_574);
+
+        /// Initialize from the address book.
+        veToken = AddressBook.VE_YFI;
+        locker = ILocker(AddressBook.YFI_LOCKER);
+        sdtDistributor = AddressBook.SDT_DISTRIBUTOR;
+
+        /// Deploy Strategy.
+        strategyImpl = new YearnStrategy(address(this), address(locker), veToken, DYFI, YFI_REWARD_POOL);
+
+        address strategyProxy = LibClone.deployERC1967(address(strategyImpl));
+
+        strategy = YearnStrategy(payable(strategyProxy));
+        strategy.initialize(address(this));
+
+        /// Deploy Vault Implentation.
+        vaultImpl = new GaugeDepositorVault();
+
+        /// Deploy Factory.
+        factory = new YearnVaultFactoryOwnable(address(strategy), address(vaultImpl), GAUGE_IMPL);
+
+        /// Setup Strategy.
+        strategy.setFactory(address(factory));
+        strategy.setAccumulator(address(0xACC)); // Fake accumulator.
+        strategy.setFeeRewardToken(AddressBook.YFI);
+
+        strategy.updateProtocolFee(1_700); // 17%
+        strategy.updateClaimIncentiveFee(100); // 1%
+
+        /// Setup Locker.
+        vm.prank(locker.governance());
+        locker.setGovernance(address(strategy));
+
+        /// Create vault and reward distributor for gauge.
+        address _vault;
+        address _rewardDistributor;
+        (_vault, _rewardDistributor) = factory.create(gauge);
+
+        vault = GaugeDepositorVault(_vault);
+        rewardDistributor = ILiquidityGaugeStrat(_rewardDistributor);
+    }
+
+    function test_deposit(uint128 _amount) public {
+        uint256 amount = uint256(_amount);
+        vm.assume(amount != 0);
+
+        deal(address(vault.token()), address(this), amount);
+        vault.token().approve(address(vault), amount);
+
+        /// Deposit with _doEarn = true.
+        vault.deposit(address(this), amount, true);
+
+        ERC20 token = vault.token();
+
+        /// Token Balances.
+        assertEq(token.balanceOf(address(locker)), 0);
+        assertEq(token.balanceOf(address(this)), 0);
+        assertEq(token.balanceOf(address(strategy)), 0);
+
+        /// Strategy Balances.
+        assertEq(strategy.balanceOf(address(token)), amount);
+
+        /// Gauge Balances.
+        assertEq(ILiquidityGauge(gauge).balanceOf(address(locker)), amount);
+
+        /// User balances.
+        assertEq(vault.balanceOf(address(this)), 0);
+        assertEq(rewardDistributor.balanceOf(address(this)), amount);
+    }
+
+    function test_withdraw(uint128 _amount) public {
+        uint256 amount = uint256(_amount);
+        vm.assume(amount != 0);
+
+        deal(address(vault.token()), address(this), amount);
+        vault.token().approve(address(vault), amount);
+
+        /// Deposit with _doEarn = true.
+        vault.deposit(address(this), amount, true);
+
+        /// Withdraw.
+        vault.withdraw(amount);
+
+        ERC20 token = vault.token();
+
+        /// Token Balances.
+        assertEq(token.balanceOf(address(locker)), 0);
+        assertEq(token.balanceOf(address(strategy)), 0);
+        assertEq(token.balanceOf(address(this)), amount);
+
+        /// Strategy Balances.
+        assertEq(strategy.balanceOf(address(token)), 0);
+
+        /// Gauge Balances.
+        assertEq(ILiquidityGauge(gauge).balanceOf(address(locker)), 0);
+
+        /// User balances.
+        assertEq(vault.balanceOf(address(this)), 0);
+        assertEq(rewardDistributor.balanceOf(address(this)), 0);
+    }
+
+    function test_harvest(uint128 _amount) public {
+        address token = address(vault.token());
+        address rewardToken = strategy.rewardToken();
+
+        uint256 amount = uint256(_amount);
+        vm.assume(amount > 1e18);
+        vm.assume(amount < ILiquidityGauge(gauge).totalSupply());
+
+        deal(address(vault.token()), address(this), amount);
+        vault.token().approve(address(vault), amount);
+
+        /// Deposit with _doEarn = true.
+        vault.deposit(address(this), amount, true);
+
+        skip(1 days);
+
+        uint256 _expectedLockerRewardTokenAmount = _getRewardTokenAmount();
+        assertGt(_expectedLockerRewardTokenAmount, 0);
+
+        vm.prank(claimer);
+        strategy.harvest(token, false, false);
+
+        uint256 _claimerFee;
+        uint256 _protocolFee;
+
+        /// Compute the fees.
+        _protocolFee = _expectedLockerRewardTokenAmount.mulDiv(17, 100);
+        _claimerFee = _expectedLockerRewardTokenAmount.mulDiv(1, 100);
+
+        _expectedLockerRewardTokenAmount -= (_protocolFee + _claimerFee);
+
+        assertEq(_balanceOf(rewardToken, address(claimer)), _claimerFee);
+
+        assertEq(strategy.feesAccrued(), _protocolFee);
+        assertEq(_balanceOf(rewardToken, address(strategy)), _protocolFee);
+
+        uint256 _balanceRewardToken = _balanceOf(rewardToken, address(rewardDistributor));
+        assertEq(_balanceRewardToken, _expectedLockerRewardTokenAmount);
+
+        skip(1 days);
+
+        uint256 _newExpectedRewardAmount = _getRewardTokenAmount();
+        assertGt(_newExpectedRewardAmount, 0);
+
+        vm.prank(claimer);
+        strategy.harvest(token, false, false);
+
+        uint256 _cumulativeProtocolFee = _protocolFee;
+        uint256 _cumulativeClaimerFee = _claimerFee;
+
+        /// Compute the fees.
+        _protocolFee = _newExpectedRewardAmount.mulDiv(17, 100);
+        _claimerFee = _newExpectedRewardAmount.mulDiv(1, 100);
+
+        _cumulativeProtocolFee += _protocolFee;
+        _cumulativeClaimerFee += _claimerFee;
+
+        _newExpectedRewardAmount -= (_protocolFee + _claimerFee);
+
+        assertEq(_balanceOf(rewardToken, address(claimer)), _cumulativeClaimerFee);
+
+        assertEq(strategy.feesAccrued(), _cumulativeProtocolFee);
+        assertEq(_balanceOf(rewardToken, address(strategy)), _cumulativeProtocolFee);
+
+        _balanceRewardToken = _balanceOf(rewardToken, address(rewardDistributor));
+        assertEq(_balanceRewardToken, _expectedLockerRewardTokenAmount + _newExpectedRewardAmount);
+    }
+
+    function _getRewardTokenAmount() internal view returns (uint256) {
+        return ILiquidityGaugeStrat(gauge).earned(address(strategy.locker()));
+    }
+
+    function _balanceOf(address _token, address account) internal view returns (uint256) {
+        if (_token == address(0)) {
+            return account.balance;
+        }
+
+        return ERC20(_token).balanceOf(account);
+    }
+}

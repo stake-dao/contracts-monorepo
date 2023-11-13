@@ -2,20 +2,24 @@
 src = "src"
 out = "out"
 libs = ["lib"]
+verbosity = 3
 
-# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+ffi = true
 
 remappings = [
 "utils=lib/utils/",
+"solady=lib/solady/src/",
 "forge-std=lib/forge-std/src/",
-"@addressBook=lib/AddressBook/src/",
+"addressBook=lib/AddressBook/src/",
 "@openzeppelin=lib/openzeppelin-contracts/",
 "openzeppelin-contracts/=lib/openzeppelin-contracts/contracts/",
 "openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
 ]
 
-ffi = true
 optimizers_runs = 200
 
+[etherscan]
+mainnet = { key = "${API_KEY_ETHERSCAN}" }
+
 [rpc_endpoints]
-ethereum = "https://eth.llamarpc.com"
+mainnet = "https://mainnet.infura.io/v3/${INFURA_KEY}"
