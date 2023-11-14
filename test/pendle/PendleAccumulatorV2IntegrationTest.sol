@@ -93,7 +93,7 @@ contract PendleAccumulatorV2IntegrationTest is Test {
     ];
 
     function setUp() public virtual {
-        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"), 18045826);
+        uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"), 18045826);
         vm.selectFork(forkId);
         // Deploy Accumulator Contract
         pendleAccumulator = new PendleAccumulatorV2( 

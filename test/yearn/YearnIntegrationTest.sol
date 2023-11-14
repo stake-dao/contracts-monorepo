@@ -40,7 +40,7 @@ contract YearnIntegrationTest is Test {
     uint256 internal constant amount = 100e18;
 
     function setUp() public {
-        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"));
+        uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"));
         vm.selectFork(forkId);
         VyperDeployer vyperDeployer = new VyperDeployer();
         sdYFI = new sdToken("Stake DAO YFI", "sdYFI");

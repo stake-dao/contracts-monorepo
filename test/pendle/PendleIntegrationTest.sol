@@ -59,7 +59,7 @@ contract PendleIntegrationTest is Test {
     address public constant WETH_FRAX_LP = 0x31351Bf3fba544863FBff44DDC27bA880916A199;
 
     function setUp() public virtual {
-        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"));
+        uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"));
         vm.selectFork(forkId);
         VyperDeployer vyperDeployer = new VyperDeployer();
         sdPendle = new sdToken("Stake DAO PENDLE", "sdPENDLE");

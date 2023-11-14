@@ -30,7 +30,7 @@ contract FXNLockerIntegrationTest is Test {
     uint256 private constant amount = 100e18;
 
     function setUp() public virtual {
-        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"));
+        uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"));
         vm.selectFork(forkId);
         VyperDeployer vyperDeployer = new VyperDeployer();
         token = IERC20(AddressBook.FXN);

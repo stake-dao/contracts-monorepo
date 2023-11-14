@@ -64,7 +64,7 @@ contract PendleAccumulatorIntegrationTest is Test {
     address public constant POOL_5 = 0x7D49E5Adc0EAAD9C027857767638613253eF125f;
 
     function setUp() public virtual {
-        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"), 17621271);
+        uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"), 17621271);
         vm.selectFork(forkId);
 
         // Deploy Accumulator Contract

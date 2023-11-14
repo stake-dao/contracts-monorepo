@@ -24,7 +24,7 @@ contract YearnAccumulatorV2Test is Test {
     address liquidityFeeRecipient = vm.addr(2);
 
     function setUp() public {
-        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"), 18514500);
+        uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"), 18514500);
         vm.selectFork(forkId);
         yfi = AddressBook.YFI;
         sdYfiLG = ILiquidityGauge(AddressBook.GAUGE_SDYFI);

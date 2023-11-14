@@ -25,7 +25,7 @@ contract SdMavOftIntegrationTest is Test {
     address public deployer = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
 
     function setUp() public virtual {
-        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"));
+        uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"));
         vm.selectFork(forkId);
         VyperDeployer vyperDeployer = new VyperDeployer();
         sdMav = new sdMAV("Stake DAO MAV", "sdMAV", lzEndpoint);
