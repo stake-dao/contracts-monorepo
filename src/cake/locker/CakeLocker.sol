@@ -44,12 +44,10 @@ contract CakeLocker is VeCRVLocker {
     /// @notice Release the tokens from the Voting Escrow contract when the lock expires.
     /// @param _recipient Address to send the tokens to
     function release(address _recipient) external override onlyGovernance {
-        (int128 amount, uint256 end,,,,,,) = IVeCake(address(veToken)).getUserInfo(address(this));
-        // early withdraw the whole amount with penalty
-        if (block.timestamp < end) {
-            IVeCake(veToken).earlyWithdraw(_recipient, uint256(uint128(amount))); 
+        (int128 amount,,,,,,,) = IVeCake(address(veToken)).getUserInfo(address(this));
 
-            emit Released(msg.sender, uint256(uint128(amount)));
-        }
+        IVeCake(veToken).withdrawAll(_recipient); 
+
+        emit Released(msg.sender, uint256(uint128(amount)));
     }
 }

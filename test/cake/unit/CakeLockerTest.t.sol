@@ -98,10 +98,10 @@ contract CakeLockerTest is Test {
         assertEq(_newEnd, _end + 14 days);
     }
 
-    function test_EarlyRelease() public {
+    function test_release() public {
         locker.createLock(100e18, block.timestamp + MAX_LOCK_DURATION);
 
-        skip(MAX_LOCK_DURATION - 1 weeks);
+        skip(MAX_LOCK_DURATION + 1 weeks);
 
         assertEq(token.balanceOf(address(this)), 0);
 
@@ -109,12 +109,12 @@ contract CakeLockerTest is Test {
         assertEq(token.balanceOf(address(this)), 100e18);
     }
 
-    // function test_EarlyReleaseAfterEndRevert() public {
-    //     locker.createLock(100e18, block.timestamp + MAX_LOCK_DURATION);
+    function test_EarlyReleaseAfterEndRevert() public {
+        locker.createLock(100e18, block.timestamp + MAX_LOCK_DURATION);
 
-    //     vm.expectRevert();
-    //     locker.release(address(this));
-    // }
+        vm.expectRevert();
+        locker.release(address(this));
+    }
 
     function test_transferGovernance() public {
         address newGovernance = address(0x123);

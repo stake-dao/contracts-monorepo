@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 interface IVeCake {
     function createLock(uint256 _amount, uint256 _unlockTime) external;
 
-    function earlyWithdraw(address _to, uint256 _amount) external;
+    function withdrawAll(address _to) external;
 
     function getUserInfo(address _user) external view returns (int128 amount,
             uint256 end,
