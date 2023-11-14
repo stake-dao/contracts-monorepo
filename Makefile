@@ -13,7 +13,7 @@ install:
 	forge install
 
 test:
-	@forge test --mc YFIDepositorIntegrationTest
+	@forge test
 
 test-f-%:
 	@FOUNDRY_MATCH_TEST=$* make test
