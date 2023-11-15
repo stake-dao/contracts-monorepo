@@ -21,8 +21,7 @@ contract DeployYearnAccumulatorV2 is Script, Test {
         vm.startBroadcast(DEPLOYER);
         sdYfiLG = AddressBook.GAUGE_SDYFI;
         yfiLocker = AddressBook.YFI_LOCKER;
-        accumulator =
-            new YearnAccumulatorV2(sdYfiLG, yfiLocker, GOV, GOV, YEARN_STRATEGY, GOV);
+        accumulator = new YearnAccumulatorV2(sdYfiLG, yfiLocker, GOV, GOV, YEARN_STRATEGY, GOV);
         assertEq(accumulator.governance(), GOV);
         vm.stopBroadcast();
     }

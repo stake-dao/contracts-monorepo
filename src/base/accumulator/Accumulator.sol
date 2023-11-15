@@ -118,7 +118,13 @@ abstract contract Accumulator {
     /// @param _daoFeeRecipient dao fee recipient
     /// @param _liquidityFeeRecipient liquidity fee recipient
     /// @param _governance governance
-    constructor(address _gauge, address _locker, address _daoFeeRecipient, address _liquidityFeeRecipient, address _governance) {
+    constructor(
+        address _gauge,
+        address _locker,
+        address _daoFeeRecipient,
+        address _liquidityFeeRecipient,
+        address _governance
+    ) {
         gauge = _gauge;
         locker = _locker;
         daoFeeRecipient = _daoFeeRecipient;
