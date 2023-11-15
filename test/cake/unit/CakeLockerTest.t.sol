@@ -75,26 +75,26 @@ contract CakeLockerTest is Test {
     function test_increaseAmountWithoutIncreaseTime() public {
         locker.createLock(100e18, block.timestamp + MAX_LOCK_DURATION);
 
-        (,uint256 _end,,,,,,) = IVeCake(address(veToken)).getUserInfo(address(locker));
+        (, uint256 _end,,,,,,) = IVeCake(address(veToken)).getUserInfo(address(locker));
         deal(address(token), address(locker), 100e18);
         locker.increaseLock(100e18, block.timestamp + MAX_LOCK_DURATION);
 
         assertApproxEqRel(veToken.balanceOf(address(locker)), 197e18, 5e15);
 
-        (,uint256 _newEnd,,,,,,) = IVeCake(address(veToken)).getUserInfo(address(locker));
+        (, uint256 _newEnd,,,,,,) = IVeCake(address(veToken)).getUserInfo(address(locker));
         assertEq(_newEnd, _end);
     }
 
     function test_increaseUnlockTime() public {
         locker.createLock(100e18, block.timestamp + MAX_LOCK_DURATION);
 
-        (,uint256 _end,,,,,,) = IVeCake(address(veToken)).getUserInfo(address(locker));
+        (, uint256 _end,,,,,,) = IVeCake(address(veToken)).getUserInfo(address(locker));
 
         skip(14 days);
 
         locker.increaseLock(0, block.timestamp + MAX_LOCK_DURATION);
 
-        (,uint256 _newEnd,,,,,,) = IVeCake(address(veToken)).getUserInfo(address(locker));
+        (, uint256 _newEnd,,,,,,) = IVeCake(address(veToken)).getUserInfo(address(locker));
         assertEq(_newEnd, _end + 14 days);
     }
 

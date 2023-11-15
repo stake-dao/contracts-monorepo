@@ -6,14 +6,19 @@ interface IVeCake {
 
     function withdrawAll(address _to) external;
 
-    function getUserInfo(address _user) external view returns (int128 amount,
+    function getUserInfo(address _user)
+        external
+        view
+        returns (
+            int128 amount,
             uint256 end,
             address cakePoolProxy,
             uint128 cakeAmount,
             uint48 lockEndTime,
             uint48 migrationTime,
             uint16 cakePoolType,
-            uint16 withdrawFlag);
+            uint16 withdrawFlag
+        );
 
     function increaseLockAmount(uint256 _amount) external;
 

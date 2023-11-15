@@ -16,9 +16,11 @@ import {TransparentUpgradeableProxy} from "openzeppelin-contracts/proxy/transpar
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {IVeToken} from "src/base/interfaces/IVeToken.sol";
 
-interface ICakeWhitelist {
+interface IVeCakeUtil {
     function setWhitelistedCallers(address[] memory callers, bool ok) external;
     function owner() external view returns (address);
+    function delegateFromCakePool(address _delegator) external;
+    function updateDelegator(address _delegator, bool _isDelegator, uint40 _limit) external;
 }
 
 contract CAKELockerIntegrationTest is Test {
@@ -37,6 +39,7 @@ contract CAKELockerIntegrationTest is Test {
     // testnet addresses
     address public constant CAKE = 0x8d008B313C1d6C7fE2982F62d32Da7507cF43551;
     address public constant VE_CAKE = 0xD512FDe5b20B136Ffd8E0087194BEf8537dc88AE;
+    address public constant CAKE_POOL_HOLDER = 0xA13bb13609c3B9AABB8A4D5B4E9EcbaF502cA56E;
 
     function setUp() public virtual {
         uint256 forkId = vm.createFork(vm.rpcUrl("bnb_testnet"));
@@ -46,17 +49,21 @@ contract CAKELockerIntegrationTest is Test {
         veToken = IVeToken(VE_CAKE);
         _sdToken = new sdToken("Stake DAO CAKE", "sdCAKE");
 
-
         bytes memory constructorParams = abi.encode(address(_sdToken), address(this));
-        liquidityGauge = ILiquidityGauge(vyperDeployer.deployContract("src/base/staking/LiquidityGaugeV4XChain.vy", constructorParams));
+        liquidityGauge = ILiquidityGauge(
+            vyperDeployer.deployContract("src/base/staking/LiquidityGaugeV4XChain.vy", constructorParams)
+        );
 
         locker = new CakeLocker(address(this), address(token), address(veToken));
 
         // Whitelist the locker contract
-        vm.prank(ICakeWhitelist(VE_CAKE).owner());
+        vm.startPrank(IVeCakeUtil(VE_CAKE).owner());
         address[] memory callers = new address[](1);
         callers[0] = address(locker);
-        ICakeWhitelist(VE_CAKE).setWhitelistedCallers(callers, true);
+        IVeCakeUtil(VE_CAKE).setWhitelistedCallers(callers, true);
+        // set the locker contract as delegator
+        IVeCakeUtil(VE_CAKE).updateDelegator(address(locker), true, 0);
+        vm.stopPrank();
 
         depositor = new CAKEDepositor(address(token), address(locker), address(_sdToken), address(liquidityGauge));
 
@@ -231,6 +238,13 @@ contract CAKELockerIntegrationTest is Test {
         assertEq(_sdToken.balanceOf(address(_random)), 0);
 
         assertApproxEqRel(veToken.balanceOf(address(locker)), 295e18, 5e15);
+    }
+
+    function test_migrationFromCakePool() public {
+        assertEq(liquidityGauge.balanceOf(CAKE_POOL_HOLDER), 0);
+        vm.prank(CAKE_POOL_HOLDER);
+        IVeCakeUtil(VE_CAKE).delegateFromCakePool(address(locker));
+        assertGt(liquidityGauge.balanceOf(CAKE_POOL_HOLDER), 0);
     }
 
     function test_transferGovernance() public {
