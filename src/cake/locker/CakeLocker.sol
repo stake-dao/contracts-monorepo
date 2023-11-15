@@ -11,10 +11,11 @@ import {ERC20} from "solady/src/tokens/ERC20.sol";
 /// @author StakeDAO
 /// @notice Locks the CAKE tokens to veCAKE contract
 contract CakeLocker is VeCRVLocker {
-    error VE_TOKEN();
+    /// @notice Throws if caller is not the veCAKE contract.
+    error VE_CAKE();
 
     modifier onlyVeCake() {
-        if (msg.sender != veToken) revert VE_TOKEN();
+        if (msg.sender != veToken) revert VE_CAKE();
         _;
     }
 
@@ -24,10 +25,9 @@ contract CakeLocker is VeCRVLocker {
     /// @param _veToken veToken
     constructor(address _governance, address _token, address _veToken) VeCRVLocker(_governance, _token, _veToken) {}
 
-    /// @dev Returns the name of the locker.
-    function name() public pure override returns (string memory) {
-        return "veCAKE Locker";
-    }
+    //////////////////////////////////////////////////////
+    /// --- MUTATIVE FUNCTIONS
+    //////////////////////////////////////////////////////
 
     /// @notice Create a lock for the contract on the Voting Escrow contract.
     /// @param _value Amount of tokens to lock
@@ -76,5 +76,10 @@ contract CakeLocker is VeCRVLocker {
     function delegate(address _user, uint256 _amount, uint256) external onlyVeCake {
         // mint sdCAKE for the user and stake to the sdCAKE gauge
         ICakeDepositor(depositor).mintForCakeDelegator(_user, _amount);
+    }
+
+    /// @dev Returns the name of the locker.
+    function name() public pure override returns (string memory) {
+        return "veCAKE Locker";
     }
 }
