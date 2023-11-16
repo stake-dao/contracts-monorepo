@@ -10,3 +10,6 @@
 [submodule "lib/AddressBook"]
 	path = lib/AddressBook
 	url = https://github.com/StakeDAO/AddressBook
+[submodule "lib/solady"]
+	path = lib/solady
+	url = https://github.com/vectorized/solady
