@@ -22,7 +22,7 @@ contract CAKEDepositor is DepositorV4 {
     /// @param _minter sdToken
     /// @param _gauge sd gauge
     constructor(address _token, address _locker, address _minter, address _gauge)
-        DepositorV4(_token, _locker, _minter, _gauge, (53 * 1 weeks) - 1)
+        DepositorV4(_token, _locker, _minter, _gauge, (209 * 1 weeks) - 1)
     {}
 
     /// @notice mint sdCAKE for the delegator

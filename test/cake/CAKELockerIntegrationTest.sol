@@ -24,7 +24,7 @@ interface IVeCakeUtil {
 }
 
 contract CAKELockerIntegrationTest is Test {
-    uint256 private constant MAX_LOCK_DURATION = (53 * 1 weeks) - 1;
+    uint256 private constant MAX_LOCK_DURATION = (209 * 1 weeks) - 1;
 
     ERC20 private token;
     CakeLocker private locker;
@@ -38,7 +38,7 @@ contract CAKELockerIntegrationTest is Test {
 
     // testnet addresses
     address public constant CAKE = 0x8d008B313C1d6C7fE2982F62d32Da7507cF43551;
-    address public constant VE_CAKE = 0xD512FDe5b20B136Ffd8E0087194BEf8537dc88AE;
+    address public constant VE_CAKE = 0x279957513FC505F8Cb16f4b6783D170C9BEcE322;
     address public constant CAKE_POOL_HOLDER = 0xA13bb13609c3B9AABB8A4D5B4E9EcbaF502cA56E;
 
     function setUp() public virtual {
@@ -113,7 +113,7 @@ contract CAKELockerIntegrationTest is Test {
         assertEq(_sdToken.balanceOf(address(this)), amount);
         assertEq(liquidityGauge.balanceOf(address(this)), 0);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), 196e18, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 200e18, 5e15);
     }
 
     function test_depositAndStake() public {
@@ -128,7 +128,7 @@ contract CAKELockerIntegrationTest is Test {
         assertEq(liquidityGauge.balanceOf(address(this)), amount);
         assertEq(_sdToken.balanceOf(address(liquidityGauge)), amount);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), 196e18, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 200e18, 5e15);
     }
 
     function test_depositAndStakeWithoutLock() public {
@@ -142,7 +142,7 @@ contract CAKELockerIntegrationTest is Test {
         assertEq(token.balanceOf(address(depositor)), amount);
 
         assertEq(depositor.incentiveToken(), expectedIncentiveAmount);
-        assertApproxEqRel(veToken.balanceOf(address(locker)), 98e18, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 100e18, 5e15);
         assertEq(liquidityGauge.balanceOf(address(this)), expectedStakedBalance);
         assertEq(_sdToken.balanceOf(address(liquidityGauge)), expectedStakedBalance);
 
@@ -162,7 +162,7 @@ contract CAKELockerIntegrationTest is Test {
         assertEq(liquidityGauge.balanceOf(address(_random)), 0);
         assertEq(_sdToken.balanceOf(address(_random)), expectedIncentiveAmount);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), 196e18, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 200e18, 5e15);
     }
 
     function test_depositAndStakeWithoutLockThenDepositWith() public {
@@ -174,7 +174,7 @@ contract CAKELockerIntegrationTest is Test {
 
         assertEq(_sdToken.balanceOf(address(this)), 0);
         assertEq(token.balanceOf(address(depositor)), amount);
-        assertApproxEqRel(veToken.balanceOf(address(locker)), 98e18, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 100e18, 5e15);
         assertEq(depositor.incentiveToken(), expectedIncentiveAmount);
         assertEq(liquidityGauge.balanceOf(address(this)), expectedStakedBalance);
         assertEq(_sdToken.balanceOf(address(liquidityGauge)), expectedStakedBalance);
@@ -200,7 +200,7 @@ contract CAKELockerIntegrationTest is Test {
         assertEq(liquidityGauge.balanceOf(address(_random)), amount + expectedIncentiveAmount);
         assertEq(_sdToken.balanceOf(address(_random)), 0);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), 295e18, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 300e18, 5e15);
     }
 
     function test_depositAndStakeWithoutLockIncentivePercent() public {
@@ -211,7 +211,7 @@ contract CAKELockerIntegrationTest is Test {
 
         assertEq(_sdToken.balanceOf(address(this)), 0);
         assertEq(token.balanceOf(address(depositor)), amount);
-        assertApproxEqRel(veToken.balanceOf(address(locker)), 98e18, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 100e18, 5e15);
         assertEq(depositor.incentiveToken(), 0);
         assertEq(liquidityGauge.balanceOf(address(this)), amount);
         assertEq(_sdToken.balanceOf(address(liquidityGauge)), amount);
@@ -237,7 +237,7 @@ contract CAKELockerIntegrationTest is Test {
         assertEq(liquidityGauge.balanceOf(address(_random)), amount);
         assertEq(_sdToken.balanceOf(address(_random)), 0);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), 295e18, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 300e18, 5e15);
     }
 
     function test_migrationFromCakePool() public {

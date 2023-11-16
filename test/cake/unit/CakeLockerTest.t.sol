@@ -18,8 +18,7 @@ interface ICakeWhitelist {
 }
 
 contract CakeLockerTest is Test {
-    uint256 private constant MIN_LOCK_DURATION = 1 weeks;
-    uint256 private constant MAX_LOCK_DURATION = (53 * 1 weeks) - 1;
+    uint256 private constant MAX_LOCK_DURATION = (209 * 1 weeks) - 1;
 
     ERC20 private token;
     CakeLocker private locker;
@@ -27,7 +26,7 @@ contract CakeLockerTest is Test {
 
     // testnet addresses
     address public constant CAKE = 0x8d008B313C1d6C7fE2982F62d32Da7507cF43551;
-    address public constant VE_CAKE = 0xD512FDe5b20B136Ffd8E0087194BEf8537dc88AE;
+    address public constant VE_CAKE = 0x279957513FC505F8Cb16f4b6783D170C9BEcE322;
 
     function setUp() public virtual {
         uint256 forkId = vm.createFork(vm.rpcUrl("bnb_testnet"));
@@ -57,7 +56,7 @@ contract CakeLockerTest is Test {
     function test_createLock() public {
         locker.createLock(100e18, block.timestamp + MAX_LOCK_DURATION);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), 985e17, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 100e18, 5e15);
     }
 
     function test_increaseAmount() public {
@@ -69,7 +68,7 @@ contract CakeLockerTest is Test {
         deal(address(token), address(locker), 100e18);
         locker.increaseLock(100e18, block.timestamp + MAX_LOCK_DURATION);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), 197e18, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 200e18, 5e15);
     }
 
     function test_increaseAmountWithoutIncreaseTime() public {
@@ -79,7 +78,7 @@ contract CakeLockerTest is Test {
         deal(address(token), address(locker), 100e18);
         locker.increaseLock(100e18, block.timestamp + MAX_LOCK_DURATION);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), 197e18, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 200e18, 5e15);
 
         (, uint256 _newEnd,,,,,,) = IVeCake(address(veToken)).getUserInfo(address(locker));
         assertEq(_newEnd, _end);
@@ -193,6 +192,6 @@ contract CakeLockerTest is Test {
             abi.encodeWithSignature("createLock(uint256,uint256)", 100e18, block.timestamp + MAX_LOCK_DURATION)
         );
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), 985e17, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 100e18, 5e15);
     }
 }
