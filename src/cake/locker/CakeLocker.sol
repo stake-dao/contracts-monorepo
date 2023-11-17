@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import {VeCRVLocker} from "src/base/locker/VeCRVLocker.sol";
 import {ICakeDepositor} from "src/base/interfaces/ICakeDepositor.sol";
+import {IRevenueSharingPoolGateway} from "src/base/interfaces/IRevenueSharingPoolGateway.sol";
 import {IVeCake} from "src/base/interfaces/IVeCake.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
@@ -11,8 +12,14 @@ import {ERC20} from "solady/src/tokens/ERC20.sol";
 /// @author StakeDAO
 /// @notice Locks the CAKE tokens to veCAKE contract
 contract CakeLocker is VeCRVLocker {
+
+    /// @notice veCAKE revenue sharing pool gateway.
+    address public rspg;
+
     /// @notice Throws if caller is not the veCAKE contract.
     error VE_CAKE();
+
+    event RevenueSharingPoolGatewaySet(address rspg);
 
     modifier onlyVeCake() {
         if (msg.sender != veToken) revert VE_CAKE();
@@ -60,6 +67,15 @@ contract CakeLocker is VeCRVLocker {
         emit LockIncreased(_value, _unlockTime);
     }
 
+    /// @notice Claim the rewards from the fee distributor.
+    function claimRewards(address, address, address) external override onlyGovernanceOrAccumulator {}
+
+    /// @notice Claim the rewards from the revenue pools, reward will be send to the recipient set
+    /// @param _revenueSharingPools array of revenue sharing pools
+    function claimRevenue(address[] memory _revenueSharingPools) external onlyGovernanceOrAccumulator {
+        IRevenueSharingPoolGateway(rspg).claimMultipleWithoutProxy(_revenueSharingPools, address(this));
+    }
+
     /// @notice Release the tokens from the Voting Escrow contract when the lock expires.
     /// @param _recipient Address to send the tokens to
     function release(address _recipient) external override onlyGovernance {
@@ -68,6 +84,12 @@ contract CakeLocker is VeCRVLocker {
         IVeCake(veToken).withdrawAll(_recipient);
 
         emit Released(msg.sender, uint256(uint128(amount)));
+    }
+
+    /// @notice Set veCAKE revenue sharing pool gateway
+    /// @param _rspg revenue sharing pool gateway
+    function setRevenueSharingPoolGateway(address _rspg) external onlyGovernance {
+        emit RevenueSharingPoolGatewaySet(rspg = _rspg);
     }
 
     /// @notice Delegate CAKE to the locker, it has called during the user delegation
