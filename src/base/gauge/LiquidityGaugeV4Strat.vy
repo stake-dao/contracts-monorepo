@@ -1,4 +1,4 @@
-# @version 0.3.7
+# @version 0.3.10
 """
 @title Liquidity Gauge v4
 @author StakeDAO Protocol
@@ -231,7 +231,7 @@ def _checkpoint_reward(_user: address, token: address, _total_supply: uint256, _
             new_claimable = user_balance * (integral - integral_for) / 10**18
 
         claim_data: uint256 = self.claim_data[_user][token]
-        total_claimable: uint256 = shift(claim_data, -128) + new_claimable
+        total_claimable: uint256 = (claim_data >> 128) + new_claimable
         if total_claimable > 0:
             total_claimed: uint256 = claim_data % 2**128
             if _claim:
@@ -248,7 +248,7 @@ def _checkpoint_reward(_user: address, token: address, _total_supply: uint256, _
                     assert convert(response, bool)
                 self.claim_data[_user][token] = total_claimed + total_claimable
             elif new_claimable > 0:
-                self.claim_data[_user][token] = total_claimed + shift(total_claimable, 128)
+                self.claim_data[_user][token] = total_claimed + (total_claimable << 128)
     
     if token == self.SDT : 
         self.integrate_checkpoint_of[_user] = block.timestamp
@@ -329,7 +329,7 @@ def claimable_reward(_user: address, _reward_token: address) -> uint256:
     integral_for: uint256 = self.reward_integral_for[_reward_token][_user]
     new_claimable: uint256 = user_balance * (integral - integral_for) / 10**18
 
-    return shift(self.claim_data[_user][_reward_token], -128) + new_claimable
+    return (self.claim_data[_user][_reward_token] >> 128) + new_claimable
 
 
 @external
