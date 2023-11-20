@@ -43,6 +43,9 @@ abstract contract Accumulator {
     /// @notice Denominator for fixed point math.
     uint256 public constant BASE_FEE = 10_000;
 
+    /// @notice Tokens amounts where it won't charge fee
+    mapping (address => uint256) public feeLessTokens;
+
     ////////////////////////////////////////////////////////////////
     /// --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
@@ -148,6 +151,14 @@ abstract contract Accumulator {
     /// @notice Claims a reward token for the locker and notify them to the LGV4
     function claimTokenAndNotifyAll(address _token) external virtual {}
 
+    /// @notice Deposit token where it won't charge fees on notify
+    /// @param _token token to deposit
+    /// @param _amount amount to deposit 
+    function depositTokenWithoutChargingFee(address _token, uint256 _amount) external virtual {
+        ERC20(_token).transferFrom(msg.sender, address(this), _amount);
+        feeLessTokens[_token] += _amount;
+    }
+
     /// @notice Notify the whole acc balance of a token
     /// @param _token token to notify
     function notifyReward(address _token) public virtual {
@@ -168,6 +179,12 @@ abstract contract Accumulator {
     function _notifyReward(address _tokenReward, uint256 _amount) internal virtual {
         if (_amount == 0) {
             return;
+        }
+        if (_amount > feeLessTokens[_tokenReward]) {
+            _amount -= _chargeFee(_tokenReward, _amount - feeLessTokens[_tokenReward]);
+            feeLessTokens[_tokenReward] == 0;
+        } else {
+            feeLessTokens[_tokenReward] -= _amount;
         }
         ILiquidityGauge(gauge).deposit_reward_token(_tokenReward, _amount);
 

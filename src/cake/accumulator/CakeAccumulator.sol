@@ -50,18 +50,4 @@ contract CakeAccumulator is Accumulator {
         // notify SDT
         _distributeSDT();
     }
-
-    /// @notice Notify the new reward to the LGV4
-    /// @param _tokenReward token to notify
-    /// @param _amount amount to notify
-    function _notifyReward(address _tokenReward, uint256 _amount) internal override {
-        if (_amount == 0) {
-            return;
-        }
-        // charge fees
-        _amount -= _chargeFee(_tokenReward, _amount);
-        ILiquidityGauge(gauge).deposit_reward_token(_tokenReward, _amount);
-
-        emit RewardNotified(gauge, _tokenReward, _amount);
-    }
 }
