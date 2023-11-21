@@ -9,128 +9,53 @@ import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 /// @author StakeDAO
 contract FeeSplitter {
 
-    /// @notice accumulator
-    address public accumulator;
+    uint256 public constant BASE_FEE = 10_000;
 
-    /// @notice governance
-    address public governance;
+    /// @notice accumulator address
+    address public immutable accumulator;
 
-    /// @notice future governance
-    address public futureGovernance;
+    /// @notice dao address
+    address public immutable dao;
 
-    /// @notice throwed when the msg.sender is not the futureGovernance
-    error FUTURE_GOV();
+    /// @notice veSdtFeeProxy address
+    address public immutable veSdtFeeProxy;
+    
+    /// @notice accumulator part (10_000 = 100%)
+    uint256 public immutable accumulatorFee;
 
-    /// @notice throwed when the msg.sender is not the governance
-    error GOV();
+    /// @notice dao part (10_000 = 100%)
+    uint256 public immutable daoFee;
 
-    /// @notice throwed when the address set is address(0)
-    error ZERO_ADDRESS();
+    /// @notice veSdtFeeProxy part (10_000 = 100%)
+    uint256 public immutable veSdtFeeProxyFee;
 
-    /// @notice Emitted when the accumulator is set
-    event AccumulatorSet(address _accumulator);
-
-    /// @notice Emitted when the future governance is set
-    event TransferGovernance(address _futureGovernance);
-
-    /// @notice Emitted when the future governance accept it
-    event GovernanceAccepted(address _governance);
-
-    modifier onlyGov {
-        if (msg.sender != governance) revert GOV();
-        _;
-    }
-
-    modifier onlyFutureGov {
-        if (msg.sender != futureGovernance) revert FUTURE_GOV();
-        _;
-    }
-
-    constructor(address _accumulator) {
+    constructor(address _accumulator, address _veSdtFeeProxy, address _dao) {
         accumulator = _accumulator;
+        dao = _dao;
+        veSdtFeeProxy = _veSdtFeeProxy;
+        accumulatorFee = 5_000; // 50%
+        daoFee = 2_500; // 25%
+        veSdtFeeProxyFee = 2_500; // 25%
     }
 
-    /// @notice Transfers a token to a recipient
-    /// @dev Can be called only by the governance
-    /// @param _token token to transfer
-    /// @param _amount amount to transfer
-    /// @param _recipient recipient address
-    function transferTokenToRecipient(address _token, uint256 _amount, address _recipient) external onlyGov {
-        ERC20(_token).transfer(_recipient, _amount);
-    }
-
-    /// @notice Transfers a token to different recipients 
-    /// @dev Can be called only by the governance
-    /// @param _token token to transfer
-    /// @param _amounts amount to transfer
-    /// @param _recipients recipients addresses
-    function transferTokenToRecipients(address _token, uint256[] memory _amounts, address[] memory _recipients) external onlyGov {
-        uint256 length = _amounts.length;
-        for (uint256 i; i < length;) {
-            ERC20(_token).transfer(_recipients[i], _amounts[i]);
-            unchecked {
-                i++;
-            }
+    function splitToken(address _token) external {
+        uint256 amount = ERC20(_token).balanceOf(address(this));
+        if (amount == 0) {
+            return;
         }
-    }
 
-    /// @notice Transfers tokens to a recipient
-    /// @dev Can be called only by the governance
-    /// @param _tokens tokens to transfer
-    /// @param _amounts amount to transfer
-    /// @param _recipient recipient address
-    function transferTokensToRecipient(address[] memory _tokens, uint256[] memory _amounts, address _recipient) external onlyGov {
-        uint256 length = _tokens.length;
-        for (uint256 i; i < length;) {
-            ERC20(_tokens[i]).transfer(_recipient, _amounts[i]);
-            unchecked {
-                i++;
-            }
-        }
-    }
+        // DAO part
+        uint256 daoPart = amount * daoFee / BASE_FEE;
+        SafeTransferLib.safeTransfer(_token, dao, daoPart);
 
-    /// @notice Transfers tokens to different recipients 
-    /// @dev Can be called only by the governance
-    /// @param _tokens tokens to transfer
-    /// @param _amounts amount to to transfer
-    /// @param _recipients recipients 
-    function transferTokensToRecipients(address[] memory _tokens, uint256[] memory _amounts, address[] memory _recipients) external onlyGov {
-        uint256 length = _tokens.length;
-        for (uint256 i; i < length;) {
-            ERC20(_tokens[i]).transfer(_recipients[i], _amounts[i]);
-            unchecked {
-                i++;
-            }
-        }
-    }
-
-    /// @notice Set a token to the accumulator
-    /// @dev Can be called only by the governance
-    /// @param _token token to deposit
-    /// @param _amount amount to deposit
-    function depositTokenToAccumulator(address _token, uint256 _amount) external onlyGov {
-        SafeTransferLib.safeApprove(_token, accumulator, _amount);
+        // Accumulator part
+        uint256 accumulatorPart = amount * accumulatorFee / BASE_FEE;
+        SafeTransferLib.safeApprove(_token, accumulator, accumulatorPart);
         // transfer tokens to the acc without charging fees on them when the rewatd is notified
-        IAccumulator(accumulator).depositTokenWithoutChargingFee(_token, _amount);
-    }
+        IAccumulator(accumulator).depositTokenWithoutChargingFee(_token, accumulatorPart);
 
-    /// @notice Set a new future governance that can accept it
-    /// @dev Can be called only by the governance
-    /// @param _futureGovernance future governance address
-    function transferGovernance(address _futureGovernance) external onlyGov {
-        if (_futureGovernance == address(0)) revert ZERO_ADDRESS();
-        emit TransferGovernance(futureGovernance = _futureGovernance);
-    }
-
-    /// @notice Accept the governance
-    /// @dev Can be called only by future governance
-    function acceptGovernance() external onlyFutureGov {
-        emit GovernanceAccepted(governance = futureGovernance);
-    }
-
-    /// @notice Set an accumulator
-    /// @dev Can be called only by the governance
-    function setAccumulator(address _accumulator) external onlyGov {
-        emit AccumulatorSet(accumulator = _accumulator);
+        // VeSdtFeeProxy part
+        uint256 veSdtFeeProxyPart = amount * veSdtFeeProxyFee / BASE_FEE;
+        SafeTransferLib.safeTransfer(_token, veSdtFeeProxy, veSdtFeeProxyPart);
     }
 }
