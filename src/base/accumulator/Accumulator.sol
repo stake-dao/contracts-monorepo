@@ -40,6 +40,9 @@ abstract contract Accumulator {
     /// @notice claimer fee (msg.sender) in percentage (10_000 = 100%)
     uint256 public claimerFee;
 
+    /// @notice fee splitter contract to pull strategies fees
+    address public feeSplitter;
+
     /// @notice Denominator for fixed point math.
     uint256 public constant BASE_FEE = 10_000;
 
@@ -64,6 +67,9 @@ abstract contract Accumulator {
 
     /// @notice Event emitted when the fees are charged during reward notify
     event FeeCharged(uint256 daoPart, uint256 liquidityPart, uint256 claimerPart);
+
+    /// @notice Emitted when the fee splitter is set
+    event FeeSplitterSet(address _feeSplitter);
 
     /// @notice Event emitted when an ERC20 token is rescued
     event ERC20Rescued(address token, uint256 amount);
@@ -272,6 +278,12 @@ abstract contract Accumulator {
     function setClaimerFee(uint256 _claimerFee) external onlyGov {
         if (daoFee + liquidityFee + _claimerFee > BASE_FEE) revert FEE_TOO_HIGH();
         emit ClaimerFeeSet(claimerFee = _claimerFee);
+    }
+
+    /// @notice Set a fee splitter
+    /// @param _feeSplitter fee splitter address
+    function setFeeSplitter(address _feeSplitter) external onlyGov {
+        emit FeeSplitterSet(feeSplitter = _feeSplitter);
     }
 
     /// @notice Set a new future governance that can accept it
