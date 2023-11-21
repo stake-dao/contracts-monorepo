@@ -60,7 +60,7 @@ contract YearnAccumulatorV2Test is Test {
     function testNotifyReward() external {
         uint256 amountToTopUp = 1e18;
         deal(DYFI, address(accumulator), amountToTopUp);
-        accumulator.notifyReward(DYFI);
+        accumulator.notifyReward(DYFI, false, false);
         assertEq(ERC20(DYFI).balanceOf(address(accumulator)), 0);
         _checkFeesOnClaim(DYFI);
     }

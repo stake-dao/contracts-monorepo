@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {IFeeSplitter} from "src/base/interfaces/IFeeSplitter.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {ISDTDistributor} from "src/base/interfaces/ISDTDistributor.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
@@ -167,12 +168,20 @@ abstract contract Accumulator {
 
     /// @notice Notify the whole acc balance of a token
     /// @param _token token to notify
-    function notifyReward(address _token) public virtual {
+    /// @param _notifySDT if notify SDT or not
+    /// @param _pullFromFeeSplitter if pull tokens from the fee splitter or not
+    function notifyReward(address _token, bool _notifySDT, bool _pullFromFeeSplitter) public virtual {
+        if (_pullFromFeeSplitter) {
+            // Pull CAKE reserved for acc from FeeSplitter if there is any
+            IFeeSplitter(feeSplitter).splitToken(_token);
+        }
         uint256 amount = ERC20(_token).balanceOf(address(this));
         // notify token as reward in sdToken gauge
         _notifyReward(_token, amount);
-        // notify SDT
-        _distributeSDT();
+        if (_notifySDT){
+            // notify SDT
+            _distributeSDT();
+        }
     }
 
     //////////////////////////////////////////////////////

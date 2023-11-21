@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import {Accumulator} from "src/base/accumulator/Accumulator.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {ICakeLocker} from "src/base/interfaces/ICakeLocker.sol";
-import {IFeeSplitter} from "src/base/interfaces/IFeeSplitter.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {IYearnStrategy} from "src/base/interfaces/IYearnStrategy.sol";
 
@@ -40,26 +39,14 @@ contract CakeAccumulator is Accumulator {
     //////////////////////////////////////////////////////
 
     /// @notice Claim CAKE rewards for the locker and notify all to the LGV4
-    function claimRevenueAndNotifyAll(address[] memory _revenueSharingPools) external {
-        // Pull CAKE reserved for acc from FeeSplitter if there is any
-        IFeeSplitter(feeSplitter).splitToken(CAKE);
-
+    /// @param _revenueSharingPools pancake revenue sharing pools
+    /// @param _notifySDT if notify SDT or not
+    /// @param _pullFromFeeSplitter if pull tokens from the fee splitter or not
+    function claimRevenueAndNotifyAll(address[] memory _revenueSharingPools, bool _notifySDT, bool _pullFromFeeSplitter) external {
         // claim CAKE reward
         ICakeLocker(locker).claimRevenue(_revenueSharingPools);
-        uint256 cakeAmount = ERC20(CAKE).balanceOf(address(this));
 
-        // notify CAKE in sdCAKE gauge
-        _notifyReward(CAKE, cakeAmount);
-
-        // notify SDT
-        _distributeSDT();
-    }
-
-    /// @notice Notify the whole acc balance of a token
-    /// @param _token token to notify
-    function notifyReward(address _token) public override {
-        // Pull CAKE reserved for acc from FeeSplitter if there is any
-        IFeeSplitter(feeSplitter).splitToken(CAKE);
-        super.notifyReward(_token);
+        // notify CAKE reward 
+        notifyReward(CAKE, _notifySDT, _pullFromFeeSplitter);
     }
 }
