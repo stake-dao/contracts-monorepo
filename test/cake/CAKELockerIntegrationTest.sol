@@ -6,6 +6,7 @@ import "forge-std/Test.sol";
 import "forge-std/console.sol";
 import "utils/VyperDeployer.sol";
 
+import {Constants} from "src/base/utils/Constants.sol";
 import {CakeLocker} from "src/cake/locker/CakeLocker.sol";
 import {CAKEDepositor} from "src/cake/depositor/CAKEDepositor.sol";
 
@@ -41,17 +42,19 @@ contract CAKELockerIntegrationTest is Test {
     address public constant CAKE_POOL_HOLDER = 0xF8da67Cc00ad093DBF70CA4B41656a5B3D059daC;
 
     function setUp() public virtual {
-        uint256 forkId = vm.createFork(vm.rpcUrl("bnb"), 33_702_400);
+        uint256 forkId = vm.createFork(vm.rpcUrl("bnb"), 33_718_879);
         vm.selectFork(forkId);
-        VyperDeployer vyperDeployer = new VyperDeployer();
         token = ERC20(CAKE);
         veToken = IVeToken(VE_CAKE);
         _sdToken = new sdToken("Stake DAO CAKE", "sdCAKE");
 
         bytes memory constructorParams = abi.encode(address(_sdToken), address(this));
-        liquidityGauge = ILiquidityGauge(
-            vyperDeployer.deployContract("src/base/staking/LiquidityGaugeV4XChain.vy", constructorParams)
-        );
+
+               ///@notice deploy the bytecode with the create instruction
+        address deployedAddress;
+        deployedAddress = deployBytecode(Constants.LGV4_XCHAIN_BYTECODE, constructorParams);
+
+        liquidityGauge = ILiquidityGauge(deployedAddress);
 
         locker = new CakeLocker(address(this), address(token), address(veToken));
 
@@ -268,5 +271,16 @@ contract CAKELockerIntegrationTest is Test {
 
         depositor.setSdTokenMinterOperator(newOperator);
         assertEq(_sdToken.operator(), address(newOperator));
+    }
+
+
+        function deployBytecode(bytes memory bytecode, bytes memory args) private returns (address deployed) {
+        bytecode = abi.encodePacked(bytecode, args);
+
+        assembly {
+            deployed := create(0, add(bytecode, 0x20), mload(bytecode))
+        }
+
+        require(deployed != address(0), "DEPLOYMENT_FAILED");
     }
 }
