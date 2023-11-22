@@ -22,6 +22,9 @@ interface IVeCakeUtil {
     function owner() external view returns (address);
     function delegateFromCakePool(address _delegator) external;
     function updateDelegator(address _delegator, bool _isDelegator, uint40 _limit) external;
+
+    function migrateFromCakePool() external;
+    function migrationConvertToDelegation(address _delegator) external;
 }
 
 contract CAKELockerIntegrationTest is Test {
@@ -247,6 +250,18 @@ contract CAKELockerIntegrationTest is Test {
         vm.prank(CAKE_POOL_HOLDER);
 
         IVeCakeUtil(VE_CAKE).delegateFromCakePool(address(locker));
+        assertGt(liquidityGauge.balanceOf(CAKE_POOL_HOLDER), 0);
+    }
+
+    function test_migrateFromMigration() public {
+        assertEq(liquidityGauge.balanceOf(CAKE_POOL_HOLDER), 0);
+
+        vm.prank(CAKE_POOL_HOLDER);
+        IVeCakeUtil(VE_CAKE).migrateFromCakePool();
+
+        vm.prank(address(CAKE_POOL_HOLDER));
+        IVeCakeUtil(VE_CAKE).migrationConvertToDelegation(address(locker));
+
         assertGt(liquidityGauge.balanceOf(CAKE_POOL_HOLDER), 0);
     }
 
