@@ -59,8 +59,6 @@ MAX_REWARDS: constant(uint256) = 10
 TOKENLESS_PRODUCTION: constant(uint256) = 40
 WEEK: constant(uint256) = 604800
 
-GOVERNANCE: constant(String[100]) = "GOVERNANCE"
-
 staking_token: public(address)
 decimal_staking_token: public(uint256)
 
@@ -90,9 +88,8 @@ claim_data: HashMap[address, HashMap[address, uint256]]
 
 admin: public(address)
 future_admin: public(address)
-claimer: public(address)
 
-initialized: public(bool)
+claimer: public(address)
 
 @external
 def __init__(_staking_token: address, _admin: address):
@@ -102,9 +99,6 @@ def __init__(_staking_token: address, _admin: address):
     @param _reward_token
     @param _distributor
     """
-    assert self.initialized == False #dev: contract is already initialized
-    self.initialized = True
-
     assert _staking_token != empty(address)
     assert _admin != empty(address)
 
@@ -169,7 +163,7 @@ def _checkpoint_reward(_user: address, token: address, _total_supply: uint256, _
                     assert convert(response, bool)
                 self.claim_data[_user][token] = total_claimed + total_claimable
             elif new_claimable > 0:
-                self.claim_data[_user][token] = total_claimed + total_claimable << 128
+                self.claim_data[_user][token] = total_claimed + (total_claimable << 128)
                 
 @internal
 def _checkpoint_rewards(_user: address, _total_supply: uint256, _claim: bool, _receiver: address):

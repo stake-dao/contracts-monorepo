@@ -3,6 +3,7 @@ src = "src"
 out = "out"
 libs = ["lib"]
 verbosity = 3
+evm_version = "paris"
 
 remappings = [
 "utils=lib/utils/",
