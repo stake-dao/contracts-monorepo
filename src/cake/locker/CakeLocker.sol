@@ -12,7 +12,6 @@ import {ERC20} from "solady/src/tokens/ERC20.sol";
 /// @author StakeDAO
 /// @notice Locks the CAKE tokens to veCAKE contract
 contract CakeLocker is VeCRVLocker {
-
     /// @notice veCAKE revenue sharing pool gateway.
     address public rspg;
 

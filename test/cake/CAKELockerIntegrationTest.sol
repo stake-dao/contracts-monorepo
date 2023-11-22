@@ -239,12 +239,13 @@ contract CAKELockerIntegrationTest is Test {
         assertApproxEqRel(veToken.balanceOf(address(locker)), 300e18, 5e15);
     }
 
-    // function test_migrationFromCakePool() public {
-    //     assertEq(liquidityGauge.balanceOf(CAKE_POOL_HOLDER), 0);
-    //     vm.prank(CAKE_POOL_HOLDER);
-    //     IVeCakeUtil(VE_CAKE).delegateFromCakePool(address(locker));
-    //     assertGt(liquidityGauge.balanceOf(CAKE_POOL_HOLDER), 0);
-    // }
+    function test_migrationFromCakePool() public {
+        assertEq(liquidityGauge.balanceOf(CAKE_POOL_HOLDER), 0);
+        vm.prank(CAKE_POOL_HOLDER);
+
+        IVeCakeUtil(VE_CAKE).delegateFromCakePool(address(locker));
+        assertGt(liquidityGauge.balanceOf(CAKE_POOL_HOLDER), 0);
+    }
 
     function test_transferGovernance() public {
         address newGovernance = address(0x123);
