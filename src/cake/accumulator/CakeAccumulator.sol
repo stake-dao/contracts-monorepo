@@ -5,6 +5,7 @@ import {Accumulator} from "src/base/accumulator/Accumulator.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {ICakeLocker} from "src/base/interfaces/ICakeLocker.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
+import {IRevenueSharingPool} from "src/base/interfaces/IRevenueSharingPool.sol";
 import {IYearnStrategy} from "src/base/interfaces/IYearnStrategy.sol";
 
 /// @title A contract that accumulates CAKE rewards and notifies them to the sdCAKE gauge
@@ -43,10 +44,20 @@ contract CakeAccumulator is Accumulator {
     /// @param _notifySDT if notify SDT or not
     /// @param _pullFromFeeSplitter if pull tokens from the fee splitter or not
     function claimRevenueAndNotifyAll(address[] memory _revenueSharingPools, bool _notifySDT, bool _pullFromFeeSplitter) external {
-        // claim CAKE reward
+        // claim Revenue reward
         ICakeLocker(locker).claimRevenue(_revenueSharingPools);
 
-        // notify CAKE reward 
-        notifyReward(CAKE, _notifySDT, _pullFromFeeSplitter);
+        for (uint256 i; i < _revenueSharingPools.length;) {
+            address tokenReward = IRevenueSharingPool(_revenueSharingPools[i]).rewardToken();
+            uint256 balance = ERC20(tokenReward).balanceOf(address(this));
+            // notify reward only one time for each different token
+            if (balance != 0) {
+                notifyReward(tokenReward, _notifySDT, _pullFromFeeSplitter);
+            }
+            unchecked {
+                i++;
+            }
+        }
+        
     }
 }
