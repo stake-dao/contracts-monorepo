@@ -8,7 +8,6 @@ import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 /// @title A contract that receive token at every strategy harvest
 /// @author StakeDAO
 contract FeeSplitter {
-
     uint256 public constant BASE_FEE = 10_000;
 
     /// @notice accumulator address
@@ -19,7 +18,7 @@ contract FeeSplitter {
 
     /// @notice veSdtFeeProxy address
     address public immutable veSdtFeeProxy;
-    
+
     /// @notice accumulator part (10_000 = 100%)
     uint256 public immutable accumulatorFee;
 

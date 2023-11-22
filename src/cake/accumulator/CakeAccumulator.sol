@@ -11,7 +11,6 @@ import {IYearnStrategy} from "src/base/interfaces/IYearnStrategy.sol";
 /// @title A contract that accumulates CAKE rewards and notifies them to the sdCAKE gauge
 /// @author StakeDAO
 contract CakeAccumulator is Accumulator {
-
     /// @notice CAKE token address
     address public constant CAKE = 0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82;
 
@@ -43,7 +42,9 @@ contract CakeAccumulator is Accumulator {
     /// @param _revenueSharingPools pancake revenue sharing pools
     /// @param _notifySDT if notify SDT or not
     /// @param _pullFromFeeSplitter if pull tokens from the fee splitter or not
-    function claimRevenueAndNotifyAll(address[] memory _revenueSharingPools, bool _notifySDT, bool _pullFromFeeSplitter) external {
+    function claimRevenueAndNotifyAll(address[] memory _revenueSharingPools, bool _notifySDT, bool _pullFromFeeSplitter)
+        external
+    {
         // claim Revenue reward
         ICakeLocker(locker).claimRevenue(_revenueSharingPools);
 
@@ -58,6 +59,5 @@ contract CakeAccumulator is Accumulator {
                 i++;
             }
         }
-        
     }
 }

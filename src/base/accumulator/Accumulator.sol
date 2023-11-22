@@ -48,7 +48,7 @@ abstract contract Accumulator {
     uint256 public constant BASE_FEE = 10_000;
 
     /// @notice Tokens amounts where it won't charge fee
-    mapping (address => uint256) public feeLessTokens;
+    mapping(address => uint256) public feeLessTokens;
 
     ////////////////////////////////////////////////////////////////
     /// --- EVENTS & ERRORS
@@ -160,7 +160,7 @@ abstract contract Accumulator {
 
     /// @notice Deposit token where it won't charge fees on notify
     /// @param _token token to deposit
-    /// @param _amount amount to deposit 
+    /// @param _amount amount to deposit
     function depositTokenWithoutChargingFee(address _token, uint256 _amount) external virtual {
         ERC20(_token).transferFrom(msg.sender, address(this), _amount);
         feeLessTokens[_token] += _amount;
@@ -178,7 +178,7 @@ abstract contract Accumulator {
         uint256 amount = ERC20(_token).balanceOf(address(this));
         // notify token as reward in sdToken gauge
         _notifyReward(_token, amount);
-        if (_notifySDT){
+        if (_notifySDT) {
             // notify SDT
             _distributeSDT();
         }
@@ -321,4 +321,6 @@ abstract contract Accumulator {
         SafeTransferLib.safeTransfer(_token, _recipient, _amount);
         emit ERC20Rescued(_token, _amount);
     }
+
+    receive() external payable {}
 }
