@@ -36,13 +36,12 @@ contract CAKELockerIntegrationTest is Test {
 
     uint256 private constant amount = 100e18;
 
-    // testnet addresses
-    address public constant CAKE = 0x8d008B313C1d6C7fE2982F62d32Da7507cF43551;
-    address public constant VE_CAKE = 0x279957513FC505F8Cb16f4b6783D170C9BEcE322;
-    address public constant CAKE_POOL_HOLDER = 0xA13bb13609c3B9AABB8A4D5B4E9EcbaF502cA56E;
+    address public constant CAKE = 0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82;
+    address public constant VE_CAKE = 0x5692DB8177a81A6c6afc8084C2976C9933EC1bAB;
+    address public constant CAKE_POOL_HOLDER = 0xF8da67Cc00ad093DBF70CA4B41656a5B3D059daC;
 
     function setUp() public virtual {
-        uint256 forkId = vm.createFork(vm.rpcUrl("bnb_testnet"));
+        uint256 forkId = vm.createFork(vm.rpcUrl("bnb"), 33_702_400);
         vm.selectFork(forkId);
         VyperDeployer vyperDeployer = new VyperDeployer();
         token = ERC20(CAKE);
