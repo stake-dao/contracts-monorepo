@@ -45,7 +45,7 @@ contract CAKELockerIntegrationTest is Test {
     address public constant CAKE_POOL_HOLDER = 0xF8da67Cc00ad093DBF70CA4B41656a5B3D059daC;
 
     function setUp() public virtual {
-        uint256 forkId = vm.createFork(vm.rpcUrl("bnb"), 33_718_879);
+        uint256 forkId = vm.createFork(vm.rpcUrl("bnb")); // 33_718_879
         vm.selectFork(forkId);
         token = ERC20(CAKE);
         veToken = IVeToken(VE_CAKE);
@@ -53,7 +53,7 @@ contract CAKELockerIntegrationTest is Test {
 
         bytes memory constructorParams = abi.encode(address(_sdToken), address(this));
 
-               ///@notice deploy the bytecode with the create instruction
+        ///@notice deploy the bytecode with the create instruction
         address deployedAddress;
         deployedAddress = deployBytecode(Constants.LGV4_XCHAIN_BYTECODE, constructorParams);
 
@@ -288,8 +288,7 @@ contract CAKELockerIntegrationTest is Test {
         assertEq(_sdToken.operator(), address(newOperator));
     }
 
-
-        function deployBytecode(bytes memory bytecode, bytes memory args) private returns (address deployed) {
+    function deployBytecode(bytes memory bytecode, bytes memory args) private returns (address deployed) {
         bytecode = abi.encodePacked(bytecode, args);
 
         assembly {

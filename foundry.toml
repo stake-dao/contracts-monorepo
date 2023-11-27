@@ -24,5 +24,5 @@ optimizers_runs = 200
 [rpc_endpoints]
 mainnet = "https://mainnet.infura.io/v3/${INFURA_KEY}"
 base = "https://mainnet.base.org"
-bnb = "https://binance.llamarpc.com"
+bnb = "https://bsc.publicnode.com"
 bnb_testnet = "https://bsc-testnet.publicnode.com"

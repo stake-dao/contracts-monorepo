@@ -28,7 +28,7 @@ contract CakeLockerTest is Test {
     address public constant VE_CAKE = 0x5692DB8177a81A6c6afc8084C2976C9933EC1bAB;
 
     function setUp() public virtual {
-        uint256 forkId = vm.createFork(vm.rpcUrl("bnb"), 33_702_400);
+        uint256 forkId = vm.createFork(vm.rpcUrl("bnb")); // 33_702_400
         vm.selectFork(forkId);
 
         token = ERC20(CAKE);
@@ -43,7 +43,7 @@ contract CakeLockerTest is Test {
         ICakeWhitelist(VE_CAKE).setWhitelistedCallers(callers, true);
 
         // Mint token to the Locker contract
-        deal(address(token), address(locker), 100e18);
+        deal(address(token), address(locker), 200e18);
     }
 
     function test_initialization() public {
@@ -94,6 +94,19 @@ contract CakeLockerTest is Test {
 
         (, uint256 _newEnd,,,,,,) = IVeCake(address(veToken)).getUserInfo(address(locker));
         assertEq(_newEnd, _end + 14 days);
+    }
+
+    function test_increaseAmountAndIncreaseTime() public {
+        locker.createLock(100e18, block.timestamp + MAX_LOCK_DURATION);
+
+        (, uint256 _end,,,,,,) = IVeCake(address(veToken)).getUserInfo(address(locker));
+        deal(address(token), address(locker), 100e18);
+        locker.increaseLock(100e18, block.timestamp + MAX_LOCK_DURATION);
+
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 200e18, 5e15);
+
+        (, uint256 _newEnd,,,,,,) = IVeCake(address(veToken)).getUserInfo(address(locker));
+        assertEq(_newEnd, _end);
     }
 
     function test_release() public {
