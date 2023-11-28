@@ -31,11 +31,7 @@ contract PendleLockerTest is Test {
         sdPendle = new sdToken("sdPendle", "sdPendle");
 
         // Deploy and Intialize the Pendle Depositor contract
-        depositor = new PendleDepositor(
-            address(PENDLE),
-            address(pendleLocker),
-            address(sdPendle)
-        );
+        depositor = new PendleDepositor(address(PENDLE), address(pendleLocker), address(sdPendle));
         sdPendle.setOperator(address(depositor));
 
         pendleLocker.setPendleDepositor(address(depositor));

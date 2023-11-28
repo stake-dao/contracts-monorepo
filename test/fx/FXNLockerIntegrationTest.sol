@@ -4,12 +4,14 @@ pragma solidity 0.8.19;
 import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
-import "utils/VyperDeployer.sol";
+
+import "test/utils/Utils.sol";
 
 import "src/fx/locker/FXNLocker.sol";
 import "src/fx/depositor/FXNDepositor.sol";
 
 import {sdToken} from "src/base/token/sdToken.sol";
+import {Constants} from "src/base/utils/Constants.sol";
 import {AddressBook} from "@addressBook/AddressBook.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {ISmartWalletChecker} from "src/base/interfaces/ISmartWalletChecker.sol";
@@ -32,28 +34,27 @@ contract FXNLockerIntegrationTest is Test {
     function setUp() public virtual {
         uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"));
         vm.selectFork(forkId);
-        VyperDeployer vyperDeployer = new VyperDeployer();
         token = IERC20(AddressBook.FXN);
         veToken = IVeToken(AddressBook.VE_FXN);
-        _sdToken = new sdToken("Stake DAO FXN", "sdFXN");
 
-        address liquidityGaugeImpl = vyperDeployer.deployContract("src/base/staking/LiquidityGaugeV4.vy");
+        _sdToken = new sdToken("Stake DAO FXN", "sdFXN");
+        address liquidityGaugeImpl = Utils.deployBytecode(Constants.LGV4_BYTECODE, "");
 
         // Deploy LiquidityGauge
         liquidityGauge = ILiquidityGauge(
             address(
                 new TransparentUpgradeableProxy(
-                liquidityGaugeImpl,
-                AddressBook.PROXY_ADMIN,
-                abi.encodeWithSignature(
-                "initialize(address,address,address,address,address,address)",
-                address(_sdToken),
-                address(this),
-                AddressBook.SDT,
-                AddressBook.VE_SDT,
-                AddressBook.VE_SDT_BOOST_PROXY,
-                AddressBook.SDT_DISTRIBUTOR
-                )
+                    liquidityGaugeImpl,
+                    AddressBook.PROXY_ADMIN,
+                    abi.encodeWithSignature(
+                        "initialize(address,address,address,address,address,address)",
+                        address(_sdToken),
+                        address(this),
+                        AddressBook.SDT,
+                        AddressBook.VE_SDT,
+                        AddressBook.VE_SDT_BOOST_PROXY,
+                        AddressBook.SDT_DISTRIBUTOR
+                    )
                 )
             )
         );

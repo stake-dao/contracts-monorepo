@@ -40,17 +40,17 @@ contract DeployMigratedMAV is Script, Test {
         liquidityGauge = ILiquidityGauge(
             address(
                 new TransparentUpgradeableProxy(
-                liquidityGaugeImpl,
-                AddressBook.PROXY_ADMIN,
-                abi.encodeWithSignature(
-                "initialize(address,address,address,address,address,address)",
-                address(_sdToken),
-                address(deployer),
-                AddressBook.SDT,
-                AddressBook.VE_SDT,
-                AddressBook.VE_SDT_BOOST_PROXY,
-                AddressBook.SDT_DISTRIBUTOR
-                )
+                    liquidityGaugeImpl,
+                    AddressBook.PROXY_ADMIN,
+                    abi.encodeWithSignature(
+                        "initialize(address,address,address,address,address,address)",
+                        address(_sdToken),
+                        address(deployer),
+                        AddressBook.SDT,
+                        AddressBook.VE_SDT,
+                        AddressBook.VE_SDT_BOOST_PROXY,
+                        AddressBook.SDT_DISTRIBUTOR
+                    )
                 )
             )
         );

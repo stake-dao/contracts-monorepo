@@ -4,7 +4,6 @@ pragma solidity 0.8.7;
 import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
-import "utils/VyperDeployer.sol";
 
 import {AddressBook} from "@addressBook/AddressBook.sol";
 
@@ -68,12 +67,8 @@ contract PendleAccumulatorIntegrationTest is Test {
         vm.selectFork(forkId);
 
         // Deploy Accumulator Contract
-        pendleAccumulator = new PendleAccumulator( 
-            address(liquidityGauge),
-            daoRecipient,
-            bribeRecipient,
-            address(veSdtFeePendleProxy)
-            );
+        pendleAccumulator =
+            new PendleAccumulator(address(liquidityGauge), daoRecipient, bribeRecipient, address(veSdtFeePendleProxy));
 
         // Setters
         pendleAccumulator.setLocker(address(pendleLocker));

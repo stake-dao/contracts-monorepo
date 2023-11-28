@@ -4,7 +4,6 @@ pragma solidity 0.8.19;
 import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
-import "utils/VyperDeployer.sol";
 
 import {Constants} from "src/base/utils/Constants.sol";
 import {CakeLocker} from "src/cake/locker/CakeLocker.sol";

@@ -3,7 +3,6 @@ src = "src"
 out = "out"
 libs = ["lib"]
 verbosity = 3
-evm_version = "paris"
 
 remappings = [
 "utils=lib/utils/",
@@ -24,5 +23,5 @@ optimizers_runs = 200
 [rpc_endpoints]
 mainnet = "https://mainnet.infura.io/v3/${INFURA_KEY}"
 base = "https://mainnet.base.org"
-bnb = "https://bsc.publicnode.com"
+bnb = "https://bsc-mainnet.nodereal.io/v1/8ba50235e5794af7ba04e88181bb359f"
 bnb_testnet = "https://bsc-testnet.publicnode.com"

@@ -17,13 +17,8 @@ contract DeployPendleAccumulatorV2 is Script, Test {
 
     function run() public {
         vm.startBroadcast(deployer);
-        accumulator = new PendleAccumulatorV2(
-            deployer, 
-            daoRecipient, 
-            bountyRecipient, 
-            pendleVeSdtFeeProxy,
-            votersRewardRecipient
-        );
+        accumulator =
+            new PendleAccumulatorV2(deployer, daoRecipient, bountyRecipient, pendleVeSdtFeeProxy, votersRewardRecipient);
         vm.stopBroadcast();
     }
 }

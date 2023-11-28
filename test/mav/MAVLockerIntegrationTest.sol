@@ -3,13 +3,14 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
+import "test/utils/Utils.sol";
 import "forge-std/console.sol";
-import "utils/VyperDeployer.sol";
 
 import "src/mav/locker/MAVLocker.sol";
 import "src/mav/depositor/MAVDepositor.sol";
 
 import {sdToken} from "src/base/token/sdToken.sol";
+import {Constants} from "src/base/utils/Constants.sol";
 import {AddressBook} from "@addressBook/AddressBook.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 
@@ -50,13 +51,12 @@ abstract contract MAVLockerIntegrationTest is Test {
     function setUp() public virtual {
         uint256 forkId = vm.createFork(vm.rpcUrl(rpcAlias), forkBlock);
         vm.selectFork(forkId);
-        VyperDeployer vyperDeployer = new VyperDeployer();
         _sdToken = new sdToken("Stake DAO MAV", "sdMAV");
 
         address liquidityGaugeImpl;
         if (keccak256(abi.encodePacked(rpcAlias)) == keccak256(abi.encodePacked("ethereum"))) {
-            liquidityGaugeImpl = vyperDeployer.deployContract(
-                "src/base/staking/LiquidityGaugeV4Native.vy",
+            liquidityGaugeImpl = Utils.deployBytecode(
+                Constants.LGV4_NATIVE_BYTECODE,
                 abi.encode(
                     address(_sdToken),
                     address(this),
@@ -67,9 +67,8 @@ abstract contract MAVLockerIntegrationTest is Test {
                 )
             );
         } else {
-            liquidityGaugeImpl = vyperDeployer.deployContract(
-                "src/base/staking/LiquidityGaugeV4XChain.vy", abi.encode(address(_sdToken), address(this))
-            );
+            liquidityGaugeImpl =
+                Utils.deployBytecode(Constants.LGV4_XCHAIN_BYTECODE, abi.encode(address(_sdToken), address(this)));
         }
 
         liquidityGauge = ILiquidityGauge(liquidityGaugeImpl);

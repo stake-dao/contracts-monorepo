@@ -4,7 +4,9 @@ pragma solidity 0.8.19;
 import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
-import "utils/VyperDeployer.sol";
+
+import "test/utils/Utils.sol";
+import {Constants} from "src/base/utils/Constants.sol";
 
 import "src/mav/depositor/MAVDepositor.sol";
 
@@ -27,12 +29,11 @@ contract SdMavOftIntegrationTest is Test {
     function setUp() public virtual {
         uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"));
         vm.selectFork(forkId);
-        VyperDeployer vyperDeployer = new VyperDeployer();
         sdMav = new sdMAV("Stake DAO MAV", "sdMAV", lzEndpoint);
 
         liquidityGauge = ILiquidityGauge(
-            vyperDeployer.deployContract(
-                "src/base/staking/LiquidityGaugeV4Native.vy",
+            Utils.deployBytecode(
+                Constants.LGV4_NATIVE_BYTECODE,
                 abi.encode(
                     address(sdMav),
                     address(this),

@@ -5,7 +5,9 @@ import "forge-std/Vm.sol";
 
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
-import "utils/VyperDeployer.sol";
+
+import "test/utils/Utils.sol";
+import {Constants} from "src/base/utils/Constants.sol";
 
 import {AddressBook} from "@addressBook/AddressBook.sol";
 
@@ -42,26 +44,25 @@ contract YearnIntegrationTest is Test {
     function setUp() public {
         uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"));
         vm.selectFork(forkId);
-        VyperDeployer vyperDeployer = new VyperDeployer();
         sdYFI = new sdToken("Stake DAO YFI", "sdYFI");
 
-        address liquidityGaugeImpl = vyperDeployer.deployContract("src/base/staking/LiquidityGaugeV4.vy");
+        address liquidityGaugeImpl = Utils.deployBytecode(Constants.LGV4_BYTECODE, "");
 
         // Deploy LiquidityGauge
         liquidityGauge = ILiquidityGauge(
             address(
                 new TransparentUpgradeableProxy(
-                liquidityGaugeImpl,
-                AddressBook.PROXY_ADMIN,
-                abi.encodeWithSignature(
-                "initialize(address,address,address,address,address,address)",
-                address(sdYFI),
-                address(this),
-                AddressBook.SDT,
-                AddressBook.VE_SDT,
-                AddressBook.VE_SDT_BOOST_PROXY,
-                AddressBook.SDT_DISTRIBUTOR
-                )
+                    liquidityGaugeImpl,
+                    AddressBook.PROXY_ADMIN,
+                    abi.encodeWithSignature(
+                        "initialize(address,address,address,address,address,address)",
+                        address(sdYFI),
+                        address(this),
+                        AddressBook.SDT,
+                        AddressBook.VE_SDT,
+                        AddressBook.VE_SDT_BOOST_PROXY,
+                        AddressBook.SDT_DISTRIBUTOR
+                    )
                 )
             )
         );
@@ -71,7 +72,7 @@ contract YearnIntegrationTest is Test {
         yearnLocker.approveUnderlying();
 
         // Deploy Depositor Contract
-        depositor = new DepositorV2(AddressBook.YFI, address(yearnLocker), address(sdYFI), 4*365 days);
+        depositor = new DepositorV2(AddressBook.YFI, address(yearnLocker), address(sdYFI), 4 * 365 days);
         depositor.setGauge(address(liquidityGauge));
         sdYFI.setOperator(address(depositor));
         yearnLocker.setYFIDepositor(address(depositor));
