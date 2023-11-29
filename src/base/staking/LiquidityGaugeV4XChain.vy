@@ -316,7 +316,7 @@ def withdraw(_value: uint256, _addr: address, _claim_rewards: bool = False):
     else:
         self._checkpoint_rewards(msg.sender, total_supply, False, empty(address))
 
-    log Withdraw(_addr, _value)
+    log Withdraw(msg.sender, _value)
     log Transfer(msg.sender, empty(address), _value)
 
 
