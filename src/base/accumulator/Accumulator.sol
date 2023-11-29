@@ -172,7 +172,7 @@ abstract contract Accumulator {
     /// @param _pullFromFeeSplitter if pull tokens from the fee splitter or not
     function notifyReward(address _token, bool _notifySDT, bool _pullFromFeeSplitter) public virtual {
         if (_pullFromFeeSplitter) {
-            // Pull CAKE reserved for acc from FeeSplitter if there is any
+            // Pull token reserved for acc from FeeSplitter if there is any
             IFeeSplitter(feeSplitter).splitToken(_token);
         }
         uint256 amount = ERC20(_token).balanceOf(address(this));

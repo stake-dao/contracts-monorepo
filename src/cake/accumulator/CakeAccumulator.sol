@@ -42,7 +42,7 @@ contract CakeAccumulator is Accumulator {
     /// @param _revenueSharingPools pancake revenue sharing pools
     /// @param _notifySDT if notify SDT or not
     /// @param _pullFromFeeSplitter if pull tokens from the fee splitter or not
-    function claimRevenueAndNotifyAll(address[] memory _revenueSharingPools, bool _notifySDT, bool _pullFromFeeSplitter)
+    function claimAndNotifyAll(address[] memory _revenueSharingPools, bool _notifySDT, bool _pullFromFeeSplitter)
         external
     {
         // claim Revenue reward
