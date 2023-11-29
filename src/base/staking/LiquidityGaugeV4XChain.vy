@@ -305,16 +305,16 @@ def withdraw(_value: uint256, _addr: address, _claim_rewards: bool = False):
     if _value != 0:
         is_rewards: bool = self.reward_count != 0
         if is_rewards:
-            self._checkpoint_rewards(_addr, total_supply, _claim_rewards, empty(address))
+            self._checkpoint_rewards(msg.sender, total_supply, _claim_rewards, empty(address))
 
         total_supply -= _value
-        new_balance: uint256 = self.balanceOf[_addr] - _value
-        self.balanceOf[_addr] = new_balance
+        new_balance: uint256 = self.balanceOf[msg.sender] - _value
+        self.balanceOf[msg.sender] = new_balance
         self.totalSupply = total_supply
 
-        ERC20(self.staking_token).transfer(msg.sender, _value)
+        ERC20(self.staking_token).transfer(_addr, _value)
     else:
-        self._checkpoint_rewards(_addr, total_supply, False, empty(address))
+        self._checkpoint_rewards(msg.sender, total_supply, False, empty(address))
 
     log Withdraw(_addr, _value)
     log Transfer(msg.sender, empty(address), _value)
