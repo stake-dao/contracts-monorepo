@@ -56,6 +56,8 @@ interface ILiquidityGauge {
 
     function admin() external view returns (address);
 
+    function future_admin() external view returns (address);
+
     // solhint-disable-next-line
     function set_reward_distributor(address _rewardToken, address _newDistrib) external;
 
@@ -72,4 +74,9 @@ interface ILiquidityGauge {
     ) external;
 
     function totalSupply() external returns (uint256);
+
+    function withdraw(uint256 _value, bool _claimReward) external;
+
+    // solhint-disable-next-line
+    function accept_transfer_ownership() external;
 }
