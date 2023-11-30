@@ -150,21 +150,23 @@ contract LGV4XChainTest is Test {
         vm.prank(staker1);
         liquidityGauge.set_rewards_receiver(staker2);
 
-        uint256 amountToDeposit = 50e18;
-        uint256 amountToNotify = 100e18;
+        uint256 _amountToDeposit = 50e18;
 
         // Staker1 deposits for staker1
         vm.startPrank(staker1);
-        ERC20(stakeToken).approve(address(liquidityGauge), amountToDeposit);
-        liquidityGauge.deposit(amountToDeposit, staker1);
+        ERC20(stakeToken).approve(address(liquidityGauge), _amountToDeposit);
+        liquidityGauge.deposit(_amountToDeposit, staker1);
         vm.stopPrank();
 
         skip(8 days);
+
+        uint expectedReward = liquidityGauge.claimable_reward(staker1, rewardToken);
 
         // reward will be send to staker2
         assertEq(ERC20(rewardToken).balanceOf(staker2), 0);
         liquidityGauge.claim_rewards(staker1);
         assertGt(ERC20(rewardToken).balanceOf(staker2), 0);
+        assertEq(ERC20(rewardToken).balanceOf(staker2), expectedReward);
     }
 
     function testClaimRewardsFor() external {

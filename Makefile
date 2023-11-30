@@ -35,10 +35,10 @@ coverage-html:
 	@rm ./lcov.info*
 
 simulate-%:
-	@forge script script/$*.s.sol -vvvvv --fork-url https://binance.llamarpc.com
+	@forge script script/$*.s.sol -vvvvv --fork-url https://bsc-mainnet.nodereal.io/v1/8ba50235e5794af7ba04e88181bb359f
 
 run-%:
-	@forge script script/$*.s.sol --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY) --rpc-url https://binance.llamarpc.com
+	@forge script script/$*.s.sol --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY) --rpc-url https://bsc-mainnet.nodereal.io/v1/8ba50235e5794af7ba04e88181bb359f --resume
 
 deploy-%:
 	@forge script script/$*.s.sol --broadcast --slow -vvvvv --verify --private-key ${PRIVATE_KEY}
