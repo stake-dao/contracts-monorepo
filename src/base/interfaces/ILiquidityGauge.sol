@@ -49,6 +49,9 @@ interface ILiquidityGauge {
     function claim_rewards(address) external;
 
     // solhint-disable-next-line
+    function claim_rewards(address, address) external;
+
+    // solhint-disable-next-line
     function add_reward(address, address) external;
 
     // solhint-disable-next-line
@@ -79,4 +82,10 @@ interface ILiquidityGauge {
 
     // solhint-disable-next-line
     function accept_transfer_ownership() external;
+
+    // solhint-disable-next-line
+    function claimed_reward(address _addr, address _token) external view returns (uint256);
+
+    // solhint-disable-next-line
+    function set_rewards_receiver(address _receiver) external;
 }

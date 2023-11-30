@@ -24,6 +24,8 @@ contract LGV4XChainTest is Test {
 
     ILiquidityGauge public liquidityGauge;
 
+    uint256 amountToNotify = 100e18;
+
     function setUp() public {
         uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"));
         vm.selectFork(forkId);
@@ -47,7 +49,13 @@ contract LGV4XChainTest is Test {
 
         deal(sdCrv, staker1, 100e18);
         deal(sdCrv, staker2, 100e18);
-        deal(rewardToken, rewardDistributor, 100e18);
+        deal(rewardToken, rewardDistributor, amountToNotify);
+
+        // Notify the weekly reward
+        vm.startPrank(rewardDistributor);
+        ERC20(rewardToken).approve(address(liquidityGauge), amountToNotify);
+        liquidityGauge.deposit_reward_token(rewardToken, amountToNotify);
+        vm.stopPrank();
 
     }
 
@@ -94,6 +102,60 @@ contract LGV4XChainTest is Test {
 
     function testClaimReward() external {
         uint256 amountToDeposit = 50e18;
+
+        // Staker1 deposits for staker1
+        vm.startPrank(staker1);
+        ERC20(sdCrv).approve(address(liquidityGauge), amountToDeposit);
+        liquidityGauge.deposit(amountToDeposit, staker1);
+        vm.stopPrank();
+
+        skip(8 days);
+
+        assertEq(ERC20(rewardToken).balanceOf(staker1), 0);
+        uint256 claimableReward = liquidityGauge.claimable_reward(staker1, rewardToken);
+
+        vm.prank(staker1);
+        liquidityGauge.claim_rewards(staker1);
+
+        uint256 claimedReward = liquidityGauge.claimed_reward(staker1, rewardToken);
+        uint256 rewardClaimed = ERC20(rewardToken).balanceOf(staker1);
+
+        assertApproxEqRel(rewardClaimed, amountToNotify, 0.5e18);
+        assertEq(claimableReward, rewardClaimed);
+        assertEq(claimedReward, rewardClaimed);
+    }
+
+    function testClaimRewardsForOthers() external {
+        uint256 amountToDeposit = 50e18;
+
+        // Staker1 deposits for staker1
+        vm.startPrank(staker1);
+        ERC20(sdCrv).approve(address(liquidityGauge), amountToDeposit);
+        liquidityGauge.deposit(amountToDeposit, staker1);
+        vm.stopPrank();
+
+        skip(8 days);
+
+        vm.prank(staker2);
+        // the reward can be riderect to staker2 only
+        // if the msg.sender is the staker1
+        vm.expectRevert();
+        liquidityGauge.claim_rewards(staker1, staker2);
+
+        assertEq(ERC20(rewardToken).balanceOf(staker1), 0);
+        assertEq(ERC20(rewardToken).balanceOf(staker2), 0);
+        vm.prank(staker1);
+        liquidityGauge.claim_rewards(staker1, staker2);
+        assertEq(ERC20(rewardToken).balanceOf(staker1), 0);
+        assertGt(ERC20(rewardToken).balanceOf(staker2), 0);
+    }
+
+    function testClaimRewardWithRewardReceiverSet() external {
+        // set staker2 as reward receiver for staker1
+        vm.prank(staker1);
+        liquidityGauge.set_rewards_receiver(staker2);
+
+        uint256 amountToDeposit = 50e18;
         uint256 amountToNotify = 100e18;
 
         // Staker1 deposits for staker1
@@ -102,20 +164,12 @@ contract LGV4XChainTest is Test {
         liquidityGauge.deposit(amountToDeposit, staker1);
         vm.stopPrank();
 
-        // Add reward token as reward
-        vm.startPrank(rewardDistributor);
-        ERC20(rewardToken).approve(address(liquidityGauge), amountToNotify);
-        liquidityGauge.deposit_reward_token(rewardToken, amountToNotify);
-        vm.stopPrank();
-
         skip(8 days);
 
-        assertEq(ERC20(rewardToken).balanceOf(staker1), 0);
-        vm.startPrank(staker1);
+        // reward will be send to staker2
+        assertEq(ERC20(rewardToken).balanceOf(staker2), 0);
         liquidityGauge.claim_rewards(staker1);
-        uint256 rewardClaimed = ERC20(rewardToken).balanceOf(staker1);
-        assertApproxEqRel(rewardClaimed, amountToNotify, 0.5e18);
-        emit log_uint(rewardClaimed);
+        assertGt(ERC20(rewardToken).balanceOf(staker2), 0);
     }
 
     function testClaimRewardsFor() external {
