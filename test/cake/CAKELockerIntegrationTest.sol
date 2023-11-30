@@ -44,7 +44,7 @@ contract CAKELockerIntegrationTest is Test {
     address public constant CAKE_POOL_HOLDER = 0xF8da67Cc00ad093DBF70CA4B41656a5B3D059daC;
 
     function setUp() public virtual {
-        uint256 forkId = vm.createFork(vm.rpcUrl("bnb")); // 33_718_879
+        uint256 forkId = vm.createFork(vm.rpcUrl("bnb"), 33_718_879);
         vm.selectFork(forkId);
         token = ERC20(CAKE);
         veToken = IVeToken(VE_CAKE);
