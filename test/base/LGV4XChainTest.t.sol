@@ -150,12 +150,10 @@ contract LGV4XChainTest is Test {
         vm.prank(staker1);
         liquidityGauge.set_rewards_receiver(staker2);
 
-        uint256 _amountToDeposit = 50e18;
-
         // Staker1 deposits for staker1
         vm.startPrank(staker1);
-        ERC20(stakeToken).approve(address(liquidityGauge), _amountToDeposit);
-        liquidityGauge.deposit(_amountToDeposit, staker1);
+        ERC20(stakeToken).approve(address(liquidityGauge), amountToDeposit);
+        liquidityGauge.deposit(amountToDeposit, staker1);
         vm.stopPrank();
 
         skip(8 days);
@@ -181,6 +179,30 @@ contract LGV4XChainTest is Test {
         liquidityGauge.claim_rewards_for(staker1, staker1);
         vm.prank(claimer);
         liquidityGauge.claim_rewards_for(staker1, staker1);
+    }
+
+    function testClaimRewardAfterTransferGaugeToken() external {
+        // Staker1 deposits for staker1
+        vm.startPrank(staker1);
+        ERC20(stakeToken).approve(address(liquidityGauge), amountToDeposit);
+        liquidityGauge.deposit(amountToDeposit, staker1);
+
+        skip(8 days);
+
+        ERC20(address(liquidityGauge)).transfer(staker2, liquidityGauge.balanceOf(staker1));
+
+        skip(1 days);
+
+        vm.stopPrank();
+
+        assertEq(ERC20(rewardToken).balanceOf(staker1), 0);
+        assertEq(ERC20(rewardToken).balanceOf(staker2), 0);
+        vm.prank(staker1);
+        liquidityGauge.claim_rewards();
+        vm.prank(staker2);
+        liquidityGauge.claim_rewards();
+        assertGt(ERC20(rewardToken).balanceOf(staker1), 0);
+        assertEq(ERC20(rewardToken).balanceOf(staker2), 0);
     }
 
     function testTransferGovernance() external {

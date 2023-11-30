@@ -46,6 +46,9 @@ interface ILiquidityGauge {
     function commit_transfer_ownership(address) external;
 
     // solhint-disable-next-line
+    function claim_rewards() external;
+
+    // solhint-disable-next-line
     function claim_rewards(address) external;
 
     // solhint-disable-next-line
