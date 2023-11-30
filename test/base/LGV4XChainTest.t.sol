@@ -13,7 +13,7 @@ import {ERC20} from "solady/src/tokens/ERC20.sol";
 
 contract LGV4XChainTest is Test {
 
-    address public sdCrv;
+    address public stakeToken;
     address public rewardToken;
 
     address public staker1 = vm.addr(1);
@@ -25,15 +25,16 @@ contract LGV4XChainTest is Test {
     ILiquidityGauge public liquidityGauge;
 
     uint256 amountToNotify = 100e18;
+    uint256 amountToDeposit = 50e18;
 
     function setUp() public {
         uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"));
         vm.selectFork(forkId);
 
-        sdCrv = AddressBook.SD_CRV;
+        stakeToken = AddressBook.SD_CRV;
         rewardToken = AddressBook.SDT;
 
-        bytes memory constructorParams = abi.encode(sdCrv, address(this));
+        bytes memory constructorParams = abi.encode(stakeToken, address(this));
 
         ///@notice deploy the bytecode with the create instruction
         address deployedAddress;
@@ -47,8 +48,8 @@ contract LGV4XChainTest is Test {
         // set claimer
         liquidityGauge.set_claimer(claimer);
 
-        deal(sdCrv, staker1, 100e18);
-        deal(sdCrv, staker2, 100e18);
+        deal(stakeToken, staker1, amountToDeposit);
+        deal(stakeToken, staker2, amountToDeposit);
         deal(rewardToken, rewardDistributor, amountToNotify);
 
         // Notify the weekly reward
@@ -59,36 +60,32 @@ contract LGV4XChainTest is Test {
 
     }
 
-    function deployBytecode(bytes memory bytecode, bytes memory args) private returns (address deployed) {
-        bytecode = abi.encodePacked(bytecode, args);
-
-        assembly {
-            deployed := create(0, add(bytecode, 0x20), mload(bytecode))
-        }
-
-        require(deployed != address(0), "DEPLOYMENT_FAILED");
-    }
-
     function testDepositAndWithdrawWithoutRewards() external {
-        uint256 amountToDeposit = 50e18;
-
         // Staker1 deposits for staker1
         vm.startPrank(staker1);
-        ERC20(sdCrv).approve(address(liquidityGauge), amountToDeposit);
+        ERC20(stakeToken).approve(address(liquidityGauge), amountToDeposit);
         liquidityGauge.deposit(amountToDeposit, staker1);
+        assertEq(ERC20(stakeToken).balanceOf(staker1), 0);
+        assertEq(liquidityGauge.balanceOf(staker1), amountToDeposit);
         vm.stopPrank();
 
         // Staker 2 deposits for staker3
         vm.startPrank(staker2);
-        ERC20(sdCrv).approve(address(liquidityGauge), amountToDeposit);
+        ERC20(stakeToken).approve(address(liquidityGauge), amountToDeposit);
         liquidityGauge.deposit(amountToDeposit, staker3);
+        assertEq(ERC20(stakeToken).balanceOf(staker2), 0);
+        assertEq(liquidityGauge.balanceOf(staker2), 0);
+        assertEq(liquidityGauge.balanceOf(staker3), amountToDeposit);
         vm.stopPrank();
 
         skip(5 seconds);
 
         // Staker1 withdraw all
         vm.prank(staker1);
+        
         liquidityGauge.withdraw(amountToDeposit, false);
+        assertEq(ERC20(stakeToken).balanceOf(staker1), amountToDeposit);
+        assertEq(liquidityGauge.balanceOf(staker1), 0);
 
         // expect revert when staker2 try to withdraw
         vm.prank(staker2);
@@ -98,14 +95,14 @@ contract LGV4XChainTest is Test {
         // Staker3 withdraw all
         vm.prank(staker3);
         liquidityGauge.withdraw(amountToDeposit, false);
+        assertEq(ERC20(stakeToken).balanceOf(staker3), amountToDeposit);
+        assertEq(liquidityGauge.balanceOf(staker3), 0);
     }
 
     function testClaimReward() external {
-        uint256 amountToDeposit = 50e18;
-
         // Staker1 deposits for staker1
         vm.startPrank(staker1);
-        ERC20(sdCrv).approve(address(liquidityGauge), amountToDeposit);
+        ERC20(stakeToken).approve(address(liquidityGauge), amountToDeposit);
         liquidityGauge.deposit(amountToDeposit, staker1);
         vm.stopPrank();
 
@@ -126,11 +123,9 @@ contract LGV4XChainTest is Test {
     }
 
     function testClaimRewardsForOthers() external {
-        uint256 amountToDeposit = 50e18;
-
         // Staker1 deposits for staker1
         vm.startPrank(staker1);
-        ERC20(sdCrv).approve(address(liquidityGauge), amountToDeposit);
+        ERC20(stakeToken).approve(address(liquidityGauge), amountToDeposit);
         liquidityGauge.deposit(amountToDeposit, staker1);
         vm.stopPrank();
 
@@ -160,7 +155,7 @@ contract LGV4XChainTest is Test {
 
         // Staker1 deposits for staker1
         vm.startPrank(staker1);
-        ERC20(sdCrv).approve(address(liquidityGauge), amountToDeposit);
+        ERC20(stakeToken).approve(address(liquidityGauge), amountToDeposit);
         liquidityGauge.deposit(amountToDeposit, staker1);
         vm.stopPrank();
 
@@ -173,11 +168,9 @@ contract LGV4XChainTest is Test {
     }
 
     function testClaimRewardsFor() external {
-        uint256 amountToDeposit = 50e18;
-
         // Staker1 deposits for staker1
         vm.startPrank(staker1);
-        ERC20(sdCrv).approve(address(liquidityGauge), amountToDeposit);
+        ERC20(stakeToken).approve(address(liquidityGauge), amountToDeposit);
         liquidityGauge.deposit(amountToDeposit, staker1);
         vm.stopPrank();
 
@@ -195,5 +188,15 @@ contract LGV4XChainTest is Test {
         vm.prank(staker1);
         liquidityGauge.accept_transfer_ownership();
         assertEq(liquidityGauge.admin(), staker1);
+    }
+
+    function deployBytecode(bytes memory bytecode, bytes memory args) private returns (address deployed) {
+        bytecode = abi.encodePacked(bytecode, args);
+
+        assembly {
+            deployed := create(0, add(bytecode, 0x20), mload(bytecode))
+        }
+
+        require(deployed != address(0), "DEPLOYMENT_FAILED");
     }
 }
