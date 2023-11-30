@@ -294,7 +294,7 @@ def deposit(_value: uint256, _addr: address = msg.sender, _claim_rewards: bool =
 
 @external
 @nonreentrant('lock')
-def withdraw(_value: uint256, _addr: address, _claim_rewards: bool = False):
+def withdraw(_value: uint256, _claim_rewards: bool = False):
     """
     @notice Withdraw `_value` LP tokens
     @dev Withdrawing also claims pending reward tokens
@@ -312,7 +312,7 @@ def withdraw(_value: uint256, _addr: address, _claim_rewards: bool = False):
         self.balanceOf[msg.sender] = new_balance
         self.totalSupply = total_supply
 
-        ERC20(self.staking_token).transfer(_addr, _value)
+        ERC20(self.staking_token).transfer(msg.sender, _value)
     else:
         self._checkpoint_rewards(msg.sender, total_supply, False, empty(address))
 
