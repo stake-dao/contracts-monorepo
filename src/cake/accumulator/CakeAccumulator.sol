@@ -60,4 +60,23 @@ contract CakeAccumulator is Accumulator {
             }
         }
     }
+
+    /// @notice Notify the new reward to the LGV4
+    /// @param _tokenReward token to notify
+    /// @param _amount amount to notify
+    function _notifyReward(address _tokenReward, uint256 _amount) internal override {
+        // check if the reward token needs to 
+        _approveTokenIfNeeded(_tokenReward, _amount);
+        super._notifyReward(_tokenReward, _amount);
+    }
+
+    /// @notice Approve the reward token to be transferred by the gauge if needed
+    /// @param _token token to approve
+    /// @param _amount amount to check the allowance
+    function _approveTokenIfNeeded(address _token, uint256 _amount) internal {
+        if (ERC20(_token).allowance(address(this), gauge) < _amount) {
+            // do an max approve
+            ERC20(_token).approve(gauge, type(uint256).max);
+        }
+    }
 }

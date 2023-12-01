@@ -12,7 +12,6 @@ import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 
 contract LGV4XChainTest is Test {
-
     address public stakeToken;
     address public rewardToken;
 
@@ -57,7 +56,6 @@ contract LGV4XChainTest is Test {
         ERC20(rewardToken).approve(address(liquidityGauge), amountToNotify);
         liquidityGauge.deposit_reward_token(rewardToken, amountToNotify);
         vm.stopPrank();
-
     }
 
     function testDepositAndWithdrawWithoutRewards() external {
@@ -82,7 +80,7 @@ contract LGV4XChainTest is Test {
 
         // Staker1 withdraw all
         vm.prank(staker1);
-        
+
         liquidityGauge.withdraw(amountToDeposit, false);
         assertEq(ERC20(stakeToken).balanceOf(staker1), amountToDeposit);
         assertEq(liquidityGauge.balanceOf(staker1), 0);
@@ -158,7 +156,7 @@ contract LGV4XChainTest is Test {
 
         skip(8 days);
 
-        uint expectedReward = liquidityGauge.claimable_reward(staker1, rewardToken);
+        uint256 expectedReward = liquidityGauge.claimable_reward(staker1, rewardToken);
 
         // reward will be send to staker2
         assertEq(ERC20(rewardToken).balanceOf(staker2), 0);
