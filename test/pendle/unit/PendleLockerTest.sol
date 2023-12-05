@@ -20,7 +20,7 @@ contract PendleLockerTest is Test {
     sdToken internal sdPendle;
 
     function setUp() public virtual {
-        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"));
+        uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"));
         vm.selectFork(forkId);
         PENDLE = IERC20(AddressBook.PENDLE);
         vePendle = IVePendle(AddressBook.VE_PENDLE);
@@ -31,11 +31,7 @@ contract PendleLockerTest is Test {
         sdPendle = new sdToken("sdPendle", "sdPendle");
 
         // Deploy and Intialize the Pendle Depositor contract
-        depositor = new PendleDepositor(
-            address(PENDLE),
-            address(pendleLocker),
-            address(sdPendle)
-        );
+        depositor = new PendleDepositor(address(PENDLE), address(pendleLocker), address(sdPendle));
         sdPendle.setOperator(address(depositor));
 
         pendleLocker.setPendleDepositor(address(depositor));

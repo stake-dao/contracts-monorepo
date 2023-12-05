@@ -4,7 +4,6 @@ pragma solidity 0.8.7;
 import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
-import "utils/VyperDeployer.sol";
 
 import {AddressBook} from "@addressBook/AddressBook.sol";
 
@@ -93,15 +92,11 @@ contract PendleAccumulatorV2IntegrationTest is Test {
     ];
 
     function setUp() public virtual {
-        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"), 18045826);
+        uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"), 18045826);
         vm.selectFork(forkId);
         // Deploy Accumulator Contract
-        pendleAccumulator = new PendleAccumulatorV2( 
-            address(this),
-            daoRecipient,
-            bountyRecipient,
-            address(veSdtFeePendleProxy),
-            votersRewardRecipient
+        pendleAccumulator = new PendleAccumulatorV2(
+            address(this), daoRecipient, bountyRecipient, address(veSdtFeePendleProxy), votersRewardRecipient
         );
 
         vm.prank(pendleLocker.governance());

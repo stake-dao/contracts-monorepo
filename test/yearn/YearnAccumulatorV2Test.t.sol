@@ -24,13 +24,19 @@ contract YearnAccumulatorV2Test is Test {
     address liquidityFeeRecipient = vm.addr(2);
 
     function setUp() public {
-        uint256 forkId = vm.createFork(vm.rpcUrl("ethereum"), 18514500);
+        uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"), 18514500);
         vm.selectFork(forkId);
         yfi = AddressBook.YFI;
         sdYfiLG = ILiquidityGauge(AddressBook.GAUGE_SDYFI);
         yfiLocker = ILocker(AddressBook.YFI_LOCKER);
-        accumulator =
-        new YearnAccumulatorV2(address(sdYfiLG), address(yfiLocker), daoFeeRecipient, liquidityFeeRecipient, address(strategy), address(this));
+        accumulator = new YearnAccumulatorV2(
+            address(sdYfiLG),
+            address(yfiLocker),
+            daoFeeRecipient,
+            liquidityFeeRecipient,
+            address(strategy),
+            address(this)
+        );
         vm.startPrank(GOV);
         sdYfiLG.add_reward(DYFI, address(accumulator));
         sdYfiLG.set_reward_distributor(yfi, address(accumulator));
@@ -44,7 +50,7 @@ contract YearnAccumulatorV2Test is Test {
     function testDyfiClaim() external {
         assertEq(ERC20(DYFI).balanceOf(address(sdYfiLG)), 0);
         // notify DYFI to the sdDyfi gauge
-        accumulator.claimTokenAndNotifyAll(DYFI);
+        accumulator.claimTokenAndNotifyAll(DYFI, false, false);
         assertEq(ERC20(DYFI).balanceOf(address(accumulator)), 0);
         _checkFeesOnClaim(DYFI);
     }
@@ -52,7 +58,7 @@ contract YearnAccumulatorV2Test is Test {
     function testYfiClaim() external {
         assertEq(ERC20(yfi).balanceOf(address(sdYfiLG)), 0);
         // notify YFI to the sdDyfi gauge
-        accumulator.claimTokenAndNotifyAll(yfi);
+        accumulator.claimTokenAndNotifyAll(yfi, false, false);
         assertEq(ERC20(yfi).balanceOf(address(accumulator)), 0);
         _checkFeesOnClaim(yfi);
     }
@@ -60,7 +66,7 @@ contract YearnAccumulatorV2Test is Test {
     function testNotifyReward() external {
         uint256 amountToTopUp = 1e18;
         deal(DYFI, address(accumulator), amountToTopUp);
-        accumulator.notifyReward(DYFI);
+        accumulator.notifyReward(DYFI, false, false);
         assertEq(ERC20(DYFI).balanceOf(address(accumulator)), 0);
         _checkFeesOnClaim(DYFI);
     }
