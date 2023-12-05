@@ -189,8 +189,6 @@ abstract contract Accumulator {
     /// @param _tokenReward token to notify
     /// @param _amount amount to notify
     function _notifyReward(address _tokenReward, uint256 _amount, bool _pullFromFeeSplitter) internal virtual {
-        if(_amount == 0) return;
-
         _amount -= _chargeFee(_tokenReward, _amount);
 
         if (_pullFromFeeSplitter) {
@@ -199,6 +197,8 @@ abstract contract Accumulator {
         }
 
         _amount = ERC20(_tokenReward).balanceOf(address(this));
+
+        if(_amount == 0) return;
         ILiquidityGauge(gauge).deposit_reward_token(_tokenReward, _amount);
 
         emit RewardNotified(gauge, _tokenReward, _amount);
@@ -215,6 +215,8 @@ abstract contract Accumulator {
     /// @param _token token to charge fee for
     /// @param _amount amount to charge fee for
     function _chargeFee(address _token, uint256 _amount) internal returns (uint256 _charged) {
+        if(_amount == 0) return 0;
+
         uint256 daoPart;
         uint256 liquidityPart;
         uint256 claimerPart;
