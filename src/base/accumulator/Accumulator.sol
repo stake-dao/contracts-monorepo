@@ -189,6 +189,8 @@ abstract contract Accumulator {
     /// @param _tokenReward token to notify
     /// @param _amount amount to notify
     function _notifyReward(address _tokenReward, uint256 _amount, bool _pullFromFeeSplitter) internal virtual {
+        if(_amount == 0) return;
+
         _amount -= _chargeFee(_tokenReward, _amount);
 
         if (_pullFromFeeSplitter) {
