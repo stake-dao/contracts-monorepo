@@ -56,7 +56,7 @@ contract CakeAccumulator is Accumulator {
             notifyReward(tokenReward, false, false);
 
             unchecked {
-                i++;
+                ++i;
             }
         }
     }
