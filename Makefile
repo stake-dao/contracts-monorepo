@@ -2,6 +2,7 @@
 
 .EXPORT_ALL_VARIABLES:
 MAKEFLAGS += --no-print-directory
+RPC_URL=https://bsc-mainnet.nodereal.io/v1/8ba50235e5794af7ba04e88181bb359f
 ETHERSCAN_API_KEY=$(ETHERSCAN_KEY)
 
 default:
@@ -13,7 +14,7 @@ install:
 	forge install
 
 test:
-	@forge test --mc YFIDepositorIntegrationTest
+	@forge test
 
 test-f-%:
 	@FOUNDRY_MATCH_TEST=$* make test
@@ -35,10 +36,10 @@ coverage-html:
 	@rm ./lcov.info*
 
 simulate-%:
-	@forge script script/$*.s.sol -vvvvv --fork-url $(RPC_URL_MAINNET)
+	@forge script script/$*.s.sol -vvvvv --fork-url $(RPC_URL)
 
 run-%:
-	@forge script script/$*.s.sol --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY)
+	@forge script script/$*.s.sol --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY) --rpc-url $(RPC_URL)
 
 deploy-%:
 	@forge script script/$*.s.sol --broadcast --slow -vvvvv --verify --private-key ${PRIVATE_KEY}

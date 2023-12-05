@@ -54,7 +54,7 @@ contract YearnAccumulatorV2 is Accumulator {
     //////////////////////////////////////////////////////
 
     /// @notice Claims YFI or DYFI rewards for the locker and notify all to the LGV4
-    function claimTokenAndNotifyAll(address _token) external override {
+    function claimTokenAndNotifyAll(address _token, bool _notifySDT, bool _pullFromFeeSplitter) external override {
         if (_token != YFI && _token != DYFI) revert WRONG_TOKEN();
 
         if (_token == YFI) {
@@ -67,14 +67,16 @@ contract YearnAccumulatorV2 is Accumulator {
         uint256 amount = ERC20(_token).balanceOf(address(this));
 
         // notify YFI or DYFI as reward in sdYFI gauge
-        _notifyReward(_token, amount);
+        _notifyReward(_token, amount, _pullFromFeeSplitter);
 
-        // notify SDT
-        _distributeSDT();
+        if (_notifySDT) {
+            // notify SDT
+            _distributeSDT();
+        }
     }
 
     /// @notice Claims YFI and DYFI rewards for the locker and notify all to the LGV4
-    function claimAndNotifyAll() external override {
+    function claimAndNotifyAll(bool _notifySDT, bool _pullFromFeeSplitter) external override {
         // claim YFI reward
         strategy.claimNativeRewards();
         uint256 yfiAmount = ERC20(YFI).balanceOf(address(this));
@@ -84,24 +86,12 @@ contract YearnAccumulatorV2 is Accumulator {
         uint256 dYfiAmount = ERC20(DYFI).balanceOf(address(this));
 
         // notify YFI and DYFI as reward in sdYFI gauge
-        _notifyReward(YFI, yfiAmount);
-        _notifyReward(DYFI, dYfiAmount);
+        _notifyReward(YFI, yfiAmount, false);
+        _notifyReward(DYFI, dYfiAmount, _pullFromFeeSplitter);
 
-        // notify SDT
-        _distributeSDT();
-    }
-
-    /// @notice Notify the new reward to the LGV4
-    /// @param _tokenReward token to notify
-    /// @param _amount amount to notify
-    function _notifyReward(address _tokenReward, uint256 _amount) internal override {
-        if (_amount == 0) {
-            return;
+        if (_notifySDT) {
+            // notify SDT
+            _distributeSDT();
         }
-        // charge fees
-        _amount -= _chargeFee(_tokenReward, _amount);
-        ILiquidityGauge(gauge).deposit_reward_token(_tokenReward, _amount);
-
-        emit RewardNotified(gauge, _tokenReward, _amount);
     }
 }

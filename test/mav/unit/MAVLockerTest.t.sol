@@ -172,7 +172,7 @@ abstract contract MAVLockerTest is Test {
     }
 }
 
-contract MAVLockerTestEth is MAVLockerTest(MAV_ETH, VE_MAV_ETH, "ethereum") {}
+contract MAVLockerTestEth is MAVLockerTest(MAV_ETH, VE_MAV_ETH, "mainnet") {}
 
 contract MAVLockerTestBase is MAVLockerTest(MAV_BASE, VE_MAV_BASE, "base") {}
 

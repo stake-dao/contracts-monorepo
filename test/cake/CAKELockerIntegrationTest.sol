@@ -1,94 +1,88 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.19;
+pragma solidity 0.8.19;
 
 import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
-import "test/utils/Utils.sol";
 import "forge-std/console.sol";
 
-import "src/mav/locker/MAVLocker.sol";
-import "src/mav/depositor/MAVDepositor.sol";
+import {Constants} from "src/base/utils/Constants.sol";
+import {CakeLocker} from "src/cake/locker/CakeLocker.sol";
+import {CAKEDepositor} from "src/cake/depositor/CAKEDepositor.sol";
 
 import {sdToken} from "src/base/token/sdToken.sol";
-import {Constants} from "src/base/utils/Constants.sol";
 import {AddressBook} from "@addressBook/AddressBook.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
+import {TransparentUpgradeableProxy} from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {IVeToken} from "src/base/interfaces/IVeToken.sol";
 
-address constant MAV_ETH = AddressBook.MAV;
-address constant MAV_BASE = 0x64b88c73A5DfA78D1713fE1b4c69a22d7E0faAa7;
-address constant MAV_BNB = 0xd691d9a68C887BDF34DA8c36f63487333ACfD103;
+interface IVeCakeUtil {
+    function setWhitelistedCallers(address[] memory callers, bool ok) external;
+    function owner() external view returns (address);
+    function delegateFromCakePool(address _delegator) external;
+    function updateDelegator(address _delegator, bool _isDelegator, uint40 _limit) external;
 
-address constant VE_MAV_ETH = AddressBook.VE_MAV;
-address constant VE_MAV_BASE = 0xFcCB5263148fbF11d58433aF6FeeFF0Cc49E0EA5;
-address constant VE_MAV_BNB = 0xE6108f1869d37E5076a56168C66A1607EdB10819;
+    function migrateFromCakePool() external;
+    function migrationConvertToDelegation(address _delegator) external;
+}
 
-abstract contract MAVLockerIntegrationTest is Test {
-    uint256 private constant MIN_LOCK_DURATION = 1 weeks;
-    uint256 private constant MAX_LOCK_DURATION = 4 * 365 days;
+contract CAKELockerIntegrationTest is Test {
+    uint256 private constant MAX_LOCK_DURATION = (209 * 1 weeks) - 1;
 
-    IERC20 private token;
-    MAVLocker private locker;
-    IVotingEscrowMav private veToken;
+    ERC20 private token;
+    CakeLocker private locker;
+    IVeToken private veToken;
 
     sdToken internal _sdToken;
-    MAVDepositor private depositor;
+    CAKEDepositor private depositor;
     ILiquidityGauge internal liquidityGauge;
 
     uint256 private constant amount = 100e18;
 
-    string private rpcAlias;
-    uint256 private forkBlock;
-
-    address public deployer = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
-
-    constructor(address _token, address _veToken, string memory _rpcAlias, uint256 _forkBlock) {
-        rpcAlias = _rpcAlias;
-        token = IERC20(_token);
-        veToken = IVotingEscrowMav(_veToken);
-        forkBlock = _forkBlock;
-    }
+    address public constant CAKE = 0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82;
+    address public constant VE_CAKE = 0x5692DB8177a81A6c6afc8084C2976C9933EC1bAB;
+    address public constant CAKE_POOL_HOLDER = 0xF8da67Cc00ad093DBF70CA4B41656a5B3D059daC;
 
     function setUp() public virtual {
-        uint256 forkId = vm.createFork(vm.rpcUrl(rpcAlias), forkBlock);
+        uint256 forkId = vm.createFork(vm.rpcUrl("bnb"), 33_718_879);
         vm.selectFork(forkId);
-        _sdToken = new sdToken("Stake DAO MAV", "sdMAV");
+        token = ERC20(CAKE);
+        veToken = IVeToken(VE_CAKE);
+        _sdToken = new sdToken("Stake DAO CAKE", "sdCAKE");
 
-        address liquidityGaugeImpl;
-        if (keccak256(abi.encodePacked(rpcAlias)) == keccak256(abi.encodePacked("ethereum"))) {
-            liquidityGaugeImpl = Utils.deployBytecode(
-                Constants.LGV4_NATIVE_BYTECODE,
-                abi.encode(
-                    address(_sdToken),
-                    address(this),
-                    AddressBook.SDT,
-                    AddressBook.VE_SDT,
-                    AddressBook.VE_SDT_BOOST_PROXY,
-                    AddressBook.SDT_DISTRIBUTOR
-                )
-            );
-        } else {
-            liquidityGaugeImpl =
-                Utils.deployBytecode(Constants.LGV4_XCHAIN_BYTECODE, abi.encode(address(_sdToken), address(this)));
-        }
+        bytes memory constructorParams = abi.encode(address(_sdToken), address(this));
 
-        liquidityGauge = ILiquidityGauge(liquidityGaugeImpl);
+        ///@notice deploy the bytecode with the create instruction
+        address deployedAddress;
+        deployedAddress = deployBytecode(Constants.LGV4_XCHAIN_BYTECODE, constructorParams);
 
-        locker = new MAVLocker(address(this), address(token), address(veToken));
-        depositor = new MAVDepositor(address(token), address(locker), address(_sdToken), address(liquidityGauge));
+        liquidityGauge = ILiquidityGauge(deployedAddress);
+
+        locker = new CakeLocker(address(this), address(token), address(veToken));
+
+        // Whitelist the locker contract
+        vm.startPrank(IVeCakeUtil(VE_CAKE).owner());
+        address[] memory callers = new address[](1);
+        callers[0] = address(locker);
+        IVeCakeUtil(VE_CAKE).setWhitelistedCallers(callers, true);
+        // set the locker contract as delegator
+        IVeCakeUtil(VE_CAKE).updateDelegator(address(locker), true, 0);
+        vm.stopPrank();
+
+        depositor = new CAKEDepositor(address(token), address(locker), address(_sdToken), address(liquidityGauge));
 
         locker.setDepositor(address(depositor));
         _sdToken.setOperator(address(depositor));
 
-        // Mint MAV for testing.
         deal(address(token), address(this), amount);
 
-        // Mint MAV to the MAVLocker contract
-        deal(address(token), address(this), amount);
-        deal(address(token), deployer, amount);
+        vm.startPrank(address(0xBEEF));
+        // Mint CAKE.
+        deal(address(token), address(0xBEEF), amount);
+        ERC20(address(token)).approve(address(depositor), amount);
 
-        vm.startPrank(deployer);
-        IERC20(token).approve(address(depositor), amount);
         depositor.createLock(amount);
+
         vm.stopPrank();
     }
 
@@ -102,8 +96,9 @@ abstract contract MAVLockerIntegrationTest is Test {
     }
 
     function test_createLockOnlyOnce() public {
+        // Mint CAKE.
         deal(address(token), address(this), amount);
-        IERC20(address(token)).approve(address(depositor), amount);
+        ERC20(address(token)).approve(address(depositor), amount);
 
         vm.expectRevert();
         depositor.createLock(amount);
@@ -122,15 +117,12 @@ abstract contract MAVLockerIntegrationTest is Test {
         assertEq(_sdToken.balanceOf(address(this)), amount);
         assertEq(liquidityGauge.balanceOf(address(this)), 0);
 
-        (uint256 expectedBalance,) = veToken.previewPoints(200e18, MAX_LOCK_DURATION);
-        assertEq(veToken.balanceOf(address(locker)), expectedBalance);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 200e18, 5e15);
     }
 
     function test_depositAndStake() public {
         /// Skip 1 seconds to avoid depositing in the same block as locking.
         skip(1);
-
-        (uint256 expectedBalance,) = veToken.previewPoints(200e18, MAX_LOCK_DURATION);
 
         token.approve(address(depositor), amount);
         depositor.deposit(amount, true, true, address(this));
@@ -138,29 +130,12 @@ abstract contract MAVLockerIntegrationTest is Test {
         assertEq(_sdToken.balanceOf(address(this)), 0);
         assertEq(token.balanceOf(address(depositor)), 0);
         assertEq(liquidityGauge.balanceOf(address(this)), amount);
-        assertEq(veToken.balanceOf(address(locker)), expectedBalance);
         assertEq(_sdToken.balanceOf(address(liquidityGauge)), amount);
-    }
 
-    function test_depositAndStakeWithoutGauge() public {
-        // set gauge to zero address in depositor
-        depositor.setGauge(address(0));
-        /// Skip 1 seconds to avoid depositing in the same block as locking.
-        skip(1);
-
-        (uint256 expectedBalance,) = veToken.previewPoints(200e18, MAX_LOCK_DURATION);
-
-        token.approve(address(depositor), amount);
-        depositor.deposit(amount, true, true, address(this));
-
-        assertEq(_sdToken.balanceOf(address(this)), amount);
-        assertEq(token.balanceOf(address(depositor)), 0);
-        assertEq(veToken.balanceOf(address(locker)), expectedBalance);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 200e18, 5e15);
     }
 
     function test_depositAndStakeWithoutLock() public {
-        (uint256 expectedBalance,) = veToken.previewPoints(amount, MAX_LOCK_DURATION);
-
         uint256 expectedIncentiveAmount = amount * 10 / 10_000;
         uint256 expectedStakedBalance = amount - expectedIncentiveAmount;
 
@@ -169,8 +144,9 @@ abstract contract MAVLockerIntegrationTest is Test {
 
         assertEq(_sdToken.balanceOf(address(this)), 0);
         assertEq(token.balanceOf(address(depositor)), amount);
-        assertEq(veToken.balanceOf(address(locker)), expectedBalance);
+
         assertEq(depositor.incentiveToken(), expectedIncentiveAmount);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 100e18, 5e15);
         assertEq(liquidityGauge.balanceOf(address(this)), expectedStakedBalance);
         assertEq(_sdToken.balanceOf(address(liquidityGauge)), expectedStakedBalance);
 
@@ -190,13 +166,10 @@ abstract contract MAVLockerIntegrationTest is Test {
         assertEq(liquidityGauge.balanceOf(address(_random)), 0);
         assertEq(_sdToken.balanceOf(address(_random)), expectedIncentiveAmount);
 
-        (expectedBalance,) = veToken.previewPoints(200e18, MAX_LOCK_DURATION);
-        assertEq(veToken.balanceOf(address(locker)), expectedBalance);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 200e18, 5e15);
     }
 
     function test_depositAndStakeWithoutLockThenDepositWith() public {
-        (uint256 expectedBalance,) = veToken.previewPoints(amount, MAX_LOCK_DURATION);
-
         uint256 expectedIncentiveAmount = amount * 10 / 10_000;
         uint256 expectedStakedBalance = amount - expectedIncentiveAmount;
 
@@ -205,7 +178,7 @@ abstract contract MAVLockerIntegrationTest is Test {
 
         assertEq(_sdToken.balanceOf(address(this)), 0);
         assertEq(token.balanceOf(address(depositor)), amount);
-        assertEq(veToken.balanceOf(address(locker)), expectedBalance);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 100e18, 5e15);
         assertEq(depositor.incentiveToken(), expectedIncentiveAmount);
         assertEq(liquidityGauge.balanceOf(address(this)), expectedStakedBalance);
         assertEq(_sdToken.balanceOf(address(liquidityGauge)), expectedStakedBalance);
@@ -231,9 +204,64 @@ abstract contract MAVLockerIntegrationTest is Test {
         assertEq(liquidityGauge.balanceOf(address(_random)), amount + expectedIncentiveAmount);
         assertEq(_sdToken.balanceOf(address(_random)), 0);
 
-        /// Skip 1 seconds to avoid depositing in the same block as locking.
-        (expectedBalance,) = veToken.previewPoints(300e18, MAX_LOCK_DURATION);
-        assertEq(veToken.balanceOf(address(locker)), expectedBalance);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 300e18, 5e15);
+    }
+
+    function test_depositAndStakeWithoutLockIncentivePercent() public {
+        depositor.setFees(0);
+
+        token.approve(address(depositor), amount);
+        depositor.deposit(amount, false, true, address(this));
+
+        assertEq(_sdToken.balanceOf(address(this)), 0);
+        assertEq(token.balanceOf(address(depositor)), amount);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 100e18, 5e15);
+        assertEq(depositor.incentiveToken(), 0);
+        assertEq(liquidityGauge.balanceOf(address(this)), amount);
+        assertEq(_sdToken.balanceOf(address(liquidityGauge)), amount);
+
+        address _random = address(0x123);
+
+        assertEq(_sdToken.balanceOf(address(_random)), 0);
+        assertEq(liquidityGauge.balanceOf(address(_random)), 0);
+
+        skip(1);
+
+        deal(address(token), _random, amount);
+        vm.startPrank(_random);
+
+        token.approve(address(depositor), amount);
+        depositor.deposit(amount, true, true, _random);
+
+        vm.stopPrank();
+
+        assertEq(depositor.incentiveToken(), 0);
+        assertEq(token.balanceOf(address(depositor)), 0);
+
+        assertEq(liquidityGauge.balanceOf(address(_random)), amount);
+        assertEq(_sdToken.balanceOf(address(_random)), 0);
+
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 300e18, 5e15);
+    }
+
+    function test_migrationFromCakePool() public {
+        assertEq(liquidityGauge.balanceOf(CAKE_POOL_HOLDER), 0);
+        vm.prank(CAKE_POOL_HOLDER);
+
+        IVeCakeUtil(VE_CAKE).delegateFromCakePool(address(locker));
+        assertGt(liquidityGauge.balanceOf(CAKE_POOL_HOLDER), 0);
+    }
+
+    function test_migrateFromMigration() public {
+        assertEq(liquidityGauge.balanceOf(CAKE_POOL_HOLDER), 0);
+
+        vm.prank(CAKE_POOL_HOLDER);
+        IVeCakeUtil(VE_CAKE).migrateFromCakePool();
+
+        vm.prank(address(CAKE_POOL_HOLDER));
+        IVeCakeUtil(VE_CAKE).migrationConvertToDelegation(address(locker));
+
+        assertGt(liquidityGauge.balanceOf(CAKE_POOL_HOLDER), 0);
     }
 
     function test_transferGovernance() public {
@@ -258,10 +286,14 @@ abstract contract MAVLockerIntegrationTest is Test {
         depositor.setSdTokenMinterOperator(newOperator);
         assertEq(_sdToken.operator(), address(newOperator));
     }
+
+    function deployBytecode(bytes memory bytecode, bytes memory args) private returns (address deployed) {
+        bytecode = abi.encodePacked(bytecode, args);
+
+        assembly {
+            deployed := create(0, add(bytecode, 0x20), mload(bytecode))
+        }
+
+        require(deployed != address(0), "DEPLOYMENT_FAILED");
+    }
 }
-
-contract MAVLockerIntegrationTestEth is MAVLockerIntegrationTest(MAV_ETH, VE_MAV_ETH, "mainnet", 18277719) {}
-
-contract MAVLockerIntegrationTestBase is MAVLockerIntegrationTest(MAV_BASE, VE_MAV_BASE, "base", 4821075) {}
-
-contract MAVLockerIntegrationTestBnb is MAVLockerIntegrationTest(MAV_BNB, VE_MAV_BNB, "bnb", 32311843) {}

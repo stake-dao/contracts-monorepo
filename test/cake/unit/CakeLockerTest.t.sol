@@ -5,43 +5,49 @@ import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import "src/fx/locker/FXNLocker.sol";
+import {CakeLocker} from "src/cake/locker/CakeLocker.sol";
+import {VeCRVLocker} from "src/base/locker/VeCRVLocker.sol";
 import {AddressBook} from "@addressBook/AddressBook.sol";
 import {IVeToken} from "src/base/interfaces/IVeToken.sol";
-import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import {ISmartWalletChecker} from "src/base/interfaces/ISmartWalletChecker.sol";
+import {IVeCake} from "src/base/interfaces/IVeCake.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
 
-interface ILido {
-    function submit(address _referral) external payable;
+interface ICakeWhitelist {
+    function setWhitelistedCallers(address[] memory callers, bool ok) external;
+    function owner() external view returns (address);
 }
 
-contract FXNLockerTest is Test {
-    uint256 private constant MIN_LOCK_DURATION = 1 weeks;
-    uint256 private constant MAX_LOCK_DURATION = 4 * 365 days;
+contract CakeLockerTest is Test {
+    uint256 private constant MAX_LOCK_DURATION = (209 * 1 weeks) - 1;
 
-    IERC20 private token;
-    FXNLocker private locker;
+    ERC20 private token;
+    CakeLocker private locker;
     IVeToken private veToken;
 
+    address public constant CAKE = 0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82;
+    address public constant VE_CAKE = 0x5692DB8177a81A6c6afc8084C2976C9933EC1bAB;
+
     function setUp() public virtual {
-        uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"), 18_227_675);
+        uint256 forkId = vm.createFork(vm.rpcUrl("bnb")); // 33_702_400
         vm.selectFork(forkId);
 
-        token = IERC20(AddressBook.FXN);
-        veToken = IVeToken(AddressBook.VE_FXN);
+        token = ERC20(CAKE);
+        veToken = IVeToken(VE_CAKE);
 
-        locker = new FXNLocker(address(this), address(token), address(veToken));
+        locker = new CakeLocker(address(this), address(token), address(veToken));
 
         // Whitelist the locker contract
-        vm.prank(ISmartWalletChecker(AddressBook.FXN_SMART_WALLET_CHECKER).owner());
-        ISmartWalletChecker(AddressBook.FXN_SMART_WALLET_CHECKER).approveWallet(address(locker));
+        vm.prank(ICakeWhitelist(VE_CAKE).owner());
+        address[] memory callers = new address[](1);
+        callers[0] = address(locker);
+        ICakeWhitelist(VE_CAKE).setWhitelistedCallers(callers, true);
 
         // Mint token to the Locker contract
-        deal(address(token), address(locker), 100e18);
+        deal(address(token), address(locker), 200e18);
     }
 
     function test_initialization() public {
-        assertEq(locker.name(), "FXN Locker");
+        assertEq(locker.name(), "veCAKE Locker");
         assertEq(locker.token(), address(token));
         assertEq(locker.veToken(), address(veToken));
     }
@@ -67,61 +73,54 @@ contract FXNLockerTest is Test {
     function test_increaseAmountWithoutIncreaseTime() public {
         locker.createLock(100e18, block.timestamp + MAX_LOCK_DURATION);
 
-        uint256 _end = IVeToken(veToken).locked__end(address(locker));
-
+        (, uint256 _end,,,,,,) = IVeCake(address(veToken)).getUserInfo(address(locker));
         deal(address(token), address(locker), 100e18);
         locker.increaseLock(100e18, block.timestamp + MAX_LOCK_DURATION);
 
         assertApproxEqRel(veToken.balanceOf(address(locker)), 200e18, 5e15);
 
-        uint256 _newEnd = IVeToken(veToken).locked__end(address(locker));
+        (, uint256 _newEnd,,,,,,) = IVeCake(address(veToken)).getUserInfo(address(locker));
         assertEq(_newEnd, _end);
     }
 
     function test_increaseUnlockTime() public {
         locker.createLock(100e18, block.timestamp + MAX_LOCK_DURATION);
 
-        uint256 _end = IVeToken(veToken).locked__end(address(locker));
+        (, uint256 _end,,,,,,) = IVeCake(address(veToken)).getUserInfo(address(locker));
 
         skip(14 days);
 
         locker.increaseLock(0, block.timestamp + MAX_LOCK_DURATION);
 
-        uint256 _newEnd = IVeToken(veToken).locked__end(address(locker));
+        (, uint256 _newEnd,,,,,,) = IVeCake(address(veToken)).getUserInfo(address(locker));
         assertEq(_newEnd, _end + 14 days);
     }
 
-    function test_claimRewards() public {
+    function test_increaseAmountAndIncreaseTime() public {
         locker.createLock(100e18, block.timestamp + MAX_LOCK_DURATION);
 
-        skip(7 days);
+        (, uint256 _end,,,,,,) = IVeCake(address(veToken)).getUserInfo(address(locker));
+        deal(address(token), address(locker), 100e18);
+        locker.increaseLock(100e18, block.timestamp + MAX_LOCK_DURATION);
 
-        /// stETH.
-        address _rewardToken = IFeeDistributor(AddressBook.FXN_FEE_DISTRIBUTOR).token();
+        assertApproxEqRel(veToken.balanceOf(address(locker)), 200e18, 5e15);
 
-        /// Deal to Fee Distributor.
-        ILido(_rewardToken).submit{value: 100e18}(address(this));
-        IERC20(_rewardToken).transfer(AddressBook.FXN_FEE_DISTRIBUTOR, 100e18);
-        assertEq(IERC20(_rewardToken).balanceOf(address(this)), 0);
-
-        IFeeDistributor(AddressBook.FXN_FEE_DISTRIBUTOR).checkpoint_token();
-        skip(7 days);
-
-        locker.claimRewards(AddressBook.FXN_FEE_DISTRIBUTOR, _rewardToken, address(this));
-        assertApproxEqRel(IERC20(_rewardToken).balanceOf(address(this)), 100e18, 1e15);
+        (, uint256 _newEnd,,,,,,) = IVeCake(address(veToken)).getUserInfo(address(locker));
+        assertEq(_newEnd, _end);
     }
 
     function test_release() public {
         locker.createLock(100e18, block.timestamp + MAX_LOCK_DURATION);
 
-        skip(block.timestamp + MAX_LOCK_DURATION + 1);
+        skip(MAX_LOCK_DURATION + 1 weeks);
+
         assertEq(token.balanceOf(address(this)), 0);
 
         locker.release(address(this));
         assertEq(token.balanceOf(address(this)), 100e18);
     }
 
-    function test_releaseBeforeEndRevert() public {
+    function test_EarlyReleaseAfterEndRevert() public {
         locker.createLock(100e18, block.timestamp + MAX_LOCK_DURATION);
 
         vm.expectRevert();
@@ -202,7 +201,7 @@ contract FXNLockerTest is Test {
         locker.execute(
             address(veToken),
             0,
-            abi.encodeWithSignature("create_lock(uint256,uint256)", 100e18, block.timestamp + MAX_LOCK_DURATION)
+            abi.encodeWithSignature("createLock(uint256,uint256)", 100e18, block.timestamp + MAX_LOCK_DURATION)
         );
 
         assertApproxEqRel(veToken.balanceOf(address(locker)), 100e18, 5e15);

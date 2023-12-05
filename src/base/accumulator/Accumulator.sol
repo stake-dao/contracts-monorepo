@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {IFeeSplitter} from "src/base/interfaces/IFeeSplitter.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {ISDTDistributor} from "src/base/interfaces/ISDTDistributor.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
@@ -10,20 +11,23 @@ import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 /// @notice Abstract contract used for any accumulator
 /// @author StakeDAO
 abstract contract Accumulator {
+    /// @notice Denominator for fixed point math.
+    uint256 public constant DENOMINATOR = 10_000;
+
     /// @notice sd gauge
-    address public gauge;
+    address public immutable gauge;
 
     /// @notice sd locker
     address public immutable locker;
-
-    /// @notice SDT distributor
-    address public sdtDistributor;
 
     /// @notice governance
     address public governance;
 
     /// @notice future governance
     address public futureGovernance;
+
+    /// @notice SDT distributor
+    address public sdtDistributor;
 
     /// @notice dao fee in percentage (10_000 = 100%)
     uint256 public daoFee;
@@ -40,15 +44,12 @@ abstract contract Accumulator {
     /// @notice claimer fee (msg.sender) in percentage (10_000 = 100%)
     uint256 public claimerFee;
 
-    /// @notice Denominator for fixed point math.
-    uint256 public constant BASE_FEE = 10_000;
+    /// @notice fee splitter contract to pull strategies fees
+    address public feeSplitter;
 
     ////////////////////////////////////////////////////////////////
     /// --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
-
-    /// @notice Event emitted when the sd gauge is set
-    event GaugeSet(address gauge);
 
     /// @notice Event emitted when the claimer fee is set
     event ClaimerFeeSet(uint256 claimerFee);
@@ -61,6 +62,9 @@ abstract contract Accumulator {
 
     /// @notice Event emitted when the fees are charged during reward notify
     event FeeCharged(uint256 daoPart, uint256 liquidityPart, uint256 claimerPart);
+
+    /// @notice Emitted when the fee splitter is set
+    event FeeSplitterSet(address _feeSplitter);
 
     /// @notice Event emitted when an ERC20 token is rescued
     event ERC20Rescued(address token, uint256 amount);
@@ -78,16 +82,16 @@ abstract contract Accumulator {
     event TransferGovernance(address futureGovernance);
 
     /// @notice Event emitted when the future governance accepts to be the governance
-    event GovernanceAccepted(address governance);
+    event GovernanceChanged(address governance);
 
-    /// @notice Error emitted when an onlyGov function has called by a different address
-    error GOV();
+    /// @notice Error emitted when an onlyGovernance function has called by a different address
+    error GOVERNANCE();
 
     /// @notice Error emitted when the total fee would be more than 100%
     error FEE_TOO_HIGH();
 
-    /// @notice Error emitted when an onlyFutureGov function has called by a different address
-    error FUTURE_GOV();
+    /// @notice Error emitted when an onlyFutureGovernance function has called by a different address
+    error FUTURE_GOVERNANCE();
 
     /// @notice Error emitted when a zero address is pass
     error ZERO_ADDRESS();
@@ -97,14 +101,14 @@ abstract contract Accumulator {
     //////////////////////////////////////////////////////
 
     /// @notice Modifier to check if the caller is the governance
-    modifier onlyGov() {
-        if (msg.sender != governance) revert GOV();
+    modifier onlyGovernance() {
+        if (msg.sender != governance) revert GOVERNANCE();
         _;
     }
 
     /// @notice Modifier to check if the caller is the future governance
-    modifier onlyFutureGov() {
-        if (msg.sender != futureGovernance) revert FUTURE_GOV();
+    modifier onlyFutureGovernance() {
+        if (msg.sender != futureGovernance) revert FUTURE_GOVERNANCE();
         _;
     }
 
@@ -118,7 +122,13 @@ abstract contract Accumulator {
     /// @param _daoFeeRecipient dao fee recipient
     /// @param _liquidityFeeRecipient liquidity fee recipient
     /// @param _governance governance
-    constructor(address _gauge, address _locker, address _daoFeeRecipient, address _liquidityFeeRecipient, address _governance) {
+    constructor(
+        address _gauge,
+        address _locker,
+        address _daoFeeRecipient,
+        address _liquidityFeeRecipient,
+        address _governance
+    ) {
         gauge = _gauge;
         locker = _locker;
         daoFeeRecipient = _daoFeeRecipient;
@@ -137,19 +147,24 @@ abstract contract Accumulator {
     //////////////////////////////////////////////////////
 
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4
-    function claimAndNotifyAll() external virtual {}
+    function claimAndNotifyAll(bool _notifySDT, bool _pullFromFeeSplitter) external virtual {}
 
     /// @notice Claims a reward token for the locker and notify them to the LGV4
-    function claimTokenAndNotifyAll(address _token) external virtual {}
+    function claimTokenAndNotifyAll(address _token, bool _notifySDT, bool _pullFromFeeSplitter) external virtual {}
 
     /// @notice Notify the whole acc balance of a token
     /// @param _token token to notify
-    function notifyReward(address _token) public virtual {
+    /// @param _notifySDT if notify SDT or not
+    /// @param _pullFromFeeSplitter if pull tokens from the fee splitter or not
+    function notifyReward(address _token, bool _notifySDT, bool _pullFromFeeSplitter) public virtual {
         uint256 amount = ERC20(_token).balanceOf(address(this));
         // notify token as reward in sdToken gauge
-        _notifyReward(_token, amount);
-        // notify SDT
-        _distributeSDT();
+        _notifyReward(_token, amount, _pullFromFeeSplitter);
+
+        if (_notifySDT) {
+            // notify SDT
+            _distributeSDT();
+        }
     }
 
     //////////////////////////////////////////////////////
@@ -159,10 +174,24 @@ abstract contract Accumulator {
     /// @notice Notify the new reward to the LGV4
     /// @param _tokenReward token to notify
     /// @param _amount amount to notify
-    function _notifyReward(address _tokenReward, uint256 _amount) internal virtual {
-        if (_amount == 0) {
-            return;
+    function _notifyReward(address _tokenReward, uint256 _amount, bool _pullFromFeeSplitter) internal virtual {
+        _chargeFee(_tokenReward, _amount);
+
+        if (_pullFromFeeSplitter) {
+            // Pull token reserved for acc from FeeSplitter if there is any
+            IFeeSplitter(feeSplitter).split();
+
+            address rewardToken = IFeeSplitter(feeSplitter).token();
+            if (_tokenReward != rewardToken) {
+                uint256 _rewardTokenAmount = ERC20(rewardToken).balanceOf(address(this));
+
+                if (_rewardTokenAmount == 0) return;
+                ILiquidityGauge(gauge).deposit_reward_token(rewardToken, _rewardTokenAmount);
+            }
         }
+
+        _amount = ERC20(_tokenReward).balanceOf(address(this));
+        if (_amount == 0) return;
         ILiquidityGauge(gauge).deposit_reward_token(_tokenReward, _amount);
 
         emit RewardNotified(gauge, _tokenReward, _amount);
@@ -179,21 +208,24 @@ abstract contract Accumulator {
     /// @param _token token to charge fee for
     /// @param _amount amount to charge fee for
     function _chargeFee(address _token, uint256 _amount) internal returns (uint256 _charged) {
+        if (_amount == 0) return 0;
+
         uint256 daoPart;
         uint256 liquidityPart;
         uint256 claimerPart;
+
         if (daoFee != 0) {
-            daoPart = _amount * daoFee / BASE_FEE;
+            daoPart = _amount * daoFee / DENOMINATOR;
             SafeTransferLib.safeTransfer(_token, daoFeeRecipient, daoPart);
             _charged += daoPart;
         }
         if (liquidityFee != 0) {
-            liquidityPart = _amount * liquidityFee / BASE_FEE;
+            liquidityPart = _amount * liquidityFee / DENOMINATOR;
             SafeTransferLib.safeTransfer(_token, liquidityFeeRecipient, liquidityPart);
             _charged += liquidityPart;
         }
         if (claimerFee != 0) {
-            claimerPart = _amount * claimerFee / BASE_FEE;
+            claimerPart = _amount * claimerFee / DENOMINATOR;
             SafeTransferLib.safeTransfer(_token, msg.sender, claimerPart);
             _charged += claimerPart;
         }
@@ -204,57 +236,54 @@ abstract contract Accumulator {
     /// --- GOVERNANCE FUNCTIONS
     //////////////////////////////////////////////////////
 
-    /// @notice Sets gauge for the accumulator which will receive and distribute the rewards
-    /// @dev Can be called only by the governance
-    /// @param _gauge gauge address
-    function setGauge(address _gauge) external onlyGov {
-        if (_gauge == address(0)) revert ZERO_ADDRESS();
-        gauge = _gauge;
-        emit GaugeSet(gauge);
-    }
-
     /// @notice Sets dao fee recipient
     /// @dev Can be called only by the governance
     /// @param _daoFeeRecipient dao fee recipient
-    function setDaoFeeRecipient(address _daoFeeRecipient) external onlyGov {
+    function setDaoFeeRecipient(address _daoFeeRecipient) external onlyGovernance {
         emit DaoFeeRecipientSet(daoFeeRecipient = _daoFeeRecipient);
     }
 
     /// @notice Sets liquidity fee recipient
     /// @dev Can be called only by the governance
     /// @param _liquidityFeeRecipient liquidity fee recipient
-    function setLiquidityFeeRecipient(address _liquidityFeeRecipient) external onlyGov {
+    function setLiquidityFeeRecipient(address _liquidityFeeRecipient) external onlyGovernance {
         emit LiquidityFeeRecipientSet(liquidityFeeRecipient = _liquidityFeeRecipient);
     }
 
     /// @notice Sets dao fee
     /// @dev Can be called only by the governance
     /// @param _daoFee dao fee in percentage (10_000 = 100%)
-    function setDaoFee(uint256 _daoFee) external onlyGov {
-        if (_daoFee + liquidityFee + claimerFee > BASE_FEE) revert FEE_TOO_HIGH();
+    function setDaoFee(uint256 _daoFee) external onlyGovernance {
+        if (_daoFee + liquidityFee + claimerFee > DENOMINATOR) revert FEE_TOO_HIGH();
         emit DaoFeeSet(daoFee = _daoFee);
     }
 
     /// @notice Sets liquidity fee
     /// @dev Can be called only by the governance
     /// @param _liquidityFee liquidity fee in percentage (10_000 = 100%)
-    function setLiquidityFee(uint256 _liquidityFee) external onlyGov {
-        if (daoFee + _liquidityFee + claimerFee > BASE_FEE) revert FEE_TOO_HIGH();
+    function setLiquidityFee(uint256 _liquidityFee) external onlyGovernance {
+        if (daoFee + _liquidityFee + claimerFee > DENOMINATOR) revert FEE_TOO_HIGH();
         emit LiquidityFeeSet(liquidityFee = _liquidityFee);
     }
 
     /// @notice Sets claimer fee
     /// @dev Can be called only by the governance
     /// @param _claimerFee claimer fee in percentage (10_000 = 100%)
-    function setClaimerFee(uint256 _claimerFee) external onlyGov {
-        if (daoFee + liquidityFee + _claimerFee > BASE_FEE) revert FEE_TOO_HIGH();
+    function setClaimerFee(uint256 _claimerFee) external onlyGovernance {
+        if (daoFee + liquidityFee + _claimerFee > DENOMINATOR) revert FEE_TOO_HIGH();
         emit ClaimerFeeSet(claimerFee = _claimerFee);
+    }
+
+    /// @notice Set a fee splitter
+    /// @param _feeSplitter fee splitter address
+    function setFeeSplitter(address _feeSplitter) external onlyGovernance {
+        emit FeeSplitterSet(feeSplitter = _feeSplitter);
     }
 
     /// @notice Set a new future governance that can accept it
     /// @dev Can be called only by the governance
     /// @param _futureGovernance future governance address
-    function transferGovernance(address _futureGovernance) external onlyGov {
+    function transferGovernance(address _futureGovernance) external onlyGovernance {
         if (_futureGovernance == address(0)) revert ZERO_ADDRESS();
         futureGovernance = _futureGovernance;
         emit TransferGovernance(_futureGovernance);
@@ -262,9 +291,9 @@ abstract contract Accumulator {
 
     /// @notice Accept the governance
     /// @dev Can be called only by future governance
-    function acceptGovernance() external onlyFutureGov {
+    function acceptGovernance() external onlyFutureGovernance {
         governance = futureGovernance;
-        emit GovernanceAccepted(governance);
+        emit GovernanceChanged(governance);
     }
 
     /// @notice A function that rescue any ERC20 token
@@ -272,7 +301,7 @@ abstract contract Accumulator {
     /// @param _token token address
     /// @param _amount amount to rescue
     /// @param _recipient address to send token rescued
-    function rescueERC20(address _token, uint256 _amount, address _recipient) external onlyGov {
+    function rescueERC20(address _token, uint256 _amount, address _recipient) external onlyGovernance {
         if (_recipient == address(0)) revert ZERO_ADDRESS();
         SafeTransferLib.safeTransfer(_token, _recipient, _amount);
         emit ERC20Rescued(_token, _amount);
