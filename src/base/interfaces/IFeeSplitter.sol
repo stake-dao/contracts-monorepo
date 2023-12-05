@@ -3,4 +3,5 @@ pragma solidity 0.8.19;
 
 interface IFeeSplitter {
     function split() external;
+    function token() external view returns (address);
 }

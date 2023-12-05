@@ -11,20 +11,23 @@ import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 /// @notice Abstract contract used for any accumulator
 /// @author StakeDAO
 abstract contract Accumulator {
+    /// @notice Denominator for fixed point math.
+    uint256 public constant DENOMINATOR = 10_000;
+
     /// @notice sd gauge
-    address public gauge;
+    address public immutable gauge;
 
     /// @notice sd locker
     address public immutable locker;
-
-    /// @notice SDT distributor
-    address public sdtDistributor;
 
     /// @notice governance
     address public governance;
 
     /// @notice future governance
     address public futureGovernance;
+
+    /// @notice SDT distributor
+    address public sdtDistributor;
 
     /// @notice dao fee in percentage (10_000 = 100%)
     uint256 public daoFee;
@@ -44,18 +47,9 @@ abstract contract Accumulator {
     /// @notice fee splitter contract to pull strategies fees
     address public feeSplitter;
 
-    /// @notice Denominator for fixed point math.
-    uint256 public constant BASE_FEE = 10_000;
-
-    /// @notice Tokens amounts where it won't charge fee
-    mapping(address => uint256) public feeLessTokens;
-
     ////////////////////////////////////////////////////////////////
     /// --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
-
-    /// @notice Event emitted when the sd gauge is set
-    event GaugeSet(address gauge);
 
     /// @notice Event emitted when the claimer fee is set
     event ClaimerFeeSet(uint256 claimerFee);
@@ -88,16 +82,16 @@ abstract contract Accumulator {
     event TransferGovernance(address futureGovernance);
 
     /// @notice Event emitted when the future governance accepts to be the governance
-    event GovernanceAccepted(address governance);
+    event GovernanceChanged(address governance);
 
     /// @notice Error emitted when an onlyGovernance function has called by a different address
-    error GOV();
+    error GOVERNANCE();
 
     /// @notice Error emitted when the total fee would be more than 100%
     error FEE_TOO_HIGH();
 
     /// @notice Error emitted when an onlyFutureGovernance function has called by a different address
-    error FUTURE_GOV();
+    error FUTURE_GOVERNANCE();
 
     /// @notice Error emitted when a zero address is pass
     error ZERO_ADDRESS();
@@ -108,13 +102,13 @@ abstract contract Accumulator {
 
     /// @notice Modifier to check if the caller is the governance
     modifier onlyGovernance() {
-        if (msg.sender != governance) revert GOV();
+        if (msg.sender != governance) revert GOVERNANCE();
         _;
     }
 
     /// @notice Modifier to check if the caller is the future governance
     modifier onlyFutureGovernance() {
-        if (msg.sender != futureGovernance) revert FUTURE_GOV();
+        if (msg.sender != futureGovernance) revert FUTURE_GOVERNANCE();
         _;
     }
 
@@ -158,14 +152,6 @@ abstract contract Accumulator {
     /// @notice Claims a reward token for the locker and notify them to the LGV4
     function claimTokenAndNotifyAll(address _token, bool _notifySDT, bool _pullFromFeeSplitter) external virtual {}
 
-    /// @notice Deposit token where it won't charge fees on notify
-    /// @param _token token to deposit
-    /// @param _amount amount to deposit
-    function depositTokenWithoutChargingFee(address _token, uint256 _amount) external virtual {
-        ERC20(_token).transferFrom(msg.sender, address(this), _amount);
-        feeLessTokens[_token] += _amount;
-    }
-
     /// @notice Notify the whole acc balance of a token
     /// @param _token token to notify
     /// @param _notifySDT if notify SDT or not
@@ -189,16 +175,23 @@ abstract contract Accumulator {
     /// @param _tokenReward token to notify
     /// @param _amount amount to notify
     function _notifyReward(address _tokenReward, uint256 _amount, bool _pullFromFeeSplitter) internal virtual {
-        _amount -= _chargeFee(_tokenReward, _amount);
+        _chargeFee(_tokenReward, _amount);
 
         if (_pullFromFeeSplitter) {
             // Pull token reserved for acc from FeeSplitter if there is any
             IFeeSplitter(feeSplitter).split();
+
+            address rewardToken = IFeeSplitter(feeSplitter).token();
+            if (_tokenReward != rewardToken) {
+                uint256 _rewardTokenAmount = ERC20(rewardToken).balanceOf(address(this));
+
+                if (_rewardTokenAmount == 0) return;
+                ILiquidityGauge(gauge).deposit_reward_token(rewardToken, _rewardTokenAmount);
+            }
         }
 
         _amount = ERC20(_tokenReward).balanceOf(address(this));
-
-        if(_amount == 0) return;
+        if (_amount == 0) return;
         ILiquidityGauge(gauge).deposit_reward_token(_tokenReward, _amount);
 
         emit RewardNotified(gauge, _tokenReward, _amount);
@@ -215,23 +208,24 @@ abstract contract Accumulator {
     /// @param _token token to charge fee for
     /// @param _amount amount to charge fee for
     function _chargeFee(address _token, uint256 _amount) internal returns (uint256 _charged) {
-        if(_amount == 0) return 0;
+        if (_amount == 0) return 0;
 
         uint256 daoPart;
         uint256 liquidityPart;
         uint256 claimerPart;
+
         if (daoFee != 0) {
-            daoPart = _amount * daoFee / BASE_FEE;
+            daoPart = _amount * daoFee / DENOMINATOR;
             SafeTransferLib.safeTransfer(_token, daoFeeRecipient, daoPart);
             _charged += daoPart;
         }
         if (liquidityFee != 0) {
-            liquidityPart = _amount * liquidityFee / BASE_FEE;
+            liquidityPart = _amount * liquidityFee / DENOMINATOR;
             SafeTransferLib.safeTransfer(_token, liquidityFeeRecipient, liquidityPart);
             _charged += liquidityPart;
         }
         if (claimerFee != 0) {
-            claimerPart = _amount * claimerFee / BASE_FEE;
+            claimerPart = _amount * claimerFee / DENOMINATOR;
             SafeTransferLib.safeTransfer(_token, msg.sender, claimerPart);
             _charged += claimerPart;
         }
@@ -241,15 +235,6 @@ abstract contract Accumulator {
     //////////////////////////////////////////////////////
     /// --- GOVERNANCE FUNCTIONS
     //////////////////////////////////////////////////////
-
-    /// @notice Sets gauge for the accumulator which will receive and distribute the rewards
-    /// @dev Can be called only by the governance
-    /// @param _gauge gauge address
-    function setGauge(address _gauge) external onlyGovernance {
-        if (_gauge == address(0)) revert ZERO_ADDRESS();
-        gauge = _gauge;
-        emit GaugeSet(gauge);
-    }
 
     /// @notice Sets dao fee recipient
     /// @dev Can be called only by the governance
@@ -269,7 +254,7 @@ abstract contract Accumulator {
     /// @dev Can be called only by the governance
     /// @param _daoFee dao fee in percentage (10_000 = 100%)
     function setDaoFee(uint256 _daoFee) external onlyGovernance {
-        if (_daoFee + liquidityFee + claimerFee > BASE_FEE) revert FEE_TOO_HIGH();
+        if (_daoFee + liquidityFee + claimerFee > DENOMINATOR) revert FEE_TOO_HIGH();
         emit DaoFeeSet(daoFee = _daoFee);
     }
 
@@ -277,7 +262,7 @@ abstract contract Accumulator {
     /// @dev Can be called only by the governance
     /// @param _liquidityFee liquidity fee in percentage (10_000 = 100%)
     function setLiquidityFee(uint256 _liquidityFee) external onlyGovernance {
-        if (daoFee + _liquidityFee + claimerFee > BASE_FEE) revert FEE_TOO_HIGH();
+        if (daoFee + _liquidityFee + claimerFee > DENOMINATOR) revert FEE_TOO_HIGH();
         emit LiquidityFeeSet(liquidityFee = _liquidityFee);
     }
 
@@ -285,7 +270,7 @@ abstract contract Accumulator {
     /// @dev Can be called only by the governance
     /// @param _claimerFee claimer fee in percentage (10_000 = 100%)
     function setClaimerFee(uint256 _claimerFee) external onlyGovernance {
-        if (daoFee + liquidityFee + _claimerFee > BASE_FEE) revert FEE_TOO_HIGH();
+        if (daoFee + liquidityFee + _claimerFee > DENOMINATOR) revert FEE_TOO_HIGH();
         emit ClaimerFeeSet(claimerFee = _claimerFee);
     }
 
@@ -308,7 +293,7 @@ abstract contract Accumulator {
     /// @dev Can be called only by future governance
     function acceptGovernance() external onlyFutureGovernance {
         governance = futureGovernance;
-        emit GovernanceAccepted(governance);
+        emit GovernanceChanged(governance);
     }
 
     /// @notice A function that rescue any ERC20 token

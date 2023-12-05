@@ -112,6 +112,8 @@ contract CAKEAccumulatorTest is Test {
 
         assertEq(ERC20(EXTRA_REWARD).balanceOf(SD_CAKE_GAUGE), 0);
 
+        accumulator.approveNewTokenReward(EXTRA_REWARD);
+
         vm.prank(rewardClaimer);
         accumulator.notifyReward(EXTRA_REWARD, false, false);
 
@@ -119,7 +121,7 @@ contract CAKEAccumulatorTest is Test {
     }
 
     function _checkFeeSplit(address _token) internal {
-        uint256 baseFee = accumulator.BASE_FEE();
+        uint256 baseFee = accumulator.DENOMINATOR();
 
         uint256 daoFeeBalance = ERC20(_token).balanceOf(accumulator.daoFeeRecipient());
         uint256 liquidityFeeBalance = ERC20(_token).balanceOf(accumulator.liquidityFeeRecipient());

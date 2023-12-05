@@ -25,8 +25,7 @@ contract DeployCakeAccumulator is Script {
     function run() public {
         vm.startBroadcast(DEPLOYER);
 
-        accumulator =
-            new CakeAccumulator(SD_CAKE_GAUGE, CAKE_LOCKER, GOVERNANCE, GOVERNANCE, GOVERNANCE);
+        accumulator = new CakeAccumulator(SD_CAKE_GAUGE, CAKE_LOCKER, GOVERNANCE, GOVERNANCE, GOVERNANCE);
 
         vm.stopBroadcast();
     }
