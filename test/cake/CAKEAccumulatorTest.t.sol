@@ -38,9 +38,10 @@ contract CAKEAccumulatorTest is Test {
 
         accumulator =
             new CakeAccumulator(SD_CAKE_GAUGE, CAKE_LOCKER, daoFeeRecipient, liquidityFeeRecipient, address(this));
-    
+
         // set accumulator as recipient in cake revenue sharing pool
-        bytes memory setRecipientData = abi.encodeWithSignature("setRecipient(address,address)", CAKE_LOCKER, address(accumulator));
+        bytes memory setRecipientData =
+            abi.encodeWithSignature("setRecipient(address,address)", CAKE_LOCKER, address(accumulator));
 
         vm.startPrank(ILocker(CAKE_LOCKER).governance());
         ILocker(CAKE_LOCKER).execute(revenueSharingPools[0], 0, setRecipientData);
@@ -77,10 +78,11 @@ contract CAKEAccumulatorTest is Test {
             vm.stopPrank();
             assertGt(ERC20(CAKE).balanceOf(SD_CAKE_GAUGE), gaugeBalanceBefore);
         }
-        
+
         for (uint256 i; i < revenueSharingPools.length; i++) {
-            uint256 tokenPerPreviousWeek =
-            IRevenueSharingPool(revenueSharingPools[i]).tokensPerWeek((block.timestamp / 1 weeks * 1 weeks) - 1 weeks);
+            uint256 tokenPerPreviousWeek = IRevenueSharingPool(revenueSharingPools[i]).tokensPerWeek(
+                (block.timestamp / 1 weeks * 1 weeks) - 1 weeks
+            );
             assertGt(tokenPerPreviousWeek, 0);
         }
     }

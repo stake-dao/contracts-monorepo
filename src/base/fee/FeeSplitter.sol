@@ -16,6 +16,9 @@ contract FeeSplitter {
     /// @notice dao address
     address public immutable dao;
 
+    /// @notice token address.
+    address public immutable token;
+
     /// @notice veSdtFeeProxy address
     address public immutable veSdtFeeProxy;
 
@@ -28,7 +31,15 @@ contract FeeSplitter {
     /// @notice veSdtFeeProxy part (10_000 = 100%)
     uint256 public immutable veSdtFeeProxyFee;
 
-    constructor(address _accumulator, address _veSdtFeeProxy, address _dao) {
+    error ONLY_ACCUMULATOR();
+
+    modifier onlyAccumulator() {
+        if (msg.sender != accumulator) revert ONLY_ACCUMULATOR();
+        _;
+    }
+
+    constructor(address _accumulator, address _token, address _veSdtFeeProxy, address _dao) {
+        token = _token;
         accumulator = _accumulator;
         dao = _dao;
         veSdtFeeProxy = _veSdtFeeProxy;
@@ -37,24 +48,22 @@ contract FeeSplitter {
         veSdtFeeProxyFee = 2_500; // 25%
     }
 
-    function splitToken(address _token) external {
-        uint256 amount = ERC20(_token).balanceOf(address(this));
+    function split() external onlyAccumulator {
+        uint256 amount = ERC20(token).balanceOf(address(this));
         if (amount == 0) {
             return;
         }
 
         // DAO part
         uint256 daoPart = amount * daoFee / BASE_FEE;
-        SafeTransferLib.safeTransfer(_token, dao, daoPart);
+        SafeTransferLib.safeTransfer(token, dao, daoPart);
 
         // Accumulator part
         uint256 accumulatorPart = amount * accumulatorFee / BASE_FEE;
-        SafeTransferLib.safeApprove(_token, accumulator, accumulatorPart);
-        // transfer tokens to the acc without charging fees on them when the rewatd is notified
-        IAccumulator(accumulator).depositTokenWithoutChargingFee(_token, accumulatorPart);
+        SafeTransferLib.safeTransfer(token, accumulator, accumulatorPart);
 
         // VeSdtFeeProxy part
         uint256 veSdtFeeProxyPart = amount * veSdtFeeProxyFee / BASE_FEE;
-        SafeTransferLib.safeTransfer(_token, veSdtFeeProxy, veSdtFeeProxyPart);
+        SafeTransferLib.safeTransfer(token, veSdtFeeProxy, veSdtFeeProxyPart);
     }
 }

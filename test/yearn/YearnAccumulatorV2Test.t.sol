@@ -50,7 +50,7 @@ contract YearnAccumulatorV2Test is Test {
     function testDyfiClaim() external {
         assertEq(ERC20(DYFI).balanceOf(address(sdYfiLG)), 0);
         // notify DYFI to the sdDyfi gauge
-        accumulator.claimTokenAndNotifyAll(DYFI);
+        accumulator.claimTokenAndNotifyAll(DYFI, false, false);
         assertEq(ERC20(DYFI).balanceOf(address(accumulator)), 0);
         _checkFeesOnClaim(DYFI);
     }
@@ -58,7 +58,7 @@ contract YearnAccumulatorV2Test is Test {
     function testYfiClaim() external {
         assertEq(ERC20(yfi).balanceOf(address(sdYfiLG)), 0);
         // notify YFI to the sdDyfi gauge
-        accumulator.claimTokenAndNotifyAll(yfi);
+        accumulator.claimTokenAndNotifyAll(yfi, false, false);
         assertEq(ERC20(yfi).balanceOf(address(accumulator)), 0);
         _checkFeesOnClaim(yfi);
     }
