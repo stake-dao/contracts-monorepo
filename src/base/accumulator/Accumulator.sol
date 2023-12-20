@@ -2,10 +2,11 @@
 pragma solidity 0.8.19;
 
 import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
+
 import {IFeeSplitter} from "src/base/interfaces/IFeeSplitter.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {ISDTDistributor} from "src/base/interfaces/ISDTDistributor.sol";
-import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 
 /// @title Accumulator
 /// @notice Abstract contract used for any accumulator
@@ -191,6 +192,7 @@ abstract contract Accumulator {
         }
 
         _amount = ERC20(_tokenReward).balanceOf(address(this));
+
         if (_amount == 0) return;
         ILiquidityGauge(gauge).deposit_reward_token(_tokenReward, _amount);
 
@@ -236,12 +238,19 @@ abstract contract Accumulator {
     /// --- GOVERNANCE FUNCTIONS
     //////////////////////////////////////////////////////
 
+    /// @notice Set SDT distributor.
+    /// @param _distributor SDT distributor address.
+    function setDistributor(address _distributor) external onlyGovernance {
+        sdtDistributor = _distributor;
+    }
+
     /// @notice Sets dao fee recipient
     /// @dev Can be called only by the governance
     /// @param _daoFeeRecipient dao fee recipient
     function setDaoFeeRecipient(address _daoFeeRecipient) external onlyGovernance {
         emit DaoFeeRecipientSet(daoFeeRecipient = _daoFeeRecipient);
     }
+
 
     /// @notice Sets liquidity fee recipient
     /// @dev Can be called only by the governance
@@ -294,6 +303,12 @@ abstract contract Accumulator {
     function acceptGovernance() external onlyFutureGovernance {
         governance = futureGovernance;
         emit GovernanceChanged(governance);
+    }
+
+    /// @notice Approve the distribution of a new token reward from the Accumulator.
+    /// @param _newTokenReward New token reward to be approved.
+    function approveNewTokenReward(address _newTokenReward) external onlyGovernance {
+        SafeTransferLib.safeApprove(_newTokenReward, gauge, type(uint256).max);
     }
 
     /// @notice A function that rescue any ERC20 token
