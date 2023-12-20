@@ -60,10 +60,4 @@ contract CakeAccumulator is Accumulator {
             }
         }
     }
-
-    /// @notice Approve the distribution of a new token reward from the Accumulator.
-    /// @param _newTokenReward New token reward to be approved.
-    function approveNewTokenReward(address _newTokenReward) external onlyGovernance {
-        SafeTransferLib.safeApprove(_newTokenReward, gauge, type(uint256).max);
-    }
 }

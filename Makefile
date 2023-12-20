@@ -2,7 +2,7 @@
 
 .EXPORT_ALL_VARIABLES:
 MAKEFLAGS += --no-print-directory
-RPC_URL=https://bsc-mainnet.nodereal.io/v1/8ba50235e5794af7ba04e88181bb359f
+RPC_URL=$(RPC_URL_MAINNET)
 ETHERSCAN_API_KEY=$(ETHERSCAN_KEY)
 
 default:

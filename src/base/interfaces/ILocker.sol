@@ -15,6 +15,7 @@ interface ILocker {
     function release() external;
 
     function claimRewards(address, address) external;
+    function claimRewards(address, address, address) external;
 
     function claimFXSRewards(address) external;
 
