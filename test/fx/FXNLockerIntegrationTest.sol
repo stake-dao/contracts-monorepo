@@ -270,11 +270,15 @@ contract FXNLockerIntegrationTest is Test {
 
         accumulator.claimAndNotifyAll(false, false);
 
+        /// Assert that there's rewards to distribute.
+        assertGt(expectedReward, 0);
+
         /// Received from fees.
-        assertEq(_rewardToken.balanceOf(address(this)), expectedFee);
+        /// Assert Approx because wsETH have a 1 wei issue precision on transfer.
+        assertApproxEqAbs(_rewardToken.balanceOf(address(this)), expectedFee, 1);
 
         /// Distributed as rewards.
-        assertEq(_rewardToken.balanceOf(address(liquidityGauge)), expectedReward - expectedFee);
+        assertApproxEqAbs(_rewardToken.balanceOf(address(liquidityGauge)), expectedReward - expectedFee, 1);
     }
 
     function test_transferGovernance() public {
