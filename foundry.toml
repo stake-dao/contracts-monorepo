@@ -26,3 +26,4 @@ mainnet = { key = "${API_KEY_ETHERSCAN}" }
 
 [rpc_endpoints]
 mainnet = "https://mainnet.infura.io/v3/${INFURA_KEY}"
+bnb = "https://bsc-mainnet.nodereal.io/v1/8ba50235e5794af7ba04e88181bb359f"
