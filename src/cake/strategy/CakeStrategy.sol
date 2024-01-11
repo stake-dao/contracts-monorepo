@@ -49,7 +49,7 @@ contract CakeStrategy is Strategy {
 
     /// @notice Harvest reward for an NFT.
     /// @param _tokenId NFT id to harvest.
-    function harvestNft(uint256 _tokenId) external {
+    function harvestNft(uint256 _tokenId) external onlyNftStaker(_tokenId) {
         _harvestNft(_tokenId, msg.sender);
     }
 
@@ -64,14 +64,12 @@ contract CakeStrategy is Strategy {
     /// @param _tokenId NFT id to harvest.
     /// @param _recipient reward receiver
     function _harvestNft(uint256 _tokenId, address _recipient) internal {
-        uint256 balanceBeforeHarvest = ERC20(rewardToken).balanceOf(address(locker));
-        bytes memory harvestData = abi.encodeWithSignature("harvest(uint256,address)", _tokenId, address(locker));
+        uint256 balanceBeforeHarvest = ERC20(rewardToken).balanceOf(address(this));
+        bytes memory harvestData = abi.encodeWithSignature("harvest(uint256,address)", _tokenId, address(this));
         locker.safeExecute(cakeMc, 0, harvestData);
-        uint256 reward = ERC20(rewardToken).balanceOf(address(locker)) - balanceBeforeHarvest;
+        uint256 reward = ERC20(rewardToken).balanceOf(address(this)) - balanceBeforeHarvest;
         if (reward != 0) {
-            // send the whole reward here
-            bytes memory transferData = abi.encodeWithSignature("transfer(address,uint256)", address(this), reward);
-            locker.safeExecute(rewardToken, 0, transferData);
+            // charge fee
             reward -= _chargeProtocolFees(reward);
             // send the reward - fees to the recipient
             SafeTransferLib.safeTransfer(rewardToken, _recipient, reward);
