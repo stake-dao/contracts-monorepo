@@ -9,6 +9,7 @@ import {ERC721} from "solady/tokens/ERC721.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {ICakeMc} from "src/base/interfaces/ICakeMc.sol";
 import {CakeStrategyNFT} from "src/cake/strategy/CakeStrategyNFT.sol";
+import {Executor} from "src/cake/utils/Executor.sol";
 import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
 import {CAKE} from "address-book/lockers/56.sol";
 import {DAO} from "address-book/dao/56.sol";
@@ -16,6 +17,7 @@ import {DAO} from "address-book/dao/56.sol";
 contract CakeStrategyNFTTest is Test {
     CakeStrategyNFT internal strategyImpl;
     CakeStrategyNFT internal strategy;
+    Executor internal executor;
 
     ILocker internal constant LOCKER = ILocker(CAKE.LOCKER);
     address internal constant REWARD_TOKEN = CAKE.TOKEN;
@@ -26,19 +28,23 @@ contract CakeStrategyNFTTest is Test {
 
     function setUp() public {
         vm.createSelectFork(vm.rpcUrl("bnb"), 35_094_542);
+        // Deploy Executor
+        executor = new Executor(MS);
         strategyImpl = new CakeStrategyNFT(address(this), address(LOCKER), REWARD_TOKEN);
         address strategyProxy = LibClone.deployERC1967(address(strategyImpl));
         strategy = CakeStrategyNFT(payable(strategyProxy));
-        strategy.initialize(address(this));
+        strategy.initialize(address(this), address(executor));
 
-        vm.prank(MS);
-        LOCKER.transferGovernance(address(strategy));
-        strategy.execute(address(LOCKER), 0, abi.encodeWithSignature("acceptGovernance()"));
-        assertEq(LOCKER.governance(), address(strategy));
+        vm.startPrank(MS);
+        LOCKER.transferGovernance(address(executor));
+        executor.execute(address(LOCKER), 0, abi.encodeWithSignature("acceptGovernance()"));
+        assertEq(LOCKER.governance(), address(executor));
+        executor.allowAddress(address(strategy));
+        vm.stopPrank();
     }
 
     function test_deposit_nft() external {
-        _depositNft();  
+        _depositNft();
     }
 
     function test_withdraw_nft() external {

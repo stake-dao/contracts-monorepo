@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import {ERC20} from "solady/tokens/ERC20.sol";
 import {ERC721} from "solady/tokens/ERC721.sol";
 import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
+import {IExecutor} from "src/base/interfaces/IExecutor.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {SafeExecute} from "src/base/libraries/SafeExecute.sol";
 import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
@@ -23,6 +24,9 @@ contract CakeStrategyNFT is UUPSUpgradeable {
 
     /// @notice Address of the token being rewarded.
     address public immutable rewardToken;
+
+    /// @notice Address of the executor contract.
+    IExecutor public executor;
 
     /// @notice Address of the governance.
     address public governance;
@@ -103,16 +107,16 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @param _owner Address of the strategy owner.
     /// @param _locker Address of the locker.
     /// @param _rewardToken Address of the reward token.
-    constructor(address _owner, address _locker, address _rewardToken)
-    {
+    constructor(address _owner, address _locker, address _rewardToken) {
         governance = _owner;
         locker = ILocker(_locker);
         rewardToken = _rewardToken;
     }
 
-    function initialize(address owner) external {
+    function initialize(address _governance, address _executor) external {
         if (governance != address(0)) revert Governance();
-        governance = owner;
+        governance = _governance;
+        executor = IExecutor(_executor);
 
         cakeMc = 0x556B9306565093C855AEA9AE92A594704c2Cd59e; // v3
         cakeNfpm = 0x46A15B0b27311cedF172AB29E4f4766fbE7F4364;
@@ -137,13 +141,15 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     function _harvestNft(uint256 _tokenId, address _recipient) internal {
         uint256 balanceBeforeHarvest = ERC20(rewardToken).balanceOf(address(this));
         bytes memory harvestData = abi.encodeWithSignature("harvest(uint256,address)", _tokenId, address(this));
-        locker.safeExecute(cakeMc, 0, harvestData);
+        //locker.safeExecute(cakeMc, 0, harvestData);
+        executor.callExecuteTo(address(locker), cakeMc, 0, harvestData);
         uint256 reward = ERC20(rewardToken).balanceOf(address(this)) - balanceBeforeHarvest;
         if (reward != 0) {
             // charge fee
             reward -= _chargeProtocolFees(reward);
             // send the reward - fees to the recipient
             SafeTransferLib.safeTransfer(rewardToken, _recipient, reward);
+            //emit Harvest(_tokenId, reward, _recipient);
         }
     }
 
@@ -166,7 +172,8 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     function _withdrawNft(uint256 _tokenId, address _recipient) internal onlyNftStaker(_tokenId) {
         // withdraw the NFT from pancake masterchef, it will send it to the recipient
         bytes memory withdrawData = abi.encodeWithSignature("withdraw(uint256,address)", _tokenId, _recipient);
-        locker.safeExecute(cakeMc, 0, withdrawData);
+        executor.callExecuteTo(address(locker), cakeMc, 0, withdrawData);
+        //locker.safeExecute(cakeMc, 0, withdrawData);
         nftStakers[_tokenId] = address(0);
     }
 
@@ -182,9 +189,15 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         // transfer the NFT to the pancake masterchef v3 via the locker using safe transfer to trigger the hook
         bytes memory safeTransferData =
             abi.encodeWithSignature("safeTransferFrom(address,address,uint256)", address(locker), cakeMc, _tokenId);
-        locker.safeExecute(cakeNfpm, 0, safeTransferData);
+        executor.callExecuteTo(address(locker), cakeNfpm, 0, safeTransferData);
+        //locker.safeExecute(cakeNfpm, 0, safeTransferData);
         return this.onERC721Received.selector;
     }
+
+    // function decreaseLiquidity(uint256 _tokenId, uint128 _liquidity, uint256 _amount0Min, uint256 _amount1Min) external onlyNftStaker(_tokenId) {
+    //     bytes memory decreaseLiqData = abi.encodeWithSignature("decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))", _tokenId, _liquidity, _amount0Min, _amount1Min, 60000);
+    //     locker.safeExecute(cakeMc, 0, decreaseLiqData);
+    // }
 
     //////////////////////////////////////////////////////
     /// --- PROTOCOL FEES ACCOUNTING
