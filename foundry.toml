@@ -4,6 +4,8 @@ out = "out"
 libs = ["lib"]
 verbosity = 3
 
+evm_version = "shanghai"
+
 ffi = true
 
 remappings = [

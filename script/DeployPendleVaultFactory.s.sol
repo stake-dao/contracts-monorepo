@@ -4,23 +4,31 @@ pragma solidity 0.8.19;
 import "forge-std/Test.sol";
 import "forge-std/Script.sol";
 import "address-book/dao/1.sol";
+import "utils/VyperDeployer.sol";
 import "address-book/lockers/1.sol";
 import "address-book/protocols/1.sol";
 
 import {PendleVaultFactory} from "src/pendle/PendleVaultFactory.sol";
+import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
 
 interface PendleStrategy {
     function setVaultGaugeFactory(address _vaultGaugeFactory) external;
     function vaultGaugeFactory() external returns (address);
 }
 
-contract DeployYearnStrategy is Script, Test {
+contract DeployPendleVaultFactory is Script, Test {
     PendleVaultFactory public factory;
+
+    VyperDeployer public vyperDeployer = new VyperDeployer();
 
     function run() public {
         vm.startBroadcast(DAO.MAIN_DEPLOYER);
 
-        factory = new PendleVaultFactory(PENDLE.STRATEGY, DAO.STRATEGY_SDT_DISTRIBUTOR);
+        // Deploy LGV4Strat impl
+        ILiquidityGaugeStrat gaugeImpl =
+            ILiquidityGaugeStrat(vyperDeployer.deployContract("src/base/gauge/LiquidityGaugeV4Strat.vy"));
+
+        factory = new PendleVaultFactory(PENDLE.STRATEGY, DAO.STRATEGY_SDT_DISTRIBUTOR, address(gaugeImpl));
 
         PendleStrategy(PENDLE.STRATEGY).setVaultGaugeFactory(address(factory));
 
@@ -30,7 +38,7 @@ contract DeployYearnStrategy is Script, Test {
         require(PendleStrategy(PENDLE.STRATEGY).vaultGaugeFactory() == address(factory), "Vault Gauge Factory mismatch");
         require(factory.vaultImpl() == 0x44A6A278A9a55fF22Fd5F7c6fe84af916396470C, "Vault Implementation mismatch");
         require(factory.CLAIM_REWARDS() == 0x633120100e108F03aCe79d6C78Aac9a56db1be0F, "Claim Rewards mismatch");
-        require(factory.GAUGE_IMPL() == 0x3Dc56D46F0Bd13655EfB29594a2e44534c453BF9, "Gauge Implementation mismatch");
+        require(factory.gaugeImpl() == address(gaugeImpl), "Gauge Implementation mismatch");
         require(
             factory.PENDLE_MARKET_FACTORY_V3() == 0x1A6fCc85557BC4fB7B534ed835a03EF056552D52,
             "Pendle Market Factory V3 mismatch"

@@ -52,12 +52,23 @@ contract PendleStrategyIntegrationTest is Test {
 
     address public constant PENDLE_DEPLOYER = 0x1FcCC097db89A86Bfc474A1028F93958295b1Fb7;
 
+    VyperDeployer public vyperDeployer;
+
+    ILiquidityGaugeStrat public gaugeImpl;
+
     function setUp() public {
         uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"), 19018738);
         vm.selectFork(forkId);
 
+        vyperDeployer = new VyperDeployer();
+
+        // Deploy LGV4Strat impl
+        gaugeImpl = ILiquidityGaugeStrat(vyperDeployer.deployContract("src/base/gauge/LiquidityGaugeV4Strat.vy"));
+
+        //gaugeImpl = deployBytecode(Constants.LGV4_STRAT_BYTECODE, "");
+
         // Deploying vault factory
-        factory = new PendleVaultFactory(PENDLE.STRATEGY, DAO.STRATEGY_SDT_DISTRIBUTOR);
+        factory = new PendleVaultFactory(PENDLE.STRATEGY, DAO.STRATEGY_SDT_DISTRIBUTOR, address(gaugeImpl));
 
         // Setting new factory in strategy
         vm.prank(DAO.GOVERNANCE);
@@ -68,7 +79,9 @@ contract PendleStrategyIntegrationTest is Test {
         assertEq(factory.strategy(), PENDLE.STRATEGY);
         assertEq(factory.sdtDistributor(), DAO.STRATEGY_SDT_DISTRIBUTOR);
         assertEq(factory.vaultImpl(), 0x44A6A278A9a55fF22Fd5F7c6fe84af916396470C);
-        assertEq(factory.GAUGE_IMPL(), 0x3Dc56D46F0Bd13655EfB29594a2e44534c453BF9);
+        assertNotEq(address(gaugeImpl), address(0));
+        assertEq(factory.gaugeImpl(), address(gaugeImpl));
+        assertEq(ILiquidityGaugeStrat(gaugeImpl).balanceOf(address(this)), 0);
         assertEq(factory.PENDLE_MARKET_FACTORY_V3(), 0x1A6fCc85557BC4fB7B534ed835a03EF056552D52);
         assertEq(factory.GOVERNANCE(), DAO.GOVERNANCE);
         assertEq(factory.PENDLE(), PENDLE.TOKEN);
@@ -109,13 +122,13 @@ contract PendleStrategyIntegrationTest is Test {
         (address vault, address lptToken, address impl) = abi.decode(entries[0].data, (address, address, address));
 
         assertEq(entries[2].topics[0], keccak256("GaugeDeployed(address,address,address)"));
-        (address gaugeProxy, address stakeToken, address gaugeImpl) =
+        (address gaugeProxy, address stakeToken, address gaugeImpl_) =
             abi.decode(entries[2].data, (address, address, address));
 
         assertEq(stakeToken, vault);
         assertEq(lptToken, PENDLE_LPT_V3);
         assertEq(impl, factory.vaultImpl());
-        assertEq(gaugeImpl, factory.GAUGE_IMPL());
+        assertEq(gaugeImpl_, factory.gaugeImpl());
 
         string memory name = PendleVault(vault).name();
         string memory symbol = PendleVault(vault).symbol();
@@ -143,9 +156,8 @@ contract PendleStrategyIntegrationTest is Test {
         vm.recordLogs();
         factory.cloneAndInit(PENDLE_LPT_V3);
         Vm.Log[] memory entries = vm.getRecordedLogs();
-        (address vault, address lptToken, address impl) = abi.decode(entries[0].data, (address, address, address));
-        (address gaugeProxy, address stakeToken, address gaugeImpl) =
-            abi.decode(entries[2].data, (address, address, address));
+        (address vault,,) = abi.decode(entries[0].data, (address, address, address));
+        (address gaugeProxy,,) = abi.decode(entries[2].data, (address, address, address));
 
         // Give Alice some PENDLE_LPT_V3
         deal(PENDLE_LPT_V3, alice, 100e18);
@@ -174,5 +186,13 @@ contract PendleStrategyIntegrationTest is Test {
 
         // Alice loses half gauge shares
         assertEq(ERC20(gaugeProxy).balanceOf(alice), 50e18);
+    }
+
+    function deployBytecode(bytes memory bytecode, bytes memory args) internal returns (address deployed) {
+        bytecode = abi.encodePacked(bytecode, args);
+        assembly {
+            deployed := create(0, add(bytecode, 0x20), mload(bytecode))
+        }
+        require(deployed != address(0), "DEPLOYMENT_FAILED");
     }
 }
