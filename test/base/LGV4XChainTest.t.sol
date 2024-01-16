@@ -4,10 +4,13 @@ pragma solidity 0.8.19;
 import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
 
+import "address-book/dao/1.sol";
+import "address-book/lockers/1.sol";
+import "address-book/protocols/1.sol";
+
 import {Constants} from "src/base/utils/Constants.sol";
 
 import {sdToken} from "src/base/token/sdToken.sol";
-import {AddressBook} from "@addressBook/AddressBook.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 
@@ -30,8 +33,8 @@ contract LGV4XChainTest is Test {
         uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"));
         vm.selectFork(forkId);
 
-        stakeToken = AddressBook.SD_CRV;
-        rewardToken = AddressBook.SDT;
+        stakeToken = CRV.SDTOKEN;
+        rewardToken = DAO.SDT;
 
         bytes memory constructorParams = abi.encode(stakeToken, address(this));
 
@@ -42,7 +45,7 @@ contract LGV4XChainTest is Test {
         liquidityGauge = ILiquidityGauge(deployedAddress);
 
         // add reward token
-        liquidityGauge.add_reward(AddressBook.SDT, rewardDistributor);
+        liquidityGauge.add_reward(DAO.SDT, rewardDistributor);
 
         // set claimer
         liquidityGauge.set_claimer(claimer);

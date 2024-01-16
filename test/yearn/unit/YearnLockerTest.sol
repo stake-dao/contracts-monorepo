@@ -5,14 +5,16 @@ import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
+import "address-book/lockers/1.sol";
+import "address-book/protocols/1.sol";
+
 import {IVeYFI} from "src/base/interfaces/IVeYFI.sol";
-import {AddressBook} from "@addressBook/AddressBook.sol";
 import {YearnLocker} from "src/yearn/locker/YearnLocker.sol";
 import {IRewardPool} from "src/base/interfaces/IRewardPool.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 
 contract YearnLockerTest is Test {
-    IERC20 internal YFI;
+    IERC20 internal _YFI;
     IVeYFI internal veYFI;
 
     IRewardPool internal rewardPool;
@@ -21,16 +23,16 @@ contract YearnLockerTest is Test {
     function setUp() public virtual {
         uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"));
         vm.selectFork(forkId);
-        YFI = IERC20(AddressBook.YFI);
-        veYFI = IVeYFI(AddressBook.VE_YFI);
-        rewardPool = IRewardPool(AddressBook.YFI_REWARD_POOL);
+        _YFI = IERC20(YFI.TOKEN);
+        veYFI = IVeYFI(Yearn.VEYFI);
+        rewardPool = IRewardPool(Yearn.YFI_REWARD_POOL);
 
         // Deploy and Intialize the YearnLocker contract
-        yearnLocker = new YearnLocker(address(this), address(this), AddressBook.VE_YFI, AddressBook.YFI_REWARD_POOL);
+        yearnLocker = new YearnLocker(address(this), address(this), address(veYFI), address(rewardPool));
         yearnLocker.approveUnderlying();
 
         // Mint YFI to the YearnLocker contract
-        deal(address(YFI), address(yearnLocker), 100e18);
+        deal(address(_YFI), address(yearnLocker), 100e18);
     }
 
     function testCreateLock() public {
@@ -44,7 +46,7 @@ contract YearnLockerTest is Test {
         IVeYFI.LockedBalance memory lockedBalance = veYFI.locked(address(yearnLocker));
         assertEq(lockedBalance.amount, 100e18);
 
-        deal(address(YFI), address(yearnLocker), 100e18);
+        deal(address(_YFI), address(yearnLocker), 100e18);
         yearnLocker.increaseAmount(100e18);
 
         lockedBalance = veYFI.locked(address(yearnLocker));
@@ -70,33 +72,33 @@ contract YearnLockerTest is Test {
     }
 
     function testWithdrawWithPenalty() public {
-        uint256 balanceBefore = YFI.balanceOf(address(this));
+        uint256 balanceBefore = _YFI.balanceOf(address(this));
 
         yearnLocker.createLock(100e18, block.timestamp + 365 days);
         yearnLocker.release(address(this));
 
-        uint256 balanceAfter = YFI.balanceOf(address(this));
+        uint256 balanceAfter = _YFI.balanceOf(address(this));
 
         assertEq(balanceBefore, 0);
         assertApproxEqRel(balanceAfter, 75e18, 1e16); // 25% penalty
     }
 
     function testClaimRewards() public {
-        uint256 balanceBefore = YFI.balanceOf(address(this));
-        deal(address(YFI), address(yearnLocker), 200e18);
+        uint256 balanceBefore = _YFI.balanceOf(address(this));
+        deal(address(_YFI), address(yearnLocker), 200e18);
         yearnLocker.createLock(200e18, block.timestamp + 365 days);
 
         vm.warp(block.timestamp + 2 weeks); //extend 2weeks
 
         // Fill the Reward Pool with YFI.
-        deal(address(YFI), address(rewardPool), 200e18);
+        deal(address(_YFI), address(rewardPool), 200e18);
         rewardPool.checkpoint_token();
         rewardPool.checkpoint_total_supply();
 
         vm.warp(block.timestamp + 10 days); //extend 10 days
 
-        yearnLocker.claimRewards(address(YFI), address(this));
-        uint256 balanceAfterClaim = YFI.balanceOf(address(this));
+        yearnLocker.claimRewards(address(_YFI), address(this));
+        uint256 balanceAfterClaim = _YFI.balanceOf(address(this));
 
         assertEq(balanceBefore, 0);
         assertGt(balanceAfterClaim, balanceBefore);

@@ -251,7 +251,6 @@ abstract contract Accumulator {
         emit DaoFeeRecipientSet(daoFeeRecipient = _daoFeeRecipient);
     }
 
-
     /// @notice Sets liquidity fee recipient
     /// @dev Can be called only by the governance
     /// @param _liquidityFeeRecipient liquidity fee recipient

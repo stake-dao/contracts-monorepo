@@ -4,7 +4,8 @@ pragma solidity 0.8.19;
 import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
 
-import {AddressBook} from "@addressBook/AddressBook.sol";
+import "address-book/lockers/56.sol";
+
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {ICakeLocker} from "src/base/interfaces/ICakeLocker.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
@@ -28,9 +29,9 @@ contract CAKEAccumulatorTest is Test {
     address public constant RSPG = 0x011f2a82846a4E9c62C2FC4Fd6fDbad19147D94A;
 
     address public constant EXTRA_REWARD = 0x4DB5a66E937A9F4473fA95b1cAF1d1E1D62E29EA; // BNB WH    WETH
-    address public constant SD_CAKE_GAUGE = AddressBook.GAUGE_SDCAKE;
-    address public constant CAKE_LOCKER = AddressBook.CAKE_LOCKER;
-    address public constant CAKE = AddressBook.CAKE;
+    address public constant SD_CAKE_GAUGE = CAKE.GAUGE;
+    address public constant CAKE_LOCKER = CAKE.LOCKER;
+    address public constant _CAKE = CAKE.TOKEN;
 
     function setUp() public virtual {
         uint256 forkId = vm.createFork(vm.rpcUrl("bnb"), 33960060);
@@ -52,16 +53,16 @@ contract CAKEAccumulatorTest is Test {
 
         // Add CAKE as reward in sdCAKE gauge
         vm.prank(ILiquidityGauge(SD_CAKE_GAUGE).admin());
-        ILiquidityGauge(SD_CAKE_GAUGE).add_reward(CAKE, address(accumulator));
+        ILiquidityGauge(SD_CAKE_GAUGE).add_reward(_CAKE, address(accumulator));
 
-        deal(CAKE, address(this), 100e18);
+        deal(_CAKE, address(this), 100e18);
         deal(EXTRA_REWARD, address(accumulator), 100e18);
     }
 
     function testClaimRewardRspMultiTx() public {
         // transfer rewards in each rsp
         for (uint256 i; i < revenueSharingPools.length; i++) {
-            ERC20(CAKE).transfer(revenueSharingPools[i], 50e18);
+            ERC20(_CAKE).transfer(revenueSharingPools[i], 50e18);
         }
 
         // Next friday
@@ -70,13 +71,13 @@ contract CAKEAccumulatorTest is Test {
         address[] memory rspSingle = new address[](1);
         for (uint256 i; i < revenueSharingPools.length; i++) {
             rspSingle[0] = revenueSharingPools[i];
-            gaugeBalanceBefore = ERC20(CAKE).balanceOf(SD_CAKE_GAUGE);
+            gaugeBalanceBefore = ERC20(_CAKE).balanceOf(SD_CAKE_GAUGE);
             // call it twice to checkpoint up to now
             vm.startPrank(rewardClaimer);
             accumulator.claimAndNotifyAll(rspSingle, false, false);
             accumulator.claimAndNotifyAll(rspSingle, false, false);
             vm.stopPrank();
-            assertGt(ERC20(CAKE).balanceOf(SD_CAKE_GAUGE), gaugeBalanceBefore);
+            assertGt(ERC20(_CAKE).balanceOf(SD_CAKE_GAUGE), gaugeBalanceBefore);
         }
 
         for (uint256 i; i < revenueSharingPools.length; i++) {
@@ -90,19 +91,19 @@ contract CAKEAccumulatorTest is Test {
     function testClaimRewardRspSingleTx() public {
         // transfer rewards in each rsp
         for (uint256 i; i < revenueSharingPools.length; i++) {
-            ERC20(CAKE).transfer(revenueSharingPools[i], 50e18);
+            ERC20(_CAKE).transfer(revenueSharingPools[i], 50e18);
         }
 
         // Next friday
         skip(7 days);
         uint256 gaugeBalanceBefore;
-        gaugeBalanceBefore = ERC20(CAKE).balanceOf(SD_CAKE_GAUGE);
+        gaugeBalanceBefore = ERC20(_CAKE).balanceOf(SD_CAKE_GAUGE);
         // call it twice to checkpoint up to now
         vm.startPrank(rewardClaimer);
         accumulator.claimAndNotifyAll(revenueSharingPools, false, false);
         accumulator.claimAndNotifyAll(revenueSharingPools, false, false);
         vm.stopPrank();
-        _checkFeeSplit(CAKE);
+        _checkFeeSplit(_CAKE);
     }
 
     function testNotifyExtraReward() public {

@@ -2,13 +2,13 @@
 src = "src"
 out = "out"
 libs = ["lib"]
-verbosity = 4
+verbosity = 3
 
 remappings = [
 "utils=lib/utils/",
 "solady=lib/solady/",
 "forge-std=lib/forge-std/src/",
-"@addressBook=lib/AddressBook/src/",
+"address-book=lib/address-book/src/",
 "@openzeppelin=lib/openzeppelin-contracts/",
 "openzeppelin-contracts/=lib/openzeppelin-contracts/contracts/",
 "solidity-examples/=lib/solidity-examples/contracts/"
@@ -23,5 +23,5 @@ optimizers_runs = 200
 [rpc_endpoints]
 mainnet = "https://mainnet.infura.io/v3/${INFURA_KEY}"
 base = "https://mainnet.base.org"
-bnb = "https://bsc-mainnet.nodereal.io/v1/8ba50235e5794af7ba04e88181bb359f"
+bnb = "https://bsc-mainnet.nodereal.io/v1/64a9df0874fb4a93b9d0a3849de012d3	"
 bnb_testnet = "https://bsc-testnet.publicnode.com"

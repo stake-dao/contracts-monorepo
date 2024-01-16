@@ -5,6 +5,10 @@ import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
+import "address-book/dao/1.sol";
+import "address-book/lockers/1.sol";
+import "address-book/protocols/1.sol";
+
 import "test/utils/Utils.sol";
 
 import "src/fx/locker/FXNLocker.sol";
@@ -13,7 +17,6 @@ import "src/fx/accumulator/FXNAccumulator.sol";
 
 import {sdToken} from "src/base/token/sdToken.sol";
 import {Constants} from "src/base/utils/Constants.sol";
-import {AddressBook} from "@addressBook/AddressBook.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {ISmartWalletChecker} from "src/base/interfaces/ISmartWalletChecker.sol";
 import {TransparentUpgradeableProxy} from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -36,8 +39,8 @@ contract FXNLockerIntegrationTest is Test {
     function setUp() public virtual {
         uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"));
         vm.selectFork(forkId);
-        token = IERC20(AddressBook.FXN);
-        veToken = IVeToken(AddressBook.VE_FXN);
+        token = IERC20(FXN.TOKEN);
+        veToken = IVeToken(Fx.VEFXN);
 
         _sdToken = new sdToken("Stake DAO FXN", "sdFXN");
         address liquidityGaugeImpl = Utils.deployBytecode(Constants.LGV4_BYTECODE, "");
@@ -47,15 +50,15 @@ contract FXNLockerIntegrationTest is Test {
             address(
                 new TransparentUpgradeableProxy(
                     liquidityGaugeImpl,
-                    AddressBook.PROXY_ADMIN,
+                    DAO.PROXY_ADMIN,
                     abi.encodeWithSignature(
                         "initialize(address,address,address,address,address,address)",
                         address(_sdToken),
                         address(this),
-                        AddressBook.SDT,
-                        AddressBook.VE_SDT,
-                        AddressBook.VE_SDT_BOOST_PROXY,
-                        AddressBook.SDT_DISTRIBUTOR
+                        DAO.SDT,
+                        DAO.VESDT,
+                        DAO.VESDT_BOOST_PROXY,
+                        DAO.LOCKER_SDT_DISTRIBUTOR
                     )
                 )
             )
@@ -64,8 +67,8 @@ contract FXNLockerIntegrationTest is Test {
         locker = new FXNLocker(address(this), address(token), address(veToken));
 
         // Whitelist the locker contract
-        vm.prank(ISmartWalletChecker(AddressBook.FXN_SMART_WALLET_CHECKER).owner());
-        ISmartWalletChecker(AddressBook.FXN_SMART_WALLET_CHECKER).approveWallet(address(locker));
+        vm.prank(ISmartWalletChecker(Fx.SMART_WALLET_CHECKER).owner());
+        ISmartWalletChecker(Fx.SMART_WALLET_CHECKER).approveWallet(address(locker));
 
         depositor = new FXNDepositor(address(token), address(locker), address(_sdToken), address(liquidityGauge));
 

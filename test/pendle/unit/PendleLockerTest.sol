@@ -5,15 +5,18 @@ import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
+import "address-book/dao/1.sol";
+import "address-book/lockers/1.sol";
+import "address-book/protocols/1.sol";
+
 import {sdToken} from "src/base/token/sdToken.sol";
-import {AddressBook} from "@addressBook/AddressBook.sol";
 import {IVePendle} from "src/base/interfaces/IVePendle.sol";
 import {PendleLocker} from "src/pendle/locker/PendleLocker.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {PendleDepositor} from "src/pendle/depositor/PendleDepositor.sol";
 
 contract PendleLockerTest is Test {
-    IERC20 internal PENDLE;
+    IERC20 internal _PENDLE;
     PendleLocker internal pendleLocker;
     IVePendle internal vePendle;
     PendleDepositor internal depositor;
@@ -22,8 +25,8 @@ contract PendleLockerTest is Test {
     function setUp() public virtual {
         uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"));
         vm.selectFork(forkId);
-        PENDLE = IERC20(AddressBook.PENDLE);
-        vePendle = IVePendle(AddressBook.VE_PENDLE);
+        _PENDLE = IERC20(PENDLE.TOKEN);
+        vePendle = IVePendle(Pendle.VEPENDLE);
 
         // Deploy and Intialize the PendleLocker contract
         pendleLocker = new PendleLocker(address(this), address(this));
@@ -31,30 +34,29 @@ contract PendleLockerTest is Test {
         sdPendle = new sdToken("sdPendle", "sdPendle");
 
         // Deploy and Intialize the Pendle Depositor contract
-        depositor = new PendleDepositor(address(PENDLE), address(pendleLocker), address(sdPendle));
+        depositor = new PendleDepositor(address(_PENDLE), address(pendleLocker), address(sdPendle));
         sdPendle.setOperator(address(depositor));
 
         pendleLocker.setPendleDepositor(address(depositor));
         // Mint PENDLE to the PendleLocker contract
-        deal(address(PENDLE), address(pendleLocker), 100e18);
+        deal(address(_PENDLE), address(pendleLocker), 100e18);
     }
 
     function testCreateLock() public {
-        uint128 lockTime = uint128(((block.timestamp + 104 * AddressBook.WEEK) / AddressBook.WEEK) * AddressBook.WEEK);
+        uint128 lockTime = uint128(((block.timestamp + 104 * 1 weeks) / 1 weeks) * 1 weeks);
         pendleLocker.createLock(100e18, lockTime);
         assertApproxEqRel(vePendle.balanceOf(address(pendleLocker)), 100e18, 1e16); // 1% Margin of Error
     }
 
     function testIncreaseLockAmount() public {
-        uint128 lockTime =
-            (uint128(block.timestamp + 104 * AddressBook.WEEK) / uint128(AddressBook.WEEK)) * uint128(AddressBook.WEEK);
+        uint128 lockTime = (uint128(block.timestamp + 104 * 1 weeks) / uint128(1 weeks)) * uint128(1 weeks);
         pendleLocker.createLock(100e18, lockTime);
 
         (uint256 lockedBalance,) = vePendle.positionData(address(pendleLocker));
 
         assertEq(lockedBalance, 100e18);
 
-        deal(address(PENDLE), address(pendleLocker), 100e18);
+        deal(address(_PENDLE), address(pendleLocker), 100e18);
         pendleLocker.increaseAmount(100e18);
 
         (lockedBalance,) = vePendle.positionData(address(pendleLocker));
@@ -62,10 +64,8 @@ contract PendleLockerTest is Test {
     }
 
     function testIncreaseLockDuration() public {
-        uint128 initialUnlockTime =
-            (uint128(block.timestamp + AddressBook.YEAR) / uint128(AddressBook.WEEK)) * uint128(AddressBook.WEEK);
-        uint128 newUnlockTime =
-            (uint128(block.timestamp + 104 * AddressBook.WEEK) / uint128(AddressBook.WEEK)) * uint128(AddressBook.WEEK);
+        uint128 initialUnlockTime = (uint128(block.timestamp + 365 days) / uint128(1 weeks)) * uint128(1 weeks);
+        uint128 newUnlockTime = (uint128(block.timestamp + 104 * 1 weeks) / uint128(1 weeks)) * uint128(1 weeks);
 
         pendleLocker.createLock(100e18, initialUnlockTime);
         (, uint128 end) = vePendle.positionData(address(pendleLocker));
@@ -80,30 +80,27 @@ contract PendleLockerTest is Test {
     }
 
     function testDepositViaDepositor() public {
-        uint128 lockTime =
-            (uint128(block.timestamp + 104 * AddressBook.WEEK) / uint128(AddressBook.WEEK)) * uint128(AddressBook.WEEK);
+        uint128 lockTime = (uint128(block.timestamp + 104 * 1 weeks) / uint128(1 weeks)) * uint128(1 weeks);
         pendleLocker.createLock(100e18, lockTime);
 
-        deal(address(PENDLE), address(this), 100e18);
-        PENDLE.approve(address(depositor), 100e18);
+        deal(address(_PENDLE), address(this), 100e18);
+        _PENDLE.approve(address(depositor), 100e18);
         depositor.deposit(100e18, true, false, address(this));
         uint256 sdPendleBalance = sdPendle.balanceOf(address(this));
         assertApproxEqRel(sdPendleBalance, 100e18, 1e16); // 1% Margin of Error
     }
 
     function testIncreaseLockDurationViaDepositor() public {
-        uint128 lockTime =
-            (uint128(block.timestamp + 104 * AddressBook.WEEK) / uint128(AddressBook.WEEK)) * uint128(AddressBook.WEEK);
+        uint128 lockTime = (uint128(block.timestamp + 104 * 1 weeks) / uint128(1 weeks)) * uint128(1 weeks);
         pendleLocker.createLock(100e18, lockTime);
 
-        vm.warp(block.timestamp + 52 * AddressBook.WEEK); //extend 52 weeks
+        vm.warp(block.timestamp + 52 * 1 weeks); //extend 52 weeks
 
-        deal(address(PENDLE), address(this), 100e18);
-        PENDLE.approve(address(depositor), 100e18);
+        deal(address(_PENDLE), address(this), 100e18);
+        _PENDLE.approve(address(depositor), 100e18);
         depositor.deposit(100e18, true, false, address(this));
         (, uint128 end) = vePendle.positionData(address(pendleLocker));
-        uint128 expectedEnd =
-            (uint128(block.timestamp + 104 * AddressBook.WEEK) / uint128(AddressBook.WEEK)) * uint128(AddressBook.WEEK);
+        uint128 expectedEnd = (uint128(block.timestamp + 104 * 1 weeks) / uint128(1 weeks)) * uint128(1 weeks);
         assertEq(end, expectedEnd);
     }
 

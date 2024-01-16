@@ -5,8 +5,11 @@ import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
+import "address-book/dao/1.sol";
+import "address-book/lockers/1.sol";
+import "address-book/protocols/1.sol";
+
 import "src/fx/locker/FXNLocker.sol";
-import {AddressBook} from "@addressBook/AddressBook.sol";
 import {IVeToken} from "src/base/interfaces/IVeToken.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {ISmartWalletChecker} from "src/base/interfaces/ISmartWalletChecker.sol";
@@ -27,14 +30,14 @@ contract FXNLockerTest is Test {
         uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"), 18_227_675);
         vm.selectFork(forkId);
 
-        token = IERC20(AddressBook.FXN);
-        veToken = IVeToken(AddressBook.VE_FXN);
+        token = IERC20(FXN.TOKEN);
+        veToken = IVeToken(Fx.VEFXN);
 
         locker = new FXNLocker(address(this), address(token), address(veToken));
 
         // Whitelist the locker contract
-        vm.prank(ISmartWalletChecker(AddressBook.FXN_SMART_WALLET_CHECKER).owner());
-        ISmartWalletChecker(AddressBook.FXN_SMART_WALLET_CHECKER).approveWallet(address(locker));
+        vm.prank(ISmartWalletChecker(Fx.SMART_WALLET_CHECKER).owner());
+        ISmartWalletChecker(Fx.SMART_WALLET_CHECKER).approveWallet(address(locker));
 
         // Mint token to the Locker contract
         deal(address(token), address(locker), 100e18);
@@ -97,17 +100,17 @@ contract FXNLockerTest is Test {
         skip(7 days);
 
         /// stETH.
-        address _rewardToken = IFeeDistributor(AddressBook.FXN_FEE_DISTRIBUTOR).token();
+        address _rewardToken = IFeeDistributor(Fx.FEE_DISTRIBUTOR).token();
 
         /// Deal to Fee Distributor.
         ILido(_rewardToken).submit{value: 100e18}(address(this));
-        IERC20(_rewardToken).transfer(AddressBook.FXN_FEE_DISTRIBUTOR, 100e18);
+        IERC20(_rewardToken).transfer(Fx.FEE_DISTRIBUTOR, 100e18);
         assertEq(IERC20(_rewardToken).balanceOf(address(this)), 0);
 
-        IFeeDistributor(AddressBook.FXN_FEE_DISTRIBUTOR).checkpoint_token();
+        IFeeDistributor(Fx.FEE_DISTRIBUTOR).checkpoint_token();
         skip(7 days);
 
-        locker.claimRewards(AddressBook.FXN_FEE_DISTRIBUTOR, _rewardToken, address(this));
+        locker.claimRewards(Fx.FEE_DISTRIBUTOR, _rewardToken, address(this));
         assertApproxEqRel(IERC20(_rewardToken).balanceOf(address(this)), 100e18, 1e15);
     }
 

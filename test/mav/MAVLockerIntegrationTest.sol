@@ -6,19 +6,22 @@ import "forge-std/Test.sol";
 import "test/utils/Utils.sol";
 import "forge-std/console.sol";
 
+import "address-book/dao/1.sol";
+import "address-book/lockers/1.sol";
+import "address-book/protocols/1.sol";
+
 import "src/mav/locker/MAVLocker.sol";
 import "src/mav/depositor/MAVDepositor.sol";
 
 import {sdToken} from "src/base/token/sdToken.sol";
 import {Constants} from "src/base/utils/Constants.sol";
-import {AddressBook} from "@addressBook/AddressBook.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 
-address constant MAV_ETH = AddressBook.MAV;
+address constant MAV_ETH = MAV.TOKEN;
 address constant MAV_BASE = 0x64b88c73A5DfA78D1713fE1b4c69a22d7E0faAa7;
 address constant MAV_BNB = 0xd691d9a68C887BDF34DA8c36f63487333ACfD103;
 
-address constant VE_MAV_ETH = AddressBook.VE_MAV;
+address constant VE_MAV_ETH = Maverick.VEMAV;
 address constant VE_MAV_BASE = 0xFcCB5263148fbF11d58433aF6FeeFF0Cc49E0EA5;
 address constant VE_MAV_BNB = 0xE6108f1869d37E5076a56168C66A1607EdB10819;
 
@@ -60,10 +63,10 @@ abstract contract MAVLockerIntegrationTest is Test {
                 abi.encode(
                     address(_sdToken),
                     address(this),
-                    AddressBook.SDT,
-                    AddressBook.VE_SDT,
-                    AddressBook.VE_SDT_BOOST_PROXY,
-                    AddressBook.SDT_DISTRIBUTOR
+                    DAO.SDT,
+                    DAO.VESDT,
+                    DAO.VESDT_BOOST_PROXY,
+                    DAO.LOCKER_SDT_DISTRIBUTOR
                 )
             );
         } else {

@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import "forge-std/Script.sol";
-import {AddressBook} from "@addressBook/AddressBook.sol";
 import {FXNAccumulator} from "src/fx/accumulator/FXNAccumulator.sol";
 
 contract DeployFXNAccumulator is Script {

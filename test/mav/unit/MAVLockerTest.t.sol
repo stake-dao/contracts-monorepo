@@ -5,16 +5,19 @@ import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
+import "address-book/dao/1.sol";
+import "address-book/lockers/1.sol";
+import "address-book/protocols/1.sol";
+
 import "src/mav/locker/MAVLocker.sol";
-import {AddressBook} from "@addressBook/AddressBook.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {IVotingEscrowMav} from "src/base/interfaces/IVotingEscrowMav.sol";
 
-address constant MAV_ETH = AddressBook.MAV;
+address constant MAV_ETH = MAV.TOKEN;
 address constant MAV_BASE = 0x64b88c73A5DfA78D1713fE1b4c69a22d7E0faAa7;
 address constant MAV_BNB = 0xd691d9a68C887BDF34DA8c36f63487333ACfD103;
 
-address constant VE_MAV_ETH = AddressBook.VE_MAV;
+address constant VE_MAV_ETH = Maverick.VEMAV;
 address constant VE_MAV_BASE = 0xFcCB5263148fbF11d58433aF6FeeFF0Cc49E0EA5;
 address constant VE_MAV_BNB = 0xE6108f1869d37E5076a56168C66A1607EdB10819;
 

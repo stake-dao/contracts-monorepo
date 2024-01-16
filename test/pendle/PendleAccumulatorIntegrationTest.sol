@@ -5,7 +5,8 @@ import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
-import {AddressBook} from "@addressBook/AddressBook.sol";
+import "address-book/lockers/1.sol";
+import "address-book/protocols/1.sol";
 
 import {sdToken} from "src/base/token/sdToken.sol";
 import {PendleLocker} from "src/pendle/locker/PendleLocker.sol";
@@ -30,17 +31,16 @@ contract PendleAccumulatorIntegrationTest is Test {
     address public constant SD_FRAX_3CRV = 0x5af15DA84A4a6EDf2d9FA6720De921E1026E37b7;
 
     // External Contracts
-    PendleLocker internal pendleLocker = PendleLocker(AddressBook.PENDLE_LOCKER);
+    PendleLocker internal pendleLocker = PendleLocker(PENDLE.LOCKER);
 
     // Liquid Lockers Contracts
-    IERC20 internal PENDLE = IERC20(AddressBook.PENDLE);
-    IVePendle internal vePENDLE = IVePendle(AddressBook.VE_PENDLE);
-    sdToken internal sdPendle = sdToken(AddressBook.SD_PENDLE);
+    IVePendle internal vePENDLE = IVePendle(Pendle.VEPENDLE);
+    sdToken internal sdPendle = sdToken(PENDLE.SDTOKEN);
 
-    PendleDepositor internal depositor = PendleDepositor(AddressBook.PENDLE_DEPOSITOR);
-    ILiquidityGauge internal liquidityGauge = ILiquidityGauge(AddressBook.GAUGE_SDPENDLE);
+    PendleDepositor internal depositor = PendleDepositor(PENDLE.DEPOSITOR);
+    ILiquidityGauge internal liquidityGauge = ILiquidityGauge(PENDLE.GAUGE);
     PendleAccumulator internal pendleAccumulator;
-    VeSDTFeePendleProxy internal veSdtFeePendleProxy = VeSDTFeePendleProxy(AddressBook.VE_SDT_PENDLE_FEE_PROXY);
+    VeSDTFeePendleProxy internal veSdtFeePendleProxy = VeSDTFeePendleProxy(PENDLE.VE_SDT_FEE_PROXY);
 
     address public daoRecipient = makeAddr("dao");
     address public bribeRecipient = makeAddr("bribe");
@@ -49,11 +49,11 @@ contract PendleAccumulatorIntegrationTest is Test {
     // Helper
     uint128 internal constant amount = 100e18;
 
-    uint256 public DAY = AddressBook.DAY;
-    uint256 public WEEK = AddressBook.WEEK;
-    uint256 public YEAR = AddressBook.YEAR;
+    uint256 public DAY = 1 days;
+    uint256 public WEEK = 1 weeks;
+    uint256 public YEAR = 365 days;
 
-    IERC20 public WETH = IERC20(AddressBook.WETH);
+    IERC20 public WETH = IERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
 
     /// List of pools Pendle Locker voted for and eligible to rewards previous to the block 17621271.
     address public constant POOL_1 = 0x2EC8C498ec997aD963969a2c93Bf7150a1F5b213;
