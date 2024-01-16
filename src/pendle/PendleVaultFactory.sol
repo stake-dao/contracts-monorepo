@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import "address-book/dao/1.sol";
-import "address-book/lockers/1.sol";
 import "../base/interfaces/IGaugeController.sol";
 import "../base/interfaces/ILiquidityGaugeStrat.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
@@ -48,10 +46,10 @@ contract PendleVaultFactory {
     address public vaultImpl = 0x44A6A278A9a55fF22Fd5F7c6fe84af916396470C; // Deployed vault implementation
     address public constant CLAIM_REWARDS = 0x633120100e108F03aCe79d6C78Aac9a56db1be0F; // v2
     address public constant GAUGE_IMPL = 0x3Dc56D46F0Bd13655EfB29594a2e44534c453BF9;
-    address public constant GOVERNANCE = DAO.GOVERNANCE;
-    address public constant PENDLE_TOKEN = PENDLE.TOKEN;
-    address public constant VESDT = DAO.VESDT;
-    address public constant SDT = DAO.SDT;
+    address public constant GOVERNANCE = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
+    address public constant PENDLE = 0x808507121B80c02388fAd14726482e061B8da827;
+    address public constant VESDT = 0x0C30476f66034E11782938DF8e4384970B6c9e8a;
+    address public constant SDT = 0x73968b9a57c6E53d41345FD57a6E6ae27d6CDB2F;
     address public constant VEBOOST = 0xD67bdBefF01Fc492f1864E61756E5FBB3f173506;
     address public constant PENDLE_MARKET_FACTORY_V3 = 0x1A6fCc85557BC4fB7B534ed835a03EF056552D52; // v3 factory
     address public strategy;
@@ -86,7 +84,7 @@ contract PendleVaultFactory {
         PendleVault(vault).setGovernance(GOVERNANCE);
         PendleStrategy(strategy).toggleVault(vault);
         PendleStrategy(strategy).setSdGauge(_pendleLpt, gauge);
-        ILiquidityGaugeStrat(gauge).add_reward(PENDLE_TOKEN, strategy);
+        ILiquidityGaugeStrat(gauge).add_reward(PENDLE, strategy);
         ILiquidityGaugeStrat(gauge).set_claimer(CLAIM_REWARDS);
         ILiquidityGaugeStrat(gauge).commit_transfer_ownership(GOVERNANCE);
     }
