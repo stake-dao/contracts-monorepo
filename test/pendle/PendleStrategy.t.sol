@@ -67,6 +67,14 @@ contract PendleStrategyIntegrationTest is Test {
     function testSetup() public {
         assertEq(factory.strategy(), PENDLE.STRATEGY);
         assertEq(factory.sdtDistributor(), DAO.STRATEGY_SDT_DISTRIBUTOR);
+        assertEq(factory.vaultImpl(), 0x44A6A278A9a55fF22Fd5F7c6fe84af916396470C);
+        assertEq(factory.GAUGE_IMPL(), 0x3Dc56D46F0Bd13655EfB29594a2e44534c453BF9);
+        assertEq(factory.PENDLE_MARKET_FACTORY_V3(), 0x1A6fCc85557BC4fB7B534ed835a03EF056552D52);
+        assertEq(factory.GOVERNANCE(), DAO.GOVERNANCE);
+        assertEq(factory.PENDLE_TOKEN(), PENDLE.TOKEN);
+        assertEq(factory.VESDT(), DAO.VESDT);
+        assertEq(factory.SDT(), DAO.SDT);
+        assertEq(factory.VEBOOST(), 0xD67bdBefF01Fc492f1864E61756E5FBB3f173506);
 
         assertEq(PendleStrategy(PENDLE.STRATEGY).vaultGaugeFactory(), address(factory));
     }
