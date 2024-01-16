@@ -6,6 +6,7 @@ import "../base/interfaces/ILiquidityGaugeStrat.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts-upgradeable/proxy/ClonesUpgradeable.sol";
 import "openzeppelin-contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+
 interface IPendleMarketFactory {
     function isValidMarket(address) external returns (bool);
 }
