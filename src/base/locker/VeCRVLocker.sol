@@ -70,6 +70,9 @@ abstract contract VeCRVLocker {
     /// @notice Throws if caller is not the governance or depositor.
     error GOVERNANCE_OR_DEPOSITOR();
 
+    /// @notice Throws if caller is not the governance or depositor.
+    error GOVERNANCE_OR_ACCUMULATOR();
+
     ////////////////////////////////////////////////////////////////
     /// --- MODIFIERS
     ///////////////////////////////////////////////////////////////
@@ -85,7 +88,7 @@ abstract contract VeCRVLocker {
     }
 
     modifier onlyGovernanceOrAccumulator() {
-        if (msg.sender != governance && msg.sender != accumulator) revert GOVERNANCE_OR_DEPOSITOR();
+        if (msg.sender != governance && msg.sender != accumulator) revert GOVERNANCE_OR_ACCUMULATOR();
         _;
     }
 

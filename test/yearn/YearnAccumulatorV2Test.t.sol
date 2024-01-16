@@ -4,7 +4,10 @@ pragma solidity 0.8.19;
 import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
 
-import {AddressBook} from "@addressBook/AddressBook.sol";
+import "address-book/dao/1.sol";
+import "address-book/lockers/1.sol";
+import "address-book/protocols/1.sol";
+
 import {YearnAccumulatorV2} from "src/yearn/accumulator/YearnAccumulatorV2.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {IYearnStrategy} from "src/base/interfaces/IYearnStrategy.sol";
@@ -26,9 +29,9 @@ contract YearnAccumulatorV2Test is Test {
     function setUp() public {
         uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"), 18514500);
         vm.selectFork(forkId);
-        yfi = AddressBook.YFI;
-        sdYfiLG = ILiquidityGauge(AddressBook.GAUGE_SDYFI);
-        yfiLocker = ILocker(AddressBook.YFI_LOCKER);
+        yfi = YFI.TOKEN;
+        sdYfiLG = ILiquidityGauge(YFI.GAUGE);
+        yfiLocker = ILocker(YFI.LOCKER);
         accumulator = new YearnAccumulatorV2(
             address(sdYfiLG),
             address(yfiLocker),

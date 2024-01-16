@@ -7,7 +7,6 @@ import "forge-std/console.sol";
 
 import {CakeLocker} from "src/cake/locker/CakeLocker.sol";
 import {VeCRVLocker} from "src/base/locker/VeCRVLocker.sol";
-import {AddressBook} from "@addressBook/AddressBook.sol";
 import {IVeToken} from "src/base/interfaces/IVeToken.sol";
 import {IVeCake} from "src/base/interfaces/IVeCake.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";

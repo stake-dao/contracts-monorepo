@@ -5,14 +5,18 @@ import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
 import "forge-std/console.sol";
 
+import "address-book/dao/1.sol";
+import "address-book/lockers/1.sol";
+import "address-book/protocols/1.sol";
+
 import "test/utils/Utils.sol";
 
 import "src/fx/locker/FXNLocker.sol";
 import "src/fx/depositor/FXNDepositor.sol";
+import "src/fx/accumulator/FXNAccumulator.sol";
 
 import {sdToken} from "src/base/token/sdToken.sol";
 import {Constants} from "src/base/utils/Constants.sol";
-import {AddressBook} from "@addressBook/AddressBook.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {ISmartWalletChecker} from "src/base/interfaces/ISmartWalletChecker.sol";
 import {TransparentUpgradeableProxy} from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
@@ -27,6 +31,7 @@ contract FXNLockerIntegrationTest is Test {
 
     sdToken internal _sdToken;
     FXNDepositor private depositor;
+    FXNAccumulator private accumulator;
     ILiquidityGauge internal liquidityGauge;
 
     uint256 private constant amount = 100e18;
@@ -34,8 +39,8 @@ contract FXNLockerIntegrationTest is Test {
     function setUp() public virtual {
         uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"));
         vm.selectFork(forkId);
-        token = IERC20(AddressBook.FXN);
-        veToken = IVeToken(AddressBook.VE_FXN);
+        token = IERC20(FXN.TOKEN);
+        veToken = IVeToken(Fx.VEFXN);
 
         _sdToken = new sdToken("Stake DAO FXN", "sdFXN");
         address liquidityGaugeImpl = Utils.deployBytecode(Constants.LGV4_BYTECODE, "");
@@ -45,15 +50,15 @@ contract FXNLockerIntegrationTest is Test {
             address(
                 new TransparentUpgradeableProxy(
                     liquidityGaugeImpl,
-                    AddressBook.PROXY_ADMIN,
+                    DAO.PROXY_ADMIN,
                     abi.encodeWithSignature(
                         "initialize(address,address,address,address,address,address)",
                         address(_sdToken),
                         address(this),
-                        AddressBook.SDT,
-                        AddressBook.VE_SDT,
-                        AddressBook.VE_SDT_BOOST_PROXY,
-                        AddressBook.SDT_DISTRIBUTOR
+                        DAO.SDT,
+                        DAO.VESDT,
+                        DAO.VESDT_BOOST_PROXY,
+                        DAO.LOCKER_SDT_DISTRIBUTOR
                     )
                 )
             )
@@ -62,13 +67,20 @@ contract FXNLockerIntegrationTest is Test {
         locker = new FXNLocker(address(this), address(token), address(veToken));
 
         // Whitelist the locker contract
-        vm.prank(ISmartWalletChecker(AddressBook.FXN_SMART_WALLET_CHECKER).owner());
-        ISmartWalletChecker(AddressBook.FXN_SMART_WALLET_CHECKER).approveWallet(address(locker));
+        vm.prank(ISmartWalletChecker(Fx.SMART_WALLET_CHECKER).owner());
+        ISmartWalletChecker(Fx.SMART_WALLET_CHECKER).approveWallet(address(locker));
 
         depositor = new FXNDepositor(address(token), address(locker), address(_sdToken), address(liquidityGauge));
 
         locker.setDepositor(address(depositor));
         _sdToken.setOperator(address(depositor));
+
+        accumulator =
+            new FXNAccumulator(address(liquidityGauge), address(locker), address(this), address(this), address(this));
+
+        locker.setAccumulator(address(accumulator));
+
+        liquidityGauge.add_reward(address(accumulator.WSTETH()), address(accumulator));
 
         deal(address(token), address(this), amount);
 
@@ -240,6 +252,38 @@ contract FXNLockerIntegrationTest is Test {
         assertApproxEqRel(veToken.balanceOf(address(locker)), 300e18, 5e15);
     }
 
+    function test_distributeRewards() public {
+        ERC20 _rewardToken = ERC20(accumulator.WSTETH());
+
+        deal(address(_rewardToken), address(this), 1_000e18);
+        _rewardToken.transfer(accumulator.FEE_DISTRIBUTOR(), 1_000e18);
+
+        assertEq(_rewardToken.balanceOf(address(this)), 0);
+        assertEq(_rewardToken.balanceOf(address(liquidityGauge)), 0);
+
+        skip(2 weeks);
+
+        IFeeDistributor(accumulator.FEE_DISTRIBUTOR()).checkpoint_token();
+        IFeeDistributor(accumulator.FEE_DISTRIBUTOR()).checkpoint_total_supply();
+
+        uint256 expectedReward = _snapshotLockerRewards();
+        /// 15.5% fee with 10% for liquidity, 5% for the DAO, 0.5% for the claimer.
+        /// Since for the purpose of the test it shares the same recipient, we expect 15.5%.
+        uint256 expectedFee = expectedReward * 1550 / 10_000;
+
+        accumulator.claimAndNotifyAll(false, false);
+
+        /// Assert that there's rewards to distribute.
+        assertGt(expectedReward, 0);
+
+        /// Received from fees.
+        /// Assert Approx because wsETH have a 1 wei issue precision on transfer.
+        assertApproxEqAbs(_rewardToken.balanceOf(address(this)), expectedFee, 1);
+
+        /// Distributed as rewards.
+        assertApproxEqAbs(_rewardToken.balanceOf(address(liquidityGauge)), expectedReward - expectedFee, 1);
+    }
+
     function test_transferGovernance() public {
         address newGovernance = address(0x123);
 
@@ -261,5 +305,20 @@ contract FXNLockerIntegrationTest is Test {
 
         depositor.setSdTokenMinterOperator(newOperator);
         assertEq(_sdToken.operator(), address(newOperator));
+    }
+
+    function _snapshotLockerRewards() internal returns (uint256 _claimed) {
+        ERC20 _rewardToken = ERC20(accumulator.WSTETH());
+        address feeDistributor = accumulator.FEE_DISTRIBUTOR();
+        uint256 id = vm.snapshot();
+
+        uint256 _balance = _rewardToken.balanceOf(address(locker));
+
+        vm.prank(address(locker));
+        IFeeDistributor(feeDistributor).claim();
+
+        _claimed = _rewardToken.balanceOf(address(locker)) - _balance;
+
+        vm.revertTo(id);
     }
 }

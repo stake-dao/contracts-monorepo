@@ -10,7 +10,6 @@ import {CakeLocker} from "src/cake/locker/CakeLocker.sol";
 import {CAKEDepositor} from "src/cake/depositor/CAKEDepositor.sol";
 
 import {sdToken} from "src/base/token/sdToken.sol";
-import {AddressBook} from "@addressBook/AddressBook.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {TransparentUpgradeableProxy} from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";

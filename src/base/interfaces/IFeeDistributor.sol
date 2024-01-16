@@ -15,4 +15,6 @@ interface IFeeDistributor {
     function kill_me() external;
 
     function emergency_return() external returns (address);
+
+    function admin() external returns (address);
 }

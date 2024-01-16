@@ -3,8 +3,11 @@ pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
 
+import "address-book/dao/1.sol";
+import "address-book/lockers/1.sol";
+import "address-book/protocols/1.sol";
+
 import "src/yearn/depositor/YFIDepositor.sol";
-import {AddressBook} from "@addressBook/AddressBook.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 
 contract YFIDepositorIntegrationTest is Test {
@@ -27,13 +30,13 @@ contract YFIDepositorIntegrationTest is Test {
     function setUp() public virtual {
         vm.createSelectFork(vm.rpcUrl("mainnet"));
 
-        token = IERC20(AddressBook.YFI);
-        veToken = IVeYFI(AddressBook.VE_YFI);
-        sdToken = ISdToken(AddressBook.SD_YFI);
-        locker = AddressBook.YFI_LOCKER;
+        token = IERC20(YFI.TOKEN);
+        veToken = IVeYFI(Yearn.VEYFI);
+        sdToken = ISdToken(YFI.SDTOKEN);
+        locker = YFI.LOCKER;
 
         // Deploy LiquidityGauge
-        liquidityGauge = ILiquidityGauge(AddressBook.GAUGE_SDYFI);
+        liquidityGauge = ILiquidityGauge(YFI.GAUGE);
 
         depositor = new YFIDepositor(address(token), address(locker), address(sdToken), address(liquidityGauge));
 
