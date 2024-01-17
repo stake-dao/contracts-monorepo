@@ -63,6 +63,10 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @notice Mapping of NFT stakers.
     mapping(uint256 => address) public nftStakers; // tokenId -> user
 
+    mapping(uint256 => address) public feeRecipients; // tokenId -> fee recipient
+
+    mapping(uint256 => address) public rewardRecipients; // tokenId -> reward recipient
+
     /// @notice Map addresses allowed to interact with the `execute` function.
     mapping(address => bool) public allowed;
 
@@ -96,6 +100,9 @@ contract CakeStrategyNFT is UUPSUpgradeable {
 
     /// @notice Error emitted when auth failed
     error Unauthorized();
+
+    /// @notice Error emitted when a wrong recipient is set
+    error WrongRecipient();
 
     //////////////////////////////////////////////////////
     /// --- MODIFIERS
@@ -137,34 +144,125 @@ contract CakeStrategyNFT is UUPSUpgradeable {
 
     /// @notice Harvest reward for an NFT.
     /// @param _tokenId NFT id to harvest.
-    function harvestNftReward(uint256 _tokenId) external onlyNftStaker(_tokenId) {
-        _harvestNftReward(_tokenId, msg.sender);
+    function harvestNftReward(uint256 _tokenId) external {
+        address recipient = rewardRecipients[_tokenId] == address(0) ? nftStakers[_tokenId] : rewardRecipients[_tokenId];
+        _harvestNftReward(_tokenId, recipient);
     }
 
-    /// @notice Harvest reward for an NFT.
-    /// @param _tokenId NFT id to harvest.
-    /// @param _recipient reward receiver
-    function harvestNftReward(uint256 _tokenId, address _recipient) external onlyNftStaker(_tokenId) {
-        _harvestNftReward(_tokenId, _recipient);
-    }
-
-    function harvestNftsReward(uint256[] memory _tokensId, address _recipient) external {
-        for (uint256 i; i < _tokensId.length; i++) {
-            _harvestNftReward(_tokensId[i], _recipient);
+    /// @notice Harvest reward for NFTs.
+    /// @param _tokenIds NFT ids to harvest.
+    function harvestNftsReward(uint256[] memory _tokenIds) external {
+        address recipient;
+        uint256 tokensLength = _tokenIds.length;
+        for (uint256 i; i < tokensLength;) {
+            recipient =
+                rewardRecipients[_tokenIds[i]] == address(0) ? nftStakers[_tokenIds[i]] : rewardRecipients[_tokenIds[i]];
+            _harvestNftReward(_tokenIds[i], recipient);
+            unchecked {
+                i++;
+            }
         }
     }
 
-    function harvestNftFees(uint256 _tokenId, address _recipient) external onlyNftStaker(_tokenId) {
-        _harvestNftFees(_tokenId, _recipient);
+    /// @notice Harvest fees for NFT.
+    /// @param _tokenId NFT id to harvest fees for.
+    function harvestNftFees(uint256 _tokenId) external {
+        address recipient = feeRecipients[_tokenId] == address(0) ? nftStakers[_tokenId] : feeRecipients[_tokenId];
+        _harvestNftFees(_tokenId, recipient);
     }
 
-    function harvestNftFees(uint256 _tokenId) external onlyNftStaker(_tokenId) {
+    /// @notice Harvest fees for NFTs.
+    /// @param _tokenIds NFT ids to harvest fees for.
+    function harvestNftsFees(uint256[] memory _tokenIds) external {
+        address recipient;
+        uint256 tokensLength = _tokenIds.length;
+        for (uint256 i; i < tokensLength;) {
+            recipient =
+                feeRecipients[_tokenIds[i]] == address(0) ? nftStakers[_tokenIds[i]] : feeRecipients[_tokenIds[i]];
+            _harvestNftFees(_tokenIds[i], recipient);
+            unchecked {
+                i++;
+            }
+        }
+    }
+
+    /// @notice Harvest both reward and fees for NFT.
+    /// @param _tokenId NFT id to harvest.
+    function harvestNftAll(uint256 _tokenId) external {
+        address rewardRecipient =
+            rewardRecipients[_tokenId] == address(0) ? nftStakers[_tokenId] : rewardRecipients[_tokenId];
+        _harvestNftReward(_tokenId, rewardRecipient);
+        address feeRecipient = feeRecipients[_tokenId] == address(0) ? nftStakers[_tokenId] : feeRecipients[_tokenId];
+        _harvestNftFees(_tokenId, feeRecipient);
+    }
+
+    /// @notice Harvest both reward and fees for NFTs.
+    /// @param _tokenIds NFT ids to harvest.
+    function harvestNftsAll(uint256[] memory _tokenIds) external {
+        uint256 tokenLength = _tokenIds.length;
+        address rewardRecipient;
+        address feeRecipient;
+        for (uint256 i; i < tokenLength;) {
+            rewardRecipient =
+                rewardRecipients[_tokenIds[i]] == address(0) ? nftStakers[_tokenIds[i]] : rewardRecipients[_tokenIds[i]];
+            feeRecipient =
+                feeRecipients[_tokenIds[i]] == address(0) ? nftStakers[_tokenIds[i]] : feeRecipients[_tokenIds[i]];
+            _harvestNftReward(_tokenIds[i], rewardRecipient);
+            _harvestNftFees(_tokenIds[i], feeRecipient);
+            unchecked {
+                i++;
+            }
+        }
+    }
+
+    /// @notice Withdraw the NFT sending it to the recipient.
+    /// @param _tokenId NFT id to withdraw.
+    function withdrawNft(uint256 _tokenId) external {
+        _withdrawNft(_tokenId, msg.sender);
+    }
+
+    /// @notice Withdraw the NFT sending it to the recipient.
+    /// @param _tokenId NFT id to withdraw.
+    /// @param _recipient NFT receiver.
+    function withdrawNft(uint256 _tokenId, address _recipient) external {
+        _withdrawNft(_tokenId, _recipient);
+    }
+
+    /// @notice Hook triggered within safe function calls.
+    /// @param _from NFT sender.
+    /// @param _tokenId NFT id received
+    function onERC721Received(address, address _from, uint256 _tokenId, bytes calldata) external returns (bytes4) {
+        if (msg.sender != address(cakeNfpm)) revert NotPancakeNFT();
+        // store the owner's tokenId
+        nftStakers[_tokenId] = _from;
+        // transfer the NFT to the cake locker using the non safe transfer to not trigger the hook
+        ERC721(cakeNfpm).transferFrom(address(this), address(locker), _tokenId);
+        // transfer the NFT to the pancake masterchef v3 via the locker using safe transfer to trigger the hook
+        bytes memory safeTransferData = abi.encodeWithSignature(SAFE_TRANSFER_SIG, address(locker), cakeMc, _tokenId);
+        bool success = executor.callExecuteTo(address(locker), cakeNfpm, 0, safeTransferData);
+        if (!success) revert CallFailed();
+        return this.onERC721Received.selector;
+    }
+
+    function decreaseLiquidity(uint256 _tokenId, uint128 _liquidity, uint256 _amount0Min, uint256 _amount1Min)
+        external
+        onlyNftStaker(_tokenId)
+    {
+        bytes memory decreaseLiqData = abi.encodeWithSignature(
+            DECREASE_LIQ_SIG, _tokenId, _liquidity, _amount0Min, _amount1Min, block.timestamp + 1 hours
+        );
+        bool success = executor.callExecuteTo(address(locker), cakeMc, 0, decreaseLiqData);
+        if (!success) revert CallFailed();
+        // collect liquidity removed
         _harvestNftFees(_tokenId, msg.sender);
     }
 
-    function harvestNftAll(uint256 _tokenId) external onlyNftStaker(_tokenId) {
-        _harvestNftReward(_tokenId, msg.sender);
-        _harvestNftFees(_tokenId, msg.sender);
+    function setFeeRecipient(uint256 _tokenId, address _recipient) external onlyNftStaker(_tokenId) {
+        feeRecipients[_tokenId] = _recipient;
+    }
+
+    function setRewardRecipient(uint256 _tokenId, address _recipient) external onlyNftStaker(_tokenId) {
+        rewardRecipients[_tokenId] = _recipient;
     }
 
     /// @notice Internal function to harvest reward for an NFT.
@@ -200,27 +298,12 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         if (!success) revert CallFailed();
         uint256 token0Collected = ERC20(token0).balanceOf(address(this)) - token0BalanceBeforeCollect;
         if (token0Collected != 0) {
-            token0Collected -= _chargeProtocolFees(token0Collected);
             SafeTransferLib.safeTransfer(token0, _recipient, token0Collected);
         }
         uint256 token1Collected = ERC20(token1).balanceOf(address(this)) - token1BalanceBeforeCollect;
         if (token1Collected != 0) {
-            token1Collected -= _chargeProtocolFees(token1Collected);
             SafeTransferLib.safeTransfer(token1, _recipient, token1Collected);
         }
-    }
-
-    /// @notice Withdraw the NFT sending it to the recipient.
-    /// @param _tokenId NFT id to withdraw.
-    function withdrawNft(uint256 _tokenId) external {
-        _withdrawNft(_tokenId, msg.sender);
-    }
-
-    /// @notice Withdraw the NFT sending it to the recipient.
-    /// @param _tokenId NFT id to withdraw.
-    /// @param _recipient NFT receiver.
-    function withdrawNft(uint256 _tokenId, address _recipient) external {
-        _withdrawNft(_tokenId, _recipient);
     }
 
     /// @notice Internal function to withdraw the NFT sending it to the recipient.
@@ -231,36 +314,11 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         bytes memory withdrawData = abi.encodeWithSignature(WITHDRAW_SIG, _tokenId, _recipient);
         bool success = executor.callExecuteTo(address(locker), cakeMc, 0, withdrawData);
         if (!success) revert CallFailed();
-        nftStakers[_tokenId] = address(0);
-    }
-
-    /// @notice Hook triggered within safe function calls.
-    /// @param _from NFT sender.
-    /// @param _tokenId NFT id received
-    function onERC721Received(address, address _from, uint256 _tokenId, bytes calldata) external returns (bytes4) {
-        if (msg.sender != address(cakeNfpm)) revert NotPancakeNFT();
-        // store the owner's tokenId
-        nftStakers[_tokenId] = _from;
-        // transfer the NFT to the cake locker using the non safe transfer to not trigger the hook
-        ERC721(cakeNfpm).transferFrom(address(this), address(locker), _tokenId);
-        // transfer the NFT to the pancake masterchef v3 via the locker using safe transfer to trigger the hook
-        bytes memory safeTransferData = abi.encodeWithSignature(SAFE_TRANSFER_SIG, address(locker), cakeMc, _tokenId);
-        bool success = executor.callExecuteTo(address(locker), cakeNfpm, 0, safeTransferData);
-        if (!success) revert CallFailed();
-        return this.onERC721Received.selector;
-    }
-
-    function decreaseLiquidity(uint256 _tokenId, uint128 _liquidity, uint256 _amount0Min, uint256 _amount1Min)
-        external
-        onlyNftStaker(_tokenId)
-    {
-        bytes memory decreaseLiqData = abi.encodeWithSignature(
-            DECREASE_LIQ_SIG, _tokenId, _liquidity, _amount0Min, _amount1Min, block.timestamp + 1 hours
-        );
-        bool success = executor.callExecuteTo(address(locker), cakeMc, 0, decreaseLiqData);
-        if (!success) revert CallFailed();
-        // collect liquidity removed
-        _harvestNftFees(_tokenId, msg.sender);
+        //nftStakers[_tokenId] = address(0);
+        delete nftStakers[_tokenId];
+        // erase recipients if needed
+        if (rewardRecipients[_tokenId] != address(0)) delete rewardRecipients[_tokenId];
+        if (feeRecipients[_tokenId] != address(0)) delete feeRecipients[_tokenId];
     }
 
     //////////////////////////////////////////////////////

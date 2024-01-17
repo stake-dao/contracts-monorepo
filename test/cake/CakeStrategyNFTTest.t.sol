@@ -27,6 +27,8 @@ contract CakeStrategyNFTTest is Test {
     address internal nftHolder = 0x3E61DFfa0bC323Eaa16F4C982F96FEB89ab89E8a;
     uint256 internal nftId = 382161;
 
+    address internal rewardRecipient = address(0xFEAB);
+
     function setUp() public {
         vm.createSelectFork(vm.rpcUrl("bnb"), 35_094_542);
         // Deploy Executor
@@ -58,7 +60,7 @@ contract CakeStrategyNFTTest is Test {
         assertEq(userInfo.user, address(0));
     }
 
-    function test_harvest_nft() external {
+    function test_harvest_nft_reward() external {
         _depositNft();
 
         skip(1 days);
@@ -68,6 +70,26 @@ contract CakeStrategyNFTTest is Test {
         strategy.harvestNftReward(nftId);
         // protocol fees at 0%
         assertGt(ERC20(REWARD_TOKEN).balanceOf(nftHolder) - nftHolderBalance, 0);
+    }
+
+    function test_harvest_nft_reward_recipient() external {
+        _depositNft();
+        vm.prank(nftHolder);
+        strategy.setRewardRecipient(nftId, rewardRecipient);
+
+        skip(1 days);
+
+        uint256 recipientBalance = ERC20(REWARD_TOKEN).balanceOf(rewardRecipient);
+        strategy.harvestNftReward(nftId);
+        // protocol fees at 0%
+        assertGt(ERC20(REWARD_TOKEN).balanceOf(rewardRecipient) - recipientBalance, 0);
+    }
+
+    function test_harvest_nft_fees() external {
+        _depositNft();
+
+        vm.prank(nftHolder);
+        strategy.harvestNftFees(nftId);
     }
 
     function test_decrease_liquidity() external {
@@ -84,6 +106,7 @@ contract CakeStrategyNFTTest is Test {
 
         (,,,,,,, uint256 newLiq,,, uint128 tokenOwed0After, uint128 tokenOwed1After) =
             ICakeNfpm(strategy.cakeNfpm()).positions(nftId);
+        assertGt(currentLiq, newLiq);
         // collected all liquidity removed
         assertEq(tokenOwed0After, 0);
         assertEq(tokenOwed1After, 0);
