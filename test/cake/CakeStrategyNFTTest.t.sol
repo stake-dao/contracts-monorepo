@@ -8,6 +8,7 @@ import {ERC20} from "solady/tokens/ERC20.sol";
 import {ERC721} from "solady/tokens/ERC721.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {ICakeMc} from "src/base/interfaces/ICakeMc.sol";
+import {ICakeNfpm} from "src/base/interfaces/ICakeNfpm.sol";
 import {CakeStrategyNFT} from "src/cake/strategy/CakeStrategyNFT.sol";
 import {Executor} from "src/cake/utils/Executor.sol";
 import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
@@ -64,9 +65,31 @@ contract CakeStrategyNFTTest is Test {
 
         uint256 nftHolderBalance = ERC20(REWARD_TOKEN).balanceOf(nftHolder);
         vm.prank(nftHolder);
-        strategy.harvestNft(nftId);
+        strategy.harvestNftReward(nftId);
         // protocol fees at 0%
         assertGt(ERC20(REWARD_TOKEN).balanceOf(nftHolder) - nftHolderBalance, 0);
+    }
+
+    function test_decrease_liquidity() external {
+        _depositNft();
+        (,, address token0, address token1,,,, uint256 currentLiq,,, uint128 tokenOwed0, uint128 tokenOwed1) =
+            ICakeNfpm(strategy.cakeNfpm()).positions(nftId);
+        assertEq(tokenOwed0, 0);
+        assertEq(tokenOwed1, 0);
+        uint256 token0BalanceBefore = ERC20(token0).balanceOf(nftHolder);
+        uint256 token1BalanceBefore = ERC20(token1).balanceOf(nftHolder);
+
+        vm.prank(nftHolder);
+        strategy.decreaseLiquidity(nftId, uint128(currentLiq / 2), 0, 0);
+
+        (,,,,,,, uint256 newLiq,,, uint128 tokenOwed0After, uint128 tokenOwed1After) =
+            ICakeNfpm(strategy.cakeNfpm()).positions(nftId);
+        // collected all liquidity removed
+        assertEq(tokenOwed0After, 0);
+        assertEq(tokenOwed1After, 0);
+        // check if the recipient received the tokens
+        assertGt(ERC20(token0).balanceOf(nftHolder) - token0BalanceBefore, 0);
+        assertGt(ERC20(token1).balanceOf(nftHolder) - token1BalanceBefore, 0);
     }
 
     function _depositNft() internal {
