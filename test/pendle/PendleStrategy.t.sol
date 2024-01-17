@@ -11,6 +11,7 @@ import "address-book/lockers/1.sol";
 import "address-book/protocols/1.sol";
 import "address-book/dao/1.sol";
 
+import {Constants} from "src/base/utils/Constants.sol";
 import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
 import {PendleVaultFactory} from "src/pendle/PendleVaultFactory.sol";
 import "openzeppelin-contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
@@ -63,9 +64,9 @@ contract PendleStrategyIntegrationTest is Test {
         vyperDeployer = new VyperDeployer();
 
         // Deploy LGV4Strat impl
-        gaugeImpl = ILiquidityGaugeStrat(vyperDeployer.deployContract("src/base/gauge/LiquidityGaugeV4Strat.vy"));
+        //gaugeImpl = ILiquidityGaugeStrat(vyperDeployer.deployContract("src/base/gauge/LiquidityGaugeV4Strat.vy"));
 
-        //gaugeImpl = deployBytecode(Constants.LGV4_STRAT_BYTECODE, "");
+        gaugeImpl = ILiquidityGaugeStrat(deployBytecode(Constants.LGV4_STRAT_BYTECODE, ""));
 
         // Deploying vault factory
         factory = new PendleVaultFactory(PENDLE.STRATEGY, DAO.STRATEGY_SDT_DISTRIBUTOR, address(gaugeImpl));
