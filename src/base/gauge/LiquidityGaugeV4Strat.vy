@@ -127,7 +127,7 @@ def __init__():
     self.initialized = True
 
 @external
-def initialize(_staking_token: address, _admin: address, _SDT: address, _voting_escrow: address, _veBoost_proxy: address, _distributor: address,_vault:address,symbol:String[26]):
+def initialize(_staking_token: address, _admin: address, _SDT: address, _voting_escrow: address, _veBoost_proxy: address, _distributor: address,_vault:address,symbol:String[30]):
     """
     @notice Contract initializer
     @param _staking_token Liquidity Pool contract address

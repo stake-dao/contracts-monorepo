@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
+import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
 import "forge-std/Script.sol";
 import "address-book/dao/1.sol";
@@ -48,6 +49,17 @@ contract DeployPendleVaultFactory is Script, Test {
         require(factory.VESDT() == DAO.VESDT, "VESDT mismatch");
         require(factory.SDT() == DAO.SDT, "SDT mismatch");
         require(factory.VEBOOST() == 0xD67bdBefF01Fc492f1864E61756E5FBB3f173506, "VEBOOST mismatch");
+
+        // Deploy vault for eEth 
+        vm.recordLogs();
+        factory.cloneAndInit(0xF32e58F92e60f4b0A37A69b95d642A471365EAe8);
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+
+        (address vault,,) = abi.decode(entries[0].data, (address, address, address));
+        (address gaugeProxy,,) = abi.decode(entries[2].data, (address, address, address));
+
+        console.log("Vault deployed at: ", vault);
+        console.log("Gauge deployed at: ", gaugeProxy);
 
         vm.stopBroadcast();
     }
