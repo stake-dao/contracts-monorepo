@@ -28,6 +28,12 @@ contract CakeStrategyNFTTest is Test {
     uint256 internal nftId = 382161;
 
     address internal rewardRecipient = address(0xFEAB);
+    address internal feeRecipient = address(0xFAEB);
+
+    ICakeMc internal cakeMc;
+
+    address internal token0;
+    address internal token1;
 
     function setUp() public {
         vm.createSelectFork(vm.rpcUrl("bnb"), 35_094_542);
@@ -37,6 +43,7 @@ contract CakeStrategyNFTTest is Test {
         address strategyProxy = LibClone.deployERC1967(address(strategyImpl));
         strategy = CakeStrategyNFT(payable(strategyProxy));
         strategy.initialize(address(this), address(executor));
+        cakeMc = ICakeMc(strategy.cakeMc());
 
         vm.startPrank(MS);
         LOCKER.transferGovernance(address(executor));
@@ -44,6 +51,10 @@ contract CakeStrategyNFTTest is Test {
         assertEq(LOCKER.governance(), address(executor));
         executor.allowAddress(address(strategy));
         vm.stopPrank();
+
+        (,, token0, token1,,,,,,,,) = ICakeNfpm(strategy.cakeNfpm()).positions(nftId);
+        deal(token0, address(this), 1e18);
+        deal(token1, address(this), 1e18);
     }
 
     function test_deposit_nft() external {
@@ -52,12 +63,7 @@ contract CakeStrategyNFTTest is Test {
 
     function test_withdraw_nft() external {
         _depositNft();
-
-        vm.prank(nftHolder);
-        strategy.withdrawNft(nftId);
-        assertEq(strategy.nftStakers(nftId), address(0));
-        ICakeMc.UserPositionInfo memory userInfo = ICakeMc(strategy.cakeMc()).userPositionInfos(nftId);
-        assertEq(userInfo.user, address(0));
+        _withdrawNft();
     }
 
     function test_harvest_nft_reward() external {
@@ -85,6 +91,17 @@ contract CakeStrategyNFTTest is Test {
         assertGt(ERC20(REWARD_TOKEN).balanceOf(rewardRecipient) - recipientBalance, 0);
     }
 
+    function test_harvest_nft_reward_on_withdraw() external {
+        _depositNft();
+
+        skip(1 days);
+
+        uint256 stakerBalance = ERC20(REWARD_TOKEN).balanceOf(nftHolder);
+        _withdrawNft();
+        // reward sent to the staker within the withdraw function
+        assertGt(ERC20(REWARD_TOKEN).balanceOf(nftHolder) - stakerBalance, 0);
+    }
+
     function test_harvest_nft_fees() external {
         _depositNft();
 
@@ -92,9 +109,21 @@ contract CakeStrategyNFTTest is Test {
         strategy.harvestNftFees(nftId);
     }
 
+    function test_increase_liquidity() external {
+        uint256 token0ToIncrease = 1e18;
+        uint256 token1ToIncrease = 1e18;
+        _depositNft();
+        (,,,,,,, uint256 currentLiq,,,,) = ICakeNfpm(strategy.cakeNfpm()).positions(nftId);
+        ERC20(token0).approve(address(strategy), token0ToIncrease);
+        ERC20(token1).approve(address(strategy), token1ToIncrease);
+        strategy.increaseLiquidity(nftId, token0ToIncrease, token1ToIncrease, 0, 0);
+        (,,,,,,, uint256 newLiq,,,,) = ICakeNfpm(strategy.cakeNfpm()).positions(nftId);
+        assertGt(newLiq, currentLiq);
+    }
+
     function test_decrease_liquidity() external {
         _depositNft();
-        (,, address token0, address token1,,,, uint256 currentLiq,,, uint128 tokenOwed0, uint128 tokenOwed1) =
+        (,,,,,,, uint256 currentLiq,,, uint128 tokenOwed0, uint128 tokenOwed1) =
             ICakeNfpm(strategy.cakeNfpm()).positions(nftId);
         assertEq(tokenOwed0, 0);
         assertEq(tokenOwed1, 0);
@@ -115,6 +144,19 @@ contract CakeStrategyNFTTest is Test {
         assertGt(ERC20(token1).balanceOf(nftHolder) - token1BalanceBefore, 0);
     }
 
+    function test_erase_recipients() external {
+        _depositNft();
+        vm.startPrank(nftHolder);
+        strategy.setRewardRecipient(nftId, rewardRecipient);
+        strategy.setFeeRecipient(nftId, feeRecipient);
+        assertEq(strategy.rewardRecipients(nftId), rewardRecipient);
+        assertEq(strategy.feeRecipients(nftId), feeRecipient);
+        vm.stopPrank();
+        _withdrawNft();
+        assertEq(strategy.rewardRecipients(nftId), address(0));
+        assertEq(strategy.feeRecipients(nftId), address(0));
+    }
+
     function _depositNft() internal {
         // transfer the NFT to the strategy contract
         vm.startPrank(nftHolder);
@@ -122,7 +164,15 @@ contract CakeStrategyNFTTest is Test {
         vm.stopPrank();
         assertEq(nftHolder, strategy.nftStakers(nftId));
         // check on cake mc
-        ICakeMc.UserPositionInfo memory userInfo = ICakeMc(strategy.cakeMc()).userPositionInfos(nftId);
+        ICakeMc.UserPositionInfo memory userInfo = cakeMc.userPositionInfos(nftId);
         assertEq(userInfo.user, address(LOCKER));
+    }
+
+    function _withdrawNft() internal {
+        vm.prank(nftHolder);
+        strategy.withdrawNft(nftId);
+        assertEq(strategy.nftStakers(nftId), address(0));
+        ICakeMc.UserPositionInfo memory userInfo = cakeMc.userPositionInfos(nftId);
+        assertEq(userInfo.user, address(0));
     }
 }

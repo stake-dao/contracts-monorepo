@@ -26,6 +26,8 @@ contract CakeStrategyNFT is UUPSUpgradeable {
 
     string public constant HARVEST_SIG = "harvest(uint256,address)";
 
+    string public constant INCREASE_LIQ_SIG = "increaseLiquidity((uint256,uint256,uint256,uint256,uint256,uint256))";
+
     string public constant SAFE_TRANSFER_SIG = "safeTransferFrom(address,address,uint256)";
 
     string public constant WITHDRAW_SIG = "withdraw(uint256,address)";
@@ -63,8 +65,10 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @notice Mapping of NFT stakers.
     mapping(uint256 => address) public nftStakers; // tokenId -> user
 
+    /// @notice Mapping of fee recipients.
     mapping(uint256 => address) public feeRecipients; // tokenId -> fee recipient
 
+    /// @notice Mapping of reward recipients
     mapping(uint256 => address) public rewardRecipients; // tokenId -> reward recipient
 
     /// @notice Map addresses allowed to interact with the `execute` function.
@@ -124,15 +128,18 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     }
 
     /// @notice Constructor.
-    /// @param _owner Address of the strategy owner.
+    /// @param _governance Address of the strategy governance.
     /// @param _locker Address of the locker.
     /// @param _rewardToken Address of the reward token.
-    constructor(address _owner, address _locker, address _rewardToken) {
-        governance = _owner;
+    constructor(address _governance, address _locker, address _rewardToken) {
+        governance = _governance;
         locker = ILocker(_locker);
         rewardToken = _rewardToken;
     }
 
+    /// @notice Initialize function.
+    /// @param _governance Address of the governance.
+    /// @param _executor Address of the executor.
     function initialize(address _governance, address _executor) external {
         if (governance != address(0)) revert Governance();
         governance = _governance;
@@ -232,7 +239,7 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @param _from NFT sender.
     /// @param _tokenId NFT id received
     function onERC721Received(address, address _from, uint256 _tokenId, bytes calldata) external returns (bytes4) {
-        if (msg.sender != address(cakeNfpm)) revert NotPancakeNFT();
+        if (msg.sender != cakeNfpm) revert NotPancakeNFT();
         // store the owner's tokenId
         nftStakers[_tokenId] = _from;
         // transfer the NFT to the cake locker using the non safe transfer to not trigger the hook
@@ -244,6 +251,46 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         return this.onERC721Received.selector;
     }
 
+    /// @notice Increase NFT Position Liquidity.
+    /// @param _tokenId nft token id.
+    /// @param _amount0Desired amount to add of token0
+    /// @param _amount1Desired amount to add of token1
+    /// @param _amount0Min min amount to add of token0
+    /// @param _amount1Min min amount to add of token1
+    function increaseLiquidity(
+        uint256 _tokenId,
+        uint256 _amount0Desired,
+        uint256 _amount1Desired,
+        uint256 _amount0Min,
+        uint256 _amount1Min
+    ) external {
+        // fetch underlying tokens
+        (,, address token0, address token1,,,,,,,,) = ICakeNfpm(cakeNfpm).positions(_tokenId);
+
+        // transfer token here
+        SafeTransferLib.safeTransferFrom(token0, msg.sender, address(this), _amount0Desired);
+        SafeTransferLib.safeTransferFrom(token1, msg.sender, address(this), _amount1Desired);
+
+        _approveIfNeeded(token0, _amount0Desired);
+        _approveIfNeeded(token1, _amount1Desired);
+        bytes memory increaseLiqData = abi.encodeWithSignature(
+            INCREASE_LIQ_SIG,
+            _tokenId,
+            _amount0Desired,
+            _amount1Desired,
+            _amount0Min,
+            _amount1Min,
+            block.timestamp + 1 hours // deadline
+        );
+        (bool success,) = cakeMc.call(increaseLiqData);
+        if (!success) revert CallFailed();
+    }
+
+    /// @notice Decrease NFT Position Liquidity.
+    /// @param _tokenId nft token id.
+    /// @param _liquidity new liquidity
+    /// @param _amount0Min min amount to receive of token0
+    /// @param _amount1Min min amount to receive of token1
     function decreaseLiquidity(uint256 _tokenId, uint128 _liquidity, uint256 _amount0Min, uint256 _amount1Min)
         external
         onlyNftStaker(_tokenId)
@@ -257,17 +304,23 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         _harvestNftFees(_tokenId, msg.sender);
     }
 
+    /// @notice Set the fee reward recipient
+    /// @param _tokenId NFT id to set the recipient.
+    /// @param _recipient fee recipient
     function setFeeRecipient(uint256 _tokenId, address _recipient) external onlyNftStaker(_tokenId) {
         feeRecipients[_tokenId] = _recipient;
     }
 
+    /// @notice Set the reward recipient.
+    /// @param _tokenId NFT id to set the recipient.
+    /// @param _recipient reward recipient
     function setRewardRecipient(uint256 _tokenId, address _recipient) external onlyNftStaker(_tokenId) {
         rewardRecipients[_tokenId] = _recipient;
     }
 
     /// @notice Internal function to harvest reward for an NFT.
     /// @param _tokenId NFT id to harvest.
-    /// @param _recipient reward receiver
+    /// @param _recipient reward recipient
     function _harvestNftReward(uint256 _tokenId, address _recipient) internal {
         uint256 balanceBeforeHarvest = ERC20(rewardToken).balanceOf(address(this));
         bytes memory harvestData = abi.encodeWithSignature(HARVEST_SIG, _tokenId, address(this));
@@ -283,6 +336,9 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         }
     }
 
+    /// @notice Internal function to harvest fees for an NFT.
+    /// @param _tokenId NFT id to harvest.
+    /// @param _recipient reward recipient
     function _harvestNftFees(uint256 _tokenId, address _recipient) internal {
         (,, address token0, address token1,,,,,,,,) = ICakeNfpm(cakeNfpm).positions(_tokenId);
         uint256 token0BalanceBeforeCollect = ERC20(token0).balanceOf(address(this));
@@ -314,11 +370,17 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         bytes memory withdrawData = abi.encodeWithSignature(WITHDRAW_SIG, _tokenId, _recipient);
         bool success = executor.callExecuteTo(address(locker), cakeMc, 0, withdrawData);
         if (!success) revert CallFailed();
-        //nftStakers[_tokenId] = address(0);
+
         delete nftStakers[_tokenId];
-        // erase recipients if needed
+        // delete recipients if needed
         if (rewardRecipients[_tokenId] != address(0)) delete rewardRecipients[_tokenId];
         if (feeRecipients[_tokenId] != address(0)) delete feeRecipients[_tokenId];
+    }
+
+    function _approveIfNeeded(address _token, uint256 _amount) internal {
+        if (ERC20(_token).allowance(address(this), cakeMc) < _amount) {
+            SafeTransferLib.safeApprove(_token, cakeMc, type(uint256).max);
+        }
     }
 
     //////////////////////////////////////////////////////
