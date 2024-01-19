@@ -1,28 +1,44 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {ILocker, SafeExecute} from "src/base/strategy/Strategy.sol";
-
 interface IExecuteCompatible {
     function execute(address _to, uint256 _value, bytes memory _data) external returns (bool, bytes memory);
 }
 
 /// @notice Main access point of Cake Locker.
 contract Executor {
+    /// @notice Address of the governance.
     address public governance;
 
+    /// @notice Address of the future governance.
     address public futureGovernance;
 
-    mapping(address => bool) public allowed;
+    /// @notice Mapping of allowed addresses
+    mapping(address => bool) public allowed; // contract -> allowed or not
 
+    ////////////////////////////////////////////////////////////////
+    /// --- EVENTS & ERRORS
+    ///////////////////////////////////////////////////////////////
+
+    /// @notice Error emitted when input address is null
     error AddressNull();
 
+    /// @notice Error emitted when auth failed
     error Governance();
 
+    /// @notice Error emitted when try to allow an eoa
     error NotContract();
 
+    /// @notice Error emitted when auth failed (gor or allowed)
     error Unauthorized();
 
+    /// @notice Event emitted when a new contract is allowed
+    event Allowed(address user);
+
+    /// @notice Event emitted when a new contract id disallowed
+    event Disallowed(address user);
+
+    /// @notice Event emitted when governance change
     event GovernanceChanged(address gov);
 
     modifier onlyGovernance() {
@@ -48,9 +64,9 @@ contract Executor {
     function callExecuteTo(address _executor, address _to, uint256 _value, bytes calldata _data)
         external
         onlyGovernanceOrAllowed
-        returns (bool success_)
+        returns (bool success_, bytes memory result_)
     {
-        (success_,) = IExecuteCompatible(_executor).execute(_to, _value, _data);
+        (success_, result_) = IExecuteCompatible(_executor).execute(_to, _value, _data);
     }
 
     /// @notice Execute a function.
@@ -62,10 +78,9 @@ contract Executor {
     function execute(address _to, uint256 _value, bytes calldata _data)
         external
         onlyGovernanceOrAllowed
-        returns (bool, bytes memory)
+        returns (bool success_, bytes memory result_)
     {
-        (bool success, bytes memory result) = _to.call{value: _value}(_data);
-        return (success, result);
+        (success_, result_) = _to.call{value: _value}(_data);
     }
 
     /// @notice Allow a module to interact with the `execute` function.
@@ -81,11 +96,14 @@ contract Executor {
         if (size == 0) revert NotContract();
 
         allowed[_address] = true;
+
+        emit Allowed(_address);
     }
 
     /// @notice Disallow a module to interact with the `execute` function.
     function disallowAddress(address _address) external onlyGovernance {
         allowed[_address] = false;
+        emit Disallowed(_address);
     }
 
     /// @notice Transfer the governance to a new address.
@@ -99,6 +117,7 @@ contract Executor {
         if (msg.sender != futureGovernance) revert Governance();
 
         governance = msg.sender;
+        futureGovernance = address(0);
         emit GovernanceChanged(msg.sender);
     }
 }

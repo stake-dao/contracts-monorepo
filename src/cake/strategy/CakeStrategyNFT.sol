@@ -85,6 +85,7 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @notice Error emitted when input address is null
     error AddressNull();
 
+    /// @notice Error emitted when call failed
     error CallFailed();
 
     /// @notice Error emitted when auth failed
@@ -444,6 +445,12 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     function setFeeReceiver(address _feeReceiver) external onlyGovernance {
         if (_feeReceiver == address(0)) revert AddressNull();
         feeReceiver = _feeReceiver;
+    }
+
+    /// @notice Set Executor new address.
+    /// @param _executor Address of new executor.
+    function setExecutor(address _executor) external onlyGovernance {
+        executor = IExecutor(_executor);
     }
 
     /// @notice Update protocol fees.

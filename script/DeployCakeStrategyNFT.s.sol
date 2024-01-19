@@ -33,6 +33,9 @@ contract DeployCakeStrategyNFT is Script, Test {
         // Initialize strategy
         strategy.initialize(DEPLOYER, address(executor));
 
+        assertEq(strategy.governance(), DEPLOYER);
+        assertEq(address(strategy.executor()), address(executor));
+
         executor.allowAddress(address(strategy));
 
         // Strategy setters
