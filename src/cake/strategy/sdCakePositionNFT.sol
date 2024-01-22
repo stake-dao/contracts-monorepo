@@ -2,10 +2,10 @@
 pragma solidity 0.8.19;
 
 import {ERC721} from "solady/tokens/ERC721.sol";
+import {ICakeStrategy} from "src/base/interfaces/ICakeStrategy.sol";
 
 /// @notice CakePositionNFT
-contract CakePositionNFT is ERC721 {
-
+contract sdCakePositionNFT is ERC721 {
     /// @notice Address of the operator allowed to mint/burn NFT
     address public operator;
 
@@ -22,7 +22,7 @@ contract CakePositionNFT is ERC721 {
         if (msg.sender != operator) revert OnlyOperator();
         _;
     }
-    
+
     constructor(address _operator) {
         if (operator == address(0)) revert AddressNull();
         operator = _operator;
@@ -41,6 +41,12 @@ contract CakePositionNFT is ERC721 {
         _burn(_id);
     }
 
+    function transferFrom(address _from, address _to, uint256 _id) public payable override {
+        // harvest the reward for the actual holder before tranfer it
+        ICakeStrategy(operator).harvestNftAll(_id);
+        super.transferFrom(_from, _to, _id);
+    }
+
     /// @notice Set an operator allowed to mint/burn NFT
     /// @param _operator address of the operator
     function setOperator(address _operator) external onlyOperator {
@@ -49,17 +55,17 @@ contract CakePositionNFT is ERC721 {
     }
 
     /// @notice Name of the contract
-    function name() public view override returns(string memory) {
+    function name() public view override returns (string memory) {
         return "sdCakePositionNFT";
     }
 
     /// @notice Symbol of the contract
-    function symbol() public view override returns(string memory) {
+    function symbol() public view override returns (string memory) {
         return "sdCPNFT";
     }
 
     /// @notice Token uri of the contract
-    function tokenURI(uint256) public view override returns(string memory) {
+    function tokenURI(uint256) public view override returns (string memory) {
         return "";
     }
 }
