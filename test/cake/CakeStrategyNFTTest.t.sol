@@ -73,20 +73,19 @@ contract CakeStrategyNFTTest is Test {
 
         uint256 nftHolderBalance = ERC20(REWARD_TOKEN).balanceOf(nftHolder);
         vm.prank(nftHolder);
-        strategy.harvestNftReward(nftId);
+        strategy.harvestReward(nftId, nftHolder);
         // protocol fees at 0%
         assertGt(ERC20(REWARD_TOKEN).balanceOf(nftHolder) - nftHolderBalance, 0);
     }
 
     function test_harvest_nft_reward_recipient() external {
         _depositNft();
-        vm.prank(nftHolder);
-        strategy.setRewardRecipient(nftId, rewardRecipient);
 
         skip(1 days);
 
         uint256 recipientBalance = ERC20(REWARD_TOKEN).balanceOf(rewardRecipient);
-        strategy.harvestNftReward(nftId);
+        vm.prank(nftHolder);
+        strategy.harvestReward(nftId, rewardRecipient);
         // protocol fees at 0%
         assertGt(ERC20(REWARD_TOKEN).balanceOf(rewardRecipient) - recipientBalance, 0);
     }
@@ -106,7 +105,7 @@ contract CakeStrategyNFTTest is Test {
         _depositNft();
 
         vm.prank(nftHolder);
-        strategy.harvestNftFees(nftId);
+        strategy.collectFee(nftId, nftHolder);
     }
 
     function test_increase_liquidity() external {
@@ -144,18 +143,18 @@ contract CakeStrategyNFTTest is Test {
         assertGt(ERC20(token1).balanceOf(nftHolder) - token1BalanceBefore, 0);
     }
 
-    function test_erase_recipients() external {
-        _depositNft();
-        vm.startPrank(nftHolder);
-        strategy.setRewardRecipient(nftId, rewardRecipient);
-        strategy.setFeeRecipient(nftId, feeRecipient);
-        assertEq(strategy.rewardRecipients(nftId), rewardRecipient);
-        assertEq(strategy.feeRecipients(nftId), feeRecipient);
-        vm.stopPrank();
-        _withdrawNft();
-        assertEq(strategy.rewardRecipients(nftId), address(0));
-        assertEq(strategy.feeRecipients(nftId), address(0));
-    }
+    // function test_erase_recipients() external {
+    //     _depositNft();
+    //     vm.startPrank(nftHolder);
+    //     strategy.setRewardRecipient(nftId, rewardRecipient);
+    //     strategy.setFeeRecipient(nftId, feeRecipient);
+    //     assertEq(strategy.rewardRecipients(nftId), rewardRecipient);
+    //     assertEq(strategy.feeRecipients(nftId), feeRecipient);
+    //     vm.stopPrank();
+    //     _withdrawNft();
+    //     assertEq(strategy.rewardRecipients(nftId), address(0));
+    //     assertEq(strategy.feeRecipients(nftId), address(0));
+    // }
 
     function _depositNft() internal {
         // transfer the NFT to the strategy contract

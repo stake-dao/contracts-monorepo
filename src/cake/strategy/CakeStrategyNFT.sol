@@ -62,14 +62,14 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @notice PancakeSwap masterChef.
     address public cakeMc;
 
+    /// @notice Reward claimer.
+    address public claimer;
+
+    /// @notice Increase liq deadline -> block.timestamp + deadlinePeriod
+    uint256 public deadlinePeriod = 1 hours;
+
     /// @notice Mapping of NFT stakers.
     mapping(uint256 => address) public nftStakers; // tokenId -> user
-
-    /// @notice Mapping of fee recipients.
-    mapping(uint256 => address) public feeRecipients; // tokenId -> fee recipient
-
-    /// @notice Mapping of reward recipients
-    mapping(uint256 => address) public rewardRecipients; // tokenId -> reward recipient
 
     /// @notice Map addresses allowed to interact with the `execute` function.
     mapping(address => bool) public allowed;
@@ -114,12 +114,28 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     //////////////////////////////////////////////////////
 
     modifier onlyNftStaker(uint256 tokenId) {
-        if (msg.sender != nftStakers[tokenId]) revert NotNftStaker();
+        if (msg.sender != nftStakers[tokenId]) revert Unauthorized();
+        _;
+    }
+
+    modifier onlyNftStakerOrClaimer(uint256 tokenId) {
+        if (msg.sender != nftStakers[tokenId] && msg.sender != claimer) revert Unauthorized();
+        _;
+    }
+
+    modifier onlyNftsStakerOrClaimer(uint256[] memory tokenIds) {
+        if (msg.sender == claimer) return;
+        for (uint256 i; i < tokenIds.length;) {
+            if (msg.sender != nftStakers[tokenIds[i]]) revert Unauthorized();
+            unchecked {
+                ++i;
+            }
+        }
         _;
     }
 
     modifier onlyGovernance() {
-        if (msg.sender != governance) revert Governance();
+        if (msg.sender != governance) revert Unauthorized();
         _;
     }
 
@@ -142,7 +158,7 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @param _governance Address of the governance.
     /// @param _executor Address of the executor.
     function initialize(address _governance, address _executor) external {
-        if (governance != address(0)) revert Governance();
+        if (governance != address(0)) revert AddressNull();
         governance = _governance;
         executor = IExecutor(_executor);
 
@@ -152,42 +168,41 @@ contract CakeStrategyNFT is UUPSUpgradeable {
 
     /// @notice Harvest reward for an NFT.
     /// @param _tokenId NFT id to harvest.
-    function harvestNftReward(uint256 _tokenId) external {
-        address recipient = rewardRecipients[_tokenId] == address(0) ? nftStakers[_tokenId] : rewardRecipients[_tokenId];
-        _harvestNftReward(_tokenId, recipient);
+    /// @param _recipient Address of the recipient.
+    function harvestReward(uint256 _tokenId, address _recipient) external onlyNftStakerOrClaimer(_tokenId) {
+        _harvestReward(_tokenId, _recipient);
     }
 
     /// @notice Harvest reward for NFTs.
     /// @param _tokenIds NFT ids to harvest.
-    function harvestNftsReward(uint256[] memory _tokenIds) external {
-        address recipient;
+    /// @param _recipient Address of the recipient.
+    function harvestRewards(uint256[] memory _tokenIds, address _recipient)
+        external
+        onlyNftsStakerOrClaimer(_tokenIds)
+    {
         uint256 tokensLength = _tokenIds.length;
         for (uint256 i; i < tokensLength;) {
-            recipient =
-                rewardRecipients[_tokenIds[i]] == address(0) ? nftStakers[_tokenIds[i]] : rewardRecipients[_tokenIds[i]];
-            _harvestNftReward(_tokenIds[i], recipient);
+            _harvestReward(_tokenIds[i], _recipient);
             unchecked {
-                i++;
+                ++i;
             }
         }
     }
 
-    /// @notice Harvest fees for NFT.
-    /// @param _tokenId NFT id to harvest fees for.
-    function harvestNftFees(uint256 _tokenId) external {
-        address recipient = feeRecipients[_tokenId] == address(0) ? nftStakers[_tokenId] : feeRecipients[_tokenId];
-        _harvestNftFees(_tokenId, recipient);
+    /// @notice Collect fee for NFT.
+    /// @param _tokenId NFT id to collect fee for.
+    /// @param _recipient Address of the recipient.
+    function collectFee(uint256 _tokenId, address _recipient) external onlyNftStakerOrClaimer(_tokenId) {
+        _collectFee(_tokenId, _recipient);
     }
 
     /// @notice Harvest fees for NFTs.
     /// @param _tokenIds NFT ids to harvest fees for.
-    function harvestNftsFees(uint256[] memory _tokenIds) external {
-        address recipient;
+    /// @param _recipient Address of the recipient.
+    function collectFees(uint256[] memory _tokenIds, address _recipient) external onlyNftsStakerOrClaimer(_tokenIds) {
         uint256 tokensLength = _tokenIds.length;
         for (uint256 i; i < tokensLength;) {
-            recipient =
-                feeRecipients[_tokenIds[i]] == address(0) ? nftStakers[_tokenIds[i]] : feeRecipients[_tokenIds[i]];
-            _harvestNftFees(_tokenIds[i], recipient);
+            _collectFee(_tokenIds[i], _recipient);
             unchecked {
                 i++;
             }
@@ -196,27 +211,21 @@ contract CakeStrategyNFT is UUPSUpgradeable {
 
     /// @notice Harvest both reward and fees for NFT.
     /// @param _tokenId NFT id to harvest.
-    function harvestNftAll(uint256 _tokenId) external {
-        address rewardRecipient =
-            rewardRecipients[_tokenId] == address(0) ? nftStakers[_tokenId] : rewardRecipients[_tokenId];
-        _harvestNftReward(_tokenId, rewardRecipient);
-        address feeRecipient = feeRecipients[_tokenId] == address(0) ? nftStakers[_tokenId] : feeRecipients[_tokenId];
-        _harvestNftFees(_tokenId, feeRecipient);
+    function harvestAndCollectFee(uint256 _tokenId, address _recipient) external onlyNftStakerOrClaimer(_tokenId) {
+        _harvestReward(_tokenId, _recipient);
+        _collectFee(_tokenId, _recipient);
     }
 
     /// @notice Harvest both reward and fees for NFTs.
     /// @param _tokenIds NFT ids to harvest.
-    function harvestNftsAll(uint256[] memory _tokenIds) external {
+    function harvestAndCollectFees(uint256[] memory _tokenIds, address _recipient)
+        external
+        onlyNftsStakerOrClaimer(_tokenIds)
+    {
         uint256 tokenLength = _tokenIds.length;
-        address rewardRecipient;
-        address feeRecipient;
         for (uint256 i; i < tokenLength;) {
-            rewardRecipient =
-                rewardRecipients[_tokenIds[i]] == address(0) ? nftStakers[_tokenIds[i]] : rewardRecipients[_tokenIds[i]];
-            feeRecipient =
-                feeRecipients[_tokenIds[i]] == address(0) ? nftStakers[_tokenIds[i]] : feeRecipients[_tokenIds[i]];
-            _harvestNftReward(_tokenIds[i], rewardRecipient);
-            _harvestNftFees(_tokenIds[i], feeRecipient);
+            _harvestReward(_tokenIds[i], _recipient);
+            _collectFee(_tokenIds[i], _recipient);
             unchecked {
                 i++;
             }
@@ -281,7 +290,7 @@ contract CakeStrategyNFT is UUPSUpgradeable {
             _amount1Desired,
             _amount0Min,
             _amount1Min,
-            block.timestamp + 1 hours // deadline
+            block.timestamp + deadlinePeriod // deadline
         );
         (bool success,) = cakeMc.call(increaseLiqData);
         if (!success) revert CallFailed();
@@ -302,27 +311,13 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         bool success = executor.callExecuteTo(address(locker), cakeMc, 0, decreaseLiqData);
         if (!success) revert CallFailed();
         // collect liquidity removed
-        _harvestNftFees(_tokenId, msg.sender);
-    }
-
-    /// @notice Set the fee reward recipient
-    /// @param _tokenId NFT id to set the recipient.
-    /// @param _recipient fee recipient
-    function setFeeRecipient(uint256 _tokenId, address _recipient) external onlyNftStaker(_tokenId) {
-        feeRecipients[_tokenId] = _recipient;
-    }
-
-    /// @notice Set the reward recipient.
-    /// @param _tokenId NFT id to set the recipient.
-    /// @param _recipient reward recipient
-    function setRewardRecipient(uint256 _tokenId, address _recipient) external onlyNftStaker(_tokenId) {
-        rewardRecipients[_tokenId] = _recipient;
+        _collectFee(_tokenId, msg.sender);
     }
 
     /// @notice Internal function to harvest reward for an NFT.
     /// @param _tokenId NFT id to harvest.
     /// @param _recipient reward recipient
-    function _harvestNftReward(uint256 _tokenId, address _recipient) internal {
+    function _harvestReward(uint256 _tokenId, address _recipient) internal {
         uint256 balanceBeforeHarvest = ERC20(rewardToken).balanceOf(address(this));
         bytes memory harvestData = abi.encodeWithSignature(HARVEST_SIG, _tokenId, address(this));
         bool success = executor.callExecuteTo(address(locker), cakeMc, 0, harvestData);
@@ -337,20 +332,15 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         }
     }
 
-    /// @notice Internal function to harvest fees for an NFT.
+    /// @notice Internal function to collect fee for an NFT.
     /// @param _tokenId NFT id to harvest.
     /// @param _recipient reward recipient
-    function _harvestNftFees(uint256 _tokenId, address _recipient) internal {
+    function _collectFee(uint256 _tokenId, address _recipient) internal {
         (,, address token0, address token1,,,,,,,,) = ICakeNfpm(cakeNfpm).positions(_tokenId);
         uint256 token0BalanceBeforeCollect = ERC20(token0).balanceOf(address(this));
         uint256 token1BalanceBeforeCollect = ERC20(token1).balanceOf(address(this));
-        bytes memory harvestData = abi.encodeWithSignature(
-            COLLECT_SIG,
-            _tokenId,
-            address(this),
-            340282366920938463463374607431768211455,
-            340282366920938463463374607431768211455
-        );
+        bytes memory harvestData =
+            abi.encodeWithSignature(COLLECT_SIG, _tokenId, address(this), type(uint128).max, type(uint128).max);
         bool success = executor.callExecuteTo(address(locker), cakeMc, 0, harvestData);
         if (!success) revert CallFailed();
         uint256 token0Collected = ERC20(token0).balanceOf(address(this)) - token0BalanceBeforeCollect;
@@ -365,7 +355,7 @@ contract CakeStrategyNFT is UUPSUpgradeable {
 
     /// @notice Internal function to withdraw the NFT sending it to the recipient.
     /// @param _tokenId NFT id to withdraw.
-    /// @param _recipient NFT receiver
+    /// @param _recipient NFT recipient
     function _withdrawNft(uint256 _tokenId, address _recipient) internal onlyNftStaker(_tokenId) {
         // withdraw the NFT from pancake masterchef, it will send it to the recipient
         bytes memory withdrawData = abi.encodeWithSignature(WITHDRAW_SIG, _tokenId, _recipient);
@@ -373,11 +363,11 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         if (!success) revert CallFailed();
 
         delete nftStakers[_tokenId];
-        // delete recipients if needed
-        if (rewardRecipients[_tokenId] != address(0)) delete rewardRecipients[_tokenId];
-        if (feeRecipients[_tokenId] != address(0)) delete feeRecipients[_tokenId];
     }
 
+    /// @notice Internal function to increase the allowance if needed
+    /// @param _token Token to appprove
+    /// @param _amount Allowance amount required
     function _approveIfNeeded(address _token, uint256 _amount) internal {
         if (ERC20(_token).allowance(address(this), cakeMc) < _amount) {
             SafeTransferLib.safeApprove(_token, cakeMc, type(uint256).max);
@@ -451,6 +441,18 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @param _executor Address of new executor.
     function setExecutor(address _executor) external onlyGovernance {
         executor = IExecutor(_executor);
+    }
+
+    /// @notice Set deadline period for providing liq.
+    /// @param _deadlinePeriod Deadline period.
+    function setDeadlinePeriod(uint256 _deadlinePeriod) external onlyGovernance {
+        deadlinePeriod = _deadlinePeriod;
+    }
+
+    /// @notice Set reward claimer.
+    /// @param _claimer Address of the claimer.
+    function setClaimer(address _claimer) external onlyGovernance {
+        claimer = _claimer;
     }
 
     /// @notice Update protocol fees.
