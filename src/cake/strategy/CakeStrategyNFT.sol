@@ -20,16 +20,22 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @notice Denominator for fixed point math.
     uint256 public constant DENOMINATOR = 10_000;
 
+    /// @notice collect() signature string
     string public constant COLLECT_SIG = "collect((uint256,address,uint128,uint128))";
 
+    /// @notice decreaseLiquidity() signature string
     string public constant DECREASE_LIQ_SIG = "decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))";
 
+    /// @notice harvest() signature string
     string public constant HARVEST_SIG = "harvest(uint256,address)";
 
+    /// @notice increaseLiquidity() signature string
     string public constant INCREASE_LIQ_SIG = "increaseLiquidity((uint256,uint256,uint256,uint256,uint256,uint256))";
 
+    /// @notice safeTransferFrom() signature string
     string public constant SAFE_TRANSFER_SIG = "safeTransferFrom(address,address,uint256)";
 
+    /// @notice withdraw() signature string
     string public constant WITHDRAW_SIG = "withdraw(uint256,address)";
 
     /// @notice Address of the locker contract.
@@ -63,7 +69,7 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     address public cakeMc;
 
     /// @notice Reward claimer.
-    address public claimer;
+    address public rewardClaimer;
 
     /// @notice Increase liq deadline -> block.timestamp + deadlinePeriod
     uint256 public deadlinePeriod = 1 hours;
@@ -80,7 +86,28 @@ contract CakeStrategyNFT is UUPSUpgradeable {
 
     /// @notice Event emitted when governance is changed.
     /// @param newGovernance Address of the new governance.
-    event GovernanceChanged(address indexed newGovernance);
+    event GovernanceChanged(address newGovernance);
+
+    /// @notice Event emitted when the fees are claimed
+    /// @param feeReceiver fee receiver
+    /// @param feeClaimed amount of fees claimed
+    event FeeClaimed(address indexed feeReceiver, uint256 feeClaimed);
+
+    /// @notice Event emitted at every harvest
+    /// @param tokenId nft id harvested for
+    /// @param amount amount harvested
+    /// @param recipient reward recipient
+    event Harvest(uint256 indexed tokenId, uint256 amount, address recipient);
+
+    /// @notice Event emitted when an Nft is deposited via the safe transfer hook
+    /// @param tokenId nft id deposited
+    /// @param staker nft staker
+    event NftDeposited(uint256 indexed tokenId, address indexed staker);
+
+    /// @notice Event emitted when an Nft is withdrawn
+    /// @param tokenId nft id withdrawn
+    /// @param recipient nft recipient
+    event NftWithdrawn(uint256 indexed tokenId, address indexed recipient);
 
     /// @notice Error emitted when input address is null
     error AddressNull();
@@ -97,17 +124,11 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @notice Error emitted when trying to allow an EOA.
     error NotContract();
 
-    /// @notice Error emitted when the caller is not the Nft owner
-    error NotNftStaker();
-
     /// @notice throwed when the ERC721 hook has not called by cake nfpm
     error NotPancakeNFT();
 
     /// @notice Error emitted when auth failed
     error Unauthorized();
-
-    /// @notice Error emitted when a wrong recipient is set
-    error WrongRecipient();
 
     //////////////////////////////////////////////////////
     /// --- MODIFIERS
@@ -119,16 +140,17 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     }
 
     modifier onlyNftStakerOrClaimer(uint256 tokenId) {
-        if (msg.sender != nftStakers[tokenId] && msg.sender != claimer) revert Unauthorized();
+        if (msg.sender != nftStakers[tokenId] && msg.sender != rewardClaimer) revert Unauthorized();
         _;
     }
 
     modifier onlyNftsStakerOrClaimer(uint256[] memory tokenIds) {
-        if (msg.sender == claimer) return;
-        for (uint256 i; i < tokenIds.length;) {
-            if (msg.sender != nftStakers[tokenIds[i]]) revert Unauthorized();
-            unchecked {
-                ++i;
+        if (msg.sender != rewardClaimer) {
+            for (uint256 i; i < tokenIds.length;) {
+                if (msg.sender != nftStakers[tokenIds[i]]) revert Unauthorized();
+                unchecked {
+                    ++i;
+                }
             }
         }
         _;
@@ -250,14 +272,20 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @param _tokenId NFT id received
     function onERC721Received(address, address _from, uint256 _tokenId, bytes calldata) external returns (bytes4) {
         if (msg.sender != cakeNfpm) revert NotPancakeNFT();
+
         // store the owner's tokenId
         nftStakers[_tokenId] = _from;
+
         // transfer the NFT to the cake locker using the non safe transfer to not trigger the hook
         ERC721(cakeNfpm).transferFrom(address(this), address(locker), _tokenId);
+
         // transfer the NFT to the pancake masterchef v3 via the locker using safe transfer to trigger the hook
         bytes memory safeTransferData = abi.encodeWithSignature(SAFE_TRANSFER_SIG, address(locker), cakeMc, _tokenId);
-        bool success = executor.callExecuteTo(address(locker), cakeNfpm, 0, safeTransferData);
+        (bool success,) = executor.callExecuteTo(address(locker), cakeNfpm, 0, safeTransferData);
         if (!success) revert CallFailed();
+
+        emit NftDeposited(_tokenId, _from);
+
         return this.onERC721Received.selector;
     }
 
@@ -308,8 +336,9 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         bytes memory decreaseLiqData = abi.encodeWithSignature(
             DECREASE_LIQ_SIG, _tokenId, _liquidity, _amount0Min, _amount1Min, block.timestamp + 1 hours
         );
-        bool success = executor.callExecuteTo(address(locker), cakeMc, 0, decreaseLiqData);
+        (bool success,) = executor.callExecuteTo(address(locker), cakeMc, 0, decreaseLiqData);
         if (!success) revert CallFailed();
+
         // collect liquidity removed
         _collectFee(_tokenId, msg.sender);
     }
@@ -319,34 +348,44 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @param _recipient reward recipient
     function _harvestReward(uint256 _tokenId, address _recipient) internal {
         uint256 balanceBeforeHarvest = ERC20(rewardToken).balanceOf(address(this));
+
         bytes memory harvestData = abi.encodeWithSignature(HARVEST_SIG, _tokenId, address(this));
-        bool success = executor.callExecuteTo(address(locker), cakeMc, 0, harvestData);
+        (bool success,) = executor.callExecuteTo(address(locker), cakeMc, 0, harvestData);
         if (!success) revert CallFailed();
+
         uint256 reward = ERC20(rewardToken).balanceOf(address(this)) - balanceBeforeHarvest;
+
         if (reward != 0) {
             // charge fee
             reward -= _chargeProtocolFees(reward);
             // send the reward - fees to the recipient
             SafeTransferLib.safeTransfer(rewardToken, _recipient, reward);
-            //emit Harvest(_tokenId, reward, _recipient);
+            emit Harvest(_tokenId, reward, _recipient);
         }
     }
 
     /// @notice Internal function to collect fee for an NFT.
-    /// @param _tokenId NFT id to harvest.
+    /// @param _tokenId NFT id to collect fee for.
     /// @param _recipient reward recipient
     function _collectFee(uint256 _tokenId, address _recipient) internal {
+        // fetch underlying tokens
         (,, address token0, address token1,,,,,,,,) = ICakeNfpm(cakeNfpm).positions(_tokenId);
         uint256 token0BalanceBeforeCollect = ERC20(token0).balanceOf(address(this));
         uint256 token1BalanceBeforeCollect = ERC20(token1).balanceOf(address(this));
+
+        // collect fees if there is any and transfer here
         bytes memory harvestData =
             abi.encodeWithSignature(COLLECT_SIG, _tokenId, address(this), type(uint128).max, type(uint128).max);
-        bool success = executor.callExecuteTo(address(locker), cakeMc, 0, harvestData);
+        (bool success,) = executor.callExecuteTo(address(locker), cakeMc, 0, harvestData);
         if (!success) revert CallFailed();
+
+        // transfer token0 collected to the recipient
         uint256 token0Collected = ERC20(token0).balanceOf(address(this)) - token0BalanceBeforeCollect;
         if (token0Collected != 0) {
             SafeTransferLib.safeTransfer(token0, _recipient, token0Collected);
         }
+
+        // transfer token1 collected to the recipient
         uint256 token1Collected = ERC20(token1).balanceOf(address(this)) - token1BalanceBeforeCollect;
         if (token1Collected != 0) {
             SafeTransferLib.safeTransfer(token1, _recipient, token1Collected);
@@ -358,11 +397,14 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @param _recipient NFT recipient
     function _withdrawNft(uint256 _tokenId, address _recipient) internal onlyNftStaker(_tokenId) {
         // withdraw the NFT from pancake masterchef, it will send it to the recipient
+        // if there is any reward to collect it will be send to the recipient
         bytes memory withdrawData = abi.encodeWithSignature(WITHDRAW_SIG, _tokenId, _recipient);
-        bool success = executor.callExecuteTo(address(locker), cakeMc, 0, withdrawData);
+        (bool success,) = executor.callExecuteTo(address(locker), cakeMc, 0, withdrawData);
         if (!success) revert CallFailed();
 
         delete nftStakers[_tokenId];
+
+        emit NftWithdrawn(_tokenId, _recipient);
     }
 
     /// @notice Internal function to increase the allowance if needed
@@ -387,6 +429,8 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         feesAccrued = 0;
 
         SafeTransferLib.safeTransfer(rewardToken, feeReceiver, _feesAccrued);
+
+        emit FeeClaimed(feeReceiver, _feesAccrued);
     }
 
     /// @notice Internal function to charge protocol fees from `rewardToken` claimed by the locker.
@@ -450,9 +494,9 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     }
 
     /// @notice Set reward claimer.
-    /// @param _claimer Address of the claimer.
-    function setClaimer(address _claimer) external onlyGovernance {
-        claimer = _claimer;
+    /// @param _rewardClaimer Address of the claimer.
+    function setRewardClaimer(address _rewardClaimer) external onlyGovernance {
+        rewardClaimer = _rewardClaimer;
     }
 
     /// @notice Update protocol fees.

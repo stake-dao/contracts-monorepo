@@ -253,7 +253,7 @@ contract CakeStrategyNFTMinting is UUPSUpgradeable {
 
         // transfer the NFT to the pancake masterchef v3 via the locker using safe transfer to trigger the hook
         bytes memory safeTransferData = abi.encodeWithSignature(SAFE_TRANSFER_SIG, address(locker), cakeMc, _tokenId);
-        bool success = executor.callExecuteTo(address(locker), cakeNfpm, 0, safeTransferData);
+        (bool success,) = executor.callExecuteTo(address(locker), cakeNfpm, 0, safeTransferData);
         if (!success) revert CallFailed();
 
         // Mint the NFT to the user with the same tokenId than pancake NFT
@@ -308,7 +308,7 @@ contract CakeStrategyNFTMinting is UUPSUpgradeable {
         bytes memory decreaseLiqData = abi.encodeWithSignature(
             DECREASE_LIQ_SIG, _tokenId, _liquidity, _amount0Min, _amount1Min, block.timestamp + 1 hours
         );
-        bool success = executor.callExecuteTo(address(locker), cakeMc, 0, decreaseLiqData);
+        (bool success,) = executor.callExecuteTo(address(locker), cakeMc, 0, decreaseLiqData);
         if (!success) revert CallFailed();
         // collect liquidity removed
         _harvestNftFees(_tokenId, msg.sender);
@@ -334,7 +334,7 @@ contract CakeStrategyNFTMinting is UUPSUpgradeable {
     function _harvestNftReward(uint256 _tokenId, address _recipient) internal {
         uint256 balanceBeforeHarvest = ERC20(rewardToken).balanceOf(address(this));
         bytes memory harvestData = abi.encodeWithSignature(HARVEST_SIG, _tokenId, address(this));
-        bool success = executor.callExecuteTo(address(locker), cakeMc, 0, harvestData);
+        (bool success,) = executor.callExecuteTo(address(locker), cakeMc, 0, harvestData);
         if (!success) revert CallFailed();
         uint256 reward = ERC20(rewardToken).balanceOf(address(this)) - balanceBeforeHarvest;
         if (reward != 0) {
@@ -360,7 +360,7 @@ contract CakeStrategyNFTMinting is UUPSUpgradeable {
             340282366920938463463374607431768211455,
             340282366920938463463374607431768211455
         );
-        bool success = executor.callExecuteTo(address(locker), cakeMc, 0, harvestData);
+        (bool success,) = executor.callExecuteTo(address(locker), cakeMc, 0, harvestData);
         if (!success) revert CallFailed();
         uint256 token0Collected = ERC20(token0).balanceOf(address(this)) - token0BalanceBeforeCollect;
         if (token0Collected != 0) {
@@ -381,7 +381,7 @@ contract CakeStrategyNFTMinting is UUPSUpgradeable {
 
         // withdraw the NFT from pancake masterchef, it will send it to the recipient
         bytes memory withdrawData = abi.encodeWithSignature(WITHDRAW_SIG, _tokenId, _recipient);
-        bool success = executor.callExecuteTo(address(locker), cakeMc, 0, withdrawData);
+        (bool success,) = executor.callExecuteTo(address(locker), cakeMc, 0, withdrawData);
         if (!success) revert CallFailed();
 
         // delete recipients if needed
