@@ -84,6 +84,15 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
+    /// @notice Event emitted at every fee collected by stakers.
+    /// @param token0 Address of token0.
+    /// @param token1 Address of token1.
+    /// @param token0Collected Amount of token0 collected.
+    /// @param token1Collected Amount of token1 collected.
+    event FeeCollected(
+        address indexed token0, address indexed token1, uint256 token0Collected, uint256 token1Collected
+    );
+
     /// @notice Event emitted when governance is changed.
     /// @param newGovernance Address of the new governance.
     event GovernanceChanged(address newGovernance);
@@ -91,7 +100,7 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @notice Event emitted when the fees are claimed
     /// @param feeReceiver fee receiver
     /// @param feeClaimed amount of fees claimed
-    event FeeClaimed(address indexed feeReceiver, uint256 feeClaimed);
+    event ProtocolFeeClaimed(address indexed feeReceiver, uint256 feeClaimed);
 
     /// @notice Event emitted at every harvest
     /// @param tokenId nft id harvested for
@@ -390,6 +399,8 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         if (token1Collected != 0) {
             SafeTransferLib.safeTransfer(token1, _recipient, token1Collected);
         }
+
+        emit FeeCollected(token0, token1, token0Collected, token1Collected);
     }
 
     /// @notice Internal function to withdraw the NFT sending it to the recipient.
@@ -430,7 +441,7 @@ contract CakeStrategyNFT is UUPSUpgradeable {
 
         SafeTransferLib.safeTransfer(rewardToken, feeReceiver, _feesAccrued);
 
-        emit FeeClaimed(feeReceiver, _feesAccrued);
+        emit ProtocolFeeClaimed(feeReceiver, _feesAccrued);
     }
 
     /// @notice Internal function to charge protocol fees from `rewardToken` claimed by the locker.

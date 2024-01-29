@@ -15,6 +15,18 @@ import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
 import {CAKE} from "address-book/lockers/56.sol";
 import {DAO} from "address-book/dao/56.sol";
 
+interface ICakeV3Pool {
+    function swap(
+        address recipient,
+        bool zeroForOne,
+        int256 amountSpecified,
+        uint160 sqrtPriceLimitX96,
+        bytes calldata data
+    ) external;
+    function feeGrowthGlobal0X128() external view returns (uint256);
+    function feeGrowthGlobal1X128() external view returns (uint256);
+}
+
 contract CakeStrategyNFTTest is Test {
     CakeStrategyNFT internal strategyImpl;
     CakeStrategyNFT internal strategy;
@@ -26,6 +38,7 @@ contract CakeStrategyNFTTest is Test {
 
     address internal nftHolder = 0x3E61DFfa0bC323Eaa16F4C982F96FEB89ab89E8a;
     uint256 internal nftId = 382161;
+    address internal v3Pool = 0x7f51c8AaA6B0599aBd16674e2b17FEc7a9f674A1;
 
     address internal rewardRecipient = address(0xFEAB);
     address internal nftRecipient = address(0xFAEB);
@@ -57,8 +70,10 @@ contract CakeStrategyNFTTest is Test {
         vm.stopPrank();
 
         (,, token0, token1,,,,,,,,) = ICakeNfpm(strategy.cakeNfpm()).positions(nftId);
-        deal(token0, address(this), 1e18);
-        deal(token1, address(this), 1e18);
+        deal(token0, address(this), 1000e18);
+        deal(token1, address(this), 1000e18);
+
+        //deal(token0, nftRecipient, 10e18);
     }
 
     function test_deposit_nft() external {
@@ -141,11 +156,38 @@ contract CakeStrategyNFTTest is Test {
         assertGt(ERC20(REWARD_TOKEN).balanceOf(nftHolder) - stakerBalance, 0);
     }
 
-    function test_harvest_nft_fees() external {
+    function test_collect_fee() external {
+        _depositNft();
+
+        uint256 feeGlobalBeforeSwap = ICakeV3Pool(v3Pool).feeGrowthGlobal0X128();
+
+        ERC20(token0).approve(v3Pool, 1000e18);
+        // Swap 1K token0 to token1 to increase global fees
+        ICakeV3Pool(v3Pool).swap(address(this), true, 1000e18, 4295128740, "");
+
+        uint256 feeGlobalAfterSwap = ICakeV3Pool(v3Pool).feeGrowthGlobal1X128();
+        assertGt(feeGlobalAfterSwap, feeGlobalBeforeSwap);
+
+        // collect fee
+        uint256 token0Before = ERC20(token0).balanceOf(nftHolder);
+        vm.prank(nftHolder);
+        strategy.collectFee(nftId, nftHolder);
+        uint256 token0Collected = ERC20(token0).balanceOf(nftHolder) - token0Before;
+        assertGt(token0Collected, 0);
+    }
+
+    function test_collect_no_fee() external {
         _depositNft();
 
         vm.prank(nftHolder);
+        vm.recordLogs();
         strategy.collectFee(nftId, nftHolder);
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        // check event data
+        assertEq(entries[3].topics[0], keccak256("FeeCollected(address,address,uint256,uint256)"));
+        (uint256 token0Amount, uint256 token1Amount) = abi.decode(entries[3].data, (uint256, uint256));
+        assertEq(token0Amount, 0);
+        assertEq(token1Amount, 0);
     }
 
     function test_increase_liquidity() external {
@@ -212,5 +254,14 @@ contract CakeStrategyNFTTest is Test {
         assertEq(userInfo.user, address(0));
         // check NFT received by the recipient
         assertEq(ERC721(strategy.cakeNfpm()).ownerOf(nftId), _recipient);
+    }
+
+    function pancakeV3SwapCallback(int256 _amount0, int256 _amount1, bytes calldata) external {
+        if (_amount0 > 0) {
+            ERC20(token0).transfer(msg.sender, uint256(_amount0));
+        }
+        if (_amount1 > 0) {
+            ERC20(token1).transfer(msg.sender, uint256(_amount1));
+        }
     }
 }
