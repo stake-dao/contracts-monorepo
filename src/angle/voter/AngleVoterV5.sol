@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "src/base/interfaces/IAngleGovernor.sol";
 import "openzeppelin-contracts/token/ERC20/IERC20.sol";
 
 interface IExecutor {
@@ -16,7 +15,7 @@ contract AngleVoterV5 {
     address public constant ANGLE_GC = 0x9aD7e7b0877582E14c17702EecF49018DD6f2367;
 
     /// @notice Address of the angle governor
-    IAngleGovernor public constant ANGLE_GOVERNOR = IAngleGovernor(0x748bA9Cd5a5DDba5ABA70a4aC861b2413dCa4436);
+    address public constant ANGLE_GOVERNOR = 0x748bA9Cd5a5DDba5ABA70a4aC861b2413dCa4436;
 
     /// @notice Address of the angle strategy
     address public angleStrategy = 0x22635427C72e8b0028FeAE1B5e1957508d9D7CAF;
@@ -38,16 +37,28 @@ contract AngleVoterV5 {
         _;
     }
 
-    function castVote(uint256 _proposalId, uint8 _support) external onlyGovernance returns (uint256) {
-        return ANGLE_GOVERNOR.castVote(_proposalId, _support);
+    function castVote(uint256 _proposalId, uint8 _support) external onlyGovernance returns (uint256 _weight) {
+        bytes memory voteData =
+            abi.encodeWithSignature("castVote(uint256,uint8)", _proposalId, _support);
+        (bool success, bytes memory result) = IExecutor(angleStrategy).execute(
+                ANGLE_LOCKER, 0, abi.encodeWithSignature("execute(address,uint256,bytes)", ANGLE_GOVERNOR, 0, voteData)
+            );
+        if (!success) revert CallFailed();
+        _weight = abi.decode(result, (uint256));
     }
 
     function castVoteWithReason(uint256 _proposalId, uint8 _support, string calldata _reason)
         external
         onlyGovernance
-        returns (uint256)
+        returns (uint256 _weight)
     {
-        return ANGLE_GOVERNOR.castVoteWithReason(_proposalId, _support, _reason);
+        bytes memory voteData =
+            abi.encodeWithSignature("castVoteWithReason(uint256,uint8,string)", _proposalId, _support, _reason);
+        (bool success, bytes memory result) = IExecutor(angleStrategy).execute(
+                ANGLE_LOCKER, 0, abi.encodeWithSignature("execute(address,uint256,bytes)", ANGLE_GOVERNOR, 0, voteData)
+            );
+        if (!success) revert CallFailed();
+        _weight = abi.decode(result, (uint256));
     }
 
     function castVoteWithReasonAndParams(
@@ -55,8 +66,14 @@ contract AngleVoterV5 {
         uint8 _support,
         string calldata _reason,
         bytes memory _params
-    ) external onlyGovernance returns (uint256) {
-        return ANGLE_GOVERNOR.castVoteWithReasonAndParams(_proposalId, _support, _reason, _params);
+    ) external onlyGovernance returns (uint256 _weight) {
+        bytes memory voteData =
+            abi.encodeWithSignature("castVoteWithReasonAndParams(uint256,uint8,string,bytes)", _proposalId, _support, _reason, _params);
+        (bool success, bytes memory result) = IExecutor(angleStrategy).execute(
+                ANGLE_LOCKER, 0, abi.encodeWithSignature("execute(address,uint256,bytes)", ANGLE_GOVERNOR, 0, voteData)
+            );
+        if (!success) revert CallFailed();
+        _weight = abi.decode(result, (uint256));
     }
 
     /// @notice vote for angle gauges
