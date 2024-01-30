@@ -38,6 +38,8 @@ contract CakeStrategyNFTTest is Test {
 
     address internal nftHolder = 0x3E61DFfa0bC323Eaa16F4C982F96FEB89ab89E8a;
     uint256 internal nftId = 382161;
+    uint256[] internal nftIds = [nftId];
+
     address internal v3Pool = 0x7f51c8AaA6B0599aBd16674e2b17FEc7a9f674A1;
 
     address internal rewardRecipient = address(0xFEAB);
@@ -98,25 +100,11 @@ contract CakeStrategyNFTTest is Test {
         strategy.withdrawNft(nftId);
     }
 
-    function test_harvest_reward() external {
-        _depositNft();
-
-        skip(1 days);
-
-        uint256 nftHolderBalance = ERC20(REWARD_TOKEN).balanceOf(nftHolder);
-        vm.prank(nftHolder);
-        strategy.harvestReward(nftId, nftHolder);
-        // protocol fees at 0%
-        assertGt(ERC20(REWARD_TOKEN).balanceOf(nftHolder) - nftHolderBalance, 0);
-    }
-
     function test_harvest_rewards_claimer() external {
         _depositNft();
 
         skip(1 days);
 
-        uint256[] memory nftIds = new uint256[](1);
-        nftIds[0] = nftId;
         uint256 nftHolderBalance = ERC20(REWARD_TOKEN).balanceOf(nftHolder);
         vm.prank(rewardClaimer);
         strategy.harvestRewards(nftIds, nftHolder);
@@ -133,7 +121,7 @@ contract CakeStrategyNFTTest is Test {
 
         uint256 nftHolderBalance = ERC20(REWARD_TOKEN).balanceOf(nftHolder);
         vm.prank(nftHolder);
-        strategy.harvestReward(nftId, nftHolder);
+        strategy.harvestRewards(nftIds, nftHolder);
 
         assertGt(ERC20(REWARD_TOKEN).balanceOf(nftHolder) - nftHolderBalance, 0);
         uint256 feeAccrued = strategy.feesAccrued();
@@ -171,7 +159,7 @@ contract CakeStrategyNFTTest is Test {
         // collect fee
         uint256 token0Before = ERC20(token0).balanceOf(nftHolder);
         vm.prank(nftHolder);
-        strategy.collectFee(nftId, nftHolder);
+        strategy.collectFees(nftIds, nftHolder);
         uint256 token0Collected = ERC20(token0).balanceOf(nftHolder) - token0Before;
         assertGt(token0Collected, 0);
     }
@@ -181,7 +169,7 @@ contract CakeStrategyNFTTest is Test {
 
         vm.prank(nftHolder);
         vm.recordLogs();
-        strategy.collectFee(nftId, nftHolder);
+        strategy.collectFees(nftIds, nftHolder);
         Vm.Log[] memory entries = vm.getRecordedLogs();
         // check event data
         assertEq(entries[3].topics[0], keccak256("FeeCollected(address,address,uint256,uint256)"));
@@ -197,7 +185,7 @@ contract CakeStrategyNFTTest is Test {
         (,,,,,,, uint256 currentLiq,,,,) = ICakeNfpm(strategy.cakeNfpm()).positions(nftId);
         ERC20(token0).approve(address(strategy), token0ToIncrease);
         ERC20(token1).approve(address(strategy), token1ToIncrease);
-        strategy.increaseLiquidity(nftId, token0ToIncrease, token1ToIncrease, 0, 0);
+        strategy.increaseLiquidity(nftId, token0ToIncrease, token1ToIncrease, 0, 0, block.timestamp + 1 hours);
         (,,,,,,, uint256 newLiq,,,,) = ICakeNfpm(strategy.cakeNfpm()).positions(nftId);
         assertGt(newLiq, currentLiq);
     }

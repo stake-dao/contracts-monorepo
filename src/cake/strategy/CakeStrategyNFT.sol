@@ -63,22 +63,16 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     uint256 public feesAccrued;
 
     /// @notice PancakeSwap non fungible position manager.
-    address public cakeNfpm;
+    address public immutable cakeNfpm;
 
     /// @notice PancakeSwap masterChef.
-    address public cakeMc;
+    address public immutable cakeMc;
 
     /// @notice Reward claimer.
     address public rewardClaimer;
 
-    /// @notice Increase liq deadline -> block.timestamp + deadlinePeriod
-    uint256 public deadlinePeriod = 1 hours;
-
     /// @notice Mapping of NFT stakers.
     mapping(uint256 => address) public nftStakers; // tokenId -> user
-
-    /// @notice Map addresses allowed to interact with the `execute` function.
-    mapping(address => bool) public allowed;
 
     ////////////////////////////////////////////////////////////////
     /// --- EVENTS & ERRORS
@@ -148,11 +142,6 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         _;
     }
 
-    modifier onlyNftStakerOrClaimer(uint256 tokenId) {
-        if (msg.sender != nftStakers[tokenId] && msg.sender != rewardClaimer) revert Unauthorized();
-        _;
-    }
-
     modifier onlyNftsStakerOrClaimer(uint256[] memory tokenIds) {
         if (msg.sender != rewardClaimer) {
             for (uint256 i; i < tokenIds.length;) {
@@ -170,11 +159,6 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         _;
     }
 
-    modifier onlyGovernanceOrAllowed() {
-        if (msg.sender != governance && !allowed[msg.sender]) revert Unauthorized();
-        _;
-    }
-
     /// @notice Constructor.
     /// @param _governance Address of the strategy governance.
     /// @param _locker Address of the locker.
@@ -183,6 +167,9 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         governance = _governance;
         locker = ILocker(_locker);
         rewardToken = _rewardToken;
+
+        cakeMc = 0x556B9306565093C855AEA9AE92A594704c2Cd59e; // v3
+        cakeNfpm = 0x46A15B0b27311cedF172AB29E4f4766fbE7F4364;
     }
 
     /// @notice Initialize function.
@@ -192,16 +179,6 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         if (governance != address(0)) revert AddressNull();
         governance = _governance;
         executor = IExecutor(_executor);
-
-        cakeMc = 0x556B9306565093C855AEA9AE92A594704c2Cd59e; // v3
-        cakeNfpm = 0x46A15B0b27311cedF172AB29E4f4766fbE7F4364;
-    }
-
-    /// @notice Harvest reward for an NFT.
-    /// @param _tokenId NFT id to harvest.
-    /// @param _recipient Address of the recipient.
-    function harvestReward(uint256 _tokenId, address _recipient) external onlyNftStakerOrClaimer(_tokenId) {
-        _harvestReward(_tokenId, _recipient);
     }
 
     /// @notice Harvest reward for NFTs.
@@ -210,21 +187,17 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     function harvestRewards(uint256[] memory _tokenIds, address _recipient)
         external
         onlyNftsStakerOrClaimer(_tokenIds)
+        returns (uint256[] memory)
     {
         uint256 tokensLength = _tokenIds.length;
+        uint256[] memory rewards = new uint256[](tokensLength);
         for (uint256 i; i < tokensLength;) {
-            _harvestReward(_tokenIds[i], _recipient);
+            rewards[i] = _harvestReward(_tokenIds[i], _recipient);
             unchecked {
                 ++i;
             }
         }
-    }
-
-    /// @notice Collect fee for NFT.
-    /// @param _tokenId NFT id to collect fee for.
-    /// @param _recipient Address of the recipient.
-    function collectFee(uint256 _tokenId, address _recipient) external onlyNftStakerOrClaimer(_tokenId) {
-        _collectFee(_tokenId, _recipient);
+        return rewards;
     }
 
     /// @notice Harvest fees for NFTs.
@@ -238,13 +211,6 @@ contract CakeStrategyNFT is UUPSUpgradeable {
                 i++;
             }
         }
-    }
-
-    /// @notice Harvest both reward and fees for NFT.
-    /// @param _tokenId NFT id to harvest.
-    function harvestAndCollectFee(uint256 _tokenId, address _recipient) external onlyNftStakerOrClaimer(_tokenId) {
-        _harvestReward(_tokenId, _recipient);
-        _collectFee(_tokenId, _recipient);
     }
 
     /// @notice Harvest both reward and fees for NFTs.
@@ -265,15 +231,15 @@ contract CakeStrategyNFT is UUPSUpgradeable {
 
     /// @notice Withdraw the NFT sending it to the recipient.
     /// @param _tokenId NFT id to withdraw.
-    function withdrawNft(uint256 _tokenId) external {
-        _withdrawNft(_tokenId, msg.sender);
+    function withdrawNft(uint256 _tokenId) external returns (uint256 reward) {
+        reward = _withdrawNft(_tokenId, msg.sender);
     }
 
     /// @notice Withdraw the NFT sending it to the recipient.
     /// @param _tokenId NFT id to withdraw.
     /// @param _recipient NFT receiver.
-    function withdrawNft(uint256 _tokenId, address _recipient) external {
-        _withdrawNft(_tokenId, _recipient);
+    function withdrawNft(uint256 _tokenId, address _recipient) external returns (uint256 reward) {
+        reward = _withdrawNft(_tokenId, _recipient);
     }
 
     /// @notice Hook triggered within safe function calls.
@@ -281,6 +247,7 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @param _tokenId NFT id received
     function onERC721Received(address, address _from, uint256 _tokenId, bytes calldata) external returns (bytes4) {
         if (msg.sender != cakeNfpm) revert NotPancakeNFT();
+        if (_from == cakeMc) return this.onERC721Received.selector;
 
         // store the owner's tokenId
         nftStakers[_tokenId] = _from;
@@ -309,7 +276,8 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         uint256 _amount0Desired,
         uint256 _amount1Desired,
         uint256 _amount0Min,
-        uint256 _amount1Min
+        uint256 _amount1Min,
+        uint256 _deadline
     ) external {
         // fetch underlying tokens
         (,, address token0, address token1,,,,,,,,) = ICakeNfpm(cakeNfpm).positions(_tokenId);
@@ -321,13 +289,7 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         _approveIfNeeded(token0, _amount0Desired);
         _approveIfNeeded(token1, _amount1Desired);
         bytes memory increaseLiqData = abi.encodeWithSignature(
-            INCREASE_LIQ_SIG,
-            _tokenId,
-            _amount0Desired,
-            _amount1Desired,
-            _amount0Min,
-            _amount1Min,
-            block.timestamp + deadlinePeriod // deadline
+            INCREASE_LIQ_SIG, _tokenId, _amount0Desired, _amount1Desired, _amount0Min, _amount1Min, _deadline
         );
         (bool success,) = cakeMc.call(increaseLiqData);
         if (!success) revert CallFailed();
@@ -341,12 +303,15 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     function decreaseLiquidity(uint256 _tokenId, uint128 _liquidity, uint256 _amount0Min, uint256 _amount1Min)
         external
         onlyNftStaker(_tokenId)
+        returns (uint256 amount0, uint256 amount1)
     {
         bytes memory decreaseLiqData = abi.encodeWithSignature(
             DECREASE_LIQ_SIG, _tokenId, _liquidity, _amount0Min, _amount1Min, block.timestamp + 1 hours
         );
-        (bool success,) = executor.callExecuteTo(address(locker), cakeMc, 0, decreaseLiqData);
+        (bool success, bytes memory result) = executor.callExecuteTo(address(locker), cakeMc, 0, decreaseLiqData);
         if (!success) revert CallFailed();
+
+        (amount0, amount1) = abi.decode(result, (uint256, uint256));
 
         // collect liquidity removed
         _collectFee(_tokenId, msg.sender);
@@ -355,14 +320,12 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @notice Internal function to harvest reward for an NFT.
     /// @param _tokenId NFT id to harvest.
     /// @param _recipient reward recipient
-    function _harvestReward(uint256 _tokenId, address _recipient) internal {
-        uint256 balanceBeforeHarvest = ERC20(rewardToken).balanceOf(address(this));
-
+    function _harvestReward(uint256 _tokenId, address _recipient) internal returns (uint256 reward) {
         bytes memory harvestData = abi.encodeWithSignature(HARVEST_SIG, _tokenId, address(this));
-        (bool success,) = executor.callExecuteTo(address(locker), cakeMc, 0, harvestData);
+        (bool success, bytes memory result) = executor.callExecuteTo(address(locker), cakeMc, 0, harvestData);
         if (!success) revert CallFailed();
 
-        uint256 reward = ERC20(rewardToken).balanceOf(address(this)) - balanceBeforeHarvest;
+        reward = abi.decode(result, (uint256));
 
         if (reward != 0) {
             // charge fee
@@ -379,23 +342,21 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     function _collectFee(uint256 _tokenId, address _recipient) internal {
         // fetch underlying tokens
         (,, address token0, address token1,,,,,,,,) = ICakeNfpm(cakeNfpm).positions(_tokenId);
-        uint256 token0BalanceBeforeCollect = ERC20(token0).balanceOf(address(this));
-        uint256 token1BalanceBeforeCollect = ERC20(token1).balanceOf(address(this));
 
         // collect fees if there is any and transfer here
         bytes memory harvestData =
             abi.encodeWithSignature(COLLECT_SIG, _tokenId, address(this), type(uint128).max, type(uint128).max);
-        (bool success,) = executor.callExecuteTo(address(locker), cakeMc, 0, harvestData);
+        (bool success, bytes memory result) = executor.callExecuteTo(address(locker), cakeMc, 0, harvestData);
         if (!success) revert CallFailed();
 
+        (uint256 token0Collected, uint256 token1Collected) = abi.decode(result, (uint256, uint256));
+
         // transfer token0 collected to the recipient
-        uint256 token0Collected = ERC20(token0).balanceOf(address(this)) - token0BalanceBeforeCollect;
         if (token0Collected != 0) {
             SafeTransferLib.safeTransfer(token0, _recipient, token0Collected);
         }
 
         // transfer token1 collected to the recipient
-        uint256 token1Collected = ERC20(token1).balanceOf(address(this)) - token1BalanceBeforeCollect;
         if (token1Collected != 0) {
             SafeTransferLib.safeTransfer(token1, _recipient, token1Collected);
         }
@@ -406,12 +367,27 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @notice Internal function to withdraw the NFT sending it to the recipient.
     /// @param _tokenId NFT id to withdraw.
     /// @param _recipient NFT recipient
-    function _withdrawNft(uint256 _tokenId, address _recipient) internal onlyNftStaker(_tokenId) {
-        // withdraw the NFT from pancake masterchef, it will send it to the recipient
-        // if there is any reward to collect it will be send to the recipient
-        bytes memory withdrawData = abi.encodeWithSignature(WITHDRAW_SIG, _tokenId, _recipient);
-        (bool success,) = executor.callExecuteTo(address(locker), cakeMc, 0, withdrawData);
+    function _withdrawNft(uint256 _tokenId, address _recipient)
+        internal
+        onlyNftStaker(_tokenId)
+        returns (uint256 reward)
+    {
+        // withdraw the NFT from pancake masterchef, sending it + rewards if any to this contract
+        // it charges fees on the reward and then send the NFT + reward - fees to the _recipient
+        bytes memory withdrawData = abi.encodeWithSignature(WITHDRAW_SIG, _tokenId, address(this));
+        (bool success, bytes memory result) = executor.callExecuteTo(address(locker), cakeMc, 0, withdrawData);
         if (!success) revert CallFailed();
+
+        reward = abi.decode(result, (uint256));
+
+        if (reward != 0) {
+            // charge fee
+            reward -= _chargeProtocolFees(reward);
+            // send the reward - fees to the recipient
+            SafeTransferLib.safeTransfer(rewardToken, _recipient, reward);
+        }
+
+        ERC721(cakeNfpm).safeTransferFrom(address(this), _recipient, _tokenId);
 
         delete nftStakers[_tokenId];
 
@@ -473,18 +449,6 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         emit GovernanceChanged(msg.sender);
     }
 
-    /// @notice Set pancake masterchef.
-    /// @param _cakeMc masterchef address.
-    function setCakeMc(address _cakeMc) external onlyGovernance {
-        cakeMc = _cakeMc;
-    }
-
-    /// @notice Set pancake non fungible position manager.
-    /// @param _cakeNfpm nfpm address.
-    function setCakeNfpm(address _cakeNfpm) external onlyGovernance {
-        cakeNfpm = _cakeNfpm;
-    }
-
     /// @notice Set FeeReceiver new address.
     /// @param _feeReceiver Address of new FeeReceiver.
     function setFeeReceiver(address _feeReceiver) external onlyGovernance {
@@ -496,12 +460,6 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @param _executor Address of new executor.
     function setExecutor(address _executor) external onlyGovernance {
         executor = IExecutor(_executor);
-    }
-
-    /// @notice Set deadline period for providing liq.
-    /// @param _deadlinePeriod Deadline period.
-    function setDeadlinePeriod(uint256 _deadlinePeriod) external onlyGovernance {
-        deadlinePeriod = _deadlinePeriod;
     }
 
     /// @notice Set reward claimer.
@@ -517,26 +475,6 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         protocolFeesPercent = protocolFee;
     }
 
-    /// @notice Allow a module to interact with the `execute` function.
-    /// @dev excodesize can be bypassed but whitelist should go through governance.
-    function allowAddress(address _address) external onlyGovernance {
-        if (_address == address(0)) revert AddressNull();
-
-        /// Check if the address is a contract.
-        int256 size;
-        assembly {
-            size := extcodesize(_address)
-        }
-        if (size == 0) revert NotContract();
-
-        allowed[_address] = true;
-    }
-
-    /// @notice Disallow a module to interact with the `execute` function.
-    function disallowAddress(address _address) external onlyGovernance {
-        allowed[_address] = false;
-    }
-
     //////////////////////////////////////////////////////
     /// --- GOVERNANCE OR ALLOWED FUNCTIONS
     //////////////////////////////////////////////////////
@@ -549,7 +487,7 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @return result_ Bytes containing the result of the execution.
     function execute(address to, uint256 value, bytes calldata data)
         external
-        onlyGovernanceOrAllowed
+        onlyGovernance
         returns (bool, bytes memory)
     {
         (bool success, bytes memory result) = to.call{value: value}(data);
