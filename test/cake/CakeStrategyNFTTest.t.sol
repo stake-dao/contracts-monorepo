@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 import "solady/utils/LibClone.sol";
-import "src/cake/strategy/PancakeMasterchefStrategy.sol";
+import "src/cake/strategy/CAKEMasterchefStrategy.sol";
 import "openzeppelin-contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import {ICakeMc} from "src/base/interfaces/ICakeMc.sol";
@@ -29,8 +29,8 @@ contract CakeStrategyNFTTest is Test {
     bytes32 internal constant _ERC1967_IMPLEMENTATION_SLOT =
         0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
 
-    PancakeMasterchefStrategy internal strategyImpl;
-    PancakeMasterchefStrategy internal strategy;
+    CAKEMasterchefStrategy internal strategyImpl;
+    CAKEMasterchefStrategy internal strategy;
     Executor internal executor;
 
     ILocker internal constant LOCKER = ILocker(CAKE.LOCKER);
@@ -57,9 +57,9 @@ contract CakeStrategyNFTTest is Test {
         vm.createSelectFork(vm.rpcUrl("bnb"), 35_094_542);
         // Deploy Executor
         executor = new Executor(MS);
-        strategyImpl = new PancakeMasterchefStrategy(address(this), address(LOCKER), REWARD_TOKEN);
+        strategyImpl = new CAKEMasterchefStrategy(address(this), address(LOCKER), REWARD_TOKEN);
         address strategyProxy = address(new ERC1967Proxy(address(strategyImpl), ""));
-        strategy = PancakeMasterchefStrategy(payable(strategyProxy));
+        strategy = CAKEMasterchefStrategy(payable(strategyProxy));
         strategy.initialize(address(this), address(executor));
         strategy.setRewardClaimer(rewardClaimer);
         strategy.setFeeReceiver(feeReceiver);
@@ -97,7 +97,7 @@ contract CakeStrategyNFTTest is Test {
 
     function test_withdraw_nft_not_staker() external {
         _depositNft();
-        vm.expectRevert(PancakeMasterchefStrategy.Unauthorized.selector);
+        vm.expectRevert(CAKEMasterchefStrategy.Unauthorized.selector);
         strategy.withdraw(nftId);
     }
 
@@ -111,6 +111,16 @@ contract CakeStrategyNFTTest is Test {
         strategy.harvestRewards(nftIds, nftHolder);
         // protocol fees at 0%
         assertGt(ERC20(REWARD_TOKEN).balanceOf(nftHolder) - nftHolderBalance, 0);
+    }
+
+    function test_harvestNotOwner() public {
+        _depositNft();
+
+        skip(1 days);
+
+        vm.prank(address(0xCAFE));
+        vm.expectRevert(CAKEMasterchefStrategy.Unauthorized.selector);
+        strategy.harvestRewards(nftIds, nftHolder);
     }
 
     function test_harvest_reward_protocol_fee() external {
@@ -164,7 +174,7 @@ contract CakeStrategyNFTTest is Test {
 
         // collect fee
         vm.prank(nftHolder);
-        PancakeMasterchefStrategy.CollectedFees[] memory fees = strategy.collectFees(nftIds, nftHolder);
+        CAKEMasterchefStrategy.CollectedFees[] memory fees = strategy.collectFees(nftIds, nftHolder);
         uint256 token0Collected = fees[0].token0Amount;
 
         assertGt(token0Collected, 0);
@@ -263,10 +273,10 @@ contract CakeStrategyNFTTest is Test {
     }
 
     function test_InitializeTwice() public {
-        vm.expectRevert(PancakeMasterchefStrategy.AddressNull.selector);
+        vm.expectRevert(CAKEMasterchefStrategy.AddressNull.selector);
         strategy.initialize(address(0xCAFE), address(0xCAFE));
 
-        vm.expectRevert(PancakeMasterchefStrategy.AddressNull.selector);
+        vm.expectRevert(CAKEMasterchefStrategy.AddressNull.selector);
         strategyImpl.initialize(address(0xCAFE), address(0xCAFE));
     }
 
@@ -284,12 +294,12 @@ contract CakeStrategyNFTTest is Test {
 
     function test_UpgradeToWrongCaller() public {
         vm.prank(address(0xCAFE));
-        vm.expectRevert(PancakeMasterchefStrategy.Unauthorized.selector);
+        vm.expectRevert(CAKEMasterchefStrategy.Unauthorized.selector);
         strategy.upgradeToAndCall(address(1), "");
     }
 
     function test_updateGovernanceAndUpdate() public {
-        PancakeMasterchefStrategy impl2 = new PancakeMasterchefStrategy(address(this), address(LOCKER), REWARD_TOKEN);
+        CAKEMasterchefStrategy impl2 = new CAKEMasterchefStrategy(address(this), address(LOCKER), REWARD_TOKEN);
 
         strategy.transferGovernance(address(0xCAFE));
 
@@ -300,7 +310,7 @@ contract CakeStrategyNFTTest is Test {
 
         assertEq(strategy.governance(), address(0xCAFE));
 
-        vm.expectRevert(PancakeMasterchefStrategy.Unauthorized.selector);
+        vm.expectRevert(CAKEMasterchefStrategy.Unauthorized.selector);
         strategy.upgradeToAndCall(address(impl2), "");
 
         vm.prank(address(0xCAFE));
@@ -312,17 +322,17 @@ contract CakeStrategyNFTTest is Test {
         assertEq(strategy.governance(), address(0xCAFE));
         assertEq(address(strategy.executor()), _executor);
 
-        vm.expectRevert(PancakeMasterchefStrategy.AddressNull.selector);
+        vm.expectRevert(CAKEMasterchefStrategy.AddressNull.selector);
         strategy.initialize(address(0xCAFE), address(0xCAFE));
 
-        vm.expectRevert(PancakeMasterchefStrategy.AddressNull.selector);
+        vm.expectRevert(CAKEMasterchefStrategy.AddressNull.selector);
         impl2.initialize(address(0xCAFE), address(0xCAFE));
     }
 
     event Upgraded(address indexed implementation);
 
     function test_UpgradeTo() public {
-        PancakeMasterchefStrategy impl2 = new PancakeMasterchefStrategy(address(this), address(LOCKER), REWARD_TOKEN);
+        CAKEMasterchefStrategy impl2 = new CAKEMasterchefStrategy(address(this), address(LOCKER), REWARD_TOKEN);
 
         vm.expectEmit(true, true, true, true);
 

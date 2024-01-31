@@ -14,7 +14,7 @@ import {IExecutor} from "src/base/interfaces/IExecutor.sol";
 import {SafeExecute} from "src/base/libraries/SafeExecute.sol";
 
 /// @notice Main access point of Cake Locker.
-contract PancakeMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
+contract CAKEMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
     using FixedPointMathLib for uint256;
     using SafeExecute for ILocker;
     using SafeTransferLib for ERC20;
@@ -90,16 +90,6 @@ contract PancakeMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
     /// @param amount amount harvested
     /// @param recipient reward recipient
     event Harvest(uint256 indexed tokenId, uint256 amount, address recipient);
-
-    /// @notice Event emitted when an Nft is deposited via the safe transfer hook
-    /// @param tokenId nft id deposited
-    /// @param staker nft staker
-    event NftDeposited(uint256 indexed tokenId, address indexed staker);
-
-    /// @notice Event emitted when an Nft is withdrawn
-    /// @param tokenId nft id withdrawn
-    /// @param recipient nft recipient
-    event NftWithdrawn(uint256 indexed tokenId, address indexed recipient);
 
     /// @notice Error emitted when input address is null
     error AddressNull();
@@ -260,8 +250,6 @@ contract PancakeMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
         (bool success,) = executor.callExecuteTo(address(locker), nonFungiblePositionManager, 0, safeTransferData);
         if (!success) revert CallFailed();
 
-        emit NftDeposited(_tokenId, _from);
-
         return this.onERC721Received.selector;
     }
 
@@ -348,6 +336,7 @@ contract PancakeMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
             reward -= _chargeProtocolFees(reward);
             // send the reward - fees to the recipient
             SafeTransferLib.safeTransfer(rewardToken, _recipient, reward);
+
             emit Harvest(_tokenId, reward, _recipient);
         }
     }
@@ -409,8 +398,6 @@ contract PancakeMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
         ERC721(nonFungiblePositionManager).safeTransferFrom(address(this), _recipient, _tokenId);
 
         delete nftStakers[_tokenId];
-
-        emit NftWithdrawn(_tokenId, _recipient);
     }
 
     /// @notice Internal function to increase the allowance if needed
