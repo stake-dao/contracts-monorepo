@@ -3,12 +3,12 @@ pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
 import "forge-std/Script.sol";
-import "solady/utils/LibClone.sol";
 
 import {PancakeMasterchefStrategy} from "src/cake/strategy/PancakeMasterchefStrategy.sol";
 import {Executor} from "src/cake/utils/Executor.sol";
 import {DAO} from "address-book/dao/56.sol";
 import {CAKE} from "address-book/lockers/56.sol";
+import "openzeppelin-contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 contract DeployCakeStrategyNFT is Script, Test {
     PancakeMasterchefStrategy public strategyImpl;
@@ -28,7 +28,8 @@ contract DeployCakeStrategyNFT is Script, Test {
         // Deploy strategy impl
         strategyImpl = new PancakeMasterchefStrategy(DEPLOYER, CAKE.LOCKER, CAKE.TOKEN);
         // Clone strategy
-        address strategyProxy = LibClone.deployERC1967(address(strategyImpl));
+        address strategyProxy = address(new ERC1967Proxy(address(strategyImpl), ""));
+
         strategy = PancakeMasterchefStrategy(payable(strategyProxy));
         // Initialize strategy
         strategy.initialize(DEPLOYER, address(executor));

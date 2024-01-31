@@ -27,24 +27,6 @@ contract PancakeMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
     /// @notice Denominator for fixed point math.
     uint256 public constant DENOMINATOR = 10_000;
 
-    /// @notice collect() signature string
-    string public constant COLLECT_SIG = "collect((uint256,address,uint128,uint128))";
-
-    /// @notice decreaseLiquidity() signature string
-    string public constant DECREASE_LIQ_SIG = "decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))";
-
-    /// @notice harvest() signature string
-    string public constant HARVEST_SIG = "harvest(uint256,address)";
-
-    /// @notice increaseLiquidity() signature string
-    string public constant INCREASE_LIQ_SIG = "increaseLiquidity((uint256,uint256,uint256,uint256,uint256,uint256))";
-
-    /// @notice safeTransferFrom() signature string
-    string public constant SAFE_TRANSFER_SIG = "safeTransferFrom(address,address,uint256)";
-
-    /// @notice withdraw() signature string
-    string public constant WITHDRAW_SIG = "withdraw(uint256,address)";
-
     /// @notice Address of the locker contract.
     ILocker public immutable locker;
 
@@ -274,7 +256,7 @@ contract PancakeMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
 
         // transfer the NFT to the pancake masterchef v3 via the locker using safe transfer to trigger the hook
         bytes memory safeTransferData =
-            abi.encodeWithSignature(SAFE_TRANSFER_SIG, address(locker), masterchef, _tokenId);
+            abi.encodeWithSignature("safeTransferFrom(address,address,uint256)", address(locker), masterchef, _tokenId);
         (bool success,) = executor.callExecuteTo(address(locker), nonFungiblePositionManager, 0, safeTransferData);
         if (!success) revert CallFailed();
 
@@ -308,7 +290,13 @@ contract PancakeMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
         _approveIfNeeded(token1, _amount1Desired);
 
         bytes memory increaseLiqData = abi.encodeWithSignature(
-            INCREASE_LIQ_SIG, _tokenId, _amount0Desired, _amount1Desired, _amount0Min, _amount1Min, _deadline
+            "increaseLiquidity((uint256,uint256,uint256,uint256,uint256,uint256))",
+            _tokenId,
+            _amount0Desired,
+            _amount1Desired,
+            _amount0Min,
+            _amount1Min,
+            _deadline
         );
 
         (bool success, bytes memory result) = masterchef.call(increaseLiqData);
@@ -329,7 +317,12 @@ contract PancakeMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
         returns (uint256 amount0, uint256 amount1)
     {
         bytes memory decreaseLiqData = abi.encodeWithSignature(
-            DECREASE_LIQ_SIG, _tokenId, _liquidity, _amount0Min, _amount1Min, block.timestamp + 1 hours
+            "decreaseLiquidity((uint256,uint128,uint256,uint256,uint256))",
+            _tokenId,
+            _liquidity,
+            _amount0Min,
+            _amount1Min,
+            block.timestamp + 1 hours
         );
         (bool success, bytes memory result) = executor.callExecuteTo(address(locker), masterchef, 0, decreaseLiqData);
         if (!success) revert CallFailed();
@@ -344,7 +337,7 @@ contract PancakeMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
     /// @param _tokenId NFT id to harvest.
     /// @param _recipient reward recipient
     function _harvestReward(uint256 _tokenId, address _recipient) internal returns (uint256 reward) {
-        bytes memory harvestData = abi.encodeWithSignature(HARVEST_SIG, _tokenId, address(this));
+        bytes memory harvestData = abi.encodeWithSignature("harvest(uint256,address)", _tokenId, address(this));
         (bool success, bytes memory result) = executor.callExecuteTo(address(locker), masterchef, 0, harvestData);
         if (!success) revert CallFailed();
 
@@ -367,8 +360,9 @@ contract PancakeMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
         (,, address token0, address token1,,,,,,,,) = ICakeNfpm(nonFungiblePositionManager).positions(_tokenId);
 
         // collect fees if there is any and transfer here
-        bytes memory harvestData =
-            abi.encodeWithSignature(COLLECT_SIG, _tokenId, address(this), type(uint128).max, type(uint128).max);
+        bytes memory harvestData = abi.encodeWithSignature(
+            "collect((uint256,address,uint128,uint128))", _tokenId, address(this), type(uint128).max, type(uint128).max
+        );
         (bool success, bytes memory result) = executor.callExecuteTo(address(locker), masterchef, 0, harvestData);
         if (!success) revert CallFailed();
 
@@ -399,7 +393,7 @@ contract PancakeMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
     {
         // withdraw the NFT from pancake masterchef, sending it + rewards if any to this contract
         // it charges fees on the reward and then send the NFT + reward - fees to the _recipient
-        bytes memory withdrawData = abi.encodeWithSignature(WITHDRAW_SIG, _tokenId, address(this));
+        bytes memory withdrawData = abi.encodeWithSignature("withdraw(uint256,address)", _tokenId, address(this));
         (bool success, bytes memory result) = executor.callExecuteTo(address(locker), masterchef, 0, withdrawData);
         if (!success) revert CallFailed();
 
