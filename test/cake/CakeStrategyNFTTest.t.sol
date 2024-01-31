@@ -237,7 +237,7 @@ contract CakeStrategyNFTTest is Test {
         vm.startPrank(nftHolder);
         ERC721(strategy.nonFungiblePositionManager()).safeTransferFrom(nftHolder, address(strategy), nftId);
         vm.stopPrank();
-        assertEq(nftHolder, strategy.positionOwners(nftId));
+        assertEq(nftHolder, strategy.positionOwner(nftId));
         // check on cake mc
         ICakeMc.UserPositionInfo memory userInfo = cakeMc.userPositionInfos(nftId);
         assertEq(userInfo.user, address(LOCKER));
@@ -246,7 +246,7 @@ contract CakeStrategyNFTTest is Test {
     function _withdrawNft() internal {
         vm.prank(nftHolder);
         strategy.withdraw(nftId);
-        assertEq(strategy.positionOwners(nftId), address(0));
+        assertEq(strategy.positionOwner(nftId), address(0));
         ICakeMc.UserPositionInfo memory userInfo = cakeMc.userPositionInfos(nftId);
         assertEq(userInfo.user, address(0));
         // check NFT recevied by the staker
@@ -256,7 +256,7 @@ contract CakeStrategyNFTTest is Test {
     function _withdrawNftRecipient(address _recipient) internal {
         vm.prank(nftHolder);
         strategy.withdraw(nftId, _recipient);
-        assertEq(strategy.positionOwners(nftId), address(0));
+        assertEq(strategy.positionOwner(nftId), address(0));
         ICakeMc.UserPositionInfo memory userInfo = cakeMc.userPositionInfos(nftId);
         assertEq(userInfo.user, address(0));
         // check NFT received by the recipient

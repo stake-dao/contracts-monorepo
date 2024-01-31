@@ -61,7 +61,7 @@ contract CAKEMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
     address public rewardClaimer;
 
     /// @notice Mapping of User -> TokenId
-    mapping(uint256 => address) public positionOwners; // tokenId -> user
+    mapping(uint256 => address) public positionOwner; // tokenId -> user
 
     ////////////////////////////////////////////////////////////////
     /// --- EVENTS & ERRORS
@@ -117,14 +117,14 @@ contract CAKEMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
     //////////////////////////////////////////////////////
 
     modifier onlyNftStaker(uint256 tokenId) {
-        if (msg.sender != positionOwners[tokenId]) revert Unauthorized();
+        if (msg.sender != positionOwner[tokenId]) revert Unauthorized();
         _;
     }
 
     modifier onlyNftsStakerOrClaimer(uint256[] memory tokenIds) {
         if (msg.sender != rewardClaimer) {
             for (uint256 i; i < tokenIds.length;) {
-                if (msg.sender != positionOwners[tokenIds[i]]) revert Unauthorized();
+                if (msg.sender != positionOwner[tokenIds[i]]) revert Unauthorized();
                 unchecked {
                     ++i;
                 }
@@ -239,7 +239,7 @@ contract CAKEMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
         if (_from == masterchef) return this.onERC721Received.selector;
 
         // store the owner's tokenId
-        positionOwners[_tokenId] = _from;
+        positionOwner[_tokenId] = _from;
 
         // transfer the NFT to the cake locker using the non safe transfer to not trigger the hook
         ERC721(nonFungiblePositionManager).transferFrom(address(this), address(locker), _tokenId);
@@ -397,7 +397,7 @@ contract CAKEMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
 
         ERC721(nonFungiblePositionManager).safeTransferFrom(address(this), _recipient, _tokenId);
 
-        delete positionOwners[_tokenId];
+        delete positionOwner[_tokenId];
     }
 
     /// @notice Internal function to increase the allowance if needed
