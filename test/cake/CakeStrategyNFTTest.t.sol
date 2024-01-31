@@ -3,20 +3,15 @@ pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 import "solady/utils/LibClone.sol";
+import "src/cake/strategy/PancakeMasterchefStrategy.sol";
+import "openzeppelin-contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-import {ERC20} from "solady/tokens/ERC20.sol";
-import {ERC721} from "solady/tokens/ERC721.sol";
-import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {ICakeMc} from "src/base/interfaces/ICakeMc.sol";
-import {ICakeNfpm} from "src/base/interfaces/ICakeNfpm.sol";
-import {PancakeMasterchefStrategy} from "src/cake/strategy/PancakeMasterchefStrategy.sol";
 import {Executor} from "src/cake/utils/Executor.sol";
 import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
 
-import {CAKE} from "address-book/lockers/56.sol";
 import {DAO} from "address-book/dao/56.sol";
-
-import "openzeppelin-contracts/proxy/ERC1967/ERC1967Proxy.sol";
+import {CAKE} from "address-book/lockers/56.sol";
 
 interface ICakeV3Pool {
     function swap(
@@ -31,6 +26,9 @@ interface ICakeV3Pool {
 }
 
 contract CakeStrategyNFTTest is Test {
+    bytes32 internal constant _ERC1967_IMPLEMENTATION_SLOT =
+        0x360894a13ba1a3210667c828492db98dca3e2076cc3735a920a3ca505d382bbc;
+
     PancakeMasterchefStrategy internal strategyImpl;
     PancakeMasterchefStrategy internal strategy;
     Executor internal executor;
@@ -254,5 +252,76 @@ contract CakeStrategyNFTTest is Test {
         if (_amount1 > 0) {
             ERC20(token1).transfer(msg.sender, uint256(_amount1));
         }
+    }
+
+    function test_InitializeTwice() public {
+        vm.expectRevert(PancakeMasterchefStrategy.AddressNull.selector);
+        strategy.initialize(address(0xCAFE), address(0xCAFE));
+
+        vm.expectRevert(PancakeMasterchefStrategy.AddressNull.selector);
+        strategyImpl.initialize(address(0xCAFE), address(0xCAFE));
+    }
+
+    function test_NotDelegatedGuard() public {
+        assertEq(strategyImpl.proxiableUUID(), _ERC1967_IMPLEMENTATION_SLOT);
+
+        vm.expectRevert(UUPSUpgradeable.UnauthorizedCallContext.selector);
+        strategy.proxiableUUID();
+    }
+
+    function test_OnlyProxyGuard() public {
+        vm.expectRevert(UUPSUpgradeable.UnauthorizedCallContext.selector);
+        strategyImpl.upgradeToAndCall(address(1), "");
+    }
+
+    function test_UpgradeToWrongCaller() public {
+        vm.prank(address(0xCAFE));
+        vm.expectRevert(PancakeMasterchefStrategy.Unauthorized.selector);
+        strategy.upgradeToAndCall(address(1), "");
+    }
+
+    function test_updateGovernanceAndUpdate() public {
+        PancakeMasterchefStrategy impl2 = new PancakeMasterchefStrategy(address(this), address(LOCKER), REWARD_TOKEN);
+
+        strategy.transferGovernance(address(0xCAFE));
+
+        address _executor = address(strategy.executor());
+
+        vm.prank(address(0xCAFE));
+        strategy.acceptGovernance();
+
+        assertEq(strategy.governance(), address(0xCAFE));
+
+        vm.expectRevert(PancakeMasterchefStrategy.Unauthorized.selector);
+        strategy.upgradeToAndCall(address(impl2), "");
+
+        vm.prank(address(0xCAFE));
+        strategy.upgradeToAndCall(address(impl2), "");
+
+        bytes32 v = vm.load(address(strategy), _ERC1967_IMPLEMENTATION_SLOT);
+        assertEq(address(uint160(uint256(v))), address(impl2));
+
+        assertEq(strategy.governance(), address(0xCAFE));
+        assertEq(address(strategy.executor()), _executor);
+
+        vm.expectRevert(PancakeMasterchefStrategy.AddressNull.selector);
+        strategy.initialize(address(0xCAFE), address(0xCAFE));
+
+        vm.expectRevert(PancakeMasterchefStrategy.AddressNull.selector);
+        impl2.initialize(address(0xCAFE), address(0xCAFE));
+    }
+
+    event Upgraded(address indexed implementation);
+
+    function test_UpgradeTo() public {
+        PancakeMasterchefStrategy impl2 = new PancakeMasterchefStrategy(address(this), address(LOCKER), REWARD_TOKEN);
+
+        vm.expectEmit(true, true, true, true);
+
+        emit Upgraded(address(impl2));
+        strategy.upgradeToAndCall(address(impl2), "");
+
+        bytes32 v = vm.load(address(strategy), _ERC1967_IMPLEMENTATION_SLOT);
+        assertEq(address(uint160(uint256(v))), address(impl2));
     }
 }
