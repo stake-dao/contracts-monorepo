@@ -15,8 +15,6 @@ remappings = [
 "addressBook=lib/AddressBook/src/",
 "address-book=lib/address-book/src/",
 "@openzeppelin=lib/openzeppelin-contracts/",
-"openzeppelin-contracts/=lib/openzeppelin-contracts/contracts/",
-"openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
 ]
 
 optimizers_runs = 200

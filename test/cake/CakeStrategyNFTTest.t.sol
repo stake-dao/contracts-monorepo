@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity 0.8.19;
+pragma solidity ^0.8.19;
 
 import "forge-std/Test.sol";
 import "solady/utils/LibClone.sol";
@@ -12,8 +12,11 @@ import {ICakeNfpm} from "src/base/interfaces/ICakeNfpm.sol";
 import {CakeStrategyNFT} from "src/cake/strategy/CakeStrategyNFT.sol";
 import {Executor} from "src/cake/utils/Executor.sol";
 import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
+
 import {CAKE} from "address-book/lockers/56.sol";
 import {DAO} from "address-book/dao/56.sol";
+
+import "openzeppelin-contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 interface ICakeV3Pool {
     function swap(
@@ -57,12 +60,12 @@ contract CakeStrategyNFTTest is Test {
         // Deploy Executor
         executor = new Executor(MS);
         strategyImpl = new CakeStrategyNFT(address(this), address(LOCKER), REWARD_TOKEN);
-        address strategyProxy = LibClone.deployERC1967(address(strategyImpl));
+        address strategyProxy = address(new ERC1967Proxy(address(strategyImpl), ""));
         strategy = CakeStrategyNFT(payable(strategyProxy));
         strategy.initialize(address(this), address(executor));
         strategy.setRewardClaimer(rewardClaimer);
         strategy.setFeeReceiver(feeReceiver);
-        cakeMc = ICakeMc(strategy.cakeMc());
+        cakeMc = ICakeMc(strategy.masterchef());
 
         vm.startPrank(MS);
         LOCKER.transferGovernance(address(executor));
@@ -71,7 +74,7 @@ contract CakeStrategyNFTTest is Test {
         executor.allowAddress(address(strategy));
         vm.stopPrank();
 
-        (,, token0, token1,,,,,,,,) = ICakeNfpm(strategy.cakeNfpm()).positions(nftId);
+        (,, token0, token1,,,,,,,,) = ICakeNfpm(strategy.nonFungiblePositionManager()).positions(nftId);
         deal(token0, address(this), 1000e18);
         deal(token1, address(this), 1000e18);
 
@@ -182,18 +185,18 @@ contract CakeStrategyNFTTest is Test {
         uint256 token0ToIncrease = 1e18;
         uint256 token1ToIncrease = 1e18;
         _depositNft();
-        (,,,,,,, uint256 currentLiq,,,,) = ICakeNfpm(strategy.cakeNfpm()).positions(nftId);
+        (,,,,,,, uint256 currentLiq,,,,) = ICakeNfpm(strategy.nonFungiblePositionManager()).positions(nftId);
         ERC20(token0).approve(address(strategy), token0ToIncrease);
         ERC20(token1).approve(address(strategy), token1ToIncrease);
         strategy.increaseLiquidity(nftId, token0ToIncrease, token1ToIncrease, 0, 0, block.timestamp + 1 hours);
-        (,,,,,,, uint256 newLiq,,,,) = ICakeNfpm(strategy.cakeNfpm()).positions(nftId);
+        (,,,,,,, uint256 newLiq,,,,) = ICakeNfpm(strategy.nonFungiblePositionManager()).positions(nftId);
         assertGt(newLiq, currentLiq);
     }
 
     function test_decrease_liquidity() external {
         _depositNft();
         (,,,,,,, uint256 currentLiq,,, uint128 tokenOwed0, uint128 tokenOwed1) =
-            ICakeNfpm(strategy.cakeNfpm()).positions(nftId);
+            ICakeNfpm(strategy.nonFungiblePositionManager()).positions(nftId);
         assertEq(tokenOwed0, 0);
         assertEq(tokenOwed1, 0);
         uint256 token0BalanceBefore = ERC20(token0).balanceOf(nftHolder);
@@ -203,7 +206,7 @@ contract CakeStrategyNFTTest is Test {
         strategy.decreaseLiquidity(nftId, uint128(currentLiq / 2), 0, 0);
 
         (,,,,,,, uint256 newLiq,,, uint128 tokenOwed0After, uint128 tokenOwed1After) =
-            ICakeNfpm(strategy.cakeNfpm()).positions(nftId);
+            ICakeNfpm(strategy.nonFungiblePositionManager()).positions(nftId);
         assertGt(currentLiq, newLiq);
         // collected all liquidity removed
         assertEq(tokenOwed0After, 0);
@@ -216,7 +219,7 @@ contract CakeStrategyNFTTest is Test {
     function _depositNft() internal {
         // transfer the NFT to the strategy contract
         vm.startPrank(nftHolder);
-        ERC721(strategy.cakeNfpm()).safeTransferFrom(nftHolder, address(strategy), nftId);
+        ERC721(strategy.nonFungiblePositionManager()).safeTransferFrom(nftHolder, address(strategy), nftId);
         vm.stopPrank();
         assertEq(nftHolder, strategy.nftStakers(nftId));
         // check on cake mc
@@ -231,7 +234,7 @@ contract CakeStrategyNFTTest is Test {
         ICakeMc.UserPositionInfo memory userInfo = cakeMc.userPositionInfos(nftId);
         assertEq(userInfo.user, address(0));
         // check NFT recevied by the staker
-        assertEq(ERC721(strategy.cakeNfpm()).ownerOf(nftId), nftHolder);
+        assertEq(ERC721(strategy.nonFungiblePositionManager()).ownerOf(nftId), nftHolder);
     }
 
     function _withdrawNftRecipient(address _recipient) internal {
@@ -241,7 +244,7 @@ contract CakeStrategyNFTTest is Test {
         ICakeMc.UserPositionInfo memory userInfo = cakeMc.userPositionInfos(nftId);
         assertEq(userInfo.user, address(0));
         // check NFT received by the recipient
-        assertEq(ERC721(strategy.cakeNfpm()).ownerOf(nftId), _recipient);
+        assertEq(ERC721(strategy.nonFungiblePositionManager()).ownerOf(nftId), _recipient);
     }
 
     function pancakeV3SwapCallback(int256 _amount0, int256 _amount1, bytes calldata) external {

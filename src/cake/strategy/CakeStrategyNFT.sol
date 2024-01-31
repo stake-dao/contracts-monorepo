@@ -4,18 +4,25 @@ pragma solidity 0.8.19;
 import {ERC20} from "solady/tokens/ERC20.sol";
 import {ERC721} from "solady/tokens/ERC721.sol";
 import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
+
+import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {ICakeNfpm} from "src/base/interfaces/ICakeNfpm.sol";
 import {IExecutor} from "src/base/interfaces/IExecutor.sol";
-import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {SafeExecute} from "src/base/libraries/SafeExecute.sol";
 import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
 import {UUPSUpgradeable} from "solady/utils/UUPSUpgradeable.sol";
+import {ReentrancyGuard} from "solady/utils/ReentrancyGuard.sol";
 
 /// @notice Main access point of Cake Locker.
-contract CakeStrategyNFT is UUPSUpgradeable {
+contract CakeStrategyNFT is ReentrancyGuard, UUPSUpgradeable {
     using FixedPointMathLib for uint256;
     using SafeExecute for ILocker;
     using SafeTransferLib for ERC20;
+
+    struct CollectedFees {
+        uint256 token0Amount;
+        uint256 token1Amount;
+    }
 
     /// @notice Denominator for fixed point math.
     uint256 public constant DENOMINATOR = 10_000;
@@ -41,8 +48,14 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @notice Address of the locker contract.
     ILocker public immutable locker;
 
+    /// @notice PancakeSwap masterChef.
+    address public immutable masterchef;
+
     /// @notice Address of the token being rewarded.
     address public immutable rewardToken;
+
+    /// @notice PancakeSwap non fungible position manager.
+    address public immutable nonFungiblePositionManager;
 
     /// @notice Address of the executor contract.
     IExecutor public executor;
@@ -61,12 +74,6 @@ contract CakeStrategyNFT is UUPSUpgradeable {
 
     /// @notice Amount of fees charged on `rewardToken` claimed
     uint256 public feesAccrued;
-
-    /// @notice PancakeSwap non fungible position manager.
-    address public immutable cakeNfpm;
-
-    /// @notice PancakeSwap masterChef.
-    address public immutable cakeMc;
 
     /// @notice Reward claimer.
     address public rewardClaimer;
@@ -168,8 +175,8 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         locker = ILocker(_locker);
         rewardToken = _rewardToken;
 
-        cakeMc = 0x556B9306565093C855AEA9AE92A594704c2Cd59e; // v3
-        cakeNfpm = 0x46A15B0b27311cedF172AB29E4f4766fbE7F4364;
+        masterchef = 0x556B9306565093C855AEA9AE92A594704c2Cd59e; // v3
+        nonFungiblePositionManager = 0x46A15B0b27311cedF172AB29E4f4766fbE7F4364;
     }
 
     /// @notice Initialize function.
@@ -203,10 +210,20 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @notice Harvest fees for NFTs.
     /// @param _tokenIds NFT ids to harvest fees for.
     /// @param _recipient Address of the recipient.
-    function collectFees(uint256[] memory _tokenIds, address _recipient) external onlyNftsStakerOrClaimer(_tokenIds) {
+    function collectFees(uint256[] memory _tokenIds, address _recipient)
+        external
+        onlyNftsStakerOrClaimer(_tokenIds)
+        returns (CollectedFees[] memory _collected)
+    {
         uint256 tokensLength = _tokenIds.length;
+        _collected = new CollectedFees[](tokensLength);
+
+        uint256 token0Collected;
+        uint256 token1Collected;
         for (uint256 i; i < tokensLength;) {
-            _collectFee(_tokenIds[i], _recipient);
+            (token0Collected, token1Collected) = (_collectFee(_tokenIds[i], _recipient));
+            _collected[i] = CollectedFees(token0Collected, token1Collected);
+
             unchecked {
                 i++;
             }
@@ -246,18 +263,19 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @param _from NFT sender.
     /// @param _tokenId NFT id received
     function onERC721Received(address, address _from, uint256 _tokenId, bytes calldata) external returns (bytes4) {
-        if (msg.sender != cakeNfpm) revert NotPancakeNFT();
-        if (_from == cakeMc) return this.onERC721Received.selector;
+        if (msg.sender != nonFungiblePositionManager) revert NotPancakeNFT();
+        if (_from == masterchef) return this.onERC721Received.selector;
 
         // store the owner's tokenId
         nftStakers[_tokenId] = _from;
 
         // transfer the NFT to the cake locker using the non safe transfer to not trigger the hook
-        ERC721(cakeNfpm).transferFrom(address(this), address(locker), _tokenId);
+        ERC721(nonFungiblePositionManager).transferFrom(address(this), address(locker), _tokenId);
 
         // transfer the NFT to the pancake masterchef v3 via the locker using safe transfer to trigger the hook
-        bytes memory safeTransferData = abi.encodeWithSignature(SAFE_TRANSFER_SIG, address(locker), cakeMc, _tokenId);
-        (bool success,) = executor.callExecuteTo(address(locker), cakeNfpm, 0, safeTransferData);
+        bytes memory safeTransferData =
+            abi.encodeWithSignature(SAFE_TRANSFER_SIG, address(locker), masterchef, _tokenId);
+        (bool success,) = executor.callExecuteTo(address(locker), nonFungiblePositionManager, 0, safeTransferData);
         if (!success) revert CallFailed();
 
         emit NftDeposited(_tokenId, _from);
@@ -278,9 +296,9 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         uint256 _amount0Min,
         uint256 _amount1Min,
         uint256 _deadline
-    ) external {
+    ) external nonReentrant returns (uint128 liquidity, uint256 amount0, uint256 amount1) {
         // fetch underlying tokens
-        (,, address token0, address token1,,,,,,,,) = ICakeNfpm(cakeNfpm).positions(_tokenId);
+        (,, address token0, address token1,,,,,,,,) = ICakeNfpm(nonFungiblePositionManager).positions(_tokenId);
 
         // transfer token here
         SafeTransferLib.safeTransferFrom(token0, msg.sender, address(this), _amount0Desired);
@@ -291,8 +309,11 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         bytes memory increaseLiqData = abi.encodeWithSignature(
             INCREASE_LIQ_SIG, _tokenId, _amount0Desired, _amount1Desired, _amount0Min, _amount1Min, _deadline
         );
-        (bool success,) = cakeMc.call(increaseLiqData);
+
+        (bool success, bytes memory result) = masterchef.call(increaseLiqData);
         if (!success) revert CallFailed();
+
+        (liquidity, amount0, amount1) = abi.decode(result, (uint128, uint256, uint256));
     }
 
     /// @notice Decrease NFT Position Liquidity.
@@ -302,13 +323,14 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @param _amount1Min min amount to receive of token1
     function decreaseLiquidity(uint256 _tokenId, uint128 _liquidity, uint256 _amount0Min, uint256 _amount1Min)
         external
+        nonReentrant
         onlyNftStaker(_tokenId)
         returns (uint256 amount0, uint256 amount1)
     {
         bytes memory decreaseLiqData = abi.encodeWithSignature(
             DECREASE_LIQ_SIG, _tokenId, _liquidity, _amount0Min, _amount1Min, block.timestamp + 1 hours
         );
-        (bool success, bytes memory result) = executor.callExecuteTo(address(locker), cakeMc, 0, decreaseLiqData);
+        (bool success, bytes memory result) = executor.callExecuteTo(address(locker), masterchef, 0, decreaseLiqData);
         if (!success) revert CallFailed();
 
         (amount0, amount1) = abi.decode(result, (uint256, uint256));
@@ -322,7 +344,7 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @param _recipient reward recipient
     function _harvestReward(uint256 _tokenId, address _recipient) internal returns (uint256 reward) {
         bytes memory harvestData = abi.encodeWithSignature(HARVEST_SIG, _tokenId, address(this));
-        (bool success, bytes memory result) = executor.callExecuteTo(address(locker), cakeMc, 0, harvestData);
+        (bool success, bytes memory result) = executor.callExecuteTo(address(locker), masterchef, 0, harvestData);
         if (!success) revert CallFailed();
 
         reward = abi.decode(result, (uint256));
@@ -339,14 +361,14 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @notice Internal function to collect fee for an NFT.
     /// @param _tokenId NFT id to collect fee for.
     /// @param _recipient reward recipient
-    function _collectFee(uint256 _tokenId, address _recipient) internal {
+    function _collectFee(uint256 _tokenId, address _recipient) internal returns (uint256, uint256) {
         // fetch underlying tokens
-        (,, address token0, address token1,,,,,,,,) = ICakeNfpm(cakeNfpm).positions(_tokenId);
+        (,, address token0, address token1,,,,,,,,) = ICakeNfpm(nonFungiblePositionManager).positions(_tokenId);
 
         // collect fees if there is any and transfer here
         bytes memory harvestData =
             abi.encodeWithSignature(COLLECT_SIG, _tokenId, address(this), type(uint128).max, type(uint128).max);
-        (bool success, bytes memory result) = executor.callExecuteTo(address(locker), cakeMc, 0, harvestData);
+        (bool success, bytes memory result) = executor.callExecuteTo(address(locker), masterchef, 0, harvestData);
         if (!success) revert CallFailed();
 
         (uint256 token0Collected, uint256 token1Collected) = abi.decode(result, (uint256, uint256));
@@ -362,6 +384,8 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         }
 
         emit FeeCollected(token0, token1, token0Collected, token1Collected);
+
+        return (token0Collected, token1Collected);
     }
 
     /// @notice Internal function to withdraw the NFT sending it to the recipient.
@@ -375,7 +399,7 @@ contract CakeStrategyNFT is UUPSUpgradeable {
         // withdraw the NFT from pancake masterchef, sending it + rewards if any to this contract
         // it charges fees on the reward and then send the NFT + reward - fees to the _recipient
         bytes memory withdrawData = abi.encodeWithSignature(WITHDRAW_SIG, _tokenId, address(this));
-        (bool success, bytes memory result) = executor.callExecuteTo(address(locker), cakeMc, 0, withdrawData);
+        (bool success, bytes memory result) = executor.callExecuteTo(address(locker), masterchef, 0, withdrawData);
         if (!success) revert CallFailed();
 
         reward = abi.decode(result, (uint256));
@@ -387,7 +411,7 @@ contract CakeStrategyNFT is UUPSUpgradeable {
             SafeTransferLib.safeTransfer(rewardToken, _recipient, reward);
         }
 
-        ERC721(cakeNfpm).safeTransferFrom(address(this), _recipient, _tokenId);
+        ERC721(nonFungiblePositionManager).safeTransferFrom(address(this), _recipient, _tokenId);
 
         delete nftStakers[_tokenId];
 
@@ -398,8 +422,8 @@ contract CakeStrategyNFT is UUPSUpgradeable {
     /// @param _token Token to appprove
     /// @param _amount Allowance amount required
     function _approveIfNeeded(address _token, uint256 _amount) internal {
-        if (ERC20(_token).allowance(address(this), cakeMc) < _amount) {
-            SafeTransferLib.safeApprove(_token, cakeMc, type(uint256).max);
+        if (ERC20(_token).allowance(address(this), masterchef) < _amount) {
+            SafeTransferLib.safeApprove(_token, masterchef, type(uint256).max);
         }
     }
 
