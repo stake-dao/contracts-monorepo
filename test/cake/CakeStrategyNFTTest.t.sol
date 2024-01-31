@@ -100,7 +100,7 @@ contract CakeStrategyNFTTest is Test {
     function test_withdraw_nft_not_staker() external {
         _depositNft();
         vm.expectRevert(CakeStrategyNFT.Unauthorized.selector);
-        strategy.withdrawNft(nftId);
+        strategy.withdraw(nftId);
     }
 
     function test_harvest_rewards_claimer() external {
@@ -229,7 +229,7 @@ contract CakeStrategyNFTTest is Test {
 
     function _withdrawNft() internal {
         vm.prank(nftHolder);
-        strategy.withdrawNft(nftId);
+        strategy.withdraw(nftId);
         assertEq(strategy.nftStakers(nftId), address(0));
         ICakeMc.UserPositionInfo memory userInfo = cakeMc.userPositionInfos(nftId);
         assertEq(userInfo.user, address(0));
@@ -239,7 +239,7 @@ contract CakeStrategyNFTTest is Test {
 
     function _withdrawNftRecipient(address _recipient) internal {
         vm.prank(nftHolder);
-        strategy.withdrawNft(nftId, _recipient);
+        strategy.withdraw(nftId, _recipient);
         assertEq(strategy.nftStakers(nftId), address(0));
         ICakeMc.UserPositionInfo memory userInfo = cakeMc.userPositionInfos(nftId);
         assertEq(userInfo.user, address(0));

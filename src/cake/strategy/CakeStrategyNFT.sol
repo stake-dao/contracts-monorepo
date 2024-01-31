@@ -248,15 +248,15 @@ contract CakeStrategyNFT is ReentrancyGuard, UUPSUpgradeable {
 
     /// @notice Withdraw the NFT sending it to the recipient.
     /// @param _tokenId NFT id to withdraw.
-    function withdrawNft(uint256 _tokenId) external returns (uint256 reward) {
-        reward = _withdrawNft(_tokenId, msg.sender);
+    function withdraw(uint256 _tokenId) external returns (uint256 reward) {
+        reward = _withdraw(_tokenId, msg.sender);
     }
 
     /// @notice Withdraw the NFT sending it to the recipient.
     /// @param _tokenId NFT id to withdraw.
     /// @param _recipient NFT receiver.
-    function withdrawNft(uint256 _tokenId, address _recipient) external returns (uint256 reward) {
-        reward = _withdrawNft(_tokenId, _recipient);
+    function withdraw(uint256 _tokenId, address _recipient) external returns (uint256 reward) {
+        reward = _withdraw(_tokenId, _recipient);
     }
 
     /// @notice Hook triggered within safe function calls.
@@ -391,7 +391,7 @@ contract CakeStrategyNFT is ReentrancyGuard, UUPSUpgradeable {
     /// @notice Internal function to withdraw the NFT sending it to the recipient.
     /// @param _tokenId NFT id to withdraw.
     /// @param _recipient NFT recipient
-    function _withdrawNft(uint256 _tokenId, address _recipient)
+    function _withdraw(uint256 _tokenId, address _recipient)
         internal
         onlyNftStaker(_tokenId)
         returns (uint256 reward)
