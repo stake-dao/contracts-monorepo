@@ -4,7 +4,10 @@ pragma solidity 0.8.19;
 interface IAngleGovernor {
     function getVotes(address account, uint256 timepoint) external view returns (uint256);
 
-    function getVotesWithParams(address account, uint256 timepoint, bytes memory params) external view returns (uint256);
+    function getVotesWithParams(address account, uint256 timepoint, bytes memory params)
+        external
+        view
+        returns (uint256);
 
     function hasVoted(uint256 proposalId, address account) external view returns (bool);
 

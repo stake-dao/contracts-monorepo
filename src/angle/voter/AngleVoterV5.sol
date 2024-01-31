@@ -35,13 +35,8 @@ contract AngleVoterV5 {
     }
 
     function castVote(uint256 _proposalId, uint8 _support) external onlyGovernance returns (uint256 _weight) {
-        bytes memory voteData =
-            abi.encodeWithSignature("castVote(uint256,uint8)", _proposalId, _support);
-        (bool success, bytes memory result) = IExecutor(angleStrategy).execute(
-                ANGLE_LOCKER, 0, abi.encodeWithSignature("execute(address,uint256,bytes)", ANGLE_GOVERNOR, 0, voteData)
-            );
-        if (!success) revert CallFailed();
-        _weight = abi.decode(result, (uint256));
+        bytes memory castVoteData = abi.encodeWithSignature("castVote(uint256,uint8)", _proposalId, _support);
+        return _castVotes(castVoteData);
     }
 
     function castVoteWithReason(uint256 _proposalId, uint8 _support, string calldata _reason)
@@ -49,13 +44,9 @@ contract AngleVoterV5 {
         onlyGovernance
         returns (uint256 _weight)
     {
-        bytes memory voteData =
+        bytes memory castVoteData =
             abi.encodeWithSignature("castVoteWithReason(uint256,uint8,string)", _proposalId, _support, _reason);
-        (bool success, bytes memory result) = IExecutor(angleStrategy).execute(
-                ANGLE_LOCKER, 0, abi.encodeWithSignature("execute(address,uint256,bytes)", ANGLE_GOVERNOR, 0, voteData)
-            );
-        if (!success) revert CallFailed();
-        _weight = abi.decode(result, (uint256));
+        return _castVotes(castVoteData);
     }
 
     function castVoteWithReasonAndParams(
@@ -64,13 +55,33 @@ contract AngleVoterV5 {
         string calldata _reason,
         bytes memory _params
     ) external onlyGovernance returns (uint256 _weight) {
-        bytes memory voteData =
-            abi.encodeWithSignature("castVoteWithReasonAndParams(uint256,uint8,string,bytes)", _proposalId, _support, _reason, _params);
+        bytes memory castVoteData = abi.encodeWithSignature(
+            "castVoteWithReasonAndParams(uint256,uint8,string,bytes)", _proposalId, _support, _reason, _params
+        );
+        return _castVotes(castVoteData);
+    }
+
+    function castVoteWithReasonAndParams(
+        uint256 _proposalId,
+        uint8 _support,
+        string calldata _reason,
+        uint128 _againstVotes,
+        uint128 _forVotes,
+        uint128 _abstainVotes
+    ) external onlyGovernance returns (uint256 _weight) {
+        bytes memory params = abi.encodePacked(_againstVotes, _forVotes, _abstainVotes);
+        bytes memory castVoteData = abi.encodeWithSignature(
+            "castVoteWithReasonAndParams(uint256,uint8,string,bytes)", _proposalId, _support, _reason, params
+        );
+        return _castVotes(castVoteData);
+    }
+
+    function _castVotes(bytes memory _castVoteData) internal returns (uint256 _weight) {
         (bool success, bytes memory result) = IExecutor(angleStrategy).execute(
-                ANGLE_LOCKER, 0, abi.encodeWithSignature("execute(address,uint256,bytes)", ANGLE_GOVERNOR, 0, voteData)
-            );
+            ANGLE_LOCKER, 0, abi.encodeWithSignature("execute(address,uint256,bytes)", ANGLE_GOVERNOR, 0, _castVoteData)
+        );
         if (!success) revert CallFailed();
-        _weight = abi.decode(result, (uint256));
+        (,,, _weight) = abi.decode(result, (uint256, uint256, uint256, uint256));
     }
 
     /// @notice vote for angle gauges
