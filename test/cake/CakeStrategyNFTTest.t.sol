@@ -9,7 +9,7 @@ import {ERC721} from "solady/tokens/ERC721.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {ICakeMc} from "src/base/interfaces/ICakeMc.sol";
 import {ICakeNfpm} from "src/base/interfaces/ICakeNfpm.sol";
-import {CakeStrategyNFT} from "src/cake/strategy/CakeStrategyNFT.sol";
+import {PancakeMasterchefStrategy} from "src/cake/strategy/PancakeMasterchefStrategy.sol";
 import {Executor} from "src/cake/utils/Executor.sol";
 import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
 
@@ -31,8 +31,8 @@ interface ICakeV3Pool {
 }
 
 contract CakeStrategyNFTTest is Test {
-    CakeStrategyNFT internal strategyImpl;
-    CakeStrategyNFT internal strategy;
+    PancakeMasterchefStrategy internal strategyImpl;
+    PancakeMasterchefStrategy internal strategy;
     Executor internal executor;
 
     ILocker internal constant LOCKER = ILocker(CAKE.LOCKER);
@@ -59,9 +59,9 @@ contract CakeStrategyNFTTest is Test {
         vm.createSelectFork(vm.rpcUrl("bnb"), 35_094_542);
         // Deploy Executor
         executor = new Executor(MS);
-        strategyImpl = new CakeStrategyNFT(address(this), address(LOCKER), REWARD_TOKEN);
+        strategyImpl = new PancakeMasterchefStrategy(address(this), address(LOCKER), REWARD_TOKEN);
         address strategyProxy = address(new ERC1967Proxy(address(strategyImpl), ""));
-        strategy = CakeStrategyNFT(payable(strategyProxy));
+        strategy = PancakeMasterchefStrategy(payable(strategyProxy));
         strategy.initialize(address(this), address(executor));
         strategy.setRewardClaimer(rewardClaimer);
         strategy.setFeeReceiver(feeReceiver);
@@ -99,7 +99,7 @@ contract CakeStrategyNFTTest is Test {
 
     function test_withdraw_nft_not_staker() external {
         _depositNft();
-        vm.expectRevert(CakeStrategyNFT.Unauthorized.selector);
+        vm.expectRevert(PancakeMasterchefStrategy.Unauthorized.selector);
         strategy.withdraw(nftId);
     }
 

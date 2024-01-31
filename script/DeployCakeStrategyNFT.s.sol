@@ -5,14 +5,14 @@ import "forge-std/Test.sol";
 import "forge-std/Script.sol";
 import "solady/utils/LibClone.sol";
 
-import {CakeStrategyNFT} from "src/cake/strategy/CakeStrategyNFT.sol";
+import {PancakeMasterchefStrategy} from "src/cake/strategy/PancakeMasterchefStrategy.sol";
 import {Executor} from "src/cake/utils/Executor.sol";
 import {DAO} from "address-book/dao/56.sol";
 import {CAKE} from "address-book/lockers/56.sol";
 
 contract DeployCakeStrategyNFT is Script, Test {
-    CakeStrategyNFT public strategyImpl;
-    CakeStrategyNFT public strategy;
+    PancakeMasterchefStrategy public strategyImpl;
+    PancakeMasterchefStrategy public strategy;
 
     Executor public executor;
 
@@ -26,10 +26,10 @@ contract DeployCakeStrategyNFT is Script, Test {
         executor = new Executor(DEPLOYER);
 
         // Deploy strategy impl
-        strategyImpl = new CakeStrategyNFT(DEPLOYER, CAKE.LOCKER, CAKE.TOKEN);
+        strategyImpl = new PancakeMasterchefStrategy(DEPLOYER, CAKE.LOCKER, CAKE.TOKEN);
         // Clone strategy
         address strategyProxy = LibClone.deployERC1967(address(strategyImpl));
-        strategy = CakeStrategyNFT(payable(strategyProxy));
+        strategy = PancakeMasterchefStrategy(payable(strategyProxy));
         // Initialize strategy
         strategy.initialize(DEPLOYER, address(executor));
 
