@@ -116,12 +116,12 @@ contract CAKEMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
     /// --- MODIFIERS
     //////////////////////////////////////////////////////
 
-    modifier onlyNftStaker(uint256 tokenId) {
+    modifier onlyPositionOwner(uint256 tokenId) {
         if (msg.sender != positionOwner[tokenId]) revert Unauthorized();
         _;
     }
 
-    modifier onlyNftsStakerOrClaimer(uint256[] memory tokenIds) {
+    modifier onlyPositionOwnerOrClaimer(uint256[] memory tokenIds) {
         if (msg.sender != rewardClaimer) {
             for (uint256 i; i < tokenIds.length;) {
                 if (msg.sender != positionOwner[tokenIds[i]]) revert Unauthorized();
@@ -165,7 +165,7 @@ contract CAKEMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
     /// @param _recipient Address of the recipient.
     function harvestRewards(uint256[] memory _tokenIds, address _recipient)
         external
-        onlyNftsStakerOrClaimer(_tokenIds)
+        onlyPositionOwnerOrClaimer(_tokenIds)
         returns (uint256[] memory)
     {
         uint256 tokensLength = _tokenIds.length;
@@ -184,7 +184,7 @@ contract CAKEMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
     /// @param _recipient Address of the recipient.
     function collectFees(uint256[] memory _tokenIds, address _recipient)
         external
-        onlyNftsStakerOrClaimer(_tokenIds)
+        onlyPositionOwnerOrClaimer(_tokenIds)
         returns (CollectedFees[] memory _collected)
     {
         uint256 tokensLength = _tokenIds.length;
@@ -206,7 +206,7 @@ contract CAKEMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
     /// @param _tokenIds NFT ids to harvest.
     function harvestAndCollectFees(uint256[] memory _tokenIds, address _recipient)
         external
-        onlyNftsStakerOrClaimer(_tokenIds)
+        onlyPositionOwnerOrClaimer(_tokenIds)
     {
         uint256 tokenLength = _tokenIds.length;
         for (uint256 i; i < tokenLength;) {
@@ -301,7 +301,7 @@ contract CAKEMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
     function decreaseLiquidity(uint256 _tokenId, uint128 _liquidity, uint256 _amount0Min, uint256 _amount1Min)
         external
         nonReentrant
-        onlyNftStaker(_tokenId)
+        onlyPositionOwner(_tokenId)
         returns (uint256 amount0, uint256 amount1)
     {
         bytes memory decreaseLiqData = abi.encodeWithSignature(
@@ -377,7 +377,7 @@ contract CAKEMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
     /// @param _recipient NFT recipient
     function _withdraw(uint256 _tokenId, address _recipient)
         internal
-        onlyNftStaker(_tokenId)
+        onlyPositionOwner(_tokenId)
         returns (uint256 reward)
     {
         // withdraw the NFT from pancake masterchef, sending it + rewards if any to this contract
