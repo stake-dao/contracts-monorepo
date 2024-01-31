@@ -120,16 +120,21 @@ contract CakeStrategyNFTTest is Test {
 
         skip(1 days);
 
-        uint256 nftHolderBalance = ERC20(REWARD_TOKEN).balanceOf(nftHolder);
         vm.prank(nftHolder);
-        strategy.harvestRewards(nftIds, nftHolder);
+        uint256[] memory rewards = strategy.harvestRewards(nftIds, nftHolder);
+        uint256 _balanceOf = ERC20(REWARD_TOKEN).balanceOf(nftHolder);
 
-        assertGt(ERC20(REWARD_TOKEN).balanceOf(nftHolder) - nftHolderBalance, 0);
+        assertGt(rewards[0], 0);
+        assertEq(rewards[0], _balanceOf);
+
         uint256 feeAccrued = strategy.feesAccrued();
         assertGt(feeAccrued, 0);
+
         uint256 feeReceiverBalance = ERC20(REWARD_TOKEN).balanceOf(feeReceiver);
         strategy.claimProtocolFees();
+
         uint256 feeReceiverEarned = ERC20(REWARD_TOKEN).balanceOf(feeReceiver) - feeReceiverBalance;
+
         assertEq(feeReceiverEarned, feeAccrued);
         assertEq(strategy.feesAccrued(), 0);
     }
@@ -158,11 +163,14 @@ contract CakeStrategyNFTTest is Test {
         assertGt(feeGlobalAfterSwap, feeGlobalBeforeSwap);
 
         // collect fee
-        uint256 token0Before = ERC20(token0).balanceOf(nftHolder);
         vm.prank(nftHolder);
-        strategy.collectFees(nftIds, nftHolder);
-        uint256 token0Collected = ERC20(token0).balanceOf(nftHolder) - token0Before;
+        PancakeMasterchefStrategy.CollectedFees[] memory fees = strategy.collectFees(nftIds, nftHolder);
+        uint256 token0Collected = fees[0].token0Amount;
+
         assertGt(token0Collected, 0);
+
+        uint256 _balanceOfToken0 = ERC20(token0).balanceOf(nftHolder);
+        assertEq(token0Collected, _balanceOfToken0);
     }
 
     function test_collect_no_fee() external {
