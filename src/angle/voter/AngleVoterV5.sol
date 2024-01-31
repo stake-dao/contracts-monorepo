@@ -1,11 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "openzeppelin-contracts/token/ERC20/IERC20.sol";
-
-interface IExecutor {
-    function execute(address _to, uint256 _value, bytes calldata _data) external returns (bool, bytes memory);
-}
+import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {IExecutor} from "src/base/interfaces/IExecutor.sol";
 
 contract AngleVoterV5 {
     /// @notice Address of the angle locker
@@ -122,7 +119,7 @@ contract AngleVoterV5 {
         (success,) = _to.call{value: _value}(_data);
         if (!success) revert CallFailed();
 
-        uint256 tokenBalance = IERC20(_token).balanceOf(ANGLE_LOCKER);
+        uint256 tokenBalance = ERC20(_token).balanceOf(ANGLE_LOCKER);
         bytes memory transferData = abi.encodeWithSignature("transfer(address,uint256)", _recipient, tokenBalance);
         bytes memory executeData = abi.encodeWithSignature("execute(address,uint256,bytes)", _token, 0, transferData);
         (success,) = IExecutor(angleStrategy).execute(ANGLE_LOCKER, 0, executeData);
