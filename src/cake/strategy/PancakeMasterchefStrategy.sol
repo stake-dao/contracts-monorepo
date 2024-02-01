@@ -162,6 +162,7 @@ contract PancakeMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
     /// @param _recipient Address of the recipient.
     function harvestRewards(uint256[] memory _tokenIds, address _recipient)
         external
+        nonReentrant
         onlyPositionOwnerOrClaimer(_tokenIds)
         returns (uint256[] memory)
     {
