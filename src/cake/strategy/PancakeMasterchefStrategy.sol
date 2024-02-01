@@ -256,52 +256,12 @@ contract PancakeMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
         return this.onERC721Received.selector;
     }
 
-    /// @notice Increase NFT Position Liquidity.
-    /// @param _tokenId nft token id.
-    /// @param _amount0Desired amount to add of token0
-    /// @param _amount1Desired amount to add of token1
-    /// @param _amount0Min min amount to add of token0
-    /// @param _amount1Min min amount to add of token1
-    function increaseLiquidity(
-        uint256 _tokenId,
-        uint256 _amount0Desired,
-        uint256 _amount1Desired,
-        uint256 _amount0Min,
-        uint256 _amount1Min,
-        uint256 _deadline
-    ) external nonReentrant returns (uint128 liquidity, uint256 amount0, uint256 amount1) {
-        // fetch underlying tokens
-        (,, address token0, address token1,,,,,,,,) = ICakeNfpm(nonFungiblePositionManager).positions(_tokenId);
-
-        // transfer token here
-        SafeTransferLib.safeTransferFrom(token0, msg.sender, address(this), _amount0Desired);
-        SafeTransferLib.safeTransferFrom(token1, msg.sender, address(this), _amount1Desired);
-
-        _approveIfNeeded(token0, _amount0Desired);
-        _approveIfNeeded(token1, _amount1Desired);
-
-        bytes memory increaseLiqData = abi.encodeWithSignature(
-            "increaseLiquidity((uint256,uint256,uint256,uint256,uint256,uint256))",
-            _tokenId,
-            _amount0Desired,
-            _amount1Desired,
-            _amount0Min,
-            _amount1Min,
-            _deadline
-        );
-
-        (bool success, bytes memory result) = masterchef.call(increaseLiqData);
-        if (!success) revert CallFailed();
-
-        (liquidity, amount0, amount1) = abi.decode(result, (uint128, uint256, uint256));
-    }
-
     /// @notice Decrease NFT Position Liquidity.
     /// @param _tokenId nft token id.
     /// @param _liquidity new liquidity
     /// @param _amount0Min min amount to receive of token0
     /// @param _amount1Min min amount to receive of token1
-    function decreaseLiquidity(uint256 _tokenId, uint128 _liquidity, uint256 _amount0Min, uint256 _amount1Min)
+    function decreaseLiquidity(uint256 _tokenId, uint128 _liquidity, uint256 _amount0Min, uint256 _amount1Min, uint256 _deadline)
         external
         nonReentrant
         onlyPositionOwner(_tokenId)
@@ -313,8 +273,9 @@ contract PancakeMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
             _liquidity,
             _amount0Min,
             _amount1Min,
-            block.timestamp + 1 hours
+            _deadline
         );
+
         (bool success, bytes memory result) = executor.callExecuteTo(address(locker), masterchef, 0, decreaseLiqData);
         if (!success) revert CallFailed();
 
@@ -323,6 +284,11 @@ contract PancakeMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
         // collect liquidity removed
         _collectFee(_tokenId, msg.sender);
     }
+
+    //////////////////////////////////////////////////////
+    /// --- INTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////
+
 
     /// @notice Internal function to harvest reward for an NFT.
     /// @param _tokenId NFT id to harvest.

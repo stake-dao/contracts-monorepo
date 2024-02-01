@@ -202,9 +202,20 @@ contract PancakeMasterchefStrategyTest is Test {
         uint256 token1ToIncrease = 1e18;
         _depositNft();
         (,,,,,,, uint256 currentLiq,,,,) = ICakeNfpm(strategy.nonFungiblePositionManager()).positions(nftId);
-        ERC20(token0).approve(address(strategy), token0ToIncrease);
-        ERC20(token1).approve(address(strategy), token1ToIncrease);
-        strategy.increaseLiquidity(nftId, token0ToIncrease, token1ToIncrease, 0, 0, block.timestamp + 1 hours);
+        ERC20(token0).approve(address(cakeMc), token0ToIncrease);
+        ERC20(token1).approve(address(cakeMc), token1ToIncrease);
+
+        ICakeNfpm.IncreaseLiquidityParams memory params =
+            ICakeNfpm.IncreaseLiquidityParams({
+                tokenId: nftId,
+                amount0Desired: token0ToIncrease,
+                amount1Desired: token1ToIncrease,
+                amount0Min: 0,
+                amount1Min: 0,
+                deadline: block.timestamp + 1 hours
+            });
+
+        cakeMc.increaseLiquidity(params);
         (,,,,,,, uint256 newLiq,,,,) = ICakeNfpm(strategy.nonFungiblePositionManager()).positions(nftId);
         assertGt(newLiq, currentLiq);
     }
@@ -219,7 +230,7 @@ contract PancakeMasterchefStrategyTest is Test {
         uint256 token1BalanceBefore = ERC20(token1).balanceOf(nftHolder);
 
         vm.prank(nftHolder);
-        strategy.decreaseLiquidity(nftId, uint128(currentLiq / 2), 0, 0);
+        strategy.decreaseLiquidity(nftId, uint128(currentLiq / 2), 0, 0, block.timestamp + 10);
 
         (,,,,,,, uint256 newLiq,,, uint128 tokenOwed0After, uint128 tokenOwed1After) =
             ICakeNfpm(strategy.nonFungiblePositionManager()).positions(nftId);

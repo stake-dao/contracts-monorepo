@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.19;
 
+import {ICakeNfpm} from "src/base/interfaces/ICakeNfpm.sol";
+
 interface ICakeMc {
     struct UserPositionInfo {
         uint128 liquidity;
@@ -15,4 +17,8 @@ interface ICakeMc {
     }
 
     function userPositionInfos(uint256 _tokenId) external view returns (UserPositionInfo memory);
+
+    function increaseLiquidity(ICakeNfpm.IncreaseLiquidityParams calldata params)
+        external
+        returns (uint256, uint256, uint256);
 }

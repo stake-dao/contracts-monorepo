@@ -2,6 +2,15 @@
 pragma solidity ^0.8.19;
 
 interface ICakeNfpm {
+    struct IncreaseLiquidityParams {
+        uint256 tokenId;
+        uint256 amount0Desired;
+        uint256 amount1Desired;
+        uint256 amount0Min;
+        uint256 amount1Min;
+        uint256 deadline;
+    }
+
     function positions(uint256)
         external
         view
