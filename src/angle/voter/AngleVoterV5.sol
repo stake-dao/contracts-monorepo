@@ -20,11 +20,17 @@ contract AngleVoterV5 {
     /// @notice Address of the governance
     address public governance = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
 
+    /// @notice Address of the future governance
+    address public futureGovernance;
+
     /// @notice Error emitted when a call fails
     error CallFailed();
 
     /// @notice Error emitted when the arrays have different length
     error DifferentLength();
+
+    /// @notice Event emitted when the future governance accept it
+    event GovernanceChanged(address governance);
 
     /// @notice Error emitted on auth
     error NotAllowed();
@@ -176,10 +182,20 @@ contract AngleVoterV5 {
     }
 
     /* ========== SETTERS ========== */
-    /// @notice set new governance
-    /// @param _newGovernance governance address
-    function setGovernance(address _newGovernance) external onlyGovernance {
-        governance = _newGovernance;
+    /// @notice Transfer the governance to a new address.
+    /// @param _governance Address of the new governance.
+    function transferGovernance(address _governance) external onlyGovernance {
+        futureGovernance = _governance;
+    }
+
+    /// @notice Accept the governance transfer.
+    function acceptGovernance() external {
+        if (msg.sender != futureGovernance) revert NotAllowed();
+
+        governance = msg.sender;
+        futureGovernance = address(0);
+
+        emit GovernanceChanged(msg.sender);
     }
 
     /// @notice change strategy

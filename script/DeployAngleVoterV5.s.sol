@@ -6,7 +6,6 @@ import {DAO} from "address-book/dao/1.sol";
 import {AngleVoterV5} from "src/angle/voter/AngleVoterV5.sol";
 
 contract DeployAngleVoterV5 is Script {
-
     AngleVoterV5 internal voter;
 
     function run() public {

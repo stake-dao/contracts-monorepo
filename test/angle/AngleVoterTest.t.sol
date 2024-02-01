@@ -7,14 +7,14 @@ import {ANGLE} from "address-book/lockers/1.sol";
 import {DAO} from "address-book/dao/1.sol";
 import {AngleVoterV5} from "src/angle/voter/AngleVoterV5.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
-import {IExecutor} from "src/base/interfaces/IExecutor.sol";
 import {IAngleGovernor} from "src/base/interfaces/IAngleGovernor.sol";
 
 contract AngleVoterTest is Test {
     AngleVoterV5 internal newVoter;
-    address internal currentVoter = ANGLE.VOTER;
+    address internal currentVoter = 0xDde0F1755DED401a012617f706c66a59c6917EFD;
     address internal gov = DAO.GOVERNANCE;
     address internal angleLocker = ANGLE.LOCKER;
+    address internal angleStrategy;
     IAngleGovernor internal angleGovernor;
 
     uint256 internal proposalId = 74674120326825897432082177555635413441973396692862767653812918068814714026575;
@@ -32,6 +32,8 @@ contract AngleVoterTest is Test {
 
         newVoter = new AngleVoterV5();
         angleGovernor = IAngleGovernor(newVoter.ANGLE_GOVERNOR());
+        angleStrategy = newVoter.angleStrategy();
+
         uint256 snapshot = angleGovernor.proposalSnapshot(proposalId);
         currentVotes = angleGovernor.getVotes(angleLocker, snapshot);
         uint256 proposalDeadline = angleGovernor.proposalDeadline(proposalId);
@@ -40,7 +42,7 @@ contract AngleVoterTest is Test {
         // set new strategy's governance
         bytes memory setGovData = abi.encodeWithSignature("setGovernance(address)", address(newVoter));
         vm.startPrank(gov);
-        (bool success,) = IExecutor(currentVoter).execute(newVoter.angleStrategy(), 0, setGovData);
+        (bool success,) = AngleVoterV5(currentVoter).execute(angleStrategy, 0, setGovData);
         assertTrue(success);
         vm.stopPrank();
     }
@@ -120,6 +122,37 @@ contract AngleVoterTest is Test {
         vm.prank(gov);
         uint256 newProposalId = newVoter.propose(targets, values, calldatas, proposalDescription);
         assertGt(angleGovernor.proposalSnapshot(newProposalId), block.timestamp);
+    }
+
+    function test_transfer_governance() external {
+        assertEq(newVoter.governance(), gov);
+
+        address newGovernance = address(0xFABE);
+
+        vm.prank(gov);
+        newVoter.transferGovernance(newGovernance);
+
+        assertEq(newVoter.governance(), gov);
+        assertEq(newVoter.futureGovernance(), newGovernance);
+
+        vm.prank(newGovernance);
+        newVoter.acceptGovernance();
+
+        assertEq(newVoter.governance(), newGovernance);
+        assertEq(newVoter.futureGovernance(), address(0));
+    }
+
+    function test_set_strategy_governance() external {
+        address strategyGov = AngleVoterV5(angleStrategy).governance();
+        assertEq(strategyGov, address(newVoter));
+
+        bytes memory setGovData = abi.encodeWithSignature("setGovernance(address)", gov);
+        vm.startPrank(gov);
+        (bool success,) = newVoter.execute(angleStrategy, 0, setGovData);
+        assertTrue(success);
+
+        strategyGov = AngleVoterV5(angleStrategy).governance();
+        assertEq(strategyGov, gov);
     }
 
     function _castVote(uint8 _support, string memory _reason, bytes memory _params) internal {
