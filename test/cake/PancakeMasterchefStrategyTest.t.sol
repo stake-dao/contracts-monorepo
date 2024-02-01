@@ -205,15 +205,14 @@ contract PancakeMasterchefStrategyTest is Test {
         ERC20(token0).approve(address(cakeMc), token0ToIncrease);
         ERC20(token1).approve(address(cakeMc), token1ToIncrease);
 
-        ICakeNfpm.IncreaseLiquidityParams memory params =
-            ICakeNfpm.IncreaseLiquidityParams({
-                tokenId: nftId,
-                amount0Desired: token0ToIncrease,
-                amount1Desired: token1ToIncrease,
-                amount0Min: 0,
-                amount1Min: 0,
-                deadline: block.timestamp + 1 hours
-            });
+        ICakeNfpm.IncreaseLiquidityParams memory params = ICakeNfpm.IncreaseLiquidityParams({
+            tokenId: nftId,
+            amount0Desired: token0ToIncrease,
+            amount1Desired: token1ToIncrease,
+            amount0Min: 0,
+            amount1Min: 0,
+            deadline: block.timestamp + 1 hours
+        });
 
         cakeMc.increaseLiquidity(params);
         (,,,,,,, uint256 newLiq,,,,) = ICakeNfpm(strategy.nonFungiblePositionManager()).positions(nftId);
