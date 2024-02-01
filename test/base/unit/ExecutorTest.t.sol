@@ -8,6 +8,8 @@ import {Executor} from "src/cake/utils/Executor.sol";
 import {CAKE} from "address-book/lockers/56.sol";
 import {DAO} from "address-book/dao/56.sol";
 
+contract AllowedExecutor{}
+
 contract ExecutorTest is Test {
     Executor internal executor;
 
@@ -28,7 +30,7 @@ contract ExecutorTest is Test {
     }
 
     function test_allow_contract_gov() external {
-        _allowContract();
+        _allowContract(address(this));
     }
 
     function test_allow_contract_no_gov() external {
@@ -43,7 +45,7 @@ contract ExecutorTest is Test {
     }
 
     function test_disallow_contract_gov() external {
-        _allowContract();
+        _allowContract(address(this));
         vm.prank(MS);
         executor.disallowAddress(address(this));
         assertFalse(executor.allowed(address(this)));
@@ -115,6 +117,37 @@ contract ExecutorTest is Test {
         executor.execute(address(LOCKER), 0, governanceData);
     }
 
+    function test_call_execute_with_allowed() external {
+        vm.startPrank(MS);
+        // set the locker goverance
+        LOCKER.transferGovernance(address(executor));
+        // accept the governance
+        executor.execute(address(LOCKER), 0, abi.encodeWithSignature("acceptGovernance()"));
+
+        vm.stopPrank();
+
+        bytes memory governanceData = abi.encodeWithSignature("governance()");
+
+        vm.expectRevert(Executor.Unauthorized.selector);
+        (bool success, bytes memory data) = executor.execute(address(LOCKER), 0, governanceData);
+
+
+        vm.expectRevert(Executor.Unauthorized.selector);
+        (success, data) = executor.callExecuteTo(address(LOCKER), address(executor), 0, governanceData);
+
+        AllowedExecutor _allowed = new AllowedExecutor();
+        _allowContract(address(_allowed));
+
+        vm.startPrank(address(_allowed));
+
+        (success, data) = executor.execute(address(LOCKER), 0, governanceData);
+        (success, data) = executor.callExecuteTo(address(LOCKER), address(executor), 0, governanceData);
+
+        vm.stopPrank();
+
+        assertTrue(success);
+    }
+
     function test_call_execute_to_gov() external {
         vm.startPrank(MS);
         // set the locker goverance
@@ -132,10 +165,10 @@ contract ExecutorTest is Test {
         vm.stopPrank();
     }
 
-    function _allowContract() internal {
-        assertFalse(executor.allowed(address(this)));
+    function _allowContract(address _toAllow) internal {
+        assertFalse(executor.allowed(_toAllow));
         vm.prank(MS);
-        executor.allowAddress(address(this));
-        assertTrue(executor.allowed(address(this)));
+        executor.allowAddress(_toAllow);
+        assertTrue(executor.allowed(_toAllow));
     }
 }

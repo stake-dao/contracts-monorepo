@@ -118,6 +118,7 @@ contract Executor {
 
         governance = msg.sender;
         futureGovernance = address(0);
+
         emit GovernanceChanged(msg.sender);
     }
 }

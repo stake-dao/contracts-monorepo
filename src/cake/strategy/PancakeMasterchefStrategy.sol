@@ -14,7 +14,7 @@ import {IExecutor} from "src/base/interfaces/IExecutor.sol";
 import {SafeExecute} from "src/base/libraries/SafeExecute.sol";
 
 /// @notice Main access point of Cake Locker.
-contract CAKEMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
+contract PancakeMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
     using FixedPointMathLib for uint256;
     using SafeExecute for ILocker;
     using SafeTransferLib for ERC20;
@@ -102,9 +102,6 @@ contract CAKEMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
 
     /// @notice Error emitted when sum of fees is above 100%
     error FeeTooHigh();
-
-    /// @notice Error emitted when trying to allow an EOA.
-    error NotContract();
 
     /// @notice throwed when the ERC721 hook has not called by cake nfpm
     error NotPancakeNFT();
@@ -452,6 +449,8 @@ contract CAKEMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
         if (msg.sender != futureGovernance) revert Governance();
 
         governance = msg.sender;
+        futureGovernance = address(0);
+
         emit GovernanceChanged(msg.sender);
     }
 

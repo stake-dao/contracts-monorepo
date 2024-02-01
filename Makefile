@@ -3,7 +3,7 @@
 .EXPORT_ALL_VARIABLES:
 MAKEFLAGS += --no-print-directory
 ETHERSCAN_API_KEY=$(ETHERSCAN_KEY)
-RPC_URL=${RPC_MAINNET_URL}
+RPC_URL=https://binance.llamarpc.com
 
 default:
 	forge fmt && forge build
