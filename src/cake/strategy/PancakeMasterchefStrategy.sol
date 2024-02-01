@@ -181,6 +181,7 @@ contract PancakeMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
     /// @param _recipient Address of the recipient.
     function collectFees(uint256[] memory _tokenIds, address _recipient)
         external
+        nonReentrant
         onlyPositionOwnerOrClaimer(_tokenIds)
         returns (CollectedFees[] memory _collected)
     {
@@ -203,6 +204,7 @@ contract PancakeMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
     /// @param _tokenIds NFT ids to harvest.
     function harvestAndCollectFees(uint256[] memory _tokenIds, address _recipient)
         external
+        nonReentrant
         onlyPositionOwnerOrClaimer(_tokenIds)
     {
         uint256 tokenLength = _tokenIds.length;
@@ -217,21 +219,24 @@ contract PancakeMasterchefStrategy is ReentrancyGuard, UUPSUpgradeable {
 
     /// @notice Withdraw the NFT sending it to the recipient.
     /// @param _tokenId NFT id to withdraw.
-    function withdraw(uint256 _tokenId) external returns (uint256 reward) {
+    function withdraw(uint256 _tokenId) external nonReentrant returns (uint256 reward) {
         reward = _withdraw(_tokenId, msg.sender);
     }
 
     /// @notice Withdraw the NFT sending it to the recipient.
     /// @param _tokenId NFT id to withdraw.
     /// @param _recipient NFT receiver.
-    function withdraw(uint256 _tokenId, address _recipient) external returns (uint256 reward) {
+    function withdraw(uint256 _tokenId, address _recipient) external nonReentrant returns (uint256 reward) {
         reward = _withdraw(_tokenId, _recipient);
     }
 
     /// @notice Hook triggered within safe function calls.
     /// @param _from NFT sender.
     /// @param _tokenId NFT id received
-    function onERC721Received(address, address _from, uint256 _tokenId, bytes calldata) external returns (bytes4) {
+    function onERC721Received(address, address _from, uint256 _tokenId, bytes calldata)
+        external
+        returns (bytes4)
+    {
         if (msg.sender != nonFungiblePositionManager) revert NotPancakeNFT();
         if (_from == masterchef) return this.onERC721Received.selector;
 

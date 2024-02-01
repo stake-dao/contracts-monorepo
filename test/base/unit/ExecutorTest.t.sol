@@ -8,7 +8,7 @@ import {Executor} from "src/cake/utils/Executor.sol";
 import {CAKE} from "address-book/lockers/56.sol";
 import {DAO} from "address-book/dao/56.sol";
 
-contract AllowedExecutor{}
+contract AllowedExecutor {}
 
 contract ExecutorTest is Test {
     Executor internal executor;
@@ -130,7 +130,6 @@ contract ExecutorTest is Test {
 
         vm.expectRevert(Executor.Unauthorized.selector);
         (bool success, bytes memory data) = executor.execute(address(LOCKER), 0, governanceData);
-
 
         vm.expectRevert(Executor.Unauthorized.selector);
         (success, data) = executor.callExecuteTo(address(LOCKER), address(executor), 0, governanceData);
