@@ -23,4 +23,6 @@ interface ILocker {
     function transferGovernance(address _governance) external;
 
     function governance() external view returns (address);
+
+    function futureGovernance() external view returns (address);
 }

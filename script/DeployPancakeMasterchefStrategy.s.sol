@@ -41,6 +41,7 @@ contract DeployPancakeMasterchefStrategy is Script, Test {
 
         // Strategy setters
         strategy.updateProtocolFee(1_500); // 15%
+        strategy.setFeeReceiver(GOVERNANCE);
 
         // Transfer ownership.
         executor.transferGovernance(GOVERNANCE);

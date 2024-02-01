@@ -156,11 +156,12 @@ contract ExecutorTest is Test {
 
         assertEq(LOCKER.governance(), address(executor));
 
-        // transfer back the governance
-        bytes memory checkGovData = abi.encodeWithSignature("governance()");
-        (bool success, bytes memory data) = executor.callExecuteTo(address(LOCKER), address(executor), 0, checkGovData);
-        assertTrue(success);
-        assertEq(abi.decode(data, (address)), MS);
+        executor.execute(address(LOCKER), 0, abi.encodeWithSignature("transferGovernance(address)", MS));
+
+        assertEq(LOCKER.futureGovernance(), address(MS));
+        LOCKER.acceptGovernance();
+
+        assertEq(LOCKER.governance(), address(MS));
         vm.stopPrank();
     }
 
