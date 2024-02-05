@@ -6,6 +6,12 @@ out/
 !/broadcast
 /broadcast/*/31337/
 /broadcast/**/dry-run/
+<<<<<<< HEAD
+/broadcast/
+=======
+/broadcast
+
+>>>>>>> bcc6d77 (chore: remove single use constant)
 
 # Docs
 docs/
