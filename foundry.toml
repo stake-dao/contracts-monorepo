@@ -15,8 +15,6 @@ remappings = [
 "addressBook=lib/AddressBook/src/",
 "address-book=lib/address-book/src/",
 "@openzeppelin=lib/openzeppelin-contracts/",
-"openzeppelin-contracts/=lib/openzeppelin-contracts/contracts/",
-"openzeppelin-contracts-upgradeable/=lib/openzeppelin-contracts-upgradeable/contracts/",
 ]
 
 optimizers_runs = 200
@@ -26,3 +24,4 @@ mainnet = { key = "${API_KEY_ETHERSCAN}" }
 
 [rpc_endpoints]
 mainnet = "https://mainnet.infura.io/v3/${INFURA_KEY}"
+bnb = "https://bsc-mainnet.nodereal.io/v1/8ba50235e5794af7ba04e88181bb359f"

@@ -1,7 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.19;
+pragma solidity ^0.8.19;
 
 interface ILocker {
+    function acceptGovernance() external;
+
     function claimRewards(address _rewardToken, address _recipient) external;
 
     function execute(address _to, uint256 _value, bytes calldata _data) external returns (bool, bytes memory);
@@ -18,5 +20,9 @@ interface ILocker {
 
     function setStrategy(address _strategy) external;
 
+    function transferGovernance(address _governance) external;
+
     function governance() external view returns (address);
+
+    function futureGovernance() external view returns (address);
 }
