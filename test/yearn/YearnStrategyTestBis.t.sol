@@ -4,9 +4,10 @@ pragma solidity 0.8.19;
 import "forge-std/Test.sol";
 import "solady/utils/LibClone.sol";
 
-import "src/base/strategy/Strategy.sol";
-import "src/base/vault/Vault.sol";
-import {AddressBook} from "addressBook/AddressBook.sol";
+import {ERC20} from "solady/tokens/ERC20.sol";
+import {Yearn} from "address-book/protocols/1.sol";
+import {YFI} from "address-book/lockers/1.sol";
+import {DAO} from "address-book/dao/1.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {YearnStrategy} from "src/yearn/strategy/YearnStrategy.sol";
 import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
@@ -32,9 +33,9 @@ abstract contract YearnStrategyTestBis is Test {
     address public veToken;
     address public sdtDistributor;
 
-    address public constant DYFI = 0x41252E8691e964f7DE35156B68493bAb6797a275;
-    address public constant YFI_REWARD_POOL = 0xb287a1964AEE422911c7b8409f5E5A273c1412fA;
-    address public constant DYFI_REWARD_POOL = 0x2391Fc8f5E417526338F5aa3968b1851C16D894E;
+    address public constant DYFI = Yearn.DYFI;
+    address public constant YFI_REWARD_POOL = Yearn.YFI_REWARD_POOL;
+    address public constant DYFI_REWARD_POOL = Yearn.DYFI_REWARD_POOL;
 
     address public constant GAUGE_IMPL = 0x3Dc56D46F0Bd13655EfB29594a2e44534c453BF9;
 
@@ -48,9 +49,9 @@ abstract contract YearnStrategyTestBis is Test {
         vm.createSelectFork(vm.rpcUrl("mainnet"), 18_472_574);
 
         /// Initialize from the address book.
-        veToken = AddressBook.VE_YFI;
-        locker = ILocker(AddressBook.YFI_LOCKER);
-        sdtDistributor = AddressBook.SDT_DISTRIBUTOR;
+        veToken = Yearn.VEYFI;
+        locker = ILocker(YFI.LOCKER);
+        sdtDistributor = DAO.STRATEGY_SDT_DISTRIBUTOR;
 
         /// Deploy Strategy.
         strategyImpl = new YearnStrategy(address(this), address(locker), veToken, DYFI, YFI_REWARD_POOL);
@@ -69,7 +70,7 @@ abstract contract YearnStrategyTestBis is Test {
         /// Setup Strategy.
         strategy.setFactory(address(factory));
         strategy.setAccumulator(address(0xACC)); // Fake accumulator.
-        strategy.setFeeRewardToken(AddressBook.YFI);
+        strategy.setFeeRewardToken(YFI.TOKEN);
 
         strategy.updateProtocolFee(1_700); // 17%
         strategy.updateClaimIncentiveFee(100); // 1%
@@ -108,7 +109,7 @@ abstract contract YearnStrategyTestBis is Test {
         assertEq(strategy.balanceOf(address(token)), amount);
 
         /// Gauge Balances.
-        assertEq(ILiquidityGauge(gauge).balanceOf(address(locker)), amount);
+        assertEq(ILiquidityGaugeStrat(gauge).balanceOf(address(locker)), amount);
 
         /// User balances.
         assertEq(vault.balanceOf(address(this)), 0);
@@ -139,7 +140,7 @@ abstract contract YearnStrategyTestBis is Test {
         assertEq(strategy.balanceOf(address(token)), 0);
 
         /// Gauge Balances.
-        assertEq(ILiquidityGauge(gauge).balanceOf(address(locker)), 0);
+        assertEq(ILiquidityGaugeStrat(gauge).balanceOf(address(locker)), 0);
 
         /// User balances.
         assertEq(vault.balanceOf(address(this)), 0);
@@ -152,7 +153,7 @@ abstract contract YearnStrategyTestBis is Test {
 
         uint256 amount = uint256(_amount);
         vm.assume(amount > 1e18);
-        vm.assume(amount < ILiquidityGauge(gauge).totalSupply());
+        vm.assume(amount < ILiquidityGaugeStrat(gauge).totalSupply());
 
         deal(address(vault.token()), address(this), amount);
         vault.token().approve(address(vault), amount);

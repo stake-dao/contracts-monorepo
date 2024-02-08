@@ -47,5 +47,7 @@ interface ILiquidityGaugeStrat {
     // solhint-disable-next-line
     function set_vault(address _vault) external;
 
+    function totalSupply() external returns (uint256);
+
     function withdraw(uint256 _value, address _user, bool _claim) external;
 }

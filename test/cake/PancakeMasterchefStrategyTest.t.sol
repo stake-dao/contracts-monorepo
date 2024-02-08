@@ -8,7 +8,6 @@ import "openzeppelin-contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import {ICakeMc} from "src/base/interfaces/ICakeMc.sol";
 import {Executor} from "src/cake/utils/Executor.sol";
-import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
 
 import {DAO} from "address-book/dao/56.sol";
 import {CAKE} from "address-book/lockers/56.sol";
@@ -75,8 +74,6 @@ contract PancakeMasterchefStrategyTest is Test {
         (,, token0, token1,,,,,,,,) = ICakeNfpm(strategy.nonFungiblePositionManager()).positions(nftId);
         deal(token0, address(this), 1000e18);
         deal(token1, address(this), 1000e18);
-
-        //deal(token0, nftRecipient, 10e18);
     }
 
     function test_deposit_nft() external {
