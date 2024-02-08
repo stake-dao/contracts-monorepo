@@ -19,7 +19,7 @@ contract ExecutorTest is Test {
     address internal eoa = address(0xEAA);
 
     function setUp() public {
-        vm.createSelectFork(vm.rpcUrl("bnb"));
+        vm.createSelectFork(vm.rpcUrl("bnb"), 35492855);
         // Deploy Executor
         executor = new Executor(MS);
     }
