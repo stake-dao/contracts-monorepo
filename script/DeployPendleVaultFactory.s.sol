@@ -9,7 +9,7 @@ import "utils/VyperDeployer.sol";
 import "address-book/lockers/1.sol";
 import "address-book/protocols/1.sol";
 
-import {Constants} from "src/base/utils/Constants.sol";
+import {Constants} from "herdaddy/utils/Constants.sol";
 import {PendleVaultFactory} from "src/pendle/PendleVaultFactory.sol";
 import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
 

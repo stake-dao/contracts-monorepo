@@ -8,7 +8,7 @@ import {PENDLE} from "address-book/lockers/1.sol";
 import {Pendle} from "address-book/protocols/1.sol";
 import {DAO} from "address-book/dao/1.sol";
 
-import {Constants} from "src/base/utils/Constants.sol";
+import {Constants} from "herdaddy/utils/Constants.sol";
 import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
 import {PendleVaultFactory} from "src/pendle/PendleVaultFactory.sol";
 import {ERC20} from "solady/tokens/ERC20.sol";
