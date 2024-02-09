@@ -16,3 +16,6 @@
 [submodule "lib/address-book"]
 	path = lib/address-book
 	url = https://github.com/stake-dao/address-book
+[submodule "lib/herdaddy"]
+	path = lib/herdaddy
+	url = https://github.com/stake-dao/herdaddy
