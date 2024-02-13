@@ -55,14 +55,15 @@ contract PendleVaultFactory {
 
     address public strategy;
     address public sdtDistributor;
-    address public gaugeImpl = 0x3Dc56D46F0Bd13655EfB29594a2e44534c453BF9;
+    address public gaugeImpl;
 
     event VaultDeployed(address proxy, address lptToken, address impl);
     event GaugeDeployed(address proxy, address stakeToken, address impl);
 
-    constructor(address _strategy, address _sdtDistributor) {
+    constructor(address _strategy, address _sdtDistributor, address _gaugeImpl) {
         strategy = _strategy;
         sdtDistributor = _sdtDistributor;
+        gaugeImpl = _gaugeImpl;
     }
 
     /**

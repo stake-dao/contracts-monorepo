@@ -58,7 +58,7 @@ contract PendleStrategyIntegrationTest is Test {
         gaugeImpl = ILiquidityGaugeStrat(deployBytecode(Constants.LGV4_STRAT_BYTECODE, ""));
 
         // Deploying vault factory
-        factory = new PendleVaultFactory(PENDLE.STRATEGY, DAO.STRATEGY_SDT_DISTRIBUTOR);
+        factory = new PendleVaultFactory(PENDLE.STRATEGY, DAO.STRATEGY_SDT_DISTRIBUTOR, address(gaugeImpl));
 
         // Setting new factory in strategy
         vm.prank(DAO.GOVERNANCE);
