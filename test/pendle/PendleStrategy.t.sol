@@ -10,7 +10,7 @@ import {DAO} from "address-book/dao/1.sol";
 
 import {Constants} from "herdaddy/utils/Constants.sol";
 import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
-import {PendleVaultFactory} from "src/pendle/PendleVaultFactory.sol";
+import {PendleVaultFactory} from "src/pendle/factory/PendleVaultFactory.sol";
 import {ERC20} from "solady/tokens/ERC20.sol";
 
 interface PendleStrategy {
@@ -58,7 +58,7 @@ contract PendleStrategyIntegrationTest is Test {
         gaugeImpl = ILiquidityGaugeStrat(deployBytecode(Constants.LGV4_STRAT_BYTECODE, ""));
 
         // Deploying vault factory
-        factory = new PendleVaultFactory(PENDLE.STRATEGY, DAO.STRATEGY_SDT_DISTRIBUTOR, address(gaugeImpl));
+        factory = new PendleVaultFactory(PENDLE.STRATEGY, DAO.STRATEGY_SDT_DISTRIBUTOR);
 
         // Setting new factory in strategy
         vm.prank(DAO.GOVERNANCE);

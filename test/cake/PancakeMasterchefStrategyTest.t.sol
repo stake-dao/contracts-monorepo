@@ -218,6 +218,9 @@ contract PancakeMasterchefStrategyTest is Test {
 
     function test_decrease_liquidity() external {
         _depositNft();
+
+        skip(1 days);
+
         (,,,,,,, uint256 currentLiq,,, uint128 tokenOwed0, uint128 tokenOwed1) =
             ICakeNfpm(strategy.nonFungiblePositionManager()).positions(nftId);
         assertEq(tokenOwed0, 0);
@@ -237,6 +240,8 @@ contract PancakeMasterchefStrategyTest is Test {
         // check if the recipient received the tokens
         assertGt(ERC20(token0).balanceOf(nftHolder) - token0BalanceBefore, 0);
         assertGt(ERC20(token1).balanceOf(nftHolder) - token1BalanceBefore, 0);
+        // assert that the strategy did not receive any reward
+        assertEq(ERC20(REWARD_TOKEN).balanceOf(address(strategy)), 0);
     }
 
     function _depositNft() internal {

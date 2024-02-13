@@ -10,7 +10,7 @@ import "address-book/lockers/1.sol";
 import "address-book/protocols/1.sol";
 
 import {Constants} from "herdaddy/utils/Constants.sol";
-import {PendleVaultFactory} from "src/pendle/PendleVaultFactory.sol";
+import {PendleVaultFactory} from "src/pendle/factory/PendleVaultFactory.sol";
 import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
 
 interface PendleStrategy {
@@ -29,7 +29,7 @@ contract DeployPendleVaultFactory is Script, Test {
         // Deploy LGV4Strat impl
         ILiquidityGaugeStrat gaugeImpl = ILiquidityGaugeStrat(deployBytecode(Constants.LGV4_STRAT_BYTECODE, ""));
 
-        factory = new PendleVaultFactory(PENDLE.STRATEGY, DAO.STRATEGY_SDT_DISTRIBUTOR, address(gaugeImpl));
+        factory = new PendleVaultFactory(PENDLE.STRATEGY, DAO.STRATEGY_SDT_DISTRIBUTOR);
 
         //PendleStrategy(PENDLE.STRATEGY).setVaultGaugeFactory(address(factory));
 
