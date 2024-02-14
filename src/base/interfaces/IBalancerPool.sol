@@ -2,5 +2,5 @@
 pragma solidity 0.8.19;
 
 interface IBalancerPool {
-    function getPoolId() external view returns(bytes32);
+    function getPoolId() external view returns (bytes32);
 }

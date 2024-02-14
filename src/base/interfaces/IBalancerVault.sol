@@ -15,8 +15,8 @@ interface IBalancerVault {
         external
         view
         returns (IERC20[] memory tokens, uint256[] memory balances, uint256 lastChangeBlock);
-    
+
     function joinPool(bytes32 poolId, address sender, address recipient, JoinPoolRequest memory request)
         external
-        payable;   
+        payable;
 }

@@ -7,7 +7,6 @@ import {BaseStrategy} from "src/base/strategy/BaseStrategy.sol";
 import {IBalancerAccumulator} from "src/base/interfaces/IBalancerAccumulator.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
-import {IMultiRewards} from "src/base/interfaces/IMultiRewards.sol";
 import {ISdtDistributorV2} from "src/base/interfaces/ISdtDistributorV2.sol";
 
 contract BalancerStrategy is BaseStrategy {
