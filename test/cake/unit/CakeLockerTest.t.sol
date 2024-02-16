@@ -27,7 +27,7 @@ contract CakeLockerTest is Test {
     address public constant VE_CAKE = 0x5692DB8177a81A6c6afc8084C2976C9933EC1bAB;
 
     function setUp() public virtual {
-        uint256 forkId = vm.createFork(vm.rpcUrl("bnb")); // 33_702_400
+        uint256 forkId = vm.createFork(vm.rpcUrl("bnb"), 33_702_400);
         vm.selectFork(forkId);
 
         token = ERC20(CAKE);

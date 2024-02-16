@@ -34,6 +34,11 @@ jobs:
         with:
           version: nightly
 
+      - name: Update Forge std
+        run: |
+          forge update forge-std
+        id: update
+
       - name: Run Forge build
         run: |
           forge build
