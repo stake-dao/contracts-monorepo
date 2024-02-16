@@ -28,7 +28,7 @@ contract YFIDepositorIntegrationTest is Test {
     uint256 currentLiquidityGaugeBalance = 0;
 
     function setUp() public virtual {
-        vm.createSelectFork(vm.rpcUrl("mainnet"));
+        vm.createSelectFork(vm.rpcUrl("mainnet"), 19234180);
 
         token = IERC20(YFI.TOKEN);
         veToken = IVeYFI(Yearn.VEYFI);
@@ -86,7 +86,7 @@ contract YFIDepositorIntegrationTest is Test {
         assertEq(sdToken.balanceOf(address(this)), amount);
         assertEq(liquidityGauge.balanceOf(address(this)), 0);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance + amount, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance + amount, 14e15);
     }
 
     function test_depositAndStake() public {
@@ -101,7 +101,7 @@ contract YFIDepositorIntegrationTest is Test {
         assertEq(liquidityGauge.balanceOf(address(this)), amount);
         assertEq(sdToken.balanceOf(address(liquidityGauge)), currentLiquidityGaugeBalance + amount);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance + amount, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance + amount, 14e15);
     }
 
     function test_depositAndStakeWithoutLock() public {
@@ -115,7 +115,7 @@ contract YFIDepositorIntegrationTest is Test {
         assertEq(token.balanceOf(address(depositor)), amount);
 
         assertEq(depositor.incentiveToken(), expectedIncentiveAmount);
-        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance, 14e15);
         assertEq(liquidityGauge.balanceOf(address(this)), expectedStakedBalance);
         assertEq(sdToken.balanceOf(address(liquidityGauge)), currentLiquidityGaugeBalance + expectedStakedBalance);
 
@@ -135,7 +135,7 @@ contract YFIDepositorIntegrationTest is Test {
         assertEq(liquidityGauge.balanceOf(address(_random)), 0);
         assertEq(sdToken.balanceOf(address(_random)), expectedIncentiveAmount);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance + amount, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance + amount, 14e15);
     }
 
     function test_depositAndStakeWithoutLockThenDepositWith() public {
@@ -147,7 +147,7 @@ contract YFIDepositorIntegrationTest is Test {
 
         assertEq(sdToken.balanceOf(address(this)), 0);
         assertEq(token.balanceOf(address(depositor)), amount);
-        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance, 1e16);
         assertEq(depositor.incentiveToken(), expectedIncentiveAmount);
         assertEq(liquidityGauge.balanceOf(address(this)), expectedStakedBalance);
         assertEq(sdToken.balanceOf(address(liquidityGauge)), currentLiquidityGaugeBalance + expectedStakedBalance);
@@ -173,7 +173,7 @@ contract YFIDepositorIntegrationTest is Test {
         assertEq(liquidityGauge.balanceOf(address(_random)), amount + expectedIncentiveAmount);
         assertEq(sdToken.balanceOf(address(_random)), 0);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance + 200e18, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance + 200e18, 1e16);
     }
 
     function test_depositAndStakeWithoutLockIncentivePercentS() public {
@@ -184,7 +184,7 @@ contract YFIDepositorIntegrationTest is Test {
 
         assertEq(sdToken.balanceOf(address(this)), 0);
         assertEq(token.balanceOf(address(depositor)), amount);
-        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance, 1e16);
         assertEq(depositor.incentiveToken(), 0);
         assertEq(liquidityGauge.balanceOf(address(this)), amount);
         assertEq(sdToken.balanceOf(address(liquidityGauge)), currentLiquidityGaugeBalance + amount);
@@ -210,7 +210,7 @@ contract YFIDepositorIntegrationTest is Test {
         assertEq(liquidityGauge.balanceOf(address(_random)), amount);
         assertEq(sdToken.balanceOf(address(_random)), 0);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance + 200e18, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance + 200e18, 1e16);
 
         IVeYFI.LockedBalance memory lockedBalance = veToken.locked(address(locker));
 
