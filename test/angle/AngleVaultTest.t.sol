@@ -13,7 +13,7 @@ import {ISdtDistributorV2} from "src/base/interfaces/ISdtDistributorV2.sol";
 import {AngleVaultGUni} from "src/angle/vault/AngleVaultGUni.sol";
 import {TransparentUpgradeableProxy} from "src/base/external/TransparentUpgradeableProxy.sol";
 
-import {IMc} from "src/base/interfaces/IMC.sol";
+import {IMc} from "src/base/interfaces/IMc.sol";
 import {ISmartWalletChecker} from "src/base/interfaces/ISmartWalletChecker.sol";
 import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
 import {IGaugeController} from "src/base/interfaces/IGaugeController.sol";
