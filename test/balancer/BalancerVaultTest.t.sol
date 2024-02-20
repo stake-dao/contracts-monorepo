@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: GPL3
 pragma solidity 0.8.19;
 
-// Base Tests
-import "forge-std/Test.sol";
+import "test/base/BaseTest.t.sol";
 
 import {BalancerStrategy} from "src/balancer/strategy/BalancerStrategy.sol";
 import {BalancerVault} from "src/balancer/vault/BalancerVault.sol";
-import {IBalancerAccumulator} from "src/base/interfaces/IBalancerAccumulator.sol";
+import {IAccumulator} from "src/base/interfaces/IAccumulator.sol";
 import "src/base/external/TransparentUpgradeableProxy.sol";
 import {Constants} from "herdaddy/utils/Constants.sol";
 import {ERC20} from "solady/tokens/ERC20.sol";
@@ -31,7 +30,7 @@ interface IBalancerHelper {
         returns (uint256 bptOut, uint256[] memory amountsIn);
 }
 
-contract BalancerVaultTest is Test {
+contract BalancerVaultTest is BaseTest {
     address public constant STETH_STABLE_POOL = 0x32296969Ef14EB0c6d29669C550D4a0449130230;
     address public constant OHM_DAI_WETH_POOL = 0xc45D42f801105e861e86658648e3678aD7aa70f9;
     address public constant STRATEGY = 0x873b031Ea6E4236E44d933Aae5a66AF6d4DA419d;
@@ -52,7 +51,7 @@ contract BalancerVaultTest is Test {
     ILiquidityGaugeStrat public liquidityGauge;
     ILiquidityGaugeStrat public weightedPoolLiquidityGauge;
     address internal proxyAdmin = address(0xABCD);
-    IBalancerAccumulator public accumulator;
+    IAccumulator public accumulator;
     BalancerStrategy public strategy;
     BalancerVault public vault;
     BalancerVault public weightedPoolVault;
@@ -65,7 +64,7 @@ contract BalancerVaultTest is Test {
         vm.startPrank(LOCAL_DEPLOYER);
         //proxyAdmin = new ProxyAdmin();
         helper = IBalancerHelper(BALANCER_HELPER);
-        accumulator = IBalancerAccumulator(ILocker(BAL.LOCKER).accumulator());
+        accumulator = IAccumulator(ILocker(BAL.LOCKER).accumulator());
         strategy = new BalancerStrategy(
             ILocker(BAL.LOCKER), LOCAL_DEPLOYER, LOCAL_DEPLOYER, accumulator, LOCAL_DEPLOYER, LOCAL_DEPLOYER
         );
@@ -213,13 +212,5 @@ contract BalancerVaultTest is Test {
 
         assertEq(ohmBalanceOfVault, 0, "ERROR_030");
         assertEq(lpBalanceAfter, bptOut, "ERROR_031");
-    }
-
-    function deployBytecode(bytes memory bytecode, bytes memory args) internal returns (address deployed) {
-        bytecode = abi.encodePacked(bytecode, args);
-        assembly {
-            deployed := create(0, add(bytecode, 0x20), mload(bytecode))
-        }
-        require(deployed != address(0), "DEPLOYMENT_FAILED");
     }
 }

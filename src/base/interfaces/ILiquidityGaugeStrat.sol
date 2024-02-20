@@ -2,6 +2,15 @@
 pragma solidity 0.8.19;
 
 interface ILiquidityGaugeStrat {
+    struct Reward {
+        address token;
+        address distributor;
+        uint256 period_finish;
+        uint256 rate;
+        uint256 last_update;
+        uint256 integral;
+    }
+
     function asset() external view returns (address);
 
     function earned(address) external view returns (uint256);
@@ -50,4 +59,22 @@ interface ILiquidityGaugeStrat {
     function totalSupply() external returns (uint256);
 
     function withdraw(uint256 _value, address _user, bool _claim) external;
+
+    function withdraw(uint256 _value, address _user) external;
+
+    function name() external view returns (string memory);
+
+    function symbol() external view returns (string memory);
+
+    function transfer(address _to, uint256 amount) external;
+
+    function claimable_reward(address _user, address _token) external view returns (uint256);
+
+    function reward_data(address _token) external view returns (Reward memory);
+
+    function working_balances(address _address) external returns (uint256);
+
+    function admin() external returns (address);
+
+    function set_reward_distributor(address _rewardToken, address _newDistrib) external;
 }

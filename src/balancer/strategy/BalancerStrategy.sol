@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import {BaseStrategy} from "src/base/strategy/BaseStrategy.sol";
-import {IBalancerAccumulator} from "src/base/interfaces/IBalancerAccumulator.sol";
+import {IAccumulator} from "src/base/interfaces/IAccumulator.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {ISdtDistributorV2} from "src/base/interfaces/ISdtDistributorV2.sol";
@@ -12,7 +12,7 @@ import {ISdtDistributorV2} from "src/base/interfaces/ISdtDistributorV2.sol";
 contract BalancerStrategy is BaseStrategy {
     using SafeERC20 for IERC20;
 
-    IBalancerAccumulator public accumulator;
+    IAccumulator public accumulator;
     address public sdtDistributor;
     address public constant BAL_MINTER = 0x239e55F427D44C3cc793f49bFB507ebe76638a2b;
     address public constant BAL = 0xba100000625a3754423978a60c9317c58a424e3D;
@@ -34,7 +34,7 @@ contract BalancerStrategy is BaseStrategy {
         ILocker _locker,
         address _governance,
         address _receiver,
-        IBalancerAccumulator _accumulator,
+        IAccumulator _accumulator,
         address _veSDTFeeProxy,
         address _sdtDistributor
     ) BaseStrategy(_locker, _governance, _receiver) {
@@ -190,7 +190,7 @@ contract BalancerStrategy is BaseStrategy {
     /// @param _newAccumulator accumulator address
     function setAccumulator(address _newAccumulator) external onlyGovernance {
         require(_newAccumulator != address(0), "zero address");
-        accumulator = IBalancerAccumulator(_newAccumulator);
+        accumulator = IAccumulator(_newAccumulator);
     }
 
     /// @notice function to set a new reward receiver
