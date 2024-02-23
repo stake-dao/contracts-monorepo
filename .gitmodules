@@ -7,12 +7,12 @@
 [submodule "lib/openzeppelin-contracts"]
 	path = lib/openzeppelin-contracts
 	url = https://github.com/OpenZeppelin/openzeppelin-contracts
-[submodule "lib/AddressBook"]
-	path = lib/AddressBook
-	url = https://github.com/StakeDAO/AddressBook
 [submodule "lib/solady"]
 	path = lib/solady
 	url = https://github.com/vectorized/solady
 [submodule "lib/address-book"]
 	path = lib/address-book
 	url = https://github.com/stake-dao/address-book
+[submodule "lib/herdaddy"]
+	path = lib/herdaddy
+	url = https://github.com/stake-dao/herdaddy

@@ -1,21 +1,17 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import "forge-std/Vm.sol";
-import "solady/utils/LibClone.sol";
-
 import "forge-std/Test.sol";
-import "forge-std/console.sol";
-import "utils/VyperDeployer.sol";
-import "address-book/lockers/1.sol";
-import "address-book/protocols/1.sol";
-import "address-book/dao/1.sol";
 
-import {Constants} from "src/base/utils/Constants.sol";
+import {LibClone} from "solady/utils/LibClone.sol";
+import {PENDLE} from "address-book/lockers/1.sol";
+import {Pendle} from "address-book/protocols/1.sol";
+import {DAO} from "address-book/dao/1.sol";
+
+import {Constants} from "herdaddy/utils/Constants.sol";
 import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
-import {PendleVaultFactory} from "src/pendle/PendleVaultFactory.sol";
-import "openzeppelin-contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
-import "openzeppelin-contracts/token/ERC20/ERC20.sol";
+import {PendleVaultFactory} from "src/pendle/factory/PendleVaultFactory.sol";
+import {ERC20} from "solady/tokens/ERC20.sol";
 
 interface PendleStrategy {
     function setVaultGaugeFactory(address _vaultGaugeFactory) external;
@@ -26,7 +22,7 @@ interface PendleStrategy {
 
 interface PendleVault {
     function init(
-        ERC20Upgradeable _token,
+        ERC20 _token,
         address _governance,
         string memory name_,
         string memory symbol_,
@@ -53,20 +49,13 @@ contract PendleStrategyIntegrationTest is Test {
 
     address public constant PENDLE_DEPLOYER = 0x1FcCC097db89A86Bfc474A1028F93958295b1Fb7;
 
-    VyperDeployer public vyperDeployer;
-
     ILiquidityGaugeStrat public gaugeImpl;
 
     function setUp() public {
         uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"), 19018738);
         vm.selectFork(forkId);
 
-        vyperDeployer = new VyperDeployer();
-
-        // Deploy LGV4Strat impl
-        //gaugeImpl = ILiquidityGaugeStrat(vyperDeployer.deployContract("src/base/gauge/LiquidityGaugeV4Strat.vy"));
-
-        gaugeImpl = ILiquidityGaugeStrat(deployBytecode(Constants.LGV4_STRAT_BYTECODE, ""));
+        gaugeImpl = ILiquidityGaugeStrat(deployBytecode(Constants.LGV4_BOOST_STRAT_0_2_BYTECODE, ""));
 
         // Deploying vault factory
         factory = new PendleVaultFactory(PENDLE.STRATEGY, DAO.STRATEGY_SDT_DISTRIBUTOR, address(gaugeImpl));

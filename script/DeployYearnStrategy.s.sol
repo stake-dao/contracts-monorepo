@@ -6,7 +6,8 @@ import "forge-std/Script.sol";
 import "solady/utils/LibClone.sol";
 import "utils/VyperDeployer.sol";
 
-import {AddressBook} from "addressBook/AddressBook.sol";
+import {YFI} from "address-book/lockers/1.sol";
+import {Yearn} from "address-book/protocols/1.sol";
 import {YearnStrategy} from "src/yearn/strategy/YearnStrategy.sol";
 import {GaugeDepositorVault} from "src/base/vault/GaugeDepositorVault.sol";
 import {YearnVaultFactoryOwnable} from "src/yearn/factory/YearnVaultFactoryOwnable.sol";
@@ -32,8 +33,7 @@ contract DeployYearnStrategy is Script, Test {
         vm.startBroadcast(DEPLOYER);
 
         // Deploy strategy impl
-        strategyImpl =
-            new YearnStrategy(GOVERNANCE, AddressBook.YFI_LOCKER, AddressBook.VE_YFI, DYFI, AddressBook.YFI_REWARD_POOL);
+        strategyImpl = new YearnStrategy(GOVERNANCE, YFI.LOCKER, Yearn.VEYFI, Yearn.DYFI, Yearn.YFI_REWARD_POOL);
         // Clone strategy
         address strategyProxy = LibClone.deployERC1967(address(strategyImpl));
         strategy = YearnStrategy(payable(strategyProxy));
@@ -52,8 +52,8 @@ contract DeployYearnStrategy is Script, Test {
         // Strategy setters
         strategy.setFactory(address(factory));
         strategy.setAccumulator(YEARN_ACC);
-        strategy.setFeeRewardToken(AddressBook.YFI);
-        strategy.setFeeDistributor(AddressBook.YFI_REWARD_POOL);
+        strategy.setFeeRewardToken(YFI.TOKEN);
+        strategy.setFeeDistributor(Yearn.YFI_REWARD_POOL);
 
         strategy.updateProtocolFee(1_500); // 15%
         strategy.updateClaimIncentiveFee(50); // 0.5%

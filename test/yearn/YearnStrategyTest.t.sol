@@ -1,14 +1,12 @@
-    // SPDX-License-Identifier: Unlicense
+// SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import "forge-std/Vm.sol";
-import "solady/utils/LibClone.sol";
-
 import "forge-std/Test.sol";
-import "forge-std/console.sol";
-import "utils/VyperDeployer.sol";
 
-import {AddressBook} from "addressBook/AddressBook.sol";
+import {LibClone} from "solady/utils/LibClone.sol";
+import {YFI} from "address-book/lockers/1.sol";
+import {Yearn} from "address-book/protocols/1.sol";
+import {DAO} from "address-book/dao/1.sol";
 import {YearnStrategy} from "src/yearn/strategy/YearnStrategy.sol";
 import {GaugeDepositorVault} from "src/base/vault/GaugeDepositorVault.sol";
 import {YearnVaultFactoryOwnable} from "src/yearn/factory/YearnVaultFactoryOwnable.sol";
@@ -33,10 +31,10 @@ contract YearnStrategyTest is Test {
     GaugeDepositorVault public vaultImpl;
     ILocker public locker;
     address public veToken;
-    address public constant DYFI = 0x41252E8691e964f7DE35156B68493bAb6797a275;
-    address public constant YFI_REWARD_POOL = 0xb287a1964AEE422911c7b8409f5E5A273c1412fA;
-    address public constant DYFI_REWARD_POOL = 0x2391Fc8f5E417526338F5aa3968b1851C16D894E;
-    address public constant LOCKER_GOV = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
+    address public constant DYFI = Yearn.DYFI;
+    address public constant YFI_REWARD_POOL = Yearn.YFI_REWARD_POOL;
+    address public constant DYFI_REWARD_POOL = Yearn.DYFI_REWARD_POOL;
+    address public constant LOCKER_GOV = DAO.GOVERNANCE;
     address public sdYFI;
     address public sdtDistributor;
     address public yfi;
@@ -53,17 +51,17 @@ contract YearnStrategyTest is Test {
     address[] public sdGauges = new address[](yearnGauges.length);
 
     address public constant GAUGE_IMPL = 0x3Dc56D46F0Bd13655EfB29594a2e44534c453BF9;
-    address public constant YEARN_ACC = 0x8b65438178CD4EF67b0177135dE84Fe7E3C30ec3;
+    address public constant YEARN_ACC = YFI.ACCUMULATOR;
 
     function setUp() public {
         uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"), 18431190);
         vm.selectFork(forkId);
 
-        locker = ILocker(AddressBook.YFI_LOCKER);
-        veToken = AddressBook.VE_YFI;
-        sdYFI = AddressBook.SD_YFI;
-        yfi = AddressBook.YFI;
-        sdtDistributor = AddressBook.SDT_DISTRIBUTOR_STRAT;
+        locker = ILocker(YFI.LOCKER);
+        veToken = Yearn.VEYFI;
+        sdYFI = YFI.SDTOKEN;
+        yfi = YFI.TOKEN;
+        sdtDistributor = DAO.STRATEGY_SDT_DISTRIBUTOR;
         strategyImpl = new YearnStrategy(address(this), address(locker), veToken, DYFI, sdYFI);
         address strategyProxy = LibClone.deployERC1967(address(strategyImpl));
         strategy = YearnStrategy(payable(strategyProxy));

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import "../base/interfaces/IGaugeController.sol";
-import "../base/interfaces/ILiquidityGaugeStrat.sol";
+import {IGaugeController} from "src/base/interfaces/IGaugeController.sol";
+import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import "openzeppelin-contracts-upgradeable/proxy/ClonesUpgradeable.sol";
-import "openzeppelin-contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
+import {ClonesUpgradeable} from "openzeppelin-contracts-upgradeable/proxy/ClonesUpgradeable.sol";
+import {ERC20Upgradeable} from "openzeppelin-contracts-upgradeable/token/ERC20/ERC20Upgradeable.sol";
 
 interface IPendleMarketFactory {
     function isValidMarket(address) external returns (bool);
@@ -55,7 +55,7 @@ contract PendleVaultFactory {
 
     address public strategy;
     address public sdtDistributor;
-    address public gaugeImpl = 0x3Dc56D46F0Bd13655EfB29594a2e44534c453BF9;
+    address public gaugeImpl;
 
     event VaultDeployed(address proxy, address lptToken, address impl);
     event GaugeDeployed(address proxy, address stakeToken, address impl);

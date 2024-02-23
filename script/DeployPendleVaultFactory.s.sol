@@ -9,8 +9,8 @@ import "utils/VyperDeployer.sol";
 import "address-book/lockers/1.sol";
 import "address-book/protocols/1.sol";
 
-import {Constants} from "src/base/utils/Constants.sol";
-import {PendleVaultFactory} from "src/pendle/PendleVaultFactory.sol";
+import {Constants} from "herdaddy/utils/Constants.sol";
+import {PendleVaultFactory} from "src/pendle/factory/PendleVaultFactory.sol";
 import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
 
 interface PendleStrategy {
@@ -27,7 +27,8 @@ contract DeployPendleVaultFactory is Script, Test {
         vm.startBroadcast(DAO.MAIN_DEPLOYER);
 
         // Deploy LGV4Strat impl
-        ILiquidityGaugeStrat gaugeImpl = ILiquidityGaugeStrat(deployBytecode(Constants.LGV4_STRAT_BYTECODE, ""));
+        ILiquidityGaugeStrat gaugeImpl =
+            ILiquidityGaugeStrat(deployBytecode(Constants.LGV4_BOOST_STRAT_0_2_BYTECODE, ""));
 
         factory = new PendleVaultFactory(PENDLE.STRATEGY, DAO.STRATEGY_SDT_DISTRIBUTOR, address(gaugeImpl));
 
@@ -73,5 +74,4 @@ contract DeployPendleVaultFactory is Script, Test {
         }
         require(deployed != address(0), "DEPLOYMENT_FAILED");
     }
-
 }
