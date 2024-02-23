@@ -55,7 +55,7 @@ contract PendleStrategyIntegrationTest is Test {
         uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"), 19018738);
         vm.selectFork(forkId);
 
-        gaugeImpl = ILiquidityGaugeStrat(deployBytecode(Constants.LGV4_STRAT_BYTECODE, ""));
+        gaugeImpl = ILiquidityGaugeStrat(deployBytecode(Constants.LGV4_BOOST_STRAT_0_2_BYTECODE, ""));
 
         // Deploying vault factory
         factory = new PendleVaultFactory(PENDLE.STRATEGY, DAO.STRATEGY_SDT_DISTRIBUTOR, address(gaugeImpl));

@@ -75,7 +75,7 @@ contract BalancerVaultTest is BaseTest {
             ERC20Upgradeable(OHM_DAI_WETH_POOL), LOCAL_DEPLOYER, "vaultToken", "vaultToken", strategy
         );
 
-        liquidityGaugeImpl = ILiquidityGaugeStrat(deployBytecode(Constants.LGV4_STRAT_BYTECODE, ""));
+        liquidityGaugeImpl = ILiquidityGaugeStrat(deployBytecode(Constants.LGV4_BOOST_STRAT_0_2_BYTECODE, ""));
 
         // Deploy Liquidity Gauge V4
         bytes memory lgData = abi.encodeWithSignature(

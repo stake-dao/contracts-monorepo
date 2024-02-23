@@ -83,7 +83,7 @@ contract AngleVaultTest is BaseTest {
         //         abi.encode(DAO.SDT, DAO.VESDT, LOCAL_DEPLOYER)
         //     )
         // );
-        liquidityGaugeStratImpl = ILiquidityGaugeStrat(deployBytecode(Constants.LGV4_STRAT_BYTECODE, ""));
+        liquidityGaugeStratImpl = ILiquidityGaugeStrat(deployBytecode(Constants.LGV4_BOOST_STRAT_0_2_BYTECODE, ""));
         // liquidityGaugeStratImpl = ILiquidityGaugeStrat(
         //     deployCode("artifacts/vyper-contracts/LiquidityGaugeV4Strat.vy/LiquidityGaugeV4Strat.json")
         // );

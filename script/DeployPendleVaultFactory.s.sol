@@ -27,7 +27,8 @@ contract DeployPendleVaultFactory is Script, Test {
         vm.startBroadcast(DAO.MAIN_DEPLOYER);
 
         // Deploy LGV4Strat impl
-        ILiquidityGaugeStrat gaugeImpl = ILiquidityGaugeStrat(deployBytecode(Constants.LGV4_STRAT_BYTECODE, ""));
+        ILiquidityGaugeStrat gaugeImpl =
+            ILiquidityGaugeStrat(deployBytecode(Constants.LGV4_BOOST_STRAT_0_2_BYTECODE, ""));
 
         factory = new PendleVaultFactory(PENDLE.STRATEGY, DAO.STRATEGY_SDT_DISTRIBUTOR, address(gaugeImpl));
 
