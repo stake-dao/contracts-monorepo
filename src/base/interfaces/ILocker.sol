@@ -25,4 +25,6 @@ interface ILocker {
     function governance() external view returns (address);
 
     function futureGovernance() external view returns (address);
+
+    function accumulator() external view returns (address);
 }

@@ -8,7 +8,6 @@ import "openzeppelin-contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import {ICakeMc} from "src/base/interfaces/ICakeMc.sol";
 import {Executor} from "src/cake/utils/Executor.sol";
-import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
 
 import {DAO} from "address-book/dao/56.sol";
 import {CAKE} from "address-book/lockers/56.sol";
@@ -75,8 +74,6 @@ contract PancakeMasterchefStrategyTest is Test {
         (,, token0, token1,,,,,,,,) = ICakeNfpm(strategy.nonFungiblePositionManager()).positions(nftId);
         deal(token0, address(this), 1000e18);
         deal(token1, address(this), 1000e18);
-
-        //deal(token0, nftRecipient, 10e18);
     }
 
     function test_deposit_nft() external {
@@ -221,6 +218,9 @@ contract PancakeMasterchefStrategyTest is Test {
 
     function test_decrease_liquidity() external {
         _depositNft();
+
+        skip(1 days);
+
         (,,,,,,, uint256 currentLiq,,, uint128 tokenOwed0, uint128 tokenOwed1) =
             ICakeNfpm(strategy.nonFungiblePositionManager()).positions(nftId);
         assertEq(tokenOwed0, 0);
@@ -240,6 +240,8 @@ contract PancakeMasterchefStrategyTest is Test {
         // check if the recipient received the tokens
         assertGt(ERC20(token0).balanceOf(nftHolder) - token0BalanceBefore, 0);
         assertGt(ERC20(token1).balanceOf(nftHolder) - token1BalanceBefore, 0);
+        // assert that the strategy did not receive any reward
+        assertEq(ERC20(REWARD_TOKEN).balanceOf(address(strategy)), 0);
     }
 
     function _depositNft() internal {
