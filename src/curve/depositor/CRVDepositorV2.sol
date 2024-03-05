@@ -13,6 +13,7 @@ contract CRVDepositorV2 is CurveExchangeDepositor {
     /// @notice Address of the veCRV token.
     address public constant VE_CRV = 0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2;
 
+    /// @notice Address of the sdveCRV token.
     address public constant SD_VE_CRV = 0x478bBC744811eE8310B461514BDc29D03739084D;
 
     constructor(address _token, address _locker, address _minter, address _gauge, address _pool)
