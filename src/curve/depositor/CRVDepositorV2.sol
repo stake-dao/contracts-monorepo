@@ -29,7 +29,7 @@ contract CRVDepositorV2 is CurveExchangeDepositor {
             ILocker(locker).increaseAmount(_amount);
 
             uint256 _unlockTime = block.timestamp + MAX_LOCK_DURATION;
-            bool _canIncrease = (_unlockTime / 1 weeks * 1 weeks) > (IVeToken(VE_CRV).locked__end(address(this)));
+            bool _canIncrease = (_unlockTime / 1 weeks * 1 weeks) > (IVeToken(VE_CRV).locked__end(locker));
 
             /// Increase the unlock time if the lock is not at the maximum duration.
             if (_canIncrease) {
