@@ -13,6 +13,8 @@ contract CRVDepositorV2 is CurveExchangeDepositor {
     /// @notice Address of the veCRV token.
     address public constant VE_CRV = 0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2;
 
+    address public constant SD_VE_CRV = 0x478bBC744811eE8310B461514BDc29D03739084D;
+
     constructor(address _token, address _locker, address _minter, address _gauge, address _pool)
         CurveExchangeDepositor(_token, _locker, _minter, _gauge, 4 * 365 days, _pool)
     {}
@@ -40,5 +42,13 @@ contract CRVDepositorV2 is CurveExchangeDepositor {
 
             emit TokenLocked(msg.sender, _amount);
         }
+    }
+
+    /// @notice Lock forever (irreversible action) old sdveCrv to sdCrv with 1:1 rate.
+    /// @param _amount Amount to lock.
+    function lockSdveCrvToSdCrv(uint256 _amount) external {
+        IERC20(SD_VE_CRV).transferFrom(msg.sender, address(this), _amount);
+        // mint new sdCrv to the user
+        ITokenMinter(minter).mint(msg.sender, _amount);
     }
 }

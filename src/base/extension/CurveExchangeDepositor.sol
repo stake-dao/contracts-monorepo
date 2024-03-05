@@ -67,7 +67,7 @@ abstract contract CurveExchangeDepositor is DepositorV4 {
     /// @param _amount Amount of tokens to swap.
     /// @param _minAmount Minimum amount of tokens to receive.
     /// @param _receiver Address of the receiver.
-    function _swap(uint256 _amount, uint256 _minAmount, address _receiver) internal returns (uint256){
+    function _swap(uint256 _amount, uint256 _minAmount, address _receiver) internal returns (uint256) {
         return ICurvePool(pool).exchange(0, 1, _amount, _minAmount, _receiver);
     }
 

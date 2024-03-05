@@ -207,14 +207,13 @@ contract CRVLockerIntegrationTest is Test {
         assertApproxEqRel(veToken.balanceOf(address(locker)), snapshotBalance + 200e18, 5e15);
     }
 
-
     function test_swapWithoutStake() public {
         /// Skip 1 seconds to avoid depositing in the same block as locking.
         skip(1);
 
         token.approve(address(depositor), amount);
 
-        uint minAmount = ICurvePool(POOL).get_dy(0, 1, amount);
+        uint256 minAmount = ICurvePool(POOL).get_dy(0, 1, amount);
         depositor.deposit(amount, minAmount, false, address(this));
 
         assertEq(token.balanceOf(address(depositor)), 0);
@@ -228,7 +227,7 @@ contract CRVLockerIntegrationTest is Test {
 
         token.approve(address(depositor), amount);
 
-        uint minAmount = ICurvePool(POOL).get_dy(0, 1, amount);
+        uint256 minAmount = ICurvePool(POOL).get_dy(0, 1, amount);
         depositor.deposit(amount, minAmount, true, address(this));
 
         assertEq(_sdToken.balanceOf(address(this)), 0);
