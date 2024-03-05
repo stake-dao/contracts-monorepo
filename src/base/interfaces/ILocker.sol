@@ -15,6 +15,7 @@ interface ILocker {
     function release() external;
 
     function claimRewards(address, address) external;
+
     function claimRewards(address, address, address) external;
 
     function claimFXSRewards(address) external;
@@ -50,4 +51,6 @@ interface ILocker {
     function transferGovernance(address _governance) external;
 
     function acceptGovernance() external;
+
+    function setStrategy(address _strategy) external;
 }

@@ -18,4 +18,6 @@ interface IVeToken {
     function locked__end(address) external view returns (uint256);
 
     function balanceOf(address) external view returns (uint256);
+
+    function locked(address) external returns (LockedBalance memory);
 }
