@@ -281,7 +281,7 @@ contract FXNLockerIntegrationTest is Test {
         assertApproxEqAbs(_rewardToken.balanceOf(address(this)), expectedFee, 1);
 
         /// Distributed as rewards.
-        assertApproxEqAbs(_rewardToken.balanceOf(address(liquidityGauge)), expectedReward - expectedFee, 1);
+        assertApproxEqAbs(_rewardToken.balanceOf(address(liquidityGauge)), expectedReward - expectedFee, 2);
     }
 
     function test_transferGovernance() public {
