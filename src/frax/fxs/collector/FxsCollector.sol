@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {ISdToken} from "src/base/interfaces/ISdToken.sol";
 import {IDepositor} from "src/base/interfaces/IDepositor.sol";
+import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 
 /// @title A contract that collect FXS from users and mints sdFXS at 1:1 rate when the FXS depositor will be deployed
 /// @dev to be used only on fraxtal chain
@@ -11,49 +12,81 @@ import {IDepositor} from "src/base/interfaces/IDepositor.sol";
 contract FxsCollector {
     enum Phase {
         Collect, // 0
-        Mint, // 1
-        Claim, // 2
-        Rescue // 3
+        Claim, // 1
+        Rescue // 2
 
     }
 
+    /// @notice Current phase
     Phase public currentPhase;
 
-    ERC20 public constant FXS = ERC20(0x3432B6A60D23Ca0dFCa7761B7ab56459D9C964D0);
+    /// @notice Fraxtal FXS token
+    ERC20 public constant FXS = ERC20(0xFc00000000000000000000000000000000000002);
 
+    /// @notice sdFXS token
     ISdToken public sdFxs;
 
+    /// @notice FXS depositor
     IDepositor public fxsDepositor;
 
+    /// @notice sdFXS gauge
+    ILiquidityGauge public sdFxsGauge;
+
+    /// @notice Address of the governance.
     address public governance;
 
+    /// @notice Address of the future governance.
     address public futureGovernance;
 
+    /// @notice
     mapping(address => uint256) public deposited; // user -> fxs deposited
 
+    /// @notice Total FXS deposited by the users during the collect phase
     uint256 public totalDeposited;
 
-    // Errors and Events
+    ////////////////////////////////////////////////////////////////
+    /// --- EVENTS & ERRORS
+    ///////////////////////////////////////////////////////////////
 
+    /// @notice Throws on auth issue
     error Auth();
 
+    /// @notice Throws if a raw call fails
     error CallFailed();
 
+    /// @notice Throws on phases issue
     error DifferentPhase();
 
+    /// @notice Event emitted when Fxs are deposited by users
+    /// @param user Address that deposited FXS
+    /// @param amount Amount of FXS deposited
     event FxsCollected(address indexed user, uint256 amount);
 
+    /// @notice Event emitted when Fxs are rescued by users (rescue phase)
+    /// @param user Address that deposited FXS during collect phase
+    /// @param recipient Adddress that receives FXS rescued
+    /// @param amount Amount of FXS rescued
     event FxsRescued(address user, address recipient, uint256 amount);
 
+    /// @notice Event emitted when the governance changes
+    /// @param governance Address of new governance
     event GovernanceChanged(address governance);
 
-    event SdFxsClaimed(address user, address _recipient, uint256 amount);
+    /// @notice Event emitted when sdFxs are claimed by users
+    /// @param user Address of the claimer
+    /// @param recipient Address that receives sdFxs or sdFxs-gauge tokens
+    /// @param amount Amount claimed
+    event SdFxsClaimed(address user, address recipient, uint256 amount);
 
     modifier onlyGovernance() {
         if (msg.sender != governance) revert Auth();
         _;
     }
 
+    /// @notice Constructor
+    /// @param _governance Address of the governance
+    /// @param _delegationRegistry Address of the Fraxtal's Frax Delegation registry used to delegate epoch reward
+    /// @param _initialDelegate Address of the delegate reward contract that receives it at every epoch on fraxtal
     constructor(address _governance, address _delegationRegistry, address _initialDelegate) {
         (bool success,) =
             _delegationRegistry.call(abi.encodeWithSignature("setDelegationForSelf(address)", _initialDelegate));
@@ -80,19 +113,26 @@ contract FxsCollector {
     }
 
     /// @notice Claim sdFxs
-    function claimSdFxs(address _recipient) external {
+    /// @param _recipient address that receives sdFxs or sdFxs-gauge tokens
+    /// @param _deposit deposit or not sdFxs to the gauge
+    function claimSdFxs(address _recipient, bool _deposit) external {
         if (currentPhase != Phase.Claim) revert DifferentPhase();
 
-        uint256 sdFxsToMint = deposited[msg.sender];
+        uint256 sdFxsToClaim = deposited[msg.sender];
 
-        if (sdFxsToMint != 0) {
-            // transfer the whole amount deposited, in sdFxs with 1:1 rate
-            ERC20(address(sdFxs)).transfer(_recipient, sdFxsToMint);
+        if (sdFxsToClaim != 0) {
+            if (_deposit) {
+                ERC20(address(sdFxs)).approve(address(sdFxsGauge), sdFxsToClaim);
+                sdFxsGauge.deposit(sdFxsToClaim, _recipient);
+            } else {
+                // transfer the whole amount deposited, in sdFxs with 1:1 rate
+                ERC20(address(sdFxs)).transfer(_recipient, sdFxsToClaim);
+            }
 
             delete deposited[msg.sender];
-        }
 
-        emit SdFxsClaimed(msg.sender, _recipient, sdFxsToMint);
+            emit SdFxsClaimed(msg.sender, _recipient, sdFxsToClaim);
+        }
     }
 
     /// @notice Rescue FXS deposited during the collect phase
@@ -115,39 +155,41 @@ contract FxsCollector {
     }
 
     /// @notice mint sdFxs with all FXS collected during the collect phase
+    /// @param _sdFxs sdFxs token
+    /// @param _fxsDepositor fxs depositor
+    /// @param _sdFxsGauge sdFxs gauge
     /// @param _sdFxsIncRecipient sdFxs incentives recipient
-    function mintSdFxs(address _sdFxsIncRecipient) external onlyGovernance {
-        if (currentPhase != Phase.Mint) revert DifferentPhase();
+    function mintSdFxs(address _sdFxs, address _fxsDepositor, address _sdFxsGauge, address _sdFxsIncRecipient)
+        external
+        onlyGovernance
+    {
+        if (currentPhase != Phase.Collect) revert DifferentPhase();
+        // set addresses
+        sdFxs = ISdToken(_sdFxs);
+        fxsDepositor = IDepositor(_fxsDepositor);
+        sdFxsGauge = ILiquidityGauge(_sdFxsGauge);
+
         // deposit FXS to the depositor, receive sdFxs
         uint256 amountToDeposit = FXS.balanceOf(address(this));
 
         if (amountToDeposit != 0) {
             FXS.approve(address(fxsDepositor), amountToDeposit);
             fxsDepositor.deposit(amountToDeposit, true, false, address(this));
+
+            uint256 sdFxsIncentives = ERC20(address(sdFxs)).balanceOf(address(this)) - amountToDeposit;
+
+            if (sdFxsIncentives != 0) {
+                ERC20(address(sdFxs)).transfer(_sdFxsIncRecipient, sdFxsIncentives);
+            }
+
+            currentPhase = Phase.Claim;
         }
-
-        uint256 sdFxsIncentives = ERC20(address(sdFxs)).balanceOf(address(this)) - amountToDeposit;
-
-        if (sdFxsIncentives != 0) {
-            ERC20(address(sdFxs)).transfer(_sdFxsIncRecipient, sdFxsIncentives);
-        }
-
-        currentPhase = Phase.Claim;
     }
 
-    /// @notice Trigger the Mint phase
-    /// @param _sdFxs sdFxs address
-    /// @param _fxsDepositor fxsDepositor
-    function triggerMintPhase(address _sdFxs, address _fxsDepositor) external onlyGovernance {
-        sdFxs = ISdToken(_sdFxs);
-        fxsDepositor = IDepositor(_fxsDepositor);
-
-        currentPhase = Phase.Mint;
-    }
-
-    /// @notice Toggle rescue mode
-    function togglePhase(Phase _phase) external onlyGovernance {
-        currentPhase = _phase;
+    /// @notice Toggle rescue mode (it can be done only during Collect phase)
+    function toggleRescuePhase() external onlyGovernance {
+        if (currentPhase != Phase.Collect) revert DifferentPhase();
+        currentPhase = Phase.Rescue;
     }
 
     /// @notice Transfer the governance to a new address.
