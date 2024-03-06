@@ -22,7 +22,7 @@ contract FxsCollectorTest is Test {
         uint256 forkId = vm.createFork(vm.rpcUrl("fraxtal"));
         vm.selectFork(forkId);
 
-        sdFxs = new sdToken("dummy token", "DT");
+        sdFxs = new sdToken("stake dao sdFXS", "sdFXS");
         collector = new FxsCollector(GOVERNANCE, DELEGATION_REGISTRY, INITIAL_DELEGATE);
     }
 
@@ -48,9 +48,9 @@ contract FxsCollectorTest is Test {
     function test_mint_sdFxs() public {
         vm.prank(GOVERNANCE);
         collector.mintSdFxs(address(sdFxs), FXS_DEPOSITOR, SDFXS_GAUGE, address(this));
-        assertEq(keccak256(abi.encode(collector.sdFxs())), keccak256(abi.encode(address(sdFxs))));
-        assertEq(keccak256(abi.encode(collector.fxsDepositor())), keccak256(abi.encode(FXS_DEPOSITOR)));
-        assertEq(keccak256(abi.encode(collector.sdFxsGauge())), keccak256(abi.encode(SDFXS_GAUGE)));
+        assertEq(address(collector.sdFxs()), address(sdFxs));
+        assertEq(address(collector.fxsDepositor()), FXS_DEPOSITOR);
+        assertEq(address(collector.sdFxsGauge()), SDFXS_GAUGE);
         // the FXS balance is zero so it remains in Collect phase
         assertEq(uint256(collector.currentPhase()), uint256(FxsCollector.Phase.Collect));
     }
@@ -59,5 +59,15 @@ contract FxsCollectorTest is Test {
         vm.prank(GOVERNANCE);
         collector.toggleRescuePhase();
         assertEq(uint256(collector.currentPhase()), uint256(FxsCollector.Phase.Rescue));
+    }
+
+    function test_transfer_governance() public {
+        vm.prank(GOVERNANCE);
+        collector.transferGovernance(address(this));
+        assertEq(collector.governance(), GOVERNANCE);
+        assertEq(collector.futureGovernance(), address(this));
+        collector.acceptGovernance();
+        assertEq(collector.governance(), address(this));
+        assertEq(collector.futureGovernance(), address(0));
     }
 }
