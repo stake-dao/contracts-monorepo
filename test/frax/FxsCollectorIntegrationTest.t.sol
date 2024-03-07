@@ -6,7 +6,7 @@ import "forge-std/Test.sol";
 import {FxsCollector} from "src/frax/fxs/collector/FxsCollector.sol";
 import {sdToken} from "src/base/token/sdToken.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
-import {MockFxsDepositor} from "test/frax/mocks/Mocks.sol";
+import {MockFxsDepositor, MockSdFxsGauge} from "test/frax/mocks/Mocks.sol";
 
 contract FxsCollectorIntegrationTest is Test {
     FxsCollector internal collector;
@@ -18,7 +18,7 @@ contract FxsCollectorIntegrationTest is Test {
 
     sdToken internal sdFxs;
     MockFxsDepositor internal fxsDepositor;
-    address internal constant SDFXS_GAUGE = address(0xABBACD);
+    MockSdFxsGauge internal sdFxsGauge;
 
     address internal constant USER_1 = address(0xAAAA);
     address internal constant USER_2 = address(0xBBBB);
@@ -30,6 +30,7 @@ contract FxsCollectorIntegrationTest is Test {
         sdFxs = new sdToken("stake dao sdFXS", "sdFXS");
         fxsDepositor = new MockFxsDepositor(address(sdFxs));
         sdFxs.setOperator(address(fxsDepositor));
+        sdFxsGauge = new MockSdFxsGauge(address(sdFxs));
 
         collector = new FxsCollector(GOVERNANCE, DELEGATION_REGISTRY, INITIAL_DELEGATE);
 
@@ -59,17 +60,19 @@ contract FxsCollectorIntegrationTest is Test {
         _depositFXS(USER_2, amountToDeposit / 2);
 
         vm.prank(GOVERNANCE);
-        collector.mintSdFxs(address(sdFxs), address(fxsDepositor), SDFXS_GAUGE, address(this));
+        collector.mintSdFxs(address(sdFxs), address(fxsDepositor), address(sdFxsGauge), address(this));
         assertEq(uint256(collector.currentPhase()), uint256(FxsCollector.Phase.Claim));
         assertEq(sdFxs.balanceOf(address(collector)), amountToDeposit + amountToDeposit / 2);
 
         vm.prank(USER_1);
-        collector.claimSdFxs(USER_1, false);
+        collector.claimSdFxs(USER_1, false); // receive sdFxs
         assertEq(sdFxs.balanceOf(USER_1), amountToDeposit);
 
         vm.prank(USER_2);
-        collector.claimSdFxs(USER_2, false);
-        assertEq(sdFxs.balanceOf(USER_2), amountToDeposit / 2);
+        collector.claimSdFxs(USER_2, true); // receive sdFxs-gauge
+        assertEq(sdFxs.balanceOf(USER_2), 0);
+        assertEq(sdFxs.balanceOf(address(sdFxsGauge)), amountToDeposit / 2);
+        assertEq(sdFxsGauge.balanceOf(USER_2), amountToDeposit / 2);
 
         assertEq(sdFxs.balanceOf(address(collector)), 0);
     }

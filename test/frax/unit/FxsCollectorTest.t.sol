@@ -6,6 +6,12 @@ import "forge-std/Test.sol";
 import {FxsCollector} from "src/frax/fxs/collector/FxsCollector.sol";
 import {sdToken} from "src/base/token/sdToken.sol";
 
+interface IDelegationRegistry {
+    function delegationsOf(address _delgator) external view returns (address);
+
+    function selfManagingDelegations(address _delegator) external view returns (bool);
+}
+
 contract FxsCollectorTest is Test {
     FxsCollector internal collector;
 
@@ -33,6 +39,9 @@ contract FxsCollectorTest is Test {
         assertEq(uint256(collector.currentPhase()), uint256(FxsCollector.Phase.Collect));
         assertEq(address(collector.sdFxs()), address(0));
         assertEq(address(collector.fxsDepositor()), address(0));
+
+        assertEq(IDelegationRegistry(DELEGATION_REGISTRY).delegationsOf(address(collector)), INITIAL_DELEGATE);
+        assertEq(IDelegationRegistry(DELEGATION_REGISTRY).selfManagingDelegations(address(collector)), false);
     }
 
     function test_revert_on_rescue() public {
