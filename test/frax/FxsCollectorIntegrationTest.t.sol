@@ -43,19 +43,29 @@ contract FxsCollectorIntegrationTest is Test {
 
         assertEq(collector.deposited(USER_1), 0);
 
-        _depositFXS(USER_1, amountToDeposit);
-        _depositFXS(USER_2, amountToDeposit / 2);
+        _depositFXS(USER_1, amountToDeposit, USER_1);
+        _depositFXS(USER_2, amountToDeposit / 2, USER_2);
 
         assertEq(collector.deposited(USER_1), amountToDeposit);
         assertEq(collector.deposited(USER_2), amountToDeposit / 2);
         assertEq(FXS.balanceOf(address(collector)), amountToDeposit + amountToDeposit / 2);
     }
 
+    function test_collect_phase_recipient() public {
+        uint256 amountToDeposit = 10e18;
+
+        _depositFXS(USER_1, amountToDeposit, USER_2);
+
+        assertEq(collector.deposited(USER_1), 0);
+        assertEq(collector.deposited(USER_2), amountToDeposit);
+        assertEq(FXS.balanceOf(address(collector)), amountToDeposit);
+    }
+
     function test_claim_phase() public {
         uint256 amountToDeposit = 10e18;
 
-        _depositFXS(USER_1, amountToDeposit);
-        _depositFXS(USER_2, amountToDeposit / 2);
+        _depositFXS(USER_1, amountToDeposit, USER_1);
+        _depositFXS(USER_2, amountToDeposit / 2, USER_2);
 
         vm.prank(GOVERNANCE);
         collector.mintSdFXS(address(sdFxs), address(fxsDepositor), address(sdFxsGauge), address(this));
@@ -75,11 +85,25 @@ contract FxsCollectorIntegrationTest is Test {
         assertEq(sdFxs.balanceOf(address(collector)), 0);
     }
 
+    function test_mint_incentive() public {
+        uint256 amountToDeposit = 10e18;
+        uint256 incentiveToken = 1e18;
+
+        _depositFXS(USER_1, amountToDeposit, USER_1);
+
+        fxsDepositor.setIncentiveToken(incentiveToken);
+        vm.prank(GOVERNANCE);
+        collector.mintSdFXS(address(sdFxs), address(fxsDepositor), address(sdFxsGauge), address(this));
+
+        assertEq(sdFxs.balanceOf(address(collector)), amountToDeposit);
+        assertEq(sdFxs.balanceOf(address(this)), incentiveToken);
+    }
+
     function test_rescue_phase() public {
         uint256 amountToDeposit = 10e18;
 
-        _depositFXS(USER_1, amountToDeposit);
-        _depositFXS(USER_2, amountToDeposit / 2);
+        _depositFXS(USER_1, amountToDeposit, USER_1);
+        _depositFXS(USER_2, amountToDeposit / 2, USER_2);
 
         vm.prank(GOVERNANCE);
         collector.toggleRescuePhase();
@@ -99,10 +123,10 @@ contract FxsCollectorIntegrationTest is Test {
         assertEq(FXS.balanceOf(USER_1) - user1Balance, amountToDeposit);
     }
 
-    function _depositFXS(address _user, uint256 _amountToDeposit) internal {
+    function _depositFXS(address _user, uint256 _amountToDeposit, address _recipient) internal {
         vm.startPrank(_user);
         ERC20(FXS).approve(address(collector), _amountToDeposit);
-        collector.depositFXS(_amountToDeposit, _user);
+        collector.depositFXS(_amountToDeposit, _recipient);
         vm.stopPrank();
     }
 }

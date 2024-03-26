@@ -6,13 +6,18 @@ import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 
 contract MockFxsDepositor {
     ISdToken public sdFxs;
+    uint256 public incentiveToken;
 
     constructor(address _sdFxs) {
         sdFxs = ISdToken(_sdFxs);
     }
 
     function deposit(uint256 _amount, bool, bool, address) external {
-        sdFxs.mint(msg.sender, _amount);
+        sdFxs.mint(msg.sender, _amount + incentiveToken);
+    }
+
+    function setIncentiveToken(uint256 _incentiveToken) external {
+        incentiveToken = _incentiveToken;
     }
 }
 
