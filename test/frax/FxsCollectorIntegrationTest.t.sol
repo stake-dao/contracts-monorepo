@@ -102,7 +102,7 @@ contract FxsCollectorIntegrationTest is Test {
     function _depositFXS(address _user, uint256 _amountToDeposit) internal {
         vm.startPrank(_user);
         ERC20(FXS).approve(address(collector), _amountToDeposit);
-        collector.depositFXS(_amountToDeposit);
+        collector.depositFXS(_amountToDeposit, _user);
         vm.stopPrank();
     }
 }

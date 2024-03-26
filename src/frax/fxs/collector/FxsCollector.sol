@@ -56,8 +56,9 @@ contract FxsCollector {
 
     /// @notice Event emitted when FXS are deposited by users
     /// @param user Address that deposited FXS
+    /// @param recipient Address deposited for
     /// @param amount Amount of FXS deposited
-    event FXSDeposited(address indexed user, uint256 amount);
+    event FXSDeposited(address indexed user, address indexed recipient, uint256 amount);
 
     /// @notice Event emitted when FXS are rescued by users (rescue phase)
     /// @param user Address that deposited FXS during collect phase
@@ -95,8 +96,9 @@ contract FxsCollector {
     }
 
     /// @notice Deposit FXS into the collector
-    /// @param _amount amount of FXS to deposit
-    function depositFXS(uint256 _amount) external {
+    /// @param _amount Amount of FXS to deposit
+    /// @param _recipient Address to deposit for
+    function depositFXS(uint256 _amount, address _recipient) external {
         // check current phase
         if (currentPhase != Phase.Collect) revert DifferentPhase();
 
@@ -104,14 +106,14 @@ contract FxsCollector {
         FXS.transferFrom(msg.sender, address(this), _amount);
 
         // increase the amount deposited
-        deposited[msg.sender] += _amount;
+        deposited[_recipient] += _amount;
 
-        emit FXSDeposited(msg.sender, _amount);
+        emit FXSDeposited(msg.sender, _recipient, _amount);
     }
 
     /// @notice Claim sdFXS
-    /// @param _recipient address that receives sdFXS or sdFXS-gauge tokens
-    /// @param _deposit deposit or not sdFXS to the gauge
+    /// @param _recipient Address that receives sdFXS or sdFXS-gauge tokens
+    /// @param _deposit Deposit or not sdFXS to the gauge
     function claimSdFXS(address _recipient, bool _deposit) external {
         if (currentPhase != Phase.Claim) revert DifferentPhase();
 
@@ -170,7 +172,7 @@ contract FxsCollector {
 
         if (amountToDeposit != 0) {
             FXS.approve(address(fxsDepositor), amountToDeposit);
-            // deposit the whole amount to the fxsDepositor locking but without staking
+            // deposit the whole amount to the fxsDepositor, locking but without staking
             fxsDepositor.deposit(amountToDeposit, true, false, address(this));
 
             uint256 sdFXSIncentives = ERC20(address(sdFXS)).balanceOf(address(this)) - amountToDeposit;
