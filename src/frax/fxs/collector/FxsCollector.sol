@@ -7,7 +7,7 @@ import {IDepositor} from "src/base/interfaces/IDepositor.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 
 /// @title A contract that collect FXS from users and mints sdFXS at 1:1 rate, later on, when the FXS depositor will be deployed
-/// @dev to be used only on fraxtal chain (ad-hoc contructor to delegate the fraxtal network's reward)
+/// @dev To be used only on the Fraxtal chain (ad-hoc contructor to delegate the Fraxtal network's rewards).
 /// @author StakeDAO
 contract FxsCollector {
     enum Phase {
@@ -152,7 +152,7 @@ contract FxsCollector {
         }
     }
 
-    /// @notice mint sdFXS with all FXS collected during the collect phase
+    /// @notice Mint sdFXS with all FXS collected during the collect phase
     /// @param _sdFXS sdFXS token
     /// @param _fxsDepositor FXS depositor
     /// @param _sdFXSGauge sdFXS gauge
@@ -175,6 +175,7 @@ contract FxsCollector {
             // deposit the whole amount to the fxsDepositor, locking but without staking
             fxsDepositor.deposit(amountToDeposit, true, false, address(this));
 
+            // check if the deposit() collected extra incentives too
             uint256 sdFXSIncentives = ERC20(address(sdFXS)).balanceOf(address(this)) - amountToDeposit;
 
             // transfer incentives minted, if any, to the recipient
