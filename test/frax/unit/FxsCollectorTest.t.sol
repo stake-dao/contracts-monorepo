@@ -37,7 +37,7 @@ contract FxsCollectorTest is Test {
         assertEq(collector.futureGovernance(), address(0));
         assertEq(keccak256(abi.encode(collector.FXS())), keccak256(abi.encode(FXS)));
         assertEq(uint256(collector.currentPhase()), uint256(FxsCollector.Phase.Collect));
-        assertEq(address(collector.sdFxs()), address(0));
+        assertEq(address(collector.sdFXS()), address(0));
         assertEq(address(collector.fxsDepositor()), address(0));
 
         assertEq(IDelegationRegistry(DELEGATION_REGISTRY).delegationsOf(address(collector)), INITIAL_DELEGATE);
@@ -51,15 +51,15 @@ contract FxsCollectorTest is Test {
 
     function test_revert_on_claim() public {
         vm.expectRevert(FxsCollector.DifferentPhase.selector);
-        collector.claimSdFxs(address(this), false);
+        collector.claimSdFXS(address(this), false);
     }
 
     function test_mint_sdFxs() public {
         vm.prank(GOVERNANCE);
-        collector.mintSdFxs(address(sdFxs), FXS_DEPOSITOR, SDFXS_GAUGE, address(this));
-        assertEq(address(collector.sdFxs()), address(sdFxs));
+        collector.mintSdFXS(address(sdFxs), FXS_DEPOSITOR, SDFXS_GAUGE, address(this));
+        assertEq(address(collector.sdFXS()), address(sdFxs));
         assertEq(address(collector.fxsDepositor()), FXS_DEPOSITOR);
-        assertEq(address(collector.sdFxsGauge()), SDFXS_GAUGE);
+        assertEq(address(collector.sdFXSGauge()), SDFXS_GAUGE);
         // the FXS balance is zero so it remains in Collect phase
         assertEq(uint256(collector.currentPhase()), uint256(FxsCollector.Phase.Collect));
     }

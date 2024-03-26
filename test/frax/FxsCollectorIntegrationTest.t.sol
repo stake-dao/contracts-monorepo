@@ -42,14 +42,12 @@ contract FxsCollectorIntegrationTest is Test {
         uint256 amountToDeposit = 10e18;
 
         assertEq(collector.deposited(USER_1), 0);
-        assertEq(collector.totalDeposited(), 0);
 
         _depositFXS(USER_1, amountToDeposit);
         _depositFXS(USER_2, amountToDeposit / 2);
 
         assertEq(collector.deposited(USER_1), amountToDeposit);
         assertEq(collector.deposited(USER_2), amountToDeposit / 2);
-        assertEq(collector.totalDeposited(), amountToDeposit + amountToDeposit / 2);
         assertEq(FXS.balanceOf(address(collector)), amountToDeposit + amountToDeposit / 2);
     }
 
@@ -60,16 +58,16 @@ contract FxsCollectorIntegrationTest is Test {
         _depositFXS(USER_2, amountToDeposit / 2);
 
         vm.prank(GOVERNANCE);
-        collector.mintSdFxs(address(sdFxs), address(fxsDepositor), address(sdFxsGauge), address(this));
+        collector.mintSdFXS(address(sdFxs), address(fxsDepositor), address(sdFxsGauge), address(this));
         assertEq(uint256(collector.currentPhase()), uint256(FxsCollector.Phase.Claim));
         assertEq(sdFxs.balanceOf(address(collector)), amountToDeposit + amountToDeposit / 2);
 
         vm.prank(USER_1);
-        collector.claimSdFxs(USER_1, false); // receive sdFxs
+        collector.claimSdFXS(USER_1, false); // receive sdFxs
         assertEq(sdFxs.balanceOf(USER_1), amountToDeposit);
 
         vm.prank(USER_2);
-        collector.claimSdFxs(USER_2, true); // receive sdFxs-gauge
+        collector.claimSdFXS(USER_2, true); // receive sdFxs-gauge
         assertEq(sdFxs.balanceOf(USER_2), 0);
         assertEq(sdFxs.balanceOf(address(sdFxsGauge)), amountToDeposit / 2);
         assertEq(sdFxsGauge.balanceOf(USER_2), amountToDeposit / 2);
@@ -95,7 +93,6 @@ contract FxsCollectorIntegrationTest is Test {
 
         assertEq(collector.deposited(USER_1), 0);
         assertEq(collector.deposited(USER_2), 0);
-        assertEq(collector.totalDeposited(), 0);
         assertEq(FXS.balanceOf(address(collector)), 0);
 
         assertEq(FXS.balanceOf(address(this)), amountToDeposit / 2);
@@ -105,7 +102,7 @@ contract FxsCollectorIntegrationTest is Test {
     function _depositFXS(address _user, uint256 _amountToDeposit) internal {
         vm.startPrank(_user);
         ERC20(FXS).approve(address(collector), _amountToDeposit);
-        collector.collectFXS(_amountToDeposit);
+        collector.depositFXS(_amountToDeposit);
         vm.stopPrank();
     }
 }
