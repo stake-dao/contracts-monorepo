@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
 
-import {FxsCollectorERC20} from "src/frax/fxs/collector/FxsCollectorERC20.sol";
+import {FxsCollector} from "src/frax/fxs/collector/FxsCollector.sol";
 import {sdToken} from "src/base/token/sdToken.sol";
 
 interface IDelegationRegistry {
@@ -13,7 +13,7 @@ interface IDelegationRegistry {
 }
 
 contract FxsCollectorTest is Test {
-    FxsCollectorERC20 internal collector;
+    FxsCollector internal collector;
 
     address internal constant INITIAL_DELEGATE = address(0xABBA);
     address internal constant GOVERNANCE = address(0xABCD);
@@ -29,14 +29,14 @@ contract FxsCollectorTest is Test {
         vm.selectFork(forkId);
 
         sdFxs = new sdToken("stake dao sdFXS", "sdFXS");
-        collector = new FxsCollectorERC20(GOVERNANCE, DELEGATION_REGISTRY, INITIAL_DELEGATE);
+        collector = new FxsCollector(GOVERNANCE, DELEGATION_REGISTRY, INITIAL_DELEGATE);
     }
 
     function test_collector_deploy() public {
         assertEq(collector.governance(), GOVERNANCE);
         assertEq(collector.futureGovernance(), address(0));
         assertEq(keccak256(abi.encode(collector.FXS())), keccak256(abi.encode(FXS)));
-        assertEq(uint256(collector.currentPhase()), uint256(FxsCollectorERC20.Phase.Collect));
+        assertEq(uint256(collector.currentPhase()), uint256(FxsCollector.Phase.Collect));
         assertEq(address(collector.sdFXS()), address(0));
         assertEq(address(collector.fxsDepositor()), address(0));
 
@@ -45,12 +45,12 @@ contract FxsCollectorTest is Test {
     }
 
     function test_revert_on_rescue() public {
-        vm.expectRevert(FxsCollectorERC20.DifferentPhase.selector);
+        vm.expectRevert(FxsCollector.DifferentPhase.selector);
         collector.rescueFXS(address(this));
     }
 
     function test_revert_on_claim() public {
-        vm.expectRevert(FxsCollectorERC20.DifferentPhase.selector);
+        vm.expectRevert(FxsCollector.DifferentPhase.selector);
         collector.claimSdFXS(address(this), false);
     }
 
@@ -61,13 +61,13 @@ contract FxsCollectorTest is Test {
         assertEq(address(collector.fxsDepositor()), FXS_DEPOSITOR);
         assertEq(address(collector.sdFXSGauge()), SDFXS_GAUGE);
         // the FXS balance is zero so it remains in Collect phase
-        assertEq(uint256(collector.currentPhase()), uint256(FxsCollectorERC20.Phase.Collect));
+        assertEq(uint256(collector.currentPhase()), uint256(FxsCollector.Phase.Collect));
     }
 
     function test_toggle_rescue_phase() public {
         vm.prank(GOVERNANCE);
         collector.toggleRescuePhase();
-        assertEq(uint256(collector.currentPhase()), uint256(FxsCollectorERC20.Phase.Rescue));
+        assertEq(uint256(collector.currentPhase()), uint256(FxsCollector.Phase.Rescue));
     }
 
     function test_transfer_governance() public {

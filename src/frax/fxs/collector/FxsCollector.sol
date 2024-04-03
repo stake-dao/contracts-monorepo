@@ -9,7 +9,7 @@ import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 /// @title A contract that collect FXS from users and mints sdFXS at 1:1 rate, later on, when the FXS depositor will be deployed
 /// @dev To be used only on the Fraxtal chain (ad-hoc contructor to delegate the Fraxtal network's rewards).
 /// @author StakeDAO
-contract FxsCollectorERC20 is ERC20 {
+contract FxsCollector is ERC20 {
     enum Phase {
         Collect, // 0
         Claim, // 1
@@ -103,11 +103,11 @@ contract FxsCollectorERC20 is ERC20 {
     }
 
     function name() public view override returns (string memory) {
-        return "Collector Token";
+        return "FXS Collector";
     }
 
     function symbol() public view override returns (string memory) {
-        return "CT";
+        return "FXSC";
     }
 
     /// @notice Deposit FXS into the collector

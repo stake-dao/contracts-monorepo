@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
 
-import {FxsCollectorERC20} from "src/frax/fxs/collector/FxsCollectorERC20.sol";
+import {FxsCollector} from "src/frax/fxs/collector/FxsCollector.sol";
 import {sdToken} from "src/base/token/sdToken.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {MockFxsDepositor, MockSdFxsGauge} from "test/frax/mocks/Mocks.sol";
@@ -18,8 +18,8 @@ interface IDelegationRegistry {
     function selfManagingDelegations(address _delegator) external view returns (bool);
 }
 
-contract FxsCollectorERC20IntegrationTest is Test {
-    FxsCollectorERC20 internal collector;
+contract FxsCollectorIntegrationTest is Test {
+    FxsCollector internal collector;
 
     address internal constant INITIAL_DELEGATE = address(0xABBA);
     address internal constant GOVERNANCE = address(0xABCD);
@@ -44,7 +44,7 @@ contract FxsCollectorERC20IntegrationTest is Test {
         sdFxs.setOperator(address(fxsDepositor));
         sdFxsGauge = new MockSdFxsGauge(address(sdFxs));
 
-        collector = new FxsCollectorERC20(GOVERNANCE, DELEGATION_REGISTRY, INITIAL_DELEGATE);
+        collector = new FxsCollector(GOVERNANCE, DELEGATION_REGISTRY, INITIAL_DELEGATE);
 
         address liquidityGaugeCollectorImpl = Utils.deployBytecode(Constants.LGV4_STRAT_FRAXTAL_BYTECODE, "");
 
@@ -119,7 +119,7 @@ contract FxsCollectorERC20IntegrationTest is Test {
 
         vm.prank(GOVERNANCE);
         collector.mintSdFXS(address(sdFxs), address(fxsDepositor), address(sdFxsGauge), address(this));
-        assertEq(uint256(collector.currentPhase()), uint256(FxsCollectorERC20.Phase.Claim));
+        assertEq(uint256(collector.currentPhase()), uint256(FxsCollector.Phase.Claim));
         assertEq(sdFxs.balanceOf(address(collector)), amountToDeposit + amountToDeposit / 2);
 
         vm.prank(USER_1);
@@ -157,7 +157,7 @@ contract FxsCollectorERC20IntegrationTest is Test {
 
         vm.prank(GOVERNANCE);
         collector.toggleRescuePhase();
-        assertEq(uint256(collector.currentPhase()), uint256(FxsCollectorERC20.Phase.Rescue));
+        assertEq(uint256(collector.currentPhase()), uint256(FxsCollector.Phase.Rescue));
 
         uint256 user1Balance = FXS.balanceOf(USER_1);
         vm.prank(USER_1);
