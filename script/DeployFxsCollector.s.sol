@@ -3,10 +3,10 @@ pragma solidity 0.8.19;
 
 import "forge-std/Script.sol";
 import {DAO} from "address-book/dao/1.sol";
-import {FxsCollector} from "src/frax/fxs/collector/FxsCollector.sol";
+import {FxsCollectorERC20} from "src/frax/fxs/collector/FxsCollectorERC20.sol";
 
 contract DeployFxsCollector is Script {
-    FxsCollector internal collector;
+    FxsCollectorERC20 internal collector;
 
     address internal constant DELEGATION_REGISTRY = 0x4392dC16867D53DBFE227076606455634d4c2795;
     address internal constant INITIAL_DELEGATE = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
@@ -15,7 +15,7 @@ contract DeployFxsCollector is Script {
     function run() public {
         vm.startBroadcast(DAO.MAIN_DEPLOYER);
 
-        collector = new FxsCollector(GOVERNANCE, DELEGATION_REGISTRY, INITIAL_DELEGATE);
+        collector = new FxsCollectorERC20(GOVERNANCE, DELEGATION_REGISTRY, INITIAL_DELEGATE);
 
         vm.stopBroadcast();
     }
