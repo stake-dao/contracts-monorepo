@@ -3,13 +3,13 @@ pragma solidity 0.8.19;
 
 import "forge-std/Script.sol";
 import {DAO} from "address-book/dao/1.sol";
-import {FxsCollector} from "src/frax/fxs/collector/FxsCollector.sol";
+import {FxsCollectorFraxtal} from "src/frax/fxs/collector/FxsCollectorFraxtal.sol";
 import {Constants} from "src/base/utils/Constants.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import "test/utils/Utils.sol";
 
 contract DeployFxsCollector is Script {
-    FxsCollector internal collector;
+    FxsCollectorFraxtal internal collector;
     ILiquidityGauge internal liquidityGaugeCollector;
 
     address internal constant DELEGATION_REGISTRY = 0x4392dC16867D53DBFE227076606455634d4c2795;
@@ -21,7 +21,7 @@ contract DeployFxsCollector is Script {
     function run() public {
         vm.startBroadcast(DEPLOYER);
 
-        collector = new FxsCollector(DEPLOYER, DELEGATION_REGISTRY, INITIAL_DELEGATE);
+        collector = new FxsCollectorFraxtal(DEPLOYER, DELEGATION_REGISTRY, INITIAL_DELEGATE);
 
         liquidityGaugeCollector = ILiquidityGauge(
             Utils.deployBytecode(

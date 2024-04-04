@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
 
-import {FxsCollector} from "src/frax/fxs/collector/FxsCollector.sol";
+import "src/frax/fxs/collector/FxsCollectorFraxtal.sol";
 import {sdToken} from "src/base/token/sdToken.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {MockFxsDepositor, MockSdFxsGauge} from "test/frax/mocks/Mocks.sol";
@@ -19,7 +19,7 @@ interface IDelegationRegistry {
 }
 
 contract FxsCollectorIntegrationTest is Test {
-    FxsCollector internal collector;
+    FxsCollectorFraxtal internal collector;
 
     address internal constant INITIAL_DELEGATE = address(0xABBA);
     address internal constant GOVERNANCE = address(0xABCD);
@@ -44,7 +44,7 @@ contract FxsCollectorIntegrationTest is Test {
         sdFxs.setOperator(address(fxsDepositor));
         sdFxsGauge = new MockSdFxsGauge(address(sdFxs));
 
-        collector = new FxsCollector(GOVERNANCE, DELEGATION_REGISTRY, INITIAL_DELEGATE);
+        collector = new FxsCollectorFraxtal(GOVERNANCE, DELEGATION_REGISTRY, INITIAL_DELEGATE);
 
         liquidityGaugeCollector = ILiquidityGauge(
             Utils.deployBytecode(
@@ -111,16 +111,16 @@ contract FxsCollectorIntegrationTest is Test {
         _depositFXS(USER_2, amountToDeposit / 2, USER_2);
 
         vm.prank(GOVERNANCE);
-        collector.mintSdFXS(address(sdFxs), address(fxsDepositor), address(sdFxsGauge), address(this));
-        assertEq(uint256(collector.currentPhase()), uint256(FxsCollector.Phase.Claim));
+        collector.mintSdToken(address(sdFxs), address(fxsDepositor), address(sdFxsGauge), address(this));
+        assertEq(uint256(collector.currentPhase()), uint256(Collector.Phase.Claim));
         assertEq(sdFxs.balanceOf(address(collector)), amountToDeposit + amountToDeposit / 2);
 
         vm.prank(USER_1);
-        collector.claimSdFXS(USER_1, false); // receive sdFxs
+        collector.claimSdToken(USER_1, false); // receive sdFxs
         assertEq(sdFxs.balanceOf(USER_1), amountToDeposit);
 
         vm.prank(USER_2);
-        collector.claimSdFXS(USER_2, true); // receive sdFxs-gauge
+        collector.claimSdToken(USER_2, true); // receive sdFxs-gauge
         assertEq(sdFxs.balanceOf(USER_2), 0);
         assertEq(sdFxs.balanceOf(address(sdFxsGauge)), amountToDeposit / 2);
         assertEq(sdFxsGauge.balanceOf(USER_2), amountToDeposit / 2);
@@ -136,7 +136,7 @@ contract FxsCollectorIntegrationTest is Test {
 
         fxsDepositor.setIncentiveToken(incentiveToken);
         vm.prank(GOVERNANCE);
-        collector.mintSdFXS(address(sdFxs), address(fxsDepositor), address(sdFxsGauge), address(this));
+        collector.mintSdToken(address(sdFxs), address(fxsDepositor), address(sdFxsGauge), address(this));
 
         assertEq(sdFxs.balanceOf(address(collector)), amountToDeposit);
         assertEq(sdFxs.balanceOf(address(this)), incentiveToken);
@@ -150,13 +150,13 @@ contract FxsCollectorIntegrationTest is Test {
 
         vm.prank(GOVERNANCE);
         collector.toggleRescuePhase();
-        assertEq(uint256(collector.currentPhase()), uint256(FxsCollector.Phase.Rescue));
+        assertEq(uint256(collector.currentPhase()), uint256(Collector.Phase.Rescue));
 
         uint256 user1Balance = FXS.balanceOf(USER_1);
         vm.prank(USER_1);
-        collector.rescueFXS(USER_1);
+        collector.rescueToken(USER_1);
         vm.prank(USER_2);
-        collector.rescueFXS(address(this));
+        collector.rescueToken(address(this));
 
         assertEq(liquidityGaugeCollector.balanceOf(USER_1), 0);
         assertEq(liquidityGaugeCollector.balanceOf(USER_2), 0);
@@ -169,7 +169,7 @@ contract FxsCollectorIntegrationTest is Test {
     function _depositFXS(address _user, uint256 _amountToDeposit, address _recipient) internal {
         vm.startPrank(_user);
         ERC20(FXS).approve(address(collector), _amountToDeposit);
-        collector.depositFXS(_amountToDeposit, _recipient);
+        collector.deposit(_amountToDeposit, _recipient);
         vm.stopPrank();
     }
 }
