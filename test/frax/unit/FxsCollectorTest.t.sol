@@ -23,6 +23,7 @@ contract FxsCollectorTest is Test {
     sdToken internal sdFxs;
     address internal constant FXS_DEPOSITOR = address(0xACBAD);
     address internal constant SDFXS_GAUGE = address(0xABBACD);
+    //address internal constant COLLECTOR_GAUGE = address(0xCACAC);
 
     function setUp() public {
         uint256 forkId = vm.createFork(vm.rpcUrl("fraxtal"));

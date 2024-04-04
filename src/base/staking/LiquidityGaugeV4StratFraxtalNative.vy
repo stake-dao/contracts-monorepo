@@ -91,16 +91,7 @@ initialized: public(bool)
 vault:public(address)
 
 @external
-def __init__():
-    """
-    @notice Contract constructor
-    @dev The contract has an initializer to prevent the take over of the implementation
-    """
-    assert self.initialized == False #dev: contract is already initialized
-    self.initialized = True
-
-@external
-def initialize(_staking_token: address, _admin: address, _vault: address, _claimer: address, _delegation_registry: address, _initial_delegate: address):
+def __init__(_staking_token: address, _admin: address, _vault: address, _claimer: address, _delegation_registry: address, _initial_delegate: address):
     """
     @notice Contract initializer
     @param _staking_token Liquidity Pool contract address

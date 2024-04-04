@@ -41,9 +41,6 @@ contract FxsCollector is ERC20 {
     /// @notice Address of the future governance.
     address public futureGovernance;
 
-    /// @notice
-    //mapping(address => uint256) public deposited; // user -> FXS deposited
-
     ////////////////////////////////////////////////////////////////
     /// --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
@@ -99,7 +96,6 @@ contract FxsCollector is ERC20 {
         (success,) = _delegationRegistry.call(abi.encodeWithSignature("disableSelfManagingDelegations()"));
         if (!success) revert CallFailed();
         governance = _governance;
-        //collectorGauge = ILiquidityGauge(_collectorGauge);
     }
 
     function name() public view override returns (string memory) {
@@ -136,6 +132,9 @@ contract FxsCollector is ERC20 {
     function claimSdFXS(address _recipient, bool _deposit) external {
         // check current phase
         if (currentPhase != Phase.Claim) revert DifferentPhase();
+        // check if the collector gauge has been set
+        if (address(collectorGauge) == address(0)) revert ZeroAddress();
+
         uint256 sdFXSToClaim = collectorGauge.balanceOf(msg.sender);
 
         if (sdFXSToClaim != 0) {
@@ -160,6 +159,8 @@ contract FxsCollector is ERC20 {
     function rescueFXS(address _recipient) external {
         // check current phase
         if (currentPhase != Phase.Rescue) revert DifferentPhase();
+        // check if the collector gauge has been set
+        if (address(collectorGauge) == address(0)) revert ZeroAddress();
 
         uint256 amountToRescue = collectorGauge.balanceOf(msg.sender);
 

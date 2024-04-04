@@ -46,23 +46,16 @@ contract FxsCollectorIntegrationTest is Test {
 
         collector = new FxsCollector(GOVERNANCE, DELEGATION_REGISTRY, INITIAL_DELEGATE);
 
-        address liquidityGaugeCollectorImpl = Utils.deployBytecode(Constants.LGV4_STRAT_FRAXTAL_BYTECODE, "");
-
-        // Deploy LiquidityGauge Collector
         liquidityGaugeCollector = ILiquidityGauge(
-            address(
-                new TransparentUpgradeableProxy(
-                    liquidityGaugeCollectorImpl,
-                    INITIAL_DELEGATE,
-                    abi.encodeWithSignature(
-                        "initialize(address,address,address,address,address,address)",
-                        address(collector),
-                        address(this),
-                        address(collector),
-                        CLAIMER,
-                        DELEGATION_REGISTRY,
-                        INITIAL_DELEGATE
-                    )
+            Utils.deployBytecode(
+                Constants.LGV4_STRAT_FRAXTAL_BYTECODE,
+                abi.encode(
+                    address(collector),
+                    address(this),
+                    address(collector),
+                    CLAIMER,
+                    DELEGATION_REGISTRY,
+                    INITIAL_DELEGATE
                 )
             )
         );
