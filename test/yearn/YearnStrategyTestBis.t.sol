@@ -152,8 +152,8 @@ abstract contract YearnStrategyTestBis is Test {
         address rewardToken = strategy.rewardToken();
 
         uint256 amount = uint256(_amount);
-        vm.assume(amount > 1 * 10**ERC20(token).decimals());
-        vm.assume(amount < 1_000 * 10**ERC20(token).decimals());
+        vm.assume(amount > 1 * 10 ** ERC20(token).decimals());
+        vm.assume(amount < 1_000 * 10 ** ERC20(token).decimals());
 
         deal(address(vault.token()), address(this), amount);
         vault.token().approve(address(vault), amount);
