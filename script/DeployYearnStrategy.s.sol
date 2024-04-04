@@ -9,8 +9,8 @@ import "utils/VyperDeployer.sol";
 import {YFI} from "address-book/lockers/1.sol";
 import {Yearn} from "address-book/protocols/1.sol";
 import {YearnStrategy} from "src/yearn/strategy/YearnStrategy.sol";
+import {YearnVaultFactory} from "src/yearn/factory/YearnVaultFactory.sol";
 import {GaugeDepositorVault} from "src/base/vault/GaugeDepositorVault.sol";
-import {YearnVaultFactoryOwnable} from "src/yearn/factory/YearnVaultFactoryOwnable.sol";
 import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
 
 contract DeployYearnStrategy is Script, Test {
@@ -20,7 +20,7 @@ contract DeployYearnStrategy is Script, Test {
     GaugeDepositorVault public vaultImpl;
     ILiquidityGaugeStrat public gaugeImpl;
 
-    YearnVaultFactoryOwnable public factory;
+    YearnVaultFactory public factory;
 
     address public constant DYFI = 0x41252E8691e964f7DE35156B68493bAb6797a275;
     address public constant DEPLOYER = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
@@ -47,7 +47,7 @@ contract DeployYearnStrategy is Script, Test {
         gaugeImpl = ILiquidityGaugeStrat(vyperDeployer.deployContract("src/base/gauge/LiquidityGaugeV4Strat.vy"));
 
         // Deploy Vault factory
-        factory = new YearnVaultFactoryOwnable(address(strategy), address(vaultImpl), address(gaugeImpl));
+        factory = new YearnVaultFactory(address(strategy), address(vaultImpl), address(gaugeImpl));
 
         // Strategy setters
         strategy.setFactory(address(factory));

@@ -38,7 +38,7 @@ abstract contract PoolFactory {
     address public constant VE_BOOST_PROXY = 0xD67bdBefF01Fc492f1864E61756E5FBB3f173506;
 
     /// @notice Claim helper contract address for LiquidityGauges.
-    address public constant CLAIM_HELPER = 0x633120100e108F03aCe79d6C78Aac9a56db1be0F;
+    address public constant CLAIM_HELPER = 0x539e65190a371cE73244A98DEc42BA635cCa512c;
 
     /// @notice Stake DAO token distributor address.
     address public constant SDT_DISTRIBUTOR = 0x9C99dffC1De1AfF7E7C1F36fCdD49063A281e18C;
