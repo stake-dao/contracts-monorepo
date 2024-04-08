@@ -25,14 +25,9 @@ contract DeployFxsCollector is Script {
 
         liquidityGaugeCollector = ILiquidityGauge(
             Utils.deployBytecode(
-                Constants.LGV4_STRAT_FRAXTAL_BYTECODE,
+                Constants.LGV4_STRAT_FRAXTAL_NATIVE_BYTECODE,
                 abi.encode(
-                    address(collector),
-                    address(this),
-                    address(collector),
-                    CLAIMER,
-                    DELEGATION_REGISTRY,
-                    INITIAL_DELEGATE
+                    address(collector), GOVERNANCE, address(collector), CLAIMER, DELEGATION_REGISTRY, INITIAL_DELEGATE
                 )
             )
         );

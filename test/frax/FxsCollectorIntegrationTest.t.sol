@@ -25,6 +25,7 @@ contract FxsCollectorIntegrationTest is Test {
     address internal constant GOVERNANCE = address(0xABCD);
     address internal constant DELEGATION_REGISTRY = 0x4392dC16867D53DBFE227076606455634d4c2795;
     ERC20 internal constant FXS = ERC20(0xFc00000000000000000000000000000000000002);
+    ERC20 internal constant FRAX = ERC20(0xFc00000000000000000000000000000000000001);
 
     ILiquidityGauge internal liquidityGaugeCollector;
     sdToken internal sdFxs;
@@ -48,14 +49,9 @@ contract FxsCollectorIntegrationTest is Test {
 
         liquidityGaugeCollector = ILiquidityGauge(
             Utils.deployBytecode(
-                Constants.LGV4_STRAT_FRAXTAL_BYTECODE,
+                Constants.LGV4_STRAT_FRAXTAL_NATIVE_BYTECODE,
                 abi.encode(
-                    address(collector),
-                    address(this),
-                    address(collector),
-                    CLAIMER,
-                    DELEGATION_REGISTRY,
-                    INITIAL_DELEGATE
+                    address(collector), GOVERNANCE, address(collector), CLAIMER, DELEGATION_REGISTRY, INITIAL_DELEGATE
                 )
             )
         );
@@ -65,6 +61,7 @@ contract FxsCollectorIntegrationTest is Test {
 
         deal(address(FXS), USER_1, 10e18);
         deal(address(FXS), USER_2, 10e18);
+        deal(address(FRAX), address(this), 1000e18);
     }
 
     function test_delegation_registry() public {
@@ -164,6 +161,28 @@ contract FxsCollectorIntegrationTest is Test {
 
         assertEq(FXS.balanceOf(address(this)), amountToDeposit / 2);
         assertEq(FXS.balanceOf(USER_1) - user1Balance, amountToDeposit);
+    }
+
+    function test_claim_reward() public {
+        vm.prank(GOVERNANCE);
+        liquidityGaugeCollector.add_reward(address(FRAX), address(this));
+
+        uint256 amountToDeposit = 10e18;
+        _depositFXS(USER_1, amountToDeposit, USER_1);
+        assertGt(liquidityGaugeCollector.balanceOf(USER_1), 0);
+
+        uint256 rewardAmount = 100e18;
+        FRAX.approve(address(liquidityGaugeCollector), rewardAmount);
+        liquidityGaugeCollector.deposit_reward_token(address(FRAX), rewardAmount);
+
+        skip(1 days);
+
+        uint256 balanceBefore = FRAX.balanceOf(USER_1);
+        vm.prank(USER_1);
+        liquidityGaugeCollector.claim_rewards();
+        uint256 balanceAfter = FRAX.balanceOf(USER_1);
+
+        assertGt(balanceAfter - balanceBefore, 0);
     }
 
     function _depositFXS(address _user, uint256 _amountToDeposit, address _recipient) internal {

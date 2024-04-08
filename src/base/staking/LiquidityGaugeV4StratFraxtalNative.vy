@@ -111,6 +111,7 @@ def __init__(_staking_token: address, _admin: address, _vault: address, _claimer
     assert _delegation_registry != ZERO_ADDRESS
     assert _initial_delegate != ZERO_ADDRESS
 
+    self.admin = _admin
     self.staking_token = _staking_token
     self.decimal_staking_token = ERC20Extended(_staking_token).decimals()
 
