@@ -13,14 +13,14 @@ import {YearnStrategy} from "src/yearn/strategy/YearnStrategy.sol";
 import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
 import {GaugeDepositorVault} from "src/base/vault/GaugeDepositorVault.sol";
 import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
-import {YearnVaultFactoryOwnable} from "src/yearn/factory/YearnVaultFactoryOwnable.sol";
+import {YearnVaultFactory} from "src/yearn/factory/YearnVaultFactory.sol";
 
 abstract contract YearnStrategyTestBis is Test {
     using FixedPointMathLib for uint256;
 
     address public immutable gauge;
 
-    YearnVaultFactoryOwnable public factory;
+    YearnVaultFactory public factory;
 
     YearnStrategy public strategy;
     YearnStrategy public strategyImpl;
@@ -37,7 +37,7 @@ abstract contract YearnStrategyTestBis is Test {
     address public constant YFI_REWARD_POOL = Yearn.YFI_REWARD_POOL;
     address public constant DYFI_REWARD_POOL = Yearn.DYFI_REWARD_POOL;
 
-    address public constant GAUGE_IMPL = 0x3Dc56D46F0Bd13655EfB29594a2e44534c453BF9;
+    address public constant GAUGE_IMPL = 0xc1e4775B3A589784aAcD15265AC39D3B3c13Ca3c;
 
     address public constant claimer = address(0xBEEC);
 
@@ -46,7 +46,7 @@ abstract contract YearnStrategyTestBis is Test {
     }
 
     function setUp() public {
-        vm.createSelectFork(vm.rpcUrl("mainnet"), 18_472_574);
+        vm.createSelectFork(vm.rpcUrl("mainnet"), 19_582_912);
 
         /// Initialize from the address book.
         veToken = Yearn.VEYFI;
@@ -65,7 +65,7 @@ abstract contract YearnStrategyTestBis is Test {
         vaultImpl = new GaugeDepositorVault();
 
         /// Deploy Factory.
-        factory = new YearnVaultFactoryOwnable(address(strategy), address(vaultImpl), GAUGE_IMPL);
+        factory = new YearnVaultFactory(address(strategy), address(vaultImpl), GAUGE_IMPL);
 
         /// Setup Strategy.
         strategy.setFactory(address(factory));
@@ -152,8 +152,8 @@ abstract contract YearnStrategyTestBis is Test {
         address rewardToken = strategy.rewardToken();
 
         uint256 amount = uint256(_amount);
-        vm.assume(amount > 1e18);
-        vm.assume(amount < ILiquidityGaugeStrat(gauge).totalSupply());
+        vm.assume(amount > 1 * 10 ** ERC20(token).decimals());
+        vm.assume(amount < 1_000 * 10 ** ERC20(token).decimals());
 
         deal(address(vault.token()), address(this), amount);
         vault.token().approve(address(vault), amount);

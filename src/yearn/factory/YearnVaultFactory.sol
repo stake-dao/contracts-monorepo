@@ -4,20 +4,27 @@ pragma solidity 0.8.19;
 import {Vault} from "src/base/vault/Vault.sol";
 import {PoolFactory} from "src/base/factory/PoolFactory.sol";
 import {IYearnGauge} from "src/base/interfaces/IYearnGauge.sol";
+import {IYearnRegistry} from "src/base/interfaces/IYearnRegistry.sol";
 import {IGaugeController} from "src/base/interfaces/IGaugeController.sol";
 import {RewardReceiverSingleToken} from "src/base/RewardReceiverSingleToken.sol";
 import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
 
 /// @title Factory contract used to create new yearn LP vaults.
 contract YearnVaultFactory is PoolFactory {
-    /// @notice Platform's gauge controller (TO_CHANGE_BEFORE_DEPLOY)
-    address public constant GAUGE_CONTROLLER = 0x41252E8691e964f7DE35156B68493bAb6797a275;
+    /// @notice Yearn Gauge Registry
+    address public constant REGISTRY = 0x1D0fdCb628b2f8c0e22354d45B3B2D4cE9936F8B;
 
     /// @notice Emitted when a reward received is deployed
     event RewardReceiverDeployed(address _deployed, address _sdGauge);
 
-    /// @notice Throwed if the call failed.
+    /// @notice Emitted when a governance change
+    event GovernanceChanged(address _governance);
+
+    /// @notice Throwed if the call failed
     error CALL_FAILED();
+
+    /// @notice Throwed if caller is not allowed
+    error NOT_ALLOWED();
 
     /// @notice Constructor.
     /// @param _strategy Address of the strategy contract. This contract should have the ability to add new reward tokens.
@@ -32,18 +39,13 @@ contract YearnVaultFactory is PoolFactory {
     /// @return _vault Address of the staking deposit.
     /// @return _rewardDistributor Address of the reward distributor to claim rewards.
     function create(address _gauge) public override returns (address _vault, address _rewardDistributor) {
-        // deploy Vault + Gauge
+        /// Deploy Vault + Gauge.
         (_vault, _rewardDistributor) = super.create(_gauge);
-        // deploy RewardReceiver
+
+        /// Deploy RewardReceiver.
         RewardReceiverSingleToken rewardReceiver = new RewardReceiverSingleToken(rewardToken, address(strategy));
 
-        // set reward receiver in yearn gauge via locker
-        bytes memory data = abi.encodeWithSignature("setRecipient(address)", address(rewardReceiver));
-        bytes memory lockerData = abi.encodeWithSignature("execute(address,uint256,bytes)", _gauge, 0, data);
-        (bool success,) = strategy.execute(strategy.locker(), 0, lockerData);
-        if (!success) revert CALL_FAILED();
-
-        // set reward receiver in strategy
+        /// Set reward receiver in strategy.
         strategy.setRewardReceiver(_gauge, address(rewardReceiver));
 
         emit RewardReceiverDeployed(address(rewardReceiver), _rewardDistributor);
@@ -59,11 +61,7 @@ contract YearnVaultFactory is PoolFactory {
     }
 
     /// @notice Perform checks on the gauge to make sure it's valid and can be used.
-    /// @param _gauge platform gauge address
-    /// @return valid if the gauge is valid or not
-    function _isValidGauge(address _gauge) internal view override returns (bool valid) {
-        // check if the gauge has been added into the yearn gc
-        uint256 weight = IGaugeController(GAUGE_CONTROLLER).get_gauge_weight(_gauge);
-        if (weight > 0) valid = true;
+    function _isValidGauge(address _gauge) internal view override returns (bool) {
+        return IYearnRegistry(REGISTRY).registered(_gauge);
     }
 }
