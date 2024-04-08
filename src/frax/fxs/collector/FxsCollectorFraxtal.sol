@@ -21,11 +21,11 @@ contract FxsCollectorFraxtal is Collector {
         if (!success) revert CallFailed();
     }
 
-    function name() public view override returns (string memory) {
+    function name() public pure override returns (string memory) {
         return "FXS Collector";
     }
 
-    function symbol() public view override returns (string memory) {
+    function symbol() public pure override returns (string memory) {
         return "FXSC";
     }
 }

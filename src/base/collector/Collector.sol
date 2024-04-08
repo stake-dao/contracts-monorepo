@@ -217,7 +217,6 @@ abstract contract Collector is ERC20 {
     /// @param _collectorGauge Address of the collectorGauge
     function setCollectorGauge(address _collectorGauge) external onlyGovernance {
         collectorGauge = ILiquidityGauge(_collectorGauge);
-        approve(_collectorGauge, type(uint256).max);
     }
 
     /// @notice Transfer the governance to a new address.
