@@ -11,7 +11,9 @@ remappings = [
 "address-book=lib/address-book/src/",
 "@openzeppelin=lib/openzeppelin-contracts/",
 "openzeppelin-contracts/=lib/openzeppelin-contracts/contracts/",
-"solidity-examples/=lib/solidity-examples/contracts/"
+"solidity-examples/=lib/solidity-examples/contracts/",
+"LayerZero-v2/=lib/LayerZero-v2/oapp/contracts",
+"@layerzerolabs=node_modules/@layerzerolabs"
 ]
 
 ffi = true
