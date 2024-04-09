@@ -46,4 +46,8 @@ interface ILocker {
     function increaseLock(uint256 _value, uint256 _duration) external;
 
     function release(address _recipient) external;
+
+    function transferGovernance(address _governance) external;
+
+    function acceptGovernance() external;
 }
