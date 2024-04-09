@@ -8,6 +8,7 @@ auto_detect_remappings = false
 remappings = [
 "utils=lib/utils/",
 "solady=lib/solady/",
+"herdaddy=lib/herdaddy/src/",
 "forge-std=lib/forge-std/src/",
 "address-book=lib/address-book/src/",
 "@openzeppelin=lib/openzeppelin-contracts/",
