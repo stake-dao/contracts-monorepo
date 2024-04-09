@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import "LayerZero-v2/oft/OFT.sol";
+import {OFT} from "LayerZero-v2/oft/OFT.sol";
 
 /// @title sdFxsOftV2
 /// @author StakeDAO
