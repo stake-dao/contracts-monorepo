@@ -3,9 +3,7 @@ pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
 
-import "address-book/dao/1.sol";
-import "address-book/lockers/1.sol";
-import "address-book/protocols/1.sol";
+import {Frax} from "address-book/protocols/252.sol";
 
 import "src/frax/fxs/locker/FxsLockerV2.sol";
 import {IVestedFXS} from "src/base/interfaces/IVestedFXS.sol";
@@ -15,9 +13,9 @@ contract FXSLockerFraxtalTest is Test {
     uint256 private constant MIN_LOCK_DURATION = 1 weeks;
     uint256 private constant MAX_LOCK_DURATION = 4 * 365 days;
 
-    ERC20 private token = ERC20(0xFc00000000000000000000000000000000000002); // FXS on fraxtal
+    ERC20 private token = ERC20(Frax.FXS);
     FxsLockerV2 private locker;
-    IVestedFXS private veToken = IVestedFXS(0x54bd5c72645fed784C117cA83533e0584b24Ee5c); // veFXS on fraxtal
+    IVestedFXS private veToken = IVestedFXS(Frax.VEFXS);
 
     function setUp() public virtual {
         uint256 forkId = vm.createFork(vm.rpcUrl("fraxtal"));

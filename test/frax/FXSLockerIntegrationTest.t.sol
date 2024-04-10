@@ -14,13 +14,15 @@ import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {IVestedFXS} from "src/base/interfaces/IVestedFXS.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 
+import {Frax} from "address-book/protocols/252.sol";
+
 contract FXSLockerIntegrationTest is Test {
     uint256 private constant MIN_LOCK_DURATION = 1 weeks;
     uint256 private constant MAX_LOCK_DURATION = 4 * 365 days;
 
-    ERC20 private token = ERC20(0xFc00000000000000000000000000000000000002); // FXS on fraxtal
+    ERC20 private token = ERC20(Frax.FXS);
     FxsLockerV2 private locker;
-    IVestedFXS private veToken = IVestedFXS(0x54bd5c72645fed784C117cA83533e0584b24Ee5c); // veFXS on fraxtal
+    IVestedFXS private veToken = IVestedFXS(Frax.VEFXS);
 
     sdFXS internal _sdToken;
     FXSDepositor private depositor;
