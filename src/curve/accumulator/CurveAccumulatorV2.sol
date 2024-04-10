@@ -28,11 +28,11 @@ contract CurveAccumulatorV2 is AccumulatorV2 {
 
     constructor(
         address _gauge,
-        address _locke,
+        address _locker,
         address _daoFeeRecipient,
         address _liquidityFeeRecipient,
         address _governance
-    ) AccumulatorV2(_gauge, _locke, _daoFeeRecipient, _liquidityFeeRecipient, _governance) {
+    ) AccumulatorV2(_gauge, _locker, _daoFeeRecipient, _liquidityFeeRecipient, _governance) {
         ERC20(CRV3).approve(_gauge, type(uint256).max);
         ERC20(CRV).approve(_gauge, type(uint256).max);
     }
