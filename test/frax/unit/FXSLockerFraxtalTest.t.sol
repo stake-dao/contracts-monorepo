@@ -13,6 +13,9 @@ contract FXSLockerFraxtalTest is Test {
     uint256 private constant MIN_LOCK_DURATION = 1 weeks;
     uint256 private constant MAX_LOCK_DURATION = 4 * 365 days;
 
+    address private constant DELEGATION_REGISTRY = 0xF5cA906f05cafa944c27c6881bed3DFd3a785b6A;
+    address private constant INITIAL_DELEGATE = 0xB0552b6860CE5C0202976Db056b5e3Cc4f9CC765;
+
     ERC20 private token = ERC20(Frax.FXS);
     FxsLockerFraxtal private locker;
     IVestedFXS private veToken = IVestedFXS(Frax.VEFXS);
@@ -21,7 +24,8 @@ contract FXSLockerFraxtalTest is Test {
         uint256 forkId = vm.createFork(vm.rpcUrl("fraxtal"));
         vm.selectFork(forkId);
 
-        locker = new FxsLockerFraxtal(address(this), address(token), address(veToken));
+        locker =
+            new FxsLockerFraxtal(address(this), address(token), address(veToken), DELEGATION_REGISTRY, INITIAL_DELEGATE);
 
         // Mint token to the Locker contract
         deal(address(token), address(locker), 100e18);

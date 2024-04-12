@@ -30,10 +30,14 @@ contract DeployFXSLL is Script {
 
         _sdFxs = new sdFXSFraxtal("Stake DAO FXS", "sdFXS", LZ_ENDPOINT, GOVERNANCE, DELEGATION_REGISTRY, GOVERNANCE);
 
-        liquidityGauge =
-            ILiquidityGauge(deployBytecode(Constants.LGV4_XCHAIN_BYTECODE, abi.encode(address(_sdFxs), GOVERNANCE)));
+        liquidityGauge = ILiquidityGauge(
+            deployBytecode(
+                Constants.LGV4_NATIVE_FRAXTAL_BYTECODE,
+                abi.encode(address(_sdFxs), GOVERNANCE, DELEGATION_REGISTRY, GOVERNANCE)
+            )
+        );
 
-        locker = new FxsLockerFraxtal(address(this), Frax.FXS, Frax.VEFXS);
+        locker = new FxsLockerFraxtal(address(this), Frax.FXS, Frax.VEFXS, DELEGATION_REGISTRY, GOVERNANCE);
 
         depositor = new FXSDepositorFraxtal(
             Frax.FXS, address(locker), address(_sdFxs), address(liquidityGauge), DELEGATION_REGISTRY, GOVERNANCE

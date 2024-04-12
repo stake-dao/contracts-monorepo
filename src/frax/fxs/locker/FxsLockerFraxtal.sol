@@ -11,9 +11,25 @@ import {IVestedFXS} from "src/base/interfaces/IVestedFXS.sol";
 contract FxsLockerFraxtal is VeCRVLocker {
     using SafeERC20 for IERC20;
 
+    error CallFailed();
     error LockAlreadyCreated();
 
-    constructor(address _governance, address _token, address _veToken) VeCRVLocker(_governance, _token, _veToken) {}
+    constructor(
+        address _governance,
+        address _token,
+        address _veToken,
+        address _delegationRegistry,
+        address _initialDelegate
+    ) VeCRVLocker(_governance, _token, _veToken) {
+        // Custom code for Fraxtal
+        // set _initialDelegate as delegate
+        (bool success,) =
+            _delegationRegistry.call(abi.encodeWithSignature("setDelegationForSelf(address)", _initialDelegate));
+        if (!success) revert CallFailed();
+        // disable self managing delegation
+        (success,) = _delegationRegistry.call(abi.encodeWithSignature("disableSelfManagingDelegations()"));
+        if (!success) revert CallFailed();
+    }
 
     /// @dev Returns the name of the locker.
     function name() public pure override returns (string memory) {

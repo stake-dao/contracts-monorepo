@@ -43,10 +43,14 @@ contract FXSLockerFraxtalIntegrationTest is Test {
         );
 
         liquidityGauge = ILiquidityGauge(
-            Utils.deployBytecode(Constants.LGV4_XCHAIN_BYTECODE, abi.encode(address(_sdToken), (address(this))))
+            Utils.deployBytecode(
+                Constants.LGV4_NATIVE_FRAXTAL_BYTECODE,
+                abi.encode(address(_sdToken), address(this), DELEGATION_REGISTRY, INITIAL_DELEGATE)
+            )
         );
 
-        locker = new FxsLockerFraxtal(address(this), address(token), address(veToken));
+        locker =
+            new FxsLockerFraxtal(address(this), address(token), address(veToken), DELEGATION_REGISTRY, INITIAL_DELEGATE);
 
         depositor = new FXSDepositorFraxtal(
             address(token),
