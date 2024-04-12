@@ -5,9 +5,9 @@ import "forge-std/Test.sol";
 
 import "test/utils/Utils.sol";
 
-import {sdFXS} from "src/frax/fxs/token/sdFXS.sol";
-import "src/frax/fxs/locker/FxsLockerV2.sol";
-import {FXSDepositor} from "src/frax/fxs/depositor/FXSDepositor.sol";
+import {sdFXSFraxtal} from "src/frax/fxs/token/sdFXSFraxtal.sol";
+import "src/frax/fxs/locker/FxsLockerFraxtal.sol";
+import {FXSDepositorFraxtal} from "src/frax/fxs/depositor/FXSDepositorFraxtal.sol";
 
 import {Constants} from "src/base/utils/Constants.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
@@ -16,19 +16,21 @@ import {ERC20} from "solady/src/tokens/ERC20.sol";
 
 import {Frax} from "address-book/protocols/252.sol";
 
-contract FXSLockerIntegrationTest is Test {
+contract FXSLockerFraxtalIntegrationTest is Test {
     uint256 private constant MIN_LOCK_DURATION = 1 weeks;
     uint256 private constant MAX_LOCK_DURATION = 4 * 365 days;
 
     ERC20 private token = ERC20(Frax.FXS);
-    FxsLockerV2 private locker;
+    FxsLockerFraxtal private locker;
     IVestedFXS private veToken = IVestedFXS(Frax.VEFXS);
 
-    sdFXS internal _sdToken;
-    FXSDepositor private depositor;
+    sdFXSFraxtal internal _sdToken;
+    FXSDepositorFraxtal private depositor;
     ILiquidityGauge internal liquidityGauge;
 
     address private constant LZ_ENDPOINT = 0x1a44076050125825900e736c501f859c50fE728c;
+    address private constant DELEGATION_REGISTRY = 0xF5cA906f05cafa944c27c6881bed3DFd3a785b6A;
+    address private constant INITIAL_DELEGATE = 0xB0552b6860CE5C0202976Db056b5e3Cc4f9CC765;
 
     uint256 private constant amount = 100e18;
 
@@ -36,15 +38,24 @@ contract FXSLockerIntegrationTest is Test {
         uint256 forkId = vm.createFork(vm.rpcUrl("fraxtal"));
         vm.selectFork(forkId);
 
-        _sdToken = new sdFXS("Stake DAO FXS", "sdFXS", LZ_ENDPOINT, address(this));
+        _sdToken = new sdFXSFraxtal(
+            "Stake DAO FXS", "sdFXS", LZ_ENDPOINT, address(this), DELEGATION_REGISTRY, INITIAL_DELEGATE
+        );
 
         liquidityGauge = ILiquidityGauge(
             Utils.deployBytecode(Constants.LGV4_XCHAIN_BYTECODE, abi.encode(address(_sdToken), (address(this))))
         );
 
-        locker = new FxsLockerV2(address(this), address(token), address(veToken));
+        locker = new FxsLockerFraxtal(address(this), address(token), address(veToken));
 
-        depositor = new FXSDepositor(address(token), address(locker), address(_sdToken), address(liquidityGauge));
+        depositor = new FXSDepositorFraxtal(
+            address(token),
+            address(locker),
+            address(_sdToken),
+            address(liquidityGauge),
+            DELEGATION_REGISTRY,
+            INITIAL_DELEGATE
+        );
 
         locker.setDepositor(address(depositor));
         _sdToken.setOperator(address(depositor));
@@ -77,7 +88,7 @@ contract FXSLockerIntegrationTest is Test {
         deal(address(token), address(this), amount);
         IERC20(address(token)).approve(address(depositor), amount);
 
-        vm.expectRevert(FxsLockerV2.LockAlreadyCreated.selector);
+        vm.expectRevert(FxsLockerFraxtal.LockAlreadyCreated.selector);
         depositor.createLock(amount);
     }
 

@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 
 import {Frax} from "address-book/protocols/252.sol";
 
-import "src/frax/fxs/locker/FxsLockerV2.sol";
+import "src/frax/fxs/locker/FxsLockerFraxtal.sol";
 import {IVestedFXS} from "src/base/interfaces/IVestedFXS.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 
@@ -14,14 +14,14 @@ contract FXSLockerFraxtalTest is Test {
     uint256 private constant MAX_LOCK_DURATION = 4 * 365 days;
 
     ERC20 private token = ERC20(Frax.FXS);
-    FxsLockerV2 private locker;
+    FxsLockerFraxtal private locker;
     IVestedFXS private veToken = IVestedFXS(Frax.VEFXS);
 
     function setUp() public virtual {
         uint256 forkId = vm.createFork(vm.rpcUrl("fraxtal"));
         vm.selectFork(forkId);
 
-        locker = new FxsLockerV2(address(this), address(token), address(veToken));
+        locker = new FxsLockerFraxtal(address(this), address(token), address(veToken));
 
         // Mint token to the Locker contract
         deal(address(token), address(locker), 100e18);
@@ -43,7 +43,7 @@ contract FXSLockerFraxtalTest is Test {
     function test_createMultiLockRevert() public {
         locker.createLock(100e18, block.timestamp + MAX_LOCK_DURATION);
 
-        vm.expectRevert(FxsLockerV2.LockAlreadyCreated.selector);
+        vm.expectRevert(FxsLockerFraxtal.LockAlreadyCreated.selector);
         locker.createLock(100e18, block.timestamp + MAX_LOCK_DURATION);
     }
 

@@ -8,7 +8,7 @@ import {IVestedFXS} from "src/base/interfaces/IVestedFXS.sol";
 /// @notice Locks the FXS tokens to veFXS contract
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-contract FxsLockerV2 is VeCRVLocker {
+contract FxsLockerFraxtal is VeCRVLocker {
     using SafeERC20 for IERC20;
 
     error LockAlreadyCreated();
