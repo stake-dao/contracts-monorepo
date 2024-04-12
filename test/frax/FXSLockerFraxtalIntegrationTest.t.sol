@@ -12,6 +12,7 @@ import {FXSDepositorFraxtal} from "src/frax/fxs/depositor/FXSDepositorFraxtal.so
 import {Constants} from "src/base/utils/Constants.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {IVestedFXS} from "src/base/interfaces/IVestedFXS.sol";
+import {IFraxtalDelegationRegistry} from "src/base/interfaces/IFraxtalDelegationRegistry.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 
 import {Frax} from "address-book/protocols/252.sol";
@@ -28,8 +29,9 @@ contract FXSLockerFraxtalIntegrationTest is Test {
     FXSDepositorFraxtal private depositor;
     ILiquidityGauge internal liquidityGauge;
 
+    IFraxtalDelegationRegistry private constant DELEGATION_REGISTRY =
+        IFraxtalDelegationRegistry(0xF5cA906f05cafa944c27c6881bed3DFd3a785b6A);
     address private constant LZ_ENDPOINT = 0x1a44076050125825900e736c501f859c50fE728c;
-    address private constant DELEGATION_REGISTRY = 0xF5cA906f05cafa944c27c6881bed3DFd3a785b6A;
     address private constant INITIAL_DELEGATE = 0xB0552b6860CE5C0202976Db056b5e3Cc4f9CC765;
 
     uint256 private constant amount = 100e18;
@@ -39,27 +41,49 @@ contract FXSLockerFraxtalIntegrationTest is Test {
         vm.selectFork(forkId);
 
         _sdToken = new sdFXSFraxtal(
-            "Stake DAO FXS", "sdFXS", LZ_ENDPOINT, address(this), DELEGATION_REGISTRY, INITIAL_DELEGATE
+            "Stake DAO FXS", "sdFXS", LZ_ENDPOINT, address(this), address(DELEGATION_REGISTRY), INITIAL_DELEGATE
         );
 
         liquidityGauge = ILiquidityGauge(
             Utils.deployBytecode(
                 Constants.LGV4_NATIVE_FRAXTAL_BYTECODE,
-                abi.encode(address(_sdToken), address(this), DELEGATION_REGISTRY, INITIAL_DELEGATE)
+                abi.encode(address(_sdToken), address(this), address(DELEGATION_REGISTRY), INITIAL_DELEGATE)
             )
         );
 
-        locker =
-            new FxsLockerFraxtal(address(this), address(token), address(veToken), DELEGATION_REGISTRY, INITIAL_DELEGATE);
+        locker = new FxsLockerFraxtal(
+            address(this), address(token), address(veToken), address(DELEGATION_REGISTRY), INITIAL_DELEGATE
+        );
 
         depositor = new FXSDepositorFraxtal(
             address(token),
             address(locker),
             address(_sdToken),
             address(liquidityGauge),
-            DELEGATION_REGISTRY,
+            address(DELEGATION_REGISTRY),
             INITIAL_DELEGATE
         );
+
+        // check if delegation has set correctly during the deploy
+        // sdFXS
+        assertEq(DELEGATION_REGISTRY.delegationsOf(address(_sdToken)), INITIAL_DELEGATE);
+        assertFalse(DELEGATION_REGISTRY.delegationManagementDisabled(address(_sdToken)));
+        assertFalse(DELEGATION_REGISTRY.selfManagingDelegations(address(_sdToken)));
+
+        // LiquidityGauge
+        assertEq(DELEGATION_REGISTRY.delegationsOf(address(liquidityGauge)), INITIAL_DELEGATE);
+        assertFalse(DELEGATION_REGISTRY.delegationManagementDisabled(address(liquidityGauge)));
+        assertFalse(DELEGATION_REGISTRY.selfManagingDelegations(address(liquidityGauge)));
+
+        // Locker
+        assertEq(DELEGATION_REGISTRY.delegationsOf(address(locker)), INITIAL_DELEGATE);
+        assertFalse(DELEGATION_REGISTRY.delegationManagementDisabled(address(locker)));
+        assertFalse(DELEGATION_REGISTRY.selfManagingDelegations(address(locker)));
+
+        // Depositor
+        assertEq(DELEGATION_REGISTRY.delegationsOf(address(depositor)), INITIAL_DELEGATE);
+        assertFalse(DELEGATION_REGISTRY.delegationManagementDisabled(address(depositor)));
+        assertFalse(DELEGATION_REGISTRY.selfManagingDelegations(address(depositor)));
 
         locker.setDepositor(address(depositor));
         _sdToken.setOperator(address(depositor));

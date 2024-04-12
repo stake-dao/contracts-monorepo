@@ -7,6 +7,7 @@ import {Frax} from "address-book/protocols/252.sol";
 
 import "src/frax/fxs/locker/FxsLockerFraxtal.sol";
 import {IVestedFXS} from "src/base/interfaces/IVestedFXS.sol";
+import {IFraxtalDelegationRegistry} from "src/base/interfaces/IFraxtalDelegationRegistry.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 
 contract FXSLockerFraxtalTest is Test {
@@ -26,6 +27,11 @@ contract FXSLockerFraxtalTest is Test {
 
         locker =
             new FxsLockerFraxtal(address(this), address(token), address(veToken), DELEGATION_REGISTRY, INITIAL_DELEGATE);
+
+        // check if delegation has set correctly during the deploy
+        assertEq(IFraxtalDelegationRegistry(DELEGATION_REGISTRY).delegationsOf(address(locker)), INITIAL_DELEGATE);
+        assertFalse(IFraxtalDelegationRegistry(DELEGATION_REGISTRY).delegationManagementDisabled(address(locker)));
+        assertFalse(IFraxtalDelegationRegistry(DELEGATION_REGISTRY).selfManagingDelegations(address(locker)));
 
         // Mint token to the Locker contract
         deal(address(token), address(locker), 100e18);
