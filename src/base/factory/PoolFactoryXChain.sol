@@ -6,7 +6,7 @@ import {IStrategyVault} from "src/base/interfaces/IStrategyVault.sol";
 import {LibClone} from "solady/utils/LibClone.sol";
 
 import {IStrategy} from "src/base/interfaces/IStrategy.sol";
-import {ILiquidityGaugeStratXChain} from "src/base/interfaces/ILiquidityGaugeStratXChain.sol";
+import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
 
 /// @notice Factory built to be compatible with CRV gauges but can be overidden to support other gauges/protocols.
 abstract contract PoolFactoryXChain {
@@ -90,7 +90,7 @@ abstract contract PoolFactoryXChain {
         (, string memory _symbol) = _getNameAndSymbol(lp);
 
         /// Initialize the Reward Distributor.
-        ILiquidityGaugeStratXChain(rewardDistributor).initialize(vault, address(this), vault, _symbol);
+        ILiquidityGaugeStrat(rewardDistributor).initialize(vault, address(this), vault, _symbol);
 
         /// Initialize Vault.
         IStrategyVault(vault).initialize();
@@ -111,7 +111,7 @@ abstract contract PoolFactoryXChain {
         //ILiquidityGaugeStratXChain(rewardDistributor).set_claimer(CLAIM_HELPER);
 
         /// Transfer ownership of the reward distributor to the strategy.
-        ILiquidityGaugeStratXChain(rewardDistributor).commit_transfer_ownership(address(strategy));
+        ILiquidityGaugeStrat(rewardDistributor).commit_transfer_ownership(address(strategy));
 
         /// Accept ownership of the reward distributor.
         strategy.acceptRewardDistributorOwnership(rewardDistributor);
@@ -127,7 +127,7 @@ abstract contract PoolFactoryXChain {
     function _addRewardToken(address rewardDistributor) internal virtual {
         /// The strategy should claim through the locker the reward token,
         /// and distribute it to the reward distributor every harvest.
-        ILiquidityGaugeStratXChain(rewardDistributor).add_reward(rewardToken, address(strategy));
+        ILiquidityGaugeStrat(rewardDistributor).add_reward(rewardToken, address(strategy));
     }
 
     /// @notice Add extra reward tokens to the reward distributor.
