@@ -446,7 +446,7 @@ abstract contract Strategy is UUPSUpgradeable {
     /// --- INTERNAL HELPER FUNCTIONS
     //////////////////////////////////////////////////////
 
-    function _transferFromLocker(address asset, address recipient, uint256 amount) internal {
+    function _transferFromLocker(address asset, address recipient, uint256 amount) internal virtual {
         locker.safeExecute(asset, 0, abi.encodeWithSignature("transfer(address,uint256)", recipient, amount));
     }
 
@@ -487,7 +487,7 @@ abstract contract Strategy is UUPSUpgradeable {
     /// @notice Set gauge address for a LP token
     /// @param token Address of LP token corresponding to `gauge`
     /// @param gauge Address of liquidity gauge corresponding to `token`
-    function setGauge(address token, address gauge) external onlyGovernanceOrFactory {
+    function setGauge(address token, address gauge) external virtual onlyGovernanceOrFactory {
         if (token == address(0)) revert ADDRESS_NULL();
         if (gauge == address(0)) revert ADDRESS_NULL();
 

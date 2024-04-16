@@ -44,6 +44,9 @@ interface ILiquidityGaugeStrat {
         string memory _symbol
     ) external;
 
+    // xchain version
+    function initialize(address _stakingToken, address _admin, address _vault, string memory _symbol) external;
+
     // solhint-disable-next-line
     function lp_token() external view returns (address);
 
