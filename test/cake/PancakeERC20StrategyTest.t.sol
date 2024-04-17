@@ -21,7 +21,8 @@ contract PancakeERC20StrategyTest is Test {
     using FixedPointMathLib for uint256;
 
     // WBNB/CAKE LP wrap
-    address public constant CAKE_V2_WRAP = 0x047Ad4AFCFfE502B6BC021c5621e694ABB491396;
+    address public constant CAKE_V2_WRAP = 0x1c9a562Ab4c1e45cB4C08712d18220d7cF7BA5e8;
+    address public constant CAKE_V2_LP = 0x0eD7e52944161450477ee417DE9Cd3a859b14fD0;
 
     PancakeVaultFactoryXChain public factory;
 
@@ -41,16 +42,17 @@ contract PancakeERC20StrategyTest is Test {
 
     address public constant claimer = address(0xBEEC);
 
+    address public constant CAKE_T = CAKE.TOKEN;
+
     function setUp() public {
-        vm.createSelectFork(vm.rpcUrl("bnb"));
+        vm.createSelectFork(vm.rpcUrl("bnb"), 37280683);
 
         /// Initialize from the address book.
         locker = ILocker(CAKE.LOCKER);
 
         /// Deploy Strategy.
-        strategyImpl = new PancakeERC20Strategy(
-            address(this), address(locker), address(0), CAKE.TOKEN, address(0), address(EXECUTOR)
-        );
+        strategyImpl =
+            new PancakeERC20Strategy(address(this), address(locker), address(0), CAKE_T, address(0), address(EXECUTOR));
 
         address strategyProxy = LibClone.deployERC1967(address(strategyImpl));
 
@@ -64,12 +66,12 @@ contract PancakeERC20StrategyTest is Test {
         gaugeImpl = deployBytecode(Constants.LGV4_STRAT_XCHAIN_BYTECODE, "");
 
         /// Deploy Factory.
-        factory = new PancakeVaultFactoryXChain(address(strategy), address(vaultImpl), gaugeImpl, CAKE.TOKEN);
+        factory = new PancakeVaultFactoryXChain(address(strategy), address(vaultImpl), gaugeImpl, CAKE_T);
 
         /// Setup Strategy.
         strategy.setFactory(address(factory));
         strategy.setAccumulator(address(0xACC)); // Fake accumulator.
-        strategy.setFeeRewardToken(CAKE.TOKEN);
+        strategy.setFeeRewardToken(CAKE_T);
 
         strategy.updateProtocolFee(1_700); // 17%
         strategy.updateClaimIncentiveFee(100); // 1%
@@ -146,7 +148,39 @@ contract PancakeERC20StrategyTest is Test {
         assertEq(rewardDistributor.balanceOf(address(this)), 0);
     }
 
-    function test_harvest(uint128 _amount) public {}
+    function test_harvest() public {
+        uint256 amount = 100e18;
+
+        deal(address(vault.token()), address(this), amount);
+        vault.token().approve(address(vault), amount);
+
+        /// Deposit with _doEarn = true.
+        vault.deposit(address(this), amount, true);
+
+        skip(1 days);
+
+        address rewardDistributor = strategy.rewardDistributors(CAKE_V2_WRAP);
+        ERC20 cakeT = ERC20(CAKE_T);
+
+        assertEq(cakeT.balanceOf(rewardDistributor), 0);
+        assertEq(cakeT.balanceOf(address(strategy)), 0);
+        assertEq(cakeT.balanceOf(address(this)), 0);
+        assertEq(strategy.feesAccrued(), 0);
+
+        strategy.harvest(CAKE_V2_LP, false, false);
+
+        uint256 rewardDistributorPart = cakeT.balanceOf(rewardDistributor);
+        uint256 protocolFeePart = cakeT.balanceOf(address(strategy));
+        uint256 claimerPart = cakeT.balanceOf(address(this));
+        uint256 totalHarvested = rewardDistributorPart + protocolFeePart + claimerPart;
+        assertGt(rewardDistributorPart, 0);
+        assertGt(protocolFeePart, 0);
+        assertGt(claimerPart, 0);
+        assertEq(protocolFeePart, strategy.feesAccrued());
+
+        assertEq(totalHarvested * strategy.protocolFeesPercent() / strategy.DENOMINATOR(), protocolFeePart);
+        assertEq(totalHarvested * strategy.claimIncentiveFee() / strategy.DENOMINATOR(), claimerPart);
+    }
 
     function deployBytecode(bytes memory bytecode, bytes memory args) private returns (address deployed) {
         bytecode = abi.encodePacked(bytecode, args);
