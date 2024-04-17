@@ -2,6 +2,7 @@
 pragma solidity 0.8.19;
 
 import {IExecutor} from "src/base/interfaces/IExecutor.sol";
+import {ICakeV2Wrapper} from "src/base/interfaces/ICakeV2Wrapper.sol";
 import {Strategy} from "src/base/strategy/Strategy.sol";
 import {ERC20} from "solady/tokens/ERC20.sol";
 import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
@@ -22,7 +23,7 @@ contract PancakeERC20Strategy is Strategy {
     }
 
     function _depositIntoLocker(address _asset, address _gauge, uint256 _amount) internal override {
-        /// Transfer the LP token to the Locker.
+        // Transfer the LP token to the Locker.
         SafeTransferLib.safeTransfer(_asset, address(locker), _amount);
 
         // deposit, no harvest
@@ -39,7 +40,7 @@ contract PancakeERC20Strategy is Strategy {
         (bool success,) = executor.callExecuteTo(address(locker), _gauge, 0, withdrawData);
         if (!success) revert LOW_LEVEL_CALL_FAILED();
 
-        /// Transfer the _asset_ from the Locker to this contract.
+        // Transfer the _asset_ from the Locker to this contract.
         _transferFromLocker(_asset, address(this), _amount);
     }
 
@@ -50,7 +51,7 @@ contract PancakeERC20Strategy is Strategy {
     }
 
     function _claimRewardToken(address _gauge) internal override returns (uint256 claimed) {
-        /// Snapshot before claim.
+        // Snapshot before claim.
         uint256 snapshotBalance = ERC20(rewardToken).balanceOf(address(locker));
 
         // Claim `rewardToken` from the Gauge.
@@ -60,9 +61,11 @@ contract PancakeERC20Strategy is Strategy {
 
         claimed = ERC20(rewardToken).balanceOf(address(locker)) - snapshotBalance;
 
-        /// Transfer the claimed amount to this contract.
+        // Transfer the claimed amount to this contract.
         _transferFromLocker(rewardToken, address(this), claimed);
     }
+
+    function _claimNativeRewards() internal override {}
 
     function _claimExtraRewards(address, address) internal pure override returns (uint256) {
         return 0;
@@ -79,7 +82,14 @@ contract PancakeERC20Strategy is Strategy {
         if (!success) revert LOW_LEVEL_CALL_FAILED();
     }
 
-    function migrateLP(address _asset) public override onlyVault {}
+    function migrateLP(address) public override onlyVault {}
 
-    function balanceOf(address) public view override returns (uint256) {}
+    function balanceOf(address _asset) public view override returns (uint256) {
+        // Get the gauge address
+        address gauge = gauges[_asset];
+        if (gauge == address(0)) revert ADDRESS_NULL();
+
+        ICakeV2Wrapper.UserInfo memory lockerInfo = ICakeV2Wrapper(gauge).userInfo(address(locker));
+        return lockerInfo.amount;
+    }
 }

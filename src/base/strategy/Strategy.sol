@@ -567,14 +567,14 @@ abstract contract Strategy is UUPSUpgradeable {
     }
 
     /// @notice Set new RewardToken FeeDistributor new address
-    /// @param newCurveRewardToken Address of new Accumulator
+    /// @param newCurveRewardToken Address of new curve reward token
     function setFeeRewardToken(address newCurveRewardToken) external onlyGovernance {
         if (newCurveRewardToken == address(0)) revert ADDRESS_NULL();
         feeRewardToken = newCurveRewardToken;
     }
 
     /// @notice Set FeeDistributor new address
-    /// @param newFeeDistributor Address of new Accumulator
+    /// @param newFeeDistributor Address of new fee distributor
     function setFeeDistributor(address newFeeDistributor) external onlyGovernance {
         if (newFeeDistributor == address(0)) revert ADDRESS_NULL();
         feeDistributor = newFeeDistributor;

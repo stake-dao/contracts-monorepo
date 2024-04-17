@@ -30,8 +30,8 @@ contract PancakeERC20StrategyTest is Test {
     PancakeERC20Strategy public strategyImpl;
     Vault public vaultImpl;
 
-    Vault vault;
-    ILiquidityGaugeStrat rewardDistributor;
+    Vault public vault;
+    ILiquidityGaugeStrat public rewardDistributor;
 
     ILocker public locker;
     address public veToken;
@@ -47,10 +47,10 @@ contract PancakeERC20StrategyTest is Test {
     function setUp() public {
         vm.createSelectFork(vm.rpcUrl("bnb"), 37280683);
 
-        /// Initialize from the address book.
+        // Initialize from the address book.
         locker = ILocker(CAKE.LOCKER);
 
-        /// Deploy Strategy.
+        // Deploy Strategy.
         strategyImpl =
             new PancakeERC20Strategy(address(this), address(locker), address(0), CAKE_T, address(0), address(EXECUTOR));
 
@@ -59,28 +59,27 @@ contract PancakeERC20StrategyTest is Test {
         strategy = PancakeERC20Strategy(payable(strategyProxy));
         strategy.initialize(address(this));
 
-        /// Deploy Vault Implentation.
+        // Deploy Vault Implentation.
         vaultImpl = new Vault();
 
         // Deploy gauge Implementation
         gaugeImpl = deployBytecode(Constants.LGV4_STRAT_XCHAIN_BYTECODE, "");
 
-        /// Deploy Factory.
+        // Deploy Factory.
         factory = new PancakeVaultFactoryXChain(address(strategy), address(vaultImpl), gaugeImpl, CAKE_T);
 
-        /// Setup Strategy.
+        // Setup Strategy.
         strategy.setFactory(address(factory));
-        strategy.setAccumulator(address(0xACC)); // Fake accumulator.
         strategy.setFeeRewardToken(CAKE_T);
 
         strategy.updateProtocolFee(1_700); // 17%
         strategy.updateClaimIncentiveFee(100); // 1%
 
-        /// Setup Locker.
+        // Setup Locker.
         vm.prank(DAO.GOVERNANCE);
         EXECUTOR.allowAddress(address(strategy));
 
-        /// Create vault and reward distributor for gauge.
+        // Create vault and reward distributor for gauge.
         address _vault;
         address _rewardDistributor;
         (_vault, _rewardDistributor) = factory.create(CAKE_V2_WRAP);
@@ -95,24 +94,20 @@ contract PancakeERC20StrategyTest is Test {
         deal(address(vault.token()), address(this), amount);
         vault.token().approve(address(vault), amount);
 
-        /// Deposit with _doEarn = true.
+        // Deposit with _doEarn = true.
         vault.deposit(address(this), amount, true);
 
         ERC20 token = vault.token();
 
-        // Wrap token balance
-        ICakeV2Wrapper.UserInfo memory userInfo = ICakeV2Wrapper(CAKE_V2_WRAP).userInfo(address(locker));
-        assertEq(userInfo.amount, amount);
+        // Strategy balance
+        assertEq(strategy.balanceOf(CAKE_V2_LP), amount);
 
-        /// Token Balances.
+        // Token Balances.
         assertEq(token.balanceOf(address(locker)), 0);
         assertEq(token.balanceOf(address(this)), 0);
         assertEq(token.balanceOf(address(strategy)), 0);
 
-        /// Strategy Balances.
-        //assertEq(strategy.balanceOf(address(token)), amount);
-
-        /// User balances.
+        // User balances.
         assertEq(vault.balanceOf(address(this)), 0);
         assertEq(rewardDistributor.balanceOf(address(this)), amount);
     }
@@ -123,27 +118,23 @@ contract PancakeERC20StrategyTest is Test {
         deal(address(vault.token()), address(this), amount);
         vault.token().approve(address(vault), amount);
 
-        /// Deposit with _doEarn = true.
+        // Deposit with _doEarn = true.
         vault.deposit(address(this), amount, true);
 
-        /// Withdraw.
+        // Withdraw.
         vault.withdraw(amount);
 
         ERC20 token = vault.token();
 
-        /// Token Balances.
+        // Token Balances.
         assertEq(token.balanceOf(address(locker)), 0);
         assertEq(token.balanceOf(address(strategy)), 0);
         assertEq(token.balanceOf(address(this)), amount);
 
-        /// Strategy Balances.
-        //assertEq(strategy.balanceOf(address(token)), 0);
+        // Strategy Balances.
+        assertEq(strategy.balanceOf(CAKE_V2_LP), 0);
 
-        // Wrap token balance
-        ICakeV2Wrapper.UserInfo memory userInfo = ICakeV2Wrapper(CAKE_V2_WRAP).userInfo(address(locker));
-        assertEq(userInfo.amount, 0);
-
-        /// User balances.
+        // User balances.
         assertEq(vault.balanceOf(address(this)), 0);
         assertEq(rewardDistributor.balanceOf(address(this)), 0);
     }
@@ -154,22 +145,21 @@ contract PancakeERC20StrategyTest is Test {
         deal(address(vault.token()), address(this), amount);
         vault.token().approve(address(vault), amount);
 
-        /// Deposit with _doEarn = true.
+        // Deposit with _doEarn = true.
         vault.deposit(address(this), amount, true);
 
         skip(1 days);
 
-        address rewardDistributor = strategy.rewardDistributors(CAKE_V2_WRAP);
         ERC20 cakeT = ERC20(CAKE_T);
 
-        assertEq(cakeT.balanceOf(rewardDistributor), 0);
+        assertEq(cakeT.balanceOf(address(rewardDistributor)), 0);
         assertEq(cakeT.balanceOf(address(strategy)), 0);
         assertEq(cakeT.balanceOf(address(this)), 0);
         assertEq(strategy.feesAccrued(), 0);
 
         strategy.harvest(CAKE_V2_LP, false, false);
 
-        uint256 rewardDistributorPart = cakeT.balanceOf(rewardDistributor);
+        uint256 rewardDistributorPart = cakeT.balanceOf(address(rewardDistributor));
         uint256 protocolFeePart = cakeT.balanceOf(address(strategy));
         uint256 claimerPart = cakeT.balanceOf(address(this));
         uint256 totalHarvested = rewardDistributorPart + protocolFeePart + claimerPart;
