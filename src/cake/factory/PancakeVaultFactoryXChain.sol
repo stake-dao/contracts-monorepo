@@ -4,17 +4,20 @@ pragma solidity 0.8.19;
 import {Vault} from "src/base/vault/Vault.sol";
 import {PoolFactoryXChain} from "src/base/factory/PoolFactoryXChain.sol";
 import {ICakeV2Wrapper} from "src/base/interfaces/ICakeV2Wrapper.sol";
+import {ICakeFarmBooster} from "src/base/interfaces/ICakeFarmBooster.sol";
 
 /// @title Factory contract used to create new yearn LP vaults.
 contract PancakeVaultFactoryXChain is PoolFactoryXChain {
+    address public constant FARM_BOOSTER = 0x5dbC7e443cCaD0bFB15a081F1A5C6BA0caB5b1E6;
+
     /// @notice Emitted when a governance change
     event GovernanceChanged(address _governance);
 
     /// @notice Throwed if the call failed
-    error CALL_FAILED();
+    //error CALL_FAILED();
 
     /// @notice Throwed if caller is not allowed
-    error NOT_ALLOWED();
+    //error NOT_ALLOWED();
 
     /// @notice Constructor.
     /// @param _strategy Address of the strategy contract. This contract should have the ability to add new reward tokens.
@@ -31,7 +34,8 @@ contract PancakeVaultFactoryXChain is PoolFactoryXChain {
     }
 
     /// @notice Perform checks on the gauge to make sure it's valid and can be used.
-    function _isValidGauge(address) internal pure override returns (bool) {
-        return true;
+    function _isValidGauge(address _gauge) internal view override returns (bool) {
+        if (ICakeFarmBooster(FARM_BOOSTER).whiteListWrapper(_gauge)) return true;
+        else return false;
     }
 }

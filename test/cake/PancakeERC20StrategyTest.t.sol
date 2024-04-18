@@ -14,7 +14,7 @@ import {Vault} from "src/base/vault/Vault.sol";
 import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
 import {IExecutor} from "src/base/interfaces/IExecutor.sol";
 import {ICakeV2Wrapper} from "src/base/interfaces/ICakeV2Wrapper.sol";
-import {PancakeVaultFactoryXChain} from "src/cake/factory/PancakeVaultFactoryXChain.sol";
+import "src/cake/factory/PancakeVaultFactoryXChain.sol";
 import {Constants} from "src/base/utils/Constants.sol";
 
 contract PancakeERC20StrategyTest is Test {
@@ -170,6 +170,11 @@ contract PancakeERC20StrategyTest is Test {
 
         assertEq(totalHarvested * strategy.protocolFeesPercent() / strategy.DENOMINATOR(), protocolFeePart);
         assertEq(totalHarvested * strategy.claimIncentiveFee() / strategy.DENOMINATOR(), claimerPart);
+    }
+
+    function test_create_invalid_gauge() external {
+        vm.expectRevert(PoolFactoryXChain.INVALID_GAUGE.selector);
+        factory.create(address(0xABCD));
     }
 
     function deployBytecode(bytes memory bytecode, bytes memory args) private returns (address deployed) {
