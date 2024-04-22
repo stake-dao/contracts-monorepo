@@ -10,6 +10,8 @@ interface ICakeV2Wrapper {
         uint256 unsettledRewards; // rewards haven't been transferred to users but already accounted in rewardDebt
     }
 
+    function deposit(uint256 _amount, bool _noHarvest) external;
+
     function stakedToken() external view returns (address);
 
     function userInfo(address _user) external view returns (UserInfo memory);

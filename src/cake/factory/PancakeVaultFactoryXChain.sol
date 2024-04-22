@@ -6,18 +6,9 @@ import {PoolFactoryXChain} from "src/base/factory/PoolFactoryXChain.sol";
 import {ICakeV2Wrapper} from "src/base/interfaces/ICakeV2Wrapper.sol";
 import {ICakeFarmBooster} from "src/base/interfaces/ICakeFarmBooster.sol";
 
-/// @title Factory contract used to create new yearn LP vaults.
+/// @title Factory contract used to create new pancake V2/StableSwap/PositionManager LP vaults.
 contract PancakeVaultFactoryXChain is PoolFactoryXChain {
     address public constant FARM_BOOSTER = 0x5dbC7e443cCaD0bFB15a081F1A5C6BA0caB5b1E6;
-
-    /// @notice Emitted when a governance change
-    event GovernanceChanged(address _governance);
-
-    /// @notice Throwed if the call failed
-    //error CALL_FAILED();
-
-    /// @notice Throwed if caller is not allowed
-    //error NOT_ALLOWED();
 
     /// @notice Constructor.
     /// @param _strategy Address of the strategy contract. This contract should have the ability to add new reward tokens.

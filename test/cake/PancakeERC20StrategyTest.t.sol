@@ -23,6 +23,7 @@ contract PancakeERC20StrategyTest is Test {
     // WBNB/CAKE LP wrap
     address public constant CAKE_V2_WRAP = 0x1c9a562Ab4c1e45cB4C08712d18220d7cF7BA5e8;
     address public constant CAKE_V2_LP = 0x0eD7e52944161450477ee417DE9Cd3a859b14fD0;
+    ERC20 public constant CAKE_T = ERC20(CAKE.TOKEN);
 
     PancakeVaultFactoryXChain public factory;
 
@@ -42,8 +43,6 @@ contract PancakeERC20StrategyTest is Test {
 
     address public constant claimer = address(0xBEEC);
 
-    address public constant CAKE_T = CAKE.TOKEN;
-
     function setUp() public {
         vm.createSelectFork(vm.rpcUrl("bnb"), 37280683);
 
@@ -51,8 +50,9 @@ contract PancakeERC20StrategyTest is Test {
         locker = ILocker(CAKE.LOCKER);
 
         // Deploy Strategy.
-        strategyImpl =
-            new PancakeERC20Strategy(address(this), address(locker), address(0), CAKE_T, address(0), address(EXECUTOR));
+        strategyImpl = new PancakeERC20Strategy(
+            address(this), address(locker), address(0), address(CAKE_T), address(0), address(EXECUTOR)
+        );
 
         address strategyProxy = LibClone.deployERC1967(address(strategyImpl));
 
@@ -66,11 +66,11 @@ contract PancakeERC20StrategyTest is Test {
         gaugeImpl = deployBytecode(Constants.LGV4_STRAT_XCHAIN_BYTECODE, "");
 
         // Deploy Factory.
-        factory = new PancakeVaultFactoryXChain(address(strategy), address(vaultImpl), gaugeImpl, CAKE_T);
+        factory = new PancakeVaultFactoryXChain(address(strategy), address(vaultImpl), gaugeImpl, address(CAKE_T));
 
         // Setup Strategy.
         strategy.setFactory(address(factory));
-        strategy.setFeeRewardToken(CAKE_T);
+        strategy.setFeeRewardToken(address(CAKE_T));
 
         strategy.updateProtocolFee(1_700); // 17%
         strategy.updateClaimIncentiveFee(100); // 1%
@@ -150,18 +150,16 @@ contract PancakeERC20StrategyTest is Test {
 
         skip(1 days);
 
-        ERC20 cakeT = ERC20(CAKE_T);
-
-        assertEq(cakeT.balanceOf(address(rewardDistributor)), 0);
-        assertEq(cakeT.balanceOf(address(strategy)), 0);
-        assertEq(cakeT.balanceOf(address(this)), 0);
+        assertEq(CAKE_T.balanceOf(address(rewardDistributor)), 0);
+        assertEq(CAKE_T.balanceOf(address(strategy)), 0);
+        assertEq(CAKE_T.balanceOf(address(this)), 0);
         assertEq(strategy.feesAccrued(), 0);
 
         strategy.harvest(CAKE_V2_LP, false, false);
 
-        uint256 rewardDistributorPart = cakeT.balanceOf(address(rewardDistributor));
-        uint256 protocolFeePart = cakeT.balanceOf(address(strategy));
-        uint256 claimerPart = cakeT.balanceOf(address(this));
+        uint256 rewardDistributorPart = CAKE_T.balanceOf(address(rewardDistributor));
+        uint256 protocolFeePart = CAKE_T.balanceOf(address(strategy));
+        uint256 claimerPart = CAKE_T.balanceOf(address(this));
         uint256 totalHarvested = rewardDistributorPart + protocolFeePart + claimerPart;
         assertGt(rewardDistributorPart, 0);
         assertGt(protocolFeePart, 0);
@@ -170,6 +168,44 @@ contract PancakeERC20StrategyTest is Test {
 
         assertEq(totalHarvested * strategy.protocolFeesPercent() / strategy.DENOMINATOR(), protocolFeePart);
         assertEq(totalHarvested * strategy.claimIncentiveFee() / strategy.DENOMINATOR(), claimerPart);
+    }
+
+    function test_harvest_boost() public {
+        uint256 amount = 100e18;
+        address user = address(0xABCD);
+        deal(address(vault.token()), address(user), amount);
+
+        deal(address(vault.token()), address(this), amount);
+        vault.token().approve(address(vault), amount);
+
+        // Deposit with boost
+        vault.deposit(address(this), amount, true);
+
+        // User - Deposit without boost
+        vm.startPrank(user);
+        vault.token().approve(CAKE_V2_WRAP, amount);
+        ICakeV2Wrapper(CAKE_V2_WRAP).deposit(amount, true);
+        vm.stopPrank();
+
+        skip(1 days);
+
+        // Harvest with boost
+        strategy.harvest(CAKE_V2_LP, false, false);
+
+        uint256 rewardDistributorPart = CAKE_T.balanceOf(address(rewardDistributor));
+        uint256 protocolFeePart = CAKE_T.balanceOf(address(strategy));
+        uint256 claimerPart = CAKE_T.balanceOf(address(this));
+        uint256 totalHarvested = rewardDistributorPart + protocolFeePart + claimerPart;
+
+        // User - Harvest without boost
+        uint256 userBalance = CAKE_T.balanceOf(user);
+        vm.prank(user);
+        ICakeV2Wrapper(CAKE_V2_WRAP).deposit(0, false);
+        uint256 userHarvested = CAKE_T.balanceOf(user) - userBalance;
+
+        assertGt(totalHarvested, 0);
+        assertGt(userHarvested, 0);
+        assertGt(totalHarvested * 2, userHarvested); // at least 2x boost
     }
 
     function test_create_invalid_gauge() external {
