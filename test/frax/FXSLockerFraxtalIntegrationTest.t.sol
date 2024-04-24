@@ -32,7 +32,7 @@ contract FXSLockerFraxtalIntegrationTest is Test {
     ILiquidityGauge internal liquidityGauge;
 
     IFraxtalDelegationRegistry private constant DELEGATION_REGISTRY =
-        IFraxtalDelegationRegistry(0xF5cA906f05cafa944c27c6881bed3DFd3a785b6A);
+        IFraxtalDelegationRegistry(Frax.DELEGATION_REGISTRY);
     address private constant LZ_ENDPOINT = 0x1a44076050125825900e736c501f859c50fE728c;
     address private constant INITIAL_DELEGATE = 0xB0552b6860CE5C0202976Db056b5e3Cc4f9CC765;
 
@@ -265,9 +265,6 @@ contract FXSLockerFraxtalIntegrationTest is Test {
     function test_claimRewards() public {
         /// Skip 1 seconds to avoid depositing in the same block as locking.
         skip(1);
-
-        address owner = 0xC4EB45d80DC1F079045E75D5d55de8eD1c1090E6;
-        deal(address(token), owner, 200e18);
 
         assertEq(token.balanceOf(address(depositor)), 0);
 
