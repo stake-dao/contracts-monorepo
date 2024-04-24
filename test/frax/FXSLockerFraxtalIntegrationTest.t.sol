@@ -13,6 +13,7 @@ import {Constants} from "src/base/utils/Constants.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {IVestedFXS} from "src/base/interfaces/IVestedFXS.sol";
 import {IFraxtalDelegationRegistry} from "src/base/interfaces/IFraxtalDelegationRegistry.sol";
+import {IYieldDistributor} from "src/base/interfaces/IYieldDistributor.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 
 import {Frax} from "address-book/protocols/252.sol";
@@ -24,6 +25,7 @@ contract FXSLockerFraxtalIntegrationTest is Test {
     ERC20 private token = ERC20(Frax.FXS);
     FxsLockerFraxtal private locker;
     IVestedFXS private veToken = IVestedFXS(Frax.VEFXS);
+    IYieldDistributor private yieldDistributor = IYieldDistributor(Frax.YIELD_DISTRIBUTOR);
 
     sdFXSFraxtal internal _sdToken;
     FXSDepositorFraxtal private depositor;
@@ -258,6 +260,32 @@ contract FXSLockerFraxtalIntegrationTest is Test {
         assertEq(_sdToken.balanceOf(address(_random)), 0);
 
         assertApproxEqRel(veToken.balanceOf(address(locker)), 300e18 * 4, 5e15);
+    }
+
+    function test_claimRewards() public {
+        /// Skip 1 seconds to avoid depositing in the same block as locking.
+        skip(1);
+
+        address owner = 0xC4EB45d80DC1F079045E75D5d55de8eD1c1090E6;
+        deal(address(token), owner, 200e18);
+
+        assertEq(token.balanceOf(address(depositor)), 0);
+
+        token.approve(address(depositor), amount);
+        depositor.deposit(amount, true, true, address(this));
+
+        assertEq(token.balanceOf(address(this)), 0);
+
+        bytes memory checkpointData = abi.encodeWithSignature("checkpoint()", "");
+        locker.execute(address(yieldDistributor), 0, checkpointData);
+        uint256 veCheckpointed = yieldDistributor.userVeFXSCheckpointed(address(locker));
+        assertApproxEqRel(veCheckpointed, 200e18 * 4, 5e15);
+
+        skip(1 hours);
+
+        locker.claimRewards(address(yieldDistributor), address(token), address(this));
+
+        assertGt(token.balanceOf(address(this)), 0);
     }
 
     function test_transferGovernance() public {
