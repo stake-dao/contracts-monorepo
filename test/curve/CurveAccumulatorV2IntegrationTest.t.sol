@@ -158,6 +158,7 @@ contract CurveAccumulatorV2IntegrationTest is Test {
 
         accumulator.claimAndNotifyAll(false, true, true); // Do not notify SDT, pull from reward splitter, distribute rewards from strategy
 
+        _checkFeesOnClaim(CRV3, gaugeBalanceBefore3CRV, realTotal3CRV);
         //_checkFeesOnClaim(CRV.TOKEN, gaugeBalanceBeforeCRV, realTotalCRV); ==> Fee splitter supposed to already distribute CRV rewards accordingly
         // do not re-charge fees here, all to gauge
         assertEq(ERC20(CRV.TOKEN).balanceOf(address(sdCRVLG)), realTotalCRV + gaugeBalanceBeforeCRV);

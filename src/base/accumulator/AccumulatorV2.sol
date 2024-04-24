@@ -235,9 +235,10 @@ abstract contract AccumulatorV2 {
         emit FeeCharged(daoPart, liquidityPart, claimerPart);
     }
 
-    /// @notice Distribute rewards from the strategy (to the rewardReceiver)
+    /// @notice Take the fees from the strategy (sending to the fee receiver if setted)
+    /// @dev A portion arrive if specified on that contract when calling `split`.
     /// @dev Strategy not set in that abstract contract, must be implemented by child contracts
-    function _distributeFromStrategy(address _strategy) internal {
+    function _sendToFeeReceiver(address _strategy) internal {
         // Call the claimProtocolFees function from the strategy
         (bool success, bytes memory returnData) = _strategy.call(abi.encodeWithSignature("claimProtocolFees()"));
 
