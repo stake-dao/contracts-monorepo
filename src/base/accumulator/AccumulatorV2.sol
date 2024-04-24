@@ -149,7 +149,7 @@ abstract contract AccumulatorV2 {
     //////////////////////////////////////////////////////
 
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4
-    function claimAndNotifyAll(bool _notifySDT, bool _pullFromRewardReceiver, bool _distributeRewardsFromStrategy)
+    function claimAndNotifyAll(bool _notifySDT, bool _pullFromFeeReceiver, bool _distributeRewardsFromStrategy)
         external
         virtual
     {}
@@ -158,18 +158,18 @@ abstract contract AccumulatorV2 {
     function claimTokenAndNotifyAll(
         address _token,
         bool _notifySDT,
-        bool _pullFromRewardReceiver,
+        bool _pullFromFeeReceiver,
         bool _distributeRewardsFromStrategy
     ) external virtual {}
 
     /// @notice Notify the whole acc balance of a token
     /// @param _token token to notify
     /// @param _notifySDT if notify SDT or not
-    /// @param _pullFromRewardReceiver if pull tokens from the fee splitter or not
-    function notifyReward(address _token, bool _notifySDT, bool _pullFromRewardReceiver) public virtual {
+    /// @param _pullFromFeeReceiver if pull tokens from the fee receiver or not
+    function notifyReward(address _token, bool _notifySDT, bool _pullFromFeeReceiver) public virtual {
         uint256 amount = ERC20(_token).balanceOf(address(this));
         // notify token as reward in sdToken gauge
-        _notifyReward(_token, amount, _pullFromRewardReceiver);
+        _notifyReward(_token, amount, _pullFromFeeReceiver);
 
         if (_notifySDT) {
             // notify SDT
@@ -184,10 +184,10 @@ abstract contract AccumulatorV2 {
     /// @notice Notify the new reward to the LGV4
     /// @param _tokenReward token to notify
     /// @param _amount amount to notify
-    function _notifyReward(address _tokenReward, uint256 _amount, bool _pullFromRewardReceiver) internal virtual {
+    function _notifyReward(address _tokenReward, uint256 _amount, bool _pullFromFeeReceiver) internal virtual {
         _chargeFee(_tokenReward, _amount);
 
-        if (_pullFromRewardReceiver) {
+        if (_pullFromFeeReceiver) {
             // Split fees for the specified token using the fee receiver contract
             IFeeReceiver(feeReceiver).split(_tokenReward);
         }

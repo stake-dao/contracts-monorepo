@@ -44,7 +44,7 @@ contract CurveAccumulatorV2IntegrationTest is Test {
         //uint256 forkId = vm.createFork(vm.rpcUrl("tdly")); // One block before an harvest (with 3RV Rewards)
         vm.selectFork(forkId);
 
-        // Deploy a mock reward splitter
+        // Deploy a mock fee receiver
         feeReceiver = new FeeReceiverMock(address(this));
 
         skip(7 days);

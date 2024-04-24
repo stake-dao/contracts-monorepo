@@ -41,7 +41,7 @@ contract CurveAccumulatorV2 is AccumulatorV2 {
     /// --- MUTATIVE FUNCTIONS
     ////////////////////////////////////////////////////////////
 
-    function claimAndNotifyAll(bool _notifySDT, bool _pullFromRewardSplitter, bool _distributeRewardsFromStrategy)
+    function claimAndNotifyAll(bool _notifySDT, bool _pullFromFeeReceiver, bool _distributeRewardsFromStrategy)
         external
         override
     {
@@ -51,14 +51,14 @@ contract CurveAccumulatorV2 is AccumulatorV2 {
 
         uint256 crvAmount = ERC20(CRV).balanceOf(address(this));
 
-        // Sending strategy fees to reward receiver
+        // Sending strategy fees to fee receiver
         if (_distributeRewardsFromStrategy) {
             _distributeFromStrategy(address(strategy));
         }
 
         // Notify 3CRV and CRV rewards
         _notifyReward(CRV3, crv3Amount, false);
-        _notifyReward(CRV, crvAmount, _pullFromRewardSplitter);
+        _notifyReward(CRV, crvAmount, _pullFromFeeReceiver);
 
         if (_notifySDT) {
             _distributeSDT();
@@ -69,7 +69,7 @@ contract CurveAccumulatorV2 is AccumulatorV2 {
     function claimTokenAndNotifyAll(
         address _token,
         bool _notifySDT,
-        bool _pullFromRewardSplitter,
+        bool _pullFromFeeReceiver,
         bool _distributeRewardsFromStrategy
     ) external override {
         if (_token != CRV3 && _token != CRV) revert WRONG_TOKEN();
@@ -81,13 +81,13 @@ contract CurveAccumulatorV2 is AccumulatorV2 {
 
         uint256 amount = ERC20(_token).balanceOf(address(this));
 
-        // Sending strategy fees to reward receiver
+        // Sending strategy fees to fee receiver
         if (_distributeRewardsFromStrategy) {
             _distributeFromStrategy(address(strategy));
         }
 
         // notify 3CRV or CRV as reward in sdCRV gauge
-        _notifyReward(_token, amount, _pullFromRewardSplitter);
+        _notifyReward(_token, amount, _pullFromFeeReceiver);
 
         if (_notifySDT) {
             // notify SDT
