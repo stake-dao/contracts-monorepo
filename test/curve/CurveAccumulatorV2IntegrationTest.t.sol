@@ -13,7 +13,7 @@ import {CurveAccumulatorV2} from "src/curve/accumulator/CurveAccumulatorV2.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {IStrategy} from "herdaddy/interfaces/IStrategy.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
-import {MockRewardSplitter} from "test/utils/mocks/RewardSplitterMock.sol";
+import {FeeReceiverMock} from "test/utils/mocks/FeeReceiverMock.sol";
 
 interface IStrategyGov is IStrategy {
     function setAccumulator(address _accumulator) external;
@@ -28,7 +28,7 @@ contract CurveAccumulatorV2IntegrationTest is Test {
     address public crv3;
     ILiquidityGauge public sdCRVLG;
     ILocker public crvLocker;
-    MockRewardSplitter public rewardSplitter;
+    FeeReceiverMock public feeReceiver;
 
     //address public constant CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
     address public constant CRV3 = 0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490;
@@ -45,7 +45,7 @@ contract CurveAccumulatorV2IntegrationTest is Test {
         vm.selectFork(forkId);
 
         // Deploy a mock reward splitter
-        rewardSplitter = new MockRewardSplitter();
+        feeReceiver = new FeeReceiverMock(address(this));
 
         skip(7 days);
 
@@ -57,11 +57,17 @@ contract CurveAccumulatorV2IntegrationTest is Test {
             address(sdCRVLG), address(crvLocker), daoFeeRecipient, liquidityFeeRecipient, address(this)
         );
 
-        // Set reward token for accumulator in reward splitter
-        rewardSplitter.setRewardTokenAccumulator(CRV.TOKEN, address(accumulator));
+        address[] memory receivers = new address[](1);
+        uint256[] memory fees = new uint256[](1);
 
-        // Set fee splitter in accumulator
-        accumulator.setFeeSplitter(address(rewardSplitter));
+        receivers[0] = address(accumulator);
+        fees[0] = 10000; // 100% to accumulator
+
+        // Set reward token for accumulator in fee receiver
+        feeReceiver.setRepartition(CRV.TOKEN, receivers, fees);
+
+        // Set fee receiver in accumulator
+        accumulator.setFeeReceiver(address(feeReceiver));
 
         // Set SDT distributor in accumulator
         accumulator.setDistributor(sdtDistributor);
@@ -70,7 +76,7 @@ contract CurveAccumulatorV2IntegrationTest is Test {
         sdCRVLG.set_reward_distributor(CRV.TOKEN, address(accumulator));
         sdCRVLG.set_reward_distributor(CRV3, address(accumulator));
         strategy.setAccumulator(address(accumulator));
-        strategy.setFeeReceiver(address(rewardSplitter));
+        strategy.setFeeReceiver(address(feeReceiver)); // Set fee receiver in strategy
         vm.stopPrank();
     }
 

@@ -37,17 +37,19 @@ contract CurveAccumulatorV2 is AccumulatorV2 {
         ERC20(CRV).approve(_gauge, type(uint256).max);
     }
 
-
     ////////////////////////////////////////////////////////////
     /// --- MUTATIVE FUNCTIONS
     ////////////////////////////////////////////////////////////
 
-    function claimAndNotifyAll(bool _notifySDT, bool _pullFromRewardSplitter, bool _distributeRewardsFromStrategy) external override {
-        // Claim 3CRV rewards 
+    function claimAndNotifyAll(bool _notifySDT, bool _pullFromRewardSplitter, bool _distributeRewardsFromStrategy)
+        external
+        override
+    {
+        // Claim 3CRV rewards
         strategy.claimNativeRewards();
         uint256 crv3Amount = ERC20(CRV3).balanceOf(address(this));
 
-		uint256 crvAmount = ERC20(CRV).balanceOf(address(this));
+        uint256 crvAmount = ERC20(CRV).balanceOf(address(this));
 
         // Sending strategy fees to reward receiver
         if (_distributeRewardsFromStrategy) {
@@ -61,19 +63,22 @@ contract CurveAccumulatorV2 is AccumulatorV2 {
         if (_notifySDT) {
             _distributeSDT();
         }
-
     }
 
-
     /// @notice Claims 3CRV or CRV rewards for the locker and notify all to the LGV4
-    function claimTokenAndNotifyAll(address _token, bool _notifySDT, bool _pullFromRewardSplitter, bool _distributeRewardsFromStrategy) external override {
+    function claimTokenAndNotifyAll(
+        address _token,
+        bool _notifySDT,
+        bool _pullFromRewardSplitter,
+        bool _distributeRewardsFromStrategy
+    ) external override {
         if (_token != CRV3 && _token != CRV) revert WRONG_TOKEN();
 
         if (_token == CRV3) {
             // claim 3CRV reward
             strategy.claimNativeRewards();
-        } 
-        
+        }
+
         uint256 amount = ERC20(_token).balanceOf(address(this));
 
         // Sending strategy fees to reward receiver
@@ -88,7 +93,5 @@ contract CurveAccumulatorV2 is AccumulatorV2 {
             // notify SDT
             _distributeSDT();
         }
-        
     }
-
 }

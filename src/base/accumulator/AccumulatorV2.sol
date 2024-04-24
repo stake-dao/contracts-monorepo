@@ -4,13 +4,13 @@ pragma solidity 0.8.19;
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 
-import {IRewardSplitter} from "herdaddy/interfaces/IRewardSplitter.sol";
+import {IFeeReceiver} from "herdaddy/interfaces/IFeeReceiver.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {ISDTDistributor} from "src/base/interfaces/ISDTDistributor.sol";
 
 /// @title Accumulator V2
 /// @notice Abstract contract used for any accumulator
-/// @dev New way of interacting with the feeReceiver that receives the rewards from the strategies
+/// @dev Interacting with the FeeReceiver (receiving and splitting fees)
 /// @author StakeDAO
 abstract contract AccumulatorV2 {
     /// @notice Denominator for fixed point math.
@@ -46,8 +46,8 @@ abstract contract AccumulatorV2 {
     /// @notice claimer fee (msg.sender) in percentage (10_000 = 100%)
     uint256 public claimerFee;
 
-    /// @notice reward splitter contract to pull strategies fees
-    address public rewardSplitter;
+    /// @notice Fee receiver contracts defined in Strategy
+    address public feeReceiver;
 
     ////////////////////////////////////////////////////////////////
     /// --- EVENTS & ERRORS
@@ -65,8 +65,8 @@ abstract contract AccumulatorV2 {
     /// @notice Event emitted when the fees are charged during reward notify
     event FeeCharged(uint256 daoPart, uint256 liquidityPart, uint256 claimerPart);
 
-    /// @notice Emitted when the fee splitter is set
-    event FeeSplitterSet(address _feeSplitter);
+    /// @notice Emitted when the fee receiver is set
+    event FeeReceiverSet(address _feeReceiver);
 
     /// @notice Event emitted when an ERC20 token is rescued
     event ERC20Rescued(address token, uint256 amount);
@@ -166,11 +166,7 @@ abstract contract AccumulatorV2 {
     /// @param _token token to notify
     /// @param _notifySDT if notify SDT or not
     /// @param _pullFromRewardReceiver if pull tokens from the fee splitter or not
-    function notifyReward(
-        address _token,
-        bool _notifySDT,
-        bool _pullFromRewardReceiver
-    ) public virtual {
+    function notifyReward(address _token, bool _notifySDT, bool _pullFromRewardReceiver) public virtual {
         uint256 amount = ERC20(_token).balanceOf(address(this));
         // notify token as reward in sdToken gauge
         _notifyReward(_token, amount, _pullFromRewardReceiver);
@@ -188,16 +184,12 @@ abstract contract AccumulatorV2 {
     /// @notice Notify the new reward to the LGV4
     /// @param _tokenReward token to notify
     /// @param _amount amount to notify
-    function _notifyReward(
-        address _tokenReward,
-        uint256 _amount,
-        bool _pullFromRewardReceiver
-    ) internal virtual {
+    function _notifyReward(address _tokenReward, uint256 _amount, bool _pullFromRewardReceiver) internal virtual {
         _chargeFee(_tokenReward, _amount);
 
         if (_pullFromRewardReceiver) {
-            // Pull token reserved for acc from reward splitter if there is any
-            IRewardSplitter(rewardSplitter).split(_tokenReward);
+            // Split fees for the specified token using the fee receiver contract
+            IFeeReceiver(feeReceiver).split(_tokenReward);
         }
 
         _amount = ERC20(_tokenReward).balanceOf(address(this));
@@ -255,7 +247,6 @@ abstract contract AccumulatorV2 {
                 revert(add(returnData, 32), returnData) // Reverts with an error message from the returnData
             }
         }
-
     }
 
     //////////////////////////////////////////////////////
@@ -306,10 +297,10 @@ abstract contract AccumulatorV2 {
         emit ClaimerFeeSet(claimerFee = _claimerFee);
     }
 
-    /// @notice Set a fee splitter
-    /// @param _feeSplitter fee splitter address
-    function setFeeSplitter(address _feeSplitter) external onlyGovernance {
-        emit FeeSplitterSet(rewardSplitter = _feeSplitter);
+    /// @notice Set fee receiver (from Stategy)
+    /// @param _feeReceiver Fee receiver address
+    function setFeeReceiver(address _feeReceiver) external onlyGovernance {
+        emit FeeReceiverSet(feeReceiver = _feeReceiver);
     }
 
     /// @notice Set a new future governance that can accept it

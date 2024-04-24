@@ -14,7 +14,7 @@ install:
 	forge install
 
 test:
-	@forge test --match-contract CurveAccumulatorV2IntegrationTest
+	@forge test
 
 test-f-%:
 	@FOUNDRY_MATCH_TEST=$* make test
