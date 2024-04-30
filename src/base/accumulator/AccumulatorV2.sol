@@ -184,11 +184,13 @@ abstract contract AccumulatorV2 {
     /// @notice Notify the new reward to the LGV4
     /// @param _tokenReward token to notify
     /// @param _amount amount to notify
+    /// @param _pullFromFeeReceiver if pull tokens from the fee receiver or not (tokens already in that contract)
     function _notifyReward(address _tokenReward, uint256 _amount, bool _pullFromFeeReceiver) internal virtual {
         _chargeFee(_tokenReward, _amount);
 
         if (_pullFromFeeReceiver) {
             // Split fees for the specified token using the fee receiver contract
+            // Function not permissionless, to prevent sending to that accumulator and re-splitting (_chargeFee)
             IFeeReceiver(feeReceiver).split(_tokenReward);
         }
 
@@ -235,10 +237,10 @@ abstract contract AccumulatorV2 {
         emit FeeCharged(daoPart, liquidityPart, claimerPart);
     }
 
-    /// @notice Take the fees from the strategy (sending to the fee receiver if setted)
-    /// @dev A portion arrive if specified on that contract when calling `split`.
+    /// @notice Take the fees accumulated from the strategy and sending to the fee receiver
+    /// @dev Need to be done before calling `split`, but claimProtocolFees is permissionless.
     /// @dev Strategy not set in that abstract contract, must be implemented by child contracts
-    function _sendToFeeReceiver(address _strategy) internal {
+    function _sendFeeStrategyReceiver(address _strategy) internal {
         // Call the claimProtocolFees function from the strategy
         (bool success, bytes memory returnData) = _strategy.call(abi.encodeWithSignature("claimProtocolFees()"));
 

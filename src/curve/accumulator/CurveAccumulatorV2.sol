@@ -41,7 +41,10 @@ contract CurveAccumulatorV2 is AccumulatorV2 {
     /// --- MUTATIVE FUNCTIONS
     ////////////////////////////////////////////////////////////
 
-    function claimAndNotifyAll(bool _notifySDT, bool _pullFromFeeReceiver, bool sendToFeeReceiver_) external override {
+    function claimAndNotifyAll(bool _notifySDT, bool _pullFromFeeReceiver, bool sendFeeStrategyReceiver)
+        external
+        override
+    {
         // Claim 3CRV rewards
         strategy.claimNativeRewards();
         uint256 crv3Amount = ERC20(CRV3).balanceOf(address(this));
@@ -49,8 +52,8 @@ contract CurveAccumulatorV2 is AccumulatorV2 {
         uint256 crvAmount = ERC20(CRV).balanceOf(address(this));
 
         // Sending strategy fees to fee receiver
-        if (sendToFeeReceiver_) {
-            _sendToFeeReceiver(address(strategy));
+        if (sendFeeStrategyReceiver) {
+            _sendFeeStrategyReceiver(address(strategy));
         }
 
         // Notify 3CRV and CRV rewards
@@ -63,10 +66,12 @@ contract CurveAccumulatorV2 is AccumulatorV2 {
     }
 
     /// @notice Claims 3CRV or CRV rewards for the locker and notify all to the LGV4
-    function claimTokenAndNotifyAll(address _token, bool _notifySDT, bool _pullFromFeeReceiver, bool sendToFeeReceiver_)
-        external
-        override
-    {
+    function claimTokenAndNotifyAll(
+        address _token,
+        bool _notifySDT,
+        bool _pullFromFeeReceiver,
+        bool sendFeeStrategyReceiver
+    ) external override {
         if (_token != CRV3 && _token != CRV) revert WRONG_TOKEN();
 
         if (_token == CRV3) {
@@ -77,8 +82,8 @@ contract CurveAccumulatorV2 is AccumulatorV2 {
         uint256 amount = ERC20(_token).balanceOf(address(this));
 
         // Sending strategy fees to fee receiver
-        if (sendToFeeReceiver_) {
-            _sendToFeeReceiver(address(strategy));
+        if (sendFeeStrategyReceiver) {
+            _sendFeeStrategyReceiver(address(strategy));
         }
 
         // notify 3CRV or CRV as reward in sdCRV gauge
