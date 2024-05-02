@@ -1,0 +1,224 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+pragma solidity 0.8.19;
+
+import "forge-std/Test.sol";
+
+import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
+import {ICakeLocker} from "src/base/interfaces/ICakeLocker.sol";
+import {ICakeV3} from "src/base/interfaces/ICakeV3.sol";
+import {Executor} from "src/base/utils/Executor.sol";
+import "src/cake/ifo/CakeIFOFactory.sol";
+
+import {CAKE} from "address-book/lockers/56.sol";
+import {DAO} from "address-book/dao/56.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {ERC721} from "solady/src/tokens/ERC721.sol";
+
+interface ICakeProfile {
+    function createProfile(uint256 teamId, address nftAddress, uint256 tokenId) external;
+}
+
+interface IBunnyFactory {
+    function mintNFT(uint8 bunnyId) external;
+}
+
+contract CakeIFOTest is Test {
+    CakeIFOFactory private factory;
+    Executor private executor;
+    ICakeLocker private constant LOCKER = ICakeLocker(CAKE.LOCKER);
+
+    ICakeIFOV7 private constant CAKE_IFO = ICakeIFOV7(0x5f77A54F4314aef5BDd311aCfcccAC90B39432e8);
+    address private constant CAKE_BUNNY = 0xDf7952B35f24aCF7fC0487D01c8d5690a60DBa07;
+    address private constant CAKE_BUNNY_FACTORY = 0xfa249Caa1D16f75fa159F7DFBAc0cC5EaB48CeFf;
+    address private constant CAKE_PROFILE = 0xDf4dBf6536201370F95e06A0F8a7a70fE40E388a;
+    // pid 0 private sale
+    // pid 1 public/base sale
+    CakeIFO private ifo;
+
+    ERC20 private dToken;
+    ERC20 private oToken;
+
+    address private constant USER_1 = address(0xABCD);
+    address private constant USER_2 = address(0xABBB);
+    address private constant GOVERNANCE = DAO.GOVERNANCE;
+
+    function setUp() external {
+        uint256 forkId = vm.createFork(vm.rpcUrl("bnb"), 34_949_400);
+        vm.selectFork(forkId);
+
+        // deploy the executor and set it because it has deployed after fork time
+        executor = new Executor(GOVERNANCE);
+
+        factory = new CakeIFOFactory(address(LOCKER), address(executor), address(this));
+
+        // allow the factory to call the executeTo on the executor
+        vm.startPrank(GOVERNANCE);
+        executor.allowAddress(address(factory));
+        LOCKER.transferGovernance(address(executor));
+        executor.execute(address(LOCKER), 0, abi.encodeWithSignature("acceptGovernance()", ""));
+        vm.stopPrank();
+
+        // create new ifo
+        factory.createIFO(address(CAKE_IFO));
+        ifo = CakeIFO(factory.ifos(address(CAKE_IFO)));
+        dToken = ERC20(ifo.dToken());
+        oToken = ERC20(ifo.oToken());
+
+        // set the Merkle root
+        factory.setMerkleRoot(address(ifo), bytes32("root"), 1000e18);
+
+        deal(address(dToken), USER_1, 100e18);
+        deal(CAKE.TOKEN, address(LOCKER), 100e18);
+        deal(address(dToken), USER_2, 100e18);
+        deal(CAKE.GAUGE, USER_1, 100e18);
+
+        // create locker profile
+        // mint Bunny NFT
+        vm.startPrank(address(LOCKER));
+        ERC20(CAKE.TOKEN).approve(CAKE_BUNNY_FACTORY, 100e18);
+        vm.recordLogs();
+        IBunnyFactory(CAKE_BUNNY_FACTORY).mintNFT(8);
+        Vm.Log[] memory entries = vm.getRecordedLogs();
+        assertEq(entries.length, 4);
+        uint256 tokenId = uint256(entries[3].topics[2]);
+        // create profile
+        ERC721(CAKE_BUNNY).approve(CAKE_PROFILE, tokenId);
+        ERC20(CAKE.TOKEN).approve(CAKE_PROFILE, 100e18);
+        ICakeProfile(CAKE_PROFILE).createProfile(1, CAKE_BUNNY, tokenId);
+        vm.stopPrank();
+    }
+
+    function test_factory_creation() external {
+        assertEq(factory.locker(), address(LOCKER));
+        assertEq(address(factory.executor()), address(executor));
+    }
+
+    function test_ifo_creation() external {
+        assertEq(address(ifo.cakeIFO()), address(CAKE_IFO));
+        assertEq(address(ifo.executor()), address(executor));
+        assertEq(address(dToken), CAKE_IFO.lpToken());
+        assertEq(address(oToken), CAKE_IFO.offeringToken());
+        assertEq(ifo.locker(), address(LOCKER));
+    }
+
+    function test_deposit() external {
+        uint8 pid = 1;
+        uint256 amountToDeposit = 10e18;
+
+        _depositPoolFirstPeriod(USER_1, amountToDeposit, pid);
+        _depositPoolFirstPeriod(USER_2, amountToDeposit, pid);
+
+        assertEq(ifo.depositors(USER_1, 1), amountToDeposit);
+        assertEq(ifo.depositors(USER_2, 1), amountToDeposit);
+        assertEq(ifo.totalDeposits(1), amountToDeposit * 2);
+        assertEq(ifo.userTotalDeposits(USER_1), amountToDeposit);
+        assertEq(ifo.userTotalDeposits(USER_2), amountToDeposit);
+    }
+
+    function test_harvest_pool() external {
+        uint256 amountToDeposit = 10e18;
+        uint8 pid = 1;
+        _depositPoolFirstPeriod(USER_1, amountToDeposit, pid);
+
+        skip(4 hours);
+
+        uint256 snapshotDToken = oToken.balanceOf(address(ifo));
+        uint256 snapshotOToken = dToken.balanceOf(address(ifo));
+
+        ifo.harvestPool(1);
+
+        uint256 reward = oToken.balanceOf(address(ifo)) - snapshotDToken;
+        uint256 refund = dToken.balanceOf(address(ifo)) - snapshotOToken;
+
+        (uint256 vestingPercentage,,,) = CAKE_IFO.viewPoolVestingInformation(pid);
+        assertEq(vestingPercentage, 100);
+        assertEq(reward, 0); // no initial oToken reward, all in vesting
+        assertGt(refund, 0);
+
+        assertEq(ifo.rewardRate(pid), 0);
+        assertEq(ifo.refundRate(pid), refund * 1e18 / amountToDeposit);
+    }
+
+    function test_release() external {
+        uint256 amountToDeposit1 = 10e18;
+        uint256 amountToDeposit2 = 20e18;
+        uint8 pid = 1;
+
+        _depositPoolFirstPeriod(USER_1, amountToDeposit1, pid);
+        _depositPoolFirstPeriod(USER_2, amountToDeposit2, pid);
+
+        skip(4 hours);
+
+        ifo.harvestPool(1);
+
+        // vesting cliff time
+        skip(1 weeks);
+
+        assertLt(CAKE_IFO.vestingStartTime(), block.timestamp);
+        uint256 snapshotDToken = dToken.balanceOf(address(ifo));
+        uint256 snapshotOToken = oToken.balanceOf(address(ifo));
+
+        assertEq(ifo.rewardRate(pid), 0);
+
+        // fetch vesting schedule id for locker <-> pid
+        bytes32 vestingScheduleId = CAKE_IFO.computeVestingScheduleIdForAddressAndPid(address(LOCKER), pid);
+        // first release
+        ifo.release(vestingScheduleId);
+
+        uint256 rewardReleased = oToken.balanceOf(address(ifo)) - snapshotOToken;
+        uint256 refundReleased = dToken.balanceOf(address(ifo)) - snapshotDToken;
+        assertEq(refundReleased, 0); // no refund to release during vesting time
+        assertGt(rewardReleased, 0);
+
+        uint256 rewardRate = ifo.rewardRate(pid);
+        assertEq(rewardRate, rewardReleased * 1e18 / (amountToDeposit1 + amountToDeposit2));
+
+        skip(1 hours);
+        // second release
+        ifo.release(vestingScheduleId);
+        assertGt(ifo.rewardRate(pid), rewardRate);
+    }
+
+    function test_claim() external {
+        uint256 amountToDeposit1 = 10e18;
+        uint256 amountToDeposit2 = 20e18;
+        uint8 pid = 1;
+
+        _depositPoolFirstPeriod(USER_1, amountToDeposit1, pid);
+        _depositPoolFirstPeriod(USER_2, amountToDeposit2, pid);
+
+        skip(4 hours);
+
+        ifo.harvestPool(1);
+
+        // vesting cliff time
+        skip(1 weeks);
+
+        assertEq(ifo.rewardRate(pid), 0);
+
+        // fetch vesting schedule id for locker <-> pid
+        bytes32 vestingScheduleId = CAKE_IFO.computeVestingScheduleIdForAddressAndPid(address(LOCKER), pid);
+        ifo.release(vestingScheduleId);
+
+        vm.prank(USER_1);
+        ifo.claim(pid);
+        vm.prank(USER_2);
+        ifo.claim(pid);
+
+        assertEq(oToken.balanceOf(address(ifo)), 0);
+        assertEq(oToken.balanceOf(USER_1) * 2, oToken.balanceOf(USER_2));
+    }
+
+    function _depositPoolFirstPeriod(address _user, uint256 _amount, uint8 _pid) internal {
+        bytes32[] memory merkleProof = new bytes32[](3);
+        merkleProof[0] = bytes32("test0");
+        merkleProof[1] = bytes32("test1");
+        merkleProof[2] = bytes32("test2");
+        // USER 1
+        vm.startPrank(_user);
+        dToken.approve(address(ifo), _amount);
+        // pid 1
+        ifo.depositPoolFirstPeriod(_amount, _pid, 0, 100e18, merkleProof);
+        vm.stopPrank();
+    }
+}
