@@ -229,19 +229,17 @@ contract CakeIFO {
 
     /// @notice Internal function to charge protocol fees.
     /// @param _amount Amount to charge fees on
-    /// @return _feeAccrued Amount charged earned by protocol.
-    function _chargeProtocolFees(uint256 _amount) internal returns (uint256 _feeAccrued) {
+    /// @return fee Amount charged earned by protocol.
+    function _chargeProtocolFees(uint256 _amount) internal returns (uint256 fee) {
         uint256 protocolFeesPercent = ifoFactory.protocolFeesPercent();
         if (_amount == 0 || protocolFeesPercent == 0) return 0;
 
         address feeReceiver = ifoFactory.feeReceiver();
         if (feeReceiver == address(0)) revert ZeroAddress();
 
-        uint256 fee = _amount * protocolFeesPercent / ifoFactory.DENOMINATOR();
+        fee = _amount * protocolFeesPercent / ifoFactory.DENOMINATOR();
 
-        SafeTransferLib.safeTransfer(dToken, ifoFactory.feeReceiver(), fee);
-
-        return _feeAccrued;
+        SafeTransferLib.safeTransferFrom(dToken, msg.sender, ifoFactory.feeReceiver(), fee);
     }
 
     /// @notice Harvest a pool at the end of the IFO (callable only once per pid).

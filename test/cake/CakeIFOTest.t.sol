@@ -101,7 +101,7 @@ contract CakeIFOTest is Test {
         assertEq(ifo.locker(), address(LOCKER));
     }
 
-    function test_deposit() external {
+    function test_deposit_first_period() external {
         uint8 pid = 1;
         uint256 amountToDeposit = 10e18;
 
@@ -113,6 +113,55 @@ contract CakeIFOTest is Test {
         assertEq(ifo.totalDeposits(1), amountToDeposit * 2);
         assertEq(ifo.userTotalDeposits(USER_1), amountToDeposit);
         assertEq(ifo.userTotalDeposits(USER_2), amountToDeposit);
+    }
+
+    function test_deposit_second_period_no_fees() external {
+        uint8 pid = 1;
+        uint256 amountToDeposit = 10e18;
+
+        skip(1 hours);
+
+        uint256 snapshotCakeIFO = dToken.balanceOf(address(CAKE_IFO));
+
+        vm.startPrank(USER_1);
+        dToken.approve(address(ifo), amountToDeposit);
+        ifo.depositPoolSecondPeriod(amountToDeposit, pid);
+        vm.stopPrank();
+
+        assertEq(ifo.depositors(USER_1, pid), amountToDeposit);
+        assertEq(dToken.balanceOf(address(ifo)), 0);
+        assertEq(dToken.balanceOf(address(CAKE_IFO)) - snapshotCakeIFO, amountToDeposit);
+    }
+
+    function test_deposit_second_period_fee() external {
+        address feeReceiver = address(0xABFF);
+        // set protocol fees
+        factory.updateProtocolFee(1_500); // 15%
+        factory.setFeeReceiver(feeReceiver);
+
+        uint8 pid = 1;
+        uint256 amountToDeposit = 10e18;
+
+        skip(1 hours);
+
+        uint256 snapshotCakeIFO = dToken.balanceOf(address(CAKE_IFO));
+
+        _depositPoolSecondPeriod(USER_1, amountToDeposit, pid);
+
+        uint256 feeCharged = amountToDeposit * factory.protocolFeesPercent() / factory.DENOMINATOR();
+        assertEq(ifo.depositors(USER_1, pid), amountToDeposit - feeCharged);
+        assertEq(dToken.balanceOf(address(ifo)), 0);
+        assertEq(dToken.balanceOf(address(CAKE_IFO)) - snapshotCakeIFO, amountToDeposit - feeCharged);
+        assertEq(dToken.balanceOf(feeReceiver), feeCharged);
+    }
+
+    function test_deposit_second_period_revert() external {
+        uint8 pid = 1;
+        uint256 amountToDeposit = 10e18;
+
+        vm.prank(USER_1);
+        vm.expectRevert(CakeIFO.NotInSecondPeriod.selector);
+        ifo.depositPoolSecondPeriod(amountToDeposit, pid);
     }
 
     function test_harvest_pool() external {
@@ -219,6 +268,13 @@ contract CakeIFOTest is Test {
         dToken.approve(address(ifo), _amount);
         // pid 1
         ifo.depositPoolFirstPeriod(_amount, _pid, 0, 100e18, merkleProof);
+        vm.stopPrank();
+    }
+
+    function _depositPoolSecondPeriod(address _user, uint256 _amount, uint8 _pid) internal {
+        vm.startPrank(_user);
+        dToken.approve(address(ifo), _amount);
+        ifo.depositPoolSecondPeriod(_amount, _pid);
         vm.stopPrank();
     }
 }
