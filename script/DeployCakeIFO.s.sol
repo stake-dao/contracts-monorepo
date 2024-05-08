@@ -7,7 +7,6 @@ import {CAKE} from "address-book/lockers/56.sol";
 import {DAO} from "address-book/dao/56.sol";
 
 contract DeployFXNAccumulator is Script {
-
     CakeIFOFactory private factory;
 
     function run() public {

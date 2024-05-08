@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import "forge-std/Test.sol";
 
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
+import {ICakeDepositor} from "src/base/interfaces/ICakeDepositor.sol";
 import {ICakeLocker} from "src/base/interfaces/ICakeLocker.sol";
 import {ICakeV3} from "src/base/interfaces/ICakeV3.sol";
 import {Executor} from "src/base/utils/Executor.sol";
@@ -23,10 +24,15 @@ interface IBunnyFactory {
     function mintNFT(uint8 bunnyId) external;
 }
 
+interface ICakeWhitelist {
+    function addAddressToWhitelist(address _addr) external;
+}
+
 contract CakeIFOTest is Test {
     CakeIFOFactory private factory;
     Executor private executor;
     ICakeLocker private constant LOCKER = ICakeLocker(CAKE.LOCKER);
+    ICakeDepositor private constant DEPOSITOR = ICakeDepositor(CAKE.DEPOSITOR);
 
     ICakeIFOV7 private constant CAKE_IFO = ICakeIFOV7(0x5f77A54F4314aef5BDd311aCfcccAC90B39432e8);
     address private constant CAKE_BUNNY = 0xDf7952B35f24aCF7fC0487D01c8d5690a60DBa07;
@@ -54,7 +60,6 @@ contract CakeIFOTest is Test {
     function setUp() external {
         uint256 forkId = vm.createFork(vm.rpcUrl("bnb"), 34_949_400);
         vm.selectFork(forkId);
-        
 
         // deploy the executor and set it because it has deployed after fork time
         executor = new Executor(GOVERNANCE);
@@ -86,9 +91,9 @@ contract CakeIFOTest is Test {
         merkle.verifyProof(merkleRoot, user2Proof, datas[0]);
         factory.setMerkleRoot(address(ifo), merkleRoot, 300e18);
 
-        deal(address(dToken), USER_1, 100e18);
+        deal(address(dToken), USER_1, 1_000_000e18);
         deal(CAKE.TOKEN, address(LOCKER), 100e18);
-        deal(address(dToken), USER_2, 100e18);
+        deal(address(dToken), USER_2, 1000e18);
         deal(CAKE.GAUGE, USER_1, 100e18);
 
         // create locker profile
@@ -132,6 +137,50 @@ contract CakeIFOTest is Test {
         assertEq(ifo.totalDeposits(1), amountToDeposit * 2);
         assertEq(ifo.userTotalDeposits(USER_1), amountToDeposit);
         assertEq(ifo.userTotalDeposits(USER_2), amountToDeposit);
+    }
+
+    function test_deposit_first_period_private_sale() external {
+        uint8 pid = 0;
+        uint256 amountToDeposit = 20e18;
+
+        // whitelist locker (action required by pancake)
+        vm.prank(0xeCc90d54B10ADd1ab746ABE7E83abe178B72aa9E);
+        ICakeWhitelist(address(CAKE_IFO)).addAddressToWhitelist(address(LOCKER));
+
+        // lp limit
+        (,, uint256 lpLimit,,,,) = CAKE_IFO.viewPoolInformation(pid);
+        uint256 dTokenDepositable = lpLimit * 1e18 / 300e18 * 100e18 / 1e18;
+
+        _depositPoolFirstPeriod(USER_1, dTokenDepositable, pid, 0, 100e18, user1Proof);
+    }
+
+    function test_deposit_first_period_increase_dToken_depositable() external {
+        uint8 pid = 1;
+        uint256 amountToDeposit = 10e18;
+
+        // no lp limit for pid = 1
+        uint256 lockerCredit =
+            ICakeV3(CAKE_IFO.iCakeAddress()).getUserCreditWithIfoAddr(address(LOCKER), address(CAKE_IFO));
+        uint256 dTokenDepositable = lockerCredit * 1e18 / 300e18 * 100e18 / 1e18;
+
+        // deposit max depositable
+        _depositPoolFirstPeriod(USER_1, dTokenDepositable, pid, 0, 100e18, user1Proof);
+
+        // USER 1
+        vm.startPrank(USER_1);
+        dToken.approve(address(ifo), 1);
+        // pid 1
+        vm.expectRevert(CakeIFO.AboveMax.selector);
+        ifo.depositPoolFirstPeriod(1, pid, 0, 100e18, user1Proof);
+
+        // deposit cake on locker to increase dToken depositable
+        dToken.approve(address(DEPOSITOR), 1000e18);
+        DEPOSITOR.deposit(1000e18, true, true, USER_1);
+
+        // deposit again
+        ifo.depositPoolFirstPeriod(1, pid, 0, 100e18, user1Proof);
+
+        vm.stopPrank();
     }
 
     function test_deposit_second_period_no_fees() external {

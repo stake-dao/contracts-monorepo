@@ -194,16 +194,24 @@ contract CakeIFO {
         // check max lp limit for the pool
         (,, uint256 lpLimit,,,, uint8 saleType) = cakeIFO.viewPoolInformation(_pid);
 
-        // if sale is not private calculate max dToken depositable for each user
+        // if sale is not private get the locker credit
+        uint256 lockerCredit;
         if (saleType != 1) {
-            // calculate max amount of dToken depositable
-            uint256 lockerCredit = ICakeV3(cakeIFO.iCakeAddress()).getUserCreditWithIfoAddr(locker, address(cakeIFO));
-            // if lpLimit has set, takes the min
-            if (lpLimit != 0 && lpLimit < lockerCredit) {
-                lockerCredit = lpLimit;
+            lockerCredit = ICakeV3(cakeIFO.iCakeAddress()).getUserCreditWithIfoAddr(locker, address(cakeIFO));
+        }
+        
+        // if sale is private without any lp limit, skip it
+        if (lpLimit != 0 || lockerCredit != 0) {
+            if (lpLimit == 0) {
+                // public/basic sale
+                // if lpLimit has not set, takes the lockerCredit
+                lpLimit = lockerCredit;
+            } else if (lpLimit != 0 && lockerCredit != 0) {
+                // if lpLimit has set, takes the min
+                lpLimit = lpLimit < lockerCredit ? lpLimit : lockerCredit;
             }
 
-            uint256 dTokenDepositable = lockerCredit.mulDiv(10 ** 18, sdCakeGaugeTotalSupply).mulDiv(_gAmount, 10 ** 18);
+            uint256 dTokenDepositable = lpLimit.mulDiv(1e18, sdCakeGaugeTotalSupply).mulDiv(_gAmount, 1e18);
 
             // adjust decimals
             if (dTokenDecimals != 18) {
