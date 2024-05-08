@@ -33,7 +33,9 @@ contract CakeIFOFactory {
     /// @notice Take trace of ifo created
     mapping(address => address) public ifos; // sd ifo -> cake ifo
 
-    // Events and error
+    ////////////////////////////////////////////////////////////////
+    /// --- EVENTS & ERRORS
+    ///////////////////////////////////////////////////////////////
 
     error AlreadyAllowed();
 
@@ -76,10 +78,11 @@ contract CakeIFOFactory {
     /// @param _locker Address of the Cake locker.
     /// @param _executor Address of the executor.
     /// @param _governance Address of the governance.
-    constructor(address _locker, address _executor, address _governance) {
+    constructor(address _locker, address _executor, address _governance, address _feeReceiver) {
         locker = _locker;
         executor = IExecutor(_executor);
         governance = _governance;
+        feeReceiver = _feeReceiver;
     }
 
     /// @notice Create a sd IFO.

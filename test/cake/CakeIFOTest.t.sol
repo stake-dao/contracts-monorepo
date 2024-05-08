@@ -13,6 +13,7 @@ import {CAKE} from "address-book/lockers/56.sol";
 import {DAO} from "address-book/dao/56.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {ERC721} from "solady/src/tokens/ERC721.sol";
+import {Merkle} from "murky/Merkle.sol";
 
 interface ICakeProfile {
     function createProfile(uint256 teamId, address nftAddress, uint256 tokenId) external;
@@ -40,16 +41,25 @@ contract CakeIFOTest is Test {
 
     address private constant USER_1 = address(0xABCD);
     address private constant USER_2 = address(0xABBB);
+    address private constant FEE_RECEIVER = address(0xFEEE);
     address private constant GOVERNANCE = DAO.GOVERNANCE;
+
+    bytes32[] private hashes;
+    bytes32 private merkleRoot;
+
+    Merkle private merkle;
+    bytes32[] private user1Proof;
+    bytes32[] private user2Proof;
 
     function setUp() external {
         uint256 forkId = vm.createFork(vm.rpcUrl("bnb"), 34_949_400);
         vm.selectFork(forkId);
+        
 
         // deploy the executor and set it because it has deployed after fork time
         executor = new Executor(GOVERNANCE);
 
-        factory = new CakeIFOFactory(address(LOCKER), address(executor), address(this));
+        factory = new CakeIFOFactory(address(LOCKER), address(executor), address(this), FEE_RECEIVER);
 
         // allow the factory to call the executeTo on the executor
         vm.startPrank(GOVERNANCE);
@@ -64,8 +74,17 @@ contract CakeIFOTest is Test {
         dToken = ERC20(ifo.dToken());
         oToken = ERC20(ifo.oToken());
 
-        // set the Merkle root
-        factory.setMerkleRoot(address(ifo), bytes32("root"), 1000e18);
+        // Create Merkle
+        merkle = new Merkle();
+        bytes32[] memory datas = new bytes32[](2);
+        datas[0] = keccak256(abi.encodePacked(uint256(0), USER_1, uint256(100e18)));
+        datas[1] = keccak256(abi.encodePacked(uint256(1), USER_2, uint256(200e18)));
+        merkleRoot = merkle.getRoot(datas);
+        user1Proof = merkle.getProof(datas, 0);
+        user2Proof = merkle.getProof(datas, 1);
+        merkle.verifyProof(merkleRoot, user1Proof, datas[0]);
+        merkle.verifyProof(merkleRoot, user2Proof, datas[0]);
+        factory.setMerkleRoot(address(ifo), merkleRoot, 300e18);
 
         deal(address(dToken), USER_1, 100e18);
         deal(CAKE.TOKEN, address(LOCKER), 100e18);
@@ -105,8 +124,8 @@ contract CakeIFOTest is Test {
         uint8 pid = 1;
         uint256 amountToDeposit = 10e18;
 
-        _depositPoolFirstPeriod(USER_1, amountToDeposit, pid);
-        _depositPoolFirstPeriod(USER_2, amountToDeposit, pid);
+        _depositPoolFirstPeriod(USER_1, amountToDeposit, pid, 0, 100e18, user1Proof);
+        _depositPoolFirstPeriod(USER_2, amountToDeposit, pid, 1, 200e18, user2Proof);
 
         assertEq(ifo.depositors(USER_1, 1), amountToDeposit);
         assertEq(ifo.depositors(USER_2, 1), amountToDeposit);
@@ -167,7 +186,7 @@ contract CakeIFOTest is Test {
     function test_harvest_pool() external {
         uint256 amountToDeposit = 10e18;
         uint8 pid = 1;
-        _depositPoolFirstPeriod(USER_1, amountToDeposit, pid);
+        _depositPoolFirstPeriod(USER_1, amountToDeposit, pid, 0, 100e18, user1Proof);
 
         skip(4 hours);
 
@@ -193,8 +212,8 @@ contract CakeIFOTest is Test {
         uint256 amountToDeposit2 = 20e18;
         uint8 pid = 1;
 
-        _depositPoolFirstPeriod(USER_1, amountToDeposit1, pid);
-        _depositPoolFirstPeriod(USER_2, amountToDeposit2, pid);
+        _depositPoolFirstPeriod(USER_1, amountToDeposit1, pid, 0, 100e18, user1Proof);
+        _depositPoolFirstPeriod(USER_2, amountToDeposit2, pid, 1, 200e18, user2Proof);
 
         skip(4 hours);
 
@@ -209,10 +228,8 @@ contract CakeIFOTest is Test {
 
         assertEq(ifo.rewardRate(pid), 0);
 
-        // fetch vesting schedule id for locker <-> pid
-        bytes32 vestingScheduleId = CAKE_IFO.computeVestingScheduleIdForAddressAndPid(address(LOCKER), pid);
         // first release
-        ifo.release(vestingScheduleId);
+        ifo.release(pid);
 
         uint256 rewardReleased = oToken.balanceOf(address(ifo)) - snapshotOToken;
         uint256 refundReleased = dToken.balanceOf(address(ifo)) - snapshotDToken;
@@ -224,7 +241,7 @@ contract CakeIFOTest is Test {
 
         skip(1 hours);
         // second release
-        ifo.release(vestingScheduleId);
+        ifo.release(pid);
         assertGt(ifo.rewardRate(pid), rewardRate);
     }
 
@@ -233,8 +250,8 @@ contract CakeIFOTest is Test {
         uint256 amountToDeposit2 = 20e18;
         uint8 pid = 1;
 
-        _depositPoolFirstPeriod(USER_1, amountToDeposit1, pid);
-        _depositPoolFirstPeriod(USER_2, amountToDeposit2, pid);
+        _depositPoolFirstPeriod(USER_1, amountToDeposit1, pid, 0, 100e18, user1Proof);
+        _depositPoolFirstPeriod(USER_2, amountToDeposit2, pid, 1, 200e18, user2Proof);
 
         skip(4 hours);
 
@@ -245,29 +262,30 @@ contract CakeIFOTest is Test {
 
         assertEq(ifo.rewardRate(pid), 0);
 
-        // fetch vesting schedule id for locker <-> pid
-        bytes32 vestingScheduleId = CAKE_IFO.computeVestingScheduleIdForAddressAndPid(address(LOCKER), pid);
-        ifo.release(vestingScheduleId);
+        ifo.release(pid);
 
         vm.prank(USER_1);
-        ifo.claim(pid);
+        ifo.claim(pid, false);
         vm.prank(USER_2);
-        ifo.claim(pid);
+        ifo.claim(pid, false);
 
         assertEq(oToken.balanceOf(address(ifo)), 0);
         assertEq(oToken.balanceOf(USER_1) * 2, oToken.balanceOf(USER_2));
     }
 
-    function _depositPoolFirstPeriod(address _user, uint256 _amount, uint8 _pid) internal {
-        bytes32[] memory merkleProof = new bytes32[](3);
-        merkleProof[0] = bytes32("test0");
-        merkleProof[1] = bytes32("test1");
-        merkleProof[2] = bytes32("test2");
+    function _depositPoolFirstPeriod(
+        address _user,
+        uint256 _amount,
+        uint8 _pid,
+        uint256 _merkleIndex,
+        uint256 _gAmount,
+        bytes32[] memory _merkleProof
+    ) internal {
         // USER 1
         vm.startPrank(_user);
         dToken.approve(address(ifo), _amount);
         // pid 1
-        ifo.depositPoolFirstPeriod(_amount, _pid, 0, 100e18, merkleProof);
+        ifo.depositPoolFirstPeriod(_amount, _pid, _merkleIndex, _gAmount, _merkleProof);
         vm.stopPrank();
     }
 

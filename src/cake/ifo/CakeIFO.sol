@@ -9,9 +9,11 @@ import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {MerkleProofLib} from "solmate/utils/MerkleProofLib.sol";
 import {CakeIFOFactory} from "src/cake/ifo/CakeIFOFactory.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
+import {FixedPointMathLib} from "solady/src/utils/FixedPointMathLib.sol";
 
 contract CakeIFO {
     using SafeTransferLib for ERC20;
+    using FixedPointMathLib for uint256;
 
     /// @notice Address of the pancake ifo contract
     ICakeIFOV7 public immutable cakeIFO;
@@ -23,10 +25,10 @@ contract CakeIFO {
     IExecutor public immutable executor;
 
     /// @notice Address of the deposit token
-    address public immutable dToken;
+    ERC20 public immutable dToken;
 
     /// @notice Address of the offering token
-    address public immutable oToken; // offering token
+    ERC20 public immutable oToken;
 
     /// @notice Address of the locker
     address public immutable locker;
@@ -37,16 +39,16 @@ contract CakeIFO {
     /// @notice First period end ts
     uint256 public immutable firstPeriodEnd;
 
-    /// @notice Second period end ts
-    uint256 public immutable secondPeriodEnd;
-
     /// @notice sdCake gauge total supply
     uint256 public sdCakeGaugeTotalSupply;
 
-    /// @notice Protocol fees percent
-    //uint256 public protocolFeesPercent;
+    /// @notice dToken decimals
+    uint256 public immutable dTokenDecimals;
 
-    /// @notice root
+    /// @notice oToken decimals
+    uint256 public immutable oTokenDecimals;
+
+    /// @notice merkle root
     bytes32 public merkleRoot;
 
     /// @notice user -> pid -> amount
@@ -55,7 +57,7 @@ contract CakeIFO {
     /// @notice pid -> oToken reward rate
     mapping(uint8 => uint256) public rewardRate;
 
-    /// @notice pid -> dToken reward rate
+    /// @notice pid -> dToken refund rate
     mapping(uint8 => uint256) public refundRate;
 
     /// @notice user -> pid -> oToken reward claimed
@@ -64,13 +66,15 @@ contract CakeIFO {
     /// @notice user -> pid -> dToken refund claimed
     mapping(address => mapping(uint8 => uint256)) public refundClaimed;
 
-    /// @notice pid -> total dToken deposited
+    /// @notice pid -> total dToken deposited for each pool
     mapping(uint8 => uint256) public totalDeposits;
 
-    /// @notice user -> total amount deposited between pools
+    /// @notice user -> total amount deposited by users
     mapping(address => uint256) public userTotalDeposits;
 
-    // Errors and Events
+    ////////////////////////////////////////////////////////////////
+    /// --- EVENTS & ERRORS
+    ///////////////////////////////////////////////////////////////
 
     /// @notice Throwed when a low level call failed
     error CallFailed();
@@ -151,13 +155,14 @@ contract CakeIFO {
         }
         firstPeriodStart = _firstPeriodStart;
         firstPeriodEnd = _firstPeriodEnd;
-        secondPeriodEnd = firstPeriodEnd + (firstPeriodEnd - firstPeriodStart);
 
         executor = IExecutor(_executor);
-        dToken = _dToken;
-        oToken = _oToken;
+        dToken = ERC20(_dToken);
+        oToken = ERC20(_oToken);
         locker = _locker;
         ifoFactory = CakeIFOFactory(_ifoFactory);
+        dTokenDecimals = dToken.decimals();
+        oTokenDecimals = oToken.decimals();
     }
 
     /// @notice Deposit dToken in the first period, only allowed by sdCake-gauge token holders
@@ -180,13 +185,36 @@ contract CakeIFO {
         if (merkleRoot == "") revert MerkleRootNotSet();
 
         // Verify the merkle proof.
-        //bytes32 node = keccak256(abi.encodePacked(_index, msg.sender, _gAmount));
-        //if (!MerkleProofLib.verify(_merkleProof, merkleRoot, node)) revert InvalidProof();
+        bytes32 node = keccak256(abi.encodePacked(_index, msg.sender, _gAmount));
+        if (!MerkleProofLib.verify(_merkleProof, merkleRoot, node)) revert InvalidProof();
 
-        // calculate max amount of dToken depositable
-        uint256 lockerCredit = ICakeV3(cakeIFO.iCakeAddress()).getUserCreditWithIfoAddr(locker, address(cakeIFO));
-        uint256 dTokenDepositable = (lockerCredit * 1e18 / sdCakeGaugeTotalSupply) * _gAmount / 1e18;
-        if (dTokenDepositable < _dAmount + userTotalDeposits[msg.sender]) revert AboveMax();
+        // transfer dToken from user to locker
+        SafeTransferLib.safeTransferFrom(address(dToken), msg.sender, locker, _dAmount);
+
+        // check max lp limit for the pool
+        (,, uint256 lpLimit,,,, uint8 saleType) = cakeIFO.viewPoolInformation(_pid);
+
+        // if sale is not private calculate max dToken depositable for each user
+        if (saleType != 1) {
+            // calculate max amount of dToken depositable
+            uint256 lockerCredit = ICakeV3(cakeIFO.iCakeAddress()).getUserCreditWithIfoAddr(locker, address(cakeIFO));
+            // if lpLimit has set, takes the min
+            if (lpLimit != 0 && lpLimit < lockerCredit) {
+                lockerCredit = lpLimit;
+            }
+
+            uint256 dTokenDepositable = lockerCredit.mulDiv(10 ** 18, sdCakeGaugeTotalSupply).mulDiv(_gAmount, 10 ** 18);
+
+            // adjust decimals
+            if (dTokenDecimals != 18) {
+                if (dTokenDecimals < 18) {
+                    dTokenDepositable /= 10 ** (18 - dTokenDecimals);
+                } else {
+                    dTokenDepositable *= 10 ** (dTokenDecimals - 18);
+                }
+            }
+            if (dTokenDepositable < _dAmount + userTotalDeposits[msg.sender]) revert AboveMax();
+        }
 
         _deposit(_dAmount, _pid);
     }
@@ -196,10 +224,18 @@ contract CakeIFO {
     /// @param _pid Pool id.
     function depositPoolSecondPeriod(uint256 _dAmount, uint8 _pid) external {
         // check if the IFO is in second period
-        if (block.timestamp < firstPeriodEnd || block.timestamp > secondPeriodEnd) revert NotInSecondPeriod();
+        if (block.timestamp < firstPeriodEnd || block.timestamp > ICakeIFOV7(cakeIFO).endTimestamp()) {
+            revert NotInSecondPeriod();
+        }
+
+        // transfer dToken here to charge fees
+        SafeTransferLib.safeTransferFrom(address(dToken), msg.sender, address(this), _dAmount);
 
         // charge fees on the dToken
         _dAmount -= _chargeProtocolFees(_dAmount);
+
+        // transfer dToken remained to locker
+        SafeTransferLib.safeTransfer(address(dToken), locker, _dAmount);
 
         _deposit(_dAmount, _pid);
     }
@@ -208,11 +244,8 @@ contract CakeIFO {
     /// @param _dAmount Amount to deposit.
     /// @param _pid Pool id.
     function _deposit(uint256 _dAmount, uint8 _pid) internal {
-        // transfer dToken from user to locker
-        SafeTransferLib.safeTransferFrom(dToken, msg.sender, locker, _dAmount);
-
         bytes memory approveData = abi.encodeWithSignature("approve(address,uint256)", address(cakeIFO), _dAmount);
-        (bool success,) = ifoFactory.callExecuteToLocker(dToken, approveData);
+        (bool success,) = ifoFactory.callExecuteToLocker(address(dToken), approveData);
         if (!success) revert CallFailed();
 
         // deposit dToken to cakeIFO
@@ -237,90 +270,104 @@ contract CakeIFO {
         address feeReceiver = ifoFactory.feeReceiver();
         if (feeReceiver == address(0)) revert ZeroAddress();
 
-        fee = _amount * protocolFeesPercent / ifoFactory.DENOMINATOR();
+        fee = _amount.mulDiv(protocolFeesPercent, ifoFactory.DENOMINATOR());
 
-        SafeTransferLib.safeTransferFrom(dToken, msg.sender, ifoFactory.feeReceiver(), fee);
+        SafeTransferLib.safeTransfer(address(dToken), ifoFactory.feeReceiver(), fee);
     }
 
     /// @notice Harvest a pool at the end of the IFO (callable only once per pid).
     /// @param _pid Pool id.
     function harvestPool(uint8 _pid) external {
-        uint256 snapshotDToken = ERC20(dToken).balanceOf(locker);
-        uint256 snapshotOToken = ERC20(oToken).balanceOf(locker);
+        uint256 snapshotDToken = dToken.balanceOf(locker);
+        uint256 snapshotOToken = oToken.balanceOf(locker);
 
         bytes memory harvestData = abi.encodeWithSignature("harvestPool(uint8)", _pid);
         (bool success,) = ifoFactory.callExecuteToLocker(address(cakeIFO), harvestData);
         if (!success) revert CallFailed();
 
-        uint256 oTokenHarvested = ERC20(oToken).balanceOf(locker) - snapshotOToken;
+        uint256 oTokenHarvested = oToken.balanceOf(locker) - snapshotOToken;
 
         if (oTokenHarvested != 0) {
             // transfer token here
             bytes memory transferData =
                 abi.encodeWithSignature("transfer(address,uint256)", address(this), oTokenHarvested);
-            (success,) = ifoFactory.callExecuteToLocker(oToken, transferData);
+            (success,) = ifoFactory.callExecuteToLocker(address(oToken), transferData);
             if (!success) revert CallFailed();
             // increase reward rate
-            rewardRate[_pid] += oTokenHarvested * 1e18 / totalDeposits[_pid];
+            rewardRate[_pid] += oTokenHarvested.mulDiv(10 ** oTokenDecimals, totalDeposits[_pid]);
         }
 
-        uint256 dTokenRefunded = ERC20(dToken).balanceOf(locker) - snapshotDToken;
+        uint256 dTokenRefunded = dToken.balanceOf(locker) - snapshotDToken;
 
         if (dTokenRefunded != 0) {
             // transfer token here
             bytes memory transferData =
                 abi.encodeWithSignature("transfer(address,uint256)", address(this), dTokenRefunded);
-            (success,) = ifoFactory.callExecuteToLocker(dToken, transferData);
+            (success,) = ifoFactory.callExecuteToLocker(address(dToken), transferData);
             if (!success) revert CallFailed();
             // increase refund rate
-            refundRate[_pid] += dTokenRefunded * 1e18 / totalDeposits[_pid];
+            refundRate[_pid] += dTokenRefunded.mulDiv(10 ** dTokenDecimals, totalDeposits[_pid]);
         }
 
         emit Harvest(_pid, oTokenHarvested, dTokenRefunded);
     }
 
-    /// @notice Release reward in pending.
-    /// @param _vestingScheduleId Vesting schedule id.
-    function release(bytes32 _vestingScheduleId) external {
-        // fetch pid
-        ICakeIFOV7.VestingSchedule memory vs = cakeIFO.getVestingSchedule(_vestingScheduleId);
+    /// @notice Release reward in vesting.
+    /// @param _pid Pool id.
+    function release(uint8 _pid) external {
+        _release(_pid);
+    }
 
-        uint256 snapshotOToken = ERC20(oToken).balanceOf(locker);
+    /// @notice Internal release function
+    /// @param _pid Pool id.
+    function _release(uint8 _pid) internal {
+        // fetch vestingSchedule
+        bytes32 vestingScheduleId = cakeIFO.computeVestingScheduleIdForAddressAndPid(locker, _pid);
 
-        bytes memory releaseData = abi.encodeWithSignature("release(bytes32)", _vestingScheduleId);
+        uint256 snapshotOToken = oToken.balanceOf(locker);
+
+        bytes memory releaseData = abi.encodeWithSignature("release(bytes32)", vestingScheduleId);
         (bool success,) = ifoFactory.callExecuteToLocker(address(cakeIFO), releaseData);
         if (!success) revert CallFailed();
 
-        uint256 oTokenReleased = ERC20(oToken).balanceOf(locker) - snapshotOToken;
+        uint256 oTokenReleased = oToken.balanceOf(locker) - snapshotOToken;
 
         if (oTokenReleased != 0) {
             // transfer token here
             bytes memory transferData =
                 abi.encodeWithSignature("transfer(address,uint256)", address(this), oTokenReleased);
-            (success,) = ifoFactory.callExecuteToLocker(oToken, transferData);
+            (success,) = ifoFactory.callExecuteToLocker(address(oToken), transferData);
             if (!success) revert CallFailed();
-            rewardRate[vs.pid] += oTokenReleased * 1e18 / totalDeposits[vs.pid];
+            rewardRate[_pid] += oTokenReleased.mulDiv(10 ** oTokenDecimals, totalDeposits[_pid]);
         }
 
-        emit Release(_vestingScheduleId, oTokenReleased);
+        emit Release(vestingScheduleId, oTokenReleased);
     }
 
     /// @notice Claim reward by users.
     /// @param _pid Pool id.
-    function claim(uint8 _pid) external {
+    /// @param _releaseVesting Release or not the vesting reward.
+    function claim(uint8 _pid, bool _releaseVesting) external {
         uint256 deposited = depositors[msg.sender][_pid];
         if (deposited == 0) revert NoDeposit();
 
-        uint256 rewardToClaim = (deposited * rewardRate[_pid] / 1e18) - rewardClaimed[msg.sender][_pid];
-        uint256 refundToClaim = (deposited * refundRate[_pid] / 1e18) - refundClaimed[msg.sender][_pid];
+        // release vesting rewards
+        if (_releaseVesting) {
+            _release(_pid);
+        }
+
+        uint256 rewardToClaim =
+            deposited.mulDiv(rewardRate[_pid], (10 ** dTokenDecimals)) - rewardClaimed[msg.sender][_pid];
+        uint256 refundToClaim =
+            deposited.mulDiv(refundRate[_pid], (10 ** dTokenDecimals)) - refundClaimed[msg.sender][_pid];
 
         if (rewardToClaim != 0) {
-            SafeTransferLib.safeTransfer(oToken, msg.sender, rewardToClaim);
+            SafeTransferLib.safeTransfer(address(oToken), msg.sender, rewardToClaim);
             rewardClaimed[msg.sender][_pid] += rewardToClaim;
         }
 
         if (refundToClaim != 0) {
-            SafeTransferLib.safeTransfer(dToken, msg.sender, refundToClaim);
+            SafeTransferLib.safeTransfer(address(dToken), msg.sender, refundToClaim);
             refundClaimed[msg.sender][_pid] += refundToClaim;
         }
 
