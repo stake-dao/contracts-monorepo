@@ -42,12 +42,6 @@ contract CakeIFO {
     /// @notice sdCake gauge total supply
     uint256 public sdCakeGaugeTotalSupply;
 
-    /// @notice dToken decimals
-    uint256 public immutable dTokenDecimals;
-
-    /// @notice oToken decimals
-    uint256 public immutable oTokenDecimals;
-
     /// @notice merkle root
     bytes32 public merkleRoot;
 
@@ -161,8 +155,6 @@ contract CakeIFO {
         oToken = ERC20(_oToken);
         locker = _locker;
         ifoFactory = CakeIFOFactory(_ifoFactory);
-        dTokenDecimals = dToken.decimals();
-        oTokenDecimals = oToken.decimals();
     }
 
     /// @notice Deposit dToken in the first period, only allowed by sdCake-gauge token holders
@@ -212,15 +204,6 @@ contract CakeIFO {
             }
 
             uint256 dTokenDepositable = lpLimit.mulDiv(1e18, sdCakeGaugeTotalSupply).mulDiv(_gAmount, 1e18);
-
-            // adjust decimals
-            if (dTokenDecimals != 18) {
-                if (dTokenDecimals < 18) {
-                    dTokenDepositable /= 10 ** (18 - dTokenDecimals);
-                } else {
-                    dTokenDepositable *= 10 ** (dTokenDecimals - 18);
-                }
-            }
             if (dTokenDepositable < _dAmount + userTotalDeposits[msg.sender]) revert AboveMax();
         }
 
@@ -302,7 +285,7 @@ contract CakeIFO {
             (success,) = ifoFactory.callExecuteToLocker(address(oToken), transferData);
             if (!success) revert CallFailed();
             // increase reward rate
-            rewardRate[_pid] += oTokenHarvested.mulDiv(10 ** oTokenDecimals, totalDeposits[_pid]);
+            rewardRate[_pid] += oTokenHarvested.mulDiv(1e18, totalDeposits[_pid]);
         }
 
         uint256 dTokenRefunded = dToken.balanceOf(locker) - snapshotDToken;
@@ -314,7 +297,7 @@ contract CakeIFO {
             (success,) = ifoFactory.callExecuteToLocker(address(dToken), transferData);
             if (!success) revert CallFailed();
             // increase refund rate
-            refundRate[_pid] += dTokenRefunded.mulDiv(10 ** dTokenDecimals, totalDeposits[_pid]);
+            refundRate[_pid] += dTokenRefunded.mulDiv(1e18, totalDeposits[_pid]);
         }
 
         emit Harvest(_pid, oTokenHarvested, dTokenRefunded);
@@ -346,7 +329,7 @@ contract CakeIFO {
                 abi.encodeWithSignature("transfer(address,uint256)", address(this), oTokenReleased);
             (success,) = ifoFactory.callExecuteToLocker(address(oToken), transferData);
             if (!success) revert CallFailed();
-            rewardRate[_pid] += oTokenReleased.mulDiv(10 ** oTokenDecimals, totalDeposits[_pid]);
+            rewardRate[_pid] += oTokenReleased.mulDiv(1e18, totalDeposits[_pid]);
         }
 
         emit Release(vestingScheduleId, oTokenReleased);
@@ -365,9 +348,9 @@ contract CakeIFO {
         }
 
         uint256 rewardToClaim =
-            deposited.mulDiv(rewardRate[_pid], (10 ** dTokenDecimals)) - rewardClaimed[msg.sender][_pid];
+            deposited.mulDiv(rewardRate[_pid], 1e18) - rewardClaimed[msg.sender][_pid];
         uint256 refundToClaim =
-            deposited.mulDiv(refundRate[_pid], (10 ** dTokenDecimals)) - refundClaimed[msg.sender][_pid];
+            deposited.mulDiv(refundRate[_pid], 1e18) - refundClaimed[msg.sender][_pid];
 
         if (rewardToClaim != 0) {
             SafeTransferLib.safeTransfer(address(oToken), msg.sender, rewardToClaim);
