@@ -123,6 +123,10 @@ contract CakeIFOTest is Test {
         assertEq(address(dToken), CAKE_IFO.lpToken());
         assertEq(address(oToken), CAKE_IFO.offeringToken());
         assertEq(ifo.locker(), address(LOCKER));
+
+        // check period
+        uint256 firstPeriodEnd = ifo.firstPeriodEnd();
+        assertEq(firstPeriodEnd - ifo.firstPeriodStart(), CAKE_IFO.endTimestamp() - firstPeriodEnd);
     }
 
     function test_deposit_first_period() external {

@@ -138,11 +138,11 @@ contract CakeIFO {
         // IFO not started yet
         if (block.timestamp < startTimestamp) {
             _firstPeriodStart = startTimestamp;
-            _firstPeriodEnd = endTimestamp - startTimestamp / 2;
+            _firstPeriodEnd = endTimestamp - ((endTimestamp - startTimestamp) / 2);
         } else if (block.timestamp >= startTimestamp && block.timestamp < endTimestamp) {
             // IFO started but not ended
             _firstPeriodStart = block.timestamp;
-            _firstPeriodEnd = _firstPeriodStart + ((endTimestamp - block.timestamp) / 2);
+            _firstPeriodEnd = endTimestamp - ((endTimestamp - block.timestamp) / 2);
         } else {
             // IFO already ended
             revert IfoEnded();
@@ -190,19 +190,13 @@ contract CakeIFO {
         uint256 lockerCredit;
         if (saleType != 1) {
             lockerCredit = ICakeV3(cakeIFO.iCakeAddress()).getUserCreditWithIfoAddr(locker, address(cakeIFO));
-        }
-        
-        // if sale is private without any lp limit, skip it
-        if (lpLimit != 0 || lockerCredit != 0) {
-            if (lpLimit == 0) {
-                // public/basic sale
-                // if lpLimit has not set, takes the lockerCredit
+            // set lpLimit as locker credit if there isn't any limit or if it is lower than lpLimit
+            if (lpLimit == 0 || (lpLimit != 0 && lockerCredit < lpLimit)) {
                 lpLimit = lockerCredit;
-            } else if (lpLimit != 0 && lockerCredit != 0) {
-                // if lpLimit has set, takes the min
-                lpLimit = lpLimit < lockerCredit ? lpLimit : lockerCredit;
             }
+        }
 
+        if (lpLimit != 0) {
             uint256 dTokenDepositable = lpLimit.mulDiv(1e18, sdCakeGaugeTotalSupply).mulDiv(_gAmount, 1e18);
             if (dTokenDepositable < _dAmount + userTotalDeposits[msg.sender]) revert AboveMax();
         }
@@ -347,10 +341,8 @@ contract CakeIFO {
             _release(_pid);
         }
 
-        uint256 rewardToClaim =
-            deposited.mulDiv(rewardRate[_pid], 1e18) - rewardClaimed[msg.sender][_pid];
-        uint256 refundToClaim =
-            deposited.mulDiv(refundRate[_pid], 1e18) - refundClaimed[msg.sender][_pid];
+        uint256 rewardToClaim = deposited.mulDiv(rewardRate[_pid], 1e18) - rewardClaimed[msg.sender][_pid];
+        uint256 refundToClaim = deposited.mulDiv(refundRate[_pid], 1e18) - refundClaimed[msg.sender][_pid];
 
         if (rewardToClaim != 0) {
             SafeTransferLib.safeTransfer(address(oToken), msg.sender, rewardToClaim);
