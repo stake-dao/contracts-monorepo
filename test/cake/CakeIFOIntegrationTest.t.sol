@@ -3,7 +3,6 @@ pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
 
-import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {ICakeDepositor} from "src/base/interfaces/ICakeDepositor.sol";
 import {ICakeLocker} from "src/base/interfaces/ICakeLocker.sol";
 import {ICakeV3} from "src/base/interfaces/ICakeV3.sol";
@@ -28,7 +27,7 @@ interface ICakeWhitelist {
     function addAddressToWhitelist(address _addr) external;
 }
 
-contract CakeIFOTest is Test {
+contract CakeIFOIntegrationTest is Test {
     CakeIFOFactory private factory;
     Executor private executor;
     ICakeLocker private constant LOCKER = ICakeLocker(CAKE.LOCKER);
@@ -110,23 +109,6 @@ contract CakeIFOTest is Test {
         ERC20(CAKE.TOKEN).approve(CAKE_PROFILE, 100e18);
         ICakeProfile(CAKE_PROFILE).createProfile(1, CAKE_BUNNY, tokenId);
         vm.stopPrank();
-    }
-
-    function test_factory_creation() external {
-        assertEq(factory.locker(), address(LOCKER));
-        assertEq(address(factory.executor()), address(executor));
-    }
-
-    function test_ifo_creation() external {
-        assertEq(address(ifo.cakeIFO()), address(CAKE_IFO));
-        assertEq(address(ifo.executor()), address(executor));
-        assertEq(address(dToken), CAKE_IFO.lpToken());
-        assertEq(address(oToken), CAKE_IFO.offeringToken());
-        assertEq(ifo.locker(), address(LOCKER));
-
-        // check period
-        uint256 firstPeriodEnd = ifo.firstPeriodEnd();
-        assertEq(firstPeriodEnd - ifo.firstPeriodStart(), CAKE_IFO.endTimestamp() - firstPeriodEnd);
     }
 
     function test_deposit_first_period() external {

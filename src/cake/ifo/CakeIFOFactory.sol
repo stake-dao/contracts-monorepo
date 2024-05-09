@@ -37,6 +37,7 @@ contract CakeIFOFactory {
     /// --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
+    /// @notice Throwed if an address is already allowed
     error AlreadyAllowed();
 
     /// @notice Throwed on Auth issues
