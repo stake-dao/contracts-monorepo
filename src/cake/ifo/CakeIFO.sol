@@ -34,10 +34,10 @@ contract CakeIFO {
     address public immutable locker;
 
     /// @notice First period start ts
-    uint256 public immutable firstPeriodStart;
+    uint256 public firstPeriodStart;
 
     /// @notice First period end ts
-    uint256 public immutable firstPeriodEnd;
+    uint256 public firstPeriodEnd;
 
     /// @notice sdCake gauge total supply
     uint256 public sdCakeGaugeTotalSupply;
@@ -114,6 +114,11 @@ contract CakeIFO {
 
     /// @notice Emitted when a release has triggered for the vesting schedule
     event Release(bytes32 vestingScheduleId, uint256 amount);
+
+    modifier onlyFactory() {
+        if (msg.sender != address(ifoFactory)) revert OnlyFactory();
+        _;
+    }
 
     /// @param _ifo Address of a pancake ifo.
     /// @param _dToken Address of the deposit token.
@@ -360,9 +365,16 @@ contract CakeIFO {
     /// @notice Set the merkle root to verify the user's gauge balance.
     /// @param _merkleRoot Root of the merkle.
     /// @param _sdCakeGaugeTotalSupply Total supply of the sdCake gauge.
-    function setMerkleRoot(bytes32 _merkleRoot, uint256 _sdCakeGaugeTotalSupply) external {
-        if (msg.sender != address(ifoFactory)) revert OnlyFactory();
+    function setMerkleRoot(bytes32 _merkleRoot, uint256 _sdCakeGaugeTotalSupply) external onlyFactory {
         merkleRoot = _merkleRoot;
         sdCakeGaugeTotalSupply = _sdCakeGaugeTotalSupply;
+    }
+
+    /// @notice Update periods (needs to be called if an update happens before ifo starts)
+    function updatePeriods() external onlyFactory {
+        uint256 startTimestamp = ICakeIFOV7(cakeIFO).startTimestamp();
+        uint256 endTimestamp = ICakeIFOV7(cakeIFO).endTimestamp();
+        firstPeriodStart = startTimestamp;
+        firstPeriodEnd = endTimestamp - ((endTimestamp - startTimestamp) / 2);
     }
 }
