@@ -28,7 +28,7 @@ abstract contract PoolFactoryXChain {
     address public immutable liquidityGaugeImplementation;
 
     /// @notice Claim helper contract address for LiquidityGauges.
-    address public claimHelper;
+    address public immutable claimHelper;
 
     /// @notice Throwed if the gauge is not valid candidate.
     error INVALID_GAUGE();
@@ -51,12 +51,15 @@ abstract contract PoolFactoryXChain {
         address _strategy,
         address _rewardToken,
         address _vaultImplementation,
-        address _liquidityGaugeImplementation
+        address _liquidityGaugeImplementation,
+        address _claimHelper
     ) {
         rewardToken = _rewardToken;
         strategy = IStrategy(_strategy);
         vaultImplementation = _vaultImplementation;
         liquidityGaugeImplementation = _liquidityGaugeImplementation;
+
+        claimHelper = _claimHelper;
     }
 
     /// @notice Add new staking gauge to Stake DAO Locker.

@@ -15,4 +15,15 @@ interface ICakeV2Wrapper {
     function stakedToken() external view returns (address);
 
     function userInfo(address _user) external view returns (UserInfo memory);
+
+    function adapterAddr() external view returns (address);
+
+    function depositRewardAndExpend(uint256 _amount) external;
+
+    function updateStartAndEndTimestamp(uint256 _startTimestamp, uint256 _endTimestamp) external;
+    function restart(uint256 _startTimestamp, uint256 _endTimestamp, uint256 _rewardPerSecond) external;
+
+    function owner() external view returns (address);
+
+    function endTimestamp() external view returns (uint256);
 }
