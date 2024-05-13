@@ -79,9 +79,6 @@ contract CakeIFO {
     /// @notice Throwed at deploy time if the IFO ended
     error IfoEnded();
 
-    /// @notice Throwed when the IFO not started
-    error IfoNotStarted();
-
     /// @notice Throwed when the proof is invalid
     error InvalidProof();
 
