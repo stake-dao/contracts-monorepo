@@ -63,8 +63,8 @@ contract CakeIFO {
     /// @notice pid -> total dToken deposited for each pool
     mapping(uint8 => uint256) public totalDeposits;
 
-    /// @notice user -> total amount deposited by users
-    mapping(address => uint256) public userTotalDeposits;
+    /// @notice user -> total amount deposited by users in basic/public sales
+    mapping(address => uint256) public userTotalPublicDeposits;
 
     ////////////////////////////////////////////////////////////////
     /// --- EVENTS & ERRORS
@@ -199,8 +199,16 @@ contract CakeIFO {
         }
 
         if (lpLimit != 0) {
+            // calculate max deposit amount for the user
             uint256 dTokenDepositable = lpLimit.mulDiv(1e18, sdCakeGaugeTotalSupply).mulDiv(_gAmount, 1e18);
-            if (dTokenDepositable < _dAmount + userTotalDeposits[msg.sender]) revert AboveMax();
+
+            // if sale is not private
+            if (saleType != 1) {
+                userTotalPublicDeposits[msg.sender] += _dAmount;
+                if (dTokenDepositable < userTotalPublicDeposits[msg.sender]) revert AboveMax();
+            } else {
+                if (dTokenDepositable < depositors[msg.sender][_pid] + _dAmount) revert AboveMax();
+            }
         }
 
         _deposit(_dAmount, _pid);
@@ -241,7 +249,6 @@ contract CakeIFO {
         if (!success) revert CallFailed();
 
         depositors[msg.sender][_pid] += _dAmount;
-        userTotalDeposits[msg.sender] += _dAmount;
         totalDeposits[_pid] += _dAmount;
 
         emit Deposit(msg.sender, _pid, _dAmount);

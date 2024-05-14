@@ -121,13 +121,12 @@ contract CakeIFOIntegrationTest is Test {
         assertEq(ifo.depositors(USER_1, 1), amountToDeposit);
         assertEq(ifo.depositors(USER_2, 1), amountToDeposit);
         assertEq(ifo.totalDeposits(1), amountToDeposit * 2);
-        assertEq(ifo.userTotalDeposits(USER_1), amountToDeposit);
-        assertEq(ifo.userTotalDeposits(USER_2), amountToDeposit);
+        assertEq(ifo.userTotalPublicDeposits(USER_1), amountToDeposit);
+        assertEq(ifo.userTotalPublicDeposits(USER_2), amountToDeposit);
     }
 
     function test_deposit_first_period_private_sale() external {
         uint8 pid = 0;
-        uint256 amountToDeposit = 20e18;
 
         // whitelist locker (action required by pancake)
         vm.prank(0xeCc90d54B10ADd1ab746ABE7E83abe178B72aa9E);
@@ -142,7 +141,6 @@ contract CakeIFOIntegrationTest is Test {
 
     function test_deposit_first_period_increase_dToken_depositable() external {
         uint8 pid = 1;
-        uint256 amountToDeposit = 10e18;
 
         // no lp limit for pid = 1
         uint256 lockerCredit =
