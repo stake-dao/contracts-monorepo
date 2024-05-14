@@ -375,7 +375,7 @@ contract CakeIFO {
     }
 
     /// @notice Update periods (needs to be called if an update happens before ifo starts)
-    function updatePeriods() external onlyFactory {
+    function updatePeriods() external {
         uint256 startTimestamp = ICakeIFOV7(cakeIFO).startTimestamp();
         uint256 endTimestamp = ICakeIFOV7(cakeIFO).endTimestamp();
         firstPeriodStart = startTimestamp;
