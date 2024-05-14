@@ -6,7 +6,7 @@ import {CakeIFOFactory} from "src/cake/ifo/CakeIFOFactory.sol";
 import {CAKE} from "address-book/lockers/56.sol";
 import {DAO} from "address-book/dao/56.sol";
 
-contract DeployFXNAccumulator is Script {
+contract DeployCakeIFO is Script {
     CakeIFOFactory private factory;
 
     function run() public {
