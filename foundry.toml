@@ -4,6 +4,7 @@ out = "out"
 libs = ["lib"]
 verbosity = 3
 auto_detect_remappings = false
+evm_version = "cancun"
 
 remappings = [
 "utils=lib/utils/",
