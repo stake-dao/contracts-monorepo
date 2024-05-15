@@ -53,7 +53,7 @@ abstract contract PancakeERC20PMStrategyTest is Test {
     }
 
     function setUp() public {
-        vm.createSelectFork(vm.rpcUrl("bnb"), 38_688_010);
+        vm.createSelectFork(vm.rpcUrl("bnb"), 38_743_240);
 
         (address _token0, address _token1,) = _checkAdapter(wrapper);
 
@@ -206,6 +206,50 @@ abstract contract PancakeERC20PMStrategyTest is Test {
 
             assertGe(ERC20(token0).balanceOf(address(this)), 0);
             assertGe(ERC20(token1).balanceOf(address(this)), 0);
+        }
+    }
+
+    function test_mint_and_deposit_with_earn(uint256 amount, uint256 amount0, uint256 amount1) public {
+        vm.assume(amount0 > 0 && amount1 > 0);
+        vm.assume(amount0 < 1_000_000e18 && amount1 < 1_000_000e18);
+
+        vm.assume(amount > 0);
+        vm.assume(amount < 1_000_000e18);
+
+        address adapter = adapterRegistry.getAdapter(address(vault));
+        if (adapter == address(0)) {
+            vm.expectRevert(ALMDepositorVault.NO_ADAPTER.selector);
+            vault.mintThenDeposit(amount0, amount1, "", address(this));
+        } else {
+            deal(address(vault.token()), address(this), amount);
+            vault.token().approve(address(vault), amount);
+
+            // Deposit with _doEarn = true.
+            vault.deposit(address(this), amount, false);
+
+            uint256 incentiveTokenAmount = vault.incentiveTokenAmount();
+
+            deal(token0, address(this), amount0);
+            deal(token1, address(this), amount1);
+
+            SafeTransferLib.safeApprove(token0, address(vault), amount0);
+            SafeTransferLib.safeApprove(token1, address(vault), amount1);
+
+            vault.mintThenDeposit(amount0, amount1, "", address(this));
+
+            assertEq(ERC20(token0).balanceOf(address(vault)), 0);
+            assertEq(ERC20(token0).balanceOf(address(adapter)), 0);
+
+            assertEq(ERC20(token1).balanceOf(address(vault)), 0);
+            assertEq(ERC20(token1).balanceOf(address(adapter)), 0);
+
+            assertEq(ERC20(lpToken).balanceOf(address(vault)), 0);
+            assertEq(ERC20(lpToken).balanceOf(address(adapter)), 0);
+
+            assertGe(ERC20(token0).balanceOf(address(this)), 0);
+            assertGe(ERC20(token1).balanceOf(address(this)), 0);
+
+            assertGe(rewardDistributor.balanceOf(address(this)), incentiveTokenAmount);
         }
     }
 

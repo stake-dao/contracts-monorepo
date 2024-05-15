@@ -3,6 +3,8 @@ pragma solidity 0.8.19;
 
 /// @notice Registry of vault adapters.
 contract AdapterRegistry {
+    bool isAlive;
+
     /// @notice Address of the governance.
     address public governance;
 
@@ -31,11 +33,18 @@ contract AdapterRegistry {
 
     constructor() {
         governance = msg.sender;
+        isAlive = true;
     }
 
     /// @notice Get the adapter for a vault.
     function getAdapter(address _vault) external view returns (address) {
+        if (!isAlive) return address(0);
+
         return adapters[_vault];
+    }
+
+    function toggleAlive() external onlyGovernance {
+        isAlive = !isAlive;
     }
 
     /// @notice Set the adapter for a vault.

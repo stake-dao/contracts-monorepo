@@ -58,7 +58,7 @@ contract AdapterFactory {
         address _token0 = IAdapter(adapter).token0();
         address _token1 = IAdapter(adapter).token1();
 
-        bytes32 _salt = keccak256(abi.encodePacked(_vault, gauge));
+        bytes32 _salt = keccak256(abi.encodePacked(_vault, gauge, adapterImplementation));
         bytes memory _data = abi.encodePacked(_vault, lpToken, _token0, _token1);
 
         // Clone the adapter.

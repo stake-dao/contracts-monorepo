@@ -45,6 +45,12 @@ contract ALMDepositorVault is Vault {
         /// Deposit the amount into the adapter and get the amount of staking tokens minted to deposit.
         uint256 _amount = IAdapter(adapter).deposit(_amount0, _amount1, msg.sender, _data);
 
+        /// Add incentive token amount to the total amount.
+        _amount += incentiveTokenAmount;
+
+        /// Reset incentive token amount.
+        incentiveTokenAmount = 0;
+
         /// Deposit the amount into the strategy.
         _earn();
 
