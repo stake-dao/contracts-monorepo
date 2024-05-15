@@ -14,14 +14,11 @@ contract YFIDepositorHelperIntegrationTest is Test {
     using SafeERC20 for IERC20;
 
     address a = address(0xbaba);
-    IYearnVestingFactory YearnFactory;
+    IYearnVestingFactory YearnFactory = IYearnVestingFactory(0x850De8D7d65A7b7D5bc825ba29543f41B8E8aFd2);
     YFIDepositorHelper depositorHelper;
 
     function setUp() public virtual {
-        uint256 forkId = vm.createFork("https://eth.public-rpc.com", 19728000); // Wednesday 24
-        YearnFactory = IYearnVestingFactory(0x850De8D7d65A7b7D5bc825ba29543f41B8E8aFd2);
-
-        vm.selectFork(forkId);
+        vm.createSelectFork("mainnet");
         depositorHelper = new YFIDepositorHelper(YFI.DEPOSITOR, YFI.TOKEN);
     }
 
