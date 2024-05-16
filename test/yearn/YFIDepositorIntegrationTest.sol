@@ -7,19 +7,21 @@ import "address-book/dao/1.sol";
 import "address-book/lockers/1.sol";
 import "address-book/protocols/1.sol";
 
-import "src/yearn/depositor/YFIDepositor.sol";
+import "src/yearn/depositor/YFIDepositorV2.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 
 contract YFIDepositorIntegrationTest is Test {
     uint256 private constant MIN_LOCK_DURATION = 1 weeks;
     uint256 private constant MAX_LOCK_DURATION = 4 * 370 days;
 
+    address internal constant POOL = 0x852b90239C5034b5bb7a5e54eF1bEF3Ce3359CC8;
+
     IERC20 private token;
     address private locker;
     IVeYFI private veToken;
 
     ISdToken internal sdToken;
-    YFIDepositor private depositor;
+    YFIDepositorV2 private depositor;
     ILiquidityGauge internal liquidityGauge;
 
     uint256 private constant amount = 100e18;
@@ -28,7 +30,7 @@ contract YFIDepositorIntegrationTest is Test {
     uint256 currentLiquidityGaugeBalance = 0;
 
     function setUp() public virtual {
-        vm.createSelectFork(vm.rpcUrl("mainnet"), 19234180);
+        vm.createSelectFork(vm.rpcUrl("mainnet"), 19_882_578);
 
         token = IERC20(YFI.TOKEN);
         veToken = IVeYFI(Yearn.VEYFI);
@@ -38,7 +40,7 @@ contract YFIDepositorIntegrationTest is Test {
         // Deploy LiquidityGauge
         liquidityGauge = ILiquidityGauge(YFI.GAUGE);
 
-        depositor = new YFIDepositor(address(token), address(locker), address(sdToken), address(liquidityGauge));
+        depositor = new YFIDepositorV2(address(token), address(locker), address(sdToken), address(liquidityGauge), POOL);
 
         vm.prank(ILocker(locker).governance());
         ILocker(locker).setYFIDepositor(address(depositor));
@@ -62,15 +64,6 @@ contract YFIDepositorIntegrationTest is Test {
     function test_initialization() public {
         assertEq(depositor.minter(), address(sdToken));
         assertEq(depositor.gauge(), address(liquidityGauge));
-    }
-
-    function test_createLockOnlyOnce() public {
-        // Mint FXN.
-        deal(address(token), address(this), amount);
-        IERC20(address(token)).approve(address(depositor), amount);
-
-        vm.expectRevert();
-        depositor.createLock(amount);
     }
 
     function test_depositAndMint() public {
@@ -215,6 +208,34 @@ contract YFIDepositorIntegrationTest is Test {
         IVeYFI.LockedBalance memory lockedBalance = veToken.locked(address(locker));
 
         console.log(lockedBalance.end);
+    }
+
+    function test_swapWithoutStake() public {
+        /// Skip 1 seconds to avoid depositing in the same block as locking.
+        skip(1);
+
+        token.approve(address(depositor), amount);
+
+        uint256 minAmount = ICurvePool(POOL).get_dy(0, 1, amount);
+        depositor.deposit(amount, minAmount, false, address(this));
+
+        assertEq(token.balanceOf(address(depositor)), 0);
+        assertGe(liquidityGauge.balanceOf(address(this)), 0);
+        assertGe(sdToken.balanceOf(address(this)), minAmount);
+    }
+
+    function test_swapAndStake() public {
+        /// Skip 1 seconds to avoid depositing in the same block as locking.
+        skip(1);
+
+        token.approve(address(depositor), amount);
+
+        uint256 minAmount = ICurvePool(POOL).get_dy(0, 1, amount);
+        depositor.deposit(amount, minAmount, true, address(this));
+
+        assertEq(sdToken.balanceOf(address(this)), 0);
+        assertEq(token.balanceOf(address(depositor)), 0);
+        assertGe(liquidityGauge.balanceOf(address(this)), minAmount);
     }
 
     function test_transferGovernance() public {
