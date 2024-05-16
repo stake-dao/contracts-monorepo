@@ -22,6 +22,9 @@ abstract contract CurveExchangeDepositor is DepositorV4 {
     /// @param stake Whether the sdToken is staked in the gauge.
     event Deposited(address indexed caller, address indexed user, uint256 amount, bool stake);
 
+    /// Throwed when no enought minimum amount is met.
+    error MIN_AMOUNT_NOT_MET();
+
     constructor(
         address _token,
         address _locker,
@@ -46,6 +49,7 @@ abstract contract CurveExchangeDepositor is DepositorV4 {
     function deposit(uint256 _amount, uint256 _minAmount, bool _stake, address _user) public {
         if (_amount == 0) revert AMOUNT_ZERO();
         if (_user == address(0)) revert ADDRESS_ZERO();
+        if (_minAmount < _amount) revert MIN_AMOUNT_NOT_MET();
 
         /// Transfer tokens from the user to the contract.
         IERC20(token).safeTransferFrom(msg.sender, address(this), _amount);

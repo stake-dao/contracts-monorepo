@@ -24,7 +24,7 @@ contract YFIDepositorIntegrationTest is Test {
     YFIDepositorV2 private depositor;
     ILiquidityGauge internal liquidityGauge;
 
-    uint256 private constant amount = 100e18;
+    uint256 private constant amount = 10e18;
 
     uint256 currentBalance = 0;
     uint256 currentLiquidityGaugeBalance = 0;
@@ -166,7 +166,7 @@ contract YFIDepositorIntegrationTest is Test {
         assertEq(liquidityGauge.balanceOf(address(_random)), amount + expectedIncentiveAmount);
         assertEq(sdToken.balanceOf(address(_random)), 0);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance + 200e18, 1e16);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance + 20e18, 1e16);
     }
 
     function test_depositAndStakeWithoutLockIncentivePercentS() public {
@@ -203,7 +203,7 @@ contract YFIDepositorIntegrationTest is Test {
         assertEq(liquidityGauge.balanceOf(address(_random)), amount);
         assertEq(sdToken.balanceOf(address(_random)), 0);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance + 200e18, 1e16);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance + 20e18, 1e16);
 
         IVeYFI.LockedBalance memory lockedBalance = veToken.locked(address(locker));
 
@@ -231,11 +231,15 @@ contract YFIDepositorIntegrationTest is Test {
         token.approve(address(depositor), amount);
 
         uint256 minAmount = ICurvePool(POOL).get_dy(0, 1, amount);
+        console.log(minAmount);
+
         depositor.deposit(amount, minAmount, true, address(this));
 
         assertEq(sdToken.balanceOf(address(this)), 0);
         assertEq(token.balanceOf(address(depositor)), 0);
         assertGe(liquidityGauge.balanceOf(address(this)), minAmount);
+
+        console.log(liquidityGauge.balanceOf(address(this)));
     }
 
     function test_transferGovernance() public {
