@@ -15,7 +15,7 @@ import "src/cake/adapter/AlpacaAdapter.sol";
 import "src/cake/adapter/AdapterFactory.sol";
 import "src/cake/adapter/AdapterRegistry.sol";
 
-import "src/cake/vault/ALMDepositorVault.sol";
+import "src/cake/vault/PCSVault.sol";
 import "src/cake/strategy/PancakeERC20Strategy.sol";
 import "src/cake/factory/PancakeVaultFactoryXChain.sol";
 
@@ -30,8 +30,8 @@ abstract contract PancakeERC20PMStrategyTest is Test {
     address public token0;
     address public token1;
 
-    ALMDepositorVault public vault;
-    ALMDepositorVault public vaultImpl;
+    PCSVault public vault;
+    PCSVault public vaultImpl;
 
     PancakeERC20Strategy public strategy;
     PancakeERC20Strategy public strategyImpl;
@@ -74,7 +74,7 @@ abstract contract PancakeERC20PMStrategyTest is Test {
         strategy.initialize(address(this));
 
         // Deploy Vault Implentation.
-        vaultImpl = new ALMDepositorVault();
+        vaultImpl = new PCSVault();
 
         // Deploy gauge Implementation
         rewardDistributorImpl = deployBytecode(Constants.LGV4_STRAT_XCHAIN_BYTECODE, "");
@@ -118,7 +118,7 @@ abstract contract PancakeERC20PMStrategyTest is Test {
         address _rewardDistributor;
         (_vault, _rewardDistributor) = factory.create(wrapper);
 
-        vault = ALMDepositorVault(_vault);
+        vault = PCSVault(_vault);
         rewardDistributor = ILiquidityGaugeStrat(_rewardDistributor);
     }
 
@@ -184,7 +184,7 @@ abstract contract PancakeERC20PMStrategyTest is Test {
 
         address adapter = adapterRegistry.getAdapter(address(vault));
         if (adapter == address(0)) {
-            vm.expectRevert(ALMDepositorVault.NO_ADAPTER.selector);
+            vm.expectRevert(PCSVault.NO_ADAPTER.selector);
             vault.mintThenDeposit(amount0, amount1, "", address(this));
         } else {
             deal(token0, address(this), amount0);
@@ -218,7 +218,7 @@ abstract contract PancakeERC20PMStrategyTest is Test {
 
         address adapter = adapterRegistry.getAdapter(address(vault));
         if (adapter == address(0)) {
-            vm.expectRevert(ALMDepositorVault.NO_ADAPTER.selector);
+            vm.expectRevert(PCSVault.NO_ADAPTER.selector);
             vault.mintThenDeposit(amount0, amount1, "", address(this));
         } else {
             deal(address(vault.token()), address(this), amount);
@@ -265,7 +265,7 @@ abstract contract PancakeERC20PMStrategyTest is Test {
 
         address adapter = adapterRegistry.getAdapter(address(vault));
         if (adapter == address(0)) {
-            vm.expectRevert(ALMDepositorVault.NO_ADAPTER.selector);
+            vm.expectRevert(PCSVault.NO_ADAPTER.selector);
             vault.withdrawThenBurn(amount, "", address(this));
         } else {
             vault.withdrawThenBurn(amount, "", address(this));

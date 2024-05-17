@@ -16,7 +16,7 @@ import "src/cake/adapter/AlpacaAdapter.sol";
 import "src/cake/adapter/AdapterFactory.sol";
 import "src/cake/adapter/AdapterRegistry.sol";
 
-import "src/cake/vault/ALMDepositorVault.sol";
+import "src/cake/vault/PCSVault.sol";
 import "src/cake/strategy/PancakeERC20Strategy.sol";
 import "src/cake/factory/PancakeVaultFactoryXChain.sol";
 
@@ -24,8 +24,8 @@ contract DeployPancakeERC20Strategy is Script, Test {
     address public constant DEPLOYER = DAO.MAIN_DEPLOYER;
     address public constant GOVERNANCE = DAO.GOVERNANCE;
 
-    ALMDepositorVault public vault;
-    ALMDepositorVault public vaultImpl;
+    PCSVault public vault;
+    PCSVault public vaultImpl;
 
     PancakeERC20Strategy public strategy;
     PancakeERC20Strategy public strategyImpl;
@@ -54,7 +54,7 @@ contract DeployPancakeERC20Strategy is Script, Test {
         strategy.initialize(DEPLOYER);
 
         // Deploy Vault Implentation.
-        vaultImpl = new ALMDepositorVault();
+        vaultImpl = new PCSVault();
 
         // Deploy gauge Implementation
         rewardDistributorImpl = deployBytecode(Constants.LGV4_STRAT_XCHAIN_BYTECODE, "");

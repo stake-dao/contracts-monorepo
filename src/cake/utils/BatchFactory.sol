@@ -21,10 +21,13 @@ contract BatchFactory {
 
     /// @notice Deploy a new vault and adapter for the given gauge.
     /// @param _gauge Address of the gauge to deploy the vault and adapter for.
-    function deploy(address _gauge, bool deployAdapter) external returns (address _vault, address _rewardDistributor, address _adapter) {
+    function deploy(address _gauge, bool deployAdapter)
+        external
+        returns (address _vault, address _rewardDistributor, address _adapter)
+    {
         (_vault, _rewardDistributor) = IBatchFactory(factory).create(_gauge);
 
-        if(deployAdapter) {
+        if (deployAdapter) {
             _adapter = IBatchFactory(adapterFactory).deploy(_gauge);
         }
     }

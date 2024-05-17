@@ -6,7 +6,7 @@ import "src/base/interfaces/IAdapter.sol";
 import "src/base/interfaces/IAdapterRegistry.sol";
 
 /// @dev Support mint/burn of PositionManager LP tokens, and other wrapped staking tokens.
-contract ALMDepositorVault is Vault {
+contract PCSVault is Vault {
     //////////////////////////////////////////////////////
     /// --- ALM IMMUTABLES
     //////////////////////////////////////////////////////
