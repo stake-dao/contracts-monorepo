@@ -328,11 +328,20 @@ abstract contract PancakeERC20PMStrategyTest is Test {
 
         _distributeRewards(harvestReward);
 
+        address user = address(0xABCD);
         deal(address(vault.token()), address(this), amount);
+        deal(address(vault.token()), address(user), amount);
+
         vault.token().approve(address(vault), amount);
 
         // Deposit with _doEarn = true.
         vault.deposit(address(this), amount, true);
+
+        // User - Deposit without boost
+        vm.startPrank(user);
+        vault.token().approve(wrapper, amount);
+        ICakeV2Wrapper(wrapper).deposit(amount, true);
+        vm.stopPrank();
 
         skip(1 days);
 
@@ -346,10 +355,22 @@ abstract contract PancakeERC20PMStrategyTest is Test {
 
         strategy.harvest(address(vault.token()), false, false);
 
+        // User - Harvest without boost
+        uint256 userBalance = _balanceOf(CAKE.TOKEN, user);
+
+        vm.prank(user);
+        ICakeV2Wrapper(wrapper).deposit(0, false);
+
+        uint256 userHarvested = _balanceOf(CAKE.TOKEN, user) - userBalance;
+
         uint256 rewardDistributorBalance = _balanceOf(CAKE.TOKEN, address(rewardDistributor));
         uint256 feeAccrued = _balanceOf(CAKE.TOKEN, address(strategy));
         uint256 harvesterReward = _balanceOf(CAKE.TOKEN, address(this));
         uint256 totalHarvested = rewardDistributorBalance + feeAccrued + harvesterReward;
+
+        assertGt(totalHarvested, 0);
+        assertGt(userHarvested, 0);
+        assertGt(totalHarvested * 2, userHarvested); // at least 2x boost
 
         assertGt(harvesterReward, 0);
         assertGt(rewardDistributorBalance, 0);
