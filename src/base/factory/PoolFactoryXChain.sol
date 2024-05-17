@@ -79,15 +79,7 @@ abstract contract PoolFactoryXChain {
         /// Clone the Reward Distributor.
         rewardDistributor = LibClone.clone(liquidityGaugeImplementation);
 
-        /// We use the LP token and the gauge address as salt to generate the vault address.
-        bytes32 salt = keccak256(abi.encodePacked(lp, _gauge));
-
-        /// We use CWIA setup. We encode the LP token, the strategy address and the reward distributor address as data
-        /// to be passed as immutable args to the vault.
-        bytes memory vaultData = abi.encodePacked(lp, address(strategy), rewardDistributor);
-
-        /// Clone the Vault.
-        vault = vaultImplementation.cloneDeterministic(vaultData, salt);
+        vault = _deployVault(lp, _gauge, rewardDistributor);
 
         /// Retrieve the symbol to be used on the reward distributor.
         (, string memory _symbol) = _getNameAndSymbol(lp);
@@ -131,6 +123,17 @@ abstract contract PoolFactoryXChain {
         /// The strategy should claim through the locker the reward token,
         /// and distribute it to the reward distributor every harvest.
         ILiquidityGaugeStrat(rewardDistributor).add_reward(rewardToken, address(strategy));
+    }
+
+    function _deployVault(address lp, address gauge, address rewardDistributor) internal virtual returns (address vault) {
+        /// We use the LP token and the gauge address as salt to generate the vault address.
+        bytes32 salt = keccak256(abi.encodePacked(lp, gauge));
+
+        /// We use CWIA setup. We encode the LP token, the strategy address and the reward distributor address as data
+        /// to be passed as immutable args to the vault.
+        bytes memory vaultData = abi.encodePacked(lp, address(strategy), rewardDistributor);
+
+        vault = vaultImplementation.cloneDeterministic(vaultData, salt);
     }
 
     /// @notice Add extra reward tokens to the reward distributor.

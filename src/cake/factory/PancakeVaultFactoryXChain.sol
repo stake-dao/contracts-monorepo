@@ -33,67 +33,21 @@ contract PancakeVaultFactoryXChain is PoolFactoryXChain {
         adapterRegistry = _adapterRegistry;
     }
 
-    /// @notice Add new staking gauge to Stake DAO Locker.
-    /// @param _gauge Address of the liquidity gauge.
-    /// @return vault Address of the staking deposit.
-    /// @return rewardDistributor Address of the reward distributor to claim rewards.
-    function create(address _gauge) public override returns (address vault, address rewardDistributor) {
-        /// Perform checks on the gauge to make sure it's valid and can be used.
-        if (!_isValidGauge(_gauge)) revert INVALID_GAUGE();
 
-        /// Perform checks on the strategy to make sure it's not already used.
-        if (strategy.rewardDistributors(_gauge) != address(0)) revert GAUGE_ALREADY_USED();
-
-        /// Retrieve the staking token.
-        address lp = _getGaugeStakingToken(_gauge);
-
-        /// Clone the Reward Distributor.
-        rewardDistributor = LibClone.clone(liquidityGaugeImplementation);
-
+    /// @notice Deploy a new vault.
+    /// @param lp Address of the LP token.
+    /// @param gauge Address of the liquidity gauge.
+    /// @param rewardDistributor Address of the reward distributor.
+    /// @return vault Address of the new vault.
+    function _deployVault(address lp, address gauge, address rewardDistributor) internal override returns (address vault) {
         /// We use the LP token and the gauge address as salt to generate the vault address.
-        bytes32 salt = keccak256(abi.encodePacked(lp, _gauge));
+        bytes32 salt = keccak256(abi.encodePacked(lp, gauge));
 
         /// We use CWIA setup. We encode the LP token, the strategy address and the reward distributor address as data
         /// to be passed as immutable args to the vault.
         bytes memory vaultData = abi.encodePacked(lp, address(strategy), rewardDistributor, adapterRegistry);
 
-        /// Clone the Vault.
         vault = vaultImplementation.cloneDeterministic(vaultData, salt);
-
-        /// Retrieve the symbol to be used on the reward distributor.
-        (, string memory _symbol) = _getNameAndSymbol(lp);
-
-        /// Initialize the Reward Distributor.
-        ILiquidityGaugeStrat(rewardDistributor).initialize(vault, address(this), vault, _symbol);
-
-        /// Initialize Vault.
-        IStrategyVault(vault).initialize();
-
-        /// Allow the vault to stake the LP token in the locker trough the strategy.
-        strategy.toggleVault(vault);
-
-        /// Map in the strategy the staking token to it's corresponding gauge.
-        strategy.setGauge(lp, _gauge);
-
-        /// Map the gauge to the reward distributor that should receive the rewards.
-        strategy.setRewardDistributor(_gauge, rewardDistributor);
-
-        /// Add the reward token to the reward distributor.
-        _addRewardToken(rewardDistributor);
-
-        /// Set ClaimHelper as claimer.
-        ILiquidityGaugeStrat(rewardDistributor).set_claimer(claimHelper);
-
-        /// Transfer ownership of the reward distributor to the strategy.
-        ILiquidityGaugeStrat(rewardDistributor).commit_transfer_ownership(address(strategy));
-
-        /// Accept ownership of the reward distributor.
-        strategy.acceptRewardDistributorOwnership(rewardDistributor);
-
-        /// Add extra rewards if any.
-        _addExtraRewards(_gauge);
-
-        emit PoolDeployed(vault, rewardDistributor, lp, _gauge);
     }
 
     /// @notice Retrieve the staking token from the gauge.
