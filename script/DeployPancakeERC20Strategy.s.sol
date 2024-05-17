@@ -12,6 +12,7 @@ import "address-book/protocols/56.sol";
 
 import "src/base/utils/Constants.sol";
 
+import "src/cake/utils/BatchFactory.sol";
 import "src/cake/adapter/DEdgeAdapter.sol";
 import "src/cake/adapter/AlpacaAdapter.sol";
 import "src/cake/adapter/AdapterFactory.sol";
@@ -73,7 +74,7 @@ contract DeployPancakeERC20Strategy is Script, Test {
         strategy.setFactory(address(factory));
         strategy.setFeeRewardToken(address(CAKE.TOKEN));
 
-        strategy.updateProtocolFee(1_700); // 17%
+        strategy.updateProtocolFee(1_500); // 15%
         strategy.updateClaimIncentiveFee(100); // 1%
 
         /// Setup Adapter Factory.
@@ -93,6 +94,8 @@ contract DeployPancakeERC20Strategy is Script, Test {
         strategy.transferGovernance(GOVERNANCE);
         adapterRegistry.transferGovernance(GOVERNANCE);
         adapterFactory.transferGovernance(GOVERNANCE);
+
+        new BatchFactory(address(factory), address(adapterFactory));
 
         vm.stopBroadcast();
     }
