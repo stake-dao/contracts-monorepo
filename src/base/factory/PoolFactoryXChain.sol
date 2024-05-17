@@ -111,7 +111,7 @@ abstract contract PoolFactoryXChain {
         _addRewardToken(rewardDistributor);
 
         /// Set ClaimHelper as claimer.
-        //ILiquidityGaugeStratXChain(rewardDistributor).set_claimer(CLAIM_HELPER);
+        ILiquidityGaugeStrat(rewardDistributor).set_claimer(claimHelper);
 
         /// Transfer ownership of the reward distributor to the strategy.
         ILiquidityGaugeStrat(rewardDistributor).commit_transfer_ownership(address(strategy));
