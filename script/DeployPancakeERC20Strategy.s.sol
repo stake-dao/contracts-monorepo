@@ -8,6 +8,7 @@ import "openzeppelin-contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import "address-book/dao/56.sol";
 import "address-book/lockers/56.sol";
+import "address-book/protocols/56.sol";
 
 import "src/base/utils/Constants.sol";
 
@@ -46,7 +47,7 @@ contract DeployPancakeERC20Strategy is Script, Test {
 
         // Deploy Strategy.
         strategyImpl =
-            new PancakeERC20Strategy(GOVERNANCE, CAKE.LOCKER, address(0), CAKE.TOKEN, address(0), CAKE.EXECUTOR);
+            new PancakeERC20Strategy(GOVERNANCE, CAKE.LOCKER, Pancake.VECAKE, CAKE.TOKEN, address(0), CAKE.EXECUTOR);
 
         address strategyProxy = address(new ERC1967Proxy(address(strategyImpl), ""));
 

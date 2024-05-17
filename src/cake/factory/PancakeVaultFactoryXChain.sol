@@ -33,13 +33,16 @@ contract PancakeVaultFactoryXChain is PoolFactoryXChain {
         adapterRegistry = _adapterRegistry;
     }
 
-
     /// @notice Deploy a new vault.
     /// @param lp Address of the LP token.
     /// @param gauge Address of the liquidity gauge.
     /// @param rewardDistributor Address of the reward distributor.
     /// @return vault Address of the new vault.
-    function _deployVault(address lp, address gauge, address rewardDistributor) internal override returns (address vault) {
+    function _deployVault(address lp, address gauge, address rewardDistributor)
+        internal
+        override
+        returns (address vault)
+    {
         /// We use the LP token and the gauge address as salt to generate the vault address.
         bytes32 salt = keccak256(abi.encodePacked(lp, gauge));
 

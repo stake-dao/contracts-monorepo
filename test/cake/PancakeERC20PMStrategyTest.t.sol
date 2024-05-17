@@ -3,9 +3,11 @@ pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
 import "solady/utils/LibClone.sol";
+import "openzeppelin-contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
 import "address-book/dao/56.sol";
 import "address-book/lockers/56.sol";
+import "address-book/protocols/56.sol";
 
 import "src/base/utils/Constants.sol";
 import "src/base/interfaces/ILocker.sol";
@@ -65,10 +67,10 @@ abstract contract PancakeERC20PMStrategyTest is Test {
 
         // Deploy Strategy.
         strategyImpl = new PancakeERC20Strategy(
-            address(this), address(locker), address(0), address(CAKE.TOKEN), address(0), address(CAKE.EXECUTOR)
+            address(this), address(locker), Pancake.VECAKE, address(CAKE.TOKEN), address(0), address(CAKE.EXECUTOR)
         );
 
-        address strategyProxy = LibClone.deployERC1967(address(strategyImpl));
+        address strategyProxy = address(new ERC1967Proxy(address(strategyImpl), ""));
 
         strategy = PancakeERC20Strategy(payable(strategyProxy));
         strategy.initialize(address(this));

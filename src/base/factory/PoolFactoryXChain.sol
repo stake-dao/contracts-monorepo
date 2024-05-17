@@ -125,7 +125,11 @@ abstract contract PoolFactoryXChain {
         ILiquidityGaugeStrat(rewardDistributor).add_reward(rewardToken, address(strategy));
     }
 
-    function _deployVault(address lp, address gauge, address rewardDistributor) internal virtual returns (address vault) {
+    function _deployVault(address lp, address gauge, address rewardDistributor)
+        internal
+        virtual
+        returns (address vault)
+    {
         /// We use the LP token and the gauge address as salt to generate the vault address.
         bytes32 salt = keccak256(abi.encodePacked(lp, gauge));
 

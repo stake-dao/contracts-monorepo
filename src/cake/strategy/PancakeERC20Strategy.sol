@@ -91,7 +91,7 @@ contract PancakeERC20Strategy is Strategy {
         _transferFromLocker(rewardToken, address(this), claimed);
     }
 
-    /// @notice Claim native reward (empty, it manages by the accumulator).
+    /// @notice Claim native reward (empty, it is managed by the accumulator).
     function _claimNativeRewards() internal override {}
 
     /// @notice Claim extra rewards from the locker. (it returns 0 because pancacake gauges don't support extra rewards).
@@ -106,10 +106,21 @@ contract PancakeERC20Strategy is Strategy {
         if (_token == address(0)) revert ADDRESS_NULL();
         if (_gauge == address(0)) revert ADDRESS_NULL();
 
+        bool success;
+        bytes memory approveData;
+
+        /// Revoke approval for the old gauge.
+        address oldGauge = gauges[_token];
+        if (oldGauge != address(0)) {
+            approveData = abi.encodeWithSignature("approve(address,uint256)", _gauge, 0);
+            (success,) = executor.callExecuteTo(address(locker), _token, 0, approveData);
+            if (!success) revert LOW_LEVEL_CALL_FAILED();
+        }
+
         gauges[_token] = _gauge;
 
-        bytes memory approveData = abi.encodeWithSignature("approve(address,uint256)", _gauge, type(uint256).max);
-        (bool success,) = executor.callExecuteTo(address(locker), _token, 0, approveData);
+        approveData = abi.encodeWithSignature("approve(address,uint256)", _gauge, type(uint256).max);
+        (success,) = executor.callExecuteTo(address(locker), _token, 0, approveData);
         if (!success) revert LOW_LEVEL_CALL_FAILED();
     }
 
