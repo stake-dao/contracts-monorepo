@@ -200,7 +200,7 @@ abstract contract Strategy is UUPSUpgradeable {
         SafeTransferLib.safeTransfer(asset, address(locker), amount);
 
         /// Deposit into the Gauge trough the Locker.
-        locker.execute(gauge, 0, abi.encodeWithSignature("deposit(uint256)", amount));
+        locker.safeExecute(gauge, 0, abi.encodeWithSignature("deposit(uint256)", amount));
     }
 
     /// @notice Withdraw from the gauge trhoug the Locker.
@@ -209,7 +209,7 @@ abstract contract Strategy is UUPSUpgradeable {
     /// @param amount Amount of LP token to withdraw.
     function _withdrawFromLocker(address asset, address gauge, uint256 amount) internal virtual {
         /// Withdraw from the Gauge trough the Locker.
-        locker.execute(gauge, 0, abi.encodeWithSignature("withdraw(uint256)", amount));
+        locker.safeExecute(gauge, 0, abi.encodeWithSignature("withdraw(uint256)", amount));
 
         /// Transfer the _asset_ from the Locker to this contract.
         _transferFromLocker(asset, address(this), amount);
@@ -225,7 +225,7 @@ abstract contract Strategy is UUPSUpgradeable {
         _claimNativeRewards();
     }
 
-    /// @notice Harvest rewards from the gauge trhoug the Locker.
+    /// @notice Harvest rewards from the gauge through the Locker.
     /// @param asset Address of LP token to harvest.
     /// @param distributeSDT Boolean indicating if SDT should be distributed to the rewarDistributor.
     /// @dev distributeSDT Should be called only if the rewardDistributor is valid to receive SDT inflation.
@@ -329,7 +329,7 @@ abstract contract Strategy is UUPSUpgradeable {
 
     /// @notice Internal implementation of native reward claim compatible with FeeDistributor.vy like contracts.
     function _claimNativeRewards() internal virtual {
-        locker.execute(feeDistributor, 0, abi.encodeWithSignature("claim()"));
+        locker.safeExecute(feeDistributor, 0, abi.encodeWithSignature("claim()"));
 
         /// Check if there is something to send.
         uint256 _claimed = ERC20(feeRewardToken).balanceOf(address(locker));
@@ -346,7 +346,7 @@ abstract contract Strategy is UUPSUpgradeable {
         uint256 _snapshotBalance = ERC20(rewardToken).balanceOf(address(locker));
 
         /// Claim.
-        locker.execute(minter, 0, abi.encodeWithSignature("mint(address)", gauge));
+        locker.safeExecute(minter, 0, abi.encodeWithSignature("mint(address)", gauge));
 
         /// Snapshot after claim.
         _claimed = ERC20(rewardToken).balanceOf(address(locker)) - _snapshotBalance;
@@ -446,7 +446,7 @@ abstract contract Strategy is UUPSUpgradeable {
     /// --- INTERNAL HELPER FUNCTIONS
     //////////////////////////////////////////////////////
 
-    function _transferFromLocker(address asset, address recipient, uint256 amount) internal {
+    function _transferFromLocker(address asset, address recipient, uint256 amount) internal virtual {
         locker.safeExecute(asset, 0, abi.encodeWithSignature("transfer(address,uint256)", recipient, amount));
     }
 
@@ -458,20 +458,7 @@ abstract contract Strategy is UUPSUpgradeable {
     /// @dev Only callable by the vault.
     /// @param asset Address of LP token to migrate.
     /// @dev Built only to support the old implementation of the vault, but it will be killed.
-    function migrateLP(address asset) public virtual onlyVault {
-        // Get gauge address
-        address gauge = gauges[asset];
-        if (gauge == address(0)) revert ADDRESS_NULL();
-
-        // Get the amount of LP token staked in the gauge by the locker
-        uint256 amount = ERC20(gauge).balanceOf(address(locker));
-
-        // Locker withdraw all from the gauge
-        locker.safeExecute(gauge, 0, abi.encodeWithSignature("withdraw(uint256)", amount));
-
-        // Locker transfer the LP token to the vault
-        _transferFromLocker(asset, msg.sender, amount);
-    }
+    function migrateLP(address asset) public virtual onlyVault {}
 
     //////////////////////////////////////////////////////
     /// --- FACTORY STRATEGY SETTERS
@@ -487,9 +474,15 @@ abstract contract Strategy is UUPSUpgradeable {
     /// @notice Set gauge address for a LP token
     /// @param token Address of LP token corresponding to `gauge`
     /// @param gauge Address of liquidity gauge corresponding to `token`
-    function setGauge(address token, address gauge) external onlyGovernanceOrFactory {
+    function setGauge(address token, address gauge) external virtual onlyGovernanceOrFactory {
         if (token == address(0)) revert ADDRESS_NULL();
         if (gauge == address(0)) revert ADDRESS_NULL();
+
+        /// Revoke approval for the old gauge.
+        address oldGauge = gauges[token];
+        if (oldGauge != address(0)) {
+            locker.safeExecute(token, 0, abi.encodeWithSignature("approve(address,uint256)", oldGauge, 0));
+        }
 
         gauges[token] = gauge;
 
@@ -511,6 +504,13 @@ abstract contract Strategy is UUPSUpgradeable {
     /// @param rewardDistributor Address of rewardDistributor
     function setRewardDistributor(address gauge, address rewardDistributor) external onlyGovernanceOrFactory {
         if (gauge == address(0) || rewardDistributor == address(0)) revert ADDRESS_NULL();
+
+        /// Revoke approval for the old rewardDistributor.
+        address oldRewardDistributor = rewardDistributors[gauge];
+        if (oldRewardDistributor != address(0)) {
+            SafeTransferLib.safeApprove(rewardToken, oldRewardDistributor, 0);
+        }
+
         rewardDistributors[gauge] = rewardDistributor;
 
         /// Approve the rewardDistributor to spend token.
@@ -542,6 +542,10 @@ abstract contract Strategy is UUPSUpgradeable {
         if (msg.sender != futureGovernance) revert GOVERNANCE();
 
         governance = msg.sender;
+
+        /// Reset the future governance.
+        futureGovernance = address(0);
+
         emit GovernanceChanged(msg.sender);
     }
 
@@ -553,7 +557,7 @@ abstract contract Strategy is UUPSUpgradeable {
     }
 
     /// @notice Set Factory address.
-    /// @param _factory Address of new Accumulator
+    /// @param _factory Address of new Factory
     function setFactory(address _factory) external onlyGovernance {
         if (_factory == address(0)) revert ADDRESS_NULL();
 
@@ -567,14 +571,14 @@ abstract contract Strategy is UUPSUpgradeable {
     }
 
     /// @notice Set new RewardToken FeeDistributor new address
-    /// @param newCurveRewardToken Address of new Accumulator
+    /// @param newCurveRewardToken Address of new reward token
     function setFeeRewardToken(address newCurveRewardToken) external onlyGovernance {
         if (newCurveRewardToken == address(0)) revert ADDRESS_NULL();
         feeRewardToken = newCurveRewardToken;
     }
 
     /// @notice Set FeeDistributor new address
-    /// @param newFeeDistributor Address of new Accumulator
+    /// @param newFeeDistributor Address of new fee distributor
     function setFeeDistributor(address newFeeDistributor) external onlyGovernance {
         if (newFeeDistributor == address(0)) revert ADDRESS_NULL();
         feeDistributor = newFeeDistributor;
@@ -665,6 +669,10 @@ abstract contract Strategy is UUPSUpgradeable {
 
     /// UUPS Upgradeability.
     function _authorizeUpgrade(address newImplementation) internal override onlyGovernance {}
+
+    function getVersion() external pure virtual returns (string memory) {
+        return "1.0";
+    }
 
     receive() external payable {}
 }
