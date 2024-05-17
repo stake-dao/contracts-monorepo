@@ -2,8 +2,9 @@
 
 .EXPORT_ALL_VARIABLES:
 MAKEFLAGS += --no-print-directory
-ETHERSCAN_API_KEY=$(ETHERSCAN_KEY)
-RPC_URL=https://binance.llamarpc.com
+ETHERSCAN_API_KEY=$(API_KEY_ETHERSCAN)
+PRIVATE_KEY=$(DEPLOYER_PRIVATE_KEY)
+RPC_URL=https://bsc-pokt.nodies.app #https://binance.llamarpc.com
 
 default:
 	forge fmt && forge build
@@ -36,10 +37,10 @@ coverage-html:
 	@rm ./lcov.info*
 
 simulate-%:
-	@forge script script/$*.s.sol -vvvvv --rpc-url ${RPC_URL}
+	@forge script script/$*.s.sol  -vvvvv --rpc-url ${RPC_URL}
 
 run-%:
-	@forge script script/$*.s.sol --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY) --rpc-url ${RPC_URL}
+	@forge script script/$*.s.sol --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY) --rpc-url ${RPC_URL} --verify
 
 deploy-%:
 	@forge script script/$*.s.sol --broadcast --slow -vvvvv --private-key ${PRIVATE_KEY} --rpc-url ${RPC_URL}
