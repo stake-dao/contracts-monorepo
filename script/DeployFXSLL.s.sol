@@ -11,6 +11,7 @@ import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {Constants} from "src/base/utils/Constants.sol";
 
 import {Frax} from "address-book/protocols/252.sol";
+import {FXS} from "address-book/lockers/1.sol";
 
 contract DeployFXSLL is Script {
     FXSDepositorFraxtal internal depositor;
@@ -18,17 +19,18 @@ contract DeployFXSLL is Script {
     sdFXSFraxtal internal _sdFxs;
     ILiquidityGauge internal liquidityGauge;
 
-    address internal constant LZ_ENDPOINT = 0x1a44076050125825900e736c501f859c50fE728c;
     address internal constant GOVERNANCE = 0xB0552b6860CE5C0202976Db056b5e3Cc4f9CC765;
     address internal constant DEPLOYER = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
     address internal constant DELEGATION_REGISTRY = 0xF5cA906f05cafa944c27c6881bed3DFd3a785b6A;
+    address internal constant FRAXTAL_BRIDGE = 0x4200000000000000000000000000000000000010;
 
     error DEPLOYMENT_FAILED();
 
     function run() public {
         vm.startBroadcast(DEPLOYER);
 
-        _sdFxs = new sdFXSFraxtal("Stake DAO FXS", "sdFXS", LZ_ENDPOINT, GOVERNANCE, DELEGATION_REGISTRY, GOVERNANCE);
+        _sdFxs =
+            new sdFXSFraxtal("Stake DAO FXS", "sdFXS", FRAXTAL_BRIDGE, FXS.SDTOKEN, DELEGATION_REGISTRY, GOVERNANCE);
 
         liquidityGauge = ILiquidityGauge(
             deployBytecode(
@@ -44,7 +46,7 @@ contract DeployFXSLL is Script {
         );
 
         locker.setDepositor(address(depositor));
-        _sdFxs.setOperator(address(depositor));
+        _sdFxs.toggleOperator(address(depositor));
 
         depositor.transferGovernance(GOVERNANCE);
         locker.transferGovernance(GOVERNANCE);
