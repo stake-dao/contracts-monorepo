@@ -256,7 +256,7 @@ abstract contract DepositorV4 {
 
     /// @notice Set the new operator for minting sdToken
     /// @param _minter operator minter address
-    function setSdTokenMinterOperator(address _minter) external onlyGovernance {
+    function setSdTokenMinterOperator(address _minter) external virtual onlyGovernance {
         ISdToken(minter).setOperator(_minter);
         emit SdTokenOperatorChanged(_minter);
     }

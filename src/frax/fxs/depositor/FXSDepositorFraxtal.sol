@@ -27,4 +27,7 @@ contract FXSDepositorFraxtal is DepositorV4 {
         (success,) = _delegationRegistry.call(abi.encodeWithSignature("disableSelfManagingDelegations()"));
         if (!success) revert CallFailed();
     }
+
+    /// @notice Set the operator for sdToken (leave it empty because on fraxtal the depositor is not the sdToken's operator)
+    function setSdTokenMinterOperator(address) external override onlyGovernance {}
 }
