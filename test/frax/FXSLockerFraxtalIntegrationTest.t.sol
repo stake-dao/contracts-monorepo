@@ -89,7 +89,7 @@ contract FXSLockerFraxtalIntegrationTest is Test {
         assertFalse(DELEGATION_REGISTRY.selfManagingDelegations(address(depositor)));
 
         locker.setDepositor(address(depositor));
-        _sdToken.toggleOperator(address(depositor));
+        _sdToken.setOperator(address(depositor));
 
         // liquidityGauge.add_reward(address(accumulator.WSTETH()), address(accumulator));
 
@@ -303,7 +303,7 @@ contract FXSLockerFraxtalIntegrationTest is Test {
 
     function test_transferOperator() public {
         address newOperator = address(0x123);
-        assertTrue(_sdToken.operators(address(depositor)));
+        assertEq(_sdToken.operator(), address(depositor));
 
         //depositor.setSdTokenMinterOperator(newOperator);
         //assertEq(_sdToken.operator(), address(newOperator));

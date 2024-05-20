@@ -15,28 +15,17 @@ contract sdFXSFraxtal is ERC20, IOptimismMintableERC20 {
     /// @notice Address of the bridge in fraxtal
     address public immutable bridge;
 
-    /// @notice Address of the owner
-    address public owner;
-
-    /// @notice Mapping of enabled operators
-    mapping(address => bool) public operators;
+    /// @notice Address of the operator (can mint and burn)
+    address public operator;
 
     /// @notice Throwed when a low level call fails
     error CallFailed();
 
     /// @notice Throwed on Auth
-    error OnlyOwner();
-
-    /// @notice Throwed on Auth
     error OnlyOperator();
 
     modifier onlyOperator() {
-        if (!operators[msg.sender]) revert OnlyOperator();
-        _;
-    }
-
-    modifier onlyOwner() {
-        if (msg.sender != owner) revert OnlyOwner();
+        if (operator != msg.sender) revert OnlyOperator();
         _;
     }
 
@@ -48,9 +37,9 @@ contract sdFXSFraxtal is ERC20, IOptimismMintableERC20 {
         address _delegationRegistry,
         address _initialDelegate
     ) ERC20(_name, _symbol) {
-        owner = msg.sender;
         remoteToken = _remoteToken;
         bridge = _bridge;
+        operator = msg.sender;
 
         // Custom code for Fraxtal
         // set _initialDelegate as delegate
@@ -62,15 +51,10 @@ contract sdFXSFraxtal is ERC20, IOptimismMintableERC20 {
         if (!success) revert CallFailed();
     }
 
-    /// @notice Toggle an operator that can mint and burn sdToken
+    /// @notice Set a new operator that can mint and burn sdToken
     /// @param _operator new operator address
-    function toggleOperator(address _operator) external onlyOwner {
-        operators[_operator] = !operators[_operator];
-    }
-
-    /// @notice Revoke the ownership
-    function revokeOwnnership() external onlyOwner {
-        owner = address(0);
+    function setOperator(address _operator) external onlyOperator {
+        operator = _operator;
     }
 
     /// @notice mint new sdToken, callable only by the operator
@@ -80,7 +64,7 @@ contract sdFXSFraxtal is ERC20, IOptimismMintableERC20 {
         _mint(_to, _amount);
     }
 
-    /// @notice Burn sdToken, callable only by the operator
+    /// @notice burn sdToken, callable only by the operator
     /// @param _from sdToken holder
     /// @param _amount amount to burn
     function burn(address _from, uint256 _amount) external onlyOperator {

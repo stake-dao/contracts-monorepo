@@ -46,7 +46,7 @@ contract DeployFXSLL is Script {
         );
 
         locker.setDepositor(address(depositor));
-        _sdFxs.toggleOperator(address(depositor));
+        _sdFxs.setOperator(address(depositor));
 
         depositor.transferGovernance(GOVERNANCE);
         locker.transferGovernance(GOVERNANCE);

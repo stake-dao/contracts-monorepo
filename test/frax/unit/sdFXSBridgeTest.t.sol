@@ -70,7 +70,7 @@ contract sdFXSFraxtalToEthTest is sdFXSBridgeTest("fraxtal") {
         );
 
         // approve the bridge as operator
-        sdFxsFraxtal.toggleOperator(address(FRAXTAL_BRIDGE));
+        sdFxsFraxtal.setOperator(address(FRAXTAL_BRIDGE));
 
         deal(address(sdFxsFraxtal), USER, amountToBridge);
     }
