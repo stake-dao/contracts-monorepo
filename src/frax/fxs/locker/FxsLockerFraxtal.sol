@@ -76,6 +76,8 @@ contract FxsLockerFraxtal is VeCRVLocker {
                 IVestedFXS(veToken).increaseUnlockTime(uint128(_unlockTime), 0); // lock index = 0
             }
         }
+
+        emit LockIncreased(_value, _unlockTime);
     }
 
     /// @notice Withdraw the FXS from veFXS

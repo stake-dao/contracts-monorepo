@@ -26,6 +26,10 @@ contract sdTokenOperatorFraxtal is IOptimismMintableERC20 {
     /// @notice address -> enabled or not
     mapping(address => bool) public operators;
 
+    ////////////////////////////////////////////////////////////////
+    /// --- EVENTS & ERRORS
+    ///////////////////////////////////////////////////////////////
+
     /// @notice Throwed when an operator has already allowed
     error AlreadyAllowed();
 

@@ -31,12 +31,15 @@ contract DeployFXSLL is Script {
     function run() public {
         vm.startBroadcast(DEPLOYER);
 
+        // deploy sdFXS
         _sdFxs = new sdFXSFraxtal("Stake DAO FXS", "sdFXS", DELEGATION_REGISTRY, GOVERNANCE);
 
+        // deploy main operator
         mainOperator = new sdTokenOperatorFraxtal(
-            address(_sdFxs), address(this), FXS.SDTOKEN, FRAXTAL_BRIDGE, address(DELEGATION_REGISTRY), GOVERNANCE
+            address(_sdFxs), address(this), FXS.SDTOKEN, FRAXTAL_BRIDGE, DELEGATION_REGISTRY, GOVERNANCE
         );
 
+        // deploy LGV4 native
         liquidityGauge = ILiquidityGauge(
             deployBytecode(
                 Constants.LGV4_NATIVE_FRAXTAL_BYTECODE,
@@ -44,8 +47,10 @@ contract DeployFXSLL is Script {
             )
         );
 
+        // deploy locker
         locker = new FxsLockerFraxtal(address(this), Frax.FXS, Frax.VEFXS, DELEGATION_REGISTRY, GOVERNANCE);
 
+        // deploy depositor
         depositor = new FXSDepositorFraxtal(
             Frax.FXS,
             address(locker),
@@ -56,11 +61,14 @@ contract DeployFXSLL is Script {
             GOVERNANCE
         );
 
+        // setters
         locker.setDepositor(address(depositor));
         _sdFxs.setOperator(address(mainOperator));
 
+        // allow depositor to mint sdFXS
         mainOperator.allowOperator(address(depositor));
 
+        // transfer governance
         depositor.transferGovernance(GOVERNANCE);
         locker.transferGovernance(GOVERNANCE);
         mainOperator.transferGovernance(GOVERNANCE);
