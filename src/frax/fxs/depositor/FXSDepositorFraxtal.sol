@@ -2,12 +2,16 @@
 pragma solidity ^0.8.19;
 
 import "src/base/depositor/DepositorV4.sol";
+import {ISdTokenOperator} from "src/base/interfaces/ISdTokenOperator.sol";
 
 /// @title Depositor
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
 contract FXSDepositorFraxtal is DepositorV4 {
+    using SafeERC20 for IERC20;
+
+    /// @notice Throwed when a low level call fails
     error CallFailed();
 
     constructor(
@@ -15,6 +19,7 @@ contract FXSDepositorFraxtal is DepositorV4 {
         address _locker,
         address _minter,
         address _gauge,
+        address _mainOperator,
         address _delegationRegistry,
         address _initialDelegate
     ) DepositorV4(_token, _locker, _minter, _gauge, 4 * 365 days) {
@@ -26,6 +31,19 @@ contract FXSDepositorFraxtal is DepositorV4 {
         // disable self managing delegation
         (success,) = _delegationRegistry.call(abi.encodeWithSignature("disableSelfManagingDelegations()"));
         if (!success) revert CallFailed();
+
+        // set the minter as main operator
+        minter = _mainOperator;
+    }
+
+    /// @notice Set the gauge to deposit sdToken
+    /// @param _gauge gauge address
+    function setGauge(address _gauge) external override onlyGovernance {
+        gauge = _gauge;
+        if (_gauge != address(0)) {
+            /// Approve sdToken to gauge.
+            IERC20(ISdTokenOperator(minter).sdToken()).safeApprove(gauge, type(uint256).max);
+        }
     }
 
     /// @notice Set the operator for sdToken (leave it empty because on fraxtal the depositor is not the sdToken's operator)

@@ -1,12 +1,19 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.19;
+pragma solidity 0.8.19;
 
 import {ISdToken} from "src/base/interfaces/ISdToken.sol";
+import "src/base/interfaces/IOptimismMintableERC20.sol";
 
 /// @title sdTokenOperator
 /// @author StakeDAO
 /// @notice A middleware contract used to allow multi addresses to mint/burn sdToken, it needs to be the sdToken's operator
-contract sdTokenOperatorFraxtal {
+contract sdTokenOperatorFraxtal is IOptimismMintableERC20 {
+    /// @notice Address of the remote token in ethereum
+    address public immutable remoteToken;
+
+    /// @notice Address of the bridge in fraxtal
+    address public immutable bridge;
+
     /// @notice Address of the governance
     address public governance;
 
@@ -55,9 +62,18 @@ contract sdTokenOperatorFraxtal {
         _;
     }
 
-    constructor(address _sdToken, address _governance, address _delegationRegistry, address _initialDelegate) {
+    constructor(
+        address _sdToken,
+        address _governance,
+        address _remoteToken,
+        address _bridge,
+        address _delegationRegistry,
+        address _initialDelegate
+    ) {
         sdToken = ISdToken(_sdToken);
         governance = _governance;
+        remoteToken = _remoteToken;
+        bridge = _bridge;
 
         // Custom code for Fraxtal
         // set _initialDelegate as delegate
@@ -118,5 +134,15 @@ contract sdTokenOperatorFraxtal {
         governance = msg.sender;
         futureGovernance = address(0);
         emit GovernanceChanged(msg.sender);
+    }
+
+    /// @notice ERC165 interface check function.
+    /// @param _interfaceId Interface ID to check.
+    /// @return Whether or not the interface is supported by this contract.
+    function supportsInterface(bytes4 _interfaceId) external pure virtual returns (bool) {
+        bytes4 iface1 = type(IERC165).interfaceId;
+        // Interface corresponding to the updated OptimismMintableERC20 (this contract).
+        bytes4 iface2 = type(IOptimismMintableERC20).interfaceId;
+        return _interfaceId == iface1 || _interfaceId == iface2;
     }
 }

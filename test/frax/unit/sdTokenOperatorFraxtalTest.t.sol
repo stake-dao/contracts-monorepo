@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.19;
+pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
 
@@ -23,13 +23,12 @@ contract sdTokenOperatorFraxtalTest is Test {
         uint256 forkId = vm.createFork(vm.rpcUrl("fraxtal"));
         vm.selectFork(forkId);
 
-        sdFXS = new sdFXSFraxtal(
-            "Stake DAO FXS", "sdFXS", FRAXTAL_BRIDGE, FXS.SDTOKEN, Frax.DELEGATION_REGISTRY, INITIAL_DELEGATE
-        );
+        sdFXS = new sdFXSFraxtal("Stake DAO FXS", "sdFXS", Frax.DELEGATION_REGISTRY, INITIAL_DELEGATE);
 
         // deploy main operator
-        mainOperator =
-            new sdTokenOperatorFraxtal(address(sdFXS), GOVERNANCE, Frax.DELEGATION_REGISTRY, INITIAL_DELEGATE);
+        mainOperator = new sdTokenOperatorFraxtal(
+            address(sdFXS), GOVERNANCE, FXS.SDTOKEN, FRAXTAL_BRIDGE, Frax.DELEGATION_REGISTRY, INITIAL_DELEGATE
+        );
 
         sdFXS.setOperator(address(mainOperator));
 

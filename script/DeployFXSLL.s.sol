@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.19;
+pragma solidity 0.8.19;
 
 import "forge-std/Script.sol";
 
 import {sdFXSFraxtal} from "src/frax/fxs/token/sdFXSFraxtal.sol";
+import {sdTokenOperatorFraxtal} from "src/frax/fxs/token/sdTokenOperatorFraxtal.sol";
 import {FXSDepositorFraxtal} from "src/frax/fxs/depositor/FXSDepositorFraxtal.sol";
 import {FxsLockerFraxtal} from "src/frax/fxs/locker/FxsLockerFraxtal.sol";
 
@@ -18,6 +19,7 @@ contract DeployFXSLL is Script {
     FxsLockerFraxtal internal locker;
     sdFXSFraxtal internal _sdFxs;
     ILiquidityGauge internal liquidityGauge;
+    sdTokenOperatorFraxtal internal mainOperator;
 
     address internal constant GOVERNANCE = 0xB0552b6860CE5C0202976Db056b5e3Cc4f9CC765;
     address internal constant DEPLOYER = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
@@ -29,8 +31,11 @@ contract DeployFXSLL is Script {
     function run() public {
         vm.startBroadcast(DEPLOYER);
 
-        _sdFxs =
-            new sdFXSFraxtal("Stake DAO FXS", "sdFXS", FRAXTAL_BRIDGE, FXS.SDTOKEN, DELEGATION_REGISTRY, GOVERNANCE);
+        _sdFxs = new sdFXSFraxtal("Stake DAO FXS", "sdFXS", DELEGATION_REGISTRY, GOVERNANCE);
+
+        mainOperator = new sdTokenOperatorFraxtal(
+            address(_sdFxs), address(this), FXS.SDTOKEN, FRAXTAL_BRIDGE, address(DELEGATION_REGISTRY), GOVERNANCE
+        );
 
         liquidityGauge = ILiquidityGauge(
             deployBytecode(
@@ -42,14 +47,23 @@ contract DeployFXSLL is Script {
         locker = new FxsLockerFraxtal(address(this), Frax.FXS, Frax.VEFXS, DELEGATION_REGISTRY, GOVERNANCE);
 
         depositor = new FXSDepositorFraxtal(
-            Frax.FXS, address(locker), address(_sdFxs), address(liquidityGauge), DELEGATION_REGISTRY, GOVERNANCE
+            Frax.FXS,
+            address(locker),
+            address(_sdFxs),
+            address(liquidityGauge),
+            address(mainOperator),
+            DELEGATION_REGISTRY,
+            GOVERNANCE
         );
 
         locker.setDepositor(address(depositor));
-        _sdFxs.setOperator(address(depositor));
+        _sdFxs.setOperator(address(mainOperator));
+
+        mainOperator.allowOperator(address(depositor));
 
         depositor.transferGovernance(GOVERNANCE);
         locker.transferGovernance(GOVERNANCE);
+        mainOperator.transferGovernance(GOVERNANCE);
 
         vm.stopBroadcast();
     }

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.19;
+pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
 
@@ -8,6 +8,7 @@ import {Frax} from "address-book/protocols/252.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {IFraxtalBridge} from "src/base/interfaces/IFraxtalBridge.sol";
 import {sdFXSFraxtal} from "src/frax/fxs/token/sdFXSFraxtal.sol";
+import {sdTokenOperatorFraxtal} from "src/frax/fxs/token/sdTokenOperatorFraxtal.sol";
 
 abstract contract sdFXSBridgeTest is Test {
     address internal USER = address(0xABCD);
@@ -52,25 +53,32 @@ contract sdFXSEthToFraxtalTest is sdFXSBridgeTest("mainnet") {
 
 contract sdFXSFraxtalToEthTest is sdFXSBridgeTest("fraxtal") {
     sdFXSFraxtal internal sdFxsFraxtal;
+    sdTokenOperatorFraxtal internal mainOperator;
 
-    address internal constant INITIAL_DELEGATE = 0xB0552b6860CE5C0202976Db056b5e3Cc4f9CC765;
+    address internal constant INITIAL_DELEGATE = address(0xBABA);
     address internal constant DELEGATION_REGISTRY = Frax.DELEGATION_REGISTRY;
     IFraxtalBridge internal constant FRAXTAL_BRIDGE = IFraxtalBridge(0x4200000000000000000000000000000000000010);
+    address internal constant GOVERNANCE = address(0xABBB);
 
     function setUp() public override {
         super.setUp();
 
-        sdFxsFraxtal = new sdFXSFraxtal(
-            "Stake DAO FXS",
-            "sdFXS",
-            address(FRAXTAL_BRIDGE),
+        sdFxsFraxtal = new sdFXSFraxtal("Stake DAO FXS", "sdFXS", DELEGATION_REGISTRY, INITIAL_DELEGATE);
+        mainOperator = new sdTokenOperatorFraxtal(
+            address(sdFxsFraxtal),
+            GOVERNANCE,
             FXS.SDTOKEN,
-            address(DELEGATION_REGISTRY),
+            address(FRAXTAL_BRIDGE),
+            DELEGATION_REGISTRY,
             INITIAL_DELEGATE
         );
 
-        // approve the bridge as operator
-        sdFxsFraxtal.setOperator(address(FRAXTAL_BRIDGE));
+        // set the main operator as operator
+        sdFxsFraxtal.setOperator(address(mainOperator));
+
+        // allow the bridge to mint throught the main operator
+        vm.prank(GOVERNANCE);
+        mainOperator.allowOperator(address(FRAXTAL_BRIDGE));
 
         deal(address(sdFxsFraxtal), USER, amountToBridge);
     }
@@ -80,7 +88,7 @@ contract sdFXSFraxtalToEthTest is sdFXSBridgeTest("fraxtal") {
         assertEq(ERC20(address(sdFxsFraxtal)).balanceOf(address(FRAXTAL_BRIDGE)), 0);
 
         vm.prank(USER);
-        FRAXTAL_BRIDGE.bridgeERC20(address(sdFxsFraxtal), FXS.SDTOKEN, amountToBridge, 0, "");
+        FRAXTAL_BRIDGE.bridgeERC20(address(mainOperator), FXS.SDTOKEN, amountToBridge, 0, "");
 
         assertEq(ERC20(address(sdFxsFraxtal)).balanceOf(USER), 0);
     }

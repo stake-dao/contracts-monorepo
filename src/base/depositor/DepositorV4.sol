@@ -30,7 +30,7 @@ abstract contract DepositorV4 {
     address public immutable locker;
 
     /// @notice Address of the sdToken minter contract.
-    address public immutable minter;
+    address public minter;
 
     /// @notice Fee percent to users who spend gas to increase lock.
     uint256 public lockIncentivePercent = 10;
@@ -263,7 +263,7 @@ abstract contract DepositorV4 {
 
     /// @notice Set the gauge to deposit sdToken
     /// @param _gauge gauge address
-    function setGauge(address _gauge) external onlyGovernance {
+    function setGauge(address _gauge) external virtual onlyGovernance {
         gauge = _gauge;
         if (_gauge != address(0)) {
             /// Approve sdToken to gauge.

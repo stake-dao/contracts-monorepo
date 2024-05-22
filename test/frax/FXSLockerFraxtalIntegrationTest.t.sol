@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.0;
+pragma solidity 0.8.19;
 
 import "forge-std/Test.sol";
 
 import "test/utils/Utils.sol";
 
 import {sdFXSFraxtal} from "src/frax/fxs/token/sdFXSFraxtal.sol";
+import {sdTokenOperatorFraxtal} from "src/frax/fxs/token/sdTokenOperatorFraxtal.sol";
 import "src/frax/fxs/locker/FxsLockerFraxtal.sol";
 import {FXSDepositorFraxtal} from "src/frax/fxs/depositor/FXSDepositorFraxtal.sol";
 
@@ -29,6 +30,7 @@ contract FXSLockerFraxtalIntegrationTest is Test {
     IYieldDistributor private yieldDistributor = IYieldDistributor(Frax.YIELD_DISTRIBUTOR);
 
     sdFXSFraxtal internal _sdToken;
+    sdTokenOperatorFraxtal internal mainOperator;
     FXSDepositorFraxtal private depositor;
     ILiquidityGauge internal liquidityGauge;
 
@@ -43,8 +45,15 @@ contract FXSLockerFraxtalIntegrationTest is Test {
         uint256 forkId = vm.createFork(vm.rpcUrl("fraxtal"));
         vm.selectFork(forkId);
 
-        _sdToken = new sdFXSFraxtal(
-            "Stake DAO FXS", "sdFXS", FRAXTAL_BRIDGE, FXS.SDTOKEN, address(DELEGATION_REGISTRY), INITIAL_DELEGATE
+        _sdToken = new sdFXSFraxtal("Stake DAO FXS", "sdFXS", address(DELEGATION_REGISTRY), INITIAL_DELEGATE);
+
+        mainOperator = new sdTokenOperatorFraxtal(
+            address(_sdToken),
+            address(this),
+            FXS.SDTOKEN,
+            FRAXTAL_BRIDGE,
+            address(DELEGATION_REGISTRY),
+            INITIAL_DELEGATE
         );
 
         liquidityGauge = ILiquidityGauge(
@@ -63,6 +72,7 @@ contract FXSLockerFraxtalIntegrationTest is Test {
             address(locker),
             address(_sdToken),
             address(liquidityGauge),
+            address(mainOperator),
             address(DELEGATION_REGISTRY),
             INITIAL_DELEGATE
         );
@@ -89,7 +99,10 @@ contract FXSLockerFraxtalIntegrationTest is Test {
         assertFalse(DELEGATION_REGISTRY.selfManagingDelegations(address(depositor)));
 
         locker.setDepositor(address(depositor));
-        _sdToken.setOperator(address(depositor));
+        _sdToken.setOperator(address(mainOperator));
+
+        // allow depositor to mint sdToken throught the main operator
+        mainOperator.allowOperator(address(depositor));
 
         deal(address(token), address(this), amount);
 
@@ -108,7 +121,7 @@ contract FXSLockerFraxtalIntegrationTest is Test {
         assertEq(locker.veToken(), address(veToken));
         assertEq(locker.depositor(), address(depositor));
 
-        assertEq(depositor.minter(), address(_sdToken));
+        assertEq(depositor.minter(), address(mainOperator));
         assertEq(depositor.gauge(), address(liquidityGauge));
     }
 
