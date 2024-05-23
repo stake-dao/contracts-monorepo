@@ -18,6 +18,10 @@ contract FxsLockerFraxtal is VeCRVLocker {
     /// @notice Throws if the lock is already created.
     error LockAlreadyCreated();
 
+    //////////////////////////////////////////////////////
+    /// --- CONSTRUCTOR
+    //////////////////////////////////////////////////////
+
     /// @notice Constructor
     /// @param _governance Address of the governance
     /// @param _token Address of the token to lock

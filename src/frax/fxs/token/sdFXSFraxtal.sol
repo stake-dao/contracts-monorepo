@@ -22,6 +22,15 @@ contract sdFXSFraxtal is ERC20 {
         _;
     }
 
+    //////////////////////////////////////////////////////
+    /// --- CONSTRUCTOR
+    //////////////////////////////////////////////////////
+
+    /// @notice Constructor
+    /// @param _name Token name
+    /// @param _symbol Token symbol
+    /// @param _delegationRegistry Address of the fraxtal delegation registry
+    /// @param _initialDelegate Address of the delegate that receives network reward
     constructor(string memory _name, string memory _symbol, address _delegationRegistry, address _initialDelegate)
         ERC20(_name, _symbol)
     {

@@ -66,6 +66,17 @@ contract sdTokenOperatorFraxtal is IOptimismMintableERC20 {
         _;
     }
 
+    //////////////////////////////////////////////////////
+    /// --- CONSTRUCTOR
+    //////////////////////////////////////////////////////
+
+    /// @notice Constructor
+    /// @param _sdToken Address of the sdToken
+    /// @param _governance Address of the governance
+    /// @param _remoteToken Address of the remote sdToken
+    /// @param _bridge Address of the frax bridge
+    /// @param _delegationRegistry Address of the fraxtal delegation registry
+    /// @param _initialDelegate Address of the delegate that receives network reward
     constructor(
         address _sdToken,
         address _governance,

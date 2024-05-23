@@ -13,6 +13,9 @@ contract FxsAccumulatorFraxtal is Accumulator {
     /// @notice FXS yield distributor
     address public constant YIELD_DISTRIBUTOR = 0x39333a540bbea6262e405E1A6d435Bd2e776561E;
 
+    /// @notice Throwed when a low level call fails
+    error CallFailed();
+
     //////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
     //////////////////////////////////////////////////////
@@ -28,9 +31,20 @@ contract FxsAccumulatorFraxtal is Accumulator {
         address _locker,
         address _daoFeeRecipient,
         address _liquidityFeeRecipient,
-        address _governance
+        address _governance,
+        address _delegationRegistry,
+        address _initialDelegate
     ) Accumulator(_gauge, _locker, _daoFeeRecipient, _liquidityFeeRecipient, _governance) {
         SafeTransferLib.safeApprove(FXS, _gauge, type(uint256).max);
+
+        // Custom code for Fraxtal
+        // set _initialDelegate as delegate
+        (bool success,) =
+            _delegationRegistry.call(abi.encodeWithSignature("setDelegationForSelf(address)", _initialDelegate));
+        if (!success) revert CallFailed();
+        // disable self managing delegation
+        (success,) = _delegationRegistry.call(abi.encodeWithSignature("disableSelfManagingDelegations()"));
+        if (!success) revert CallFailed();
     }
 
     //////////////////////////////////////////////////////

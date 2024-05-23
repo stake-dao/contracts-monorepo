@@ -7,6 +7,7 @@ import {sdFXSFraxtal} from "src/frax/fxs/token/sdFXSFraxtal.sol";
 import {sdTokenOperatorFraxtal} from "src/frax/fxs/token/sdTokenOperatorFraxtal.sol";
 import {FXSDepositorFraxtal} from "src/frax/fxs/depositor/FXSDepositorFraxtal.sol";
 import {FxsLockerFraxtal} from "src/frax/fxs/locker/FxsLockerFraxtal.sol";
+import {FxsAccumulatorFraxtal} from "src/frax/fxs/accumulator/FxsAccumulatorFraxtal.sol";
 
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {Constants} from "src/base/utils/Constants.sol";
@@ -20,6 +21,7 @@ contract DeployFXSLL is Script {
     sdFXSFraxtal internal _sdFxs;
     ILiquidityGauge internal liquidityGauge;
     sdTokenOperatorFraxtal internal mainOperator;
+    FxsAccumulatorFraxtal internal accumulator;
 
     address internal constant GOVERNANCE = 0xB0552b6860CE5C0202976Db056b5e3Cc4f9CC765;
     address internal constant DEPLOYER = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
@@ -43,7 +45,7 @@ contract DeployFXSLL is Script {
         liquidityGauge = ILiquidityGauge(
             deployBytecode(
                 Constants.LGV4_NATIVE_FRAXTAL_BYTECODE,
-                abi.encode(address(_sdFxs), GOVERNANCE, DELEGATION_REGISTRY, GOVERNANCE)
+                abi.encode(address(_sdFxs), address(this), DELEGATION_REGISTRY, GOVERNANCE)
             )
         );
 
@@ -61,17 +63,33 @@ contract DeployFXSLL is Script {
             GOVERNANCE
         );
 
-        // setters
-        locker.setDepositor(address(depositor));
-        _sdFxs.setOperator(address(mainOperator));
+        // deploy FXS accumulator
+        accumulator = new FxsAccumulatorFraxtal(
+            address(liquidityGauge),
+            address(locker),
+            GOVERNANCE,
+            GOVERNANCE,
+            GOVERNANCE,
+            DELEGATION_REGISTRY,
+            GOVERNANCE
+        );
 
-        // allow depositor to mint sdFXS
+        // liquidityGauge setter
+        liquidityGauge.add_reward(Frax.FXS, address(accumulator));
+
+        // locker setter
+        locker.setAccumulator(address(accumulator));
+        locker.setDepositor(address(depositor));
+
+        // mainOperator setter
         mainOperator.allowOperator(address(depositor));
 
         // transfer governance
         depositor.transferGovernance(GOVERNANCE);
         locker.transferGovernance(GOVERNANCE);
         mainOperator.transferGovernance(GOVERNANCE);
+        liquidityGauge.commit_transfer_ownership(GOVERNANCE);
+        _sdFxs.setOperator(address(mainOperator));
 
         vm.stopBroadcast();
     }

@@ -14,6 +14,17 @@ contract FXSDepositorFraxtal is DepositorV4 {
     /// @notice Throwed when a low level call fails
     error CallFailed();
 
+    //////////////////////////////////////////////////////
+    /// --- CONSTRUCTOR
+    //////////////////////////////////////////////////////
+
+    /// @notice Constructor
+    /// @param _token Address of the token
+    /// @param _minter Address of the minter (on fraxtal it is the main operator)
+    /// @param _gauge Address of the sdToken gauge
+    /// @param _mainOperator Address of the main operator (the minter)
+    /// @param _delegationRegistry Address of the fraxtal delegation registry
+    /// @param _initialDelegate Address of the delegate that receives network reward
     constructor(
         address _token,
         address _locker,
