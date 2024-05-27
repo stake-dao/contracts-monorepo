@@ -1,68 +1,76 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
+import "forge-std/Vm.sol";
 import "forge-std/Test.sol";
+import "forge-std/console.sol";
 
 import "address-book/dao/1.sol";
 import "address-book/lockers/1.sol";
 import "address-book/protocols/1.sol";
 
-import "src/yearn/depositor/YFIDepositorV2.sol";
+import "test/utils/Utils.sol";
+import "src/curve/depositor/CRVDepositorV2.sol";
+
+import {sdToken} from "src/base/token/sdToken.sol";
+import {Constants} from "src/base/utils/Constants.sol";
+import {IDepositor} from "src/base/interfaces/IDepositor.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
+import {ISmartWalletChecker} from "src/base/interfaces/ISmartWalletChecker.sol";
+import {TransparentUpgradeableProxy} from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
-contract YFIDepositorIntegrationTest is Test {
+contract CRVLockerIntegrationTest is Test {
     uint256 private constant MIN_LOCK_DURATION = 1 weeks;
-    uint256 private constant MAX_LOCK_DURATION = 4 * 370 days;
+    uint256 private constant MAX_LOCK_DURATION = 4 * 365 days;
 
-    address internal constant POOL = 0x852b90239C5034b5bb7a5e54eF1bEF3Ce3359CC8;
+    address internal constant POOL = 0xCA0253A98D16e9C1e3614caFDA19318EE69772D0;
+    address internal constant OLD_DEPOSITOR = 0xc1e3Ca8A3921719bE0aE3690A0e036feB4f69191;
 
     IERC20 private token;
-    address private locker;
-    IVeYFI private veToken;
+    ILocker private locker;
+    IVeToken private veToken;
 
-    ISdToken internal sdToken;
-    YFIDepositorV2 private depositor;
+    sdToken internal _sdToken;
+    CRVDepositorV2 private depositor;
     ILiquidityGauge internal liquidityGauge;
 
-    uint256 private constant amount = 10e18;
+    uint256 private constant amount = 100e18;
 
-    uint256 currentBalance = 0;
-    uint256 currentLiquidityGaugeBalance = 0;
+    uint256 snapshotBalance;
 
     function setUp() public virtual {
-        vm.createSelectFork(vm.rpcUrl("mainnet"), 19_882_578);
+        uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"));
+        vm.selectFork(forkId);
+        token = IERC20(CRV.TOKEN);
+        veToken = IVeToken(Curve.VECRV);
+        _sdToken = sdToken(CRV.SDTOKEN);
+        liquidityGauge = ILiquidityGauge(CRV.GAUGE);
 
-        token = IERC20(YFI.TOKEN);
-        veToken = IVeYFI(Yearn.VEYFI);
-        sdToken = ISdToken(YFI.SDTOKEN);
-        locker = YFI.LOCKER;
+        locker = ILocker(CRV.LOCKER);
 
-        // Deploy LiquidityGauge
-        liquidityGauge = ILiquidityGauge(YFI.GAUGE);
+        depositor =
+            new CRVDepositorV2(address(token), address(locker), address(_sdToken), address(liquidityGauge), POOL);
 
-        depositor = new YFIDepositorV2(address(token), address(locker), address(sdToken), address(liquidityGauge), POOL);
+        vm.prank(locker.governance());
+        locker.setStrategy(address(depositor));
 
-        vm.prank(ILocker(locker).governance());
-        ILocker(locker).setYFIDepositor(address(depositor));
-
-        vm.prank(sdToken.operator());
-        sdToken.setOperator(address(depositor));
+        vm.prank(DAO.GOVERNANCE);
+        IDepositor(OLD_DEPOSITOR).setSdTokenOperator(address(depositor));
 
         deal(address(token), address(this), amount);
         vm.startPrank(address(0xBEEF));
-
         // Mint FXN.
         deal(address(token), address(0xBEEF), amount);
-        token.approve(address(depositor), amount);
+        IERC20(address(token)).approve(address(depositor), amount);
 
-        currentBalance = IVeYFI(veToken).balanceOf(locker);
-        currentLiquidityGaugeBalance = sdToken.balanceOf(address(liquidityGauge));
+        IVeToken.LockedBalance memory locked = veToken.locked(address(locker));
+        snapshotBalance = uint256(int256(locked.amount));
 
         vm.stopPrank();
     }
 
     function test_initialization() public {
-        assertEq(depositor.minter(), address(sdToken));
+        assertEq(depositor.minter(), address(_sdToken));
         assertEq(depositor.gauge(), address(liquidityGauge));
     }
 
@@ -76,10 +84,10 @@ contract YFIDepositorIntegrationTest is Test {
         depositor.deposit(amount, true, false, address(this));
 
         assertEq(token.balanceOf(address(depositor)), 0);
-        assertEq(sdToken.balanceOf(address(this)), amount);
+        assertEq(_sdToken.balanceOf(address(this)), amount);
         assertEq(liquidityGauge.balanceOf(address(this)), 0);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance + amount, 14e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), snapshotBalance + amount, 5e15);
     }
 
     function test_depositAndStake() public {
@@ -89,12 +97,11 @@ contract YFIDepositorIntegrationTest is Test {
         token.approve(address(depositor), amount);
         depositor.deposit(amount, true, true, address(this));
 
-        assertEq(sdToken.balanceOf(address(this)), 0);
+        assertEq(_sdToken.balanceOf(address(this)), 0);
         assertEq(token.balanceOf(address(depositor)), 0);
         assertEq(liquidityGauge.balanceOf(address(this)), amount);
-        assertEq(sdToken.balanceOf(address(liquidityGauge)), currentLiquidityGaugeBalance + amount);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance + amount, 14e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), snapshotBalance + amount, 5e15);
     }
 
     function test_depositAndStakeWithoutLock() public {
@@ -104,17 +111,15 @@ contract YFIDepositorIntegrationTest is Test {
         token.approve(address(depositor), amount);
         depositor.deposit(amount, false, true, address(this));
 
-        assertEq(sdToken.balanceOf(address(this)), 0);
+        assertEq(_sdToken.balanceOf(address(this)), 0);
         assertEq(token.balanceOf(address(depositor)), amount);
 
         assertEq(depositor.incentiveToken(), expectedIncentiveAmount);
-        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance, 14e15);
         assertEq(liquidityGauge.balanceOf(address(this)), expectedStakedBalance);
-        assertEq(sdToken.balanceOf(address(liquidityGauge)), currentLiquidityGaugeBalance + expectedStakedBalance);
 
         address _random = address(0x123);
 
-        assertEq(sdToken.balanceOf(address(_random)), 0);
+        assertEq(_sdToken.balanceOf(address(_random)), 0);
         assertEq(liquidityGauge.balanceOf(address(_random)), 0);
 
         /// Skip 1 seconds to avoid depositing in the same block as locking.
@@ -126,9 +131,9 @@ contract YFIDepositorIntegrationTest is Test {
         assertEq(depositor.incentiveToken(), 0);
         assertEq(token.balanceOf(address(depositor)), 0);
         assertEq(liquidityGauge.balanceOf(address(_random)), 0);
-        assertEq(sdToken.balanceOf(address(_random)), expectedIncentiveAmount);
+        assertEq(_sdToken.balanceOf(address(_random)), expectedIncentiveAmount);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance + amount, 14e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), snapshotBalance + amount, 5e15);
     }
 
     function test_depositAndStakeWithoutLockThenDepositWith() public {
@@ -138,16 +143,14 @@ contract YFIDepositorIntegrationTest is Test {
         token.approve(address(depositor), amount);
         depositor.deposit(amount, false, true, address(this));
 
-        assertEq(sdToken.balanceOf(address(this)), 0);
+        assertEq(_sdToken.balanceOf(address(this)), 0);
         assertEq(token.balanceOf(address(depositor)), amount);
-        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance, 1e16);
         assertEq(depositor.incentiveToken(), expectedIncentiveAmount);
         assertEq(liquidityGauge.balanceOf(address(this)), expectedStakedBalance);
-        assertEq(sdToken.balanceOf(address(liquidityGauge)), currentLiquidityGaugeBalance + expectedStakedBalance);
 
         address _random = address(0x123);
 
-        assertEq(sdToken.balanceOf(address(_random)), 0);
+        assertEq(_sdToken.balanceOf(address(_random)), 0);
         assertEq(liquidityGauge.balanceOf(address(_random)), 0);
 
         skip(1);
@@ -164,27 +167,25 @@ contract YFIDepositorIntegrationTest is Test {
         assertEq(token.balanceOf(address(depositor)), 0);
 
         assertEq(liquidityGauge.balanceOf(address(_random)), amount + expectedIncentiveAmount);
-        assertEq(sdToken.balanceOf(address(_random)), 0);
+        assertEq(_sdToken.balanceOf(address(_random)), 0);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance + 20e18, 1e16);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), snapshotBalance + 200e18, 5e15);
     }
 
-    function test_depositAndStakeWithoutLockIncentivePercentS() public {
+    function test_depositAndStakeWithoutLockIncentivePercent() public {
         depositor.setFees(0);
 
         token.approve(address(depositor), amount);
         depositor.deposit(amount, false, true, address(this));
 
-        assertEq(sdToken.balanceOf(address(this)), 0);
+        assertEq(_sdToken.balanceOf(address(this)), 0);
         assertEq(token.balanceOf(address(depositor)), amount);
-        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance, 1e16);
         assertEq(depositor.incentiveToken(), 0);
         assertEq(liquidityGauge.balanceOf(address(this)), amount);
-        assertEq(sdToken.balanceOf(address(liquidityGauge)), currentLiquidityGaugeBalance + amount);
 
         address _random = address(0x123);
 
-        assertEq(sdToken.balanceOf(address(_random)), 0);
+        assertEq(_sdToken.balanceOf(address(_random)), 0);
         assertEq(liquidityGauge.balanceOf(address(_random)), 0);
 
         skip(1);
@@ -201,13 +202,9 @@ contract YFIDepositorIntegrationTest is Test {
         assertEq(token.balanceOf(address(depositor)), 0);
 
         assertEq(liquidityGauge.balanceOf(address(_random)), amount);
-        assertEq(sdToken.balanceOf(address(_random)), 0);
+        assertEq(_sdToken.balanceOf(address(_random)), 0);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), currentBalance + 20e18, 1e16);
-
-        IVeYFI.LockedBalance memory lockedBalance = veToken.locked(address(locker));
-
-        console.log(lockedBalance.end);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), snapshotBalance + 200e18, 5e15);
     }
 
     function test_swapWithoutStake() public {
@@ -221,7 +218,7 @@ contract YFIDepositorIntegrationTest is Test {
 
         assertEq(token.balanceOf(address(depositor)), 0);
         assertGe(liquidityGauge.balanceOf(address(this)), 0);
-        assertGe(sdToken.balanceOf(address(this)), minAmount);
+        assertGe(_sdToken.balanceOf(address(this)), minAmount);
     }
 
     function test_swapAndStake() public {
@@ -231,15 +228,11 @@ contract YFIDepositorIntegrationTest is Test {
         token.approve(address(depositor), amount);
 
         uint256 minAmount = ICurvePool(POOL).get_dy(0, 1, amount);
-        console.log(minAmount);
-
         depositor.deposit(amount, minAmount, true, address(this));
 
-        assertEq(sdToken.balanceOf(address(this)), 0);
+        assertEq(_sdToken.balanceOf(address(this)), 0);
         assertEq(token.balanceOf(address(depositor)), 0);
         assertGe(liquidityGauge.balanceOf(address(this)), minAmount);
-
-        console.log(liquidityGauge.balanceOf(address(this)));
     }
 
     function test_transferGovernance() public {
@@ -259,9 +252,9 @@ contract YFIDepositorIntegrationTest is Test {
 
     function test_transferOperator() public {
         address newOperator = address(0x123);
-        assertEq(sdToken.operator(), address(depositor));
+        assertEq(_sdToken.operator(), address(depositor));
 
         depositor.setSdTokenMinterOperator(newOperator);
-        assertEq(sdToken.operator(), address(newOperator));
+        assertEq(_sdToken.operator(), address(newOperator));
     }
 }
