@@ -51,8 +51,8 @@ contract FXNVoterTest is Test {
         assertEq(ILocker(FXN.LOCKER).governance(), GOVERNANCE);
     }
 
-      function test_vote_for_gauge() external {
-        address[]  memory _gauges = new address[](votes.length);
+    function test_vote_for_gauge() external {
+        address[] memory _gauges = new address[](votes.length);
         uint256[] memory _weights = new uint256[](votes.length);
 
         for (uint256 i; i < votes.length; i++) {
@@ -64,7 +64,7 @@ contract FXNVoterTest is Test {
         voter.voteGauges(_gauges, _weights);
 
         for (uint256 i; i < votes.length; i++) {
-            uint lastUserVote = gaugeController.last_user_vote(FXN_LOCKER, votes[i].gauge);
+            uint256 lastUserVote = gaugeController.last_user_vote(FXN_LOCKER, votes[i].gauge);
             uint256 power = gaugeController.vote_user_slopes(FXN_LOCKER, votes[i].gauge).power;
 
             assertEq(power, votes[i].weight);
@@ -76,14 +76,15 @@ contract FXNVoterTest is Test {
         // We skip 1 week to avoid the cooldown period.
         skip(1 weeks);
 
-        bytes memory data = abi.encodeWithSignature("vote_for_gauge_weights(address,uint256)", votes[0].gauge, votes[0].weight);
-        (bool success, ) = voter.execute(address(gaugeController), 0, data);
+        bytes memory data =
+            abi.encodeWithSignature("vote_for_gauge_weights(address,uint256)", votes[0].gauge, votes[0].weight);
+        (bool success,) = voter.execute(address(gaugeController), 0, data);
         assertTrue(success);
 
-        uint lastUserVote = gaugeController.last_user_vote(FXN_LOCKER, votes[0].gauge);
+        uint256 lastUserVote = gaugeController.last_user_vote(FXN_LOCKER, votes[0].gauge);
         uint256 power = gaugeController.vote_user_slopes(FXN_LOCKER, votes[0].gauge).power;
 
         assertEq(power, votes[0].weight);
         assertEq(lastUserVote, block.timestamp);
-}
+    }
 }

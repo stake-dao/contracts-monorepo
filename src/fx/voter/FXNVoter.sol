@@ -41,7 +41,7 @@ contract FXNVoter {
     /// @param _gauges Array of gauge addresses
     /// @param _weights Array of weights
     function voteGauges(address[] calldata _gauges, uint256[] calldata _weights) external onlyGovernance {
-        if(_gauges.length != _weights.length) revert NotAllowed();
+        if (_gauges.length != _weights.length) revert NotAllowed();
 
         uint256 length = _gauges.length;
         for (uint256 i; i < length; i++) {
