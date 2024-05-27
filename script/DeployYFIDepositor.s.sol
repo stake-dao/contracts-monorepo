@@ -23,7 +23,8 @@ contract DeployYFIDepositor is Script {
     function run() public {
         vm.startBroadcast(DEPLOYER);
 
-        depositor = new YFIDepositorV2(address(YFI.TOKEN), address(YFI.LOCKER), address(YFI.SDTOKEN), address(YFI.GAUGE), POOL);
+        depositor =
+            new YFIDepositorV2(address(YFI.TOKEN), address(YFI.LOCKER), address(YFI.SDTOKEN), address(YFI.GAUGE), POOL);
         depositor.transferGovernance(GOVERNANCE);
 
         vm.stopBroadcast();

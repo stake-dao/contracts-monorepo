@@ -184,7 +184,7 @@ contract CurveAccumulatorV2IntegrationTest is Test {
         assertEq(accumulator.governance(), GOV);
     }
 
-    function _checkFeesOnClaim(address _token, uint256 _gaugeBalanceBefore, uint256 _realTotal) internal view {
+    function _checkFeesOnClaim(address _token, uint256 _gaugeBalanceBefore, uint256 _realTotal) internal {
         uint256 gaugeBalance = ERC20(_token).balanceOf(address(sdCRVLG)) - _gaugeBalanceBefore;
         uint256 daoPart = ERC20(_token).balanceOf(daoFeeRecipient);
         uint256 liquidityPart = ERC20(_token).balanceOf(liquidityFeeRecipient);
