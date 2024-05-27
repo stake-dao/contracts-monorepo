@@ -6,7 +6,7 @@ import {IStrategy} from "herdaddy/interfaces/IStrategy.sol";
 
 /// @title A contract that accumulates 3crv rewards and notifies them to the LGV4
 /// @author StakeDAO
-contract CurveAccumulatorV2 is AccumulatorV2 {
+contract CRVAccumulatorV2 is AccumulatorV2 {
     address public constant CRV3 = 0x6c3F90f043a72FA612cbac8115EE7e52BDe6E490;
     address public constant CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
 
@@ -43,7 +43,6 @@ contract CurveAccumulatorV2 is AccumulatorV2 {
         // Claim 3CRV rewards
         strategy.claimNativeRewards();
         uint256 crv3Amount = ERC20(CRV3).balanceOf(address(this));
-
         uint256 crvAmount = ERC20(CRV).balanceOf(address(this));
 
         // Sending strategy fees to fee receiver

@@ -9,7 +9,7 @@ import "address-book/lockers/1.sol";
 import "address-book/protocols/1.sol";
 
 import {ERC20} from "solady/src/tokens/ERC20.sol";
-import {CurveAccumulatorV2} from "src/curve/accumulator/CurveAccumulatorV2.sol";
+import {CRVAccumulatorV2} from "src/curve/accumulator/CRVAccumulatorV2.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {IStrategy} from "herdaddy/interfaces/IStrategy.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
@@ -22,7 +22,7 @@ interface IStrategyGov is IStrategy {
 }
 
 contract CurveAccumulatorV2IntegrationTest is Test {
-    CurveAccumulatorV2 public accumulator;
+    CRVAccumulatorV2 public accumulator;
     IStrategyGov public strategy = IStrategyGov(0x69D61428d089C2F35Bf6a472F540D0F82D1EA2cd);
     address public crv;
     address public crv3;
@@ -53,7 +53,7 @@ contract CurveAccumulatorV2IntegrationTest is Test {
         crv3 = CRV3;
         sdCRVLG = ILiquidityGauge(CRV.GAUGE);
         crvLocker = ILocker(CRV.LOCKER);
-        accumulator = new CurveAccumulatorV2(
+        accumulator = new CRVAccumulatorV2(
             address(sdCRVLG), address(crvLocker), daoFeeRecipient, liquidityFeeRecipient, address(this)
         );
 
