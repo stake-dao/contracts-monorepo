@@ -15,7 +15,7 @@ contract CakeIFOTest is Test {
     CakeIFOFactory private factory;
     CakeIFO private ifo;
 
-    ICakeIFOV7 private constant CAKE_IFO = ICakeIFOV7(0x155c22E60B3934A58123Cf8a8Ff2DfEA4FcBA2b5);
+    ICakeIFOV8 private constant CAKE_IFO = ICakeIFOV8(0x155c22E60B3934A58123Cf8a8Ff2DfEA4FcBA2b5);
     address private constant FEE_RECEIVER = address(0xFEEE);
     address private constant GOVERNANCE = DAO.GOVERNANCE;
     address private constant EXECUTOR = CAKE.EXECUTOR;

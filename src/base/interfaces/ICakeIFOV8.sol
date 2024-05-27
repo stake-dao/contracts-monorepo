@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-interface ICakeIFOV7 {
+interface ICakeIFOV8 {
     struct VestingSchedule {
         bool isVestingInitialized;
         address beneficiary;
@@ -19,12 +19,6 @@ interface ICakeIFOV7 {
     function getVestingSchedule(bytes32 vestingSchedule) external view returns (VestingSchedule memory);
 
     function harvestPool(uint8 pid) external;
-
-    function iCakeAddress() external view returns (address);
-
-    function lpToken() external view returns (address);
-
-    function offeringToken() external view returns (address);
 
     function startTimestamp() external view returns (uint256);
 
