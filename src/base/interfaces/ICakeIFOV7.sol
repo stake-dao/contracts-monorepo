@@ -10,6 +10,8 @@ interface ICakeIFOV7 {
         uint256 released;
     }
 
+    function addresses(uint256) external view returns (address);
+
     function computeVestingScheduleIdForAddressAndPid(address holder, uint256 pid) external view returns (bytes32);
 
     function depositPool(uint256 amount, uint8 pid) external;
