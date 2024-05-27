@@ -28,7 +28,7 @@ optimizers_runs = 200
 
 
 [rpc_endpoints]
-mainnet = "https://mainnet.infura.io/v3/${INFURA_KEY}"
+mainnet = "https://eth.llamarpc.com"
 tdly = "https://rpc.tenderly.co/fork/07ccd43f-994b-4551-96b2-dc4c73778a60"
 base = "https://mainnet.base.org"
 bnb = "https://bsc-mainnet.nodereal.io/v1/64a9df0874fb4a93b9d0a3849de012d3	"

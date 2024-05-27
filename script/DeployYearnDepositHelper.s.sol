@@ -9,10 +9,12 @@ import "src/yearn/depositor/YFIDepositorHelper.sol";
 contract DeployYearnDepositHelper is Script {
     YFIDepositorHelper internal depositorHelper;
 
+    address public YEARN_DEPOSITOR = 0xf908C0281f4bAfbca67e490edae816B8472608C8;
+
     function run() public {
         vm.startBroadcast(DAO.MAIN_DEPLOYER);
 
-        depositorHelper = new YFIDepositorHelper(YFI.DEPOSITOR, YFI.TOKEN);
+        depositorHelper = new YFIDepositorHelper(YEARN_DEPOSITOR, YFI.TOKEN);
 
         vm.stopBroadcast();
     }

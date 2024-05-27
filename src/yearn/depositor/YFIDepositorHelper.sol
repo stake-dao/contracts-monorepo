@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
-import {YFIDepositor} from "./YFIDepositor.sol";
+import {YFIDepositor} from "src/yearn/depositor/YFIDepositor.sol";
 
 /// @title YFIDepositorHelper
 /// @notice Helper contract to enable Yearn vesting factory
@@ -11,8 +11,8 @@ import {YFIDepositor} from "./YFIDepositor.sol";
 contract YFIDepositorHelper {
     using SafeERC20 for IERC20;
 
-    address depositor;
-    address token;
+    address public immutable token;
+    address public immutable depositor;
 
     constructor(address _depositor, address _token) {
         depositor = _depositor;
