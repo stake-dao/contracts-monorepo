@@ -240,7 +240,7 @@ abstract contract AccumulatorV2 {
     /// @notice Take the fees accumulated from the strategy and sending to the fee receiver
     /// @dev Need to be done before calling `split`, but claimProtocolFees is permissionless.
     /// @dev Strategy not set in that abstract contract, must be implemented by child contracts
-    function _sendFeeStrategyReceiver(address _strategy) internal {
+    function _claimFeeStrategy(address _strategy) internal {
         // Call the claimProtocolFees function from the strategy
         (bool success, bytes memory returnData) = _strategy.call(abi.encodeWithSignature("claimProtocolFees()"));
 
