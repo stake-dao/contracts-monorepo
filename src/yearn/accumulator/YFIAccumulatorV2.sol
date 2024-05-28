@@ -8,7 +8,7 @@ import {IYearnStrategy} from "src/base/interfaces/IYearnStrategy.sol";
 
 /// @title A contract that accumulates YFI and dYFI rewards and notifies them to the LGV4
 /// @author StakeDAO
-contract YearnAccumulatorV2 is AccumulatorV2 {
+contract YFIAccumulatorV2 is AccumulatorV2 {
     /// @notice DFYI token address
     address public constant DYFI = 0x41252E8691e964f7DE35156B68493bAb6797a275;
 
@@ -16,7 +16,7 @@ contract YearnAccumulatorV2 is AccumulatorV2 {
     address public constant YFI = 0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e;
 
     /// @notice yearn strategy address
-    IYearnStrategy public immutable strategy;
+    IYearnStrategy public constant strategy = IYearnStrategy(0x1be150a35bb8233d092747eBFDc75FB357c35168);
 
     ////////////////////////////////////////////////////////////////
     /// --- EVENTS & ERRORS
@@ -34,17 +34,14 @@ contract YearnAccumulatorV2 is AccumulatorV2 {
     /// @param _locker sd locker
     /// @param _daoFeeRecipient dao fee recipient
     /// @param _liquidityFeeRecipient liquidity fee recipient
-    /// @param _strategy strategy
     /// @param _governance governance
     constructor(
         address _gauge,
         address _locker,
         address _daoFeeRecipient,
         address _liquidityFeeRecipient,
-        address _strategy,
         address _governance
     ) AccumulatorV2(_gauge, _locker, _daoFeeRecipient, _liquidityFeeRecipient, _governance) {
-        strategy = IYearnStrategy(_strategy);
         ERC20(YFI).approve(_gauge, type(uint256).max);
         ERC20(DYFI).approve(_gauge, type(uint256).max);
     }

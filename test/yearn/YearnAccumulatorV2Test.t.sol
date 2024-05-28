@@ -13,10 +13,10 @@ import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {IYearnStrategy} from "src/base/interfaces/IYearnStrategy.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {IFeeReceiver} from "lib/herdaddy/src/interfaces/IFeeReceiver.sol";
-import {YearnAccumulatorV2} from "src/yearn/accumulator/YearnAccumulatorV2.sol";
+import {YFIAccumulatorV2} from "src/yearn/accumulator/YFIAccumulatorV2.sol";
 
 contract YearnAccumulatorV2Test is Test {
-    YearnAccumulatorV2 public accumulator;
+    YFIAccumulatorV2 public accumulator;
     IYearnStrategy public strategy = IYearnStrategy(0x1be150a35bb8233d092747eBFDc75FB357c35168);
     address public yfi;
     ILiquidityGauge public sdYfiLG;
@@ -38,13 +38,8 @@ contract YearnAccumulatorV2Test is Test {
         yfi = YFI.TOKEN;
         sdYfiLG = ILiquidityGauge(YFI.GAUGE);
         yfiLocker = ILocker(YFI.LOCKER);
-        accumulator = new YearnAccumulatorV2(
-            address(sdYfiLG),
-            address(yfiLocker),
-            daoFeeRecipient,
-            liquidityFeeRecipient,
-            address(strategy),
-            address(this)
+        accumulator = new YFIAccumulatorV2(
+            address(sdYfiLG), address(yfiLocker), daoFeeRecipient, liquidityFeeRecipient, address(this)
         );
         vm.startPrank(GOV);
 
