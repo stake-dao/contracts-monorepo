@@ -9,7 +9,7 @@ import {sdFXSFraxtal} from "src/frax/fxs/token/sdFXSFraxtal.sol";
 import {sdTokenOperatorFraxtal} from "src/frax/fxs/token/sdTokenOperatorFraxtal.sol";
 import "src/frax/fxs/locker/FxsLockerFraxtal.sol";
 import {FXSDepositorFraxtal} from "src/frax/fxs/depositor/FXSDepositorFraxtal.sol";
-import {FxsAccumulatorFraxtal} from "src/frax/fxs/accumulator/FxsAccumulatorFraxtal.sol";
+import {FxsAccumulatorV2Fraxtal} from "src/frax/fxs/accumulator/FxsAccumulatorV2Fraxtal.sol";
 
 import {Constants} from "src/base/utils/Constants.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
@@ -21,6 +21,12 @@ import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {Frax} from "address-book/protocols/252.sol";
 import {FXS} from "address-book/lockers/1.sol";
 
+interface IYieldDistributorWhitelist {
+    function owner() external view returns (address);
+
+    function setThirdPartyClaimer(address _staker, address _claimer) external;
+}
+
 contract FXSLockerFraxtalIntegrationTest is Test {
     uint256 private constant MIN_LOCK_DURATION = 1 weeks;
     uint256 private constant MAX_LOCK_DURATION = 4 * 365 days;
@@ -28,12 +34,13 @@ contract FXSLockerFraxtalIntegrationTest is Test {
     ERC20 private token = ERC20(Frax.FXS);
     FxsLockerFraxtal private locker;
     IVestedFXS private veToken = IVestedFXS(Frax.VEFXS);
-    IYieldDistributor private yieldDistributor = IYieldDistributor(Frax.YIELD_DISTRIBUTOR);
+    //IYieldDistributor private yieldDistributor = IYieldDistributor(Frax.YIELD_DISTRIBUTOR);
+    IYieldDistributor private yieldDistributor = IYieldDistributor(0x21359d1697e610e25C8229B2C57907378eD09A2E);
 
     sdFXSFraxtal private _sdToken;
     sdTokenOperatorFraxtal private mainOperator;
     FXSDepositorFraxtal private depositor;
-    FxsAccumulatorFraxtal private accumulator;
+    FxsAccumulatorV2Fraxtal private accumulator;
     ILiquidityGauge private liquidityGauge;
 
     IFraxtalDelegationRegistry private constant DELEGATION_REGISTRY =
@@ -77,7 +84,7 @@ contract FXSLockerFraxtalIntegrationTest is Test {
             INITIAL_DELEGATE
         );
 
-        accumulator = new FxsAccumulatorFraxtal(
+        accumulator = new FxsAccumulatorV2Fraxtal(
             address(liquidityGauge),
             address(locker),
             DAO_FEE_REC,
@@ -128,6 +135,10 @@ contract FXSLockerFraxtalIntegrationTest is Test {
         depositor.createLock(amount);
 
         vm.stopPrank();
+
+        // whitelist accumulator to be the veFXS's L1 reward claimer
+        vm.prank(IYieldDistributorWhitelist(address(yieldDistributor)).owner());
+        IYieldDistributorWhitelist(address(yieldDistributor)).setThirdPartyClaimer(FXS.LOCKER, address(accumulator));
     }
 
     function test_initialization() public {
