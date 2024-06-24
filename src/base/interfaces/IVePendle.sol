@@ -1,4 +1,4 @@
-pragma solidity 0.8.7;
+pragma solidity ^0.8.7;
 
 interface IVePendle {
     event BroadcastTotalSupply(VeBalance newTotalSupply, uint256[] chainIds);
