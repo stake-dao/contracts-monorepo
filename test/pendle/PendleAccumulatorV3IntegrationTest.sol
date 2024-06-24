@@ -134,5 +134,27 @@ contract PendleAccumulatorV3IntegrationTest is Test {
         assertEq(total * feeSplit.fees[1] / 10_000, liquidityFee);
 
         assertEq(accumulator.remainingPeriods(), 3);
+
+        vm.expectRevert(PendleAccumulatorV3.ONGOING_REWARD.selector);
+        accumulator.notifyReward(address(WETH), false, false);
+
+        vm.expectRevert(PendleAccumulatorV3.NO_BALANCE.selector);
+        accumulator.claimAll(_pools, false, false, false);
+
+        skip(1 weeks);
+
+        vm.expectRevert(PendleAccumulatorV3.NO_BALANCE.selector);
+        accumulator.claimAll(_pools, false, false, false);
+
+        uint toDistribute = WETH.balanceOf(address(accumulator)) / 3;
+        accumulator.notifyReward(address(WETH), false, false);
+
+        /// Balances should be the same as we already took fees.
+        assertEq(WETH.balanceOf(address(treasuryRecipient)), treasury);
+        assertEq(WETH.balanceOf(address(liquidityFeeRecipient)), liquidityFee);
+        assertEq(WETH.balanceOf(address(liquidityGauge)) - gaugeBalanceBefore, gauge + toDistribute);
+        assertEq(WETH.balanceOf(address(this)), claimer);
+
+        assertEq(accumulator.remainingPeriods(), 2);
     }
 }
