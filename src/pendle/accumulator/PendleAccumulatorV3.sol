@@ -97,13 +97,13 @@ contract PendleAccumulatorV3 is AccumulatorV2 {
         remainingPeriods += periodsToAdd;
 
         /// Charge fee on the total reward.
-        _chargeFee(WETH, totalReward);
+        totalReward -= _chargeFee(WETH, totalReward);
 
         /// If the voters rewards are not transferred to the recipient, they will be distributed to the gauge.
         if (transferVotersRewards) {
             uint256 votersTotalReward = totalReward - nativeRewardClaimable;
             // transfer the amount without charging fees
-            ERC20(WETH).transfer(votesRewardRecipient, votersTotalReward);
+            SafeTransferLib.safeTransfer(WETH, votesRewardRecipient, votersTotalReward);
         }
 
         /// We put 0 as the amount to notify, as it'll distribute the balance.

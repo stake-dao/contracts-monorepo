@@ -277,4 +277,6 @@ abstract contract AccumulatorV2 {
         SafeTransferLib.safeTransfer(_token, _recipient, _amount);
         emit ERC20Rescued(_token, _amount);
     }
+
+    receive() external payable {}
 }

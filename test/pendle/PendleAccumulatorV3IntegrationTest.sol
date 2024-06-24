@@ -15,6 +15,7 @@ import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 
 import "src/base/fee/TreasuryRecipient.sol";
 import "src/base/fee/LiquidityFeeRecipient.sol";
+import "src/pendle/voters-rewards/VotersRewardsRecipient.sol";
 
 contract PendleAccumulatorV3IntegrationTest is Test {
     uint256 blockNumber = 20_031_924;
@@ -30,6 +31,7 @@ contract PendleAccumulatorV3IntegrationTest is Test {
     PendleAccumulatorV3 internal accumulator;
     TreasuryRecipient internal treasuryRecipient;
     LiquidityFeeRecipient internal liquidityFeeRecipient;
+    VotersRewardsRecipient internal votersRewardsRecipient;
 
     /// Pools where rewards accrued at the block number 20_031_924.
     address[] public _pools = [
@@ -67,6 +69,11 @@ contract PendleAccumulatorV3IntegrationTest is Test {
         /// Set Fee split.
         accumulator.setFeeSplit(feeSplitReceivers, feeSplitFees);
 
+        /// Transfer voter rewards.
+        votersRewardsRecipient = new VotersRewardsRecipient(address(this));
+        accumulator.setTransferVotersRewards(true);
+        accumulator.setVotesRewardRecipient(address(votersRewardsRecipient));
+
         vm.prank(ILocker(locker).governance());
         ILocker(locker).setAccumulator(address(accumulator));
 
@@ -87,6 +94,9 @@ contract PendleAccumulatorV3IntegrationTest is Test {
         rewardData = liquidityGauge.reward_data(address(PENDLE.TOKEN));
         assertEq(rewardData.distributor, address(accumulator));
 
+        assertEq(accumulator.transferVotersRewards(), true);
+        assertEq(accumulator.votesRewardRecipient(), address(votersRewardsRecipient));
+
         PendleAccumulatorV3.Split memory split = accumulator.getFeeSplit();
 
         assertEq(split.receivers[0], address(treasuryRecipient));
@@ -94,5 +104,25 @@ contract PendleAccumulatorV3IntegrationTest is Test {
 
         assertEq(split.fees[0], 500);
         assertEq(split.fees[1], 1000);
+    }
+
+    function test_claimAll() public {
+        //Check Dao recipient
+        assertEq(WETH.balanceOf(address(treasuryRecipient)), 0);
+        //// Check Bounty recipient
+        assertEq(WETH.balanceOf(address(liquidityFeeRecipient)), 0);
+        //// Check lgv4
+        uint256 gaugeBalanceBefore = WETH.balanceOf(address(liquidityGauge));
+
+        accumulator.claimAll(_pools, false, false, false);
+
+        uint256 daoPart = WETH.balanceOf(address(treasuryRecipient));
+        uint256 bountyPart = WETH.balanceOf(address(liquidityFeeRecipient));
+        uint256 gaugePart = WETH.balanceOf(address(liquidityGauge)) - gaugeBalanceBefore;
+        uint256 claimerPart = WETH.balanceOf(address(this));
+
+        /// WETH is distributed over 4 weeks to Accumulator.
+        uint256 remaining = WETH.balanceOf(address(accumulator));
+        uint256 total = claimerPart + daoPart + bountyPart + gaugePart + remaining;
     }
 }
