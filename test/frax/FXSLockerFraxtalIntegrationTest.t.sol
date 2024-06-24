@@ -44,7 +44,8 @@ contract FXSLockerFraxtalIntegrationTest is Test {
     ILiquidityGauge private liquidityGauge;
 
     IFraxtalDelegationRegistry private constant DELEGATION_REGISTRY =
-        IFraxtalDelegationRegistry(Frax.DELEGATION_REGISTRY);
+        IFraxtalDelegationRegistry(0x098c837FeF2e146e96ceAF58A10F68Fc6326DC4C);
+    //IFraxtalDelegationRegistry(Frax.DELEGATION_REGISTRY);
     address private constant INITIAL_DELEGATE = 0xB0552b6860CE5C0202976Db056b5e3Cc4f9CC765;
     address private constant FRAXTAL_BRIDGE = 0x4200000000000000000000000000000000000010;
     address private constant DAO_FEE_REC = address(0xABFD);
