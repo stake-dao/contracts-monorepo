@@ -116,13 +116,23 @@ contract PendleAccumulatorV3IntegrationTest is Test {
 
         accumulator.claimAll(_pools, false, false, false);
 
-        uint256 daoPart = WETH.balanceOf(address(treasuryRecipient));
-        uint256 bountyPart = WETH.balanceOf(address(liquidityFeeRecipient));
-        uint256 gaugePart = WETH.balanceOf(address(liquidityGauge)) - gaugeBalanceBefore;
-        uint256 claimerPart = WETH.balanceOf(address(this));
+        uint256 treasury = WETH.balanceOf(address(treasuryRecipient));
+        uint256 voters = WETH.balanceOf(address(votersRewardsRecipient));
+        uint256 liquidityFee = WETH.balanceOf(address(liquidityFeeRecipient));
+        uint256 gauge = WETH.balanceOf(address(liquidityGauge)) - gaugeBalanceBefore;
+        uint256 claimer = WETH.balanceOf(address(this));
 
-        /// WETH is distributed over 4 weeks to Accumulator.
+        /// WETH is distributed over 4 weeks to gauge.
         uint256 remaining = WETH.balanceOf(address(accumulator));
-        uint256 total = claimerPart + daoPart + bountyPart + gaugePart + remaining;
+        uint256 total = treasury + liquidityFee + gauge + claimer + remaining + voters;
+
+        PendleAccumulatorV3.Split memory feeSplit = accumulator.getFeeSplit();
+
+        assertEq(total * accumulator.claimerFee() / 10_000, claimer);
+
+        assertEq(total * feeSplit.fees[0] / 10_000, treasury);
+        assertEq(total * feeSplit.fees[1] / 10_000, liquidityFee);
+
+        assertEq(accumulator.remainingPeriods(), 3);
     }
 }
