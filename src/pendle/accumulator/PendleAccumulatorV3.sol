@@ -29,8 +29,8 @@ contract PendleAccumulatorV3 is AccumulatorV2 {
     /// @notice WETH Rewards period to notify.
     uint256 public remainingPeriods;
 
-    /// @notice If set, the voters rewards will be distributed to the gauge
-    bool public distributeVotersRewards;
+    /// @notice If false, the voters rewards will be distributed to the gauge
+    bool public transferVotersRewards;
 
     /// @notice Address to receive the voters rewards.
     address public votesRewardRecipient;
@@ -74,32 +74,43 @@ contract PendleAccumulatorV3 is AccumulatorV2 {
             _claimFeeStrategy(address(strategy));
         }
 
+        /// Check historical rewards.
         uint256 totalAccrued = IPendleFeeDistributor(FEE_DISTRIBUTOR).getProtocolTotalAccrued(address(locker));
+
+        /// Check claimed rewards.
         uint256 claimed = IPendleFeeDistributor(FEE_DISTRIBUTOR).claimed(address(locker));
 
         address[] memory vePendle = new address[](1);
         vePendle[0] = VE_PENDLE;
 
+        /// Check the native reward claimable.
         uint256 nativeRewardClaimable =
             IPendleFeeDistributor(FEE_DISTRIBUTOR).getProtocolClaimables(address(locker), vePendle)[0];
 
+        /// Claim on behalf of the locker.
         uint256 totalReward = _claimReward(_pools);
 
+        /// There's 1e4 wei of tolerance to avoid rounding errors because of a mistake in the Pendle FEE_DISTRIBUTOR contract.
         if (totalReward + 1e4 < totalAccrued - claimed) revert NOT_CLAIMED_ALL();
+
+        /// Update the remaining periods.
         remainingPeriods += periodsToAdd;
 
         /// Charge fee on the total reward.
         _chargeFee(WETH, totalReward);
 
-        if (!distributeVotersRewards) {
+        /// If the voters rewards are not transferred to the recipient, they will be distributed to the gauge.
+        if (transferVotersRewards) {
             uint256 votersTotalReward = totalReward - nativeRewardClaimable;
             // transfer the amount without charging fees
             ERC20(WETH).transfer(votesRewardRecipient, votersTotalReward);
         }
 
+        /// We put 0 as the amount to notify, as it'll distribute the balance.
         _notifyReward(WETH, 0, false);
         _notifyReward(PENDLE, 0, pullFromFeeReceiver);
 
+        /// Just in case, but it should be needed anymore.
         if (notifySDT) {
             _distributeSDT();
         }
@@ -110,7 +121,7 @@ contract PendleAccumulatorV3 is AccumulatorV2 {
     /// @param _amount amount to notify
     /// @param _pullFromFeeReceiver if pull tokens from the fee receiver or not (tokens already in that contract)
     function _notifyReward(address _tokenReward, uint256 _amount, bool _pullFromFeeReceiver) internal override {
-        if (_pullFromFeeReceiver) {
+        if (_pullFromFeeReceiver && feeReceiver != address(0)) {
             // Split fees for the specified token using the fee receiver contract
             // Function not permissionless, to prevent sending to that accumulator and re-splitting (_chargeFee)
             IFeeReceiver(feeReceiver).split(_tokenReward);
@@ -148,8 +159,8 @@ contract PendleAccumulatorV3 is AccumulatorV2 {
         votesRewardRecipient = _votesRewardRecipient;
     }
 
-    function setDistributeVotersRewards(bool _distributeVotersRewards) external onlyGovernance {
-        distributeVotersRewards = _distributeVotersRewards;
+    function setTransferVotersRewards(bool _transferVotersRewards) external onlyGovernance {
+        transferVotersRewards = _transferVotersRewards;
     }
 
     function setPeriodsToAdd(uint256 _periodsToAdd) external onlyGovernance {

@@ -161,7 +161,7 @@ abstract contract AccumulatorV2 {
     function _notifyReward(address _tokenReward, uint256 _amount, bool _pullFromFeeReceiver) internal virtual {
         _chargeFee(_tokenReward, _amount);
 
-        if (_pullFromFeeReceiver) {
+        if (_pullFromFeeReceiver && feeReceiver != address(0)) {
             // Split fees for the specified token using the fee receiver contract
             // Function not permissionless, to prevent sending to that accumulator and re-splitting (_chargeFee)
             IFeeReceiver(feeReceiver).split(_tokenReward);
