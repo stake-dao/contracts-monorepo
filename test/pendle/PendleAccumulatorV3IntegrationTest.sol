@@ -114,8 +114,16 @@ contract PendleAccumulatorV3IntegrationTest is Test {
         //// Check lgv4
         uint256 gaugeBalanceBefore = WETH.balanceOf(address(liquidityGauge));
 
-        accumulator.setTransferVotersRewards(_setTransfer);
+        address[] memory _poolsCopy = _pools;
+
+        /// Remove 1 pool from the list to trigger NOT_CLAIMED_ALL.
+        _pools.pop();
+
+        vm.expectRevert(PendleAccumulatorV3.NOT_CLAIMED_ALL.selector);
         accumulator.claimAll(_pools, false, false, false);
+
+        accumulator.setTransferVotersRewards(_setTransfer);
+        accumulator.claimAll(_poolsCopy, false, false, false);
 
         uint256 treasury = WETH.balanceOf(address(treasuryRecipient));
         uint256 voters = WETH.balanceOf(address(votersRewardsRecipient));
