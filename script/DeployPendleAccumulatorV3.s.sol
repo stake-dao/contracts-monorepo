@@ -12,7 +12,7 @@ import "src/base/fee/LiquidityFeeRecipient.sol";
 import "src/pendle/accumulator/PendleAccumulatorV3.sol";
 import "src/pendle/voters-rewards/VotersRewardsRecipient.sol";
 
-contract DeployYearnDepositHelper is Script {
+contract DeployPendleAccumulatorV3 is Script {
     PendleAccumulatorV3 internal accumulator;
 
     VeSDTRecipient internal veSDTRecipient;
