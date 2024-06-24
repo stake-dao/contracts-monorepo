@@ -16,6 +16,25 @@ abstract contract AccumulatorV2 {
     /// @notice Denominator for fixed point math.
     uint256 public constant DENOMINATOR = 10_000;
 
+    /// @notice Split struct
+    /// @param receivers Array of receivers
+    /// @param fees Array of fees
+    /// @dev First go to the first receiver, then the second, and so on
+    /// @dev Fee in basis points, where 10,000 basis points = 100%
+    struct Split {
+        address[] receivers;
+        uint256[] fees; // Fee in basis points, where 10,000 basis points = 100%
+    }
+
+    /// @notice Fee split.
+    Split feeSplit;
+
+    /// @notice SDT distributor
+    address public sdtDistributor;
+
+    /// @notice Claimer Fee.
+    uint256 public claimerFee;
+
     /// @notice sd gauge
     address public immutable gauge;
 
@@ -28,24 +47,6 @@ abstract contract AccumulatorV2 {
     /// @notice future governance
     address public futureGovernance;
 
-    /// @notice SDT distributor
-    address public sdtDistributor;
-
-    /// @notice dao fee in percentage (10_000 = 100%)
-    uint256 public daoFee;
-
-    /// @notice dao fee recipient address
-    address public daoFeeRecipient;
-
-    /// @notice liquidity fee in percentage (10_000 = 100%)
-    uint256 public liquidityFee;
-
-    /// @notice liquidity fee recipient
-    address public liquidityFeeRecipient;
-
-    /// @notice claimer fee (msg.sender) in percentage (10_000 = 100%)
-    uint256 public claimerFee;
-
     /// @notice Fee receiver contracts defined in Strategy
     address public feeReceiver;
 
@@ -56,29 +57,11 @@ abstract contract AccumulatorV2 {
     /// @notice Event emitted when the claimer fee is set
     event ClaimerFeeSet(uint256 claimerFee);
 
-    /// @notice Event emitted when the dao fee is set
-    event DaoFeeSet(uint256 daoFee);
-
-    /// @notice Event emitted when the dao fee recipient is set
-    event DaoFeeRecipientSet(address daoFeeRecipient);
-
-    /// @notice Event emitted when the fees are charged during reward notify
-    event FeeCharged(uint256 daoPart, uint256 liquidityPart, uint256 claimerPart);
-
     /// @notice Emitted when the fee receiver is set
     event FeeReceiverSet(address _feeReceiver);
 
     /// @notice Event emitted when an ERC20 token is rescued
     event ERC20Rescued(address token, uint256 amount);
-
-    /// @notice Event emitted when the liquidity fee percentage is set
-    event LiquidityFeeSet(uint256 liquidityFee);
-
-    /// @notice Event emitted when a liquidity fee recipient  is set
-    event LiquidityFeeRecipientSet(address liquidityFeeRecipient);
-
-    /// @notice Event emitted when a new reward has notified
-    event RewardNotified(address gauge, address tokenReward, uint256 amountNotified);
 
     /// @notice Event emitted when a new future governance has set
     event TransferGovernance(address futureGovernance);
@@ -97,6 +80,9 @@ abstract contract AccumulatorV2 {
 
     /// @notice Error emitted when a zero address is pass
     error ZERO_ADDRESS();
+
+    /// @notice Error emitted when the fee is invalid
+    error INVALID_SPLIT();
 
     //////////////////////////////////////////////////////
     /// --- MODIFIERS
@@ -121,26 +107,14 @@ abstract contract AccumulatorV2 {
     /// @notice Constructor
     /// @param _gauge sd gauge
     /// @param _locker sd locker
-    /// @param _daoFeeRecipient dao fee recipient
-    /// @param _liquidityFeeRecipient liquidity fee recipient
     /// @param _governance governance
-    constructor(
-        address _gauge,
-        address _locker,
-        address _daoFeeRecipient,
-        address _liquidityFeeRecipient,
-        address _governance
-    ) {
+    constructor(address _gauge, address _locker, address _governance) {
         gauge = _gauge;
         locker = _locker;
-        daoFeeRecipient = _daoFeeRecipient;
-        liquidityFeeRecipient = _liquidityFeeRecipient;
 
         governance = _governance;
 
-        // default fees
-        liquidityFee = 1_000; // 10%
-        claimerFee = 50; // 0.5%
+        claimerFee = 10; // 0.1%
     }
 
     //////////////////////////////////////////////////////
@@ -197,8 +171,6 @@ abstract contract AccumulatorV2 {
 
         if (_amount == 0) return;
         ILiquidityGauge(gauge).deposit_reward_token(_tokenReward, _amount);
-
-        emit RewardNotified(gauge, _tokenReward, _amount);
     }
 
     /// @notice Distribute SDT to the gauge
@@ -214,26 +186,20 @@ abstract contract AccumulatorV2 {
     function _chargeFee(address _token, uint256 _amount) internal returns (uint256 _charged) {
         if (_amount == 0) return 0;
 
-        uint256 daoPart;
-        uint256 liquidityPart;
-        uint256 claimerPart;
+        Split memory _feeSplit = getFeeSplit();
+        uint256 fee;
+        for (uint256 i = 0; i < _feeSplit.receivers.length; i++) {
+            fee = (_amount * _feeSplit.fees[i]) / DENOMINATOR;
+            SafeTransferLib.safeTransfer(_token, _feeSplit.receivers[i], fee);
 
-        if (daoFee != 0) {
-            daoPart = _amount * daoFee / DENOMINATOR;
-            SafeTransferLib.safeTransfer(_token, daoFeeRecipient, daoPart);
-            _charged += daoPart;
+            _charged += fee;
         }
-        if (liquidityFee != 0) {
-            liquidityPart = _amount * liquidityFee / DENOMINATOR;
-            SafeTransferLib.safeTransfer(_token, liquidityFeeRecipient, liquidityPart);
-            _charged += liquidityPart;
-        }
-        if (claimerFee != 0) {
-            claimerPart = _amount * claimerFee / DENOMINATOR;
-            SafeTransferLib.safeTransfer(_token, msg.sender, claimerPart);
-            _charged += claimerPart;
-        }
-        emit FeeCharged(daoPart, liquidityPart, claimerPart);
+
+        /// Claimer fee.
+        fee = (_amount * claimerFee) / DENOMINATOR;
+        SafeTransferLib.safeTransfer(_token, msg.sender, fee);
+
+        _charged += fee;
     }
 
     /// @notice Take the fees accumulated from the strategy and sending to the fee receiver
@@ -255,48 +221,14 @@ abstract contract AccumulatorV2 {
     /// --- GOVERNANCE FUNCTIONS
     //////////////////////////////////////////////////////
 
+    function getFeeSplit() public view returns (Split memory) {
+        return feeSplit;
+    }
+
     /// @notice Set SDT distributor.
     /// @param _distributor SDT distributor address.
     function setDistributor(address _distributor) external onlyGovernance {
         sdtDistributor = _distributor;
-    }
-
-    /// @notice Sets dao fee recipient
-    /// @dev Can be called only by the governance
-    /// @param _daoFeeRecipient dao fee recipient
-    function setDaoFeeRecipient(address _daoFeeRecipient) external onlyGovernance {
-        emit DaoFeeRecipientSet(daoFeeRecipient = _daoFeeRecipient);
-    }
-
-    /// @notice Sets liquidity fee recipient
-    /// @dev Can be called only by the governance
-    /// @param _liquidityFeeRecipient liquidity fee recipient
-    function setLiquidityFeeRecipient(address _liquidityFeeRecipient) external onlyGovernance {
-        emit LiquidityFeeRecipientSet(liquidityFeeRecipient = _liquidityFeeRecipient);
-    }
-
-    /// @notice Sets dao fee
-    /// @dev Can be called only by the governance
-    /// @param _daoFee dao fee in percentage (10_000 = 100%)
-    function setDaoFee(uint256 _daoFee) external onlyGovernance {
-        if (_daoFee + liquidityFee + claimerFee > DENOMINATOR) revert FEE_TOO_HIGH();
-        emit DaoFeeSet(daoFee = _daoFee);
-    }
-
-    /// @notice Sets liquidity fee
-    /// @dev Can be called only by the governance
-    /// @param _liquidityFee liquidity fee in percentage (10_000 = 100%)
-    function setLiquidityFee(uint256 _liquidityFee) external onlyGovernance {
-        if (daoFee + _liquidityFee + claimerFee > DENOMINATOR) revert FEE_TOO_HIGH();
-        emit LiquidityFeeSet(liquidityFee = _liquidityFee);
-    }
-
-    /// @notice Sets claimer fee
-    /// @dev Can be called only by the governance
-    /// @param _claimerFee claimer fee in percentage (10_000 = 100%)
-    function setClaimerFee(uint256 _claimerFee) external onlyGovernance {
-        if (daoFee + liquidityFee + _claimerFee > DENOMINATOR) revert FEE_TOO_HIGH();
-        emit ClaimerFeeSet(claimerFee = _claimerFee);
     }
 
     /// @notice Set fee receiver (from Stategy)
@@ -325,6 +257,14 @@ abstract contract AccumulatorV2 {
     /// @param _newTokenReward New token reward to be approved.
     function approveNewTokenReward(address _newTokenReward) external onlyGovernance {
         SafeTransferLib.safeApprove(_newTokenReward, gauge, type(uint256).max);
+    }
+
+    /// @notice Set fee split
+    /// @param receivers array of receivers
+    /// @param fees array of fees
+    function setFeeSplit(address[] calldata receivers, uint256[] calldata fees) external onlyGovernance {
+        if (receivers.length == 0 || receivers.length != fees.length) revert INVALID_SPLIT();
+        feeSplit = Split(receivers, fees);
     }
 
     /// @notice A function that rescue any ERC20 token

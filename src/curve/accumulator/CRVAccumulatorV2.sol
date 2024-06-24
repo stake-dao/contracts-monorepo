@@ -24,13 +24,7 @@ contract CRVAccumulatorV2 is AccumulatorV2 {
     /// --- CONSTRUCTOR
     ////////////////////////////////////////////////////////////
 
-    constructor(
-        address _gauge,
-        address _locker,
-        address _daoFeeRecipient,
-        address _liquidityFeeRecipient,
-        address _governance
-    ) AccumulatorV2(_gauge, _locker, _daoFeeRecipient, _liquidityFeeRecipient, _governance) {
+    constructor(address _gauge, address _locker, address _governance) AccumulatorV2(_gauge, _locker, _governance) {
         SafeTransferLib.safeApprove(CRV, gauge, type(uint256).max);
         SafeTransferLib.safeApprove(CRV3, gauge, type(uint256).max);
     }

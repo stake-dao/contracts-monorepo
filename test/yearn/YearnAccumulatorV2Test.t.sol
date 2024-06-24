@@ -38,11 +38,18 @@ contract YearnAccumulatorV2Test is Test {
         yfi = YFI.TOKEN;
         sdYfiLG = ILiquidityGauge(YFI.GAUGE);
         yfiLocker = ILocker(YFI.LOCKER);
-        accumulator = new YFIAccumulatorV2(
-            address(sdYfiLG), address(yfiLocker), daoFeeRecipient, liquidityFeeRecipient, address(this)
-        );
-        vm.startPrank(GOV);
+        accumulator = new YFIAccumulatorV2(address(sdYfiLG), address(yfiLocker), address(this));
 
+        address[] memory feeSplitReceivers = new address[](2);
+        uint256[] memory feeSplitFees = new uint256[](2);
+
+        feeSplitReceivers[0] = daoFeeRecipient;
+        feeSplitFees[0] = 500; // 5% to dao
+
+        feeSplitReceivers[1] = liquidityFeeRecipient;
+        feeSplitFees[1] = 1000; // 5% to liquidity
+
+        vm.startPrank(GOV);
         sdYfiLG.set_reward_distributor(yfi, address(accumulator));
         sdYfiLG.set_reward_distributor(DYFI, address(accumulator));
 
@@ -145,8 +152,10 @@ contract YearnAccumulatorV2Test is Test {
         uint256 claimerPart = ERC20(_token).balanceOf(address(this));
         uint256 totalClaimed = gaugeBalance + daoPart + liquidityPart + claimerPart;
 
-        assertEq(daoPart, totalClaimed * accumulator.daoFee() / 10_000);
-        assertEq(liquidityPart, totalClaimed * accumulator.liquidityFee() / 10_000);
+        YFIAccumulatorV2.Split memory feeSplit = accumulator.getFeeSplit();
+
+        assertEq(daoPart, totalClaimed * feeSplit.fees[0] / 10_000);
+        assertEq(liquidityPart, totalClaimed * feeSplit.fees[1] / 10_000);
         assertEq(claimerPart, totalClaimed * accumulator.claimerFee() / 10_000);
     }
 }
