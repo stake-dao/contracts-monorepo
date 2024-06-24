@@ -106,7 +106,7 @@ contract PendleAccumulatorV3IntegrationTest is Test {
         assertEq(split.fees[1], 1000);
     }
 
-    function test_claimAll() public {
+    function test_claimAll(bool _setTransfer) public {
         //Check Dao recipient
         assertEq(WETH.balanceOf(address(treasuryRecipient)), 0);
         //// Check Bounty recipient
@@ -114,6 +114,7 @@ contract PendleAccumulatorV3IntegrationTest is Test {
         //// Check lgv4
         uint256 gaugeBalanceBefore = WETH.balanceOf(address(liquidityGauge));
 
+        accumulator.setTransferVotersRewards(_setTransfer);
         accumulator.claimAll(_pools, false, false, false);
 
         uint256 treasury = WETH.balanceOf(address(treasuryRecipient));
@@ -135,6 +136,10 @@ contract PendleAccumulatorV3IntegrationTest is Test {
 
         assertEq(accumulator.remainingPeriods(), 3);
 
+        if (!_setTransfer) {
+            assertEq(voters, 0);
+        }
+
         vm.expectRevert(PendleAccumulatorV3.ONGOING_REWARD.selector);
         accumulator.notifyReward(address(WETH), false, false);
 
@@ -146,7 +151,7 @@ contract PendleAccumulatorV3IntegrationTest is Test {
         vm.expectRevert(PendleAccumulatorV3.NO_BALANCE.selector);
         accumulator.claimAll(_pools, false, false, false);
 
-        uint toDistribute = WETH.balanceOf(address(accumulator)) / 3;
+        uint256 toDistribute = WETH.balanceOf(address(accumulator)) / 3;
         accumulator.notifyReward(address(WETH), false, false);
 
         /// Balances should be the same as we already took fees.
@@ -156,5 +161,52 @@ contract PendleAccumulatorV3IntegrationTest is Test {
         assertEq(WETH.balanceOf(address(this)), claimer);
 
         assertEq(accumulator.remainingPeriods(), 2);
+
+        uint256 _before = ERC20(PENDLE.TOKEN).balanceOf(address(liquidityGauge));
+
+        deal(PENDLE.TOKEN, address(accumulator), 1_000_000e18);
+        accumulator.notifyReward(address(PENDLE.TOKEN), false, false);
+
+        /// It should distribute 1_000_000 PENDLE to LGV4, meaning no fees were taken.
+        assertEq(ERC20(PENDLE.TOKEN).balanceOf(address(liquidityGauge)), _before + 1_000_000e18);
+    }
+
+    function test_setters() public {
+        accumulator.setTransferVotersRewards(false);
+        assertEq(accumulator.transferVotersRewards(), false);
+
+        accumulator.setVotesRewardRecipient(address(1));
+        assertEq(accumulator.votesRewardRecipient(), address(1));
+
+        address[] memory feeSplitReceivers = new address[](2);
+        uint256[] memory feeSplitFees = new uint256[](2);
+
+        feeSplitReceivers[0] = address(treasuryRecipient);
+        feeSplitFees[0] = 100; // 5% to dao
+
+        feeSplitReceivers[1] = address(liquidityFeeRecipient);
+        feeSplitFees[1] = 50; // 5% to liquidity
+
+        accumulator.setFeeSplit(feeSplitReceivers, feeSplitFees);
+        PendleAccumulatorV3.Split memory split = accumulator.getFeeSplit();
+
+        assertEq(split.receivers[0], address(treasuryRecipient));
+        assertEq(split.receivers[1], address(liquidityFeeRecipient));
+
+        assertEq(split.fees[0], 100);
+        assertEq(split.fees[1], 50);
+
+        accumulator.setClaimerFee(1000);
+        assertEq(accumulator.claimerFee(), 1000);
+
+        accumulator.setPeriodsToAdd(10);
+        assertEq(accumulator.periodsToAdd(), 10);
+
+        accumulator.setFeeReceiver(address(1));
+        assertEq(accumulator.feeReceiver(), address(1));
+
+        vm.prank(address(2));
+        vm.expectRevert(AccumulatorV2.GOVERNANCE.selector);
+        accumulator.setFeeReceiver(address(2));
     }
 }

@@ -225,6 +225,11 @@ abstract contract AccumulatorV2 {
         return feeSplit;
     }
 
+    function setClaimerFee(uint256 _claimerFee) external onlyGovernance {
+        if (_claimerFee > DENOMINATOR) revert FEE_TOO_HIGH();
+        emit ClaimerFeeSet(claimerFee = _claimerFee);
+    }
+
     /// @notice Set SDT distributor.
     /// @param _distributor SDT distributor address.
     function setDistributor(address _distributor) external onlyGovernance {
