@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import "src/base/accumulator/AccumulatorV2.sol";
-import {IStrategy} from "herdaddy/interfaces/IStrategy.sol";
+import {IStrategy} from "herdaddy/interfaces/stake-dao/IStrategy.sol";
 
 /// @title A contract that accumulates 3crv rewards and notifies them to the LGV4
 /// @author StakeDAO

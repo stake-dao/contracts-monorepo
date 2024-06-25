@@ -11,7 +11,7 @@ import "address-book/protocols/1.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {CRVAccumulatorV2} from "src/curve/accumulator/CRVAccumulatorV2.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
-import {IStrategy} from "herdaddy/interfaces/IStrategy.sol";
+import {IStrategy} from "herdaddy/interfaces/stake-dao/IStrategy.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {FeeReceiverMock} from "test/utils/mocks/FeeReceiverMock.sol";
 

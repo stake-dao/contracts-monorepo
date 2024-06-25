@@ -21,6 +21,12 @@ import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {Frax} from "address-book/protocols/252.sol";
 import {FXS} from "address-book/lockers/1.sol";
 
+interface IYieldDistributorWhitelist {
+    function owner() external view returns (address);
+
+    function setThirdPartyClaimer(address _staker, address _claimer) external;
+}
+
 contract FXSLockerFraxtalIntegrationTest is Test {
     uint256 private constant MIN_LOCK_DURATION = 1 weeks;
     uint256 private constant MAX_LOCK_DURATION = 4 * 365 days;
@@ -28,7 +34,8 @@ contract FXSLockerFraxtalIntegrationTest is Test {
     ERC20 private token = ERC20(Frax.FXS);
     FxsLockerFraxtal private locker;
     IVestedFXS private veToken = IVestedFXS(Frax.VEFXS);
-    IYieldDistributor private yieldDistributor = IYieldDistributor(Frax.YIELD_DISTRIBUTOR);
+    //IYieldDistributor private yieldDistributor = IYieldDistributor(Frax.YIELD_DISTRIBUTOR);
+    IYieldDistributor private yieldDistributor = IYieldDistributor(0x21359d1697e610e25C8229B2C57907378eD09A2E);
 
     sdFXSFraxtal private _sdToken;
     sdTokenOperatorFraxtal private mainOperator;
@@ -37,7 +44,8 @@ contract FXSLockerFraxtalIntegrationTest is Test {
     ILiquidityGauge private liquidityGauge;
 
     IFraxtalDelegationRegistry private constant DELEGATION_REGISTRY =
-        IFraxtalDelegationRegistry(Frax.DELEGATION_REGISTRY);
+        IFraxtalDelegationRegistry(0x098c837FeF2e146e96ceAF58A10F68Fc6326DC4C);
+    //IFraxtalDelegationRegistry(Frax.DELEGATION_REGISTRY);
     address private constant INITIAL_DELEGATE = 0xB0552b6860CE5C0202976Db056b5e3Cc4f9CC765;
     address private constant FRAXTAL_BRIDGE = 0x4200000000000000000000000000000000000010;
     address private constant DAO_FEE_REC = address(0xABFD);
@@ -78,14 +86,19 @@ contract FXSLockerFraxtalIntegrationTest is Test {
         );
 
         accumulator = new FxsAccumulatorFraxtal(
-            address(liquidityGauge),
-            address(locker),
-            DAO_FEE_REC,
-            LIQUIDITY_FEE_REC,
-            GOVERNANCE,
-            address(DELEGATION_REGISTRY),
-            INITIAL_DELEGATE
+            address(liquidityGauge), address(locker), GOVERNANCE, address(DELEGATION_REGISTRY), INITIAL_DELEGATE
         );
+
+        address[] memory receivers = new address[](2);
+        receivers[0] = DAO_FEE_REC;
+        receivers[1] = LIQUIDITY_FEE_REC;
+
+        uint256[] memory fees = new uint256[](2);
+        fees[0] = 500; // 5%
+        fees[1] = 100; // 1%
+
+        vm.prank(GOVERNANCE);
+        accumulator.setFeeSplit(receivers, fees);
 
         // check if delegation has set correctly during the deploy
         // sdFXS
@@ -128,6 +141,10 @@ contract FXSLockerFraxtalIntegrationTest is Test {
         depositor.createLock(amount);
 
         vm.stopPrank();
+
+        // whitelist accumulator to be the veFXS's L1 reward claimer
+        vm.prank(IYieldDistributorWhitelist(address(yieldDistributor)).owner());
+        IYieldDistributorWhitelist(address(yieldDistributor)).setThirdPartyClaimer(FXS.LOCKER, address(accumulator));
     }
 
     function test_initialization() public {
@@ -315,7 +332,7 @@ contract FXSLockerFraxtalIntegrationTest is Test {
         address claimer = address(0xCCCC);
 
         vm.prank(claimer);
-        accumulator.claimAndNotifyAll(false, false);
+        accumulator.claimAndNotifyAll(false, false, false);
 
         assertEq(token.balanceOf(address(accumulator)), 0);
 
@@ -326,8 +343,10 @@ contract FXSLockerFraxtalIntegrationTest is Test {
 
         uint256 totalClaimed = daoFeeRecBalance + liqFeeRecBalance + claimerBalance + gaugeBalance;
 
-        assertEq(daoFeeRecBalance, totalClaimed * accumulator.daoFee() / accumulator.DENOMINATOR());
-        assertEq(liqFeeRecBalance, totalClaimed * accumulator.liquidityFee() / accumulator.DENOMINATOR());
+        FxsAccumulatorFraxtal.Split memory feeSplit = accumulator.getFeeSplit();
+
+        assertEq(daoFeeRecBalance, totalClaimed * feeSplit.fees[0] / accumulator.DENOMINATOR());
+        assertEq(liqFeeRecBalance, totalClaimed * feeSplit.fees[1] / accumulator.DENOMINATOR());
         assertEq(claimerBalance, totalClaimed * accumulator.claimerFee() / accumulator.DENOMINATOR());
     }
 

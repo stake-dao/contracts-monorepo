@@ -63,8 +63,8 @@ contract YearnAccumulatorV2Test is Test {
         accumulator.setFeeReceiver(FEE_RECEIVER);
 
         /// Setup the accumulator in the Fee Receiver.
-        vm.prank(GOV);
-        IFeeReceiver(FEE_RECEIVER).setAccumulator(DYFI, address(accumulator));
+        //vm.prank(GOV);
+        //IFeeReceiver(FEE_RECEIVER).setAccumulator(DYFI, address(accumulator));
 
         address[] memory receivers = new address[](2);
         uint256[] memory fees = new uint256[](2);
@@ -75,8 +75,8 @@ contract YearnAccumulatorV2Test is Test {
         fees[0] = 5000;
         fees[1] = 5000;
 
-        vm.prank(GOV);
-        IFeeReceiver(FEE_RECEIVER).setRepartition(DYFI, receivers, fees);
+        //vm.prank(GOV);
+        //IFeeReceiver(FEE_RECEIVER).setRepartition(DYFI, receivers, fees);
 
         deal(DYFI, DYFI_REWARD_POOL, 100e18);
         deal(yfi, YFI_REWARD_POOL, 100e18);

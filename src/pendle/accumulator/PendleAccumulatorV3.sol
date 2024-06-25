@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import "src/base/accumulator/AccumulatorV2.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
-import {IStrategy} from "herdaddy/interfaces/IStrategy.sol";
+import {IStrategy} from "herdaddy/interfaces/stake-dao/IStrategy.sol";
 import {IPendleFeeDistributor} from "src/base/interfaces/IPendleFeeDistributor.sol";
 
 interface IWETH {

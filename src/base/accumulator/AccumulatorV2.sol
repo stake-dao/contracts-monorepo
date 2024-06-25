@@ -122,18 +122,13 @@ abstract contract AccumulatorV2 {
     //////////////////////////////////////////////////////
 
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4
-    function claimAndNotifyAll(bool _notifySDT, bool _pullFromFeeReceiver, bool _distributeRewardsFromStrategy)
+    function claimAndNotifyAll(bool notifySDT, bool pullFromFeeReceiver, bool claimFeeStrategy) external virtual {}
+
+    /// @notice Claims a reward token for the locker and notify them to the LGV4
+    function claimTokenAndNotifyAll(address token, bool notifySDT, bool pullFromFeeReceiver, bool claimFeeStrategy)
         external
         virtual
     {}
-
-    /// @notice Claims a reward token for the locker and notify them to the LGV4
-    function claimTokenAndNotifyAll(
-        address _token,
-        bool _notifySDT,
-        bool _pullFromFeeReceiver,
-        bool _distributeRewardsFromStrategy
-    ) external virtual {}
 
     /// @notice Notify the whole acc balance of a token
     /// @param _token token to notify
