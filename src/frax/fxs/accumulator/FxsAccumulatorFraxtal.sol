@@ -27,18 +27,16 @@ contract FxsAccumulatorFraxtal is AccumulatorV2 {
     /// @notice Constructor
     /// @param _gauge sd gauge
     /// @param _locker sd locker
-    /// @param _daoFeeRecipient dao fee recipient
-    /// @param _liquidityFeeRecipient liquidity fee recipient
     /// @param _governance governance
+    /// @param _delegationRegistry delegation registry
+    /// @param _initialDelegate initial delegate
     constructor(
         address _gauge,
         address _locker,
-        address _daoFeeRecipient,
-        address _liquidityFeeRecipient,
         address _governance,
         address _delegationRegistry,
         address _initialDelegate
-    ) AccumulatorV2(_gauge, _locker, _daoFeeRecipient, _liquidityFeeRecipient, _governance) {
+    ) AccumulatorV2(_gauge, _locker, _governance) {
         SafeTransferLib.safeApprove(FXS, _gauge, type(uint256).max);
 
         // Custom code for Fraxtal

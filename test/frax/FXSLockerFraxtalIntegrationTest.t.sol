@@ -86,14 +86,19 @@ contract FXSLockerFraxtalIntegrationTest is Test {
         );
 
         accumulator = new FxsAccumulatorFraxtal(
-            address(liquidityGauge),
-            address(locker),
-            DAO_FEE_REC,
-            LIQUIDITY_FEE_REC,
-            GOVERNANCE,
-            address(DELEGATION_REGISTRY),
-            INITIAL_DELEGATE
+            address(liquidityGauge), address(locker), GOVERNANCE, address(DELEGATION_REGISTRY), INITIAL_DELEGATE
         );
+
+        address[] memory receivers = new address[](2);
+        receivers[0] = DAO_FEE_REC;
+        receivers[1] = LIQUIDITY_FEE_REC;
+
+        uint256[] memory fees = new uint256[](2);
+        fees[0] = 500; // 5%
+        fees[1] = 100; // 1%
+
+        vm.prank(GOVERNANCE);
+        accumulator.setFeeSplit(receivers, fees);
 
         // check if delegation has set correctly during the deploy
         // sdFXS
@@ -338,8 +343,10 @@ contract FXSLockerFraxtalIntegrationTest is Test {
 
         uint256 totalClaimed = daoFeeRecBalance + liqFeeRecBalance + claimerBalance + gaugeBalance;
 
-        assertEq(daoFeeRecBalance, totalClaimed * accumulator.daoFee() / accumulator.DENOMINATOR());
-        assertEq(liqFeeRecBalance, totalClaimed * accumulator.liquidityFee() / accumulator.DENOMINATOR());
+        FxsAccumulatorFraxtal.Split memory feeSplit = accumulator.getFeeSplit();
+
+        assertEq(daoFeeRecBalance, totalClaimed * feeSplit.fees[0] / accumulator.DENOMINATOR());
+        assertEq(liqFeeRecBalance, totalClaimed * feeSplit.fees[1] / accumulator.DENOMINATOR());
         assertEq(claimerBalance, totalClaimed * accumulator.claimerFee() / accumulator.DENOMINATOR());
     }
 

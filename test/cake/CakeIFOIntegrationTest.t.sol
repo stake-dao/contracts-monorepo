@@ -110,7 +110,7 @@ contract CakeIFOIntegrationTest is Test {
     }
 
     function test_deposit_first_period() external {
-        uint startTimestamp = ifo.firstPeriodStart();
+        uint256 startTimestamp = ifo.firstPeriodStart();
         vm.warp(startTimestamp + 1);
 
         uint8 pid = 1;

@@ -17,9 +17,7 @@ contract DeployFxsAccumulatoFraxtal is Script {
         vm.startBroadcast(DEPLOYER);
 
         require(block.chainid == 252, "wrong network");
-        accumulator = new FxsAccumulatorFraxtal(
-            GAUGE, LOCKER, GOVERNANCE, GOVERNANCE, GOVERNANCE, DELEGATION_REGISTRY, GOVERNANCE
-        );
+        accumulator = new FxsAccumulatorFraxtal(GAUGE, LOCKER, GOVERNANCE, DELEGATION_REGISTRY, GOVERNANCE);
 
         vm.stopBroadcast();
     }
