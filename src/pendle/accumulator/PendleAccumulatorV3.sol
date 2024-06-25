@@ -70,7 +70,7 @@ contract PendleAccumulatorV3 is AccumulatorV2 {
         external
     {
         // Sending strategy fees to fee receiver
-        if (claimFeeStrategy) {
+        if (claimFeeStrategy && strategy != address(0)) {
             _claimFeeStrategy(address(strategy));
         }
 
