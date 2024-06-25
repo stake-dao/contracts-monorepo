@@ -138,9 +138,9 @@ contract CRVAccumulatorV3IntegrationTest is Test {
 
         /// Compute new fee split.
         feeSplit = accumulator.getFeeSplit();
-        uint new_treasury = 1_000_000e18 * feeSplit.fees[0] / 10_000;
-        uint new_liquidityFee = 1_000_000e18 * feeSplit.fees[1] / 10_000;
-        uint new_claimer = 1_000_000e18 * accumulator.claimerFee() / 10_000;
+        uint256 new_treasury = 1_000_000e18 * feeSplit.fees[0] / 10_000;
+        uint256 new_liquidityFee = 1_000_000e18 * feeSplit.fees[1] / 10_000;
+        uint256 new_claimer = 1_000_000e18 * accumulator.claimerFee() / 10_000;
 
         total = 1_000_000e18 - new_treasury - new_liquidityFee - new_claimer;
 
