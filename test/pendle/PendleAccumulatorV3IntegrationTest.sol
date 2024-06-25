@@ -120,10 +120,10 @@ contract PendleAccumulatorV3IntegrationTest is Test {
         _pools.pop();
 
         vm.expectRevert(PendleAccumulatorV3.NOT_CLAIMED_ALL.selector);
-        accumulator.claimAll(_pools, false, false, false);
+        accumulator.claimAndNotifyAll(_pools, false, false, false);
 
         accumulator.setTransferVotersRewards(_setTransfer);
-        accumulator.claimAll(_poolsCopy, false, false, false);
+        accumulator.claimAndNotifyAll(_poolsCopy, false, false, false);
 
         uint256 treasury = WETH.balanceOf(address(treasuryRecipient));
         uint256 voters = WETH.balanceOf(address(votersRewardsRecipient));
@@ -152,12 +152,12 @@ contract PendleAccumulatorV3IntegrationTest is Test {
         accumulator.notifyReward(address(WETH), false, false);
 
         vm.expectRevert(PendleAccumulatorV3.NO_BALANCE.selector);
-        accumulator.claimAll(_pools, false, false, false);
+        accumulator.claimAndNotifyAll(_pools, false, false, false);
 
         skip(1 weeks);
 
         vm.expectRevert(PendleAccumulatorV3.NO_BALANCE.selector);
-        accumulator.claimAll(_pools, false, false, false);
+        accumulator.claimAndNotifyAll(_pools, false, false, false);
 
         uint256 toDistribute = WETH.balanceOf(address(accumulator)) / 3;
         accumulator.notifyReward(address(WETH), false, false);
