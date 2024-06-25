@@ -11,13 +11,15 @@ import "address-book/protocols/1.sol";
 
 import "src/curve/accumulator/CRVAccumulatorV3.sol";
 
-import {IStrategy} from "lib/herdaddy/src/interfaces/IStrategy.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
+import "lib/herdaddy/src/interfaces/stake-dao/IStrategy.sol";
+import "lib/herdaddy/src/interfaces/curve/IFeeDistributor.sol";
 
 contract CRVAccumulatorV3IntegrationTest is Test {
-    uint256 blockNumber = 20_031_924;
+    uint256 blockNumber = 20_169_332;
 
-    address public constant CRV_USD = 0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E;
+    ERC20 public constant CRV_USD = ERC20(0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E);
+    address public constant FEE_DISTRIBUTOR = 0xD16d5eC345Dd86Fb63C6a9C43c517210F1027914;
 
     address internal locker = CRV.LOCKER;
     address internal sdToken = CRV.SDTOKEN;
@@ -48,14 +50,32 @@ contract CRVAccumulatorV3IntegrationTest is Test {
         /// Set Fee split.
         accumulator.setFeeSplit(feeSplitReceivers, feeSplitFees);
 
+        /// Setup new Fee Distributor.
+
         vm.prank(DAO.GOVERNANCE);
         IStrategy(CRV.STRATEGY).setAccumulator(address(accumulator));
+
+        vm.prank(DAO.GOVERNANCE);
+        IStrategy(CRV.STRATEGY).setFeeDistributor(address(FEE_DISTRIBUTOR));
+
+        vm.prank(DAO.GOVERNANCE);
+        IStrategy(CRV.STRATEGY).setFeeRewardToken(address(CRV_USD));
+
+        /// Simulate CRV_USD rewards.
+        deal(address(CRV_USD), address(FEE_DISTRIBUTOR), 1_000_000e18);
+
+        address _admin = IFeeDistributor(FEE_DISTRIBUTOR).admin();
+
+        vm.prank(_admin);
+        IFeeDistributor(FEE_DISTRIBUTOR).checkpoint_token();
 
         // Add Reward to LGV4
         vm.startPrank(liquidityGauge.admin());
         liquidityGauge.add_reward(address(CRV_USD), address(accumulator));
         liquidityGauge.set_reward_distributor(address(CRV.TOKEN), address(accumulator));
         vm.stopPrank();
+
+        skip(1 weeks);
     }
 
     function test_setup() public {
@@ -77,78 +97,58 @@ contract CRVAccumulatorV3IntegrationTest is Test {
         assertEq(split.fees[1], 1000);
     }
 
-    // function test_claimAll(bool _setTransfer) public {
-    // //Check Dao recipient
-    // assertEq(WETH.balanceOf(address(treasuryRecipient)), 0);
-    // //// Check Bounty recipient
-    // assertEq(WETH.balanceOf(address(liquidityFeeRecipient)), 0);
-    // //// Check lgv4
-    // uint256 gaugeBalanceBefore = WETH.balanceOf(address(liquidityGauge));
+    function test_claimAll(bool pullFromFeeReceiver) public {
+        //Check Dao recipient
+        assertEq(CRV_USD.balanceOf(address(treasuryRecipient)), 0);
+        //// Check Bounty recipient
+        assertEq(CRV_USD.balanceOf(address(liquidityFeeRecipient)), 0);
 
-    // address[] memory _poolsCopy = _pools;
+        assertEq(CRV_USD.balanceOf(address(FEE_DISTRIBUTOR)), 1_000_000e18);
 
-    // /// Remove 1 pool from the list to trigger NOT_CLAIMED_ALL.
-    // _pools.pop();
+        /// Check lgv4.
+        uint256 gaugeBalanceBefore = CRV_USD.balanceOf(address(liquidityGauge));
 
-    // vm.expectRevert(PendleAccumulatorV3.NOT_CLAIMED_ALL.selector);
-    // accumulator.claimAll(_pools, false, false, false);
+        accumulator.claimAndNotifyAll(false, pullFromFeeReceiver, pullFromFeeReceiver);
 
-    // accumulator.setTransferVotersRewards(_setTransfer);
-    // accumulator.claimAll(_poolsCopy, false, false, false);
+        uint256 treasury = CRV_USD.balanceOf(address(treasuryRecipient));
+        uint256 liquidityFee = CRV_USD.balanceOf(address(liquidityFeeRecipient));
+        uint256 gauge = CRV_USD.balanceOf(address(liquidityGauge)) - gaugeBalanceBefore;
+        uint256 claimer = CRV_USD.balanceOf(address(this));
+        uint256 total = treasury + liquidityFee + gauge + claimer;
 
-    // uint256 treasury = WETH.balanceOf(address(treasuryRecipient));
-    // uint256 voters = WETH.balanceOf(address(votersRewardsRecipient));
-    // uint256 liquidityFee = WETH.balanceOf(address(liquidityFeeRecipient));
-    // uint256 gauge = WETH.balanceOf(address(liquidityGauge)) - gaugeBalanceBefore;
-    // uint256 claimer = WETH.balanceOf(address(this));
+        assertGt(total, 0);
 
-    // /// WETH is distributed over 4 weeks to gauge.
-    // uint256 remaining = WETH.balanceOf(address(accumulator));
-    // uint256 total = treasury + liquidityFee + gauge + claimer + remaining + voters;
+        CRVAccumulatorV3.Split memory feeSplit = accumulator.getFeeSplit();
+        assertEq(total * accumulator.claimerFee() / 10_000, claimer);
+        assertEq(total * feeSplit.fees[0] / 10_000, treasury);
+        assertEq(total * feeSplit.fees[1] / 10_000, liquidityFee);
 
-    // PendleAccumulatorV3.Split memory feeSplit = accumulator.getFeeSplit();
+        uint256 _before = ERC20(CRV.TOKEN).balanceOf(address(liquidityGauge));
 
-    // assertEq(total * accumulator.claimerFee() / 10_000, claimer);
+        deal(CRV.TOKEN, address(accumulator), 1_000_000e18);
+        accumulator.notifyReward(address(CRV.TOKEN), false, false);
 
-    // assertEq(total * feeSplit.fees[0] / 10_000, treasury);
-    // assertEq(total * feeSplit.fees[1] / 10_000, liquidityFee);
+        /// It should distribute 1_000_000 CRV  LGV4, meaning no fees were taken.
+        assertEq(ERC20(CRV.TOKEN).balanceOf(address(liquidityGauge)), _before + 1_000_000e18);
 
-    // assertEq(accumulator.remainingPeriods(), 3);
+        _before = CRV_USD.balanceOf(address(liquidityGauge));
 
-    // if (!_setTransfer) {
-    // assertEq(voters, 0);
-    // }
+        deal(address(CRV_USD), address(accumulator), 1_000_000e18);
+        accumulator.notifyReward(address(CRV_USD), false, false);
 
-    // vm.expectRevert(PendleAccumulatorV3.ONGOING_REWARD.selector);
-    // accumulator.notifyReward(address(WETH), false, false);
+        /// Compute new fee split.
+        feeSplit = accumulator.getFeeSplit();
+        uint new_treasury = 1_000_000e18 * feeSplit.fees[0] / 10_000;
+        uint new_liquidityFee = 1_000_000e18 * feeSplit.fees[1] / 10_000;
+        uint new_claimer = 1_000_000e18 * accumulator.claimerFee() / 10_000;
 
-    // vm.expectRevert(PendleAccumulatorV3.NO_BALANCE.selector);
-    // accumulator.claimAll(_pools, false, false, false);
+        total = 1_000_000e18 - new_treasury - new_liquidityFee - new_claimer;
 
-    // skip(1 weeks);
-
-    // vm.expectRevert(PendleAccumulatorV3.NO_BALANCE.selector);
-    // accumulator.claimAll(_pools, false, false, false);
-
-    // uint256 toDistribute = WETH.balanceOf(address(accumulator)) / 3;
-    // accumulator.notifyReward(address(WETH), false, false);
-
-    // /// Balances should be the same as we already took fees.
-    // assertEq(WETH.balanceOf(address(treasuryRecipient)), treasury);
-    // assertEq(WETH.balanceOf(address(liquidityFeeRecipient)), liquidityFee);
-    // assertEq(WETH.balanceOf(address(liquidityGauge)) - gaugeBalanceBefore, gauge + toDistribute);
-    // assertEq(WETH.balanceOf(address(this)), claimer);
-
-    // assertEq(accumulator.remainingPeriods(), 2);
-
-    // uint256 _before = ERC20(PENDLE.TOKEN).balanceOf(address(liquidityGauge));
-
-    // deal(PENDLE.TOKEN, address(accumulator), 1_000_000e18);
-    // accumulator.notifyReward(address(PENDLE.TOKEN), false, false);
-
-    // /// It should distribute 1_000_000 PENDLE to LGV4, meaning no fees were taken.
-    // assertEq(ERC20(PENDLE.TOKEN).balanceOf(address(liquidityGauge)), _before + 1_000_000e18);
-    // }
+        assertEq(CRV_USD.balanceOf(address(treasuryRecipient)), treasury + new_treasury);
+        assertEq(CRV_USD.balanceOf(address(liquidityFeeRecipient)), liquidityFee + new_liquidityFee);
+        assertEq(CRV_USD.balanceOf(address(liquidityGauge)), _before + total);
+        assertEq(CRV_USD.balanceOf(address(this)), claimer + new_claimer);
+    }
 
     function test_setters() public {
         address[] memory feeSplitReceivers = new address[](2);

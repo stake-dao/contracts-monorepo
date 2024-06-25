@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import "src/base/accumulator/AccumulatorV2.sol";
-import {IStrategy} from "herdaddy/interfaces/IStrategy.sol";
+import {IStrategy} from "herdaddy/interfaces/stake-dao/IStrategy.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 
 /// @title A contract that accumulates crvUsd rewards and notifies them to the LGV4
