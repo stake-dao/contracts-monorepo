@@ -1,17 +1,21 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "src/base/accumulator/Accumulator.sol";
+import "src/base/accumulator/AccumulatorV2.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
+import {IYieldDistributor} from "src/base/interfaces/IYieldDistributor.sol";
 
 /// @title A contract that accumulates FXS rewards and notifies them to the LGV4
 /// @author StakeDAO
-contract FxsAccumulatorFraxtal is Accumulator {
+contract FxsAccumulatorFraxtal is AccumulatorV2 {
     /// @notice FXS token address
     address public constant FXS = 0xFc00000000000000000000000000000000000002;
 
+    /// @notice FXS ethereum locker
+    address public constant ETH_LOCKER = 0xCd3a267DE09196C48bbB1d9e842D7D7645cE448f;
+
     /// @notice FXS yield distributor
-    address public constant YIELD_DISTRIBUTOR = 0x39333a540bbea6262e405E1A6d435Bd2e776561E;
+    address public yieldDistributor = 0x21359d1697e610e25C8229B2C57907378eD09A2E;
 
     /// @notice Throwed when a low level call fails
     error CallFailed();
@@ -34,7 +38,7 @@ contract FxsAccumulatorFraxtal is Accumulator {
         address _governance,
         address _delegationRegistry,
         address _initialDelegate
-    ) Accumulator(_gauge, _locker, _daoFeeRecipient, _liquidityFeeRecipient, _governance) {
+    ) AccumulatorV2(_gauge, _locker, _daoFeeRecipient, _liquidityFeeRecipient, _governance) {
         SafeTransferLib.safeApprove(FXS, _gauge, type(uint256).max);
 
         // Custom code for Fraxtal
@@ -55,11 +59,20 @@ contract FxsAccumulatorFraxtal is Accumulator {
     /// @param _notifySDT if notify SDT or not
     /// @param _pullFromFeeSplitter if pull tokens from the fee splitter or not
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4
-    function claimAndNotifyAll(bool _notifySDT, bool _pullFromFeeSplitter) external override {
-        /// Claim FXS reward.
-        ILocker(locker).claimRewards(YIELD_DISTRIBUTOR, FXS, address(this));
+    function claimAndNotifyAll(bool _notifySDT, bool _pullFromFeeSplitter, bool) external override {
+        /// Claim FXS reward for L1's veFXS bridged, on behalf of the eth locker
+        IYieldDistributor(yieldDistributor).getYieldThirdParty(ETH_LOCKER);
+
+        /// Claim FXS reward for fraxtal's veFXS
+        ILocker(locker).claimRewards(yieldDistributor, FXS, address(this));
 
         /// Notify FXS to the gauge.
         notifyReward(FXS, _notifySDT, _pullFromFeeSplitter);
+    }
+
+    /// @notice Set frax yield distributor
+    /// @param _yieldDistributor Address of the frax yield distributor
+    function setYieldDistributor(address _yieldDistributor) external onlyGovernance {
+        yieldDistributor = _yieldDistributor;
     }
 }

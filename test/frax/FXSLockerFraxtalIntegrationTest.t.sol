@@ -9,7 +9,7 @@ import {sdFXSFraxtal} from "src/frax/fxs/token/sdFXSFraxtal.sol";
 import {sdTokenOperatorFraxtal} from "src/frax/fxs/token/sdTokenOperatorFraxtal.sol";
 import "src/frax/fxs/locker/FxsLockerFraxtal.sol";
 import {FXSDepositorFraxtal} from "src/frax/fxs/depositor/FXSDepositorFraxtal.sol";
-import {FxsAccumulatorV2Fraxtal} from "src/frax/fxs/accumulator/FxsAccumulatorV2Fraxtal.sol";
+import {FxsAccumulatorFraxtal} from "src/frax/fxs/accumulator/FxsAccumulatorFraxtal.sol";
 
 import {Constants} from "src/base/utils/Constants.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
@@ -40,7 +40,7 @@ contract FXSLockerFraxtalIntegrationTest is Test {
     sdFXSFraxtal private _sdToken;
     sdTokenOperatorFraxtal private mainOperator;
     FXSDepositorFraxtal private depositor;
-    FxsAccumulatorV2Fraxtal private accumulator;
+    FxsAccumulatorFraxtal private accumulator;
     ILiquidityGauge private liquidityGauge;
 
     IFraxtalDelegationRegistry private constant DELEGATION_REGISTRY =
@@ -85,7 +85,7 @@ contract FXSLockerFraxtalIntegrationTest is Test {
             INITIAL_DELEGATE
         );
 
-        accumulator = new FxsAccumulatorV2Fraxtal(
+        accumulator = new FxsAccumulatorFraxtal(
             address(liquidityGauge),
             address(locker),
             DAO_FEE_REC,
@@ -327,7 +327,7 @@ contract FXSLockerFraxtalIntegrationTest is Test {
         address claimer = address(0xCCCC);
 
         vm.prank(claimer);
-        accumulator.claimAndNotifyAll(false, false);
+        accumulator.claimAndNotifyAll(false, false, false);
 
         assertEq(token.balanceOf(address(accumulator)), 0);
 

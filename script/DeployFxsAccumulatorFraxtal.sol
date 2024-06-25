@@ -2,10 +2,10 @@
 pragma solidity 0.8.19;
 
 import "forge-std/Script.sol";
-import {FxsAccumulatorV2Fraxtal} from "src/frax/fxs/accumulator/FxsAccumulatorV2Fraxtal.sol";
+import {FxsAccumulatorFraxtal} from "src/frax/fxs/accumulator/FxsAccumulatorFraxtal.sol";
 
-contract DeployFxsAccumulatoV2Fraxtal is Script {
-    FxsAccumulatorV2Fraxtal public accumulator;
+contract DeployFxsAccumulatoFraxtal is Script {
+    FxsAccumulatorFraxtal public accumulator;
 
     address public constant GAUGE = 0x12992595328E52267c95e45B1a97014D6Ddf8683;
     address public constant LOCKER = 0x26aCff2adc9104FE1c26c958dC4C9a5180840c35;
@@ -17,7 +17,7 @@ contract DeployFxsAccumulatoV2Fraxtal is Script {
         vm.startBroadcast(DEPLOYER);
 
         require(block.chainid == 252, "wrong network");
-        accumulator = new FxsAccumulatorV2Fraxtal(
+        accumulator = new FxsAccumulatorFraxtal(
             GAUGE, LOCKER, GOVERNANCE, GOVERNANCE, GOVERNANCE, DELEGATION_REGISTRY, GOVERNANCE
         );
 
