@@ -33,7 +33,7 @@ contract CakeIFOIntegrationTest is Test {
     ICakeLocker private constant LOCKER = ICakeLocker(CAKE.LOCKER);
     ICakeDepositor private constant DEPOSITOR = ICakeDepositor(CAKE.DEPOSITOR);
 
-    ICakeIFOV7 private constant CAKE_IFO = ICakeIFOV7(0x5f77A54F4314aef5BDd311aCfcccAC90B39432e8);
+    ICakeIFOV8 private constant CAKE_IFO = ICakeIFOV8(0x155c22E60B3934A58123Cf8a8Ff2DfEA4FcBA2b5);
     address private constant CAKE_BUNNY = 0xDf7952B35f24aCF7fC0487D01c8d5690a60DBa07;
     address private constant CAKE_BUNNY_FACTORY = 0xfa249Caa1D16f75fa159F7DFBAc0cC5EaB48CeFf;
     address private constant CAKE_PROFILE = 0xDf4dBf6536201370F95e06A0F8a7a70fE40E388a;
@@ -57,19 +57,17 @@ contract CakeIFOIntegrationTest is Test {
     bytes32[] private user2Proof;
 
     function setUp() external {
-        uint256 forkId = vm.createFork(vm.rpcUrl("bnb"), 34_949_400);
+        uint256 forkId = vm.createFork(vm.rpcUrl("bnb"), 38_539_682);
         vm.selectFork(forkId);
 
         // deploy the executor and set it because it has deployed after fork time
-        executor = new Executor(GOVERNANCE);
+        executor = Executor(CAKE.EXECUTOR);
 
         factory = new CakeIFOFactory(address(LOCKER), address(executor), address(this), FEE_RECEIVER);
 
         // allow the factory to call the executeTo on the executor
         vm.startPrank(GOVERNANCE);
         executor.allowAddress(address(factory));
-        LOCKER.transferGovernance(address(executor));
-        executor.execute(address(LOCKER), 0, abi.encodeWithSignature("acceptGovernance()", ""));
         vm.stopPrank();
 
         // create new ifo
@@ -112,6 +110,9 @@ contract CakeIFOIntegrationTest is Test {
     }
 
     function test_deposit_first_period() external {
+        uint startTimestamp = ifo.firstPeriodStart();
+        vm.warp(startTimestamp + 1);
+
         uint8 pid = 1;
         uint256 amountToDeposit = 10e18;
 
@@ -129,7 +130,7 @@ contract CakeIFOIntegrationTest is Test {
         uint8 pid = 0;
 
         // whitelist locker (action required by pancake)
-        vm.prank(0xeCc90d54B10ADd1ab746ABE7E83abe178B72aa9E);
+        vm.prank(0x444D73Ea7bC7C72Ea11638203846dAD632677180);
         ICakeWhitelist(address(CAKE_IFO)).addAddressToWhitelist(address(LOCKER));
 
         // lp limit
@@ -144,7 +145,7 @@ contract CakeIFOIntegrationTest is Test {
 
         // no lp limit for pid = 1
         uint256 lockerCredit =
-            ICakeV3(CAKE_IFO.iCakeAddress()).getUserCreditWithIfoAddr(address(LOCKER), address(CAKE_IFO));
+            ICakeV3(CAKE_IFO.addresses(3)).getUserCreditWithIfoAddr(address(LOCKER), address(CAKE_IFO));
         uint256 dTokenDepositable = lockerCredit * 1e18 / 300e18 * 100e18 / 1e18;
 
         // deposit max depositable
