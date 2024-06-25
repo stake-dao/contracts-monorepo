@@ -9,7 +9,7 @@ import "address-book/lockers/1.sol";
 import "address-book/protocols/1.sol";
 
 import {ERC20} from "solady/src/tokens/ERC20.sol";
-import {CurveAccumulatorV2} from "src/curve/accumulator/CurveAccumulatorV2.sol";
+import {CRVAccumulatorV2} from "src/curve/accumulator/CRVAccumulatorV2.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {IStrategy} from "herdaddy/interfaces/IStrategy.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
@@ -22,7 +22,7 @@ interface IStrategyGov is IStrategy {
 }
 
 contract CurveAccumulatorV2IntegrationTest is Test {
-    CurveAccumulatorV2 public accumulator;
+    CRVAccumulatorV2 public accumulator;
     IStrategyGov public strategy = IStrategyGov(0x69D61428d089C2F35Bf6a472F540D0F82D1EA2cd);
     address public crv;
     address public crv3;
@@ -53,9 +53,18 @@ contract CurveAccumulatorV2IntegrationTest is Test {
         crv3 = CRV3;
         sdCRVLG = ILiquidityGauge(CRV.GAUGE);
         crvLocker = ILocker(CRV.LOCKER);
-        accumulator = new CurveAccumulatorV2(
-            address(sdCRVLG), address(crvLocker), daoFeeRecipient, liquidityFeeRecipient, address(this)
-        );
+        accumulator = new CRVAccumulatorV2(address(sdCRVLG), address(crvLocker), address(this));
+
+        address[] memory feeSplitReceivers = new address[](2);
+        uint256[] memory feeSplitFees = new uint256[](2);
+
+        feeSplitReceivers[0] = daoFeeRecipient;
+        feeSplitFees[0] = 500; // 5% to dao
+
+        feeSplitReceivers[1] = liquidityFeeRecipient;
+        feeSplitFees[1] = 1000; // 5% to liquidity
+
+        accumulator.setFeeSplit(feeSplitReceivers, feeSplitFees);
 
         address[] memory receivers = new address[](1);
         uint256[] memory fees = new uint256[](1);
@@ -189,10 +198,14 @@ contract CurveAccumulatorV2IntegrationTest is Test {
         uint256 daoPart = ERC20(_token).balanceOf(daoFeeRecipient);
         uint256 liquidityPart = ERC20(_token).balanceOf(liquidityFeeRecipient);
         uint256 claimerPart = ERC20(_token).balanceOf(address(this));
+
+        CRVAccumulatorV2.Split memory feeSplit = accumulator.getFeeSplit();
+
         uint256 totalClaimed = gaugeBalance + daoPart + liquidityPart + claimerPart;
+
         assertEq(totalClaimed, _realTotal);
-        assertEq(daoPart, totalClaimed * accumulator.daoFee() / 10_000);
-        assertEq(liquidityPart, totalClaimed * accumulator.liquidityFee() / 10_000);
+        assertEq(daoPart, totalClaimed * feeSplit.fees[0] / 10_000);
+        assertEq(liquidityPart, totalClaimed * feeSplit.fees[1] / 10_000);
         assertEq(claimerPart, totalClaimed * accumulator.claimerFee() / 10_000);
     }
 }

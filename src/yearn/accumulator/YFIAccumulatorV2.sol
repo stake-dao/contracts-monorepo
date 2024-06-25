@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {Accumulator} from "src/base/accumulator/Accumulator.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {AccumulatorV2} from "src/base/accumulator/AccumulatorV2.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {IYearnStrategy} from "src/base/interfaces/IYearnStrategy.sol";
 
 /// @title A contract that accumulates YFI and dYFI rewards and notifies them to the LGV4
 /// @author StakeDAO
-contract YearnAccumulatorV2 is Accumulator {
+contract YFIAccumulatorV2 is AccumulatorV2 {
     /// @notice DFYI token address
     address public constant DYFI = 0x41252E8691e964f7DE35156B68493bAb6797a275;
 
@@ -16,7 +16,7 @@ contract YearnAccumulatorV2 is Accumulator {
     address public constant YFI = 0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e;
 
     /// @notice yearn strategy address
-    IYearnStrategy public immutable strategy;
+    IYearnStrategy public constant strategy = IYearnStrategy(0x1be150a35bb8233d092747eBFDc75FB357c35168);
 
     ////////////////////////////////////////////////////////////////
     /// --- EVENTS & ERRORS
@@ -32,19 +32,8 @@ contract YearnAccumulatorV2 is Accumulator {
     /// @notice Constructor
     /// @param _gauge sd gauge
     /// @param _locker sd locker
-    /// @param _daoFeeRecipient dao fee recipient
-    /// @param _liquidityFeeRecipient liquidity fee recipient
-    /// @param _strategy strategy
     /// @param _governance governance
-    constructor(
-        address _gauge,
-        address _locker,
-        address _daoFeeRecipient,
-        address _liquidityFeeRecipient,
-        address _strategy,
-        address _governance
-    ) Accumulator(_gauge, _locker, _daoFeeRecipient, _liquidityFeeRecipient, _governance) {
-        strategy = IYearnStrategy(_strategy);
+    constructor(address _gauge, address _locker, address _governance) AccumulatorV2(_gauge, _locker, _governance) {
         ERC20(YFI).approve(_gauge, type(uint256).max);
         ERC20(DYFI).approve(_gauge, type(uint256).max);
     }
@@ -54,29 +43,41 @@ contract YearnAccumulatorV2 is Accumulator {
     //////////////////////////////////////////////////////
 
     /// @notice Claims YFI or DYFI rewards for the locker and notify all to the LGV4
-    function claimTokenAndNotifyAll(address _token, bool _notifySDT, bool _pullFromFeeSplitter) external override {
-        if (_token != YFI && _token != DYFI) revert WRONG_TOKEN();
+    function claimTokenAndNotifyAll(address token, bool notifySDT, bool pullFromFeeSplitter, bool claimFeeStrategy)
+        external
+        override
+    {
+        if (token != YFI && token != DYFI) revert WRONG_TOKEN();
 
-        if (_token == YFI) {
+        // Sending strategy fees to fee receiver
+        if (claimFeeStrategy) {
+            _claimFeeStrategy(address(strategy));
+        }
+
+        if (token == YFI) {
             // claim YFI reward
             strategy.claimNativeRewards();
         } else {
             // claim dYFI reward
             strategy.claimDYFIRewardPool();
         }
-        uint256 amount = ERC20(_token).balanceOf(address(this));
+        uint256 amount = ERC20(token).balanceOf(address(this));
 
         // notify YFI or DYFI as reward in sdYFI gauge
-        _notifyReward(_token, amount, _pullFromFeeSplitter);
+        _notifyReward(token, amount, false);
 
-        if (_notifySDT) {
+        if (pullFromFeeSplitter) {
+            _notifyReward(DYFI, 0, true);
+        }
+
+        if (notifySDT) {
             // notify SDT
             _distributeSDT();
         }
     }
 
     /// @notice Claims YFI and DYFI rewards for the locker and notify all to the LGV4
-    function claimAndNotifyAll(bool _notifySDT, bool _pullFromFeeSplitter) external override {
+    function claimAndNotifyAll(bool _notifySDT, bool _pullFromFeeSplitter, bool claimFeeStrategy) external override {
         // claim YFI reward
         strategy.claimNativeRewards();
         uint256 yfiAmount = ERC20(YFI).balanceOf(address(this));
@@ -84,6 +85,11 @@ contract YearnAccumulatorV2 is Accumulator {
         // claim dYFI reward
         strategy.claimDYFIRewardPool();
         uint256 dYfiAmount = ERC20(DYFI).balanceOf(address(this));
+
+        // Sending strategy fees to fee receiver
+        if (claimFeeStrategy) {
+            _claimFeeStrategy(address(strategy));
+        }
 
         // notify YFI and DYFI as reward in sdYFI gauge
         _notifyReward(YFI, yfiAmount, false);

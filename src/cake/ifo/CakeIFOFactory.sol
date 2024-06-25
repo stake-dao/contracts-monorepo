@@ -2,8 +2,8 @@
 pragma solidity ^0.8.19;
 
 import {CakeIFO} from "src/cake/ifo/CakeIFO.sol";
-import {ICakeIFOV7} from "src/base/interfaces/ICakeIFOV7.sol";
 import {IExecutor} from "src/base/interfaces/IExecutor.sol";
+import {ICakeIFOV8} from "src/base/interfaces/ICakeIFOV8.sol";
 
 contract CakeIFOFactory {
     /// @notice Address of the executor
@@ -90,8 +90,8 @@ contract CakeIFOFactory {
     /// @param _cakeIFO Address of the pancake IFO contract.
     function createIFO(address _cakeIFO) external onlyGovernance {
         if (ifos[_cakeIFO] != address(0)) revert IfoAlreadyCreated();
-        address dToken = ICakeIFOV7(_cakeIFO).lpToken();
-        address oToken = ICakeIFOV7(_cakeIFO).offeringToken();
+        address dToken = ICakeIFOV8(_cakeIFO).addresses(0);
+        address oToken = ICakeIFOV8(_cakeIFO).addresses(1);
         ifos[_cakeIFO] = address(new CakeIFO(_cakeIFO, dToken, oToken, locker, address(executor), address(this)));
         allowed[ifos[_cakeIFO]] = true;
 

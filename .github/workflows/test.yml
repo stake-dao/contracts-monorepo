@@ -1,11 +1,11 @@
 name: test
 
 on:
-  push:
-    branches:
-      - main
-      - develop
-  pull_request:
+  # push:
+    # branches:
+      # - main
+      # - develop
+  # #pull_request:
 
 env:
   FOUNDRY_PROFILE: ci

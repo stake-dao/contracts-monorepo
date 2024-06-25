@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import {IExecutor} from "src/base/interfaces/IExecutor.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
-import {ICakeIFOV7} from "src/base/interfaces/ICakeIFOV7.sol";
+import {ICakeIFOV8} from "src/base/interfaces/ICakeIFOV8.sol";
 import {ICakeV3} from "src/base/interfaces/ICakeV3.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {MerkleProofLib} from "solmate/utils/MerkleProofLib.sol";
@@ -16,7 +16,7 @@ contract CakeIFO {
     using FixedPointMathLib for uint256;
 
     /// @notice Address of the pancake ifo contract
-    ICakeIFOV7 public immutable cakeIFO;
+    ICakeIFOV8 public immutable cakeIFO;
 
     /// @notice Address of the sd ifo factoruy
     CakeIFOFactory public immutable ifoFactory;
@@ -131,10 +131,10 @@ contract CakeIFO {
         address _executor,
         address _ifoFactory
     ) {
-        cakeIFO = ICakeIFOV7(_ifo);
+        cakeIFO = ICakeIFOV8(_ifo);
         // check if ifo already started
-        uint256 startTimestamp = ICakeIFOV7(cakeIFO).startTimestamp();
-        uint256 endTimestamp = ICakeIFOV7(cakeIFO).endTimestamp();
+        uint256 startTimestamp = ICakeIFOV8(cakeIFO).startTimestamp();
+        uint256 endTimestamp = ICakeIFOV8(cakeIFO).endTimestamp();
         uint256 _firstPeriodStart;
         uint256 _firstPeriodEnd;
         // IFO not started yet
@@ -191,7 +191,7 @@ contract CakeIFO {
         // if sale is not private get the locker credit
         uint256 lockerCredit;
         if (saleType != 1) {
-            lockerCredit = ICakeV3(cakeIFO.iCakeAddress()).getUserCreditWithIfoAddr(locker, address(cakeIFO));
+            lockerCredit = ICakeV3(cakeIFO.addresses(3)).getUserCreditWithIfoAddr(locker, address(cakeIFO));
             // set lpLimit as locker credit if there isn't any limit or if it is lower than lpLimit
             if (lpLimit == 0 || (lpLimit != 0 && lockerCredit < lpLimit)) {
                 lpLimit = lockerCredit;
@@ -219,7 +219,7 @@ contract CakeIFO {
     /// @param _pid Pool id.
     function depositPoolSecondPeriod(uint256 _dAmount, uint8 _pid) external {
         // check if the IFO is in second period
-        if (block.timestamp < firstPeriodEnd || block.timestamp > ICakeIFOV7(cakeIFO).endTimestamp()) {
+        if (block.timestamp < firstPeriodEnd || block.timestamp > ICakeIFOV8(cakeIFO).endTimestamp()) {
             revert NotInSecondPeriod();
         }
 
@@ -376,8 +376,8 @@ contract CakeIFO {
 
     /// @notice Update periods (needs to be called if an update happens before ifo starts)
     function updatePeriods() external {
-        uint256 startTimestamp = ICakeIFOV7(cakeIFO).startTimestamp();
-        uint256 endTimestamp = ICakeIFOV7(cakeIFO).endTimestamp();
+        uint256 startTimestamp = ICakeIFOV8(cakeIFO).startTimestamp();
+        uint256 endTimestamp = ICakeIFOV8(cakeIFO).endTimestamp();
         firstPeriodStart = startTimestamp;
         firstPeriodEnd = endTimestamp - ((endTimestamp - startTimestamp) / 2);
     }

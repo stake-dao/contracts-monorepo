@@ -15,14 +15,14 @@ contract CakeIFOTest is Test {
     CakeIFOFactory private factory;
     CakeIFO private ifo;
 
-    ICakeIFOV7 private constant CAKE_IFO = ICakeIFOV7(0x5f77A54F4314aef5BDd311aCfcccAC90B39432e8);
+    ICakeIFOV8 private constant CAKE_IFO = ICakeIFOV8(0x155c22E60B3934A58123Cf8a8Ff2DfEA4FcBA2b5);
     address private constant FEE_RECEIVER = address(0xFEEE);
     address private constant GOVERNANCE = DAO.GOVERNANCE;
     address private constant EXECUTOR = CAKE.EXECUTOR;
     address private constant LOCKER = CAKE.LOCKER;
 
     function setUp() external {
-        uint256 forkId = vm.createFork(vm.rpcUrl("bnb"), 34_947_503); // ifo needs to start yet
+        uint256 forkId = vm.createFork(vm.rpcUrl("bnb"), 38_538_797); // ifo needs to start yet
         vm.selectFork(forkId);
 
         factory = new CakeIFOFactory(LOCKER, EXECUTOR, GOVERNANCE, FEE_RECEIVER);
@@ -42,8 +42,8 @@ contract CakeIFOTest is Test {
 
         assertEq(address(ifo.cakeIFO()), address(CAKE_IFO));
         assertEq(address(ifo.executor()), EXECUTOR);
-        assertEq(address(ifo.dToken()), CAKE_IFO.lpToken());
-        assertEq(address(ifo.oToken()), CAKE_IFO.offeringToken());
+        assertEq(address(ifo.dToken()), CAKE_IFO.addresses(0));
+        assertEq(address(ifo.oToken()), CAKE_IFO.addresses(1));
         assertEq(ifo.locker(), LOCKER);
 
         // check periods
