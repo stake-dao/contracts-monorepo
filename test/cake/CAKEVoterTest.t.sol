@@ -46,7 +46,6 @@ contract CAKEVoterTest is Test {
 
     function test_vote_for_gauge() external {
         bytes32 gaugeHash = keccak256(abi.encodePacked(votes[0].gauge, votes[0].chainId));
-        uint256 currentPower = cakeGc.voteUserSlopes(CAKE_LOCKER, gaugeHash).power;
         vm.prank(GOVERNANCE);
         voter.voteForGaugeWeights(votes[0].gauge, votes[0].weight, votes[0].chainId, false, false);
         uint256 futurePower = cakeGc.voteUserSlopes(CAKE_LOCKER, gaugeHash).power;

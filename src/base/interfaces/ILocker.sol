@@ -53,4 +53,6 @@ interface ILocker {
     function acceptGovernance() external;
 
     function setStrategy(address _strategy) external;
+
+    function claimRewards(address _recipient, address[] calldata _pools) external;
 }

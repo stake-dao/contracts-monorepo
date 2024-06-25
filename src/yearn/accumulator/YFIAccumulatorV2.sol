@@ -32,16 +32,8 @@ contract YFIAccumulatorV2 is AccumulatorV2 {
     /// @notice Constructor
     /// @param _gauge sd gauge
     /// @param _locker sd locker
-    /// @param _daoFeeRecipient dao fee recipient
-    /// @param _liquidityFeeRecipient liquidity fee recipient
     /// @param _governance governance
-    constructor(
-        address _gauge,
-        address _locker,
-        address _daoFeeRecipient,
-        address _liquidityFeeRecipient,
-        address _governance
-    ) AccumulatorV2(_gauge, _locker, _daoFeeRecipient, _liquidityFeeRecipient, _governance) {
+    constructor(address _gauge, address _locker, address _governance) AccumulatorV2(_gauge, _locker, _governance) {
         ERC20(YFI).approve(_gauge, type(uint256).max);
         ERC20(DYFI).approve(_gauge, type(uint256).max);
     }
