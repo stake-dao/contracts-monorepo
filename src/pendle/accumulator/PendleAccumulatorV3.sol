@@ -66,11 +66,11 @@ contract PendleAccumulatorV3 is AccumulatorV2 {
         SafeTransferLib.safeApprove(PENDLE, gauge, type(uint256).max);
     }
 
-    function claimAll(address[] memory _pools, bool notifySDT, bool pullFromFeeReceiver, bool claimFeeStrategy)
+    function claimAndNotifyAll(address[] memory _pools, bool notifySDT, bool pullFromFeeReceiver, bool claimFeeStrategy)
         external
     {
         // Sending strategy fees to fee receiver
-        if (claimFeeStrategy) {
+        if (claimFeeStrategy && strategy != address(0)) {
             _claimFeeStrategy(address(strategy));
         }
 
