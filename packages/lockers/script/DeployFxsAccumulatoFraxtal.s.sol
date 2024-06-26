@@ -41,7 +41,6 @@ contract DeployFxsAccumulatoFraxtal is Script {
         accumulator.setFeeSplit(feeSplitReceivers, feeSplitFees);
         accumulator.transferGovernance(GOVERNANCE);
 
-
         vm.stopBroadcast();
     }
 }
