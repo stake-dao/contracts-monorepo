@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {ERC20} from "solady/tokens/ERC20.sol";
 import {AccumulatorV2} from "src/base/accumulator/AccumulatorV2.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {IYearnStrategy} from "src/base/interfaces/IYearnStrategy.sol";

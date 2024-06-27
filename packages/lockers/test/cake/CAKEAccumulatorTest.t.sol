@@ -9,7 +9,7 @@ import "address-book/lockers/56.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {ICakeLocker} from "src/base/interfaces/ICakeLocker.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
-import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {ERC20} from "solady/tokens/ERC20.sol";
 
 import {CakeAccumulator} from "src/cake/accumulator/CakeAccumulator.sol";
 import {IRevenueSharingPool} from "src/base/interfaces/IRevenueSharingPool.sol";

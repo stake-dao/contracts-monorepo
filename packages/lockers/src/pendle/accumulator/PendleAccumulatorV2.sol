@@ -5,7 +5,7 @@ import "src/base/interfaces/ILiquidityGauge.sol";
 import "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {PendleLocker} from "src/pendle/locker/PendleLocker.sol";
-import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
+import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
 import {ISDTDistributor} from "src/base/interfaces/ISDTDistributor.sol";
 import {IPendleFeeDistributor} from "src/base/interfaces/IPendleFeeDistributor.sol";
 

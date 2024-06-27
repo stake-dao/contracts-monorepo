@@ -5,7 +5,7 @@ import "forge-std/Test.sol";
 
 import "src/frax/fxs/collector/FxsCollectorFraxtal.sol";
 import {sdToken} from "src/base/token/sdToken.sol";
-import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {ERC20} from "solady/tokens/ERC20.sol";
 import {MockFxsDepositor, MockSdFxsGauge} from "test/frax/mocks/Mocks.sol";
 import {Constants} from "src/base/utils/Constants.sol";
 import {TransparentUpgradeableProxy} from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";

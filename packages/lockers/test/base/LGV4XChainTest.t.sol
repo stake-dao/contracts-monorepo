@@ -12,7 +12,7 @@ import {Constants} from "src/base/utils/Constants.sol";
 
 import {sdToken} from "src/base/token/sdToken.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
-import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {ERC20} from "solady/tokens/ERC20.sol";
 
 contract LGV4XChainTest is Test {
     address public stakeToken;

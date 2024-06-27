@@ -12,7 +12,7 @@ import {CAKEDepositor} from "src/cake/depositor/CAKEDepositor.sol";
 import {sdToken} from "src/base/token/sdToken.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {TransparentUpgradeableProxy} from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {ERC20} from "solady/tokens/ERC20.sol";
 import {IVeToken} from "src/base/interfaces/IVeToken.sol";
 
 interface IVeCakeUtil {

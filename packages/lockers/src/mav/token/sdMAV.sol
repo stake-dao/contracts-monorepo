@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import {OFT} from "solidity-examples/token/oft/OFT.sol";
+import {OFT} from "solidity-examples/token/oft/v1/OFT.sol";
 
 /// @title sdMAVOft
 /// @author StakeDAO
@@ -28,6 +28,7 @@ contract sdMAV is OFT {
     /// @param _amount amount to mint
     function mint(address _to, uint256 _amount) external {
         if (msg.sender != operator) revert ONLY_OPERATOR();
+
         _mint(_to, _amount);
     }
 

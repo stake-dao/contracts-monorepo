@@ -8,11 +8,11 @@ import "address-book/dao/1.sol";
 import "address-book/lockers/1.sol";
 import "address-book/protocols/1.sol";
 
-import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {ERC20} from "solady/tokens/ERC20.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {IYearnStrategy} from "src/base/interfaces/IYearnStrategy.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
-import {IFeeReceiver} from "lib/herdaddy/src/interfaces/IFeeReceiver.sol";
+import {IFeeReceiver} from "herdaddy/interfaces/IFeeReceiver.sol";
 import {YFIAccumulatorV2} from "src/yearn/accumulator/YFIAccumulatorV2.sol";
 
 contract YearnAccumulatorV2Test is Test {

@@ -7,7 +7,7 @@ import {FXS} from "address-book/lockers/1.sol";
 import {Frax} from "address-book/protocols/252.sol";
 import {sdTokenOperatorFraxtal} from "src/frax/fxs/token/sdTokenOperatorFraxtal.sol";
 import {sdFXSFraxtal} from "src/frax/fxs/token/sdFXSFraxtal.sol";
-import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {ERC20} from "solady/tokens/ERC20.sol";
 
 contract sdTokenOperatorFraxtalTest is Test {
     address internal constant OPERATOR_1 = address(0xBBBB);

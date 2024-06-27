@@ -16,7 +16,7 @@ import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {IVestedFXS} from "src/base/interfaces/IVestedFXS.sol";
 import {IFraxtalDelegationRegistry} from "src/base/interfaces/IFraxtalDelegationRegistry.sol";
 import {IYieldDistributor} from "src/base/interfaces/IYieldDistributor.sol";
-import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {ERC20} from "solady/tokens/ERC20.sol";
 
 import {Frax} from "address-book/protocols/252.sol";
 import {FXS} from "address-book/lockers/1.sol";

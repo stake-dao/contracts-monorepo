@@ -9,7 +9,7 @@ import "src/cake/ifo/CakeIFOFactory.sol";
 
 import {CAKE} from "address-book/lockers/56.sol";
 import {DAO} from "address-book/dao/56.sol";
-//import {ERC20} from "solady/src/tokens/ERC20.sol";
+//import {ERC20} from "solady/tokens/ERC20.sol";
 
 contract CakeIFOTest is Test {
     CakeIFOFactory private factory;

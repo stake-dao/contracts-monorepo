@@ -5,8 +5,8 @@ import {VeCRVLocker} from "src/base/locker/VeCRVLocker.sol";
 import {ICakeDepositor} from "src/base/interfaces/ICakeDepositor.sol";
 import {IRevenueSharingPoolGateway} from "src/base/interfaces/IRevenueSharingPoolGateway.sol";
 import {IVeCake} from "src/base/interfaces/IVeCake.sol";
-import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
-import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
+import {ERC20} from "solady/tokens/ERC20.sol";
 
 /// @title PancakeSwap Locker
 /// @author StakeDAO

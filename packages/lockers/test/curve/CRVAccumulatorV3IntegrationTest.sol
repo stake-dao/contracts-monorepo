@@ -12,8 +12,8 @@ import "address-book/protocols/1.sol";
 import "src/curve/accumulator/CRVAccumulatorV3.sol";
 
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
-import "lib/herdaddy/src/interfaces/stake-dao/IStrategy.sol";
-import "lib/herdaddy/src/interfaces/curve/IFeeDistributor.sol";
+import "herdaddy/interfaces/stake-dao/IStrategy.sol";
+import "herdaddy/interfaces/curve/IFeeDistributor.sol";
 
 contract CRVAccumulatorV3IntegrationTest is Test {
     uint256 blockNumber = 20_169_332;
