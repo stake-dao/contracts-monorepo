@@ -148,18 +148,19 @@ abstract contract AccumulatorV2Test is Test {
         accumulator.notifyReward(address(strategyRewardToken), false, false);
 
         /// It should distribute 1_000_000 PENDLE to LGV4, meaning no fees were taken.
-        if(rewardToken != strategyRewardToken){
+        if (rewardToken != strategyRewardToken) {
             assertEq(ERC20(strategyRewardToken).balanceOf(address(liquidityGauge)), _before + 1_000e18);
-        }
-        else {
-
+        } else {
             uint256 _treasuryFee = 1_000e18 * feeSplit.fees[0] / 10_000;
             uint256 _liquidityFee = 1_000e18 * feeSplit.fees[1] / 10_000;
             uint256 _claimerFee = 1_000e18 * accumulator.claimerFee() / 10_000;
 
             assertEq(ERC20(strategyRewardToken).balanceOf(address(treasuryRecipient)), treasury + _treasuryFee);
             assertEq(ERC20(strategyRewardToken).balanceOf(address(liquidityFeeRecipient)), liquidityFee + _liquidityFee);
-            assertEq(ERC20(strategyRewardToken).balanceOf(address(liquidityGauge)), _before + 1_000e18 - _treasuryFee - _liquidityFee - _claimerFee);
+            assertEq(
+                ERC20(strategyRewardToken).balanceOf(address(liquidityGauge)),
+                _before + 1_000e18 - _treasuryFee - _liquidityFee - _claimerFee
+            );
         }
     }
 
