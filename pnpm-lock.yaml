@@ -31,7 +31,7 @@ importers:
         version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/8948d45d3d9022c508b83eb5d26fd3a7a93f2f32
       solady:
         specifier: github:vectorized/solady
-        version: https://codeload.github.com/vectorized/solady/tar.gz/7590df8e38c64970a26e6fb13aefc95bb52435db
+        version: https://codeload.github.com/vectorized/solady/tar.gz/b12aa65e8cc3740f8b85a2a7a2d5296f57f13149
 
   packages/strategies:
     devDependencies:
@@ -52,7 +52,7 @@ importers:
         version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/8948d45d3d9022c508b83eb5d26fd3a7a93f2f32
       solady:
         specifier: github:vectorized/solady
-        version: https://codeload.github.com/vectorized/solady/tar.gz/7590df8e38c64970a26e6fb13aefc95bb52435db
+        version: https://codeload.github.com/vectorized/solady/tar.gz/b12aa65e8cc3740f8b85a2a7a2d5296f57f13149
 
 packages:
 
@@ -218,36 +218,36 @@ packages:
   '@noble/secp256k1@1.7.1':
     resolution: {integrity: sha512-hOUk6AyBFmqVrv7k5WAw/LpszxVbj9gGN4JRkIX52fdFAj1UA61KXmZDvqVEm+pOyec3+fIeZB02LYa/pWOArw==}
 
-  '@nomicfoundation/edr-darwin-arm64@0.4.0':
-    resolution: {integrity: sha512-7+rraFk9tCqvfemv9Ita5vTlSBAeO/S5aDKOgGRgYt0JEKZlrX161nDW6UfzMPxWl9GOLEDUzCEaYuNmXseUlg==}
+  '@nomicfoundation/edr-darwin-arm64@0.4.1':
+    resolution: {integrity: sha512-XuiUUnWAVNw7JYv7nRqDWfpBm21HOxCRBQ8lQnRnmiets9Ss2X5Ul9mvBheIPh/D0wBzwJ8TRtsSrorpwE79cA==}
     engines: {node: '>= 18'}
 
-  '@nomicfoundation/edr-darwin-x64@0.4.0':
-    resolution: {integrity: sha512-+Hrc0mP9L6vhICJSfyGo/2taOToy1AIzVZawO3lU8Lf7oDQXfhQ4UkZnkWAs9SVu1eUwHUGGGE0qB8644piYgg==}
+  '@nomicfoundation/edr-darwin-x64@0.4.1':
+    resolution: {integrity: sha512-N1MfJqEX5ixaXlyyrHnaYxzwIT27Nc/jUgLI7ts4/9kRvPTvyZRYmXS1ciKhmUFr/WvFckTCix2RJbZoGGtX7g==}
     engines: {node: '>= 18'}
 
-  '@nomicfoundation/edr-linux-arm64-gnu@0.4.0':
-    resolution: {integrity: sha512-4HUDMchNClQrVRfVTqBeSX92hM/3khCgpZkXP52qrnJPqgbdCxosOehlQYZ65wu0b/kaaZSyvACgvCLSQ5oSzQ==}
+  '@nomicfoundation/edr-linux-arm64-gnu@0.4.1':
+    resolution: {integrity: sha512-bSPOfmcFjJwDgWOV5kgZHeqg2OWu1cINrHSGjig0aVHehjcoX4Sgayrj6fyAxcOV5NQKA6WcyTFll6NrCxzWRA==}
     engines: {node: '>= 18'}
 
-  '@nomicfoundation/edr-linux-arm64-musl@0.4.0':
-    resolution: {integrity: sha512-D4J935ZRL8xfnP3zIFlCI9jXInJ0loDUkCTLeCEbOf2uuDumWDghKNQlF1itUS+EHaR1pFVBbuwqq8hVK0dASg==}
+  '@nomicfoundation/edr-linux-arm64-musl@0.4.1':
+    resolution: {integrity: sha512-F/+DgOdeBFQDrk+SX4aFffJFBgJfd75ZtE2mjcWNAh/qWiS7NfUxdQX/5OvNo/H6EY4a+3bZH6Bgzqg4mEWvMw==}
     engines: {node: '>= 18'}
 
-  '@nomicfoundation/edr-linux-x64-gnu@0.4.0':
-    resolution: {integrity: sha512-6x7HPy+uN5Cb9N77e2XMmT6+QSJ+7mRbHnhkGJ8jm4cZvWuj2Io7npOaeHQ3YHK+TiQpTnlbkjoOIpEwpY3XZA==}
+  '@nomicfoundation/edr-linux-x64-gnu@0.4.1':
+    resolution: {integrity: sha512-POHhTWczIXCPhzKtY0Vt/l+VCqqCx5gNR5ErwSrNnLz/arfQobZFAU+nc61BX3Jch82TW8b3AbfGI73Kh7gO0w==}
     engines: {node: '>= 18'}
 
-  '@nomicfoundation/edr-linux-x64-musl@0.4.0':
-    resolution: {integrity: sha512-3HFIJSXgyubOiaN4MWGXx2xhTnhwlJk0PiSYNf9+L/fjBtcRkb2nM910ZJHTvqCb6OT98cUnaKuAYdXIW2amgw==}
+  '@nomicfoundation/edr-linux-x64-musl@0.4.1':
+    resolution: {integrity: sha512-uu8oNp4Ozg3H1x1We0FF+rwXfFiAvsOm5GQ+OBx9YYOXnfDPWqguQfGIkhrti9GD0iYhfQ/WOG5wvp0IzzgGSg==}
     engines: {node: '>= 18'}
 
-  '@nomicfoundation/edr-win32-x64-msvc@0.4.0':
-    resolution: {integrity: sha512-CP4GsllEfXEz+lidcGYxKe5rDJ60TM5/blB5z/04ELVvw6/CK9eLcYeku7HV0jvV7VE6dADYKSdQyUkvd0El+A==}
+  '@nomicfoundation/edr-win32-x64-msvc@0.4.1':
+    resolution: {integrity: sha512-PaZHFw455z89ZiKYNTnKu+/TiVZVRI+mRJsbRTe2N0VlYfUBS1o2gdXBM12oP1t198HR7xQwEPPAslTFxGBqHA==}
     engines: {node: '>= 18'}
 
-  '@nomicfoundation/edr@0.4.0':
-    resolution: {integrity: sha512-T96DMSogO8TCdbKKctvxfsDljbhFOUKWc9fHJhSeUh71EEho2qR4951LKQF7t7UWEzguVYh/idQr5L/E3QeaMw==}
+  '@nomicfoundation/edr@0.4.1':
+    resolution: {integrity: sha512-NgrMo2rI9r28uidumvd+K2/AJLdxtXsUlJr3hj/pM6S1FCd/HiWaLeLa/cjCVPcE2u1rYAa3W6UFxLCB7S5Dhw==}
     engines: {node: '>= 18'}
 
   '@nomicfoundation/ethereumjs-common@4.0.4':
@@ -1748,8 +1748,8 @@ packages:
     resolution: {integrity: sha512-qMCMfhY040cVHT43K9BFygqYbUPFZKHOg7K73mtTWJRb8pyP3fzf4Ixd5SzdEJQ6MRUg/WBnOLxghZtKKurENQ==}
     engines: {node: '>=10'}
 
-  solady@https://codeload.github.com/vectorized/solady/tar.gz/7590df8e38c64970a26e6fb13aefc95bb52435db:
-    resolution: {tarball: https://codeload.github.com/vectorized/solady/tar.gz/7590df8e38c64970a26e6fb13aefc95bb52435db}
+  solady@https://codeload.github.com/vectorized/solady/tar.gz/b12aa65e8cc3740f8b85a2a7a2d5296f57f13149:
+    resolution: {tarball: https://codeload.github.com/vectorized/solady/tar.gz/b12aa65e8cc3740f8b85a2a7a2d5296f57f13149}
     version: 0.0.216
 
   solc@0.7.3:
@@ -2393,7 +2393,7 @@ snapshots:
     dependencies:
       '@ledgerhq/cryptoassets': 5.53.0
       '@ledgerhq/errors': 5.50.0
-      '@ledgerhq/hw-transport': 5.51.1
+      '@ledgerhq/hw-transport': 5.26.0
       bignumber.js: 9.1.2
       rlp: 2.2.7
 
@@ -2410,7 +2410,7 @@ snapshots:
     dependencies:
       '@ledgerhq/devices': 5.51.1
       '@ledgerhq/errors': 5.50.0
-      '@ledgerhq/hw-transport': 5.51.1
+      '@ledgerhq/hw-transport': 5.26.0
       '@ledgerhq/hw-transport-node-hid-noevents': 5.51.1
       '@ledgerhq/logs': 5.50.0
       lodash: 4.17.21
@@ -2421,7 +2421,7 @@ snapshots:
   '@ledgerhq/hw-transport-u2f@5.26.0':
     dependencies:
       '@ledgerhq/errors': 5.50.0
-      '@ledgerhq/hw-transport': 5.51.1
+      '@ledgerhq/hw-transport': 5.26.0
       '@ledgerhq/logs': 5.50.0
       u2f-api: 0.2.7
 
@@ -2436,6 +2436,7 @@ snapshots:
       '@ledgerhq/devices': 5.51.1
       '@ledgerhq/errors': 5.50.0
       events: 3.3.0
+    optional: true
 
   '@ledgerhq/logs@5.50.0': {}
 
@@ -2451,29 +2452,29 @@ snapshots:
 
   '@noble/secp256k1@1.7.1': {}
 
-  '@nomicfoundation/edr-darwin-arm64@0.4.0': {}
+  '@nomicfoundation/edr-darwin-arm64@0.4.1': {}
 
-  '@nomicfoundation/edr-darwin-x64@0.4.0': {}
+  '@nomicfoundation/edr-darwin-x64@0.4.1': {}
 
-  '@nomicfoundation/edr-linux-arm64-gnu@0.4.0': {}
+  '@nomicfoundation/edr-linux-arm64-gnu@0.4.1': {}
 
-  '@nomicfoundation/edr-linux-arm64-musl@0.4.0': {}
+  '@nomicfoundation/edr-linux-arm64-musl@0.4.1': {}
 
-  '@nomicfoundation/edr-linux-x64-gnu@0.4.0': {}
+  '@nomicfoundation/edr-linux-x64-gnu@0.4.1': {}
 
-  '@nomicfoundation/edr-linux-x64-musl@0.4.0': {}
+  '@nomicfoundation/edr-linux-x64-musl@0.4.1': {}
 
-  '@nomicfoundation/edr-win32-x64-msvc@0.4.0': {}
+  '@nomicfoundation/edr-win32-x64-msvc@0.4.1': {}
 
-  '@nomicfoundation/edr@0.4.0':
+  '@nomicfoundation/edr@0.4.1':
     dependencies:
-      '@nomicfoundation/edr-darwin-arm64': 0.4.0
-      '@nomicfoundation/edr-darwin-x64': 0.4.0
-      '@nomicfoundation/edr-linux-arm64-gnu': 0.4.0
-      '@nomicfoundation/edr-linux-arm64-musl': 0.4.0
-      '@nomicfoundation/edr-linux-x64-gnu': 0.4.0
-      '@nomicfoundation/edr-linux-x64-musl': 0.4.0
-      '@nomicfoundation/edr-win32-x64-msvc': 0.4.0
+      '@nomicfoundation/edr-darwin-arm64': 0.4.1
+      '@nomicfoundation/edr-darwin-x64': 0.4.1
+      '@nomicfoundation/edr-linux-arm64-gnu': 0.4.1
+      '@nomicfoundation/edr-linux-arm64-musl': 0.4.1
+      '@nomicfoundation/edr-linux-x64-gnu': 0.4.1
+      '@nomicfoundation/edr-linux-x64-musl': 0.4.1
+      '@nomicfoundation/edr-win32-x64-msvc': 0.4.1
 
   '@nomicfoundation/ethereumjs-common@4.0.4':
     dependencies:
@@ -3600,7 +3601,7 @@ snapshots:
     dependencies:
       '@ethersproject/abi': 5.7.0
       '@metamask/eth-sig-util': 4.0.1
-      '@nomicfoundation/edr': 0.4.0
+      '@nomicfoundation/edr': 0.4.1
       '@nomicfoundation/ethereumjs-common': 4.0.4
       '@nomicfoundation/ethereumjs-tx': 5.0.4
       '@nomicfoundation/ethereumjs-util': 9.0.4
@@ -4346,7 +4347,7 @@ snapshots:
       astral-regex: 2.0.0
       is-fullwidth-code-point: 3.0.0
 
-  solady@https://codeload.github.com/vectorized/solady/tar.gz/7590df8e38c64970a26e6fb13aefc95bb52435db: {}
+  solady@https://codeload.github.com/vectorized/solady/tar.gz/b12aa65e8cc3740f8b85a2a7a2d5296f57f13149: {}
 
   solc@0.7.3(debug@4.3.5):
     dependencies:
@@ -4639,7 +4640,7 @@ snapshots:
 
   wide-align@1.1.5:
     dependencies:
-      string-width: 4.2.3
+      string-width: 1.0.2
     optional: true
 
   widest-line@3.1.0:
