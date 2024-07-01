@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "forge-std/Test.sol";
+import "forge-std/src/Test.sol";
 
 import "src/fx/voter/FXNVoter.sol";
-import "address-book/lockers/1.sol";
-import "address-book/protocols/1.sol";
-import {DAO} from "address-book/dao/1.sol";
+import "address-book/src/lockers/1.sol";
+import "address-book/src/protocols/1.sol";
+import {DAO} from "address-book/src/dao/1.sol";
 import {IGaugeController} from "src/base/interfaces/IGaugeController.sol";
 
 contract FXNVoterTest is Test {

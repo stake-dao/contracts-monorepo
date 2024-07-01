@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "forge-std/Vm.sol";
-import "forge-std/Test.sol";
-import "forge-std/console.sol";
+import "forge-std/src/Vm.sol";
+import "forge-std/src/Test.sol";
+import "forge-std/src/console.sol";
 
 import {Constants} from "src/base/utils/Constants.sol";
 import {CakeLocker} from "src/cake/locker/CakeLocker.sol";
@@ -12,7 +12,7 @@ import {CAKEDepositor} from "src/cake/depositor/CAKEDepositor.sol";
 import {sdToken} from "src/base/token/sdToken.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {TransparentUpgradeableProxy} from "openzeppelin-contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import {ERC20} from "solady/tokens/ERC20.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {IVeToken} from "src/base/interfaces/IVeToken.sol";
 
 interface IVeCakeUtil {

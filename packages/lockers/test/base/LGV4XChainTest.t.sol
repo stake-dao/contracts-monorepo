@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "forge-std/Vm.sol";
-import "forge-std/Test.sol";
+import "forge-std/src/Vm.sol";
+import "forge-std/src/Test.sol";
 
-import "address-book/dao/1.sol";
-import "address-book/lockers/1.sol";
-import "address-book/protocols/1.sol";
+import "address-book/src/dao/1.sol";
+import "address-book/src/lockers/1.sol";
+import "address-book/src/protocols/1.sol";
 
 import {Constants} from "src/base/utils/Constants.sol";
 
 import {sdToken} from "src/base/token/sdToken.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
-import {ERC20} from "solady/tokens/ERC20.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
 
 contract LGV4XChainTest is Test {
     address public stakeToken;

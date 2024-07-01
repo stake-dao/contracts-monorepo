@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "forge-std/Test.sol";
-import "solady/utils/LibClone.sol";
+import "forge-std/src/Test.sol";
+import "solady/src/utils/LibClone.sol";
 import "openzeppelin-contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-import "address-book/dao/56.sol";
-import "address-book/lockers/56.sol";
-import "address-book/protocols/56.sol";
+import "address-book/src/dao/56.sol";
+import "address-book/src/lockers/56.sol";
+import "address-book/src/protocols/56.sol";
 
 import "src/base/utils/Constants.sol";
 import "src/base/interfaces/ILocker.sol";

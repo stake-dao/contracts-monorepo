@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "forge-std/Test.sol";
+import "forge-std/src/Test.sol";
 
-import {CAKE} from "address-book/lockers/56.sol";
-import {Pancake} from "address-book/protocols/56.sol";
-import {DAO} from "address-book/dao/56.sol";
+import {CAKE} from "address-book/src/lockers/56.sol";
+import {Pancake} from "address-book/src/protocols/56.sol";
+import {DAO} from "address-book/src/dao/56.sol";
 import {CakeVoter} from "src/cake/voter/CakeVoter.sol";
 import {IExecutor} from "src/base/interfaces/IExecutor.sol";
 import {ICakeGaugeController} from "src/base/interfaces/ICakeGaugeController.sol";

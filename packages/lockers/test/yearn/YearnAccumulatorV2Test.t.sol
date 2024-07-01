@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import "forge-std/Vm.sol";
-import "forge-std/Test.sol";
+import "forge-std/src/Vm.sol";
+import "forge-std/src/Test.sol";
 
-import "address-book/dao/1.sol";
-import "address-book/lockers/1.sol";
-import "address-book/protocols/1.sol";
+import "address-book/src/dao/1.sol";
+import "address-book/src/lockers/1.sol";
+import "address-book/src/protocols/1.sol";
 
-import {ERC20} from "solady/tokens/ERC20.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {IYearnStrategy} from "src/base/interfaces/IYearnStrategy.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";

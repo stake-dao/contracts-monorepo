@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "forge-std/Test.sol";
+import "forge-std/src/Test.sol";
 
-import {Frax} from "address-book/protocols/252.sol";
+import {Frax} from "address-book/src/protocols/252.sol";
 
 import "src/frax/fxs/locker/FxsLockerFraxtal.sol";
 import {IVestedFXS} from "src/base/interfaces/IVestedFXS.sol";
 import {IFraxtalDelegationRegistry} from "src/base/interfaces/IFraxtalDelegationRegistry.sol";
-import {ERC20} from "solady/tokens/ERC20.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
 
 contract FXSLockerFraxtalTest is Test {
     uint256 private constant MIN_LOCK_DURATION = 1 weeks;

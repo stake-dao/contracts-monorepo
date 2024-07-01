@@ -1,8 +1,10 @@
 {
-  "dependencies": {
-    "@layerzerolabs/solidity-examples": "LayerZero-Labs/solidity-examples",
-    "@openzeppelin/contracts": "4.9.0",
-    "forge-std": "foundry-rs/forge-std",
-    "solady": "vectorized/solady"
+  "name": "contracts-monorepo",
+  "private": true,
+  "packageManager": "pnpm@9.4.0",
+  "workspaces": {
+    "packages": [
+      "packages/*"
+    ]
   }
 }

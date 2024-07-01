@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
+import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 
 /// @title Recipient - Contract to receive tokens and outsource their management to allowlist.
 abstract contract Recipient {

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {ERC20} from "solady/tokens/ERC20.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {IYearnGauge} from "src/base/interfaces/IYearnGauge.sol";
-import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
+import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {ISDTDistributor} from "src/base/interfaces/ISDTDistributor.sol";
 import {IYearnRewardPool} from "src/base/interfaces/IYearnRewardPool.sol";
 import {ILocker, SafeExecute, Strategy} from "src/base/strategy/Strategy.sol";

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "forge-std/Test.sol";
+import "forge-std/src/Test.sol";
 
 import "src/frax/fxs/collector/FxsCollectorFraxtal.sol";
 import {sdToken} from "src/base/token/sdToken.sol";

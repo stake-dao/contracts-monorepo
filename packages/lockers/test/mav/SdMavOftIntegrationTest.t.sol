@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "forge-std/Vm.sol";
-import "forge-std/Test.sol";
-import "forge-std/console.sol";
+import "forge-std/src/Vm.sol";
+import "forge-std/src/Test.sol";
+import "forge-std/src/console.sol";
 
 import "test/utils/Utils.sol";
 import {Constants} from "src/base/utils/Constants.sol";
 
 import "src/mav/depositor/MAVDepositor.sol";
 
-import "address-book/dao/1.sol";
-import "address-book/lockers/1.sol";
-import "address-book/protocols/1.sol";
+import "address-book/src/dao/1.sol";
+import "address-book/src/lockers/1.sol";
+import "address-book/src/protocols/1.sol";
 
 import {sdMAV} from "src/mav/token/sdMAV.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";

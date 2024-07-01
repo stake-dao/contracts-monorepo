@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import "forge-std/Vm.sol";
-import "forge-std/Test.sol";
-import "forge-std/console.sol";
+import "forge-std/src/Vm.sol";
+import "forge-std/src/Test.sol";
+import "forge-std/src/console.sol";
 
-import "address-book/dao/1.sol";
-import "address-book/lockers/1.sol";
-import "address-book/protocols/1.sol";
+import "address-book/src/dao/1.sol";
+import "address-book/src/lockers/1.sol";
+import "address-book/src/protocols/1.sol";
 
 import "src/curve/accumulator/CRVAccumulatorV3.sol";
 

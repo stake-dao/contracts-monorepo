@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "forge-std/Vm.sol";
-import "forge-std/Test.sol";
+import "forge-std/src/Vm.sol";
+import "forge-std/src/Test.sol";
 
-import "address-book/lockers/56.sol";
+import "address-book/src/lockers/56.sol";
 
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {ICakeLocker} from "src/base/interfaces/ICakeLocker.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
-import {ERC20} from "solady/tokens/ERC20.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
 
 import {CakeAccumulator} from "src/cake/accumulator/CakeAccumulator.sol";
 import {IRevenueSharingPool} from "src/base/interfaces/IRevenueSharingPool.sol";

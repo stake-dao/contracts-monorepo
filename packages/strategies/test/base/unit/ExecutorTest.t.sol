@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import "forge-std/Test.sol";
+import "forge-std/src/Test.sol";
 
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {Executor} from "src/cake/utils/Executor.sol";
-import {CAKE} from "address-book/lockers/56.sol";
-import {DAO} from "address-book/dao/56.sol";
+import {CAKE} from "address-book/src/lockers/56.sol";
+import {DAO} from "address-book/src/dao/56.sol";
 
 contract AllowedExecutor {}
 

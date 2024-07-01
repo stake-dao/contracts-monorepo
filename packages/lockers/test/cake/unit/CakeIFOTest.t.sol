@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "forge-std/Test.sol";
+import "forge-std/src/Test.sol";
 
 ///import {ICakeV3} from "src/base/interfaces/ICakeV3.sol";
 //import {Executor} from "src/base/utils/Executor.sol";
 import "src/cake/ifo/CakeIFOFactory.sol";
 
-import {CAKE} from "address-book/lockers/56.sol";
-import {DAO} from "address-book/dao/56.sol";
-//import {ERC20} from "solady/tokens/ERC20.sol";
+import {CAKE} from "address-book/src/lockers/56.sol";
+import {DAO} from "address-book/src/dao/56.sol";
+//import {ERC20} from "solady/src/tokens/ERC20.sol";
 
 contract CakeIFOTest is Test {
     CakeIFOFactory private factory;

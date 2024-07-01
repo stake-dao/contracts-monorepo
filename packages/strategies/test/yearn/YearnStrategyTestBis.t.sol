@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.19;
 
-import "forge-std/Test.sol";
-import "solady/utils/LibClone.sol";
+import "forge-std/src/Test.sol";
+import "solady/src/utils/LibClone.sol";
 
-import {ERC20} from "solady/tokens/ERC20.sol";
-import {Yearn} from "address-book/protocols/1.sol";
-import {YFI} from "address-book/lockers/1.sol";
-import {DAO} from "address-book/dao/1.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {Yearn} from "address-book/src/protocols/1.sol";
+import {YFI} from "address-book/src/lockers/1.sol";
+import {DAO} from "address-book/src/dao/1.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {YearnStrategy} from "src/yearn/strategy/YearnStrategy.sol";
-import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
+import {FixedPointMathLib} from "solady/src/utils/FixedPointMathLib.sol";
 import {GaugeDepositorVault} from "src/base/vault/GaugeDepositorVault.sol";
 import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
 import {YearnVaultFactory} from "src/yearn/factory/YearnVaultFactory.sol";

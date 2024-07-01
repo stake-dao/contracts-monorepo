@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {ERC20} from "solady/tokens/ERC20.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {IStrategyVault} from "src/base/interfaces/IStrategyVault.sol";
-import {LibClone} from "solady/utils/LibClone.sol";
+import {LibClone} from "solady/src/utils/LibClone.sol";
 
 import {IStrategy} from "src/base/interfaces/IStrategy.sol";
 import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";

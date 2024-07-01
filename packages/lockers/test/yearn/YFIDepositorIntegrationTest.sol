@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "forge-std/Test.sol";
+import "forge-std/src/Test.sol";
 
-import "address-book/dao/1.sol";
-import "address-book/lockers/1.sol";
-import "address-book/protocols/1.sol";
+import "address-book/src/dao/1.sol";
+import "address-book/src/lockers/1.sol";
+import "address-book/src/protocols/1.sol";
 
 import "src/yearn/depositor/YFIDepositorV2.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";

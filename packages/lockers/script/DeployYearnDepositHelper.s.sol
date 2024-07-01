@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "forge-std/Script.sol";
-import "address-book/lockers/1.sol";
-import {DAO} from "address-book/dao/1.sol";
+import "forge-std/src/Script.sol";
+import "address-book/src/lockers/1.sol";
+import {DAO} from "address-book/src/dao/1.sol";
 import "src/yearn/depositor/YFIDepositorHelper.sol";
 
 contract DeployYearnDepositHelper is Script {

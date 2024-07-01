@@ -8,10 +8,7 @@ verbosity = 3
 
 evm_version = "shanghai"
 
-ffi = true
-
 optimizers_runs = 200
-
 
 [etherscan]
 mainnet = { key = "${API_KEY_ETHERSCAN}" }

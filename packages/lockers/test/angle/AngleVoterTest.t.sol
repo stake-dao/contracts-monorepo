@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "forge-std/Test.sol";
+import "forge-std/src/Test.sol";
 
-import {ANGLE} from "address-book/lockers/1.sol";
-import {DAO} from "address-book/dao/1.sol";
+import {ANGLE} from "address-book/src/lockers/1.sol";
+import {DAO} from "address-book/src/dao/1.sol";
 import {AngleVoterV5} from "src/angle/voter/AngleVoterV5.sol";
-import {ERC20} from "solady/tokens/ERC20.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {IAngleGovernor} from "src/base/interfaces/IAngleGovernor.sol";
 
 contract AngleVoterTest is Test {

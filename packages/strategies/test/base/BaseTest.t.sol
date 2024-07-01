@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.7;
 
-import "forge-std/Test.sol";
+import "forge-std/src/Test.sol";
 
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 
@@ -13,7 +13,7 @@ import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {IAccumulator} from "src/base/interfaces/IAccumulator.sol";
 import {ISmartWalletChecker} from "src/base/interfaces/ISmartWalletChecker.sol";
 
-import {DAO} from "address-book/dao/1.sol";
+import {DAO} from "address-book/src/dao/1.sol";
 
 contract BaseTest is Test {
     ////////////////////////////////////////////////////////////////

@@ -4,8 +4,8 @@ pragma solidity 0.8.19;
 import {IExecutor} from "src/base/interfaces/IExecutor.sol";
 import {ICakeV2Wrapper} from "src/base/interfaces/ICakeV2Wrapper.sol";
 import {Strategy} from "src/base/strategy/Strategy.sol";
-import {ERC20} from "solady/tokens/ERC20.sol";
-import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 
 /// @notice Pancake ERC20 strategy module, it interacts with the Cake Locker via the Executor.
 contract PancakeERC20Strategy is Strategy {

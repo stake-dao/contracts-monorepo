@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "forge-std/Test.sol";
+import "forge-std/src/Test.sol";
 
-import {FXS} from "address-book/lockers/1.sol";
-import {Frax} from "address-book/protocols/252.sol";
-import {ERC20} from "solady/tokens/ERC20.sol";
+import {FXS} from "address-book/src/lockers/1.sol";
+import {Frax} from "address-book/src/protocols/252.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {IFraxtalBridge} from "src/base/interfaces/IFraxtalBridge.sol";
 import {sdFXSFraxtal} from "src/frax/fxs/token/sdFXSFraxtal.sol";
 import {sdTokenOperatorFraxtal} from "src/frax/fxs/token/sdTokenOperatorFraxtal.sol";

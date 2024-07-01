@@ -7,7 +7,7 @@ import "src/base/interfaces/IStrategy.sol";
 import "src/base/interfaces/ICakeV2Wrapper.sol";
 import "src/base/interfaces/IAdapterRegistry.sol";
 
-import {LibClone} from "solady/utils/LibClone.sol";
+import {LibClone} from "solady/src/utils/LibClone.sol";
 
 /// @notice Temporary contract to deploy new adapters.
 contract AdapterFactory {

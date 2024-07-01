@@ -2,14 +2,14 @@
 pragma solidity ^0.8.19;
 
 import {IExecutor} from "src/base/interfaces/IExecutor.sol";
-import {ERC20} from "solady/tokens/ERC20.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {ICakeIFOV8} from "src/base/interfaces/ICakeIFOV8.sol";
 import {ICakeV3} from "src/base/interfaces/ICakeV3.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
-import {MerkleProofLib} from "solady/utils/MerkleProofLib.sol";
+import {MerkleProofLib} from "solady/src/utils/MerkleProofLib.sol";
 import {CakeIFOFactory} from "src/cake/ifo/CakeIFOFactory.sol";
-import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
-import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
+import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
+import {FixedPointMathLib} from "solady/src/utils/FixedPointMathLib.sol";
 
 contract CakeIFO {
     using SafeTransferLib for ERC20;

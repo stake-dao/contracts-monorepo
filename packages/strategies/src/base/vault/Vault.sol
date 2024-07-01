@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {Clone} from "solady/utils/Clone.sol";
-import {ERC20} from "solady/tokens/ERC20.sol";
-import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
-import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
+import {Clone} from "solady/src/utils/Clone.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
+import {FixedPointMathLib} from "solady/src/utils/FixedPointMathLib.sol";
 
 import {IStrategy} from "src/base/interfaces/IStrategy.sol";
 import {ISDLiquidityGauge} from "src/base/interfaces/ISDLiquidityGauge.sol";

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.19;
 
-import {ERC20} from "solady/tokens/ERC20.sol";
-import {ERC721} from "solady/tokens/ERC721.sol";
-import {SafeTransferLib} from "solady/utils/SafeTransferLib.sol";
-import {UUPSUpgradeable} from "solady/utils/UUPSUpgradeable.sol";
-import {ReentrancyGuard} from "solady/utils/ReentrancyGuard.sol";
-import {FixedPointMathLib} from "solady/utils/FixedPointMathLib.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {ERC721} from "solady/src/tokens/ERC721.sol";
+import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
+import {UUPSUpgradeable} from "solady/src/utils/UUPSUpgradeable.sol";
+import {ReentrancyGuard} from "solady/src/utils/ReentrancyGuard.sol";
+import {FixedPointMathLib} from "solady/src/utils/FixedPointMathLib.sol";
 
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {ICakeNfpm} from "src/base/interfaces/ICakeNfpm.sol";
