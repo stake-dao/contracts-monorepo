@@ -78,7 +78,7 @@ contract CRVAccumulatorV3IntegrationTest is Test {
         skip(1 weeks);
     }
 
-    function test_setup() public {
+    function test_setup() public view {
         assertEq(accumulator.governance(), address(this));
         assertEq(accumulator.futureGovernance(), address(0));
 

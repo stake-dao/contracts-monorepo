@@ -84,7 +84,7 @@ contract PendleAccumulatorV3IntegrationTest is Test {
         vm.stopPrank();
     }
 
-    function test_setup() public {
+    function test_setup() public view {
         assertEq(accumulator.governance(), address(this));
         assertEq(accumulator.futureGovernance(), address(0));
 

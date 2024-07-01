@@ -7,16 +7,11 @@ allow_paths = ['../../node_modules']
 fs_permissions = [{ access = "read-write", path = "./" }]
 verbosity = 4
 auto_detect_remappings = false
-evm_version = "cancun"
 
-ffi = true
 optimizers_runs = 200
-
 
 [rpc_endpoints]
 mainnet = "https://mainnet.infura.io/v3/${INFURA_KEY}"
-tdly = "https://rpc.tenderly.co/fork/07ccd43f-994b-4551-96b2-dc4c73778a60"
 base = "https://mainnet.base.org"
 bnb = "https://bsc-mainnet.nodereal.io/v1/8ba50235e5794af7ba04e88181bb359f"
-bnb_testnet = "https://bsc-testnet.publicnode.com"
 fraxtal = "https://rpc.frax.com"
