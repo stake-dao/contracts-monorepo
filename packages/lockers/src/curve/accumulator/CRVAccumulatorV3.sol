@@ -34,7 +34,7 @@ contract CRVAccumulatorV3 is AccumulatorV2 {
     /// --- MUTATIVE FUNCTIONS
     ////////////////////////////////////////////////////////////
 
-     function claimAndNotifyAll(bool notifySDT, bool, bool claimFeeStrategy) external override {
+    function claimAndNotifyAll(bool notifySDT, bool, bool claimFeeStrategy) external override {
         /// Claim CRVUSD rewards.
         IStrategy(strategy).claimNativeRewards();
 

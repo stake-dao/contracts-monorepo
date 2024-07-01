@@ -3,18 +3,15 @@ pragma solidity 0.8.19;
 
 import "src/base/accumulator/AccumulatorV2.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
+import {IYearnStrategy} from "src/base/interfaces/IYearnStrategy.sol";
 
-/// @notice A contract that accumulates FXN rewards and notifies them to the sdFXN gauge
+/// @title YFI Accumulator V3
 /// @author StakeDAO
-contract FXNAccumulatorV3 is AccumulatorV2 {
-    /// @notice FXN token address.
-    address public constant FXN = 0x365AccFCa291e7D3914637ABf1F7635dB165Bb09;
-
-    /// @notice WSTETH token address.
-    address public constant WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
-
-    /// @notice Fee distributor address.
-    address public constant FEE_DISTRIBUTOR = 0xd116513EEa4Efe3908212AfBAeFC76cb29245681;
+contract YFIAccumulatorV3 is AccumulatorV2 {
+    /// @notice YFI token address
+    address public constant YFI = 0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e;
+    /// @notice DFYI token address
+    address public constant DYFI = 0x41252E8691e964f7DE35156B68493bAb6797a275;
 
     //////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
@@ -25,10 +22,11 @@ contract FXNAccumulatorV3 is AccumulatorV2 {
     /// @param _locker sd locker
     /// @param _governance governance
     constructor(address _gauge, address _locker, address _governance)
-        AccumulatorV2(_gauge, WSTETH, _locker, _governance)
+        AccumulatorV2(_gauge, DYFI, _locker, _governance)
     {
-        SafeTransferLib.safeApprove(FXN, _gauge, type(uint256).max);
-        SafeTransferLib.safeApprove(WSTETH, _gauge, type(uint256).max);
+        strategy = 0x1be150a35bb8233d092747eBFDc75FB357c35168;
+        SafeTransferLib.safeApprove(YFI, _gauge, type(uint256).max);
+        SafeTransferLib.safeApprove(DYFI, _gauge, type(uint256).max);
     }
 
     //////////////////////////////////////////////////////
@@ -37,13 +35,15 @@ contract FXNAccumulatorV3 is AccumulatorV2 {
 
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4
     function claimAndNotifyAll(bool notifySDT, bool, bool claimFeeStrategy) external override {
-        ILocker(locker).claimRewards(FEE_DISTRIBUTOR, WSTETH, address(this));
+        IYearnStrategy(strategy).claimNativeRewards();
+        IYearnStrategy(strategy).claimDYFIRewardPool();
 
-        /// Claim Extra FXN rewards.
-        if (claimFeeStrategy && strategy != address(0)) {
+        // Sending strategy fees to fee receiver
+        if (claimFeeStrategy) {
             _claimFeeStrategy();
         }
 
-        notifyReward(WSTETH, notifySDT, claimFeeStrategy);
+        notifyReward(YFI, false, false);
+        notifyReward(DYFI, notifySDT, claimFeeStrategy);
     }
 }
