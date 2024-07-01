@@ -21,8 +21,6 @@ contract PendleAccumulatorV3 is AccumulatorV2 {
     address public constant VE_PENDLE = 0x4f30A9D41B80ecC5B94306AB4364951AE3170210;
     address public constant FEE_DISTRIBUTOR = 0x8C237520a8E14D658170A633D96F8e80764433b9;
 
-    address public strategy;
-
     /// @notice WETH Distribution fee.
     uint256 public periodsToAdd = 4;
 
@@ -61,7 +59,9 @@ contract PendleAccumulatorV3 is AccumulatorV2 {
     /// --- CONSTRUCTOR
     ////////////////////////////////////////////////////////////
 
-    constructor(address _gauge, address _locker, address _governance) AccumulatorV2(_gauge, _locker, _governance) {
+    constructor(address _gauge, address _locker, address _governance)
+        AccumulatorV2(_gauge, WETH, _locker, _governance)
+    {
         SafeTransferLib.safeApprove(WETH, gauge, type(uint256).max);
         SafeTransferLib.safeApprove(PENDLE, gauge, type(uint256).max);
     }
@@ -71,7 +71,7 @@ contract PendleAccumulatorV3 is AccumulatorV2 {
     {
         // Sending strategy fees to fee receiver
         if (claimFeeStrategy && strategy != address(0)) {
-            _claimFeeStrategy(address(strategy));
+            _claimFeeStrategy();
         }
 
         /// Check historical rewards.
@@ -165,9 +165,5 @@ contract PendleAccumulatorV3 is AccumulatorV2 {
 
     function setPeriodsToAdd(uint256 _periodsToAdd) external onlyGovernance {
         periodsToAdd = _periodsToAdd;
-    }
-
-    function setStrategy(address _strategy) external onlyGovernance {
-        strategy = _strategy;
     }
 }

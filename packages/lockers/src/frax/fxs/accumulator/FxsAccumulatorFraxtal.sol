@@ -17,9 +17,6 @@ contract FxsAccumulatorFraxtal is AccumulatorV2 {
     /// @notice FXS yield distributor
     address public yieldDistributor = 0x21359d1697e610e25C8229B2C57907378eD09A2E;
 
-    /// @notice Strategy address
-    address public strategy;
-
     /// @notice Throwed when a low level call fails
     error CallFailed();
 
@@ -39,7 +36,7 @@ contract FxsAccumulatorFraxtal is AccumulatorV2 {
         address _governance,
         address _delegationRegistry,
         address _initialDelegate
-    ) AccumulatorV2(_gauge, _locker, _governance) {
+    ) AccumulatorV2(_gauge, FXS, _locker, _governance) {
         SafeTransferLib.safeApprove(FXS, _gauge, type(uint256).max);
 
         // Custom code for Fraxtal
@@ -58,13 +55,12 @@ contract FxsAccumulatorFraxtal is AccumulatorV2 {
 
     /// @notice Claim FXS rewards for the locker and notify all to the LGV4
     /// @param _notifySDT if notify SDT or not
-    /// @param _pullFromFeeSplitter if pull tokens from the fee splitter or not
     /// @param _claimStrategyFee if claim or not strategy fees
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4
-    function claimAndNotifyAll(bool _notifySDT, bool _pullFromFeeSplitter, bool _claimStrategyFee) external override {
+    function claimAndNotifyAll(bool _notifySDT, bool, bool _claimStrategyFee) external override {
         // Sending strategy fees to fee receiver
         if (_claimStrategyFee && strategy != address(0)) {
-            _claimFeeStrategy(strategy);
+            _claimFeeStrategy();
         }
 
         /// Claim FXS reward for L1's veFXS bridged, on behalf of the eth locker
@@ -74,18 +70,12 @@ contract FxsAccumulatorFraxtal is AccumulatorV2 {
         ILocker(locker).claimRewards(yieldDistributor, FXS, address(this));
 
         /// Notify FXS to the gauge.
-        notifyReward(FXS, _notifySDT, _pullFromFeeSplitter);
+        notifyReward(FXS, _notifySDT, _claimStrategyFee);
     }
 
     /// @notice Set frax yield distributor
     /// @param _yieldDistributor Address of the frax yield distributor
     function setYieldDistributor(address _yieldDistributor) external onlyGovernance {
         yieldDistributor = _yieldDistributor;
-    }
-
-    /// @notice Set strategy
-    /// @param _strategy Address of the strategy
-    function setStrategy(address _strategy) external onlyGovernance {
-        strategy = _strategy;
     }
 }

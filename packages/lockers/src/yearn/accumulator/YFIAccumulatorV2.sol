@@ -15,9 +15,6 @@ contract YFIAccumulatorV2 is AccumulatorV2 {
     /// @notice YFI token address
     address public constant YFI = 0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e;
 
-    /// @notice yearn strategy address
-    IYearnStrategy public constant strategy = IYearnStrategy(0x1be150a35bb8233d092747eBFDc75FB357c35168);
-
     ////////////////////////////////////////////////////////////////
     /// --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
@@ -33,7 +30,10 @@ contract YFIAccumulatorV2 is AccumulatorV2 {
     /// @param _gauge sd gauge
     /// @param _locker sd locker
     /// @param _governance governance
-    constructor(address _gauge, address _locker, address _governance) AccumulatorV2(_gauge, _locker, _governance) {
+    constructor(address _gauge, address _locker, address _governance)
+        AccumulatorV2(_gauge, DYFI, _locker, _governance)
+    {
+        strategy = 0x1be150a35bb8233d092747eBFDc75FB357c35168;
         ERC20(YFI).approve(_gauge, type(uint256).max);
         ERC20(DYFI).approve(_gauge, type(uint256).max);
     }
@@ -43,31 +43,28 @@ contract YFIAccumulatorV2 is AccumulatorV2 {
     //////////////////////////////////////////////////////
 
     /// @notice Claims YFI or DYFI rewards for the locker and notify all to the LGV4
-    function claimTokenAndNotifyAll(address token, bool notifySDT, bool pullFromFeeSplitter, bool claimFeeStrategy)
-        external
-        override
-    {
+    function claimTokenAndNotifyAll(address token, bool notifySDT, bool, bool claimFeeStrategy) external override {
         if (token != YFI && token != DYFI) revert WRONG_TOKEN();
 
         // Sending strategy fees to fee receiver
         if (claimFeeStrategy) {
-            _claimFeeStrategy(address(strategy));
+            _claimFeeStrategy();
         }
 
         if (token == YFI) {
             // claim YFI reward
-            strategy.claimNativeRewards();
+            IYearnStrategy(strategy).claimNativeRewards();
         } else {
             // claim dYFI reward
-            strategy.claimDYFIRewardPool();
+            IYearnStrategy(strategy).claimDYFIRewardPool();
         }
         uint256 amount = ERC20(token).balanceOf(address(this));
 
         // notify YFI or DYFI as reward in sdYFI gauge
         _notifyReward(token, amount, false);
 
-        if (pullFromFeeSplitter) {
-            _notifyReward(DYFI, 0, true);
+        if (claimFeeStrategy) {
+            _notifyReward(DYFI, 0, claimFeeStrategy);
         }
 
         if (notifySDT) {
@@ -77,23 +74,23 @@ contract YFIAccumulatorV2 is AccumulatorV2 {
     }
 
     /// @notice Claims YFI and DYFI rewards for the locker and notify all to the LGV4
-    function claimAndNotifyAll(bool _notifySDT, bool _pullFromFeeSplitter, bool claimFeeStrategy) external override {
+    function claimAndNotifyAll(bool _notifySDT, bool, bool claimFeeStrategy) external override {
         // claim YFI reward
-        strategy.claimNativeRewards();
+        IYearnStrategy(strategy).claimNativeRewards();
         uint256 yfiAmount = ERC20(YFI).balanceOf(address(this));
 
         // claim dYFI reward
-        strategy.claimDYFIRewardPool();
+        IYearnStrategy(strategy).claimDYFIRewardPool();
         uint256 dYfiAmount = ERC20(DYFI).balanceOf(address(this));
 
         // Sending strategy fees to fee receiver
         if (claimFeeStrategy) {
-            _claimFeeStrategy(address(strategy));
+            _claimFeeStrategy();
         }
 
         // notify YFI and DYFI as reward in sdYFI gauge
         _notifyReward(YFI, yfiAmount, false);
-        _notifyReward(DYFI, dYfiAmount, _pullFromFeeSplitter);
+        _notifyReward(DYFI, dYfiAmount, claimFeeStrategy);
 
         if (_notifySDT) {
             // notify SDT

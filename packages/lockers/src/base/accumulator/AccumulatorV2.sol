@@ -5,6 +5,7 @@ import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 
 import {IFeeReceiver} from "herdaddy/interfaces/IFeeReceiver.sol";
+import {IStrategy} from "herdaddy/interfaces/stake-dao/IStrategy.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {ISDTDistributor} from "src/base/interfaces/ISDTDistributor.sol";
 
@@ -38,8 +39,14 @@ abstract contract AccumulatorV2 {
     /// @notice sd gauge
     address public immutable gauge;
 
+    /// @notice Main Reward Token distributed.
+    address public immutable rewardToken;
+
     /// @notice sd locker
     address public immutable locker;
+
+    /// @notice Strategy address.
+    address public strategy;
 
     /// @notice governance
     address public governance;
@@ -108,9 +115,10 @@ abstract contract AccumulatorV2 {
     /// @param _gauge sd gauge
     /// @param _locker sd locker
     /// @param _governance governance
-    constructor(address _gauge, address _locker, address _governance) {
+    constructor(address _gauge, address _rewardToken, address _locker, address _governance) {
         gauge = _gauge;
         locker = _locker;
+        rewardToken = _rewardToken;
 
         governance = _governance;
 
@@ -178,8 +186,8 @@ abstract contract AccumulatorV2 {
     /// @notice Charge fee for dao, liquidity, claimer
     /// @param _token token to charge fee for
     /// @param _amount amount to charge fee for
-    function _chargeFee(address _token, uint256 _amount) internal returns (uint256 _charged) {
-        if (_amount == 0) return 0;
+    function _chargeFee(address _token, uint256 _amount) internal virtual returns (uint256 _charged) {
+        if (_amount == 0 || _token != rewardToken) return 0;
 
         Split memory _feeSplit = getFeeSplit();
         uint256 fee;
@@ -200,16 +208,8 @@ abstract contract AccumulatorV2 {
     /// @notice Take the fees accumulated from the strategy and sending to the fee receiver
     /// @dev Need to be done before calling `split`, but claimProtocolFees is permissionless.
     /// @dev Strategy not set in that abstract contract, must be implemented by child contracts
-    function _claimFeeStrategy(address _strategy) internal {
-        // Call the claimProtocolFees function from the strategy
-        (bool success, bytes memory returnData) = _strategy.call(abi.encodeWithSignature("claimProtocolFees()"));
-
-        if (!success) {
-            if (returnData.length == 0) revert("Strategy call failed");
-            assembly {
-                revert(add(returnData, 32), returnData) // Reverts with an error message from the returnData
-            }
-        }
+    function _claimFeeStrategy() internal {
+        IStrategy(strategy).claimProtocolFees();
     }
 
     //////////////////////////////////////////////////////
@@ -265,6 +265,10 @@ abstract contract AccumulatorV2 {
     function setFeeSplit(address[] calldata receivers, uint256[] calldata fees) external onlyGovernance {
         if (receivers.length == 0 || receivers.length != fees.length) revert INVALID_SPLIT();
         feeSplit = Split(receivers, fees);
+    }
+
+    function setStrategy(address _strategy) external onlyGovernance {
+        strategy = _strategy;
     }
 
     /// @notice A function that rescue any ERC20 token

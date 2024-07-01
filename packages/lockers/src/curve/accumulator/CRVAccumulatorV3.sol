@@ -25,7 +25,9 @@ contract CRVAccumulatorV3 is AccumulatorV2 {
     /// --- CONSTRUCTOR
     ////////////////////////////////////////////////////////////
 
-    constructor(address _gauge, address _locker, address _governance) AccumulatorV2(_gauge, _locker, _governance) {
+    constructor(address _gauge, address _locker, address _governance)
+        AccumulatorV2(_gauge, CRV_USD, _locker, _governance)
+    {
         SafeTransferLib.safeApprove(CRV, _gauge, type(uint256).max);
         SafeTransferLib.safeApprove(CRV_USD, _gauge, type(uint256).max);
     }
@@ -34,13 +36,13 @@ contract CRVAccumulatorV3 is AccumulatorV2 {
     /// --- MUTATIVE FUNCTIONS
     ////////////////////////////////////////////////////////////
 
-    function claimAndNotifyAll(bool notifySDT, bool pullFromFeeReceiver, bool claimFeeStrategy) external override {
+    function claimAndNotifyAll(bool notifySDT, bool, bool claimFeeStrategy) external override {
         /// Claim CRVUSD rewards.
         STRATEGY.claimNativeRewards();
 
         // Claim Extra CRV rewards.
         if (claimFeeStrategy) {
-            _claimFeeStrategy(address(STRATEGY));
+            _claimFeeStrategy();
         }
 
         uint256 _balance = ERC20(CRV_USD).balanceOf(address(this));
@@ -49,7 +51,7 @@ contract CRVAccumulatorV3 is AccumulatorV2 {
         _notifyReward(CRV_USD, _balance, false);
 
         /// We put 0 to avoid charging fees on CRV rewards.
-        _notifyReward(CRV, 0, pullFromFeeReceiver);
+        _notifyReward(CRV, 0, claimFeeStrategy);
 
         if (notifySDT) {
             _distributeSDT();
