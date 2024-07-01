@@ -71,22 +71,23 @@ abstract contract AccumulatorV2Test is Test {
         vm.prank(ILocker(locker).governance());
         ILocker(locker).setAccumulator(address(accumulator));
 
-
         ILiquidityGauge.Reward memory rewardData = liquidityGauge.reward_data(address(rewardToken));
 
         vm.startPrank(liquidityGauge.admin());
         if (rewardData.distributor == address(0)) {
             liquidityGauge.add_reward(address(rewardToken), address(accumulator));
-        } else{
+        } else {
             liquidityGauge.set_reward_distributor(address(rewardToken), address(accumulator));
         }
 
-        rewardData = liquidityGauge.reward_data(address(strategyRewardToken));
+        if (rewardToken != strategyRewardToken) {
+            rewardData = liquidityGauge.reward_data(address(strategyRewardToken));
 
-        if (rewardData.distributor == address(0)) {
-            liquidityGauge.add_reward(address(strategyRewardToken), address(accumulator));
-        } else{
-            liquidityGauge.set_reward_distributor(address(strategyRewardToken), address(accumulator));
+            if (rewardData.distributor == address(0)) {
+                liquidityGauge.add_reward(address(strategyRewardToken), address(accumulator));
+            } else {
+                liquidityGauge.set_reward_distributor(address(strategyRewardToken), address(accumulator));
+            }
         }
 
         vm.stopPrank();
@@ -143,11 +144,11 @@ abstract contract AccumulatorV2Test is Test {
 
         uint256 _before = ERC20(strategyRewardToken).balanceOf(address(liquidityGauge));
 
-        deal(address(strategyRewardToken), address(accumulator), 1_000_000e18);
+        deal(address(strategyRewardToken), address(accumulator), 1_000e18);
         accumulator.notifyReward(address(strategyRewardToken), false, false);
 
         /// It should distribute 1_000_000 PENDLE to LGV4, meaning no fees were taken.
-        assertEq(ERC20(strategyRewardToken).balanceOf(address(liquidityGauge)), _before + 1_000_000e18);
+        assertEq(ERC20(strategyRewardToken).balanceOf(address(liquidityGauge)), _before + 1_000e18);
     }
 
     function test_setters() public {
