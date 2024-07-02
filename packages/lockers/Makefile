@@ -35,13 +35,35 @@ coverage-html:
 	@genhtml ./lcov.info.pruned -o report --branch-coverage --output-dir ./coverage
 	@rm ./lcov.info*
 
-simulate-%:
-	@forge script script/$*.s.sol -vvvvv --fork-url $(RPC_URL)
-
 run-%:
 	@forge script script/$*.s.sol --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY) --rpc-url $(RPC_URL) --verify
 
+# Flexible rule for simulation
+simulate-%:
+	@echo "Target: $@"
+	@echo "Match: $*"
+	@dirs=$$(echo $* | tr '-' '/'); \
+	script_path="script/$$dirs/Deploy.s.sol"; \
+	echo "Attempting to simulate: $$script_path"; \
+	if [ -f "$$script_path" ]; then \
+		forge script "$$script_path:Deploy" -vvvvv --fork-url $(RPC_URL); \
+	else \
+		echo "Error: $$script_path does not exist"; \
+		exit 1; \
+	fi
+
+# Flexible rule for simulation
 deploy-%:
-	@forge script script/$*.s.sol --broadcast --slow -vvvvv --verify --private-key ${PRIVATE_KEY}
+	@echo "Target: $@"
+	@echo "Match: $*"
+	@dirs=$$(echo $* | tr '-' '/'); \
+	script_path="script/$$dirs/Deploy.s.sol"; \
+	echo "Attempting to deploy: $$script_path"; \
+	if [ -f "$$script_path" ]; then \
+		forge script "$$script_path:Deploy"--broadcast --slow -vvvvv --private-key $(PRIVATE_KEY) --fork-url $(RPC_URL) --verify; \
+	else \
+		echo "Error: $$script_path does not exist"; \
+		exit 1; \
+	fi
 
 .PHONY: test coverage
