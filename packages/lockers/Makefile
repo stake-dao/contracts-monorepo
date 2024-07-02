@@ -6,7 +6,7 @@ RPC_URL=$(RPC_URL_MAINNET)
 ETHERSCAN_API_KEY=$(ETHERSCAN_KEY)
 
 default:
-	forge fmt && forge build
+	forge fmt && forge clean && forge build
 
 # Always keep Forge up to date
 install:
@@ -25,8 +25,8 @@ test-c-%:
 test-%:
 	@FOUNDRY_TEST=test/$* make test
 
-# Flexible rule for simulation
 simulate-%:
+	make default
 	@echo "Target: $@"
 	@echo "Match: $*"
 	@dirs=$$(echo $* | tr '-' '/'); \
@@ -39,7 +39,6 @@ simulate-%:
 		exit 1; \
 	fi
 
-# Flexible rule for simulation
 deploy-%:
 	@echo "Target: $@"
 	@echo "Match: $*"
