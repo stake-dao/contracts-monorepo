@@ -60,7 +60,7 @@ deploy-%:
 	script_path="script/$$dirs/Deploy.s.sol"; \
 	echo "Attempting to deploy: $$script_path"; \
 	if [ -f "$$script_path" ]; then \
-		forge script "$$script_path:Deploy"--broadcast --slow -vvvvv --private-key $(PRIVATE_KEY) --fork-url $(RPC_URL) --verify; \
+		forge script "$$script_path:Deploy" --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY) --fork-url $(RPC_URL) --verify; \
 	else \
 		echo "Error: $$script_path does not exist"; \
 		exit 1; \
