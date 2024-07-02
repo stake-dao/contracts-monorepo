@@ -25,19 +25,6 @@ test-c-%:
 test-%:
 	@FOUNDRY_TEST=test/$* make test
 
-coverage:
-	@forge coverage --report lcov
-	@lcov --ignore-errors unused --remove ./lcov.info -o ./lcov.info.pruned "test/*" "script/*"
-	@rm ./lcov.info*
-
-coverage-html:
-	@make coverage
-	@genhtml ./lcov.info.pruned -o report --branch-coverage --output-dir ./coverage
-	@rm ./lcov.info*
-
-run-%:
-	@forge script script/$*.s.sol --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY) --rpc-url $(RPC_URL) --verify
-
 # Flexible rule for simulation
 simulate-%:
 	@echo "Target: $@"
