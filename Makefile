@@ -23,12 +23,19 @@ test-f-%:
 test-c-%:
 	@FOUNDRY_MATCH_CONTRACT=$* make test
 
+test-m-%:
+	@network=$$(echo "$*" | cut -d'-' -f1); \
+	script_path="test/$$network/"; \
+	FOUNDRY_TEST=$$script_path make test; \
+
 test-%:
-	@dir=$$(echo "$*" | cut -d'-' -f1); \
-	file=$$(echo "$*" | cut -d'-' -f2-); \
+	@network=$$(echo "$*" | cut -d'-' -f1); \
+	project=$$(echo "$*" | cut -d'-' -f2); \
+	file=$$(echo "$*" | cut -d'-' -f3-); \
 	capitalized_file=$$(echo "$$file" | tr '[:lower:]' '[:upper:]' | cut -c1)$$(echo "$$file" | cut -c2-); \
-	script_path="test/$$dir/$$capitalized_file.t.sol"; \
+	script_path="test/$$network/$$project/$$capitalized_file.t.sol"; \
 	if [ -f "$$script_path" ]; then \
+		echo "Running test: $$script_path"; \
 		FOUNDRY_TEST=$$script_path make test; \
 	else \
 		echo "Test file not found: $$script_path"; \
