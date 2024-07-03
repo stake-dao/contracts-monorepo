@@ -4,6 +4,9 @@
 MAKEFLAGS += --no-print-directory
 
 default:
+	forge fmt && forge build
+
+clean:
 	forge fmt && forge clean && forge build
 
 # Always keep Forge up to date
