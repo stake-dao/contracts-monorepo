@@ -3,15 +3,16 @@
 MAKEFLAGS += --no-print-directory
 
 default:
-	forge fmt && forge build
+	@forge fmt && forge build
 
 clean:
-	forge fmt && forge clean && forge build
+	@forge clean && make default
 
 # Always keep Forge up to date
 install:
 	foundryup
-	forge install
+	rm -rf node_modules
+	pnpm i
 
 test:
 	@forge test
