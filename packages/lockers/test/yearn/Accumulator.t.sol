@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import "test/base/BaseAccumulatorTest.sol";
-import "src/yearn/accumulator/YFIAccumulator.sol";
+import "test/common/BaseAccumulatorTest.sol";
+import "src/mainnet/yearn/accumulator/YFIAccumulator.sol";
 
 contract AccumulatorTest is BaseAccumulatorTest {
     address internal constant DYFI = 0x41252E8691e964f7DE35156B68493bAb6797a275;

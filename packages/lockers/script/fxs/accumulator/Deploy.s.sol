@@ -5,8 +5,8 @@ import "forge-std/src/Script.sol";
 import "address-book/src/dao/1.sol";
 import "address-book/src/lockers/1.sol";
 
-import "script/base/DeployAccumulator.sol";
-import "src/frax/fxs/accumulator/FXSAccumulator.sol";
+import "script/common/DeployAccumulator.sol";
+import "src/mainnet/frax/fxs/accumulator/FXSAccumulator.sol";
 
 contract Deploy is DeployAccumulator {
     function run() public {

@@ -9,17 +9,17 @@ import "address-book/src/dao/56.sol";
 import "address-book/src/lockers/56.sol";
 import "address-book/src/protocols/56.sol";
 
-import "src/base/utils/Constants.sol";
-import "src/base/interfaces/ILocker.sol";
+import "src/common/utils/Constants.sol";
+import "src/common/interfaces/ILocker.sol";
 
-import "src/cake/adapter/DEdgeAdapter.sol";
-import "src/cake/adapter/AlpacaAdapter.sol";
-import "src/cake/adapter/AdapterFactory.sol";
-import "src/cake/adapter/AdapterRegistry.sol";
+import "src/bnb/cake/adapter/DEdgeAdapter.sol";
+import "src/bnb/cake/adapter/AlpacaAdapter.sol";
+import "src/bnb/cake/adapter/AdapterFactory.sol";
+import "src/bnb/cake/adapter/AdapterRegistry.sol";
 
-import "src/cake/vault/PCSVault.sol";
-import "src/cake/strategy/PancakeERC20Strategy.sol";
-import "src/cake/factory/PancakeVaultFactoryXChain.sol";
+import "src/bnb/cake/vault/PCSVault.sol";
+import "src/bnb/cake/strategy/PancakeERC20Strategy.sol";
+import "src/bnb/cake/factory/PancakeVaultFactoryXChain.sol";
 
 abstract contract PancakeERC20PMStrategyTest is Test {
     ILocker public constant locker = ILocker(CAKE.LOCKER);

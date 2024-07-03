@@ -8,14 +8,14 @@ import "forge-std/src/console.sol";
 import "address-book/src/lockers/1.sol";
 import "address-book/src/protocols/1.sol";
 
-import "src/pendle/accumulator/PENDLEAccumulator.sol";
+import "src/mainnet/pendle/accumulator/PENDLEAccumulator.sol";
 
-import {ILocker} from "src/base/interfaces/ILocker.sol";
-import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
+import {ILocker} from "src/common/interfaces/ILocker.sol";
+import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 
-import "src/base/fee/TreasuryRecipient.sol";
-import "src/base/fee/LiquidityFeeRecipient.sol";
-import "src/pendle/voters-rewards/VotersRewardsRecipient.sol";
+import "src/common/fee/TreasuryRecipient.sol";
+import "src/common/fee/LiquidityFeeRecipient.sol";
+import "src/mainnet/pendle/voters-rewards/VotersRewardsRecipient.sol";
 
 contract AccumulatorTest is Test {
     uint256 blockNumber = 20_031_924;

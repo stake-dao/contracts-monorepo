@@ -3,8 +3,8 @@ pragma solidity 0.8.19;
 
 import "forge-std/src/Test.sol";
 
-import {ILocker} from "src/base/interfaces/ILocker.sol";
-import {Executor} from "src/cake/utils/Executor.sol";
+import {ILocker} from "src/common/interfaces/ILocker.sol";
+import {Executor} from "src/bnb/cake/utils/Executor.sol";
 import {CAKE} from "address-book/src/lockers/56.sol";
 import {DAO} from "address-book/src/dao/56.sol";
 
@@ -24,7 +24,7 @@ contract ExecutorTest is Test {
         executor = new Executor(MS);
     }
 
-    function test_initial_data() external {
+    function test_initial_data() external view {
         assertEq(executor.governance(), MS);
         assertEq(executor.futureGovernance(), address(0));
     }

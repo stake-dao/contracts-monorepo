@@ -9,9 +9,9 @@ import "address-book/src/dao/1.sol";
 import "address-book/src/lockers/1.sol";
 import "address-book/src/protocols/1.sol";
 
-import "src/curve/accumulator/CRVAccumulator.sol";
+import "src/mainnet/curve/accumulator/CRVAccumulator.sol";
 
-import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
+import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import "herdaddy/interfaces/stake-dao/IStrategy.sol";
 import "herdaddy/interfaces/curve/IFeeDistributor.sol";
 

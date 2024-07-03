@@ -3,11 +3,11 @@ pragma solidity ^0.8.19;
 
 import "forge-std/src/Test.sol";
 import "solady/src/utils/LibClone.sol";
-import "src/cake/strategy/PancakeMasterchefStrategy.sol";
+import "src/bnb/cake/strategy/PancakeMasterchefStrategy.sol";
 import "openzeppelin-contracts/proxy/ERC1967/ERC1967Proxy.sol";
 
-import {ICakeMc} from "src/base/interfaces/ICakeMc.sol";
-import {Executor} from "src/cake/utils/Executor.sol";
+import {ICakeMc} from "src/common/interfaces/ICakeMc.sol";
+import {Executor} from "src/bnb/cake/utils/Executor.sol";
 
 import {DAO} from "address-book/src/dao/56.sol";
 import {CAKE} from "address-book/src/lockers/56.sol";

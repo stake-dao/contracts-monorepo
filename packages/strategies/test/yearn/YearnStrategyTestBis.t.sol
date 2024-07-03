@@ -8,12 +8,12 @@ import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {Yearn} from "address-book/src/protocols/1.sol";
 import {YFI} from "address-book/src/lockers/1.sol";
 import {DAO} from "address-book/src/dao/1.sol";
-import {ILocker} from "src/base/interfaces/ILocker.sol";
-import {YearnStrategy} from "src/yearn/strategy/YearnStrategy.sol";
+import {ILocker} from "src/common/interfaces/ILocker.sol";
+import {YearnStrategy} from "src/mainnet/yearn/strategy/YearnStrategy.sol";
 import {FixedPointMathLib} from "solady/src/utils/FixedPointMathLib.sol";
-import {GaugeDepositorVault} from "src/base/vault/GaugeDepositorVault.sol";
-import {ILiquidityGaugeStrat} from "src/base/interfaces/ILiquidityGaugeStrat.sol";
-import {YearnVaultFactory} from "src/yearn/factory/YearnVaultFactory.sol";
+import {GaugeDepositorVault} from "src/common/vault/GaugeDepositorVault.sol";
+import {ILiquidityGaugeStrat} from "src/common/interfaces/ILiquidityGaugeStrat.sol";
+import {YearnVaultFactory} from "src/mainnet/yearn/factory/YearnVaultFactory.sol";
 
 abstract contract YearnStrategyTestBis is Test {
     using FixedPointMathLib for uint256;

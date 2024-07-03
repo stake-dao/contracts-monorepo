@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import "test/base/BaseAccumulatorTest.sol";
-import "src/fx/accumulator/FXNAccumulator.sol";
+import "test/common/BaseAccumulatorTest.sol";
+import "src/mainnet/fx/accumulator/FXNAccumulator.sol";
 
 contract AccumulatorTest is BaseAccumulatorTest {
     address internal constant WSETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
