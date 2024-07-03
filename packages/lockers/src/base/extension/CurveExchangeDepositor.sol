@@ -2,14 +2,14 @@
 pragma solidity ^0.8.19;
 
 import "src/base/interfaces/ICurvePool.sol";
-import "src/base/depositor/DepositorV4.sol";
+import "src/base/depositor/Depositor.sol";
 
 /// @title CurveExchange
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return
 /// @dev Adapted for veCRV like Locker.
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-abstract contract CurveExchangeDepositor is DepositorV4 {
+abstract contract CurveExchangeDepositor is Depositor {
     using SafeERC20 for IERC20;
 
     /// @notice Address of the sdToken pool.
@@ -32,7 +32,7 @@ abstract contract CurveExchangeDepositor is DepositorV4 {
         address _gauge,
         uint256 _maxLockDuration,
         address _pool
-    ) DepositorV4(_token, _locker, _minter, _gauge, _maxLockDuration) {
+    ) Depositor(_token, _locker, _minter, _gauge, _maxLockDuration) {
         pool = _pool;
 
         /// Approve sdToken to gauge.

@@ -5,10 +5,10 @@ import "forge-std/src/Script.sol";
 import "address-book/src/dao/56.sol";
 import "address-book/src/lockers/56.sol";
 
-import "script/base/Accumulator.s.sol";
+import "script/base/DeployAccumulator.sol";
 import "src/cake/accumulator/CAKEAccumulator.sol";
 
-contract Deploy is Accumulator {
+contract Deploy is DeployAccumulator {
     function run() public {
         vm.createSelectFork("bnb");
         _run(DAO.MAIN_DEPLOYER, DAO.GOVERNANCE, DAO.GOVERNANCE, DAO.GOVERNANCE);

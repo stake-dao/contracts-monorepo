@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "src/base/accumulator/AccumulatorV2.sol";
+import "src/base/accumulator/Accumulator.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 
 /// @title FPIS Accumulator V3
 /// @author StakeDAO
-contract APWAccumulatorV3 is AccumulatorV2 {
+contract APWAccumulatorV3 is Accumulator {
     /// @notice FXS token address
     address public constant APW = 0x4104b135DBC9609Fc1A9490E61369036497660c8;
 
@@ -18,9 +18,7 @@ contract APWAccumulatorV3 is AccumulatorV2 {
     /// @param _gauge sd gauge
     /// @param _locker sd locker
     /// @param _governance governance
-    constructor(address _gauge, address _locker, address _governance)
-        AccumulatorV2(_gauge, APW, _locker, _governance)
-    {
+    constructor(address _gauge, address _locker, address _governance) Accumulator(_gauge, APW, _locker, _governance) {
         SafeTransferLib.safeApprove(APW, _gauge, type(uint256).max);
     }
 

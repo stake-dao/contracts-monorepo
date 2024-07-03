@@ -26,7 +26,7 @@ abstract contract BaseAccumulatorTest is Test {
 
     ILiquidityGauge public liquidityGauge;
 
-    AccumulatorV2 public accumulator;
+    Accumulator public accumulator;
 
     address public treasuryRecipient = DAO.TREASURY;
     address public liquidityFeeRecipient = DAO.LIQUIDITY_FEES_RECIPIENT;
@@ -55,7 +55,7 @@ abstract contract BaseAccumulatorTest is Test {
         vm.selectFork(forkId);
 
         /// Deploy Accumulator Contract.
-        accumulator = AccumulatorV2(_deployAccumulator());
+        accumulator = Accumulator(_deployAccumulator());
 
         address[] memory feeSplitReceivers = new address[](2);
         uint256[] memory feeSplitBps = new uint256[](2);
@@ -190,7 +190,7 @@ abstract contract BaseAccumulatorTest is Test {
         assertEq(accumulator.feeReceiver(), address(1));
 
         vm.prank(address(2));
-        vm.expectRevert(AccumulatorV2.GOVERNANCE.selector);
+        vm.expectRevert(Accumulator.GOVERNANCE.selector);
         accumulator.setFeeReceiver(address(2));
     }
 }

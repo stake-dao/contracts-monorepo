@@ -13,7 +13,7 @@ import {ISDTDistributor} from "src/base/interfaces/ISDTDistributor.sol";
 /// @notice Abstract contract used for any accumulator
 /// @dev Interacting with the FeeReceiver (receiving and splitting fees)
 /// @author StakeDAO
-abstract contract AccumulatorV2 {
+abstract contract Accumulator {
     /// @notice Denominator for fixed point math.
     uint256 public constant DENOMINATOR = 10_000;
 

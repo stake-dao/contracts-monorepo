@@ -9,7 +9,7 @@ import "address-book/src/dao/1.sol";
 import "address-book/src/lockers/1.sol";
 import "address-book/src/protocols/1.sol";
 
-import "src/curve/accumulator/CRVAccumulatorV3.sol";
+import "src/curve/accumulator/CRVAccumulator.sol";
 
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import "herdaddy/interfaces/stake-dao/IStrategy.sol";
@@ -27,7 +27,7 @@ contract CRVAccumulatorV3IntegrationTest is Test {
 
     ILiquidityGauge internal liquidityGauge = ILiquidityGauge(CRV.GAUGE);
 
-    CRVAccumulatorV3 internal accumulator;
+    CRVAccumulator internal accumulator;
     address internal treasuryRecipient = DAO.TREASURY;
     address internal liquidityFeeRecipient = DAO.LIQUIDITY_FEES_RECIPIENT;
 
@@ -36,7 +36,7 @@ contract CRVAccumulatorV3IntegrationTest is Test {
         vm.selectFork(forkId);
 
         /// Deploy Accumulator Contract.
-        accumulator = new CRVAccumulatorV3(address(liquidityGauge), locker, address(this));
+        accumulator = new CRVAccumulator(address(liquidityGauge), locker, address(this));
 
         address[] memory feeSplitReceivers = new address[](2);
         uint256[] memory feeSplitFees = new uint256[](2);
@@ -88,7 +88,7 @@ contract CRVAccumulatorV3IntegrationTest is Test {
         rewardData = liquidityGauge.reward_data(address(CRV.TOKEN));
         assertEq(rewardData.distributor, address(accumulator));
 
-        CRVAccumulatorV3.Split memory split = accumulator.getFeeSplit();
+        CRVAccumulator.Split memory split = accumulator.getFeeSplit();
 
         assertEq(split.receivers[0], address(treasuryRecipient));
         assertEq(split.receivers[1], address(liquidityFeeRecipient));
@@ -118,7 +118,7 @@ contract CRVAccumulatorV3IntegrationTest is Test {
 
         assertGt(total, 0);
 
-        CRVAccumulatorV3.Split memory feeSplit = accumulator.getFeeSplit();
+        CRVAccumulator.Split memory feeSplit = accumulator.getFeeSplit();
         assertEq(total * accumulator.claimerFee() / 10_000, claimer);
         assertEq(total * feeSplit.fees[0] / 10_000, treasury);
         assertEq(total * feeSplit.fees[1] / 10_000, liquidityFee);
@@ -161,7 +161,7 @@ contract CRVAccumulatorV3IntegrationTest is Test {
         feeSplitFees[1] = 50; // 5% to liquidity
 
         accumulator.setFeeSplit(feeSplitReceivers, feeSplitFees);
-        CRVAccumulatorV3.Split memory split = accumulator.getFeeSplit();
+        CRVAccumulator.Split memory split = accumulator.getFeeSplit();
 
         assertEq(split.receivers[0], address(treasuryRecipient));
         assertEq(split.receivers[1], address(liquidityFeeRecipient));
@@ -176,7 +176,7 @@ contract CRVAccumulatorV3IntegrationTest is Test {
         assertEq(accumulator.feeReceiver(), address(1));
 
         vm.prank(address(2));
-        vm.expectRevert(AccumulatorV2.GOVERNANCE.selector);
+        vm.expectRevert(Accumulator.GOVERNANCE.selector);
         accumulator.setFeeReceiver(address(2));
     }
 }

@@ -2,9 +2,9 @@
 pragma solidity 0.8.19;
 
 import "forge-std/src/Script.sol";
-import "src/base/accumulator/AccumulatorV2.sol";
+import "src/base/accumulator/Accumulator.sol";
 
-abstract contract Accumulator is Script {
+abstract contract DeployAccumulator is Script {
     address payable internal accumulator;
 
     address[] feeSplitReceivers = new address[](2);
@@ -21,11 +21,11 @@ abstract contract Accumulator is Script {
         feeSplitReceivers[1] = address(liquidityFeeRecipient);
         feeSplitFees[1] = 1000; // 5% to liquidity
 
-        AccumulatorV2(accumulator).setFeeSplit(feeSplitReceivers, feeSplitFees);
+        Accumulator(accumulator).setFeeSplit(feeSplitReceivers, feeSplitFees);
 
         _afterDeploy();
 
-        AccumulatorV2(accumulator).transferGovernance(governance);
+        Accumulator(accumulator).transferGovernance(governance);
 
         vm.stopBroadcast();
     }

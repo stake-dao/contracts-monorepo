@@ -214,7 +214,7 @@ contract AccumulatorTest is Test {
         assertEq(accumulator.feeReceiver(), address(1));
 
         vm.prank(address(2));
-        vm.expectRevert(AccumulatorV2.GOVERNANCE.selector);
+        vm.expectRevert(Accumulator.GOVERNANCE.selector);
         accumulator.setFeeReceiver(address(2));
     }
 }

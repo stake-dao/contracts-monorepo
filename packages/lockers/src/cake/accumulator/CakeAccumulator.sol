@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "src/base/accumulator/AccumulatorV2.sol";
+import "src/base/accumulator/Accumulator.sol";
 import {ICakeLocker} from "src/base/interfaces/ICakeLocker.sol";
 import {IRevenueSharingPool} from "src/base/interfaces/IRevenueSharingPool.sol";
 
 /// @notice CAKE Accumulator.
 /// @author StakeDAO
-contract CAKEAccumulator is AccumulatorV2 {
+contract CAKEAccumulator is Accumulator {
     /// @notice CAKE token address
     address public constant CAKE = 0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82;
 
@@ -22,9 +22,7 @@ contract CAKEAccumulator is AccumulatorV2 {
     /// @param _gauge sd gauge
     /// @param _locker sd locker
     /// @param _governance governance
-    constructor(address _gauge, address _locker, address _governance)
-        AccumulatorV2(_gauge, CAKE, _locker, _governance)
-    {
+    constructor(address _gauge, address _locker, address _governance) Accumulator(_gauge, CAKE, _locker, _governance) {
         SafeTransferLib.safeApprove(CAKE, _gauge, type(uint256).max);
     }
 

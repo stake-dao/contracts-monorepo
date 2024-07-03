@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import "src/base/depositor/DepositorV4.sol";
+import "src/base/depositor/Depositor.sol";
 import {ISdTokenOperator} from "src/base/interfaces/ISdTokenOperator.sol";
 
 /// @title Depositor
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-contract FXSDepositorFraxtal is DepositorV4 {
+contract FXSDepositorFraxtal is Depositor {
     using SafeERC20 for IERC20;
 
     /// @notice Throwed when a low level call fails
@@ -33,7 +33,7 @@ contract FXSDepositorFraxtal is DepositorV4 {
         address _mainOperator,
         address _delegationRegistry,
         address _initialDelegate
-    ) DepositorV4(_token, _locker, _minter, _gauge, 4 * 365 days) {
+    ) Depositor(_token, _locker, _minter, _gauge, 4 * 365 days) {
         // Custom code for Fraxtal
         // set _initialDelegate as delegate
         (bool success,) =

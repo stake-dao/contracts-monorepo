@@ -4,12 +4,12 @@ pragma solidity 0.8.19;
 import "src/base/interfaces/IVeBoost.sol";
 import "src/base/interfaces/IVeBoostDelegation.sol";
 
-import "src/base/accumulator/AccumulatorV2.sol";
+import "src/base/accumulator/Accumulator.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 
 /// @notice BAL Accumulator
 /// @author StakeDAO
-contract BALAccumulatorV3 is AccumulatorV2 {
+contract BALAccumulatorV3 is Accumulator {
     /// @notice BAL token address.
     address public constant BAL = 0xba100000625a3754423978a60c9317c58a424e3D;
 
@@ -27,9 +27,7 @@ contract BALAccumulatorV3 is AccumulatorV2 {
 
     uint256 public multiplier;
 
-    constructor(address _gauge, address _locker, address _governance)
-        AccumulatorV2(_gauge, USDC, _locker, _governance)
-    {
+    constructor(address _gauge, address _locker, address _governance) Accumulator(_gauge, USDC, _locker, _governance) {
         SafeTransferLib.safeApprove(BAL, _gauge, type(uint256).max);
         SafeTransferLib.safeApprove(USDC, _gauge, type(uint256).max);
     }

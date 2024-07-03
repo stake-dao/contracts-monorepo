@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "src/base/accumulator/AccumulatorV2.sol";
+import "src/base/accumulator/Accumulator.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {IYieldDistributor} from "src/base/interfaces/IYieldDistributor.sol";
 
 /// @title A contract that accumulates FXS rewards and notifies them to the LGV4
 /// @author StakeDAO
-contract FxsAccumulatorFraxtal is AccumulatorV2 {
+contract FxsAccumulatorFraxtal is Accumulator {
     /// @notice FXS token address
     address public constant FXS = 0xFc00000000000000000000000000000000000002;
 
@@ -36,7 +36,7 @@ contract FxsAccumulatorFraxtal is AccumulatorV2 {
         address _governance,
         address _delegationRegistry,
         address _initialDelegate
-    ) AccumulatorV2(_gauge, FXS, _locker, _governance) {
+    ) Accumulator(_gauge, FXS, _locker, _governance) {
         SafeTransferLib.safeApprove(FXS, _gauge, type(uint256).max);
 
         // Custom code for Fraxtal

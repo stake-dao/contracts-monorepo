@@ -10,7 +10,7 @@ import "address-book/src/lockers/1.sol";
 import "address-book/src/protocols/1.sol";
 
 import "test/utils/Utils.sol";
-import "src/curve/depositor/CRVDepositorV2.sol";
+import "src/curve/depositor/CRVDepositor.sol";
 
 import {sdToken} from "src/base/token/sdToken.sol";
 import {Constants} from "src/base/utils/Constants.sol";
@@ -31,7 +31,7 @@ contract CRVLockerIntegrationTest is Test {
     IVeToken private veToken;
 
     sdToken internal _sdToken;
-    CRVDepositorV2 private depositor;
+    CRVDepositor private depositor;
     ILiquidityGauge internal liquidityGauge;
 
     uint256 private constant amount = 100e18;
@@ -48,8 +48,7 @@ contract CRVLockerIntegrationTest is Test {
 
         locker = ILocker(CRV.LOCKER);
 
-        depositor =
-            new CRVDepositorV2(address(token), address(locker), address(_sdToken), address(liquidityGauge), POOL);
+        depositor = new CRVDepositor(address(token), address(locker), address(_sdToken), address(liquidityGauge), POOL);
 
         vm.prank(locker.governance());
         locker.setStrategy(address(depositor));

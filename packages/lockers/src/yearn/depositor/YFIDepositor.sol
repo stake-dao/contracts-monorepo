@@ -2,17 +2,17 @@
 pragma solidity 0.8.19;
 
 import "src/base/interfaces/IVeYFI.sol";
-import "src/base/depositor/DepositorV4.sol";
+import "src/base/depositor/Depositor.sol";
 
 /// @title YFIDepositor
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-contract YFIDepositor is DepositorV4 {
+contract YFIDepositor is Depositor {
     address public constant VE_YFI = 0x90c1f9220d90d3966FbeE24045EDd73E1d588aD5;
 
     constructor(address _token, address _locker, address _minter, address _gauge)
-        DepositorV4(_token, _locker, _minter, _gauge, 4 * 370 days)
+        Depositor(_token, _locker, _minter, _gauge, 4 * 370 days)
     {}
 
     /// @notice Locks the tokens held by the contract

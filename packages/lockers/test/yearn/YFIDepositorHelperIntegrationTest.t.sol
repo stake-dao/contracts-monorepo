@@ -6,7 +6,7 @@ import "forge-std/src/Test.sol";
 import "address-book/src/dao/1.sol";
 import "address-book/src/lockers/1.sol";
 
-import "src/base/depositor/DepositorV4.sol";
+import "src/base/depositor/Depositor.sol";
 import "src/yearn/depositor/YFIDepositorHelper.sol";
 import {IYearnVestingFactory} from "src/base/interfaces/IYearnVestingFactory.sol";
 

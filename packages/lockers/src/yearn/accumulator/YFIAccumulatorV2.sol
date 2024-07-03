@@ -2,13 +2,13 @@
 pragma solidity 0.8.19;
 
 import {ERC20} from "solady/src/tokens/ERC20.sol";
-import {AccumulatorV2} from "src/base/accumulator/AccumulatorV2.sol";
+import {Accumulator} from "src/base/accumulator/Accumulator.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {IYearnStrategy} from "src/base/interfaces/IYearnStrategy.sol";
 
 /// @title A contract that accumulates YFI and dYFI rewards and notifies them to the LGV4
 /// @author StakeDAO
-contract YFIAccumulatorV2 is AccumulatorV2 {
+contract YFIAccumulatorV2 is Accumulator {
     /// @notice DFYI token address
     address public constant DYFI = 0x41252E8691e964f7DE35156B68493bAb6797a275;
 
@@ -30,9 +30,7 @@ contract YFIAccumulatorV2 is AccumulatorV2 {
     /// @param _gauge sd gauge
     /// @param _locker sd locker
     /// @param _governance governance
-    constructor(address _gauge, address _locker, address _governance)
-        AccumulatorV2(_gauge, DYFI, _locker, _governance)
-    {
+    constructor(address _gauge, address _locker, address _governance) Accumulator(_gauge, DYFI, _locker, _governance) {
         strategy = 0x1be150a35bb8233d092747eBFDc75FB357c35168;
         ERC20(YFI).approve(_gauge, type(uint256).max);
         ERC20(DYFI).approve(_gauge, type(uint256).max);
