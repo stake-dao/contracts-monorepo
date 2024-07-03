@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import "src/base/interfaces/ICurvePool.sol";
 import "src/base/depositor/Depositor.sol";
+import "src/base/interfaces/ICurvePool.sol";
 
 /// @title CurveExchange
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return
@@ -10,8 +10,6 @@ import "src/base/depositor/Depositor.sol";
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
 abstract contract CurveExchangeDepositor is Depositor {
-    using SafeERC20 for IERC20;
-
     /// @notice Address of the sdToken pool.
     address public pool;
 
@@ -37,7 +35,7 @@ abstract contract CurveExchangeDepositor is Depositor {
 
         /// Approve sdToken to gauge.
         if (_pool != address(0)) {
-            IERC20(_token).safeApprove(_pool, type(uint256).max);
+            SafeTransferLib.safeApprove(_token, _pool, type(uint256).max);
         }
     }
 
@@ -52,7 +50,7 @@ abstract contract CurveExchangeDepositor is Depositor {
         if (_minAmount < _amount) revert MIN_AMOUNT_NOT_MET();
 
         /// Transfer tokens from the user to the contract.
-        IERC20(token).safeTransferFrom(msg.sender, address(this), _amount);
+        SafeTransferLib.safeTransferFrom(token, msg.sender, address(this), _amount);
 
         // Mint sdtoken to the user if the gauge is not set
         if (_stake && gauge != address(0)) {
@@ -82,7 +80,7 @@ abstract contract CurveExchangeDepositor is Depositor {
 
         /// Approve sdToken to gauge.
         if (_pool != address(0)) {
-            IERC20(token).safeApprove(_pool, type(uint256).max);
+            SafeTransferLib.safeApprove(token, _pool, type(uint256).max);
         }
     }
 }

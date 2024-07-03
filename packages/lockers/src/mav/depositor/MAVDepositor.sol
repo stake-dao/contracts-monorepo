@@ -9,8 +9,6 @@ import "src/base/depositor/Depositor.sol";
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
 contract MAVDepositor is Depositor {
-    using SafeERC20 for IERC20;
-
     constructor(address _token, address _locker, address _minter, address _gauge)
         Depositor(_token, _locker, _minter, _gauge, 4 * 365 days)
     {}
@@ -29,7 +27,7 @@ contract MAVDepositor is Depositor {
     /// @param _amount Amount of tokens to lock.
     function createLock(uint256 _amount) external override {
         /// Transfer tokens to this contract
-        IERC20(token).safeTransferFrom(msg.sender, address(locker), _amount);
+        SafeTransferLib.safeTransferFrom(token, msg.sender, address(this), _amount);
 
         /// Can be called only once.
         ILocker(locker).createLock(_amount, MAX_LOCK_DURATION);

@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
+import "src/base/interfaces/IERC20.sol";
 import "src/base/interfaces/ILocker.sol";
 import "src/base/interfaces/ISdToken.sol";
 import "src/base/interfaces/ITokenMinter.sol";
 import "src/base/interfaces/ILiquidityGauge.sol";
 
-import "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
+import "solady/src/tokens/ERC20.sol";
+import "solady/src/utils/SafeTransferLib.sol";
 
 /// @title Depositor
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return
@@ -15,8 +16,6 @@ import "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
 abstract contract Depositor {
-    using SafeERC20 for IERC20;
-
     /// @notice Denominator for fixed point math.
     uint256 public constant DENOMINATOR = 10_000;
 
@@ -114,7 +113,7 @@ abstract contract Depositor {
 
         /// Approve sdToken to gauge.
         if (gauge != address(0)) {
-            IERC20(minter).safeApprove(gauge, type(uint256).max);
+            SafeTransferLib.safeApprove(minter, gauge, type(uint256).max);
         }
     }
 
@@ -126,7 +125,7 @@ abstract contract Depositor {
     /// @param _amount Amount of tokens to lock.
     function createLock(uint256 _amount) external virtual {
         /// Transfer tokens to this contract
-        IERC20(token).safeTransferFrom(msg.sender, address(locker), _amount);
+        SafeTransferLib.safeTransferFrom(token, msg.sender, address(locker), _amount);
 
         /// Can be called only once.
         ILocker(locker).createLock(_amount, block.timestamp + MAX_LOCK_DURATION);
@@ -154,13 +153,13 @@ abstract contract Depositor {
         /// If _lock is true, lock tokens in the locker contract.
         if (_lock) {
             /// Transfer tokens to this contract
-            IERC20(token).safeTransferFrom(msg.sender, locker, _amount);
+            SafeTransferLib.safeTransferFrom(token, msg.sender, locker, _amount);
 
             /// Transfer the balance
             uint256 balance = IERC20(token).balanceOf(address(this));
 
             if (balance != 0) {
-                IERC20(token).safeTransfer(locker, balance);
+                SafeTransferLib.safeTransfer(token, locker, balance);
             }
 
             /// Lock the amount sent + balance of the contract.
@@ -176,7 +175,7 @@ abstract contract Depositor {
             }
         } else {
             /// Transfer tokens to the locker contract and lock them.
-            IERC20(token).safeTransferFrom(msg.sender, address(this), _amount);
+            SafeTransferLib.safeTransferFrom(token, msg.sender, locker, _amount);
 
             /// Compute call incentive and add to incentiveToken
             uint256 callIncentive = (_amount * lockIncentivePercent) / DENOMINATOR;
@@ -208,7 +207,9 @@ abstract contract Depositor {
 
         if (tokenBalance != 0) {
             /// Transfer tokens to the locker contract and lock them.
-            IERC20(token).safeTransfer(locker, tokenBalance);
+            SafeTransferLib.safeTransfer(token, locker, tokenBalance);
+
+            /// Lock the amount sent.
             _lockToken(tokenBalance);
         }
 
@@ -267,7 +268,7 @@ abstract contract Depositor {
         gauge = _gauge;
         if (_gauge != address(0)) {
             /// Approve sdToken to gauge.
-            IERC20(minter).safeApprove(gauge, type(uint256).max);
+            SafeTransferLib.safeApprove(minter, gauge, type(uint256).max);
         }
     }
 
@@ -278,7 +279,6 @@ abstract contract Depositor {
             emit FeesChanged(lockIncentivePercent = _lockIncentive);
         }
     }
-
 
     function version() external pure returns (string memory) {
         return "4.0.0";

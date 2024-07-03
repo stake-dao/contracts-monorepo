@@ -9,8 +9,6 @@ import {ISdTokenOperator} from "src/base/interfaces/ISdTokenOperator.sol";
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
 contract FXSDepositorFraxtal is Depositor {
-    using SafeERC20 for IERC20;
-
     /// @notice Throwed when a low level call fails
     error CallFailed();
 
@@ -52,8 +50,9 @@ contract FXSDepositorFraxtal is Depositor {
     function setGauge(address _gauge) external override onlyGovernance {
         gauge = _gauge;
         if (_gauge != address(0)) {
-            /// Approve sdToken to gauge.
-            IERC20(ISdTokenOperator(minter).sdToken()).safeApprove(gauge, type(uint256).max);
+            address _token = ISdTokenOperator(minter).sdToken();
+            /// Approve sdToken to locker.
+            SafeTransferLib.safeApprove(_token, _gauge, type(uint256).max);
         }
     }
 
