@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity 0.8.7;
+pragma solidity ^0.8.7;
 
 interface BalancerFeeDistributor {
     /// @notice Claims all pending distributions of the provided token for a user.
