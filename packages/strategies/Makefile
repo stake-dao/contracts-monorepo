@@ -2,12 +2,9 @@
 
 .EXPORT_ALL_VARIABLES:
 MAKEFLAGS += --no-print-directory
-ETHERSCAN_API_KEY=$(API_KEY_ETHERSCAN)
-PRIVATE_KEY=$(DEPLOYER_PRIVATE_KEY)
-RPC_URL=https://bsc-pokt.nodies.app #https://binance.llamarpc.com
 
 default:
-	forge fmt && forge build
+	forge fmt && forge clean && forge build
 
 # Always keep Forge up to date
 install:
@@ -26,23 +23,31 @@ test-c-%:
 test-%:
 	@FOUNDRY_TEST=test/$* make test
 
-coverage:
-	@forge coverage --report lcov
-	@lcov --ignore-errors unused --remove ./lcov.info -o ./lcov.info.pruned "test/*" "script/*"
-	@rm ./lcov.info*
-
-coverage-html:
-	@make coverage
-	@genhtml ./lcov.info.pruned -o report --branch-coverage --output-dir ./coverage
-	@rm ./lcov.info*
-
 simulate-%:
-	@forge script script/$*.s.sol  -vvvvv --rpc-url ${RPC_URL}
-
-run-%:
-	@forge script script/$*.s.sol --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY) --rpc-url ${RPC_URL} --verify
+	make default
+	@echo "Target: $@"
+	@echo "Match: $*"
+	@dirs=$$(echo $* | tr '-' '/'); \
+	script_path="script/$$dirs/Deploy.s.sol"; \
+	echo "Attempting to simulate: $$script_path"; \
+	if [ -f "$$script_path" ]; then \
+		forge script "$$script_path:Deploy" -vvvvv; \
+	else \
+		echo "Error: $$script_path does not exist"; \
+		exit 1; \
+	fi
 
 deploy-%:
-	@forge script script/$*.s.sol --broadcast --slow -vvvvv --private-key ${PRIVATE_KEY} --rpc-url ${RPC_URL}
+	@echo "Target: $@"
+	@echo "Match: $*"
+	@dirs=$$(echo $* | tr '-' '/'); \
+	script_path="script/$$dirs/Deploy.s.sol"; \
+	echo "Attempting to deploy: $$script_path"; \
+	if [ -f "$$script_path" ]; then \
+		forge script "$$script_path:Deploy" --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY) --verify; \
+	else \
+		echo "Error: $$script_path does not exist"; \
+		exit 1; \
+	fi
 
 .PHONY: test coverage
