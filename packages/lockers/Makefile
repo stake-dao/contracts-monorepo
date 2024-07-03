@@ -57,4 +57,4 @@ deploy-%:
 		exit 1; \
 	fi
 
-.PHONY: test coverage
+.PHONY: test
