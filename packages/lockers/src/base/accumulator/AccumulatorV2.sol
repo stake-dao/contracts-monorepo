@@ -208,7 +208,7 @@ abstract contract AccumulatorV2 {
     /// @notice Take the fees accumulated from the strategy and sending to the fee receiver
     /// @dev Need to be done before calling `split`, but claimProtocolFees is permissionless.
     /// @dev Strategy not set in that abstract contract, must be implemented by child contracts
-    function _claimFeeStrategy() internal {
+    function _claimFeeStrategy() internal virtual {
         IStrategy(strategy).claimProtocolFees();
     }
 

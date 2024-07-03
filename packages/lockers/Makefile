@@ -2,8 +2,6 @@
 
 .EXPORT_ALL_VARIABLES:
 MAKEFLAGS += --no-print-directory
-RPC_URL=$(RPC_URL_MAINNET)
-ETHERSCAN_API_KEY=$(ETHERSCAN_KEY)
 
 default:
 	forge fmt && forge clean && forge build
@@ -33,7 +31,7 @@ simulate-%:
 	script_path="script/$$dirs/Deploy.s.sol"; \
 	echo "Attempting to simulate: $$script_path"; \
 	if [ -f "$$script_path" ]; then \
-		forge script "$$script_path:Deploy" -vvvvv --fork-url $(RPC_URL); \
+		forge script "$$script_path:Deploy" -vvvvv; \
 	else \
 		echo "Error: $$script_path does not exist"; \
 		exit 1; \
@@ -46,7 +44,7 @@ deploy-%:
 	script_path="script/$$dirs/Deploy.s.sol"; \
 	echo "Attempting to deploy: $$script_path"; \
 	if [ -f "$$script_path" ]; then \
-		forge script "$$script_path:Deploy" --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY) --fork-url $(RPC_URL) --verify; \
+		forge script "$$script_path:Deploy" --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY) --verify; \
 	else \
 		echo "Error: $$script_path does not exist"; \
 		exit 1; \
