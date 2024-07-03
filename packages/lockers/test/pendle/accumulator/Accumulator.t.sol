@@ -17,7 +17,7 @@ import "src/base/fee/TreasuryRecipient.sol";
 import "src/base/fee/LiquidityFeeRecipient.sol";
 import "src/pendle/voters-rewards/VotersRewardsRecipient.sol";
 
-contract PendleAccumulatorV3IntegrationTest is Test {
+contract AccumulatorTest is Test {
     uint256 blockNumber = 20_031_924;
 
     ERC20 public WETH = ERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
