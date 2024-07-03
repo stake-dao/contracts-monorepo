@@ -15,7 +15,7 @@ import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import "herdaddy/interfaces/stake-dao/IStrategy.sol";
 import "herdaddy/interfaces/curve/IFeeDistributor.sol";
 
-contract CRVAccumulatorV3IntegrationTest is Test {
+contract AccumulatorTest is Test {
     uint256 blockNumber = 20_169_332;
 
     ERC20 public constant CRV_USD = ERC20(0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E);
