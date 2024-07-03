@@ -282,5 +282,9 @@ abstract contract Accumulator {
         emit ERC20Rescued(_token, _amount);
     }
 
+    function version() external pure returns (string memory) {
+        return "3.0.0";
+    }
+
     receive() external payable {}
 }
