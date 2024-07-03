@@ -278,4 +278,9 @@ abstract contract Depositor {
             emit FeesChanged(lockIncentivePercent = _lockIncentive);
         }
     }
+
+
+    function version() external pure returns (string memory) {
+        return "4.0.0";
+    }
 }

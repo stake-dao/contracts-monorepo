@@ -9,7 +9,7 @@ import {IStrategy} from "herdaddy/interfaces/stake-dao/IStrategy.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 import {ISDTDistributor} from "src/base/interfaces/ISDTDistributor.sol";
 
-/// @title Accumulator V2
+/// @title Accumulator
 /// @notice Abstract contract used for any accumulator
 /// @dev Interacting with the FeeReceiver (receiving and splitting fees)
 /// @author StakeDAO
