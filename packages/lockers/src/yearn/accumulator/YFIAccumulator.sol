@@ -7,7 +7,7 @@ import {IYearnStrategy} from "src/base/interfaces/IYearnStrategy.sol";
 
 /// @title YFI Accumulator V3
 /// @author StakeDAO
-contract YFIAccumulatorV3 is Accumulator {
+contract YFIAccumulator is Accumulator {
     /// @notice YFI token address
     address public constant YFI = 0x0bc529c00C6401aEF6D220BE8C6Ea1667F6Ad93e;
     /// @notice DFYI token address

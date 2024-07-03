@@ -10,9 +10,9 @@ interface IWETH {
     function deposit() external payable;
 }
 
-/// @title PendlAccumulatorV3 - Accumulator for Pendle
+/// @title PENDLEAccumulator - Accumulator for Pendle
 /// @author StakeDAO
-contract PendleAccumulatorV3 is Accumulator {
+contract PENDLEAccumulator is Accumulator {
     /// @notice Base fee (10_000 = 100%)
     uint256 private constant BASE_FEE = 10_000;
 
