@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import "test/base/AccumulatorV3.t.sol";
+import "test/base/BaseAccumulatorTest.sol";
 import "herdaddy/interfaces/frax/IFraxShares.sol";
 import "src/apwine/accumulator/APWAccumulatorV3.sol";
 
-contract APWAccumulatorV3IntegrationTest is AccumulatorV2Test {
+contract AccumulatorTest is BaseAccumulatorTest {
     constructor()
-        AccumulatorV2Test(
+        BaseAccumulatorTest(
             20_187_867,
             SPECTRA.LOCKER,
             SPECTRA.SDTOKEN,

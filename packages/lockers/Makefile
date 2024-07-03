@@ -24,7 +24,11 @@ test-c-%:
 	@FOUNDRY_MATCH_CONTRACT=$* make test
 
 test-%:
-	@FOUNDRY_TEST=test/$* make test
+	@echo "Target: $@"
+	@echo "Match: $*"
+	@dirs=$$(echo $* | tr '-' '/'); \
+	script_path="test/$$dirs/"; \
+	FOUNDRY_TEST=$$script_path make test
 
 simulate-%:
 	make default

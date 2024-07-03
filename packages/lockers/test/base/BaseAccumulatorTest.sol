@@ -14,7 +14,7 @@ import "src/fx/accumulator/FXNAccumulatorV3.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {ILiquidityGauge} from "src/base/interfaces/ILiquidityGauge.sol";
 
-abstract contract AccumulatorV2Test is Test {
+abstract contract BaseAccumulatorTest is Test {
     uint256 blockNumber;
 
     address public locker;
