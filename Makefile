@@ -24,11 +24,16 @@ test-c-%:
 	@FOUNDRY_MATCH_CONTRACT=$* make test
 
 test-%:
-	@echo "Target: $@"
-	@echo "Match: $*"
-	@dirs=$$(echo $* | tr '-' '/'); \
-	script_path="test/$$dirs/"; \
-	FOUNDRY_TEST=$$script_path make test
+	@dir=$$(echo "$*" | cut -d'-' -f1); \
+	file=$$(echo "$*" | cut -d'-' -f2-); \
+	capitalized_file=$$(echo "$$file" | tr '[:lower:]' '[:upper:]' | cut -c1)$$(echo "$$file" | cut -c2-); \
+	script_path="test/$$dir/$$capitalized_file.t.sol"; \
+	if [ -f "$$script_path" ]; then \
+		FOUNDRY_TEST=$$script_path make test; \
+	else \
+		echo "Test file not found: $$script_path"; \
+		exit 1; \
+	fi
 
 simulate-%:
 	make default
