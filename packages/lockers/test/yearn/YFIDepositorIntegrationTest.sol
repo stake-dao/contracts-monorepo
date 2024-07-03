@@ -61,7 +61,7 @@ contract YFIDepositorIntegrationTest is Test {
         vm.stopPrank();
     }
 
-    function test_initialization() public {
+    function test_initialization() public view {
         assertEq(depositor.minter(), address(sdToken));
         assertEq(depositor.gauge(), address(liquidityGauge));
     }

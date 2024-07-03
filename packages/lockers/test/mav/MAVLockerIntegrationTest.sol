@@ -95,7 +95,7 @@ abstract contract MAVLockerIntegrationTest is Test {
         vm.stopPrank();
     }
 
-    function test_initialization() public {
+    function test_initialization() public view {
         assertEq(locker.token(), address(token));
         assertEq(locker.veToken(), address(veToken));
         assertEq(locker.depositor(), address(depositor));

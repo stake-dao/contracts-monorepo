@@ -28,7 +28,7 @@ contract CakeIFOTest is Test {
         factory = new CakeIFOFactory(LOCKER, EXECUTOR, GOVERNANCE, FEE_RECEIVER);
     }
 
-    function test_factory_creation() external {
+    function test_factory_creation() external view {
         assertEq(factory.locker(), address(LOCKER));
         assertEq(address(factory.executor()), EXECUTOR);
         assertEq(factory.governance(), GOVERNANCE);

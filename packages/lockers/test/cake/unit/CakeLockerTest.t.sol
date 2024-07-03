@@ -45,7 +45,7 @@ contract CakeLockerTest is Test {
         deal(address(token), address(locker), 200e18);
     }
 
-    function test_initialization() public {
+    function test_initialization() public view {
         assertEq(locker.name(), "veCAKE Locker");
         assertEq(locker.token(), address(token));
         assertEq(locker.veToken(), address(veToken));

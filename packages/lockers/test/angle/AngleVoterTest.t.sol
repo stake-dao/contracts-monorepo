@@ -47,7 +47,7 @@ contract AngleVoterTest is Test {
         vm.stopPrank();
     }
 
-    function test_voter_params() external {
+    function test_voter_params() external view {
         assertEq(newVoter.ANGLE_LOCKER(), angleLocker);
         assertEq(newVoter.governance(), gov);
     }

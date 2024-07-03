@@ -123,7 +123,7 @@ contract PendleIntegrationTest is Test {
         deal(WETH, address(veSdtFeePendleProxy), 1e18);
     }
 
-    function testInitialStateDepositor() public {
+    function testInitialStateDepositor() public view {
         (, uint256 end) = vePENDLE.positionData(address(pendleLocker));
         assertEq(end, depositor.unlockTime());
     }

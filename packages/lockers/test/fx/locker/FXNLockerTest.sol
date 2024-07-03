@@ -43,7 +43,7 @@ contract FXNLockerTest is Test {
         deal(address(token), address(locker), 100e18);
     }
 
-    function test_initialization() public {
+    function test_initialization() public view {
         assertEq(locker.name(), "FXN Locker");
         assertEq(locker.token(), address(token));
         assertEq(locker.veToken(), address(veToken));
