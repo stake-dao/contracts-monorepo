@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import "src/base/accumulator/Accumulator.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 
-/// @title FXS Accumulator V3
+/// @title FXS Accumulator
 /// @author StakeDAO
 contract FXSAccumulator is Accumulator {
     /// @notice FXS token address
