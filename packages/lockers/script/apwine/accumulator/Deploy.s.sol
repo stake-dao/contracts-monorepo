@@ -9,6 +9,11 @@ import "script/base/Accumulator.s.sol";
 import "src/apwine/accumulator/APWAccumulatorV3.sol";
 
 contract Deploy is Accumulator {
+    function run() public {
+        vm.createSelectFork("mainnet");
+        _run(DAO.MAIN_DEPLOYER, DAO.TREASURY, DAO.LIQUIDITY_FEES_RECIPIENT, DAO.GOVERNANCE);
+    }
+
     function _deployAccumulator() internal override returns (address payable) {
         return payable(new APWAccumulatorV3(address(SPECTRA.GAUGE), SPECTRA.LOCKER, DAO.MAIN_DEPLOYER));
     }

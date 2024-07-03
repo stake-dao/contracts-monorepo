@@ -2,20 +2,20 @@
 pragma solidity 0.8.19;
 
 import "forge-std/src/Script.sol";
-import "address-book/src/dao/1.sol";
-import "address-book/src/lockers/1.sol";
+import "address-book/src/dao/56.sol";
+import "address-book/src/lockers/56.sol";
 
 import "script/base/Accumulator.s.sol";
-import "src/fx/accumulator/FXNAccumulatorV3.sol";
+import "src/cake/accumulator/CAKEAccumulator.sol";
 
 contract Deploy is Accumulator {
     function run() public {
-        vm.createSelectFork("mainnet");
-        _run(DAO.MAIN_DEPLOYER, DAO.TREASURY, DAO.LIQUIDITY_FEES_RECIPIENT, DAO.GOVERNANCE);
+        vm.createSelectFork("bnb");
+        _run(DAO.MAIN_DEPLOYER, DAO.GOVERNANCE, DAO.GOVERNANCE, DAO.GOVERNANCE);
     }
 
     function _deployAccumulator() internal override returns (address payable) {
-        return payable(new FXNAccumulatorV3(address(FXN.GAUGE), FXN.LOCKER, DAO.MAIN_DEPLOYER));
+        return payable(new CAKEAccumulator(address(CAKE.GAUGE), CAKE.LOCKER, DAO.MAIN_DEPLOYER));
     }
 
     function _afterDeploy() internal virtual override {}

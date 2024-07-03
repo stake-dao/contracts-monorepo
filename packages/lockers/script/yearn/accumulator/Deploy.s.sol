@@ -9,6 +9,11 @@ import "script/base/Accumulator.s.sol";
 import "src/yearn/accumulator/YFIAccumulatorV3.sol";
 
 contract Deploy is Accumulator {
+    function run() public {
+        vm.createSelectFork("mainnet");
+        _run(DAO.MAIN_DEPLOYER, DAO.TREASURY, DAO.LIQUIDITY_FEES_RECIPIENT, DAO.GOVERNANCE);
+    }
+
     function _deployAccumulator() internal override returns (address payable) {
         return payable(new YFIAccumulatorV3(address(YFI.GAUGE), YFI.LOCKER, DAO.MAIN_DEPLOYER));
     }

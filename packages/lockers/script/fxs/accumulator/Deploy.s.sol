@@ -9,6 +9,11 @@ import "script/base/Accumulator.s.sol";
 import "src/frax/fxs/accumulator/FXSAccumulatorV3.sol";
 
 contract Deploy is Accumulator {
+    function run() public {
+        vm.createSelectFork("mainnet");
+        _run(DAO.MAIN_DEPLOYER, DAO.TREASURY, DAO.LIQUIDITY_FEES_RECIPIENT, DAO.GOVERNANCE);
+    }
+
     function _deployAccumulator() internal override returns (address payable) {
         return payable(new FXSAccumulatorV3(address(FXS.GAUGE), FXS.LOCKER, DAO.MAIN_DEPLOYER));
     }

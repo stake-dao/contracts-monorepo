@@ -2,9 +2,6 @@
 pragma solidity 0.8.19;
 
 import "forge-std/src/Script.sol";
-import "address-book/src/dao/1.sol";
-import "address-book/src/lockers/1.sol";
-
 import "src/base/accumulator/AccumulatorV2.sol";
 
 abstract contract Accumulator is Script {
@@ -13,22 +10,22 @@ abstract contract Accumulator is Script {
     address[] feeSplitReceivers = new address[](2);
     uint256[] feeSplitFees = new uint256[](2);
 
-    function run() public {
-        vm.startBroadcast(DAO.MAIN_DEPLOYER);
+    function _run(address deployer, address treasury, address liquidityFeeRecipient, address governance) internal {
+        vm.startBroadcast(deployer);
 
         accumulator = _deployAccumulator();
 
-        feeSplitReceivers[0] = address(DAO.TREASURY);
+        feeSplitReceivers[0] = address(treasury);
         feeSplitFees[0] = 500; // 5% to dao
 
-        feeSplitReceivers[1] = address(DAO.LIQUIDITY_FEES_RECIPIENT);
+        feeSplitReceivers[1] = address(liquidityFeeRecipient);
         feeSplitFees[1] = 1000; // 5% to liquidity
 
         AccumulatorV2(accumulator).setFeeSplit(feeSplitReceivers, feeSplitFees);
 
         _afterDeploy();
 
-        AccumulatorV2(accumulator).transferGovernance(DAO.GOVERNANCE);
+        AccumulatorV2(accumulator).transferGovernance(governance);
 
         vm.stopBroadcast();
     }
