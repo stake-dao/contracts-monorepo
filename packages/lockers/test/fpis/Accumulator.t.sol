@@ -3,7 +3,7 @@ pragma solidity ^0.8.4;
 
 import "test/base/BaseAccumulatorTest.sol";
 import "herdaddy/interfaces/frax/IFraxShares.sol";
-import "src/frax/fpis/accumulator/FPISAccumulatorV3.sol";
+import "src/frax/fpis/accumulator/FPISAccumulator.sol";
 
 contract AccumulatorTest is BaseAccumulatorTest {
     constructor()
@@ -11,6 +11,6 @@ contract AccumulatorTest is BaseAccumulatorTest {
     {}
 
     function _deployAccumulator() internal override returns (address payable) {
-        return payable(new FPISAccumulatorV3(address(liquidityGauge), locker, address(this)));
+        return payable(new FPISAccumulator(address(liquidityGauge), locker, address(this)));
     }
 }

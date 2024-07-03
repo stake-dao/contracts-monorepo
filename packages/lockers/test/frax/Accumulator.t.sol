@@ -3,7 +3,7 @@ pragma solidity ^0.8.4;
 
 import "test/base/BaseAccumulatorTest.sol";
 import "herdaddy/interfaces/frax/IFraxShares.sol";
-import "src/frax/fxs/accumulator/FXSAccumulatorV3.sol";
+import "src/frax/fxs/accumulator/FXSAccumulator.sol";
 
 contract AccumulatorTest is BaseAccumulatorTest {
     constructor()
@@ -15,6 +15,6 @@ contract AccumulatorTest is BaseAccumulatorTest {
         vm.prank(IFraxShares(FXS.TOKEN).owner_address());
         IFraxShares(FXS.TOKEN).toggleVotes();
 
-        return payable(new FXSAccumulatorV3(address(liquidityGauge), locker, address(this)));
+        return payable(new FXSAccumulator(address(liquidityGauge), locker, address(this)));
     }
 }

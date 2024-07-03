@@ -9,7 +9,7 @@ import {ILocker} from "src/base/interfaces/ILocker.sol";
 
 /// @notice BAL Accumulator
 /// @author StakeDAO
-contract BALAccumulatorV3 is Accumulator {
+contract BALAccumulator is Accumulator {
     /// @notice BAL token address.
     address public constant BAL = 0xba100000625a3754423978a60c9317c58a424e3D;
 

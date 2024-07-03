@@ -6,7 +6,7 @@ import "address-book/src/dao/1.sol";
 import "address-book/src/lockers/1.sol";
 
 import "script/base/DeployAccumulator.sol";
-import "src/frax/fpis/accumulator/FPISAccumulatorV3.sol";
+import "src/frax/fpis/accumulator/FPISAccumulator.sol";
 
 contract Deploy is DeployAccumulator {
     function run() public {
@@ -15,7 +15,7 @@ contract Deploy is DeployAccumulator {
     }
 
     function _deployAccumulator() internal override returns (address payable) {
-        return payable(new FPISAccumulatorV3(address(FPIS.GAUGE), FPIS.LOCKER, DAO.MAIN_DEPLOYER));
+        return payable(new FPISAccumulator(address(FPIS.GAUGE), FPIS.LOCKER, DAO.MAIN_DEPLOYER));
     }
 
     function _afterDeploy() internal virtual override {}

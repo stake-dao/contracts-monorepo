@@ -6,7 +6,7 @@ import "address-book/src/dao/1.sol";
 import "address-book/src/lockers/1.sol";
 
 import "script/base/DeployAccumulator.sol";
-import "src/fx/accumulator/FXNAccumulatorV3.sol";
+import "src/fx/accumulator/FXNAccumulator.sol";
 
 contract Deploy is DeployAccumulator {
     function run() public {
@@ -15,7 +15,7 @@ contract Deploy is DeployAccumulator {
     }
 
     function _deployAccumulator() internal override returns (address payable) {
-        return payable(new FXNAccumulatorV3(address(FXN.GAUGE), FXN.LOCKER, DAO.MAIN_DEPLOYER));
+        return payable(new FXNAccumulator(address(FXN.GAUGE), FXN.LOCKER, DAO.MAIN_DEPLOYER));
     }
 
     function _afterDeploy() internal virtual override {}

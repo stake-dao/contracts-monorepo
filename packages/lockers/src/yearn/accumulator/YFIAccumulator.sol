@@ -5,7 +5,7 @@ import "src/base/accumulator/Accumulator.sol";
 import {ILocker} from "src/base/interfaces/ILocker.sol";
 import {IYearnStrategy} from "src/base/interfaces/IYearnStrategy.sol";
 
-/// @title YFI Accumulator V3
+/// @title YFI Accumulator
 /// @author StakeDAO
 contract YFIAccumulator is Accumulator {
     /// @notice YFI token address
