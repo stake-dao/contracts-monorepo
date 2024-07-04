@@ -5,8 +5,8 @@ import "forge-std/src/Script.sol";
 import "address-book/src/dao/56.sol";
 import "address-book/src/lockers/56.sol";
 
+import "src/bnb/cake/Accumulator.sol";
 import "script/common/DeployAccumulator.sol";
-import "src/bnb/cake/accumulator/CAKEAccumulator.sol";
 
 contract Deploy is DeployAccumulator {
     function run() public {
@@ -15,7 +15,7 @@ contract Deploy is DeployAccumulator {
     }
 
     function _deployAccumulator() internal override returns (address payable) {
-        return payable(new CAKEAccumulator(address(CAKE.GAUGE), CAKE.LOCKER, DAO.MAIN_DEPLOYER));
+        return payable(new Accumulator(address(CAKE.GAUGE), CAKE.LOCKER, DAO.MAIN_DEPLOYER));
     }
 
     function _afterDeploy() internal virtual override {}

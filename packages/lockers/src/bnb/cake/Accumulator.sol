@@ -7,7 +7,7 @@ import {IRevenueSharingPool} from "src/common/interfaces/IRevenueSharingPool.sol
 
 /// @notice CAKE BaseAccumulator.
 /// @author StakeDAO
-contract CAKEAccumulator is BaseAccumulator {
+contract Accumulator is BaseAccumulator {
     /// @notice CAKE token address
     address public constant CAKE = 0x0E09FaBB73Bd3Ade0a17ECC321fD13a19e81cE82;
 

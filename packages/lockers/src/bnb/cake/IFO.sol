@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import {IExecutor} from "src/common/interfaces/IExecutor.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
-import {ICakeIFOV8} from "src/common/interfaces/ICakeIFOV8.sol";
-import {ICakeV3} from "src/common/interfaces/ICakeV3.sol";
-import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {MerkleProofLib} from "solady/src/utils/MerkleProofLib.sol";
-import {CakeIFOFactory} from "src/bnb/cake/ifo/CakeIFOFactory.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "solady/src/utils/FixedPointMathLib.sol";
 
-contract CakeIFO {
+import {IFOFactory} from "src/bnb/cake/IFOFactory.sol";
+import {ICakeV3} from "src/common/interfaces/ICakeV3.sol";
+import {IExecutor} from "src/common/interfaces/IExecutor.sol";
+import {ICakeIFOV8} from "src/common/interfaces/ICakeIFOV8.sol";
+import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
+
+contract IFO {
     using SafeTransferLib for ERC20;
     using FixedPointMathLib for uint256;
 
@@ -19,7 +20,7 @@ contract CakeIFO {
     ICakeIFOV8 public immutable cakeIFO;
 
     /// @notice Address of the sd ifo factoruy
-    CakeIFOFactory public immutable ifoFactory;
+    IFOFactory public immutable ifoFactory;
 
     /// @notice Executor
     IExecutor public immutable executor;
@@ -156,7 +157,7 @@ contract CakeIFO {
         dToken = ERC20(_dToken);
         oToken = ERC20(_oToken);
         locker = _locker;
-        ifoFactory = CakeIFOFactory(_ifoFactory);
+        ifoFactory = IFOFactory(_ifoFactory);
     }
 
     /// @notice Deposit dToken in the first period, only allowed by sdCake-gauge token holders

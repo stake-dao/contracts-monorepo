@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import {CakeIFO} from "src/bnb/cake/ifo/CakeIFO.sol";
+import {IFO} from "src/bnb/cake/IFO.sol";
 import {IExecutor} from "src/common/interfaces/IExecutor.sol";
 import {ICakeIFOV8} from "src/common/interfaces/ICakeIFOV8.sol";
 
-contract CakeIFOFactory {
+contract IFOFactory {
     /// @notice Address of the executor
     IExecutor public immutable executor;
 
@@ -92,7 +92,7 @@ contract CakeIFOFactory {
         if (ifos[_cakeIFO] != address(0)) revert IfoAlreadyCreated();
         address dToken = ICakeIFOV8(_cakeIFO).addresses(0);
         address oToken = ICakeIFOV8(_cakeIFO).addresses(1);
-        ifos[_cakeIFO] = address(new CakeIFO(_cakeIFO, dToken, oToken, locker, address(executor), address(this)));
+        ifos[_cakeIFO] = address(new IFO(_cakeIFO, dToken, oToken, locker, address(executor), address(this)));
         allowed[ifos[_cakeIFO]] = true;
 
         emit IfoCreated(_cakeIFO, ifos[_cakeIFO]);
@@ -117,7 +117,7 @@ contract CakeIFOFactory {
         external
         onlyGovernanceOrAllowed
     {
-        CakeIFO(_ifo).setMerkleRoot(_merkleRoot, _sdCakeGaugeTotalSupply);
+        IFO(_ifo).setMerkleRoot(_merkleRoot, _sdCakeGaugeTotalSupply);
     }
 
     /// @notice Update protocol fees.

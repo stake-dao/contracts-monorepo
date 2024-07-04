@@ -7,7 +7,7 @@ import "src/common/depositor/BaseDepositor.sol";
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-contract CAKEDepositor is BaseDepositor {
+contract Depositor is BaseDepositor {
     /// @notice Throws if caller is not the Locker contract.
     error LOCKER();
 
