@@ -9,7 +9,7 @@ import "address-book/src/dao/1.sol";
 import "address-book/src/lockers/1.sol";
 import "address-book/src/protocols/1.sol";
 
-import "src/mainnet/curve/accumulator/CRVAccumulator.sol";
+import "src/mainnet/curve/CRVAccumulator.sol";
 
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import "herdaddy/interfaces/stake-dao/IStrategy.sol";
@@ -35,7 +35,7 @@ contract AccumulatorTest is Test {
         uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"), blockNumber);
         vm.selectFork(forkId);
 
-        /// Deploy Accumulator Contract.
+        /// Deploy BaseAccumulator Contract.
         accumulator = new CRVAccumulator(address(liquidityGauge), locker, address(this));
 
         address[] memory feeSplitReceivers = new address[](2);
@@ -176,7 +176,7 @@ contract AccumulatorTest is Test {
         assertEq(accumulator.feeReceiver(), address(1));
 
         vm.prank(address(2));
-        vm.expectRevert(Accumulator.GOVERNANCE.selector);
+        vm.expectRevert(BaseAccumulator.GOVERNANCE.selector);
         accumulator.setFeeReceiver(address(2));
     }
 }

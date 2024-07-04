@@ -5,8 +5,8 @@ import "forge-std/src/Script.sol";
 import "address-book/src/dao/1.sol";
 import "address-book/src/lockers/1.sol";
 
+import "src/mainnet/fxs/Accumulator.sol";
 import "script/common/DeployAccumulator.sol";
-import "src/mainnet/frax/fxs/accumulator/FXSAccumulator.sol";
 
 contract Deploy is DeployAccumulator {
     function run() public {
@@ -15,7 +15,7 @@ contract Deploy is DeployAccumulator {
     }
 
     function _deployAccumulator() internal override returns (address payable) {
-        return payable(new FXSAccumulator(address(FXS.GAUGE), FXS.LOCKER, DAO.MAIN_DEPLOYER));
+        return payable(new Accumulator(address(FXS.GAUGE), FXS.LOCKER, DAO.MAIN_DEPLOYER));
     }
 
     function _afterDeploy() internal virtual override {}

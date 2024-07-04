@@ -9,11 +9,11 @@ import {IStrategy} from "herdaddy/interfaces/stake-dao/IStrategy.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {ISDTDistributor} from "src/common/interfaces/ISDTDistributor.sol";
 
-/// @title Accumulator
+/// @title BaseAccumulator
 /// @notice Abstract contract used for any accumulator
 /// @dev Interacting with the FeeReceiver (receiving and splitting fees)
 /// @author StakeDAO
-abstract contract Accumulator {
+abstract contract BaseAccumulator {
     /// @notice Denominator for fixed point math.
     uint256 public constant DENOMINATOR = 10_000;
 
@@ -253,7 +253,7 @@ abstract contract Accumulator {
         emit GovernanceChanged(governance);
     }
 
-    /// @notice Approve the distribution of a new token reward from the Accumulator.
+    /// @notice Approve the distribution of a new token reward from the BaseAccumulator.
     /// @param _newTokenReward New token reward to be approved.
     function approveNewTokenReward(address _newTokenReward) external onlyGovernance {
         SafeTransferLib.safeApprove(_newTokenReward, gauge, type(uint256).max);

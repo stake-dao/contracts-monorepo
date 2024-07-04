@@ -9,7 +9,7 @@ import "address-book/src/dao/1.sol";
 import "address-book/src/lockers/1.sol";
 import "address-book/src/protocols/1.sol";
 
-import "src/mainnet/fx/accumulator/FXNAccumulator.sol";
+import "src/common/accumulator/BaseAccumulator.sol";
 
 import {ILocker} from "src/common/interfaces/ILocker.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
@@ -26,7 +26,7 @@ abstract contract BaseAccumulatorTest is Test {
 
     ILiquidityGauge public liquidityGauge;
 
-    Accumulator public accumulator;
+    BaseAccumulator public accumulator;
 
     address public treasuryRecipient = DAO.TREASURY;
     address public liquidityFeeRecipient = DAO.LIQUIDITY_FEES_RECIPIENT;
@@ -54,8 +54,8 @@ abstract contract BaseAccumulatorTest is Test {
         uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"), blockNumber);
         vm.selectFork(forkId);
 
-        /// Deploy Accumulator Contract.
-        accumulator = Accumulator(_deployAccumulator());
+        /// Deploy BaseAccumulator Contract.
+        accumulator = BaseAccumulator(_deployAccumulator());
 
         address[] memory feeSplitReceivers = new address[](2);
         uint256[] memory feeSplitBps = new uint256[](2);
@@ -105,7 +105,7 @@ abstract contract BaseAccumulatorTest is Test {
         rewardData = liquidityGauge.reward_data(address(strategyRewardToken));
         assertEq(rewardData.distributor, address(accumulator));
 
-        FXNAccumulator.Split memory split = accumulator.getFeeSplit();
+        BaseAccumulator.Split memory split = accumulator.getFeeSplit();
 
         assertEq(split.receivers[0], treasuryRecipient);
         assertEq(split.receivers[1], liquidityFeeRecipient);
@@ -133,7 +133,7 @@ abstract contract BaseAccumulatorTest is Test {
         uint256 remaining = rewardToken.balanceOf(address(accumulator));
         uint256 total = treasury + liquidityFee + gauge + claimer + remaining;
 
-        FXNAccumulator.Split memory feeSplit = accumulator.getFeeSplit();
+        BaseAccumulator.Split memory feeSplit = accumulator.getFeeSplit();
 
         assertEq(total * accumulator.claimerFee() / 10_000, claimer);
 
@@ -175,7 +175,7 @@ abstract contract BaseAccumulatorTest is Test {
         feeSplitFees[1] = 50; // 5% to liquidity
 
         accumulator.setFeeSplit(feeSplitReceivers, feeSplitFees);
-        FXNAccumulator.Split memory split = accumulator.getFeeSplit();
+        BaseAccumulator.Split memory split = accumulator.getFeeSplit();
 
         assertEq(split.receivers[0], address(treasuryRecipient));
         assertEq(split.receivers[1], address(liquidityFeeRecipient));
@@ -190,7 +190,7 @@ abstract contract BaseAccumulatorTest is Test {
         assertEq(accumulator.feeReceiver(), address(1));
 
         vm.prank(address(2));
-        vm.expectRevert(Accumulator.GOVERNANCE.selector);
+        vm.expectRevert(BaseAccumulator.GOVERNANCE.selector);
         accumulator.setFeeReceiver(address(2));
     }
 }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "src/common/accumulator/Accumulator.sol";
+import "src/common/accumulator/BaseAccumulator.sol";
 import {ILocker} from "src/common/interfaces/ILocker.sol";
 import {IStrategy} from "herdaddy/interfaces/stake-dao/IStrategy.sol";
 import {IPendleFeeDistributor} from "src/common/interfaces/IPendleFeeDistributor.sol";
@@ -10,9 +10,9 @@ interface IWETH {
     function deposit() external payable;
 }
 
-/// @title PENDLEAccumulator - Accumulator for Pendle
+/// @title Accumulator - BaseAccumulator for Pendle
 /// @author StakeDAO
-contract PENDLEAccumulator is Accumulator {
+contract Accumulator is BaseAccumulator {
     /// @notice Base fee (10_000 = 100%)
     uint256 private constant BASE_FEE = 10_000;
 
@@ -59,7 +59,9 @@ contract PENDLEAccumulator is Accumulator {
     /// --- CONSTRUCTOR
     ////////////////////////////////////////////////////////////
 
-    constructor(address _gauge, address _locker, address _governance) Accumulator(_gauge, WETH, _locker, _governance) {
+    constructor(address _gauge, address _locker, address _governance)
+        BaseAccumulator(_gauge, WETH, _locker, _governance)
+    {
         SafeTransferLib.safeApprove(WETH, gauge, type(uint256).max);
         SafeTransferLib.safeApprove(PENDLE, gauge, type(uint256).max);
     }

@@ -8,14 +8,14 @@ import "forge-std/src/console.sol";
 import "address-book/src/lockers/1.sol";
 import "address-book/src/protocols/1.sol";
 
-import "src/mainnet/pendle/accumulator/PENDLEAccumulator.sol";
+import "src/mainnet/pendle/Accumulator.sol";
 
 import {ILocker} from "src/common/interfaces/ILocker.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 
 import "src/common/fee/TreasuryRecipient.sol";
 import "src/common/fee/LiquidityFeeRecipient.sol";
-import "src/mainnet/pendle/voters-rewards/VotersRewardsRecipient.sol";
+import "src/mainnet/pendle/VotersRewardsRecipient.sol";
 
 contract AccumulatorTest is Test {
     uint256 blockNumber = 20_031_924;
@@ -28,7 +28,7 @@ contract AccumulatorTest is Test {
 
     ILiquidityGauge internal liquidityGauge = ILiquidityGauge(PENDLE.GAUGE);
 
-    PENDLEAccumulator internal accumulator;
+    Accumulator internal accumulator;
     TreasuryRecipient internal treasuryRecipient;
     LiquidityFeeRecipient internal liquidityFeeRecipient;
     VotersRewardsRecipient internal votersRewardsRecipient;
@@ -50,8 +50,8 @@ contract AccumulatorTest is Test {
         uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"), blockNumber);
         vm.selectFork(forkId);
 
-        /// Deploy Accumulator Contract.
-        accumulator = new PENDLEAccumulator(address(liquidityGauge), locker, address(this));
+        /// Deploy BaseAccumulator Contract.
+        accumulator = new Accumulator(address(liquidityGauge), locker, address(this));
 
         /// Deploy Fees Recipients.
         treasuryRecipient = new TreasuryRecipient(address(this));
@@ -97,7 +97,7 @@ contract AccumulatorTest is Test {
         assertEq(accumulator.transferVotersRewards(), true);
         assertEq(accumulator.votesRewardRecipient(), address(votersRewardsRecipient));
 
-        PENDLEAccumulator.Split memory split = accumulator.getFeeSplit();
+        Accumulator.Split memory split = accumulator.getFeeSplit();
 
         assertEq(split.receivers[0], address(treasuryRecipient));
         assertEq(split.receivers[1], address(liquidityFeeRecipient));
@@ -119,7 +119,7 @@ contract AccumulatorTest is Test {
         /// Remove 1 pool from the list to trigger NOT_CLAIMED_ALL.
         _pools.pop();
 
-        vm.expectRevert(PENDLEAccumulator.NOT_CLAIMED_ALL.selector);
+        vm.expectRevert(Accumulator.NOT_CLAIMED_ALL.selector);
         accumulator.claimAndNotifyAll(_pools, false, false, false);
 
         accumulator.setTransferVotersRewards(_setTransfer);
@@ -135,7 +135,7 @@ contract AccumulatorTest is Test {
         uint256 remaining = WETH.balanceOf(address(accumulator));
         uint256 total = treasury + liquidityFee + gauge + claimer + remaining + voters;
 
-        PENDLEAccumulator.Split memory feeSplit = accumulator.getFeeSplit();
+        Accumulator.Split memory feeSplit = accumulator.getFeeSplit();
 
         assertEq(total * accumulator.claimerFee() / 10_000, claimer);
 
@@ -148,15 +148,15 @@ contract AccumulatorTest is Test {
             assertEq(voters, 0);
         }
 
-        vm.expectRevert(PENDLEAccumulator.ONGOING_REWARD.selector);
+        vm.expectRevert(Accumulator.ONGOING_REWARD.selector);
         accumulator.notifyReward(address(WETH), false, false);
 
-        vm.expectRevert(PENDLEAccumulator.NO_BALANCE.selector);
+        vm.expectRevert(Accumulator.NO_BALANCE.selector);
         accumulator.claimAndNotifyAll(_pools, false, false, false);
 
         skip(1 weeks);
 
-        vm.expectRevert(PENDLEAccumulator.NO_BALANCE.selector);
+        vm.expectRevert(Accumulator.NO_BALANCE.selector);
         accumulator.claimAndNotifyAll(_pools, false, false, false);
 
         uint256 toDistribute = WETH.balanceOf(address(accumulator)) / 3;
@@ -196,7 +196,7 @@ contract AccumulatorTest is Test {
         feeSplitFees[1] = 50; // 5% to liquidity
 
         accumulator.setFeeSplit(feeSplitReceivers, feeSplitFees);
-        PENDLEAccumulator.Split memory split = accumulator.getFeeSplit();
+        Accumulator.Split memory split = accumulator.getFeeSplit();
 
         assertEq(split.receivers[0], address(treasuryRecipient));
         assertEq(split.receivers[1], address(liquidityFeeRecipient));
@@ -214,7 +214,7 @@ contract AccumulatorTest is Test {
         assertEq(accumulator.feeReceiver(), address(1));
 
         vm.prank(address(2));
-        vm.expectRevert(Accumulator.GOVERNANCE.selector);
+        vm.expectRevert(BaseAccumulator.GOVERNANCE.selector);
         accumulator.setFeeReceiver(address(2));
     }
 }

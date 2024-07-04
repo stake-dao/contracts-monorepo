@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "src/common/accumulator/Accumulator.sol";
+import "src/common/accumulator/BaseAccumulator.sol";
 import {ILocker} from "src/common/interfaces/ILocker.sol";
 
 /// @notice A contract that accumulates FXN rewards and notifies them to the sdFXN gauge
 /// @author StakeDAO
-contract FXNAccumulator is Accumulator {
+contract Accumulator is BaseAccumulator {
     /// @notice FXN token address.
     address public constant FXN = 0x365AccFCa291e7D3914637ABf1F7635dB165Bb09;
 
@@ -25,7 +25,7 @@ contract FXNAccumulator is Accumulator {
     /// @param _locker sd locker
     /// @param _governance governance
     constructor(address _gauge, address _locker, address _governance)
-        Accumulator(_gauge, WSTETH, _locker, _governance)
+        BaseAccumulator(_gauge, WSTETH, _locker, _governance)
     {
         SafeTransferLib.safeApprove(FXN, _gauge, type(uint256).max);
         SafeTransferLib.safeApprove(WSTETH, _gauge, type(uint256).max);

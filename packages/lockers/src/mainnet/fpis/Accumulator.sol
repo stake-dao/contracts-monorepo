@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "src/common/accumulator/Accumulator.sol";
+import "src/common/accumulator/BaseAccumulator.sol";
 import {ILocker} from "src/common/interfaces/ILocker.sol";
 
-/// @title FPIS Accumulator V3
+/// @title FPIS BaseAccumulator V3
 /// @author StakeDAO
-contract APWAccumulatorV3 is Accumulator {
+contract Accumulator is BaseAccumulator {
     /// @notice FXS token address
-    address public constant APW = 0x4104b135DBC9609Fc1A9490E61369036497660c8;
+    address public constant FPIS = 0xc2544A32872A91F4A553b404C6950e89De901fdb;
 
     //////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
@@ -18,8 +18,10 @@ contract APWAccumulatorV3 is Accumulator {
     /// @param _gauge sd gauge
     /// @param _locker sd locker
     /// @param _governance governance
-    constructor(address _gauge, address _locker, address _governance) Accumulator(_gauge, APW, _locker, _governance) {
-        SafeTransferLib.safeApprove(APW, _gauge, type(uint256).max);
+    constructor(address _gauge, address _locker, address _governance)
+        BaseAccumulator(_gauge, FPIS, _locker, _governance)
+    {
+        SafeTransferLib.safeApprove(FPIS, _gauge, type(uint256).max);
     }
 
     //////////////////////////////////////////////////////
@@ -28,13 +30,13 @@ contract APWAccumulatorV3 is Accumulator {
 
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4
     function claimAndNotifyAll(bool notifySDT, bool, bool claimFeeStrategy) external override {
-        ILocker(locker).claimRewards(APW, address(this));
+        ILocker(locker).claimFPISRewards(address(this));
 
         // Sending strategy fees to fee receiver
         if (claimFeeStrategy) {
             _claimFeeStrategy();
         }
 
-        notifyReward(APW, notifySDT, claimFeeStrategy);
+        notifyReward(FPIS, notifySDT, claimFeeStrategy);
     }
 }

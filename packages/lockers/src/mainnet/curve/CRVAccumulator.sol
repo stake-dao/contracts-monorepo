@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "src/common/accumulator/Accumulator.sol";
+import "src/common/accumulator/BaseAccumulator.sol";
 import {IStrategy} from "herdaddy/interfaces/stake-dao/IStrategy.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 
 /// @title A contract that accumulates crvUsd rewards and notifies them to the LGV4
 /// @author StakeDAO
-contract CRVAccumulator is Accumulator {
+contract CRVAccumulator is BaseAccumulator {
     address public constant CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
     address public constant CRV_USD = 0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E;
 
@@ -23,7 +23,7 @@ contract CRVAccumulator is Accumulator {
     ////////////////////////////////////////////////////////////
 
     constructor(address _gauge, address _locker, address _governance)
-        Accumulator(_gauge, CRV_USD, _locker, _governance)
+        BaseAccumulator(_gauge, CRV_USD, _locker, _governance)
     {
         strategy = 0x69D61428d089C2F35Bf6a472F540D0F82D1EA2cd;
         SafeTransferLib.safeApprove(CRV, _gauge, type(uint256).max);

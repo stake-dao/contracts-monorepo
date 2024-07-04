@@ -5,8 +5,8 @@ import "forge-std/src/Script.sol";
 import "address-book/src/dao/1.sol";
 import "address-book/src/lockers/1.sol";
 
+import "src/mainnet/apwine/Accumulator.sol";
 import "script/common/DeployAccumulator.sol";
-import "src/mainnet/apwine/accumulator/APWAccumulatorV3.sol";
 
 contract Deploy is DeployAccumulator {
     function run() public {
@@ -15,7 +15,7 @@ contract Deploy is DeployAccumulator {
     }
 
     function _deployAccumulator() internal override returns (address payable) {
-        return payable(new APWAccumulatorV3(address(SPECTRA.GAUGE), SPECTRA.LOCKER, DAO.MAIN_DEPLOYER));
+        return payable(new Accumulator(address(SPECTRA.GAUGE), SPECTRA.LOCKER, DAO.MAIN_DEPLOYER));
     }
 
     function _afterDeploy() internal virtual override {}
