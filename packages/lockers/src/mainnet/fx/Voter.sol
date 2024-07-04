@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {ILocker} from "src/common/interfaces/ILocker.sol";
 import {IExecutor} from "src/common/interfaces/IExecutor.sol";
 
-contract FXNVoter {
+contract Voter {
     /// @notice Address of the cake locker
     address public immutable locker;
 

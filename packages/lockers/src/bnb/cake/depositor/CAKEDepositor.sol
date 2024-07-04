@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "src/common/depositor/Depositor.sol";
+import "src/common/depositor/BaseDepositor.sol";
 
-/// @title Cake Depositor
+/// @title Cake BaseDepositor
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-contract CAKEDepositor is Depositor {
+contract CAKEDepositor is BaseDepositor {
     /// @notice Throws if caller is not the Locker contract.
     error LOCKER();
 
@@ -22,7 +22,7 @@ contract CAKEDepositor is Depositor {
     /// @param _minter sdToken
     /// @param _gauge sd gauge
     constructor(address _token, address _locker, address _minter, address _gauge)
-        Depositor(_token, _locker, _minter, _gauge, (209 * 1 weeks) - 1)
+        BaseDepositor(_token, _locker, _minter, _gauge, (209 * 1 weeks) - 1)
     {}
 
     /// @notice mint sdCAKE for the delegator

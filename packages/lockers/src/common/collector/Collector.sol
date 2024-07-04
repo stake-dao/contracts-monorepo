@@ -26,7 +26,7 @@ abstract contract Collector is ERC20 {
     /// @notice sdToken token
     ISdToken public sdToken;
 
-    /// @notice Token Depositor
+    /// @notice Token BaseDepositor
     IDepositor public depositor;
 
     /// @notice sdToken gauge

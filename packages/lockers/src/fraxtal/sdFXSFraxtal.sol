@@ -5,7 +5,7 @@ import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 
 /// @title sdFxsFraxtal
 /// @author StakeDAO
-/// @notice A token that represents the Token deposited by a user into the Depositor
+/// @notice A token that represents the Token deposited by a user into the BaseDepositor
 /// @dev Minting & Burning was modified to be used by the operator
 contract sdFXSFraxtal is ERC20 {
     /// @notice Address of the operator (can mint and burn)

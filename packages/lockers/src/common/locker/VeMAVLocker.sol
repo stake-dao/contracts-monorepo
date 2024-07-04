@@ -5,7 +5,7 @@ import "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 import {IVotingEscrowMav} from "src/common/interfaces/IVotingEscrowMav.sol";
 
-/// @title  MAVLocker
+/// @title  Locker
 /// @notice Locker contract for locking tokens for a period of time
 /// @dev Adapted for Maverick Voting Escrow.
 /// @author Stake DAO

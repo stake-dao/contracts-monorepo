@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import "src/common/depositor/Depositor.sol";
+import "src/common/depositor/BaseDepositor.sol";
 import "src/common/interfaces/ICurvePool.sol";
 
 /// @title CurveExchange
@@ -9,7 +9,7 @@ import "src/common/interfaces/ICurvePool.sol";
 /// @dev Adapted for veCRV like Locker.
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-abstract contract CurveExchangeDepositor is Depositor {
+abstract contract CurveExchangeDepositor is BaseDepositor {
     /// @notice Address of the sdToken pool.
     address public pool;
 
@@ -30,7 +30,7 @@ abstract contract CurveExchangeDepositor is Depositor {
         address _gauge,
         uint256 _maxLockDuration,
         address _pool
-    ) Depositor(_token, _locker, _minter, _gauge, _maxLockDuration) {
+    ) BaseDepositor(_token, _locker, _minter, _gauge, _maxLockDuration) {
         pool = _pool;
 
         /// Approve sdToken to gauge.

@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "src/common/depositor/Depositor.sol";
+import "src/common/depositor/BaseDepositor.sol";
 
-/// @title MAVDepositor
+/// @title Depositor
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return
 /// @dev Adapted for Maverick Voting Escrow.
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-contract MAVDepositor is Depositor {
+contract Depositor is BaseDepositor {
     constructor(address _token, address _locker, address _minter, address _gauge)
-        Depositor(_token, _locker, _minter, _gauge, 4 * 365 days)
+        BaseDepositor(_token, _locker, _minter, _gauge, 4 * 365 days)
     {}
 
     function _lockToken(uint256 _amount) internal override {

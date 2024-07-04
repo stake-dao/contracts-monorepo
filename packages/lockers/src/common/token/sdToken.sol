@@ -5,7 +5,7 @@ import "openzeppelin-contracts/token/ERC20/ERC20.sol";
 
 /// @title sdToken
 /// @author StakeDAO
-/// @notice A token that represents the Token deposited by a user into the Depositor
+/// @notice A token that represents the Token deposited by a user into the BaseDepositor
 /// @dev Minting & Burning was modified to be used by the operator
 contract sdToken is ERC20 {
     address public operator;

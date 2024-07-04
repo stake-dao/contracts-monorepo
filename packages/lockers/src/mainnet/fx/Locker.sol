@@ -3,11 +3,11 @@ pragma solidity 0.8.19;
 
 import "src/common/locker/VeCRVLocker.sol";
 
-/// @title  FXNLocker
+/// @title  Locker
 /// @notice Locker contract for locking tokens for a period of time
 /// @author Stake DAO
 /// @custom:contact contact@stakedao.org
-contract FXNLocker is VeCRVLocker {
+contract Locker is VeCRVLocker {
     constructor(address _governance, address _token, address _veToken) VeCRVLocker(_governance, _token, _veToken) {}
 
     function name() public pure override returns (string memory) {

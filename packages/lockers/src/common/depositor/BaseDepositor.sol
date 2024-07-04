@@ -10,12 +10,12 @@ import "src/common/interfaces/ILiquidityGauge.sol";
 import "solady/src/tokens/ERC20.sol";
 import "solady/src/utils/SafeTransferLib.sol";
 
-/// @title Depositor
+/// @title BaseDepositor
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return
 /// @dev Adapted for veCRV like Locker.
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-abstract contract Depositor {
+abstract contract BaseDepositor {
     /// @notice Denominator for fixed point math.
     uint256 public constant DENOMINATOR = 10_000;
 

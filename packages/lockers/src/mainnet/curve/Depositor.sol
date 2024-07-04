@@ -5,11 +5,11 @@ import "src/common/interfaces/IExecutor.sol";
 import "src/common/extension/CurveExchangeDepositor.sol";
 import {IVeToken} from "src/common/interfaces/IVeToken.sol";
 
-/// @title Depositor
+/// @title BaseDepositor
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-contract CRVDepositor is CurveExchangeDepositor {
+contract Depositor is CurveExchangeDepositor {
     /// @notice Address of the veCRV token.
     address public constant VE_CRV = 0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2;
 

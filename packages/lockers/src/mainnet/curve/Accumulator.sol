@@ -7,7 +7,7 @@ import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 
 /// @title A contract that accumulates crvUsd rewards and notifies them to the LGV4
 /// @author StakeDAO
-contract CRVAccumulator is BaseAccumulator {
+contract Accumulator is BaseAccumulator {
     address public constant CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
     address public constant CRV_USD = 0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E;
 
