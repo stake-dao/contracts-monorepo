@@ -286,6 +286,11 @@ abstract contract BaseAccumulator {
         return string("Base Accumulator");
     }
 
+    /// @notice Get the version of the contract
+    /// Version follows the Semantic Versioning (https://semver.org/)
+    /// Major version is increased when backward compatibility is broken in this base contract.
+    /// Minor version is increased when new features are added in this base contract.
+    /// Patch version is increased when child contracts are updated.
     function version() external pure returns (string memory) {
         return "3.0.0";
     }
