@@ -1,18 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
+import "src/fraxtal/FXTLDelegation.sol";
 import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 
 /// @title sdFxsFraxtal
 /// @author StakeDAO
 /// @notice A token that represents the Token deposited by a user into the BaseDepositor
 /// @dev Minting & Burning was modified to be used by the operator
-contract sdFXSFraxtal is ERC20 {
+contract sdToken is ERC20, FXTLDelegation {
     /// @notice Address of the operator (can mint and burn)
     address public operator;
-
-    /// @notice Throwed when a low level call fails
-    error CallFailed();
 
     /// @notice Throwed on Auth
     error OnlyOperator();
@@ -33,17 +31,9 @@ contract sdFXSFraxtal is ERC20 {
     /// @param _initialDelegate Address of the delegate that receives network reward
     constructor(string memory _name, string memory _symbol, address _delegationRegistry, address _initialDelegate)
         ERC20(_name, _symbol)
+        FXTLDelegation(_delegationRegistry, _initialDelegate)
     {
         operator = msg.sender;
-
-        // Custom code for Fraxtal
-        // set _initialDelegate as delegate
-        (bool success,) =
-            _delegationRegistry.call(abi.encodeWithSignature("setDelegationForSelf(address)", _initialDelegate));
-        if (!success) revert CallFailed();
-        // disable self managing delegation
-        (success,) = _delegationRegistry.call(abi.encodeWithSignature("disableSelfManagingDelegations()"));
-        if (!success) revert CallFailed();
     }
 
     /// @notice Set a new operator that can mint and burn sdToken

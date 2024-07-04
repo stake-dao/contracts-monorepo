@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
+import "src/fraxtal/FXTLDelegation.sol";
 import "src/common/depositor/BaseDepositor.sol";
 import {ISdTokenOperator} from "src/common/interfaces/ISdTokenOperator.sol";
 
@@ -8,10 +9,7 @@ import {ISdTokenOperator} from "src/common/interfaces/ISdTokenOperator.sol";
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-contract FXSDepositorFraxtal is BaseDepositor {
-    /// @notice Throwed when a low level call fails
-    error CallFailed();
-
+contract Depositor is BaseDepositor, FXTLDelegation {
     //////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
     //////////////////////////////////////////////////////
@@ -31,16 +29,10 @@ contract FXSDepositorFraxtal is BaseDepositor {
         address _mainOperator,
         address _delegationRegistry,
         address _initialDelegate
-    ) BaseDepositor(_token, _locker, _minter, _gauge, 4 * 365 days) {
-        // Custom code for Fraxtal
-        // set _initialDelegate as delegate
-        (bool success,) =
-            _delegationRegistry.call(abi.encodeWithSignature("setDelegationForSelf(address)", _initialDelegate));
-        if (!success) revert CallFailed();
-        // disable self managing delegation
-        (success,) = _delegationRegistry.call(abi.encodeWithSignature("disableSelfManagingDelegations()"));
-        if (!success) revert CallFailed();
-
+    )
+        BaseDepositor(_token, _locker, _minter, _gauge, 4 * 365 days)
+        FXTLDelegation(_delegationRegistry, _initialDelegate)
+    {
         // set the minter as main operator
         minter = _mainOperator;
     }

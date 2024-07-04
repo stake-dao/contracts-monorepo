@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
+import "src/fraxtal/FXTLDelegation.sol";
 import "src/common/accumulator/BaseAccumulator.sol";
 import {ILocker} from "src/common/interfaces/ILocker.sol";
 import {IYieldDistributor} from "src/common/interfaces/IYieldDistributor.sol";
 
 /// @title A contract that accumulates FXS rewards and notifies them to the LGV4
 /// @author StakeDAO
-contract FxsAccumulatorFraxtal is BaseAccumulator {
+contract Accumulator is BaseAccumulator, FXTLDelegation {
     /// @notice FXS token address
     address public constant FXS = 0xFc00000000000000000000000000000000000002;
 
@@ -36,17 +37,8 @@ contract FxsAccumulatorFraxtal is BaseAccumulator {
         address _governance,
         address _delegationRegistry,
         address _initialDelegate
-    ) BaseAccumulator(_gauge, FXS, _locker, _governance) {
+    ) BaseAccumulator(_gauge, FXS, _locker, _governance) FXTLDelegation(_delegationRegistry, _initialDelegate) {
         SafeTransferLib.safeApprove(FXS, _gauge, type(uint256).max);
-
-        // Custom code for Fraxtal
-        // set _initialDelegate as delegate
-        (bool success,) =
-            _delegationRegistry.call(abi.encodeWithSignature("setDelegationForSelf(address)", _initialDelegate));
-        if (!success) revert CallFailed();
-        // disable self managing delegation
-        (success,) = _delegationRegistry.call(abi.encodeWithSignature("disableSelfManagingDelegations()"));
-        if (!success) revert CallFailed();
     }
 
     //////////////////////////////////////////////////////

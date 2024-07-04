@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
+import "src/fraxtal/FXTLDelegation.sol";
 import "src/common/locker/VeCRVLocker.sol";
 import {IVestedFXS} from "src/common/interfaces/IVestedFXS.sol";
 import {IYieldDistributor} from "src/common/interfaces/IYieldDistributor.sol";
@@ -9,11 +10,8 @@ import {IYieldDistributor} from "src/common/interfaces/IYieldDistributor.sol";
 /// @notice Locks the FXS tokens to veFXS contract
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-contract FxsLockerFraxtal is VeCRVLocker {
+contract Locker is VeCRVLocker, FXTLDelegation {
     using SafeERC20 for IERC20;
-
-    /// @notice Throws if a low leve call failed.
-    error CallFailed();
 
     /// @notice Throws if the lock is already created.
     error LockAlreadyCreated();
@@ -34,16 +32,7 @@ contract FxsLockerFraxtal is VeCRVLocker {
         address _veToken,
         address _delegationRegistry,
         address _initialDelegate
-    ) VeCRVLocker(_governance, _token, _veToken) {
-        // Custom code for Fraxtal
-        // set _initialDelegate as delegate
-        (bool success,) =
-            _delegationRegistry.call(abi.encodeWithSignature("setDelegationForSelf(address)", _initialDelegate));
-        if (!success) revert CallFailed();
-        // disable self managing delegation
-        (success,) = _delegationRegistry.call(abi.encodeWithSignature("disableSelfManagingDelegations()"));
-        if (!success) revert CallFailed();
-    }
+    ) VeCRVLocker(_governance, _token, _veToken) FXTLDelegation(_delegationRegistry, _initialDelegate) {}
 
     /// @dev Returns the name of the locker.
     function name() public pure override returns (string memory) {

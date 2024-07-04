@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {ISdToken} from "src/common/interfaces/ISdToken.sol";
+import "src/fraxtal/FXTLDelegation.sol";
 import "src/common/interfaces/IOptimismMintableERC20.sol";
+import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 
 /// @title sdTokenOperator
 /// @author StakeDAO
 /// @notice A middleware contract used to allow multi addresses to mint/burn sdToken, it needs to be the sdToken's operator
-contract sdTokenOperatorFraxtal is IOptimismMintableERC20 {
+contract sdTokenOperator is IOptimismMintableERC20, FXTLDelegation {
     /// @notice Address of the remote token in ethereum
     address public immutable remoteToken;
 
@@ -32,9 +33,6 @@ contract sdTokenOperatorFraxtal is IOptimismMintableERC20 {
 
     /// @notice Throwed when an operator has already allowed
     error AlreadyAllowed();
-
-    /// @notice Throwed when a low level call fails
-    error CallFailed();
 
     /// @notice Throwed when an operator has not allowed
     error NotAllowed();
@@ -84,20 +82,11 @@ contract sdTokenOperatorFraxtal is IOptimismMintableERC20 {
         address _bridge,
         address _delegationRegistry,
         address _initialDelegate
-    ) {
+    ) FXTLDelegation(_delegationRegistry, _initialDelegate) {
         sdToken = ISdToken(_sdToken);
         governance = _governance;
         remoteToken = _remoteToken;
         bridge = _bridge;
-
-        // Custom code for Fraxtal
-        // set _initialDelegate as delegate
-        (bool success,) =
-            _delegationRegistry.call(abi.encodeWithSignature("setDelegationForSelf(address)", _initialDelegate));
-        if (!success) revert CallFailed();
-        // disable self managing delegation
-        (success,) = _delegationRegistry.call(abi.encodeWithSignature("disableSelfManagingDelegations()"));
-        if (!success) revert CallFailed();
     }
 
     /// @notice mint new sdToken, callable only by the operator
