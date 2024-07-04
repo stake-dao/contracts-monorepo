@@ -282,6 +282,10 @@ abstract contract BaseAccumulator {
         emit ERC20Rescued(_token, _amount);
     }
 
+    function name() external view virtual returns (string memory) {
+        return string("Base Accumulator");
+    }
+
     function version() external pure returns (string memory) {
         return "3.0.0";
     }

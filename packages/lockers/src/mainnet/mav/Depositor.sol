@@ -18,8 +18,6 @@ contract Depositor is BaseDepositor {
         if (_amount != 0) {
             /// Increase the lock.
             ILocker(locker).increaseLock(_amount, MAX_LOCK_DURATION);
-
-            emit TokenLocked(msg.sender, _amount);
         }
     }
 
@@ -34,7 +32,5 @@ contract Depositor is BaseDepositor {
 
         /// Mint sdToken to msg.sender.
         ITokenMinter(minter).mint(msg.sender, _amount);
-
-        emit CreateLock(_amount, MAX_LOCK_DURATION);
     }
 }

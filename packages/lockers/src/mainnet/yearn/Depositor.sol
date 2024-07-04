@@ -4,11 +4,11 @@ pragma solidity 0.8.19;
 import "src/common/interfaces/IVeYFI.sol";
 import "src/common/extension/CurveExchangeDepositor.sol";
 
-/// @title YFIDepositor
+/// @title Depositor
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-contract YFIDepositor is CurveExchangeDepositor {
+contract Depositor is CurveExchangeDepositor {
     address public constant VE_YFI = 0x90c1f9220d90d3966FbeE24045EDd73E1d588aD5;
 
     constructor(address _token, address _locker, address _minter, address _gauge, address _pool)
@@ -25,20 +25,18 @@ contract YFIDepositor is CurveExchangeDepositor {
         if (_amount != 0) {
             /// Increase the amount.
             ILocker(locker).increaseAmount(_amount);
+        }
 
-            /// In the case of Yearn, we can lock up to 10 years.
-            /// But we will lock for 4 years and couple months more to avoid decay.
-            uint256 _unlockTime = block.timestamp + MAX_LOCK_DURATION;
+        /// In the case of Yearn, we can lock up to 10 years.
+        /// But we will lock for 4 years and couple months more to avoid decay.
+        uint256 _unlockTime = block.timestamp + MAX_LOCK_DURATION;
 
-            IVeYFI.LockedBalance memory _lockedBalance = IVeYFI(VE_YFI).locked(address(locker));
-            bool _canIncrease = (_unlockTime / 1 weeks * 1 weeks) > _lockedBalance.end;
+        IVeYFI.LockedBalance memory _lockedBalance = IVeYFI(VE_YFI).locked(address(locker));
+        bool _canIncrease = (_unlockTime / 1 weeks * 1 weeks) > _lockedBalance.end;
 
-            if (_canIncrease) {
-                /// Increase the unlock time.
-                ILocker(locker).increaseUnlockTime(_unlockTime);
-            }
-
-            emit TokenLocked(msg.sender, _amount);
+        if (_canIncrease) {
+            /// Increase the unlock time.
+            ILocker(locker).increaseUnlockTime(_unlockTime);
         }
     }
 }

@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
+import {Depositor} from "src/mainnet/yearn/Depositor.sol";
 import "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
-import {YFIDepositor} from "src/mainnet/yearn/depositor/YFIDepositor.sol";
 
-/// @title YFIDepositorHelper
+/// @title DepositorHelper
 /// @notice Helper contract to enable Yearn vesting factory
 /// @author Stake DAO
 /// @custom:contact contact@stakedao.org
-contract YFIDepositorHelper {
+contract DepositorHelper {
     using SafeERC20 for IERC20;
 
     address public immutable token;
@@ -24,8 +24,8 @@ contract YFIDepositorHelper {
     function deposit(uint256 _amount) external returns (uint256) {
         IERC20(token).safeTransferFrom(msg.sender, address(this), _amount);
         IERC20(token).approve(depositor, _amount);
-        uint256 lockIncentive = YFIDepositor(depositor).incentiveToken();
-        YFIDepositor(depositor).deposit(_amount, true, true, msg.sender);
+        uint256 lockIncentive = Depositor(depositor).incentiveToken();
+        Depositor(depositor).deposit(_amount, true, true, msg.sender);
 
         return _amount + lockIncentive;
     }

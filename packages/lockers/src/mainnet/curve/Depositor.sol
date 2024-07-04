@@ -30,18 +30,14 @@ contract Depositor is CurveExchangeDepositor {
         if (_amount != 0) {
             /// Increase the lock.
             ILocker(locker).increaseAmount(_amount);
+        }
 
-            uint256 _unlockTime = block.timestamp + MAX_LOCK_DURATION;
-            bool _canIncrease = (_unlockTime / 1 weeks * 1 weeks) > (IVeToken(VE_CRV).locked__end(locker));
+        uint256 _unlockTime = block.timestamp + MAX_LOCK_DURATION;
+        bool _canIncrease = (_unlockTime / 1 weeks * 1 weeks) > (IVeToken(VE_CRV).locked__end(locker));
 
-            /// Increase the unlock time if the lock is not at the maximum duration.
-            if (_canIncrease) {
-                IExecutor(locker).execute(
-                    VE_CRV, 0, abi.encodeWithSignature("increase_unlock_time(uint256)", _unlockTime)
-                );
-            }
-
-            emit TokenLocked(msg.sender, _amount);
+        /// Increase the unlock time if the lock is not at the maximum duration.
+        if (_canIncrease) {
+            IExecutor(locker).execute(VE_CRV, 0, abi.encodeWithSignature("increase_unlock_time(uint256)", _unlockTime));
         }
     }
 

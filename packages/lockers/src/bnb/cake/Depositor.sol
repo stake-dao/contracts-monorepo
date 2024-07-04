@@ -34,7 +34,5 @@ contract Depositor is BaseDepositor {
 
         /// Deposit sdToken into gauge for _user.
         ILiquidityGauge(gauge).deposit(_amount, _user);
-
-        emit Deposited(msg.sender, _user, _amount, true, true);
     }
 }

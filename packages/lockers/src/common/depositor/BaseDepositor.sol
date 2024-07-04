@@ -7,7 +7,6 @@ import "src/common/interfaces/ISdToken.sol";
 import "src/common/interfaces/ITokenMinter.sol";
 import "src/common/interfaces/ILiquidityGauge.sol";
 
-import "solady/src/tokens/ERC20.sol";
 import "solady/src/utils/SafeTransferLib.sol";
 
 /// @title BaseDepositor
@@ -47,41 +46,8 @@ abstract contract BaseDepositor {
     address public futureGovernance;
 
     ////////////////////////////////////////////////////////////////
-    /// --- EVENTS & ERRORS
+    /// --- ERRORS
     ///////////////////////////////////////////////////////////////
-
-    /// @notice Event emitted when a lock is created.
-    /// @param amount Amount of tokens locked.
-    /// @param duration Duration of the lock.
-    event CreateLock(uint256 amount, uint256 duration);
-
-    /// @notice Event emitted when tokens are deposited.
-    /// @param caller Address of the caller.
-    /// @param user Address of the user.
-    /// @param amount Amount of tokens deposited.
-    /// @param lock Whether the tokens are locked.
-    /// @param stake Whether the sdToken is staked in the gauge.
-    event Deposited(address indexed caller, address indexed user, uint256 amount, bool lock, bool stake);
-
-    /// @notice Event emitted when incentive tokens are received.
-    /// @param caller Address of the caller.
-    /// @param amount Amount of tokens received.
-    event IncentiveReceived(address indexed caller, uint256 amount);
-
-    /// @notice Event emitted when tokens are locked.
-    /// @param user Address of the user.
-    /// @param amount Amount of tokens locked.
-    event TokenLocked(address indexed user, uint256 amount);
-
-    /// @notice Event emitted when governance is changed.
-    /// @param newGovernance Address of the new governance.
-    event GovernanceChanged(address indexed newGovernance);
-
-    /// @notice Event emitted when the sdToken Operator is changed.
-    event SdTokenOperatorChanged(address indexed newSdToken);
-
-    /// @notice Event emitted Incentive percent is changed.
-    event FeesChanged(uint256 newFee);
 
     /// @notice Throws if caller is not the governance.
     error GOVERNANCE();
@@ -132,8 +98,6 @@ abstract contract BaseDepositor {
 
         /// Mint sdToken to msg.sender.
         ITokenMinter(minter).mint(msg.sender, _amount);
-
-        emit CreateLock(_amount, block.timestamp + MAX_LOCK_DURATION);
     }
 
     /// @notice Deposit tokens, and receive sdToken or sdTokenGauge in return.
@@ -169,8 +133,6 @@ abstract contract BaseDepositor {
             if (incentiveToken != 0) {
                 _amount += incentiveToken;
 
-                emit IncentiveReceived(msg.sender, incentiveToken);
-
                 incentiveToken = 0;
             }
         } else {
@@ -197,7 +159,6 @@ abstract contract BaseDepositor {
             /// Mint sdToken to _user.
             ITokenMinter(minter).mint(_user, _amount);
         }
-        emit Deposited(msg.sender, _user, _amount, _lock, _stake);
     }
 
     /// @notice Lock tokens held by the contract
@@ -218,8 +179,6 @@ abstract contract BaseDepositor {
             /// Mint incentiveToken to msg.sender.
             ITokenMinter(minter).mint(msg.sender, incentiveToken);
 
-            emit IncentiveReceived(msg.sender, incentiveToken);
-
             /// Reset incentiveToken.
             incentiveToken = 0;
         }
@@ -232,8 +191,6 @@ abstract contract BaseDepositor {
         if (_amount != 0) {
             /// Increase the lock.
             ILocker(locker).increaseLock(_amount, block.timestamp + MAX_LOCK_DURATION);
-
-            emit TokenLocked(msg.sender, _amount);
         }
     }
 
@@ -252,14 +209,14 @@ abstract contract BaseDepositor {
         if (msg.sender != futureGovernance) revert GOVERNANCE();
 
         governance = msg.sender;
-        emit GovernanceChanged(msg.sender);
+
+        futureGovernance = address(0);
     }
 
     /// @notice Set the new operator for minting sdToken
     /// @param _minter operator minter address
     function setSdTokenMinterOperator(address _minter) external virtual onlyGovernance {
         ISdToken(minter).setOperator(_minter);
-        emit SdTokenOperatorChanged(_minter);
     }
 
     /// @notice Set the gauge to deposit sdToken
@@ -276,8 +233,12 @@ abstract contract BaseDepositor {
     /// @param _lockIncentive Percentage of the lock incentive
     function setFees(uint256 _lockIncentive) external onlyGovernance {
         if (_lockIncentive >= 0 && _lockIncentive <= 30) {
-            emit FeesChanged(lockIncentivePercent = _lockIncentive);
+            lockIncentivePercent = _lockIncentive;
         }
+    }
+
+    function name() external view returns (string memory) {
+        return string(abi.encodePacked(IERC20(token).symbol(), " Depositor"));
     }
 
     function version() external pure returns (string memory) {
