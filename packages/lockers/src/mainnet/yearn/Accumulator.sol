@@ -33,9 +33,15 @@ contract Accumulator is BaseAccumulator {
     /// --- OVERRIDDEN FUNCTIONS
     //////////////////////////////////////////////////////
 
-    /// @notice Claims all rewards tokens for the locker and notify them to the LGV4
     function claimAndNotifyAll(bool notifySDT, bool claimFeeStrategy) external override {
-        IYearnStrategy(strategy).claimNativeRewards();
+        claimAndNotifyAll(notifySDT, claimFeeStrategy, true);
+    }
+
+    function claimAndNotifyAll(bool notifySDT, bool claimFeeStrategy, bool claimPenalty) public {
+        if (claimPenalty) {
+            IYearnStrategy(strategy).claimNativeRewards();
+        }
+
         IYearnStrategy(strategy).claimDYFIRewardPool();
 
         // Sending strategy fees to fee receiver
