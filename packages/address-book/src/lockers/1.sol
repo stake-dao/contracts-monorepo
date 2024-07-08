@@ -68,7 +68,7 @@ library FXS {
     address public constant LOCKER = 0xCd3a267DE09196C48bbB1d9e842D7D7645cE448f;
     address public constant DEPOSITOR = 0xFaF3740167B866b571465B063c6B3A71Ba9b6285;
     address public constant GAUGE = 0xF3C6e8fbB946260e8c2a55d48a5e01C82fD63106;
-    address public constant ACCUMULATOR = 0xF980B8A714Ce0cCB049f2890494b068CeC715c3f;
+    address public constant ACCUMULATOR = 0xAB8a21516465D9Fc57c621f57eCAB838c1910BD6;
     address public constant VOTER = 0xaE26E4478FF6BbC555EAE020AFFea3B505fC4D05;
 
     address public constant STRATEGY = 0xf285Dec3217E779353350443fC276c07D05917c3;
