@@ -9,13 +9,15 @@ library Angle {
 
 library Balancer {
     address public constant HELPER = 0x5aDDCCa35b7A0D07C74063c48700C8590E87864E;
+    address public constant VEBAL = 0xC128a9954e6c874eA3d62ce62B468bA073093F25;
+    address public constant BAL = 0xba100000625a3754423978a60c9317c58a424e3D;
 }
 
 library Curve {
     address public constant CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
     address public constant VECRV = 0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2;
 
-    address public constant FEE_DISTRIBUTOR = 0xA464e6DCda8AC41e03616F95f4BC98a13b8922Dc;
+    address public constant FEE_DISTRIBUTOR = 0xD16d5eC345Dd86Fb63C6a9C43c517210F1027914;
     address public constant GAUGE_CONTROLLER = 0x2F50D538606Fa9EDD2B11E2446BEb18C9D5846bB;
     address public constant SMART_WALLET_CHECKER = 0xca719728Ef172d0961768581fdF35CB116e0B7a4;
 

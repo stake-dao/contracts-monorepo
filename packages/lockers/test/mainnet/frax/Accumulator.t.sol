@@ -11,11 +11,16 @@ contract AccumulatorTest is BaseAccumulatorTest {
         BaseAccumulatorTest(20_187_867, FXS.LOCKER, FXS.SDTOKEN, Frax.VEFXS, FXS.GAUGE, FXS.TOKEN, FXS.TOKEN)
     {}
 
-    function _deployAccumulator() internal override returns (address payable) {
+    function _deployAccumulator() internal override returns (address payable accumulator) {
         /// Disable tracking votes in order to mint any amount of FXS for testing purposes.
         vm.prank(IFraxShares(FXS.TOKEN).owner_address());
         IFraxShares(FXS.TOKEN).toggleVotes();
 
-        return payable(new Accumulator(address(liquidityGauge), locker, address(this)));
+        accumulator = payable(new Accumulator(address(liquidityGauge), locker, address(this)));
+
+        /// Set up the accumulator in the locker.
+        vm.prank(ILocker(locker).governance());
+        ILocker(locker).setAccumulator(address(accumulator));
+
     }
 }

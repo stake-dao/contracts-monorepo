@@ -11,7 +11,11 @@ contract AccumulatorTest is BaseAccumulatorTest {
         BaseAccumulatorTest(20_187_867, FPIS.LOCKER, FPIS.SDTOKEN, Frax.VEFPIS, FPIS.GAUGE, FPIS.TOKEN, FPIS.TOKEN)
     {}
 
-    function _deployAccumulator() internal override returns (address payable) {
-        return payable(new Accumulator(address(liquidityGauge), locker, address(this)));
+    function _deployAccumulator() internal override returns (address payable accumulator) {
+        accumulator = payable(new Accumulator(address(liquidityGauge), locker, address(this)));
+
+        /// Set up the accumulator in the locker.
+        vm.prank(ILocker(locker).governance());
+        ILocker(locker).setAccumulator(address(accumulator));
     }
 }

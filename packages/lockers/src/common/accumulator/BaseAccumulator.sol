@@ -15,7 +15,7 @@ import {ISDTDistributor} from "src/common/interfaces/ISDTDistributor.sol";
 /// @author StakeDAO
 abstract contract BaseAccumulator {
     /// @notice Denominator for fixed point math.
-    uint256 public constant DENOMINATOR = 10_000;
+    uint256 public constant DENOMINATOR = 1e18;
 
     /// @notice Split struct
     /// @param receivers Array of receivers
@@ -122,7 +122,7 @@ abstract contract BaseAccumulator {
 
         governance = _governance;
 
-        claimerFee = 10; // 0.1%
+        claimerFee = 1e16; // 0.1%
     }
 
     //////////////////////////////////////////////////////

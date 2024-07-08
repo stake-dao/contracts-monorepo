@@ -9,7 +9,12 @@ contract AccumulatorTest is BaseAccumulatorTest {
 
     constructor() BaseAccumulatorTest(20_187_797, FXN.LOCKER, FXN.SDTOKEN, Fx.VEFXN, FXN.GAUGE, WSETH, FXN.TOKEN) {}
 
-    function _deployAccumulator() internal override returns (address payable) {
-        return payable(new Accumulator(address(liquidityGauge), locker, address(this)));
+
+      function _deployAccumulator() internal override returns (address payable accumulator) {
+        accumulator = payable(new Accumulator(address(liquidityGauge), locker, address(this)));
+
+        /// Set up the accumulator in the locker.
+        vm.prank(ILocker(locker).governance());
+        ILocker(locker).setAccumulator(address(accumulator));
     }
 }

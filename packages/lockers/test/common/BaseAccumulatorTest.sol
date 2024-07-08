@@ -63,13 +63,12 @@ abstract contract BaseAccumulatorTest is Test {
         feeSplitReceivers[0] = treasuryRecipient;
         feeSplitReceivers[1] = liquidityFeeRecipient;
 
-        feeSplitBps[0] = 500;
-        feeSplitBps[1] = 1000;
+        feeSplitBps[0] = 5e16;
+        feeSplitBps[1] = 10e16;
 
         accumulator.setFeeSplit(feeSplitReceivers, feeSplitBps);
 
-        vm.prank(ILocker(locker).governance());
-        ILocker(locker).setAccumulator(address(accumulator));
+
 
         ILiquidityGauge.Reward memory rewardData = liquidityGauge.reward_data(address(rewardToken));
 
@@ -110,8 +109,8 @@ abstract contract BaseAccumulatorTest is Test {
         assertEq(split.receivers[0], treasuryRecipient);
         assertEq(split.receivers[1], liquidityFeeRecipient);
 
-        assertEq(split.fees[0], 500);
-        assertEq(split.fees[1], 1000);
+        assertEq(split.fees[0], 5e16); // 5%
+        assertEq(split.fees[1], 10e16); // 10%
     }
 
     function test_claimAll() public virtual {
@@ -135,10 +134,10 @@ abstract contract BaseAccumulatorTest is Test {
 
         BaseAccumulator.Split memory feeSplit = accumulator.getFeeSplit();
 
-        assertEq(total * accumulator.claimerFee() / 10_000, claimer);
+        assertEq(total * accumulator.claimerFee() / 1e18, claimer);
 
-        assertEq(total * feeSplit.fees[0] / 10_000, treasury);
-        assertEq(total * feeSplit.fees[1] / 10_000, liquidityFee);
+        assertEq(total * feeSplit.fees[0] / 1e18, treasury);
+        assertEq(total * feeSplit.fees[1] / 1e18, liquidityFee);
 
         skip(1 weeks);
 
@@ -151,9 +150,9 @@ abstract contract BaseAccumulatorTest is Test {
         if (rewardToken != strategyRewardToken) {
             assertEq(ERC20(strategyRewardToken).balanceOf(address(liquidityGauge)), _before + 1_000e18);
         } else {
-            uint256 _treasuryFee = 1_000e18 * feeSplit.fees[0] / 10_000;
-            uint256 _liquidityFee = 1_000e18 * feeSplit.fees[1] / 10_000;
-            uint256 _claimerFee = 1_000e18 * accumulator.claimerFee() / 10_000;
+            uint256 _treasuryFee = 1_000e18 * feeSplit.fees[0] / 1e18;
+            uint256 _liquidityFee = 1_000e18 * feeSplit.fees[1] / 1e18;
+            uint256 _claimerFee = 1_000e18 * accumulator.claimerFee() / 1e18;
 
             assertEq(ERC20(strategyRewardToken).balanceOf(address(treasuryRecipient)), treasury + _treasuryFee);
             assertEq(ERC20(strategyRewardToken).balanceOf(address(liquidityFeeRecipient)), liquidityFee + _liquidityFee);
@@ -183,8 +182,8 @@ abstract contract BaseAccumulatorTest is Test {
         assertEq(split.fees[0], 100);
         assertEq(split.fees[1], 50);
 
-        accumulator.setClaimerFee(1000);
-        assertEq(accumulator.claimerFee(), 1000);
+        accumulator.setClaimerFee(1000e15);
+        assertEq(accumulator.claimerFee(), 1000e15);
 
         accumulator.setFeeReceiver(address(1));
         assertEq(accumulator.feeReceiver(), address(1));

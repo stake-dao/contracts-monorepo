@@ -14,10 +14,10 @@ contract Accumulator is BaseAccumulator {
     address public constant BAL = 0xba100000625a3754423978a60c9317c58a424e3D;
 
     /// @notice USDC token address.
-    address public constant USDC = 0x72faA679E100a5B6b2Dcae0E4f7F7F8e9f5ca6F8;
+    address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
 
     /// @notice VeBAL token address.
-    address public constant VE_BAL = 0x9af599ea0B095b7d8B2f84bc8a7B6B5c5Ba0Ff8a;
+    address public constant VE_BAL = 0xC128a9954e6c874eA3d62ce62B468bA073093F25;
 
     /// @notice Ve Boost.
     IVeBoost public veBoost = IVeBoost(0x67F8DF125B796B05895a6dc8Ecf944b9556ecb0B);
@@ -68,6 +68,7 @@ contract Accumulator is BaseAccumulator {
     function _shareWithDelegation() internal returns (uint256 delegationShare) {
         uint256 amount = ERC20(BAL).balanceOf(address(this));
         if (amount == 0) return 0;
+        if (address(veBoost) == address(0) || address(veBoostDelegation) == address(0)) return 0;
 
         /// Share the BAL rewards with the delegation contract.
         uint256 boostReceived = veBoost.received_balance(locker);
@@ -76,23 +77,18 @@ contract Accumulator is BaseAccumulator {
         /// Get the VeBAL balance of the locker.
         uint256 lockerVeBal = ERC20(VE_BAL).balanceOf(locker);
 
-        /// Calculate the percentage of the locker's VeBAL balance.
-        uint256 liquidityGaugeBps = (lockerVeBal * DENOMINATOR) / (boostReceived + lockerVeBal);
+        /// Calculate the percentage of BAL delegated to the VeBoost contract.
+        uint256 bpsDelegated = (boostReceived * DENOMINATOR / lockerVeBal);
 
-        /// Calculate the amount to be shared with the delegation contract.
-        uint256 liquidityGaugeShare = (amount * liquidityGaugeBps) / DENOMINATOR;
+        /// Calculate the expected delegation share.
+        delegationShare = amount * bpsDelegated / DENOMINATOR;
 
         /// Apply the multiplier.
         if (multiplier != 0) {
-            liquidityGaugeShare = liquidityGaugeShare * multiplier / DENOMINATOR;
+            delegationShare = delegationShare * multiplier / DENOMINATOR;
         }
 
-        /// Share the amount with the delegation contract.
-        delegationShare = amount - liquidityGaugeShare;
-
         SafeTransferLib.safeTransfer(BAL, address(veBoostDelegation), delegationShare);
-
-        return delegationShare;
     }
 
     function setMultiplier(uint256 _multiplier) external onlyGovernance {
