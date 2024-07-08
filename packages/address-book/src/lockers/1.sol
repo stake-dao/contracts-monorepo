@@ -102,7 +102,7 @@ library PENDLE {
     address public constant LOCKER = 0xD8fa8dC5aDeC503AcC5e026a98F32Ca5C1Fa289A;
     address public constant DEPOSITOR = 0xf7F64f63ec693C6a3A79fCe4b222Bca2595cAcEf;
     address public constant GAUGE = 0x50DC9aE51f78C593d4138263da7088A973b8184E;
-    address public constant ACCUMULATOR = 0x6A09Bdb1681Db87c71Ea2be1F0cA316A4dbcC2Cd;
+    address public constant ACCUMULATOR = 0xFFEc6CFf6780c9f9F3c324e976751FFCfc8810fB;
 
     address public constant VOTERS_REWARDS_RECIPIENT = 0xe42a462dbF54F281F95776e663D8c942dcf94f17;
 
