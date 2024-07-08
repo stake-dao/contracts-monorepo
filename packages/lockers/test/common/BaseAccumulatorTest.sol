@@ -119,7 +119,7 @@ abstract contract BaseAccumulatorTest is Test {
         //// Check lgv4
         uint256 gaugeBalanceBefore = rewardToken.balanceOf(address(liquidityGauge));
 
-        accumulator.claimAndNotifyAll(false, false, false);
+        accumulator.claimAndNotifyAll(false, false);
 
         uint256 treasury = rewardToken.balanceOf(address(treasuryRecipient));
         uint256 liquidityFee = rewardToken.balanceOf(address(liquidityFeeRecipient));

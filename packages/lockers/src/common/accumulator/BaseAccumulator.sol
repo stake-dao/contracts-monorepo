@@ -130,24 +130,21 @@ abstract contract BaseAccumulator {
     //////////////////////////////////////////////////////
 
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4
-    function claimAndNotifyAll(bool notifySDT, bool pullFromFeeReceiver, bool claimFeeStrategy) external virtual {}
+    function claimAndNotifyAll(bool notifySDT, bool claimFeeStrategy) external virtual {}
 
     /// @notice Claims a reward token for the locker and notify them to the LGV4
-    function claimTokenAndNotifyAll(address token, bool notifySDT, bool pullFromFeeReceiver, bool claimFeeStrategy)
-        external
-        virtual
-    {}
+    function claimTokenAndNotifyAll(address token, bool notifySDT, bool claimFeeStrategy) external virtual {}
 
     /// @notice Notify the whole acc balance of a token
-    /// @param _token token to notify
-    /// @param _notifySDT if notify SDT or not
-    /// @param _pullFromFeeReceiver if pull tokens from the fee receiver or not
-    function notifyReward(address _token, bool _notifySDT, bool _pullFromFeeReceiver) public virtual {
-        uint256 amount = ERC20(_token).balanceOf(address(this));
+    /// @param token token to notify
+    /// @param notifySDT if notify SDT or not
+    /// @param claimFeeStrategy if pull tokens from the fee receiver or not
+    function notifyReward(address token, bool notifySDT, bool claimFeeStrategy) public virtual {
+        uint256 amount = ERC20(token).balanceOf(address(this));
         // notify token as reward in sdToken gauge
-        _notifyReward(_token, amount, _pullFromFeeReceiver);
+        _notifyReward(token, amount, claimFeeStrategy);
 
-        if (_notifySDT) {
+        if (notifySDT) {
             // notify SDT
             _distributeSDT();
         }
@@ -158,22 +155,22 @@ abstract contract BaseAccumulator {
     //////////////////////////////////////////////////////
 
     /// @notice Notify the new reward to the LGV4
-    /// @param _tokenReward token to notify
-    /// @param _amount amount to notify
-    /// @param _pullFromFeeReceiver if pull tokens from the fee receiver or not (tokens already in that contract)
-    function _notifyReward(address _tokenReward, uint256 _amount, bool _pullFromFeeReceiver) internal virtual {
-        _chargeFee(_tokenReward, _amount);
+    /// @param tokenReward token to notify
+    /// @param amount amount to notify
+    /// @param claimFeeStrategy if pull tokens from the fee receiver or not (tokens already in that contract)
+    function _notifyReward(address tokenReward, uint256 amount, bool claimFeeStrategy) internal virtual {
+        _chargeFee(tokenReward, amount);
 
-        if (_pullFromFeeReceiver && feeReceiver != address(0)) {
+        if (claimFeeStrategy && feeReceiver != address(0)) {
             // Split fees for the specified token using the fee receiver contract
             // Function not permissionless, to prevent sending to that accumulator and re-splitting (_chargeFee)
-            IFeeReceiver(feeReceiver).split(_tokenReward);
+            IFeeReceiver(feeReceiver).split(tokenReward);
         }
 
-        _amount = ERC20(_tokenReward).balanceOf(address(this));
+        amount = ERC20(tokenReward).balanceOf(address(this));
 
-        if (_amount == 0) return;
-        ILiquidityGauge(gauge).deposit_reward_token(_tokenReward, _amount);
+        if (amount == 0) return;
+        ILiquidityGauge(gauge).deposit_reward_token(tokenReward, amount);
     }
 
     /// @notice Distribute SDT to the gauge

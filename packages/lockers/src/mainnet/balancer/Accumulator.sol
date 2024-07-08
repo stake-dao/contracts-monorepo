@@ -34,7 +34,7 @@ contract Accumulator is BaseAccumulator {
         SafeTransferLib.safeApprove(USDC, _gauge, type(uint256).max);
     }
 
-    function claimAndNotifyAll(bool notifySDT, bool, bool claimFeeStrategy) external override {
+    function claimAndNotifyAll(bool notifySDT, bool claimFeeStrategy) external override {
         ILocker(locker).claimRewards(USDC, address(this));
 
         // Claim Extra USDC rewards.

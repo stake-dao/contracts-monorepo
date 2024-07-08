@@ -25,7 +25,6 @@ contract AccumulatorTest is BaseAccumulatorTest {
         /// Set up the accumulator in the locker.
         vm.prank(ILocker(locker).governance());
         ILocker(locker).setAccumulator(address(accumulator));
-
     }
 
     /// Pools where rewards accrued at the block number 20_031_924.
@@ -65,10 +64,10 @@ contract AccumulatorTest is BaseAccumulatorTest {
         _pools.pop();
 
         vm.expectRevert(Accumulator.NOT_CLAIMED_ALL.selector);
-        accumulator.claimAndNotifyAll(_pools, false, false, false);
+        accumulator.claimAndNotifyAll(_pools, false, false);
 
         accumulator.setTransferVotersRewards(_transfer);
-        accumulator.claimAndNotifyAll(_poolsCopy, false, false, false);
+        accumulator.claimAndNotifyAll(_poolsCopy, false, false);
 
         uint256 treasury = WETH.balanceOf(address(treasuryRecipient));
         uint256 voters = WETH.balanceOf(address(PENDLE.VOTERS_REWARDS_RECIPIENT));
@@ -96,12 +95,12 @@ contract AccumulatorTest is BaseAccumulatorTest {
         accumulator.notifyReward(address(WETH), false, false);
 
         vm.expectRevert(Accumulator.NO_BALANCE.selector);
-        accumulator.claimAndNotifyAll(_pools, false, false, false);
+        accumulator.claimAndNotifyAll(_pools, false, false);
 
         skip(1 weeks);
 
         vm.expectRevert(Accumulator.NO_BALANCE.selector);
-        accumulator.claimAndNotifyAll(_pools, false, false, false);
+        accumulator.claimAndNotifyAll(_pools, false, false);
 
         uint256 toDistribute = WETH.balanceOf(address(accumulator)) / 3;
         accumulator.notifyReward(address(WETH), false, false);

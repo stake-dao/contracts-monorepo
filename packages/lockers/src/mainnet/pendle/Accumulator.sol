@@ -66,9 +66,7 @@ contract Accumulator is BaseAccumulator {
         SafeTransferLib.safeApprove(PENDLE, gauge, type(uint256).max);
     }
 
-    function claimAndNotifyAll(address[] memory _pools, bool notifySDT, bool pullFromFeeReceiver, bool claimFeeStrategy)
-        external
-    {
+    function claimAndNotifyAll(address[] memory _pools, bool notifySDT, bool claimFeeStrategy) external {
         // Sending strategy fees to fee receiver
         if (claimFeeStrategy && strategy != address(0)) {
             _claimFeeStrategy();
@@ -108,7 +106,7 @@ contract Accumulator is BaseAccumulator {
 
         /// We put 0 as the amount to notify, as it'll distribute the balance.
         _notifyReward(WETH, 0, false);
-        _notifyReward(PENDLE, 0, pullFromFeeReceiver);
+        _notifyReward(PENDLE, 0, claimFeeStrategy);
 
         /// Just in case, but it should be needed anymore.
         if (notifySDT) {
@@ -117,30 +115,30 @@ contract Accumulator is BaseAccumulator {
     }
 
     /// @notice Notify the new reward to the LGV4
-    /// @param _tokenReward token to notify
-    /// @param _amount amount to notify
-    /// @param _pullFromFeeReceiver if pull tokens from the fee receiver or not (tokens already in that contract)
-    function _notifyReward(address _tokenReward, uint256 _amount, bool _pullFromFeeReceiver) internal override {
-        if (_pullFromFeeReceiver && feeReceiver != address(0)) {
+    /// @param tokenReward token to notify
+    /// @param amount amount to notify
+    /// @param claimFeeStrategy if pull tokens from the fee receiver or not (tokens already in that contract)
+    function _notifyReward(address tokenReward, uint256 amount, bool claimFeeStrategy) internal override {
+        if (claimFeeStrategy && feeReceiver != address(0)) {
             // Split fees for the specified token using the fee receiver contract
             // Function not permissionless, to prevent sending to that accumulator and re-splitting (_chargeFee)
-            IFeeReceiver(feeReceiver).split(_tokenReward);
+            IFeeReceiver(feeReceiver).split(tokenReward);
         }
 
-        if (_tokenReward == WETH && remainingPeriods != 0) {
+        if (tokenReward == WETH && remainingPeriods != 0) {
             uint256 currentWeek = block.timestamp * 1 weeks / 1 weeks;
             if (rewards[currentWeek] != 0) revert ONGOING_REWARD();
 
-            _amount = ERC20(WETH).balanceOf(address(this)) / remainingPeriods;
-            rewards[currentWeek] = _amount;
+            amount = ERC20(WETH).balanceOf(address(this)) / remainingPeriods;
+            rewards[currentWeek] = amount;
 
             remainingPeriods -= 1;
         } else {
-            _amount = ERC20(_tokenReward).balanceOf(address(this));
+            amount = ERC20(tokenReward).balanceOf(address(this));
         }
 
-        if (_amount == 0) return;
-        ILiquidityGauge(gauge).deposit_reward_token(_tokenReward, _amount);
+        if (amount == 0) return;
+        ILiquidityGauge(gauge).deposit_reward_token(tokenReward, amount);
     }
 
     /// @notice Claim reward for the pools

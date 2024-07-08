@@ -35,9 +35,7 @@ contract Accumulator is BaseAccumulator {
     /// @notice Claim CAKE rewards for the locker and notify all to the LGV4
     /// @param revenueSharingPools pancake revenue sharing pools
     /// @param notifySDT if notify SDT or not
-    function claimAndNotifyAll(address[] memory revenueSharingPools, bool, bool notifySDT, bool claimFeeStrategy)
-        external
-    {
+    function claimAndNotifyAll(address[] memory revenueSharingPools, bool notifySDT, bool claimFeeStrategy) external {
         /// Claim Revenue Reward.
         ICakeLocker(locker).claimRevenue(revenueSharingPools);
 

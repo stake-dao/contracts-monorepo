@@ -49,7 +49,7 @@ contract Accumulator is BaseAccumulator, FXTLDelegation {
     /// @param _notifySDT if notify SDT or not
     /// @param _claimStrategyFee if claim or not strategy fees
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4
-    function claimAndNotifyAll(bool _notifySDT, bool, bool _claimStrategyFee) external override {
+    function claimAndNotifyAll(bool _notifySDT, bool _claimStrategyFee) external override {
         // Sending strategy fees to fee receiver
         if (_claimStrategyFee && strategy != address(0)) {
             _claimFeeStrategy();

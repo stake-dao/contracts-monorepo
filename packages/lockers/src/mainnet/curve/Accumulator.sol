@@ -34,7 +34,7 @@ contract Accumulator is BaseAccumulator {
     /// --- MUTATIVE FUNCTIONS
     ////////////////////////////////////////////////////////////
 
-    function claimAndNotifyAll(bool notifySDT, bool, bool claimFeeStrategy) external override {
+    function claimAndNotifyAll(bool notifySDT, bool claimFeeStrategy) external override {
         /// Claim CRVUSD rewards.
         IStrategy(strategy).claimNativeRewards();
 
