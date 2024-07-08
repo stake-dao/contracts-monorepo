@@ -116,9 +116,6 @@ abstract contract BaseAccumulator {
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4
     function claimAndNotifyAll(bool notifySDT, bool claimFeeStrategy) external virtual {}
 
-    /// @notice Claims a reward token for the locker and notify them to the LGV4
-    function claimTokenAndNotifyAll(address token, bool notifySDT, bool claimFeeStrategy) external virtual {}
-
     /// @notice Notify the whole acc balance of a token
     /// @param token token to notify
     /// @param notifySDT if notify SDT or not
