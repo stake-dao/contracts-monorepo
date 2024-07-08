@@ -68,8 +68,6 @@ abstract contract BaseAccumulatorTest is Test {
 
         accumulator.setFeeSplit(feeSplitReceivers, feeSplitBps);
 
-
-
         ILiquidityGauge.Reward memory rewardData = liquidityGauge.reward_data(address(rewardToken));
 
         vm.startPrank(liquidityGauge.admin());

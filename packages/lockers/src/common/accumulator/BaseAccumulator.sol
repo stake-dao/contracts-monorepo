@@ -122,7 +122,7 @@ abstract contract BaseAccumulator {
 
         governance = _governance;
 
-        claimerFee = 1e16; // 0.1%
+        claimerFee = 1e15; // 0.1%
     }
 
     //////////////////////////////////////////////////////

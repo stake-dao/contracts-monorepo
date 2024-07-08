@@ -21,6 +21,5 @@ contract AccumulatorTest is BaseAccumulatorTest {
         /// Set up the accumulator in the locker.
         vm.prank(ILocker(locker).governance());
         ILocker(locker).setAccumulator(address(accumulator));
-
     }
 }
