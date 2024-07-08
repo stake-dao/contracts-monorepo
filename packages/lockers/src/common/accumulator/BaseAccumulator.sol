@@ -60,21 +60,6 @@ abstract contract BaseAccumulator {
     /// --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
-    /// @notice Event emitted when the claimer fee is set
-    event ClaimerFeeSet(uint256 claimerFee);
-
-    /// @notice Emitted when the fee receiver is set
-    event FeeReceiverSet(address _feeReceiver);
-
-    /// @notice Event emitted when an ERC20 token is rescued
-    event ERC20Rescued(address token, uint256 amount);
-
-    /// @notice Event emitted when a new future governance has set
-    event TransferGovernance(address futureGovernance);
-
-    /// @notice Event emitted when the future governance accepts to be the governance
-    event GovernanceChanged(address governance);
-
     /// @notice Error emitted when an onlyGovernance function has called by a different address
     error GOVERNANCE();
 
@@ -218,7 +203,7 @@ abstract contract BaseAccumulator {
 
     function setClaimerFee(uint256 _claimerFee) external onlyGovernance {
         if (_claimerFee > DENOMINATOR) revert FEE_TOO_HIGH();
-        emit ClaimerFeeSet(claimerFee = _claimerFee);
+        claimerFee = _claimerFee;
     }
 
     /// @notice Set SDT distributor.
@@ -230,7 +215,7 @@ abstract contract BaseAccumulator {
     /// @notice Set fee receiver (from Stategy)
     /// @param _feeReceiver Fee receiver address
     function setFeeReceiver(address _feeReceiver) external onlyGovernance {
-        emit FeeReceiverSet(feeReceiver = _feeReceiver);
+        feeReceiver = _feeReceiver;
     }
 
     /// @notice Set a new future governance that can accept it
@@ -239,14 +224,14 @@ abstract contract BaseAccumulator {
     function transferGovernance(address _futureGovernance) external onlyGovernance {
         if (_futureGovernance == address(0)) revert ZERO_ADDRESS();
         futureGovernance = _futureGovernance;
-        emit TransferGovernance(_futureGovernance);
     }
 
     /// @notice Accept the governance
     /// @dev Can be called only by future governance
     function acceptGovernance() external onlyFutureGovernance {
         governance = futureGovernance;
-        emit GovernanceChanged(governance);
+
+        futureGovernance = address(0);
     }
 
     /// @notice Approve the distribution of a new token reward from the BaseAccumulator.
@@ -275,7 +260,6 @@ abstract contract BaseAccumulator {
     function rescueERC20(address _token, uint256 _amount, address _recipient) external onlyGovernance {
         if (_recipient == address(0)) revert ZERO_ADDRESS();
         SafeTransferLib.safeTransfer(_token, _recipient, _amount);
-        emit ERC20Rescued(_token, _amount);
     }
 
     function name() external view virtual returns (string memory) {
