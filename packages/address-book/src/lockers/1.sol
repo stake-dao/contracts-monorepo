@@ -35,7 +35,7 @@ library SPECTRA {
     address public constant LOCKER = 0xE71e28a510bC3F98a9E77e847aE5AEF9a2e5721d;
     address public constant DEPOSITOR = 0xFe928ca6a9C0cdf658a26A374b7373B9D6CefBCf;
     address public constant GAUGE = 0x9c9d06C7378909C6d0A2A0017Bb409F7fb8004E0;
-    address public constant ACCUMULATOR = 0xc50f67DB3a63641a57d2d3DE9FdA6767E999Efe5;
+    address public constant ACCUMULATOR = 0xB1d7787B8dB300b2d664DA3897116a0135E588A6;
 }
 
 library BAL {
