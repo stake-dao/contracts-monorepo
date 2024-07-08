@@ -39,4 +39,9 @@ contract Accumulator is BaseAccumulator {
 
         notifyReward(APW, notifySDT, claimFeeStrategy);
     }
+
+
+    function name() external pure override returns (string memory) {
+        return "APW Accumulator";
+    }
 }

@@ -102,4 +102,8 @@ contract Accumulator is BaseAccumulator {
     function setVeBoostDelegation(address _veBoostDelegation) external onlyGovernance {
         veBoostDelegation = IVeBoostDelegation(_veBoostDelegation);
     }
+
+    function name() external pure override returns (string memory) {
+        return "BAL Accumulator";
+    }
 }

@@ -21,10 +21,9 @@ abstract contract BaseAccumulator {
     /// @param receivers Array of receivers
     /// @param fees Array of fees
     /// @dev First go to the first receiver, then the second, and so on
-    /// @dev Fee in basis points, where 10,000 basis points = 100%
     struct Split {
         address[] receivers;
-        uint256[] fees; // Fee in basis points, where 10,000 basis points = 100%
+        uint256[] fees; // Fee in basis points with 1e18 precision
     }
 
     /// @notice Fee split.

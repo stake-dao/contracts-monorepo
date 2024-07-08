@@ -164,4 +164,8 @@ contract Accumulator is BaseAccumulator {
     function setPeriodsToAdd(uint256 _periodsToAdd) external onlyGovernance {
         periodsToAdd = _periodsToAdd;
     }
+
+    function name() external pure override returns (string memory) {
+        return "PENDLE Accumulator";
+    }
 }

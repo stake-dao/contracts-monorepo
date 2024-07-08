@@ -39,4 +39,8 @@ contract Accumulator is BaseAccumulator {
 
         notifyReward(FPIS, notifySDT, claimFeeStrategy);
     }
+
+    function name() external pure override returns (string memory) {
+        return "FPIS Accumulator";
+    }
 }

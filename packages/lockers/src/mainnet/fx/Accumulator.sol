@@ -46,4 +46,8 @@ contract Accumulator is BaseAccumulator {
 
         notifyReward(WSTETH, notifySDT, claimFeeStrategy);
     }
+
+    function name() external pure override returns (string memory) {
+        return "FXN Accumulator";
+    }
 }

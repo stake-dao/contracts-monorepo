@@ -46,4 +46,8 @@ contract Accumulator is BaseAccumulator {
         notifyReward(YFI, false, false);
         notifyReward(DYFI, notifySDT, claimFeeStrategy);
     }
+
+    function name() external pure override returns (string memory) {
+        return "YFI Accumulator";
+    }
 }

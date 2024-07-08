@@ -46,4 +46,8 @@ contract Accumulator is BaseAccumulator {
         notifyReward(CRV_USD, false, false);
         notifyReward(CRV, notifySDT, claimFeeStrategy);
     }
+
+    function name() external pure override returns (string memory) {
+        return "CRV Accumulator";
+    }
 }
