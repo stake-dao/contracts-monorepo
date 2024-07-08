@@ -44,7 +44,7 @@ library BAL {
     address public constant LOCKER = 0xea79d1A83Da6DB43a85942767C389fE0ACf336A5;
     address public constant DEPOSITOR = 0x3e0d44542972859de3CAdaF856B1a4FD351B4D2E;
     address public constant GAUGE = 0x3E8C72655e48591d93e6dfdA16823dB0fF23d859;
-    address public constant ACCUMULATOR = 0x99e8cBa4e91aDeA2C9321344e33FCCCBfBA9b0C4;
+    address public constant ACCUMULATOR = 0xE75DA6eF028B49140953e84aD097D4DeEdd88423;
 
     address public constant VOTER = 0xff09A9b50A4E9b9AB95D2DCb552E8469f9c891Ff;
 
