@@ -1,3 +1,4 @@
+include .env
 
 .EXPORT_ALL_VARIABLES:
 MAKEFLAGS += --no-print-directory
@@ -63,7 +64,7 @@ deploy-%:
 	script_path="script/$$dirs/Deploy.s.sol"; \
 	echo "Attempting to deploy: $$script_path"; \
 	if [ -f "$$script_path" ]; then \
-		forge script "$$script_path:Deploy" --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY) --verify; \
+		forge script "$$script_path:Deploy" --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY) --verify --etherscan-api-key $(ETHERSCAN_KEY);\
 	else \
 		echo "Error: $$script_path does not exist"; \
 		exit 1; \

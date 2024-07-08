@@ -126,5 +126,5 @@ library FXN {
     address public constant DEPOSITOR = 0x7995192bE61EA0B28ce14183DDA51eDF78F1c7AB;
     address public constant GAUGE = 0xbcfE5c47129253C6B8a9A00565B3358b488D42E0;
 
-    address public constant ACCUMULATOR = 0xAb1938B685f72f34dE7F4Cc0A9E2bbEFDB667EdE;
+    address public constant ACCUMULATOR = 0x23ab5100acaFF53d00ad92BB8Df75a72e7a3Bc4a;
 }

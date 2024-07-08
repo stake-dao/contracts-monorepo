@@ -16,10 +16,10 @@ abstract contract DeployAccumulator is Script {
         accumulator = _deployAccumulator();
 
         feeSplitReceivers[0] = address(treasury);
-        feeSplitFees[0] = 500; // 5% to dao
+        feeSplitFees[0] = 5e16; // 5% to dao
 
         feeSplitReceivers[1] = address(liquidityFeeRecipient);
-        feeSplitFees[1] = 1000; // 5% to liquidity
+        feeSplitFees[1] = 10e16; // 5% to liquidity
 
         BaseAccumulator(accumulator).setFeeSplit(feeSplitReceivers, feeSplitFees);
 
