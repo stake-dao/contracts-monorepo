@@ -26,6 +26,9 @@ importers:
       '@stake-dao/herdaddy':
         specifier: workspace:*
         version: link:../herdaddy
+      '@stake-dao/vyper':
+        specifier: workspace:*
+        version: link:../vyper
       forge-std:
         specifier: github:foundry-rs/forge-std
         version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/8948d45d3d9022c508b83eb5d26fd3a7a93f2f32
@@ -47,12 +50,36 @@ importers:
       '@stake-dao/herdaddy':
         specifier: workspace:*
         version: link:../herdaddy
+      '@stake-dao/vyper':
+        specifier: workspace:*
+        version: link:../vyper
       forge-std:
         specifier: github:foundry-rs/forge-std
         version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/8948d45d3d9022c508b83eb5d26fd3a7a93f2f32
       solady:
         specifier: github:vectorized/solady
         version: https://codeload.github.com/vectorized/solady/tar.gz/b12aa65e8cc3740f8b85a2a7a2d5296f57f13149
+
+  packages/vyper:
+    devDependencies:
+      '@layerzerolabs/solidity-examples':
+        specifier: github:LayerZero-Labs/solidity-examples
+        version: https://codeload.github.com/LayerZero-Labs/solidity-examples/tar.gz/c04e7d211b1b610f84761df943e6a38b0a53d304(@ethersproject/hardware-wallets@5.7.0)(@nomiclabs/hardhat-ethers@2.2.3(ethers@5.7.2)(hardhat@2.22.5))(@nomiclabs/hardhat-etherscan@3.1.8(hardhat@2.22.5))(ethers@5.7.2)
+      '@openzeppelin/contracts':
+        specifier: 4.9.0
+        version: 4.9.0
+      '@stake-dao/address-book':
+        specifier: workspace:*
+        version: link:../address-book
+      '@stake-dao/herdaddy':
+        specifier: workspace:*
+        version: link:../herdaddy
+      forge-std:
+        specifier: github:foundry-rs/forge-std
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/07263d193d621c4b2b0ce8b4d54af58f6957d97d
+      solady:
+        specifier: github:vectorized/solady
+        version: https://codeload.github.com/vectorized/solady/tar.gz/8d726fb1499f7f1d7459d05379efddcd500dab1a
 
 packages:
 
@@ -970,6 +997,10 @@ packages:
   for-each@0.3.3:
     resolution: {integrity: sha512-jqYfLp7mo9vIyQf8ykW2v7A+2N4QjeCeI5+Dz9XraiO1ign81wjiH7Fb9vSOWvQfNtmSa4H2RoQTrrXivdUZmw==}
 
+  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/07263d193d621c4b2b0ce8b4d54af58f6957d97d:
+    resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/07263d193d621c4b2b0ce8b4d54af58f6957d97d}
+    version: 1.9.1
+
   forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/8948d45d3d9022c508b83eb5d26fd3a7a93f2f32:
     resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/8948d45d3d9022c508b83eb5d26fd3a7a93f2f32}
     version: 1.9.0
@@ -1748,6 +1779,10 @@ packages:
     resolution: {integrity: sha512-qMCMfhY040cVHT43K9BFygqYbUPFZKHOg7K73mtTWJRb8pyP3fzf4Ixd5SzdEJQ6MRUg/WBnOLxghZtKKurENQ==}
     engines: {node: '>=10'}
 
+  solady@https://codeload.github.com/vectorized/solady/tar.gz/8d726fb1499f7f1d7459d05379efddcd500dab1a:
+    resolution: {tarball: https://codeload.github.com/vectorized/solady/tar.gz/8d726fb1499f7f1d7459d05379efddcd500dab1a}
+    version: 0.0.218
+
   solady@https://codeload.github.com/vectorized/solady/tar.gz/b12aa65e8cc3740f8b85a2a7a2d5296f57f13149:
     resolution: {tarball: https://codeload.github.com/vectorized/solady/tar.gz/b12aa65e8cc3740f8b85a2a7a2d5296f57f13149}
     version: 0.0.216
@@ -2393,7 +2428,7 @@ snapshots:
     dependencies:
       '@ledgerhq/cryptoassets': 5.53.0
       '@ledgerhq/errors': 5.50.0
-      '@ledgerhq/hw-transport': 5.26.0
+      '@ledgerhq/hw-transport': 5.51.1
       bignumber.js: 9.1.2
       rlp: 2.2.7
 
@@ -2410,7 +2445,7 @@ snapshots:
     dependencies:
       '@ledgerhq/devices': 5.51.1
       '@ledgerhq/errors': 5.50.0
-      '@ledgerhq/hw-transport': 5.26.0
+      '@ledgerhq/hw-transport': 5.51.1
       '@ledgerhq/hw-transport-node-hid-noevents': 5.51.1
       '@ledgerhq/logs': 5.50.0
       lodash: 4.17.21
@@ -2421,7 +2456,7 @@ snapshots:
   '@ledgerhq/hw-transport-u2f@5.26.0':
     dependencies:
       '@ledgerhq/errors': 5.50.0
-      '@ledgerhq/hw-transport': 5.26.0
+      '@ledgerhq/hw-transport': 5.51.1
       '@ledgerhq/logs': 5.50.0
       u2f-api: 0.2.7
 
@@ -2436,7 +2471,6 @@ snapshots:
       '@ledgerhq/devices': 5.51.1
       '@ledgerhq/errors': 5.50.0
       events: 3.3.0
-    optional: true
 
   '@ledgerhq/logs@5.50.0': {}
 
@@ -3420,6 +3454,8 @@ snapshots:
     dependencies:
       is-callable: 1.2.7
 
+  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/07263d193d621c4b2b0ce8b4d54af58f6957d97d: {}
+
   forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/8948d45d3d9022c508b83eb5d26fd3a7a93f2f32: {}
 
   form-data@2.5.1:
@@ -4347,6 +4383,8 @@ snapshots:
       astral-regex: 2.0.0
       is-fullwidth-code-point: 3.0.0
 
+  solady@https://codeload.github.com/vectorized/solady/tar.gz/8d726fb1499f7f1d7459d05379efddcd500dab1a: {}
+
   solady@https://codeload.github.com/vectorized/solady/tar.gz/b12aa65e8cc3740f8b85a2a7a2d5296f57f13149: {}
 
   solc@0.7.3(debug@4.3.5):
@@ -4640,7 +4678,7 @@ snapshots:
 
   wide-align@1.1.5:
     dependencies:
-      string-width: 1.0.2
+      string-width: 4.2.3
     optional: true
 
   widest-line@3.1.0:
