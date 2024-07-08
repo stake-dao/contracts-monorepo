@@ -90,7 +90,7 @@ library YFI {
     address public constant LOCKER = 0xF750162fD81F9a436d74d737EF6eE8FC08e98220;
     address public constant DEPOSITOR = 0xe56d9776fbB287A2f8Ba3f11375F51A24D7e25DB;
     address public constant GAUGE = 0x5AdF559f5D24aaCbE4FA3A3a4f44Fdc7431E6b52;
-    address public constant ACCUMULATOR = 0xc7793bC89724925615D7E4080Bd6B893d50D5FDE;
+    address public constant ACCUMULATOR = 0xc74c0E02cbca62045C3a0375D31dAA40e49eE75B;
 
     address public constant STRATEGY = 0x1be150a35bb8233d092747eBFDc75FB357c35168;
     address public constant FACTORY = 0x1EFb2C804166be34a6956159646CAE9D0063b7fF;
