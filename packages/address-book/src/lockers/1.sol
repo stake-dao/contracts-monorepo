@@ -81,7 +81,7 @@ library FPIS {
     address public constant LOCKER = 0x1ce5181124c33Abc281BF0F07eF4fB8573556aA5;
     address public constant DEPOSITOR = 0x56D27f6BA42Ec4C4E37dae0561e8E872ABb196Ad;
     address public constant GAUGE = 0xE58101D3848E12dAD6d7B5981dC11411bb267D2f;
-    address public constant ACCUMULATOR = 0x0CA369A70AD74E52604abC63792ABbE088A9F460;
+    address public constant ACCUMULATOR = 0x644a15E85Aa4A56Afe1461e7ff4F75D733B26322;
 }
 
 library YFI {
