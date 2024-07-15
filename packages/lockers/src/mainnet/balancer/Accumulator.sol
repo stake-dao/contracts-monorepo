@@ -91,6 +91,11 @@ contract Accumulator is BaseAccumulator {
         SafeTransferLib.safeTransfer(BAL, address(veBoostDelegation), delegationShare);
     }
 
+    /// @dev To be compatible with the "old" strategy.
+    function depositToken(address token, uint256 amount) external {
+        SafeTransferLib.safeTransferFrom(token, msg.sender, address(this), amount);
+    }
+
     function setMultiplier(uint256 _multiplier) external onlyGovernance {
         multiplier = _multiplier;
     }
