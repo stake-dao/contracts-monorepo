@@ -57,8 +57,10 @@ contract Accumulator is BaseAccumulator {
 
         _amount = ERC20(_tokenReward).balanceOf(address(this));
 
-        /// Share the BAL rewards with the delegation contract.
-        _amount -= _shareWithDelegation();
+        if (_tokenReward == BAL) {
+            /// Share the BAL rewards with the delegation contract.
+            _amount -= _shareWithDelegation();
+        }
 
         if (_amount == 0) return;
         ILiquidityGauge(gauge).deposit_reward_token(_tokenReward, _amount);

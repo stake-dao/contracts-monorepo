@@ -113,8 +113,10 @@ abstract contract BaseAccumulatorTest is Test {
 
     function test_claimAll() public virtual {
         //Check Dao recipient
+        deal(address(rewardToken), address(treasuryRecipient), 0);
         assertEq(rewardToken.balanceOf(address(treasuryRecipient)), 0);
         //// Check Bounty recipient
+        deal(address(rewardToken), address(liquidityFeeRecipient), 0);
         assertEq(rewardToken.balanceOf(address(liquidityFeeRecipient)), 0);
         //// Check lgv4
         uint256 gaugeBalanceBefore = rewardToken.balanceOf(address(liquidityGauge));

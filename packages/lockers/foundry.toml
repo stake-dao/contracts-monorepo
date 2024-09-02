@@ -3,6 +3,7 @@ src = "src"
 out = "out"
 libs = ["node_modules"]
 solc = "0.8.19"
+evm_version = "cancun"
 
 verbosity = 3
 optimizers_runs = 200
