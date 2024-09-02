@@ -7,7 +7,7 @@ library CRV {
     address public constant LOCKER = 0x52f541764E6e90eeBc5c21Ff570De0e2D63766B6;
     address public constant DEPOSITOR = 0x88C88Aa6a9cedc2aff9b4cA6820292F39cc64026;
     address public constant GAUGE = 0x7f50786A0b15723D741727882ee99a0BF34e3466;
-    address public constant ACCUMULATOR = 0xBA445CBD4b94D98E0aC530cafF3623DCa54776C8;
+    address public constant ACCUMULATOR = 0x615959a1d3E2740054d7130028613ECfa988056f;
     address public constant VOTER = 0x20b22019406Cf990F0569a6161cf30B8e6651dDa;
 
     address public constant STRATEGY = 0x69D61428d089C2F35Bf6a472F540D0F82D1EA2cd;

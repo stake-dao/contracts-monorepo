@@ -24,7 +24,7 @@ contract Accumulator is BaseAccumulator {
     IVeBoost public veBoost = IVeBoost(0xD37A6aa3d8460Bd2b6536d608103D880695A23CD);
 
     /// @notice Ve Boost Delegation.
-    IVeBoostDelegation public veBoostDelegation = IVeBoostDelegation(0xD37A6aa3d8460Bd2b6536d608103D880695A23CD);
+    IVeBoostDelegation public veBoostDelegation = IVeBoostDelegation(0xe1F9C8ebBC80A013cAf0940fdD1A8554d763b9cf);
 
     uint256 public multiplier;
 

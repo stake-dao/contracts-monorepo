@@ -7,11 +7,11 @@ import "test/common/BaseAccumulatorTest.sol";
 contract AccumulatorTest is BaseAccumulatorTest {
     address public constant CRV_USD = 0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E;
 
-    IVeBoost public veBoost = IVeBoost(0xD37A6aa3d8460Bd2b6536d608103D880695A23CD);
-
     address public constant CONVEX_PROXY = 0x989AEb4d175e16225E39E87d0D97A3360524AD80;
 
-    IVeBoostDelegation public veBoostDelegation = IVeBoostDelegation(0xD37A6aa3d8460Bd2b6536d608103D880695A23CD);
+    IVeBoost public veBoost = IVeBoost(0xD37A6aa3d8460Bd2b6536d608103D880695A23CD);
+
+    IVeBoostDelegation public veBoostDelegation = IVeBoostDelegation(0xe1F9C8ebBC80A013cAf0940fdD1A8554d763b9cf);
 
     constructor()
         BaseAccumulatorTest(20_661_622, CRV.LOCKER, CRV.SDTOKEN, Curve.VECRV, CRV.GAUGE, CRV_USD, CRV.TOKEN)
@@ -57,10 +57,8 @@ contract AccumulatorTest is BaseAccumulatorTest {
         uint256 sizeDelegation = veBoost.received_balance(CRV.LOCKER);
         uint256 sizeLocker = veBoost.balanceOf(CRV.LOCKER) - sizeDelegation;
 
-
         uint256 bpsDelegated = (sizeDelegation * 1e18 / sizeLocker);
         uint256 expectedDelegation = 1_000_000e18 * bpsDelegated / 1e18;
-
 
         // Notify the reward.
         accumulator.notifyReward(CRV.TOKEN, false, false);
