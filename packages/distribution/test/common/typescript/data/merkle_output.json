@@ -1,0 +1,27 @@
+{
+  "merkle": {
+    "0x000000000000000000000000000000000000abcd": {
+      "amount": {
+        "type": "BigNumber",
+        "hex": "0x4b3b4ca85a86c47a098a224000000000"
+      },
+      "proof": [
+        "0x5dfd7764ddad1cc59497ee39190d372a2ba65f2adf76e335268b2f40a5d04f30"
+      ]
+    },
+    "0x000000000000000000000000000000000000abbb": {
+      "amount": {
+        "type": "BigNumber",
+        "hex": "0x96769950b50d88f41314448000000000"
+      },
+      "proof": [
+        "0x6db7c7a2b6e14e0e69dc063aff6c98bebc02fc27dd55466746bcb5a2a574cf0c"
+      ]
+    }
+  },
+  "root": "0xd7a7b55ff371aba093ab62f7eb44c540604a259bf4cb29a18c0cf713f06b707c",
+  "total": {
+    "type": "BigNumber",
+    "hex": "0xe1b1e5f90f944d6e1c9e66c000000000"
+  }
+}

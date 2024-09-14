@@ -1,0 +1,20 @@
+{
+  "name": "@stake-dao/distributions-contracts",
+  "version": "1.0.0",
+  "devDependencies": {
+    "@layerzerolabs/solidity-examples": "github:LayerZero-Labs/solidity-examples",
+    "@openzeppelin/contracts": "4.9.0",
+    "@stake-dao/address-book": "workspace:*",
+    "@stake-dao/herdaddy": "workspace:*",
+    "@stake-dao/vyper": "workspace:*",
+    "forge-std": "github:foundry-rs/forge-std",
+    "solady": "github:vectorized/solady"
+  },
+  "dependencies": {
+    "ethers": "^5.6.8",
+    "keccak256": "^1.0.6",
+    "merkletreejs": "^0.4.0",
+    "solmate": "github:transmissions11/solmate",
+    "viem": "^2.21.6"
+  }
+}
