@@ -3,11 +3,12 @@ pragma solidity ^0.8.19;
 
 import "forge-std/src/Test.sol";
 import {MultiCumulativeMerkleDrop} from "src/common/MultiCumulativeMerkleDrop.sol";
-import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {MockMultiCumulativeMerkleDrop} from "test/common/mocks/Mocks.sol";
+import {MockERC20} from "test/common/mocks/Mocks.sol";
 import {Utils} from "test/common/utils/Utils.sol";
 
 contract MultiCumulativeMerkleDropTest is Test, Utils {
-    MultiCumulativeMerkleDrop private merkleDropContract;
+    MockMultiCumulativeMerkleDrop private merkleDropContract;
 
     address private constant GOVERNANCE = address(0x1234);
     address private constant USER_1 = address(0xABCD);
@@ -22,7 +23,7 @@ contract MultiCumulativeMerkleDropTest is Test, Utils {
     bytes32 private merkleRoot2;
 
     function setUp() external {
-        merkleDropContract = new TestMultiCumulativeMerkleDrop(GOVERNANCE);
+        merkleDropContract = new MockMultiCumulativeMerkleDrop(GOVERNANCE);
 
         // Deploy mock ERC20 tokens
         token1 = new MockERC20("Token1", "TKN1", 18);
@@ -38,7 +39,7 @@ contract MultiCumulativeMerkleDropTest is Test, Utils {
         token2.mint(address(merkleDropContract), 500 ether);
     }
 
-    function testInitialState() public {
+    function testInitialState() public view {
         assertEq(merkleDropContract.governance(), GOVERNANCE);
         assertTrue(merkleDropContract.allowed(ALLOWED_ADDRESS));
         assertTrue(merkleDropContract.isFrozen(address(token1)));
@@ -67,11 +68,7 @@ contract MultiCumulativeMerkleDropTest is Test, Utils {
 
         generateMerkleProof(userAddresses, amounts);
 
-        (
-            address[] memory addresses,
-            uint256[] memory claimAmounts,
-            bytes32[][] memory proofs
-        ) = getMerkleJSONData();
+        (address[] memory addresses, uint256[] memory claimAmounts, bytes32[][] memory proofs) = getMerkleJSONData();
 
         (bytes32 root1, uint256 total1) = getMerkleRootAndTotal();
 
@@ -81,12 +78,7 @@ contract MultiCumulativeMerkleDropTest is Test, Utils {
 
         // Claim for USER_1
         vm.prank(USER_1);
-        merkleDropContract.claim(
-            address(token1),
-            USER_1,
-            claimAmounts[0],
-            proofs[0]
-        );
+        merkleDropContract.claim(address(token1), USER_1, claimAmounts[0], proofs[0]);
         assertEq(token1.balanceOf(USER_1), 100 ether);
 
         // Second distribution (double the amounts)
@@ -100,49 +92,27 @@ contract MultiCumulativeMerkleDropTest is Test, Utils {
         (bytes32 root2, uint256 total2) = getMerkleRootAndTotal();
 
         // Set new merkle root for token1
-        vm.startPrank(GOVERNANCE);
-        merkleDropContract.freeze(address(token1));
+        vm.prank(GOVERNANCE);
         merkleDropContract.setMerkleRoot(address(token1), root2);
-        vm.stopPrank();
 
         // Claim for USER_1 (should only receive additional 100)
         vm.prank(USER_1);
-        merkleDropContract.claim(
-            address(token1),
-            USER_1,
-            claimAmounts[0],
-            proofs[0]
-        );
+        merkleDropContract.claim(address(token1), USER_1, claimAmounts[0], proofs[0]);
         assertEq(token1.balanceOf(USER_1), 200 ether);
 
         // Claim for USER_2 (should receive full 400)
         vm.prank(USER_2);
-        merkleDropContract.claim(
-            address(token1),
-            USER_2,
-            claimAmounts[1],
-            proofs[1]
-        );
+        merkleDropContract.claim(address(token1), USER_2, claimAmounts[1], proofs[1]);
         assertEq(token1.balanceOf(USER_2), 400 ether);
 
         // Attempt to claim again (should revert)
         vm.prank(USER_1);
         vm.expectRevert(MultiCumulativeMerkleDrop.NothingToClaim.selector);
-        merkleDropContract.claim(
-            address(token1),
-            USER_1,
-            claimAmounts[0],
-            proofs[0]
-        );
+        merkleDropContract.claim(address(token1), USER_1, claimAmounts[0], proofs[0]);
 
         vm.prank(USER_2);
         vm.expectRevert(MultiCumulativeMerkleDrop.NothingToClaim.selector);
-        merkleDropContract.claim(
-            address(token1),
-            USER_2,
-            claimAmounts[1],
-            proofs[1]
-        );
+        merkleDropContract.claim(address(token1), USER_2, claimAmounts[1], proofs[1]);
     }
 
     function testFreeze() public {
@@ -155,12 +125,7 @@ contract MultiCumulativeMerkleDropTest is Test, Utils {
         // Attempt to claim after freezing
         vm.prank(USER_1);
         vm.expectRevert(MultiCumulativeMerkleDrop.Frozen.selector);
-        merkleDropContract.claim(
-            address(token1),
-            USER_1,
-            100,
-            new bytes32[](0)
-        );
+        merkleDropContract.claim(address(token1), USER_1, 100, new bytes32[](0));
     }
 
     function testMultiFreeze() public {
@@ -214,11 +179,7 @@ contract MultiCumulativeMerkleDropTest is Test, Utils {
 
         generateMerkleProof(userAddresses, amounts);
 
-        (
-            address[] memory addresses,
-            uint256[] memory claimAmounts,
-            bytes32[][] memory proofs
-        ) = getMerkleJSONData();
+        (address[] memory addresses, uint256[] memory claimAmounts, bytes32[][] memory proofs) = getMerkleJSONData();
 
         (bytes32 root, uint256 total) = getMerkleRootAndTotal();
 
@@ -228,12 +189,7 @@ contract MultiCumulativeMerkleDropTest is Test, Utils {
 
         vm.prank(USER_1);
         vm.expectRevert(MultiCumulativeMerkleDrop.InvalidProof.selector);
-        merkleDropContract.claim(
-            address(token1),
-            USER_1,
-            claimAmounts[0] + 1 ether,
-            proofs[0]
-        );
+        merkleDropContract.claim(address(token1), USER_1, claimAmounts[0] + 1 ether, proofs[0]);
     }
 
     function testSetWrongMerkleRootReverts() public {
@@ -250,20 +206,11 @@ contract MultiCumulativeMerkleDropTest is Test, Utils {
 
         generateMerkleProof(userAddresses, amounts);
 
-        (
-            address[] memory addresses,
-            uint256[] memory claimAmounts,
-            bytes32[][] memory proofs
-        ) = getMerkleJSONData();
+        (address[] memory addresses, uint256[] memory claimAmounts, bytes32[][] memory proofs) = getMerkleJSONData();
 
         vm.prank(USER_1);
         vm.expectRevert(MultiCumulativeMerkleDrop.InvalidProof.selector);
-        merkleDropContract.claim(
-            address(token1),
-            USER_1,
-            claimAmounts[0],
-            proofs[0]
-        );
+        merkleDropContract.claim(address(token1), USER_1, claimAmounts[0], proofs[0]);
     }
 
     function testClaimForAnotherAccount() public {
@@ -275,16 +222,7 @@ contract MultiCumulativeMerkleDropTest is Test, Utils {
 
         generateMerkleProof(userAddresses, amounts);
 
-        (
-            address[] memory addresses,
-            uint256[] memory claimAmounts,
-            bytes32[][] memory proofs
-        ) = getMerkleJSONData();
-
-        for (uint256 i = 0; i < addresses.length; i++) {
-            console.log("address", addresses[i]);
-            console.log("amount", claimAmounts[i]);
-        }
+        (address[] memory addresses, uint256[] memory claimAmounts, bytes32[][] memory proofs) = getMerkleJSONData();
 
         (bytes32 root, uint256 total) = getMerkleRootAndTotal();
 
@@ -294,12 +232,7 @@ contract MultiCumulativeMerkleDropTest is Test, Utils {
 
         // USER_2 claims for USER_1
         vm.prank(USER_2);
-        merkleDropContract.claim(
-            address(token1),
-            USER_1,
-            claimAmounts[0],
-            proofs[0]
-        );
+        merkleDropContract.claim(address(token1), USER_1, claimAmounts[0], proofs[0]);
 
         // Check that USER_1 received the tokens
         assertEq(token1.balanceOf(USER_1), 100 ether);
@@ -315,11 +248,7 @@ contract MultiCumulativeMerkleDropTest is Test, Utils {
 
         generateMerkleProof(userAddresses, amounts);
 
-        (
-            address[] memory addresses,
-            uint256[] memory claimAmounts,
-            bytes32[][] memory proofs
-        ) = getMerkleJSONData();
+        (, uint256[] memory claimAmounts, bytes32[][] memory proofs) = getMerkleJSONData();
 
         (bytes32 root, uint256 total) = getMerkleRootAndTotal();
 
@@ -328,30 +257,11 @@ contract MultiCumulativeMerkleDropTest is Test, Utils {
         vm.stopPrank();
 
         vm.prank(USER_1);
-        merkleDropContract.claim(
-            address(token1),
-            USER_1,
-            claimAmounts[0],
-            proofs[0]
-        );
+        merkleDropContract.claim(address(token1), USER_1, claimAmounts[0], proofs[0]);
 
         vm.prank(USER_1);
         vm.expectRevert(MultiCumulativeMerkleDrop.NothingToClaim.selector);
-        merkleDropContract.claim(
-            address(token1),
-            USER_1,
-            claimAmounts[0],
-            proofs[0]
-        );
-    }
-
-    function testCannotSetMerkleRootWhenNotFrozen() public {
-        bytes32 newRoot = keccak256("new root");
-        vm.startPrank(GOVERNANCE);
-        merkleDropContract.setMerkleRoot(address(token1), keccak256("root1"));
-        vm.expectRevert(MultiCumulativeMerkleDrop.NotFrozen.selector);
-        merkleDropContract.setMerkleRoot(address(token1), newRoot);
-        vm.stopPrank();
+        merkleDropContract.claim(address(token1), USER_1, claimAmounts[0], proofs[0]);
     }
 
     function testMultiSetMerkleRoot() public {
@@ -380,11 +290,7 @@ contract MultiCumulativeMerkleDropTest is Test, Utils {
 
         generateMerkleProof(userAddresses, amounts);
 
-        (
-            address[] memory addresses,
-            uint256[] memory claimAmounts,
-            bytes32[][] memory proofs
-        ) = getMerkleJSONData();
+        (, uint256[] memory claimAmounts, bytes32[][] memory proofs) = getMerkleJSONData();
 
         (bytes32 root, uint256 total) = getMerkleRootAndTotal();
 
@@ -400,12 +306,7 @@ contract MultiCumulativeMerkleDropTest is Test, Utils {
 
         // USER_1 claims, but tokens should go to USER_2
         vm.prank(USER_1);
-        merkleDropContract.claim(
-            address(token1),
-            USER_1,
-            claimAmounts[0],
-            proofs[0]
-        );
+        merkleDropContract.claim(address(token1), USER_1, claimAmounts[0], proofs[0]);
 
         // Check that USER_2 received the tokens instead of USER_1
         assertEq(token1.balanceOf(USER_1), 0);
@@ -413,49 +314,5 @@ contract MultiCumulativeMerkleDropTest is Test, Utils {
 
         // Verify that the claim is recorded for USER_1
         assertEq(merkleDropContract.getCumulativeClaimed(address(token1), USER_1), 100 ether);
-    }
-}
-
-contract TestMultiCumulativeMerkleDrop is MultiCumulativeMerkleDrop {
-    constructor(address _governance) MultiCumulativeMerkleDrop(_governance) {}
-
-    function name() external pure override returns (string memory) {
-        return "TestMultiCumulativeMerkleDrop";
-    }
-
-    function version() external pure override returns (string memory) {
-        return "1.0.0";
-    }
-}
-
-contract MockERC20 is ERC20 {
-    string private _name;
-    string private _symbol;
-    uint8 private _decimals;
-
-    constructor(string memory name_, string memory symbol_, uint8 decimals_) {
-        _name = name_;
-        _symbol = symbol_;
-        _decimals = decimals_;
-    }
-
-    function decimals() public view override returns (uint8) {
-        return _decimals;
-    }
-
-    function name() public view override returns (string memory) {
-        return _name;
-    }
-
-    function symbol() public view override returns (string memory) {
-        return _symbol;
-    }
-
-    function mint(address to, uint256 amount) external {
-        _mint(to, amount);
-    }
-
-    function burn(address from, uint256 amount) external {
-        _burn(from, amount);
     }
 }

@@ -31,18 +31,10 @@ abstract contract MultiCumulativeMerkleDrop {
     mapping(address => bool) public allowed;
 
     /// @notice Emitted when the merkle root is updated
-    event MerkleRootUpdated(
-        address indexed token,
-        bytes32 oldMerkleRoot,
-        bytes32 newMerkleRoot
-    );
+    event MerkleRootUpdated(address indexed token, bytes32 oldMerkleRoot, bytes32 newMerkleRoot);
 
     /// @notice Emitted when a successful claim is made
-    event Claimed(
-        address indexed token,
-        address indexed account,
-        uint256 amount
-    );
+    event Claimed(address indexed token, address indexed account, uint256 amount);
 
     /// @notice Emitted when an address is allowed to set the merkle
     event Allowed(address _addr);
@@ -83,9 +75,6 @@ abstract contract MultiCumulativeMerkleDrop {
     /// @notice Thrown when the token is already frozen
     error AlreadyFrozen();
 
-    /// @notice Thrown when the merkle root is not frozen
-    error NotFrozen();
-
     /// @notice only governance
     modifier onlyGovernance() {
         if (msg.sender != governance) revert Auth();
@@ -107,11 +96,7 @@ abstract contract MultiCumulativeMerkleDrop {
     /// @notice Set a new merkle root for a token
     /// @param token The token address
     /// @param newMerkleRoot The new merkle root to set
-    function setMerkleRoot(
-        address token,
-        bytes32 newMerkleRoot
-    ) external onlyGovernanceOrAllowed {
-        if (!isFrozen(token)) revert NotFrozen();
+    function setMerkleRoot(address token, bytes32 newMerkleRoot) external onlyGovernanceOrAllowed {
         emit MerkleRootUpdated(token, merkleRoots[token], newMerkleRoot);
         merkleRoots[token] = newMerkleRoot;
     }
@@ -119,18 +104,13 @@ abstract contract MultiCumulativeMerkleDrop {
     /// @notice Set new merkle roots for multiple tokens
     /// @param tokens Array of token addresses
     /// @param newMerkleRoots Array of new merkle roots to set
-    function multiSetMerkleRoot(
-        address[] calldata tokens,
-        bytes32[] calldata newMerkleRoots
-    ) external onlyGovernanceOrAllowed {
+    function multiSetMerkleRoot(address[] calldata tokens, bytes32[] calldata newMerkleRoots)
+        external
+        onlyGovernanceOrAllowed
+    {
         require(tokens.length == newMerkleRoots.length, "Length mismatch");
         for (uint256 i = 0; i < tokens.length; i++) {
-            if (!isFrozen(tokens[i])) revert NotFrozen();
-            emit MerkleRootUpdated(
-                tokens[i],
-                merkleRoots[tokens[i]],
-                newMerkleRoots[i]
-            );
+            emit MerkleRootUpdated(tokens[i], merkleRoots[tokens[i]], newMerkleRoots[i]);
             merkleRoots[tokens[i]] = newMerkleRoots[i];
         }
     }
@@ -140,12 +120,7 @@ abstract contract MultiCumulativeMerkleDrop {
     /// @param account The account to claim for
     /// @param cumulativeAmount The total amount claimable for the account
     /// @param merkleProof The merkle proof for the claim
-    function claim(
-        address token,
-        address account,
-        uint256 cumulativeAmount,
-        bytes32[] calldata merkleProof
-    ) external {
+    function claim(address token, address account, uint256 cumulativeAmount, bytes32[] calldata merkleProof) external {
         if (isFrozen(token)) revert Frozen();
 
         bytes32 leaf = keccak256(abi.encodePacked(account, cumulativeAmount));
@@ -179,11 +154,7 @@ abstract contract MultiCumulativeMerkleDrop {
     function multiFreeze(address[] calldata tokens) external onlyGovernance {
         for (uint256 i = 0; i < tokens.length; i++) {
             if (isFrozen(tokens[i])) revert AlreadyFrozen();
-            emit MerkleRootUpdated(
-                tokens[i],
-                merkleRoots[tokens[i]],
-                bytes32(0)
-            );
+            emit MerkleRootUpdated(tokens[i], merkleRoots[tokens[i]], bytes32(0));
             merkleRoots[tokens[i]] = bytes32(0);
             emit Freeze(tokens[i]);
         }
@@ -245,10 +216,7 @@ abstract contract MultiCumulativeMerkleDrop {
     /// @param token The token address
     /// @param account The account to check
     /// @return uint256 The cumulative claimed amount
-    function getCumulativeClaimed(
-        address token,
-        address account
-    ) external view returns (uint256) {
+    function getCumulativeClaimed(address token, address account) external view returns (uint256) {
         return cumulativeClaimed[token][account];
     }
 
