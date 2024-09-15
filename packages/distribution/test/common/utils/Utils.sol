@@ -5,7 +5,7 @@ import "forge-std/src/Test.sol";
 
 contract Utils is Test {
     string constant MERKLE_DATA_PATH =
-        "/test/common/typescript/data/merkle_output.json";
+        "/test/common/utils/data/merkle_output.json";
 
     function generateMerkleProof(
         string[] memory userAddresses,
@@ -17,7 +17,7 @@ contract Utils is Test {
         );
 
         string[] memory inputs = new string[](2 + userAddresses.length * 2);
-        inputs[0] = "./test/common/typescript/getMerkle.sh";
+        inputs[0] = "./test/common/utils/getMerkle.sh";
         inputs[1] = "generate";
 
         for (uint256 i = 0; i < userAddresses.length; i++) {

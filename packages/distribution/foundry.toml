@@ -4,7 +4,7 @@ out = "out"
 libs = ["node_modules"]
 solc = "0.8.19"
 evm_version = "cancun"
-fs_permissions = [{ access = "read", path = "./test/common/typescript/data"}]
+fs_permissions = [{ access = "read-write", path = "./test/common/utils/data"}]
 ffi = true
 
 verbosity = 3

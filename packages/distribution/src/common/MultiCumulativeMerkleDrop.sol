@@ -4,7 +4,6 @@ pragma solidity ^0.8.19;
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {MerkleProofLib} from "solady/src/utils/MerkleProofLib.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
-import {console} from "forge-std/src/console.sol";
 
 /// @title MultiCumulativeMerkleDrop
 /// @notice A multi-token merkle tree based distribution contract with cumulative claiming mechanism
@@ -18,6 +17,9 @@ abstract contract MultiCumulativeMerkleDrop {
 
     /// @notice Cumulative amount claimed by each account for each token
     mapping(address => mapping(address => uint256)) public cumulativeClaimed;
+
+    /// @notice Recipient for each account
+    mapping(address => address) public recipients;
 
     /// @notice Address of the governance
     address public governance;
@@ -54,6 +56,9 @@ abstract contract MultiCumulativeMerkleDrop {
     /// @notice Emitted when a token is frozen
     event Freeze(address indexed token);
 
+    /// @notice Emitted when a recipient is set for an account
+    event RecipientSet(address indexed account, address indexed recipient);
+
     /// @notice Thrown when the token is frozen
     error Frozen();
 
@@ -77,6 +82,9 @@ abstract contract MultiCumulativeMerkleDrop {
 
     /// @notice Thrown when the token is already frozen
     error AlreadyFrozen();
+
+    /// @notice Thrown when the merkle root is not frozen
+    error NotFrozen();
 
     /// @notice only governance
     modifier onlyGovernance() {
@@ -103,7 +111,7 @@ abstract contract MultiCumulativeMerkleDrop {
         address token,
         bytes32 newMerkleRoot
     ) external onlyGovernanceOrAllowed {
-        require(isFrozen(token), "Not frozen");
+        if (!isFrozen(token)) revert NotFrozen();
         emit MerkleRootUpdated(token, merkleRoots[token], newMerkleRoot);
         merkleRoots[token] = newMerkleRoot;
     }
@@ -117,7 +125,7 @@ abstract contract MultiCumulativeMerkleDrop {
     ) external onlyGovernanceOrAllowed {
         require(tokens.length == newMerkleRoots.length, "Length mismatch");
         for (uint256 i = 0; i < tokens.length; i++) {
-            require(isFrozen(tokens[i]), "Not frozen");
+            if (!isFrozen(tokens[i])) revert NotFrozen();
             emit MerkleRootUpdated(
                 tokens[i],
                 merkleRoots[tokens[i]],
@@ -140,21 +148,7 @@ abstract contract MultiCumulativeMerkleDrop {
     ) external {
         if (isFrozen(token)) revert Frozen();
 
-        console.log("Claiming for token:", token);
-        console.log("Account:", account);
-        console.log("Cumulative Amount:", cumulativeAmount);
-        console.log("Merkle Root:");
-        console.logBytes32(merkleRoots[token]);
-
         bytes32 leaf = keccak256(abi.encodePacked(account, cumulativeAmount));
-
-        console.log("Leaf:");
-        console.logBytes32(leaf);
-
-        for (uint i = 0; i < merkleProof.length; i++) {
-            console.log("Proof element:");
-            console.logBytes32(merkleProof[i]);
-        }
 
         if (!MerkleProofLib.verify(merkleProof, merkleRoots[token], leaf)) {
             revert InvalidProof();
@@ -167,7 +161,8 @@ abstract contract MultiCumulativeMerkleDrop {
 
         unchecked {
             uint256 amount = cumulativeAmount - preclaimed;
-            SafeTransferLib.safeTransfer(token, account, amount);
+            address recipient = recipients[account] == address(0) ? account : recipients[account];
+            SafeTransferLib.safeTransfer(token, recipient, amount);
             emit Claimed(token, account, amount);
         }
     }
@@ -222,6 +217,14 @@ abstract contract MultiCumulativeMerkleDrop {
         governance = msg.sender;
         futureGovernance = address(0);
         emit GovernanceChanged(msg.sender);
+    }
+
+    /// @notice Set a recipient for an account
+    /// @param account The account to set the recipient for
+    /// @param recipient The recipient address
+    function setRecipient(address account, address recipient) external onlyGovernance {
+        recipients[account] = recipient;
+        emit RecipientSet(account, recipient);
     }
 
     /// @notice Check if a token is frozen (merkle root is 0)
