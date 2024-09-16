@@ -60,9 +60,6 @@ abstract contract MultiCumulativeMerkleDrop {
     /// @notice Thrown when there's nothing to claim
     error NothingToClaim();
 
-    /// @notice Thrown when the merkle root has been updated
-    error MerkleRootWasUpdated();
-
     /// @notice Thrown on unauthorized access
     error Auth();
 
