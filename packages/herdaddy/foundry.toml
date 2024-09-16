@@ -2,6 +2,8 @@
 src = "src"
 out = "out"
 tests = "test"
-libs = ["lib"]
+libs = ["node_modules"]
+solc = "0.8.19"
+evm_version = "cancun"
 
 # See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
