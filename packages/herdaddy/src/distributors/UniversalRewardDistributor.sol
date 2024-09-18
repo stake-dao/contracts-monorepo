@@ -9,17 +9,18 @@ import {
 import {ErrorsLib} from "src/utils/ErrorsLib.sol";
 import {EventsLib} from "src/utils/EventsLib.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
+import {Multicallable} from "solady/src/utils/Multicallable.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";
 
 /// @title UniversalRewardsDistributor
 /// @author Stake DAO
 /// @notice Forked from Morpho Labs
 /// @dev Adding possibility to set a recipient for each account's rewards.
+/// @dev Adding support for multicall.
 /// @notice This contract enables the distribution of various reward tokens to multiple accounts using different
 /// permissionless Merkle trees. It is largely inspired by Morpho's current rewards distributor:
 /// https://github.com/morpho-dao/morpho-v1/blob/main/src/common/rewards-distribution/RewardsDistributor.sol
-contract UniversalRewardsDistributor is IUniversalRewardsDistributorStaticTyping {
+contract UniversalRewardsDistributor is Multicallable, IUniversalRewardsDistributorStaticTyping {
     using SafeERC20 for IERC20;
 
     /* STORAGE */
