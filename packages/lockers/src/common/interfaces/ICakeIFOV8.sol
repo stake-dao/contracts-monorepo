@@ -31,4 +31,6 @@ interface ICakeIFOV8 {
     function viewPoolVestingInformation(uint256 pid) external returns (uint256, uint256, uint256, uint256);
 
     function vestingStartTime() external returns (uint256);
+
+    function totalTokensOffered() external view returns (uint256);
 }

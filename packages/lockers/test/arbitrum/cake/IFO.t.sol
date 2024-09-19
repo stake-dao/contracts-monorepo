@@ -15,9 +15,11 @@ contract IFOTest is Test {
     IFO public ifo;
     IFOFactory public ifoFactory;
 
-    uint256 public constant BLOCK_NUMBER = 253_008_401;
+    address ifoAdmin = 0x444D73Ea7bC7C72Ea11638203846dAD632677180;
+
+    uint256 public constant BLOCK_NUMBER = 255172335;
     address public constant LOCKER = 0x1E6F87A9ddF744aF31157d8DaA1e3025648d042d;
-    address public constant CAKE_IFO = 0x6164B999597a6F30DA9aEF8A7F31D6dD7AE57e04;
+    address public constant CAKE_IFO = 0xa6f907493269BEF3383fF0CBFd25e1Cc35167c3B;
 
     /// Users
     address public constant USER_1 = address(0x1);
@@ -58,6 +60,7 @@ contract IFOTest is Test {
 
         deal(address(ifo.dToken()), USER_1, 100e18);
         deal(address(ifo.oToken()), USER_2, 200e18);
+        deal(address(ifo.oToken()), CAKE_IFO, ICakeIFOV8(CAKE_IFO).totalTokensOffered());
     }
 
     function test_initialSetup() public view {
@@ -70,6 +73,10 @@ contract IFOTest is Test {
 
         assertEq(ifo.merkleRoot(), merkleRoot);
         assertEq(ifo.sdCakeGaugeTotalSupply(), 300e18);
+
+        address iCAKEV3 = ICakeIFOV8(CAKE_IFO).addresses(3);
+        assertEq(ICakeV3(iCAKEV3).delegated(address(CAKE.EXECUTOR)), LOCKER);
+        assertEq(ICakeV3(iCAKEV3).getVeCakeUser(address(CAKE.EXECUTOR)), LOCKER);
     }
 
     function test_deposit_private_sale() public {
@@ -94,23 +101,6 @@ contract IFOTest is Test {
         bytes32[] memory _merkleProof
     ) internal {
         // USER 1
-        address pancakeProfile = ICakeIFOV8(CAKE_IFO).addresses(2);
-
-        address iCAKEV3 = ICakeIFOV8(CAKE_IFO).addresses(3);
-        uint credit = ICakeV3(iCAKEV3).getUserCredit(LOCKER);
-
-        vm.mockCall(
-            pancakeProfile,
-            abi.encodeWithSignature("getUserStatus(address)", CAKE.EXECUTOR),
-            abi.encode(true)
-        );
-
-        vm.mockCall(
-            iCAKEV3,
-            abi.encodeWithSignature("getUserCredit(address)", CAKE.EXECUTOR),
-            abi.encode(credit)
-        );
-
         vm.startPrank(_user);
         ERC20(address(ifo.dToken())).approve(address(ifo), _amount);
         // pid 1

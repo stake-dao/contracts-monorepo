@@ -82,6 +82,8 @@ contract IFOFactory {
         locker = IExecutor(_locker);
         governance = _governance;
         feeReceiver = _feeReceiver;
+
+        protocolFeesPercent = 100; // 1%
     }
 
     /// @notice Create a sd IFO.
