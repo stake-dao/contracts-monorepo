@@ -55,7 +55,7 @@ contract IFOHelperTest is Test {
         vm.expectRevert(IFOHelper.Unauthorized.selector);
         ifoHelper.recover(address(rewardToken));
 
-        uint balance = rewardToken.balanceOf(address(ifoHelper));
+        uint256 balance = rewardToken.balanceOf(address(ifoHelper));
 
         vm.prank(CAKE.EXECUTOR);
         ifoHelper.recover(address(rewardToken));
