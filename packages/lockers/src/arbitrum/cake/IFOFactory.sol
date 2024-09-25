@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
+import "forge-std/src/Test.sol";
 import {IFO} from "src/arbitrum/cake/IFO.sol";
 import {IExecutor} from "src/common/interfaces/IExecutor.sol";
 import {ICakeIFOV8} from "src/common/interfaces/ICakeIFOV8.sol";
@@ -92,6 +93,9 @@ contract IFOFactory {
         if (ifos[_cakeIFO] != address(0)) revert IfoAlreadyCreated();
         address dToken = ICakeIFOV8(_cakeIFO).addresses(0);
         address oToken = ICakeIFOV8(_cakeIFO).addresses(1);
+        console.logBytes(
+            abi.encode(_cakeIFO, dToken, oToken, address(locker), address(0x809c19E6444b4AB89d29b29191dbF7fAA48A1a57))
+        );
         ifos[_cakeIFO] = address(new IFO(_cakeIFO, dToken, oToken, address(locker), address(this)));
         allowed[ifos[_cakeIFO]] = true;
 

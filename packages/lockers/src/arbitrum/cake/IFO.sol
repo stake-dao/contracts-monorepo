@@ -86,6 +86,9 @@ contract IFO {
     /// @notice Throwed if the user has not deposited any dToken
     error NoDeposit();
 
+    /// @notice Throwed if the sale type is not allowed
+    error SaleTypeNotAllowed();
+
     /// @notice Throwed on Auth
     error OnlyFactory();
 
@@ -176,6 +179,7 @@ contract IFO {
 
         // check max lp limit for the pool
         (,, uint256 lpLimit,,,, uint8 saleType) = cakeIFO.viewPoolInformation(_pid);
+        if (saleType == 2) revert SaleTypeNotAllowed();
 
         // if sale is not private get the locker credit
         uint256 lockerCredit;
@@ -207,6 +211,10 @@ contract IFO {
     /// @param _dAmount Amount of dToken to deposit.
     /// @param _pid Pool id.
     function depositPoolSecondPeriod(uint256 _dAmount, uint8 _pid) external {
+        // check max lp limit for the pool
+        (,,,,,, uint8 saleType) = cakeIFO.viewPoolInformation(_pid);
+        if (saleType == 2) revert SaleTypeNotAllowed();
+
         // check if the IFO is in second period
         if (block.timestamp < firstPeriodEnd || block.timestamp > ICakeIFOV8(cakeIFO).endTimestamp()) {
             revert NotInSecondPeriod();
