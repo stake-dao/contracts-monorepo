@@ -33,4 +33,6 @@ interface IStrategy {
     function setLGtype(address _gauge, uint256 _type) external;
 
     function setRewardReceiver(address _gauge, address _rewardReceiver) external;
+
+    function claimProtocolFees() external;
 }

@@ -64,7 +64,7 @@ deploy-%:
 	script_path="script/$$dirs/Deploy.s.sol"; \
 	echo "Attempting to deploy: $$script_path"; \
 	if [ -f "$$script_path" ]; then \
-		forge script "$$script_path:Deploy" --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY);\
+		forge script "$$script_path:Deploy" --rpc-url https://rpc.ankr.com/bsc --broadcast --slow -vvvvv --private-key $(PRIVATE_KEY) --verify --etherscan-api-key $(BNBSCAN_KEY) --resume; \
 	else \
 		echo "Error: $$script_path does not exist"; \
 		exit 1; \
