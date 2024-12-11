@@ -2,7 +2,7 @@
   "name": "@stake-dao/vyper",
   "version": "1.0.0",
   "devDependencies": {
-    "@layerzerolabs/solidity-examples": "github:LayerZero-Labs/solidity-examples",
+    "@layerzerolabs/solidity-examples": "github:LayerZero-Labs/endpoint-v1-solidity-examples",
     "@openzeppelin/contracts": "4.9.0",
     "forge-std": "github:foundry-rs/forge-std",
     "solady": "github:vectorized/solady",

@@ -4,4 +4,4 @@ herdaddy=node_modules/@stake-dao/herdaddy/src/
 address-book=node_modules/@stake-dao/address-book/
 openzeppelin-contracts=node_modules/@openzeppelin/contracts
 @openzeppelin/contracts=node_modules/@openzeppelin/contracts
-solidity-examples/=node_modules/@layerzerolabs/solidity-examples/contracts/
+solidity-examples/=node_modules/@layerzerolabs/endpoint-v1-solidity-examples/contracts/
