@@ -137,7 +137,7 @@ abstract contract BaseDepositor {
             }
         } else {
             /// Transfer tokens to the locker contract and lock them.
-            SafeTransferLib.safeTransferFrom(token, msg.sender, locker, _amount);
+            SafeTransferLib.safeTransferFrom(token, msg.sender, address(this), _amount);
 
             /// Compute call incentive and add to incentiveToken
             uint256 callIncentive = (_amount * lockIncentivePercent) / DENOMINATOR;
