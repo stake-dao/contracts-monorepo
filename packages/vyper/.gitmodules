@@ -6,7 +6,7 @@
 	url = https://github.com/openzeppelin/openzeppelin-contracts
 [submodule "lib/solidity-examples"]
 	path = packages/lockers/lib/solidity-examples
-	url = https://github.com/LayerZero-Labs/solidity-examples
+	url = https://github.com/LayerZero-Labs/endpoint-v1-solidity-examples
 [submodule "lib/solady"]
 	path = packages/lockers/lib/solady
 	url = https://github.com/vectorized/solady
