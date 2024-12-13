@@ -55,7 +55,7 @@ contract DepositorTest is Test {
 
         deal(address(token), address(this), amount);
         vm.startPrank(address(0xBEEF));
-        // Mint FXN.
+
         deal(address(token), address(0xBEEF), amount);
         IERC20(address(token)).approve(address(depositor), amount);
 
