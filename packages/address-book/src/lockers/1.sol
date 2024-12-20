@@ -100,7 +100,7 @@ library PENDLE {
     address public constant TOKEN = 0x808507121B80c02388fAd14726482e061B8da827;
     address public constant SDTOKEN = 0x5Ea630e00D6eE438d3deA1556A110359ACdc10A9;
     address public constant LOCKER = 0xD8fa8dC5aDeC503AcC5e026a98F32Ca5C1Fa289A;
-    address public constant DEPOSITOR = 0xf7F64f63ec693C6a3A79fCe4b222Bca2595cAcEf;
+    address public constant DEPOSITOR = 0x89645148Cb8d7530f4DdB51ea72E2D05Ba38abC9;
     address public constant GAUGE = 0x50DC9aE51f78C593d4138263da7088A973b8184E;
     address public constant ACCUMULATOR = 0xFFEc6CFf6780c9f9F3c324e976751FFCfc8810fB;
 

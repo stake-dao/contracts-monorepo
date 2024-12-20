@@ -24,12 +24,7 @@ contract Deploy is Script {
         vm.createSelectFork("bnb");
         vm.startBroadcast(DEPLOYER);
 
-        voter = new CakeVoter(
-            Pancake.GAUGE_CONTROLLER,
-            CAKE.LOCKER,
-            CAKE.EXECUTOR,
-            DAO.GOVERNANCE
-        );
+        voter = new CakeVoter(Pancake.GAUGE_CONTROLLER, CAKE.LOCKER, CAKE.EXECUTOR, DAO.GOVERNANCE);
 
         require(voter.locker() == CAKE.LOCKER, "Nope");
         require(voter.gaugeController() == Pancake.GAUGE_CONTROLLER, "Nope");
