@@ -10,6 +10,7 @@ importers:
 
   packages/address-book: {}
 
+<<<<<<< HEAD
   packages/herdaddy:
     dependencies:
       '@openzeppelin/contracts':
@@ -27,6 +28,9 @@ importers:
       solady:
         specifier: github:vectorized/solady
         version: https://codeload.github.com/vectorized/solady/tar.gz/cd51985ded9e70ab1991cea74bf8db972b40ecd3
+=======
+  packages/common: {}
+>>>>>>> ad5e2d6 (feat: init new package)
 
   packages/lockers:
     devDependencies:
@@ -39,9 +43,9 @@ importers:
       '@stake-dao/address-book':
         specifier: workspace:*
         version: link:../address-book
-      '@stake-dao/herdaddy':
+      '@stake-dao/common':
         specifier: workspace:*
-        version: link:../herdaddy
+        version: link:../common
       '@stake-dao/vyper':
         specifier: workspace:*
         version: link:../vyper
@@ -90,9 +94,9 @@ importers:
       '@stake-dao/address-book':
         specifier: workspace:*
         version: link:../address-book
-      '@stake-dao/herdaddy':
+      '@stake-dao/common':
         specifier: workspace:*
-        version: link:../herdaddy
+        version: link:../common
       forge-std:
         specifier: github:foundry-rs/forge-std
         version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/07263d193d621c4b2b0ce8b4d54af58f6957d97d

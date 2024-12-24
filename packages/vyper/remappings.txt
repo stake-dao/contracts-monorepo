@@ -1,6 +1,6 @@
 solady=node_modules/solady/
 forge-std=node_modules/forge-std/
-herdaddy=node_modules/@stake-dao/herdaddy/src/
+common=node_modules/@stake-dao/common/src/
 address-book=node_modules/@stake-dao/address-book/
 openzeppelin-contracts=node_modules/@openzeppelin/contracts
 @openzeppelin/contracts=node_modules/@openzeppelin/contracts

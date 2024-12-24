@@ -4,7 +4,7 @@ pragma solidity ^0.8.4;
 import "test/common/BaseAccumulatorTest.sol";
 
 import "src/mainnet/fpis/Accumulator.sol";
-import "herdaddy/interfaces/frax/IFraxShares.sol";
+import "common/interfaces/frax/IFraxShares.sol";
 
 contract AccumulatorTest is BaseAccumulatorTest {
     constructor()

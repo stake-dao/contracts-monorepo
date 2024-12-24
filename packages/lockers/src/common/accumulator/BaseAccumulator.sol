@@ -4,8 +4,8 @@ pragma solidity ^0.8.19;
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 
-import {IFeeReceiver} from "herdaddy/interfaces/IFeeReceiver.sol";
-import {IStrategy} from "herdaddy/interfaces/stake-dao/IStrategy.sol";
+import {IFeeReceiver} from "common/interfaces/IFeeReceiver.sol";
+import {IStrategy} from "common/interfaces/stake-dao/IStrategy.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {ISDTDistributor} from "src/common/interfaces/ISDTDistributor.sol";
 

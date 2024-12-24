@@ -19,6 +19,6 @@
 [submodule "lib/murky"]
 	path = packages/lockers/lib/murky
 	url = https://github.com/dmfxyz/murky
-[submodule "lib/herdaddy"]
-	path = packages/lockers/lib/herdaddy
-	url = https://github.com/stake-dao/herdaddy
+[submodule "lib/common"]
+	path = packages/lockers/lib/common
+	url = https://github.com/stake-dao/common

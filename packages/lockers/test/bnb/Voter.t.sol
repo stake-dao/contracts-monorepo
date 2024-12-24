@@ -7,7 +7,7 @@ import "src/bnb/cake/Voter.sol";
 import "address-book/src/lockers/56.sol";
 import "address-book/src/protocols/56.sol";
 import {DAO} from "address-book/src/dao/56.sol";
-import {IGaugeVoting} from "herdaddy/interfaces/pancake/IGaugeVoting.sol";
+import {IGaugeVoting} from "common/interfaces/pancake/IGaugeVoting.sol";
 
 contract PancakeVoterTest is Test {
     CakeVoter internal voter;
