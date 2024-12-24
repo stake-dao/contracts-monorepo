@@ -1,0 +1,9 @@
+{
+  "name": "@stake-dao/strategies",
+  "version": "1.0.0",
+  "devDependencies": {
+    "@openzeppelin/contracts": "4.9.0",
+    "@stake-dao/address-book": "workspace:*",
+    "forge-std": "github:foundry-rs/forge-std"
+  }
+}
