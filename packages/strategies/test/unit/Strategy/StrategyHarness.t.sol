@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
 import {Test} from "forge-std/src/Test.sol";
-import {Strategy, IStrategy} from "src/Strategy.sol";
-import {TransientSlot} from "@openzeppelin/contracts/utils/TransientSlot.sol";
+
+import "src/Strategy.sol";
 
 // Exposes the useful internal functions of the Strategy contract for testing purposes
 contract StrategyHarness is Strategy, Test {
@@ -35,6 +36,24 @@ contract StrategyHarness is Strategy, Test {
     function _cheat_setSyncRewards(uint128 feeSubjectAmount, uint128 totalAmount) external {
         _mockSyncRewards.feeSubjectAmount = feeSubjectAmount;
         _mockSyncRewards.totalAmount = totalAmount;
+    }
+
+    function _cheat_setLockerBalance(address gauge, uint256 balance) external {
+        vm.mockCall(
+            address(gauge), abi.encodeWithSelector(IBalanceProvider.balanceOf.selector, LOCKER), abi.encode(balance)
+        );
+    }
+
+    function _cheat_setAllocationTargets(address gauge, address allocator, address[] memory targets) external {
+        vm.mockCall(
+            address(allocator),
+            abi.encodeWithSelector(IAllocator.getAllocationTargets.selector, gauge),
+            abi.encode(targets)
+        );
+    }
+
+    function _cheat_setSidecarBalance(address sidecar, uint256 balance) external {
+        vm.mockCall(address(sidecar), abi.encodeWithSelector(ISidecar.balanceOf.selector), abi.encode(balance));
     }
 
     function _sync(address) internal view override returns (IStrategy.PendingRewards memory) {
