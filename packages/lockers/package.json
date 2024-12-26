@@ -8,7 +8,7 @@
     "murky": "github:dmfxyz/murky",
     "solady": "github:vectorized/solady",
     "@stake-dao/address-book": "workspace:*",
-    "@stake-dao/common": "workspace:*",
+    "@stake-dao/interfaces": "workspace:*",
     "@stake-dao/vyper": "workspace:*"
 
   }
