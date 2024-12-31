@@ -29,8 +29,12 @@ abstract contract RewardDistributor is ERC4626 {
     /// @notice User Earned Rewards.
     mapping(address => mapping(address => uint256)) public rewards;
 
+    /// @notice Custom errors
+    error RewardAlreadyExists();
+    error UnauthorizedRewardsDistributor();
+
     function addReward(address _rewardsToken, address _rewardsDistributor, uint256 _rewardsDuration) public {
-        require(rewardData[_rewardsToken].rewardsDuration == 0);
+        if (rewardData[_rewardsToken].rewardsDuration != 0) revert RewardAlreadyExists();
         rewardTokens.push(_rewardsToken);
         rewardData[_rewardsToken].rewardsDistributor = _rewardsDistributor;
         rewardData[_rewardsToken].rewardsDuration = _rewardsDuration;
@@ -63,9 +67,7 @@ abstract contract RewardDistributor is ERC4626 {
     function notifyRewardAmount(address _rewardsToken, uint256 reward) external {
         _updateReward(address(0));
 
-        require(rewardData[_rewardsToken].rewardsDistributor == msg.sender);
-        // handle the transfer of reward tokens via `transferFrom` to reduce the number
-        // of transactions required and ensure correctness of the reward amount
+        if (rewardData[_rewardsToken].rewardsDistributor != msg.sender) revert UnauthorizedRewardsDistributor();
         IERC20(_rewardsToken).safeTransferFrom(msg.sender, address(this), reward);
 
         if (block.timestamp >= rewardData[_rewardsToken].periodFinish) {
