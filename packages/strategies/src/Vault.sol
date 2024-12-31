@@ -48,7 +48,7 @@ contract Vault is ERC4626 {
 
     /// @dev Internal function to deposit assets into the vault.
     function _deposit(address caller, address receiver, uint256 assets, uint256) internal override {
-        /// 1. Get the allocations.
+        /// 1. Get the allocation.
         IAllocator.Allocation memory allocation = ALLOCATOR.getDepositAllocations(asset(), assets);
 
         /// 2. Transfer the assets to the strategy from the caller.
@@ -64,6 +64,27 @@ contract Vault is ERC4626 {
 
         /// 5. Emit the deposit event.
         emit Deposit(caller, receiver, assets, assets);
+    }
+
+    /// @dev Internal function to withdraw assets from the vault.
+    function _withdraw(address caller, address receiver, address owner, uint256 assets, uint256 shares)
+        internal
+        override
+    {
+        /// 1. Get the allocation.
+        IAllocator.Allocation memory allocation = ALLOCATOR.getWithdrawAllocations(asset(), assets);
+
+        /// 2. Withdraw the assets from the strategy.
+        uint256 pendingRewards = STRATEGY.withdraw(allocation);
+
+        /// 3. Checkpoint the vault. The accountant will deal with minting and burning.
+        ACCOUNTANT.checkpoint(allocation.gauge, owner, address(0), assets, SOFT_CHECKPOINT, pendingRewards);
+
+        /// 4. Transfer the assets to the receiver.
+        SafeERC20.safeTransfer(IERC20(asset()), receiver, assets);
+
+        /// 5. Emit the withdraw event.
+        emit Withdraw(caller, receiver, owner, assets, shares);
     }
 
     //////////////////////////////////////////////////////
