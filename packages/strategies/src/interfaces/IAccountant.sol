@@ -10,4 +10,7 @@ interface IAccountant {
         bool softCheckpoint,
         uint256 pendingRewards
     ) external;
+
+    function totalSupply(address asset) external view returns (uint256);
+    function balanceOf(address asset, address account) external view returns (uint256);
 }
