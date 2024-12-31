@@ -10,9 +10,6 @@ import "src/interfaces/IAccountant.sol";
 import "src/interfaces/IRewardDistributor.sol";
 
 contract Vault is ERC4626 {
-    /// @notice The gauge associated with the vault.
-    address immutable GAUGE;
-
     /// @notice Soft checkpoint flag.
     bool immutable SOFT_CHECKPOINT;
 
@@ -30,7 +27,6 @@ contract Vault is ERC4626 {
 
     constructor(
         address asset,
-        address gauge,
         address rewardDistributor,
         address accountant,
         address allocator,
@@ -43,7 +39,6 @@ contract Vault is ERC4626 {
             string.concat("sd-", IERC20Metadata(asset).symbol(), "-vault")
         )
     {
-        GAUGE = gauge;
         STRATEGY = IStrategy(strategy);
         SOFT_CHECKPOINT = softCheckpoint;
         ALLOCATOR = IAllocator(allocator);
@@ -54,18 +49,18 @@ contract Vault is ERC4626 {
     /// @dev Internal function to deposit assets into the vault.
     function _deposit(address caller, address receiver, uint256 assets, uint256) internal override {
         /// 1. Get the allocations.
-        IAllocator.Allocation[] memory allocations = ALLOCATOR.getDepositAllocations(asset(), assets);
+        IAllocator.Allocation memory allocation = ALLOCATOR.getDepositAllocations(asset(), assets);
 
         /// 2. Transfer the assets to the strategy from the caller.
-        for (uint256 i = 0; i < allocations.length; i++) {
-            SafeERC20.safeTransferFrom(IERC20(asset()), caller, allocations[i].target, allocations[i].amount);
+        for (uint256 i = 0; i < allocation.targets.length; i++) {
+            SafeERC20.safeTransferFrom(IERC20(asset()), caller, allocation.targets[i], allocation.amounts[i]);
         }
 
         /// 3. Deposit the assets into the strategy.
-        uint256 pendingRewards = STRATEGY.deposit(allocations);
+        uint256 pendingRewards = STRATEGY.deposit(allocation);
 
         /// 4. Checkpoint the vault. The accountant will deal with minting and burning.
-        ACCOUNTANT.checkpoint(GAUGE, address(0), receiver, assets, SOFT_CHECKPOINT, pendingRewards);
+        ACCOUNTANT.checkpoint(allocation.gauge, address(0), receiver, assets, SOFT_CHECKPOINT, pendingRewards);
 
         /// 5. Emit the deposit event.
         emit Deposit(caller, receiver, assets, assets);
