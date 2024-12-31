@@ -53,7 +53,13 @@ contract Vault is ERC4626 {
     }
 
     /// @dev Internal function to deposit assets into the vault.
-    function _deposit(address caller, address receiver, uint256 assets, uint256) internal override {
+    function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal override {
+        /// @dev Update the reward distributor for the caller.
+        _updateReward(caller);
+
+        /// @dev Update the reward distributor for the receiver.
+        _updateReward(receiver);
+
         /// 1. Get the allocation.
         IAllocator.Allocation memory allocation = ALLOCATOR.getDepositAllocations(asset(), assets);
 
@@ -69,7 +75,7 @@ contract Vault is ERC4626 {
         ACCOUNTANT.checkpoint(allocation.gauge, address(0), receiver, assets, SOFT_CHECKPOINT, pendingRewards);
 
         /// 5. Emit the deposit event.
-        emit Deposit(caller, receiver, assets, assets);
+        emit Deposit(caller, receiver, assets, shares);
     }
 
     /// @dev Internal function to withdraw assets from the vault.
@@ -77,6 +83,12 @@ contract Vault is ERC4626 {
         internal
         override
     {
+        /// @dev Update the reward distributor for the owner.
+        _updateReward(owner);
+
+        /// @dev Update the reward distributor for the receiver.
+        _updateReward(receiver);
+
         /// 1. Get the allocation.
         IAllocator.Allocation memory allocation = ALLOCATOR.getWithdrawAllocations(asset(), assets);
 
@@ -111,10 +123,10 @@ contract Vault is ERC4626 {
 
         if (amount > 0) {
             /// @dev Update the reward distributor for the receiver.
-            REWARD_DISTRIBUTOR.updateReward(to);
+            _updateReward(to);
 
             /// @dev Update the reward distributor for the sender.
-            REWARD_DISTRIBUTOR.updateReward(from);
+            _updateReward(from);
 
             /// @dev Get the pending rewards.
             uint256 pendingRewards = STRATEGY.pendingRewards(asset());
@@ -124,5 +136,10 @@ contract Vault is ERC4626 {
         }
 
         emit Transfer(from, to, amount);
+    }
+
+    /// @dev Internal function to update the reward distributor.
+    function _updateReward(address account) internal {
+        REWARD_DISTRIBUTOR.updateReward(account);
     }
 }
