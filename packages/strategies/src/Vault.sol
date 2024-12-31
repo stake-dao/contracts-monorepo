@@ -88,6 +88,18 @@ contract Vault is ERC4626 {
     }
 
     //////////////////////////////////////////////////////
+    /// --- ERC20 OVERRIDES
+    //////////////////////////////////////////////////////
+
+    function totalSupply() public view virtual override(ERC20, IERC20) returns (uint256) {
+        return ACCOUNTANT.totalSupply(address(this));
+    }
+
+    function balanceOf(address account) public view virtual override(ERC20, IERC20) returns (uint256) {
+        return ACCOUNTANT.balanceOf(address(this), account);
+    }
+
+    //////////////////////////////////////////////////////
     /// --- HOOKS
     //////////////////////////////////////////////////////
 
