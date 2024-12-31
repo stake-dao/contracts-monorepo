@@ -4,6 +4,7 @@ pragma solidity 0.8.19;
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
+import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 abstract contract RewardDistributor is ERC4626 {
     using Math for uint256;
@@ -17,6 +18,14 @@ abstract contract RewardDistributor is ERC4626 {
         uint256 lastUpdateTime;
         uint256 rewardPerTokenStored;
     }
+
+    constructor(address asset)
+        ERC4626(IERC20(asset))
+        ERC20(
+            string.concat("StakeDAO ", IERC20Metadata(asset).symbol(), " Vault"),
+            string.concat("sd-", IERC20Metadata(asset).symbol(), "-vault")
+        )
+    {}
 
     mapping(address => Reward) public rewardData;
 
