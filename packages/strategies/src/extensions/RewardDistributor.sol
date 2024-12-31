@@ -3,10 +3,9 @@ pragma solidity 0.8.19;
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-abstract contract RewardDistributor is ERC4626 {
+contract RewardDistributor {
     using Math for uint256;
     using SafeERC20 for IERC20;
 
@@ -19,13 +18,8 @@ abstract contract RewardDistributor is ERC4626 {
         uint256 rewardPerTokenStored;
     }
 
-    constructor(address asset)
-        ERC4626(IERC20(asset))
-        ERC20(
-            string.concat("StakeDAO ", IERC20Metadata(asset).symbol(), " Vault"),
-            string.concat("sd-", IERC20Metadata(asset).symbol(), "-vault")
-        )
-    {}
+    /// @notice The asset being tracked by the reward distributor.
+    IERC20 public immutable ASSET;
 
     mapping(address => Reward) public rewardData;
 
@@ -37,6 +31,10 @@ abstract contract RewardDistributor is ERC4626 {
 
     /// @notice User Earned Rewards.
     mapping(address => mapping(address => uint256)) public rewards;
+
+    constructor(address asset) {
+        ASSET = IERC20(asset);
+    }
 
     /// @notice Custom errors
     error RewardAlreadyExists();
@@ -54,19 +52,20 @@ abstract contract RewardDistributor is ERC4626 {
     }
 
     function rewardPerToken(address _rewardsToken) public view returns (uint256) {
-        if (totalSupply() == 0) {
+        if (ASSET.totalSupply() == 0) {
             return rewardData[_rewardsToken].rewardPerTokenStored;
         }
         return rewardData[_rewardsToken].rewardPerTokenStored
             + (
                 (lastTimeRewardApplicable(_rewardsToken) - rewardData[_rewardsToken].lastUpdateTime)
-                    * rewardData[_rewardsToken].rewardRate * 1e18 / totalSupply()
+                    * rewardData[_rewardsToken].rewardRate * 1e18 / ASSET.totalSupply()
             );
     }
 
     function earned(address account, address _rewardsToken) public view returns (uint256) {
-        return balanceOf(account) * (rewardPerToken(_rewardsToken) - userRewardPerTokenPaid[account][_rewardsToken])
-            / 1e18 + rewards[account][_rewardsToken];
+        return ASSET.balanceOf(account)
+            * (rewardPerToken(_rewardsToken) - userRewardPerTokenPaid[account][_rewardsToken]) / 1e18
+            + rewards[account][_rewardsToken];
     }
 
     function getRewardForDuration(address _rewardsToken) external view returns (uint256) {
