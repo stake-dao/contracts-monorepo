@@ -16,7 +16,7 @@ contract Vault is ERC4626 {
     /// @notice The strategy hold the logic associated to deposits and withdrawals.
     IStrategy public immutable STRATEGY;
 
-    /// @notice The allocator, distributing the vault's balance to the gauges.
+    /// @notice The allocator, allocating the vault's balance to targets.
     IAllocator public immutable ALLOCATOR;
 
     /// @notice The accountant, maintaining the vault's balance and distribution of main reward token.
@@ -110,6 +110,12 @@ contract Vault is ERC4626 {
         if (to == address(this)) revert TransferToVault();
 
         if (amount > 0) {
+            /// @dev Update the reward distributor for the receiver.
+            REWARD_DISTRIBUTOR.updateReward(to);
+
+            /// @dev Update the reward distributor for the sender.
+            REWARD_DISTRIBUTOR.updateReward(from);
+
             /// @dev Get the pending rewards.
             uint256 pendingRewards = STRATEGY.pendingRewards(asset());
 
@@ -118,14 +124,5 @@ contract Vault is ERC4626 {
         }
 
         emit Transfer(from, to, amount);
-    }
-
-    //////////////////////////////////////////////////////
-    /// --- HOOKS
-    //////////////////////////////////////////////////////
-
-    function _beforeTokenTransfer(address from, address to, uint256) internal override {
-        REWARD_DISTRIBUTOR.updateReward(to);
-        REWARD_DISTRIBUTOR.updateReward(from);
     }
 }
