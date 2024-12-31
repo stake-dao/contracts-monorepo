@@ -17,6 +17,21 @@ contract RewardDistributor {
         uint256 slot2; // [rate(96) | rewardPerToken(160)]
     }
 
+    /// @notice Constants for bit manipulation - Slot 1
+    uint256 private constant DISTRIBUTOR_MASK = (1 << 160) - 1;
+    uint256 private constant DURATION_MASK = ((1 << 32) - 1) << 160;
+    uint256 private constant LAST_UPDATE_MASK = ((1 << 32) - 1) << 192;
+    uint256 private constant PERIOD_FINISH_MASK = ((1 << 32) - 1) << 224;
+
+    /// @notice Constants for bit manipulation - Slot 2
+    uint256 private constant REWARD_PER_TOKEN_MASK = (1 << 160) - 1;
+    uint256 private constant REWARD_RATE_MASK = ((1 << 96) - 1) << 160;
+
+    /// @notice Constants for bit manipulation - User Data
+    uint256 private constant USER_REWARD_PER_TOKEN_MASK = (1 << 160) - 1;
+    uint256 private constant USER_CLAIMABLE_MASK = ((1 << 48) - 1) << 160;
+    uint256 private constant USER_CLAIMED_MASK = ((1 << 48) - 1) << 208;
+
     /// @notice The asset being tracked by the reward distributor.
     IERC20 public immutable ASSET;
 
@@ -38,27 +53,27 @@ contract RewardDistributor {
     }
 
     function getRewardsDistributor(address token) public view returns (address) {
-        return address(uint160(rewardData[token].slot1));
+        return address(uint160(rewardData[token].slot1 & DISTRIBUTOR_MASK));
     }
 
     function getRewardsDuration(address token) public view returns (uint32) {
-        return uint32(rewardData[token].slot1 >> 160);
+        return uint32((rewardData[token].slot1 & DURATION_MASK) >> 160);
     }
 
     function getLastUpdateTime(address token) public view returns (uint32) {
-        return uint32(rewardData[token].slot1 >> 192);
+        return uint32((rewardData[token].slot1 & LAST_UPDATE_MASK) >> 192);
     }
 
     function getPeriodFinish(address token) public view returns (uint32) {
-        return uint32(rewardData[token].slot1 >> 224);
+        return uint32((rewardData[token].slot1 & PERIOD_FINISH_MASK) >> 224);
     }
 
     function getRewardRate(address token) public view returns (uint96) {
-        return uint96(rewardData[token].slot2 >> 160);
+        return uint96((rewardData[token].slot2 & REWARD_RATE_MASK) >> 160);
     }
 
     function getRewardPerTokenStored(address token) public view returns (uint160) {
-        return uint160(rewardData[token].slot2);
+        return uint160(rewardData[token].slot2 & REWARD_PER_TOKEN_MASK);
     }
 
     function lastTimeRewardApplicable(address _rewardsToken) public view returns (uint256) {
@@ -71,18 +86,17 @@ contract RewardDistributor {
             return getRewardPerTokenStored(_rewardsToken);
         }
         return getRewardPerTokenStored(_rewardsToken) + (
-            (lastTimeRewardApplicable(_rewardsToken) - getLastUpdateTime(_rewardsToken))
-                * getRewardRate(_rewardsToken) * 1e18 / totalSupply
+            (lastTimeRewardApplicable(_rewardsToken) - getLastUpdateTime(_rewardsToken)) * getRewardRate(_rewardsToken)
+                * 1e18 / totalSupply
         );
     }
 
     function earned(address account, address _rewardsToken) public view returns (uint256) {
         uint256 userDataValue = userData[account][_rewardsToken];
-        uint256 rewardPerTokenPaid = userDataValue >> 96;
-        uint256 claimable = (userDataValue >> 48) & ((1 << 48) - 1);
-        
-        uint256 newEarned = ASSET.balanceOf(account) *
-            (rewardPerToken(_rewardsToken) - rewardPerTokenPaid) / 1e18;
+        uint256 rewardPerTokenPaid = userDataValue & USER_REWARD_PER_TOKEN_MASK;
+        uint256 claimable = (userDataValue & USER_CLAIMABLE_MASK) >> 160;
+
+        uint256 newEarned = ASSET.balanceOf(account) * (rewardPerToken(_rewardsToken) - rewardPerTokenPaid) / 1e18;
         return claimable + newEarned;
     }
 
@@ -111,18 +125,22 @@ contract RewardDistributor {
 
         if (newRewardRate > type(uint96).max) revert RewardRateOverflow();
 
-        // Pack slot1 data
-        uint256 slot1 = uint256(uint160(getRewardsDistributor(_rewardsToken))) |
-            (uint256(rewardsDuration) << 160) |
-            (uint256(currentTime) << 192) |
-            (uint256(currentTime + rewardsDuration) << 224);
+        // Pack slot1 data using masks
+        uint256 slot1 = (rewardData[_rewardsToken].slot1 & DISTRIBUTOR_MASK) |
+            ((uint256(rewardsDuration) << 160) & DURATION_MASK) |
+            ((uint256(currentTime) << 192) & LAST_UPDATE_MASK) |
+            ((uint256(currentTime + rewardsDuration) << 224) & PERIOD_FINISH_MASK);
 
-        // Pack slot2 data
-        uint256 slot2 = uint256(uint160(getRewardPerTokenStored(_rewardsToken))) |
-            (uint256(uint96(newRewardRate)) << 160);
+        // Pack slot2 data using masks
+        uint256 slot2 = (getRewardPerTokenStored(_rewardsToken) & REWARD_PER_TOKEN_MASK) |
+            ((uint256(newRewardRate) << 160) & REWARD_RATE_MASK);
 
         rewardData[_rewardsToken].slot1 = slot1;
         rewardData[_rewardsToken].slot2 = slot2;
+    }
+
+    function updateReward(address account) external {
+        _updateReward(account);
     }
 
     function _updateReward(address account) internal {
@@ -131,20 +149,20 @@ contract RewardDistributor {
             uint256 newRewardPerToken = rewardPerToken(token);
             uint32 currentTime = uint32(block.timestamp);
 
-            // Update slot1 (only lastUpdateTime)
-            rewardData[token].slot1 = (rewardData[token].slot1 & ~(uint256(type(uint32).max) << 192)) |
-                (uint256(currentTime) << 192);
+            // Update slot1 (only lastUpdateTime) using masks
+            rewardData[token].slot1 = (rewardData[token].slot1 & ~LAST_UPDATE_MASK) |
+                ((uint256(currentTime) << 192) & LAST_UPDATE_MASK);
 
-            // Update slot2 (only rewardPerTokenStored)
-            rewardData[token].slot2 = (rewardData[token].slot2 & (uint256(type(uint96).max) << 160)) |
-                uint160(newRewardPerToken);
+            // Update slot2 (only rewardPerTokenStored) using masks
+            rewardData[token].slot2 = (rewardData[token].slot2 & REWARD_RATE_MASK) |
+                (uint160(newRewardPerToken) & REWARD_PER_TOKEN_MASK);
 
             if (account != address(0)) {
                 uint256 earnedAmount = earned(account, token);
-                // Pack user data: [rewardPerTokenPaid (160) | claimable (48) | claimed (48)]
-                userData[account][token] = (uint256(uint160(newRewardPerToken)) << 96) |
-                    (uint256(uint48(earnedAmount)) << 48) |
-                    (userData[account][token] & ((1 << 48) - 1));
+                // Pack user data using masks
+                userData[account][token] = (uint256(uint160(newRewardPerToken)) & USER_REWARD_PER_TOKEN_MASK) |
+                    ((uint256(uint48(earnedAmount)) << 160) & USER_CLAIMABLE_MASK) |
+                    (userData[account][token] & USER_CLAIMED_MASK);
             }
         }
     }
