@@ -40,23 +40,23 @@ contract Accountant {
     }
 
     /// @notice Function called by vaults to checkpoint the state of the vault on every account action.
-    /// @param gauge The gauge address.
+    /// @param asset The asset address.
     /// @param from The address of the sender.
     /// @param to The address of the receiver.
     /// @param amount The amount of tokens transferred.
     /// @param pendingRewards The amount of pending rewards.
     /// @param softCheckpoint Whether the vault integral is updated before the accounts checkpoint. Careful, as false means vault has been harvested before the accounts checkpoint.
     function checkpoint(
-        address gauge,
+        address asset,
         address from,
         address to,
         uint256 amount,
         bool softCheckpoint,
         uint256 pendingRewards
     ) external {
-        if (msg.sender != IRegistry(registry).vaults(gauge)) revert OnlyVault();
+        if (msg.sender != IRegistry(registry).vaults(asset)) revert OnlyVault();
 
-        Vault storage _vault = vaults[gauge];
+        Vault storage _vault = vaults[asset];
 
         /// 0. Update the vault integral with the pending rewards distributed.
         if (softCheckpoint && pendingRewards > 0) {
