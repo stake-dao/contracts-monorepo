@@ -25,6 +25,12 @@ contract Vault is ERC4626 {
     /// @notice The extra-reward token distributor associated with the vault.
     IRewardDistributor public immutable REWARD_DISTRIBUTOR;
 
+    /// @notice The error thrown when a transfer is made to the vault.
+    error TransferToVault();
+
+    /// @notice The error thrown when a transfer is made to the zero address.
+    error TransferToZeroAddress();
+
     constructor(
         address asset,
         address rewardDistributor,
@@ -97,6 +103,21 @@ contract Vault is ERC4626 {
 
     function balanceOf(address account) public view virtual override(ERC20, IERC20) returns (uint256) {
         return ACCOUNTANT.balanceOf(address(this), account);
+    }
+
+    function _transfer(address from, address to, uint256 amount) internal override {
+        if (to == address(0)) revert TransferToZeroAddress();
+        if (to == address(this)) revert TransferToVault();
+
+        if (amount > 0) {
+            /// @dev Get the pending rewards.
+            uint256 pendingRewards = STRATEGY.pendingRewards(asset());
+
+            /// @dev Checkpoint the vault. The accountant will deal with minting and burning.
+            ACCOUNTANT.checkpoint(asset(), from, to, amount, SOFT_CHECKPOINT, pendingRewards);
+        }
+
+        emit Transfer(from, to, amount);
     }
 
     //////////////////////////////////////////////////////
