@@ -8,9 +8,14 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "src/interfaces/IStrategy.sol";
 import "src/interfaces/IAccountant.sol";
 import "src/interfaces/IRewardDistributor.sol";
-import "src/interfaces/IAllocator.sol";
 
 contract Vault is ERC4626 {
+    /// @notice The gauge associated with the vault.
+    address immutable GAUGE;
+
+    /// @notice Soft checkpoint flag.
+    bool immutable SOFT_CHECKPOINT;
+
     /// @notice The strategy hold the logic associated to deposits and withdrawals.
     IStrategy public immutable STRATEGY;
 
@@ -23,18 +28,52 @@ contract Vault is ERC4626 {
     /// @notice The extra-reward token distributor associated with the vault.
     IRewardDistributor public immutable REWARD_DISTRIBUTOR;
 
-    constructor(address asset, address rewardDistributor, address accountant, address allocator, address strategy)
+    constructor(
+        address asset,
+        address gauge,
+        address rewardDistributor,
+        address accountant,
+        address allocator,
+        address strategy,
+        bool softCheckpoint
+    )
         ERC4626(IERC20(asset))
         ERC20(
             string.concat("StakeDAO ", IERC20Metadata(asset).symbol(), " Vault"),
             string.concat("sd-", IERC20Metadata(asset).symbol(), "-vault")
         )
     {
+        GAUGE = gauge;
         STRATEGY = IStrategy(strategy);
+        SOFT_CHECKPOINT = softCheckpoint;
         ALLOCATOR = IAllocator(allocator);
         ACCOUNTANT = IAccountant(accountant);
         REWARD_DISTRIBUTOR = IRewardDistributor(rewardDistributor);
     }
+
+    /// @dev Internal function to deposit assets into the vault.
+    function _deposit(address caller, address receiver, uint256 assets, uint256) internal override {
+        /// 1. Get the allocations.
+        IAllocator.Allocation[] memory allocations = ALLOCATOR.getDepositAllocations(asset(), assets);
+
+        /// 2. Transfer the assets to the strategy from the caller.
+        for (uint256 i = 0; i < allocations.length; i++) {
+            SafeERC20.safeTransferFrom(IERC20(asset()), caller, allocations[i].target, allocations[i].amount);
+        }
+
+        /// 3. Deposit the assets into the strategy.
+        uint256 pendingRewards = STRATEGY.deposit(allocations);
+
+        /// 4. Checkpoint the vault. The accountant will deal with minting and burning.
+        ACCOUNTANT.checkpoint(GAUGE, address(0), receiver, assets, SOFT_CHECKPOINT, pendingRewards);
+
+        /// 5. Emit the deposit event.
+        emit Deposit(caller, receiver, assets, assets);
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- HOOKS
+    //////////////////////////////////////////////////////
 
     function _beforeTokenTransfer(address from, address to, uint256) internal override {
         REWARD_DISTRIBUTOR.updateReward(to);
