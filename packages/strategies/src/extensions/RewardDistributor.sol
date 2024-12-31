@@ -9,67 +9,85 @@ contract RewardDistributor {
     using Math for uint256;
     using SafeERC20 for IERC20;
 
-    struct Reward {
+    /// @notice Packed reward data structure
+    /// [0-159]   rewardRate (uint160)
+    /// [160-191] rewardsDuration (uint32)
+    /// [192-223] lastUpdateTime (uint32)
+    /// [224-255] periodFinish (uint32)
+    struct PackedReward {
         address rewardsDistributor;
-        uint256 rewardsDuration;
-        uint256 periodFinish;
-        uint256 rewardRate;
-        uint256 lastUpdateTime;
         uint256 rewardPerTokenStored;
+        uint256 packedData;
     }
 
     /// @notice The asset being tracked by the reward distributor.
     IERC20 public immutable ASSET;
 
-    mapping(address => Reward) public rewardData;
+    /// @notice Packed reward data per token
+    mapping(address => PackedReward) public rewardData;
 
     /// @notice Active Reward Tokens.
     address[] public rewardTokens;
 
+    /// @notice User reward data - packed [claimable amount (128 bits)][claimed amount (128 bits)]
+    mapping(address => mapping(address => uint256)) public userRewardData;
+
     /// @notice User Reward Per Token Paid.
     mapping(address => mapping(address => uint256)) public userRewardPerTokenPaid;
 
-    /// @notice User Earned Rewards.
-    mapping(address => mapping(address => uint256)) public rewards;
+    error UnauthorizedRewardsDistributor();
+    error RewardAlreadyExists();
 
     constructor(address asset) {
         ASSET = IERC20(asset);
     }
 
-    /// @notice Custom errors
-    error RewardAlreadyExists();
-    error UnauthorizedRewardsDistributor();
+    /// @notice Get reward rate 
+    function getRewardRate(address token) public view returns (uint256) {
+        return uint160(rewardData[token].packedData);
+    }
 
-    function addReward(address _rewardsToken, address _rewardsDistributor, uint256 _rewardsDuration) public {
-        if (rewardData[_rewardsToken].rewardsDuration != 0) revert RewardAlreadyExists();
-        rewardTokens.push(_rewardsToken);
-        rewardData[_rewardsToken].rewardsDistributor = _rewardsDistributor;
-        rewardData[_rewardsToken].rewardsDuration = _rewardsDuration;
+    /// @notice Get rewards duration 
+    function getRewardsDuration(address token) public view returns (uint32) {
+        return uint32(rewardData[token].packedData >> 160);
+    }
+
+    /// @notice Get last update time 
+    function getLastUpdateTime(address token) public view returns (uint32) {
+        return uint32(rewardData[token].packedData >> 192);
+    }
+
+    /// @notice Get period finish
+    function getPeriodFinish(address token) public view returns (uint32) {
+        return uint32(rewardData[token].packedData >> 224);
     }
 
     function lastTimeRewardApplicable(address _rewardsToken) public view returns (uint256) {
-        return Math.min(block.timestamp, rewardData[_rewardsToken].periodFinish);
+        return Math.min(block.timestamp, getPeriodFinish(_rewardsToken));
     }
 
     function rewardPerToken(address _rewardsToken) public view returns (uint256) {
-        if (ASSET.totalSupply() == 0) {
+        uint256 totalSupply = ASSET.totalSupply();
+        if (totalSupply == 0) {
             return rewardData[_rewardsToken].rewardPerTokenStored;
         }
         return rewardData[_rewardsToken].rewardPerTokenStored
             + (
-                (lastTimeRewardApplicable(_rewardsToken) - rewardData[_rewardsToken].lastUpdateTime)
-                    * rewardData[_rewardsToken].rewardRate * 1e18 / ASSET.totalSupply()
+                (lastTimeRewardApplicable(_rewardsToken) - getLastUpdateTime(_rewardsToken)) * getRewardRate(_rewardsToken)
+                    * 1e18 / totalSupply
             );
     }
 
     function earned(address account, address _rewardsToken) public view returns (uint256) {
-        return ASSET.balanceOf(account)
-            * (rewardPerToken(_rewardsToken) - userRewardPerTokenPaid[account][_rewardsToken]) / 1e18
-            + rewards[account][_rewardsToken];
+        uint256 userRewardData_ = userRewardData[account][_rewardsToken];
+        uint256 claimable = userRewardData_ >> 128;
+        uint256 newEarned = ASSET.balanceOf(account)
+            * (rewardPerToken(_rewardsToken) - userRewardPerTokenPaid[account][_rewardsToken]) / 1e18;
+        return claimable + newEarned;
     }
 
     function getRewardForDuration(address _rewardsToken) external view returns (uint256) {
-        return rewardData[_rewardsToken].rewardRate * rewardData[_rewardsToken].rewardsDuration;
+        return getRewardRate(_rewardsToken) * getRewardsDuration(_rewardsToken);
     }
 
     function notifyRewardAmount(address _rewardsToken, uint256 reward) external {
@@ -78,25 +96,40 @@ contract RewardDistributor {
         if (rewardData[_rewardsToken].rewardsDistributor != msg.sender) revert UnauthorizedRewardsDistributor();
         IERC20(_rewardsToken).safeTransferFrom(msg.sender, address(this), reward);
 
-        if (block.timestamp >= rewardData[_rewardsToken].periodFinish) {
-            rewardData[_rewardsToken].rewardRate = reward / rewardData[_rewardsToken].rewardsDuration;
+        uint32 currentTime = uint32(block.timestamp);
+        uint32 periodFinish = getPeriodFinish(_rewardsToken);
+        uint32 rewardsDuration = getRewardsDuration(_rewardsToken);
+        uint256 newRewardRate;
+
+        if (currentTime >= periodFinish) {
+            newRewardRate = reward / rewardsDuration;
         } else {
-            uint256 remaining = rewardData[_rewardsToken].periodFinish - block.timestamp;
-            uint256 leftover = remaining * rewardData[_rewardsToken].rewardRate;
-            rewardData[_rewardsToken].rewardRate = reward + leftover / rewardData[_rewardsToken].rewardsDuration;
+            uint256 remaining = periodFinish - currentTime;
+            uint256 leftover = remaining * getRewardRate(_rewardsToken);
+            newRewardRate = (reward + leftover) / rewardsDuration;
         }
 
-        rewardData[_rewardsToken].lastUpdateTime = block.timestamp;
-        rewardData[_rewardsToken].periodFinish = block.timestamp + rewardData[_rewardsToken].rewardsDuration;
+        // Pack the new data
+        uint256 packedData = uint256(newRewardRate) | (uint256(rewardsDuration) << 160) | (uint256(currentTime) << 192)
+            | (uint256(currentTime + rewardsDuration) << 224);
+
+        rewardData[_rewardsToken].packedData = packedData;
     }
 
     function _updateReward(address account) internal {
         for (uint256 i; i < rewardTokens.length; i++) {
             address token = rewardTokens[i];
             rewardData[token].rewardPerTokenStored = rewardPerToken(token);
-            rewardData[token].lastUpdateTime = lastTimeRewardApplicable(token);
+
+            uint32 currentTime = uint32(block.timestamp);
+
+            rewardData[token].packedData =
+                (rewardData[token].packedData & ~(uint256(type(uint32).max) << 192)) | (uint256(currentTime) << 192);
+
             if (account != address(0)) {
-                rewards[account][token] = earned(account, token);
+                uint256 earnedAmount = earned(account, token);
+                userRewardData[account][token] =
+                    (earnedAmount << 128) | (userRewardData[account][token] & ((1 << 128) - 1));
                 userRewardPerTokenPaid[account][token] = rewardData[token].rewardPerTokenStored;
             }
         }

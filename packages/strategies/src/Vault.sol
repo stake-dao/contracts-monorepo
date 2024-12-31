@@ -61,7 +61,7 @@ contract Vault is ERC4626 {
         _updateReward(receiver);
 
         /// 1. Get the allocation.
-        IAllocator.Allocation memory allocation = ALLOCATOR.getDepositAllocations(asset(), assets);
+        IAllocator.Allocation memory allocation = ALLOCATOR.getDepositAllocation(asset(), assets);
 
         /// 2. Transfer the assets to the strategy from the caller.
         for (uint256 i = 0; i < allocation.targets.length; i++) {
@@ -90,7 +90,7 @@ contract Vault is ERC4626 {
         _updateReward(receiver);
 
         /// 1. Get the allocation.
-        IAllocator.Allocation memory allocation = ALLOCATOR.getWithdrawAllocations(asset(), assets);
+        IAllocator.Allocation memory allocation = ALLOCATOR.getWithdrawAllocation(asset(), assets);
 
         /// 2. Withdraw the assets from the strategy.
         uint256 pendingRewards = STRATEGY.withdraw(allocation);
