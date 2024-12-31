@@ -3,10 +3,12 @@ pragma solidity 0.8.19;
 
 import "src/interfaces/IRegistry.sol";
 
+/// @notice The source of truth.
 contract Accountant {
     struct Vault {
         uint128 supply;
         uint128 integral;
+        bool softCheckpoint;
     }
 
     struct Account {
@@ -14,9 +16,6 @@ contract Accountant {
         uint96 integral;
         uint64 pendingRewards;
     }
-
-    /// @notice Whether the vault integral is updated before the accounts checkpoint.
-    bool public immutable updateBeforeCheckpoint;
 
     /// @notice The registry of vaults.
     address public immutable registry;
@@ -32,54 +31,62 @@ contract Accountant {
     /// @dev Vault address -> Account address -> Account.
     mapping(address => mapping(address => Account)) public accounts;
 
+    /// @notice The error thrown when the caller is not a vault.
     error OnlyVault();
 
-    constructor(address _registry, address _rewardToken, bool _updateBeforeCheckpoint) {
+    constructor(address _registry, address _rewardToken) {
         registry = _registry;
         rewardToken = _rewardToken;
-        updateBeforeCheckpoint = _updateBeforeCheckpoint;
     }
 
     /// @notice Function called by vaults to checkpoint the state of the vault on every account action.
-    /// @param vault The vault address.
+    /// @param gauge The gauge address.
     /// @param from The address of the sender.
     /// @param to The address of the receiver.
     /// @param amount The amount of tokens transferred.
     /// @param pendingRewards The amount of pending rewards.
-    function checkpoint(address vault, address from, address to, uint256 amount, uint256 pendingRewards) external {
-        if (msg.sender != IRegistry(registry).vaults(msg.sender)) revert OnlyVault();
+    /// @param softCheckpoint Whether the vault integral is updated before the accounts checkpoint. Careful, as false means vault has been harvested before the accounts checkpoint.
+    function checkpoint(
+        address gauge,
+        address from,
+        address to,
+        uint256 amount,
+        bool softCheckpoint,
+        uint256 pendingRewards
+    ) external {
+        if (msg.sender != IRegistry(registry).vaults(gauge)) revert OnlyVault();
 
-        Vault storage _vault = vaults[vault];
+        Vault storage _vault = vaults[gauge];
 
-        // If configured, update the vault's integral with new rewards before processing transfers
-        if (updateBeforeCheckpoint) {
+        /// 0. Update the vault integral with the pending rewards distributed.
+        if (softCheckpoint && pendingRewards > 0) {
             _vault.integral += uint128(pendingRewards * 1e18 / _vault.supply);
         }
 
-        // Handle minting - increase total supply when tokens are minted
+        /// 1. Minting.
         if (from == address(0)) {
             _vault.supply += uint128(amount);
         }
-        // Handle outgoing transfer - update sender's rewards and decrease their balance
+        /// 2. Transferring. Update the "from" account.
         else {
-            Account storage _from = accounts[vault][from];
+            Account storage _from = accounts[msg.sender][from];
             _from.pendingRewards += uint64((_vault.integral - _from.integral) * _from.balance / _vault.supply);
             _from.balance -= uint96(amount);
         }
 
-        // Handle burning - decrease total supply when tokens are burned
+        /// 3. Burning.
         if (to == address(0)) {
             _vault.supply -= uint128(amount);
         }
-        // Handle incoming transfer - update receiver's rewards and increase their balance
+        /// 4. Transferring. Update the "to" account.
         else {
-            Account storage _to = accounts[vault][to];
+            Account storage _to = accounts[msg.sender][to];
             _to.pendingRewards += uint64((_vault.integral - _to.integral) * _to.balance / _vault.supply);
             _to.balance += uint96(amount);
         }
 
-        // If configured, update the vault's integral with new rewards after processing transfers
-        if (!updateBeforeCheckpoint) {
+        /// 5. Update the vault integral with the pending rewards no yet distributed.
+        if (!softCheckpoint && pendingRewards > 0) {
             _vault.integral += uint128(pendingRewards * 1e18 / _vault.supply);
         }
     }
