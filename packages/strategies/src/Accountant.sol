@@ -8,7 +8,14 @@ contract Accountant {
     struct Vault {
         uint128 supply;
         uint128 integral;
-        bool softCheckpoint;
+        uint64 lastUpdateTime;
+        uint64 pendingRewards;
+    }
+
+    struct Donation {
+        address vault;
+        uint96 amount;
+        uint64 timestamp;
     }
 
     struct Account {
@@ -18,10 +25,13 @@ contract Accountant {
     }
 
     /// @notice The registry of vaults.
-    address public immutable registry;
+    address public immutable REGISTRY;
 
     /// @notice The reward token.
-    address public immutable rewardToken;
+    address public immutable REWARD_TOKEN;
+
+    /// @notice Whether the vault integral is updated before the accounts checkpoint. Careful, as false means vault has been harvested before the accounts checkpoint.
+    bool public immutable PRE_CHECKPOINT_REWARDS;
 
     /// @notice Supply of vaults.
     /// @dev Vault address -> Vault.
@@ -34,9 +44,10 @@ contract Accountant {
     /// @notice The error thrown when the caller is not a vault.
     error OnlyVault();
 
-    constructor(address _registry, address _rewardToken) {
-        registry = _registry;
-        rewardToken = _rewardToken;
+    constructor(address _registry, address _rewardToken, bool _softCheckpoint) {
+        REGISTRY = _registry;
+        REWARD_TOKEN = _rewardToken;
+        PRE_CHECKPOINT_REWARDS = _softCheckpoint;
     }
 
     /// @notice Function called by vaults to checkpoint the state of the vault on every account action.
@@ -45,21 +56,13 @@ contract Accountant {
     /// @param to The address of the receiver.
     /// @param amount The amount of tokens transferred.
     /// @param pendingRewards The amount of pending rewards.
-    /// @param softCheckpoint Whether the vault integral is updated before the accounts checkpoint. Careful, as false means vault has been harvested before the accounts checkpoint.
-    function checkpoint(
-        address asset,
-        address from,
-        address to,
-        uint256 amount,
-        bool softCheckpoint,
-        uint256 pendingRewards
-    ) external {
-        if (msg.sender != IRegistry(registry).vaults(asset)) revert OnlyVault();
+    function checkpoint(address asset, address from, address to, uint256 amount, uint256 pendingRewards) external {
+        if (msg.sender != IRegistry(REGISTRY).vaults(asset)) revert OnlyVault();
 
         Vault storage _vault = vaults[asset];
 
         /// 0. Update the vault integral with the pending rewards distributed.
-        if (softCheckpoint && pendingRewards > 0) {
+        if (PRE_CHECKPOINT_REWARDS && pendingRewards > 0) {
             _vault.integral += uint128(pendingRewards * 1e18 / _vault.supply);
         }
 
@@ -86,7 +89,7 @@ contract Accountant {
         }
 
         /// 5. Update the vault integral with the pending rewards no yet distributed.
-        if (!softCheckpoint && pendingRewards > 0) {
+        if (!PRE_CHECKPOINT_REWARDS && pendingRewards > 0) {
             _vault.integral += uint128(pendingRewards * 1e18 / _vault.supply);
         }
     }
