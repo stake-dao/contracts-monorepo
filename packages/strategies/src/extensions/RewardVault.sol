@@ -1,3 +1,6 @@
+/// @title RewardVault
+/// @notice Extension of CoreVault that adds reward distribution functionality
+/// @dev Uses bit packing to optimize storage of reward data
 /// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
@@ -12,72 +15,100 @@ contract RewardVault is CoreVault {
     using Math for uint256;
     using SafeERC20 for IERC20;
 
-    /// @notice Super packed reward data structure into 2 slots
-    /// Slot 1 [rewardsDistributor (160 bits) | rewardsDuration (32 bits) | lastUpdateTime (32 bits) | periodFinish (32 bits)]
-    /// Slot 2 [rewardRate (96 bits) | rewardPerTokenStored (160 bits)]
+    /// @notice Packed reward data structure into 2 slots for gas optimization
+    /// @dev Slot 1: [rewardsDistributor (160) | rewardsDuration (32) | lastUpdateTime (32) | periodFinish (32)]
+    /// @dev Slot 2: [rewardRate (96) | rewardPerTokenStored (160)]
     struct PackedReward {
-        uint256 slot1; // [address(160) | duration(32) | lastUpdate(32) | finish(32)]
-        uint256 slot2; // [rate(96) | rewardPerToken(160)]
+        uint256 slot1;
+        uint256 slot2;
     }
 
-    /// @notice Constants for bit manipulation - Slot 1
+    /// @dev Bit masks for slot 1
     uint256 private constant DISTRIBUTOR_MASK = (1 << 160) - 1;
     uint256 private constant DURATION_MASK = ((1 << 32) - 1) << 160;
     uint256 private constant LAST_UPDATE_MASK = ((1 << 32) - 1) << 192;
     uint256 private constant PERIOD_FINISH_MASK = ((1 << 32) - 1) << 224;
 
-    /// @notice Constants for bit manipulation - Slot 2
+    /// @dev Bit masks for slot 2
     uint256 private constant REWARD_PER_TOKEN_MASK = (1 << 160) - 1;
     uint256 private constant REWARD_RATE_MASK = ((1 << 96) - 1) << 160;
 
-    /// @notice Constants for bit manipulation - User Data
+    /// @dev Bit masks for user data
     uint256 private constant USER_REWARD_PER_TOKEN_MASK = (1 << 160) - 1;
     uint256 private constant USER_CLAIMABLE_MASK = ((1 << 48) - 1) << 160;
     uint256 private constant USER_CLAIMED_MASK = ((1 << 48) - 1) << 208;
 
+    /// @notice Mapping of reward token to its packed reward data
     mapping(address => PackedReward) private rewardData;
 
-    /// @notice Active Reward Tokens.
+    /// @notice List of active reward tokens
     address[] public rewardTokens;
 
-    /// @notice Combined user data mapping
-    /// [rewardPerTokenPaid (160 bits) | claimable (48 bits) | claimed (48 bits)]
+    /// @notice User reward data mapping
+    /// @dev [rewardPerTokenPaid (160) | claimable (48) | claimed (48)]
     mapping(address => mapping(address => uint256)) private userData;
 
     error UnauthorizedRewardsDistributor();
     error RewardAlreadyExists();
     error RewardRateOverflow();
 
+    /// @notice Creates a new RewardVault
+    /// @param asset The underlying asset token
+    /// @param softCheckpoint Whether to use soft checkpointing
     constructor(address asset, bool softCheckpoint) CoreVault(asset, softCheckpoint) {}
 
+    /// @notice Gets the rewards distributor for a token
+    /// @param token The reward token address
+    /// @return The distributor address
     function getRewardsDistributor(address token) public view returns (address) {
         return address(uint160(rewardData[token].slot1 & DISTRIBUTOR_MASK));
     }
 
+    /// @notice Gets the rewards duration for a token
+    /// @param token The reward token address
+    /// @return The duration in seconds
     function getRewardsDuration(address token) public view returns (uint32) {
         return uint32((rewardData[token].slot1 & DURATION_MASK) >> 160);
     }
 
+    /// @notice Gets the last update time for a token
+    /// @param token The reward token address
+    /// @return The last update timestamp
     function getLastUpdateTime(address token) public view returns (uint32) {
         return uint32((rewardData[token].slot1 & LAST_UPDATE_MASK) >> 192);
     }
 
+    /// @notice Gets the period finish time for a token
+    /// @param token The reward token address
+    /// @return The period finish timestamp
     function getPeriodFinish(address token) public view returns (uint32) {
         return uint32((rewardData[token].slot1 & PERIOD_FINISH_MASK) >> 224);
     }
 
+    /// @notice Gets the reward rate for a token
+    /// @param token The reward token address
+    /// @return The reward rate per second
     function getRewardRate(address token) public view returns (uint96) {
         return uint96((rewardData[token].slot2 & REWARD_RATE_MASK) >> 160);
     }
 
+    /// @notice Gets the stored reward per token
+    /// @param token The reward token address
+    /// @return The stored reward per token value
     function getRewardPerTokenStored(address token) public view returns (uint160) {
         return uint160(rewardData[token].slot2 & REWARD_PER_TOKEN_MASK);
     }
 
+    /// @notice Gets the last applicable time for reward calculation
+    /// @param _rewardsToken The reward token address
+    /// @return The last applicable timestamp
     function lastTimeRewardApplicable(address _rewardsToken) public view returns (uint256) {
         return Math.min(block.timestamp, getPeriodFinish(_rewardsToken));
     }
 
+    /// @notice Calculates the current reward per token
+    /// @param _rewardsToken The reward token address
+    /// @return The current reward per token value
     function rewardPerToken(address _rewardsToken) public view returns (uint256) {
         uint256 totalSupply = totalSupply();
         if (totalSupply == 0) {
@@ -90,6 +121,10 @@ contract RewardVault is CoreVault {
             );
     }
 
+    /// @notice Calculates earned rewards for an account
+    /// @param account The account to check
+    /// @param _rewardsToken The reward token address
+    /// @return The amount of rewards earned
     function earned(address account, address _rewardsToken) public view returns (uint256) {
         uint256 userDataValue = userData[account][_rewardsToken];
         uint256 rewardPerTokenPaid = userDataValue & USER_REWARD_PER_TOKEN_MASK;
@@ -99,10 +134,16 @@ contract RewardVault is CoreVault {
         return claimable + newEarned;
     }
 
+    /// @notice Gets the reward amount for the current duration
+    /// @param _rewardsToken The reward token address
+    /// @return The total reward amount for the duration
     function getRewardForDuration(address _rewardsToken) external view returns (uint256) {
         return getRewardRate(_rewardsToken) * getRewardsDuration(_rewardsToken);
     }
 
+    /// @notice Notifies the contract of a reward amount
+    /// @param _rewardsToken The reward token address
+    /// @param reward The amount of reward tokens
     function notifyRewardAmount(address _rewardsToken, uint256 reward) external {
         _updateReward(address(0));
 
@@ -124,12 +165,10 @@ contract RewardVault is CoreVault {
 
         if (newRewardRate > type(uint96).max) revert RewardRateOverflow();
 
-        // Pack slot1 data using masks
         uint256 slot1 = (rewardData[_rewardsToken].slot1 & DISTRIBUTOR_MASK)
             | ((uint256(rewardsDuration) << 160) & DURATION_MASK) | ((uint256(currentTime) << 192) & LAST_UPDATE_MASK)
             | ((uint256(currentTime + rewardsDuration) << 224) & PERIOD_FINISH_MASK);
 
-        // Pack slot2 data using masks
         uint256 slot2 = (getRewardPerTokenStored(_rewardsToken) & REWARD_PER_TOKEN_MASK)
             | ((uint256(newRewardRate) << 160) & REWARD_RATE_MASK);
 
@@ -137,27 +176,28 @@ contract RewardVault is CoreVault {
         rewardData[_rewardsToken].slot2 = slot2;
     }
 
+    /// @notice Updates reward state for an account
+    /// @param account The account to update rewards for
     function updateReward(address account) external {
         _updateReward(account);
     }
 
+    /// @dev Internal function to update reward state
+    /// @param account The account to update rewards for
     function _updateReward(address account) internal {
         for (uint256 i; i < rewardTokens.length; i++) {
             address token = rewardTokens[i];
             uint256 newRewardPerToken = rewardPerToken(token);
             uint32 currentTime = uint32(block.timestamp);
 
-            // Update slot1 (only lastUpdateTime) using masks
             rewardData[token].slot1 =
                 (rewardData[token].slot1 & ~LAST_UPDATE_MASK) | ((uint256(currentTime) << 192) & LAST_UPDATE_MASK);
 
-            // Update slot2 (only rewardPerTokenStored) using masks
             rewardData[token].slot2 =
                 (rewardData[token].slot2 & REWARD_RATE_MASK) | (uint160(newRewardPerToken) & REWARD_PER_TOKEN_MASK);
 
             if (account != address(0)) {
                 uint256 earnedAmount = earned(account, token);
-                // Pack user data using masks
                 userData[account][token] = (uint256(uint160(newRewardPerToken)) & USER_REWARD_PER_TOKEN_MASK)
                     | ((uint256(uint48(earnedAmount)) << 160) & USER_CLAIMABLE_MASK)
                     | (userData[account][token] & USER_CLAIMED_MASK);
@@ -165,43 +205,36 @@ contract RewardVault is CoreVault {
         }
     }
 
+    /// @inheritdoc ERC20
     function _transfer(address from, address to, uint256 amount) internal override {
         if (to == address(0)) revert TransferToZeroAddress();
         if (to == address(this)) revert TransferToVault();
 
         if (amount > 0) {
-            /// @dev Update the reward distributor for the receiver.
             _updateReward(to);
-
-            /// @dev Update the reward distributor for the sender.
             _updateReward(from);
 
-            /// @dev Get the pending rewards.
             uint256 pendingRewards = STRATEGY().pendingRewards(asset());
-
-            /// @dev Checkpoint the vault. The accountant will deal with minting and burning.
             ACCOUNTANT().checkpoint(asset(), from, to, amount, CHECKPOINT, pendingRewards);
         }
 
         emit Transfer(from, to, amount);
     }
 
+    /// @dev Hook that is called before any deposit.
     function _beforeDeposit(address caller, address receiver, uint256, uint256) internal override {
-        /// @dev Update the reward distributor for the caller.
         _updateReward(caller);
 
         if (caller != receiver) {
-            /// @dev Update the reward distributor for the receiver.
             _updateReward(receiver);
         }
     }
 
+    /// @dev Hook that is called before any withdrawal.
     function _beforeWithdraw(address caller, address receiver, address, uint256, uint256) internal override {
-        /// @dev Update the reward distributor for the caller.
         _updateReward(caller);
 
         if (caller != receiver) {
-            /// @dev Update the reward distributor for the receiver.
             _updateReward(receiver);
         }
     }

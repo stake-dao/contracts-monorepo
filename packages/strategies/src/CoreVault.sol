@@ -8,6 +8,7 @@ import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import "src/interfaces/IStrategy.sol";
+import "src/interfaces/IAllocator.sol";
 import "src/interfaces/IAccountant.sol";
 
 contract CoreVault is ERC4626 {
@@ -44,7 +45,6 @@ contract CoreVault is ERC4626 {
 
     /// @dev Internal function to deposit assets into the vault.
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal override {
-
         /// @dev Call the before deposit hook.
         _beforeDeposit(caller, receiver, assets, shares);
 
