@@ -11,7 +11,7 @@ import "src/interfaces/IStrategy.sol";
 import "src/interfaces/IAccountant.sol";
 import "src/interfaces/IRewardDistributor.sol";
 
-contract Vault is ERC4626 {
+contract CoreVault is ERC4626 {
     /// @notice  Checkpoint flag.
     bool immutable CHECKPOINT;
 
@@ -49,13 +49,7 @@ contract Vault is ERC4626 {
 
     /// @dev Internal function to deposit assets into the vault.
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal override {
-        /// @dev Update the reward distributor for the caller.
-        _updateReward(caller);
-
-        if (caller != receiver) {
-            /// @dev Update the reward distributor for the receiver.
-            _updateReward(receiver);
-        }
+        _beforeDeposit(caller, receiver, assets, shares);
 
         /// 1. Get the allocation.
         IAllocator.Allocation memory allocation = ALLOCATOR().getDepositAllocation(asset(), assets);
@@ -80,13 +74,7 @@ contract Vault is ERC4626 {
         internal
         override
     {
-        /// @dev Update the reward distributor for the owner.
-        _updateReward(owner);
-
-        if (owner != receiver) {
-            /// @dev Update the reward distributor for the receiver.
-            _updateReward(receiver);
-        }
+        _beforeWithdraw(caller, receiver, owner, assets, shares);
 
         /// 1. Get the allocation.
         IAllocator.Allocation memory allocation = ALLOCATOR().getWithdrawAllocation(asset(), assets);
@@ -116,29 +104,10 @@ contract Vault is ERC4626 {
         return ACCOUNTANT().balanceOf(address(this), account);
     }
 
-    function _transfer(address from, address to, uint256 amount) internal override {
-        if (to == address(0)) revert TransferToZeroAddress();
-        if (to == address(this)) revert TransferToVault();
+    function _beforeDeposit(address caller, address receiver, uint256 assets, uint256 shares) internal virtual {}
 
-        if (amount > 0) {
-            /// @dev Update the reward distributor for the receiver.
-            _updateReward(to);
-
-            /// @dev Update the reward distributor for the sender.
-            _updateReward(from);
-
-            /// @dev Get the pending rewards.
-            uint256 pendingRewards = STRATEGY().pendingRewards(asset());
-
-            /// @dev Checkpoint the vault. The accountant will deal with minting and burning.
-            ACCOUNTANT().checkpoint(asset(), from, to, amount, CHECKPOINT, pendingRewards);
-        }
-
-        emit Transfer(from, to, amount);
-    }
-
-    /// @dev Internal function to update the reward distributor.
-    function _updateReward(address account) internal {
-        REWARD_DISTRIBUTOR().updateReward(account);
-    }
+    function _beforeWithdraw(address caller, address receiver, address owner, uint256 assets, uint256 shares)
+        internal
+        virtual
+    {}
 }
