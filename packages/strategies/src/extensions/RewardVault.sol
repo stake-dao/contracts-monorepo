@@ -1,11 +1,15 @@
 /// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
+import "src/CoreVault.sol";
+
+import "@solady/src/utils/LibClone.sol";
+
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-contract RewardDistributor {
+contract RewardVault is CoreVault {
     using Math for uint256;
     using SafeERC20 for IERC20;
 
@@ -32,9 +36,6 @@ contract RewardDistributor {
     uint256 private constant USER_CLAIMABLE_MASK = ((1 << 48) - 1) << 160;
     uint256 private constant USER_CLAIMED_MASK = ((1 << 48) - 1) << 208;
 
-    /// @notice The asset being tracked by the reward distributor.
-    IERC20 public immutable ASSET;
-
     mapping(address => PackedReward) private rewardData;
 
     /// @notice Active Reward Tokens.
@@ -48,9 +49,7 @@ contract RewardDistributor {
     error RewardAlreadyExists();
     error RewardRateOverflow();
 
-    constructor(address asset) {
-        ASSET = IERC20(asset);
-    }
+    constructor(address asset, bool softCheckpoint) CoreVault(asset, softCheckpoint) {}
 
     function getRewardsDistributor(address token) public view returns (address) {
         return address(uint160(rewardData[token].slot1 & DISTRIBUTOR_MASK));
@@ -81,7 +80,7 @@ contract RewardDistributor {
     }
 
     function rewardPerToken(address _rewardsToken) public view returns (uint256) {
-        uint256 totalSupply = ASSET.totalSupply();
+        uint256 totalSupply = totalSupply();
         if (totalSupply == 0) {
             return getRewardPerTokenStored(_rewardsToken);
         }
@@ -97,7 +96,7 @@ contract RewardDistributor {
         uint256 rewardPerTokenPaid = userDataValue & USER_REWARD_PER_TOKEN_MASK;
         uint256 claimable = (userDataValue & USER_CLAIMABLE_MASK) >> 160;
 
-        uint256 newEarned = ASSET.balanceOf(account) * (rewardPerToken(_rewardsToken) - rewardPerTokenPaid) / 1e18;
+        uint256 newEarned = balanceOf(account) * (rewardPerToken(_rewardsToken) - rewardPerTokenPaid) / 1e18;
         return claimable + newEarned;
     }
 
@@ -164,6 +163,47 @@ contract RewardDistributor {
                     | ((uint256(uint48(earnedAmount)) << 160) & USER_CLAIMABLE_MASK)
                     | (userData[account][token] & USER_CLAIMED_MASK);
             }
+        }
+    }
+
+    function _transfer(address from, address to, uint256 amount) internal override {
+        if (to == address(0)) revert TransferToZeroAddress();
+        if (to == address(this)) revert TransferToVault();
+
+        if (amount > 0) {
+            /// @dev Update the reward distributor for the receiver.
+            _updateReward(to);
+
+            /// @dev Update the reward distributor for the sender.
+            _updateReward(from);
+
+            /// @dev Get the pending rewards.
+            uint256 pendingRewards = STRATEGY().pendingRewards(asset());
+
+            /// @dev Checkpoint the vault. The accountant will deal with minting and burning.
+            ACCOUNTANT().checkpoint(asset(), from, to, amount, CHECKPOINT, pendingRewards);
+        }
+
+        emit Transfer(from, to, amount);
+    }
+
+    function _beforeDeposit(address caller, address receiver, uint256, uint256) internal override {
+        /// @dev Update the reward distributor for the caller.
+        _updateReward(caller);
+
+        if (caller != receiver) {
+            /// @dev Update the reward distributor for the receiver.
+            _updateReward(receiver);
+        }
+    }
+
+    function _beforeWithdraw(address caller, address, address owner, uint256, uint256) internal override {
+        /// @dev Update the reward distributor for the caller.
+        _updateReward(caller);
+
+        if (caller != owner) {
+            /// @dev Update the reward distributor for the owner.
+            _updateReward(owner);
         }
     }
 }
