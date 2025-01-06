@@ -27,18 +27,19 @@ contract CoreVault is ERC4626 {
         return IAccountant(address(bytes20(LibClone.argsOnClone(address(this), 40, 60))));
     }
 
+    function ASSET() public view returns (address) {
+        return address(bytes20(LibClone.argsOnClone(address(this), 60, 80)));
+    }
+
     /// @notice The error thrown when a transfer is made to the vault.
     error TransferToVault();
 
     /// @notice The error thrown when a transfer is made to the zero address.
     error TransferToZeroAddress();
 
-    constructor(address asset, bool softCheckpoint)
-        ERC4626(IERC20(asset))
-        ERC20(
-            string.concat("StakeDAO ", IERC20Metadata(asset).symbol(), " Vault"),
-            string.concat("sd-", IERC20Metadata(asset).symbol(), "-vault")
-        )
+    constructor(bool softCheckpoint)
+        ERC4626(IERC20(address(0)))
+        ERC20(string.concat("StakeDAO Vault"), string.concat("sd-vault"))
     {
         CHECKPOINT = softCheckpoint;
     }
@@ -91,8 +92,28 @@ contract CoreVault is ERC4626 {
     }
 
     //////////////////////////////////////////////////////
+    /// --- ERC4626 OVERRIDES
+    //////////////////////////////////////////////////////
+
+    function asset() public view override returns (address) {
+        return ASSET();
+    }
+
+    //////////////////////////////////////////////////////
     /// --- ERC20 OVERRIDES
     //////////////////////////////////////////////////////
+
+    function name() public view override(ERC20, IERC20Metadata) returns (string memory) {
+        return string.concat("StakeDAO ", IERC20Metadata(ASSET()).name(), " Vault");
+    }
+
+    function symbol() public view override(ERC20, IERC20Metadata) returns (string memory) {
+        return string.concat("sd-", IERC20Metadata(ASSET()).symbol(), "-vault");
+    }
+
+    function decimals() public view override(ERC4626) returns (uint8) {
+        return IERC20Metadata(ASSET()).decimals();
+    }
 
     function totalSupply() public view override(ERC20, IERC20) returns (uint256) {
         return ACCOUNTANT().totalSupply(address(this));

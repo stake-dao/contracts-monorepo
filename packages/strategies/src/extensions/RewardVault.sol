@@ -53,9 +53,8 @@ contract RewardVault is CoreVault {
     error RewardRateOverflow();
 
     /// @notice Creates a new RewardVault
-    /// @param asset The underlying asset token
     /// @param softCheckpoint Whether to use soft checkpointing
-    constructor(address asset, bool softCheckpoint) CoreVault(asset, softCheckpoint) {}
+    constructor(bool softCheckpoint) CoreVault(softCheckpoint) {}
 
     /// @notice Gets the rewards distributor for a token
     /// @param token The reward token address
