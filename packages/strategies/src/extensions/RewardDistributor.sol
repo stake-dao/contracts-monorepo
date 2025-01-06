@@ -35,14 +35,14 @@ contract RewardDistributor {
     /// @notice The asset being tracked by the reward distributor.
     IERC20 public immutable ASSET;
 
-    mapping(address => PackedReward) public rewardData;
+    mapping(address => PackedReward) private rewardData;
 
     /// @notice Active Reward Tokens.
     address[] public rewardTokens;
 
     /// @notice Combined user data mapping
     /// [rewardPerTokenPaid (160 bits) | claimable (48 bits) | claimed (48 bits)]
-    mapping(address => mapping(address => uint256)) public userData;
+    mapping(address => mapping(address => uint256)) private userData;
 
     error UnauthorizedRewardsDistributor();
     error RewardAlreadyExists();
@@ -85,10 +85,11 @@ contract RewardDistributor {
         if (totalSupply == 0) {
             return getRewardPerTokenStored(_rewardsToken);
         }
-        return getRewardPerTokenStored(_rewardsToken) + (
-            (lastTimeRewardApplicable(_rewardsToken) - getLastUpdateTime(_rewardsToken)) * getRewardRate(_rewardsToken)
-                * 1e18 / totalSupply
-        );
+        return getRewardPerTokenStored(_rewardsToken)
+            + (
+                (lastTimeRewardApplicable(_rewardsToken) - getLastUpdateTime(_rewardsToken)) * getRewardRate(_rewardsToken)
+                    * 1e18 / totalSupply
+            );
     }
 
     function earned(address account, address _rewardsToken) public view returns (uint256) {
@@ -126,14 +127,13 @@ contract RewardDistributor {
         if (newRewardRate > type(uint96).max) revert RewardRateOverflow();
 
         // Pack slot1 data using masks
-        uint256 slot1 = (rewardData[_rewardsToken].slot1 & DISTRIBUTOR_MASK) |
-            ((uint256(rewardsDuration) << 160) & DURATION_MASK) |
-            ((uint256(currentTime) << 192) & LAST_UPDATE_MASK) |
-            ((uint256(currentTime + rewardsDuration) << 224) & PERIOD_FINISH_MASK);
+        uint256 slot1 = (rewardData[_rewardsToken].slot1 & DISTRIBUTOR_MASK)
+            | ((uint256(rewardsDuration) << 160) & DURATION_MASK) | ((uint256(currentTime) << 192) & LAST_UPDATE_MASK)
+            | ((uint256(currentTime + rewardsDuration) << 224) & PERIOD_FINISH_MASK);
 
         // Pack slot2 data using masks
-        uint256 slot2 = (getRewardPerTokenStored(_rewardsToken) & REWARD_PER_TOKEN_MASK) |
-            ((uint256(newRewardRate) << 160) & REWARD_RATE_MASK);
+        uint256 slot2 = (getRewardPerTokenStored(_rewardsToken) & REWARD_PER_TOKEN_MASK)
+            | ((uint256(newRewardRate) << 160) & REWARD_RATE_MASK);
 
         rewardData[_rewardsToken].slot1 = slot1;
         rewardData[_rewardsToken].slot2 = slot2;
@@ -150,19 +150,19 @@ contract RewardDistributor {
             uint32 currentTime = uint32(block.timestamp);
 
             // Update slot1 (only lastUpdateTime) using masks
-            rewardData[token].slot1 = (rewardData[token].slot1 & ~LAST_UPDATE_MASK) |
-                ((uint256(currentTime) << 192) & LAST_UPDATE_MASK);
+            rewardData[token].slot1 =
+                (rewardData[token].slot1 & ~LAST_UPDATE_MASK) | ((uint256(currentTime) << 192) & LAST_UPDATE_MASK);
 
             // Update slot2 (only rewardPerTokenStored) using masks
-            rewardData[token].slot2 = (rewardData[token].slot2 & REWARD_RATE_MASK) |
-                (uint160(newRewardPerToken) & REWARD_PER_TOKEN_MASK);
+            rewardData[token].slot2 =
+                (rewardData[token].slot2 & REWARD_RATE_MASK) | (uint160(newRewardPerToken) & REWARD_PER_TOKEN_MASK);
 
             if (account != address(0)) {
                 uint256 earnedAmount = earned(account, token);
                 // Pack user data using masks
-                userData[account][token] = (uint256(uint160(newRewardPerToken)) & USER_REWARD_PER_TOKEN_MASK) |
-                    ((uint256(uint48(earnedAmount)) << 160) & USER_CLAIMABLE_MASK) |
-                    (userData[account][token] & USER_CLAIMED_MASK);
+                userData[account][token] = (uint256(uint160(newRewardPerToken)) & USER_REWARD_PER_TOKEN_MASK)
+                    | ((uint256(uint48(earnedAmount)) << 160) & USER_CLAIMABLE_MASK)
+                    | (userData[account][token] & USER_CLAIMED_MASK);
             }
         }
     }

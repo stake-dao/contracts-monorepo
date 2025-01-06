@@ -1,6 +1,8 @@
 /// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
+import "@solady/src/utils/LibClone.sol";
+
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -10,20 +12,24 @@ import "src/interfaces/IAccountant.sol";
 import "src/interfaces/IRewardDistributor.sol";
 
 contract Vault is ERC4626 {
-    /// @notice Soft checkpoint flag.
-    bool immutable SOFT_CHECKPOINT;
+    /// @notice  Checkpoint flag.
+    bool immutable CHECKPOINT;
 
-    /// @notice The strategy hold the logic associated to deposits and withdrawals.
-    IStrategy public immutable STRATEGY;
+    function STRATEGY() public view returns (IStrategy) {
+        return IStrategy(address(bytes20(LibClone.argsOnClone(address(this), 0, 20))));
+    }
 
-    /// @notice The allocator, allocating the vault's balance to targets.
-    IAllocator public immutable ALLOCATOR;
+    function ALLOCATOR() public view returns (IAllocator) {
+        return IAllocator(address(bytes20(LibClone.argsOnClone(address(this), 20, 40))));
+    }
 
-    /// @notice The accountant, maintaining the vault's balance and distribution of main reward token.
-    IAccountant public immutable ACCOUNTANT;
+    function ACCOUNTANT() public view returns (IAccountant) {
+        return IAccountant(address(bytes20(LibClone.argsOnClone(address(this), 40, 60))));
+    }
 
-    /// @notice The extra-reward token distributor associated with the vault.
-    IRewardDistributor public immutable REWARD_DISTRIBUTOR;
+    function REWARD_DISTRIBUTOR() public view returns (IRewardDistributor) {
+        return IRewardDistributor(address(bytes20(LibClone.argsOnClone(address(this), 60, 80))));
+    }
 
     /// @notice The error thrown when a transfer is made to the vault.
     error TransferToVault();
@@ -31,25 +37,14 @@ contract Vault is ERC4626 {
     /// @notice The error thrown when a transfer is made to the zero address.
     error TransferToZeroAddress();
 
-    constructor(
-        address asset,
-        address rewardDistributor,
-        address accountant,
-        address allocator,
-        address strategy,
-        bool softCheckpoint
-    )
+    constructor(address asset, bool softCheckpoint)
         ERC4626(IERC20(asset))
         ERC20(
             string.concat("StakeDAO ", IERC20Metadata(asset).symbol(), " Vault"),
             string.concat("sd-", IERC20Metadata(asset).symbol(), "-vault")
         )
     {
-        STRATEGY = IStrategy(strategy);
-        SOFT_CHECKPOINT = softCheckpoint;
-        ALLOCATOR = IAllocator(allocator);
-        ACCOUNTANT = IAccountant(accountant);
-        REWARD_DISTRIBUTOR = IRewardDistributor(rewardDistributor);
+        CHECKPOINT = softCheckpoint;
     }
 
     /// @dev Internal function to deposit assets into the vault.
@@ -57,11 +52,13 @@ contract Vault is ERC4626 {
         /// @dev Update the reward distributor for the caller.
         _updateReward(caller);
 
-        /// @dev Update the reward distributor for the receiver.
-        _updateReward(receiver);
+        if (caller != receiver) {
+            /// @dev Update the reward distributor for the receiver.
+            _updateReward(receiver);
+        }
 
         /// 1. Get the allocation.
-        IAllocator.Allocation memory allocation = ALLOCATOR.getDepositAllocation(asset(), assets);
+        IAllocator.Allocation memory allocation = ALLOCATOR().getDepositAllocation(asset(), assets);
 
         /// 2. Transfer the assets to the strategy from the caller.
         for (uint256 i = 0; i < allocation.targets.length; i++) {
@@ -69,10 +66,10 @@ contract Vault is ERC4626 {
         }
 
         /// 3. Deposit the assets into the strategy.
-        uint256 pendingRewards = STRATEGY.deposit(allocation);
+        uint256 pendingRewards = STRATEGY().deposit(allocation, CHECKPOINT);
 
         /// 4. Checkpoint the vault. The accountant will deal with minting and burning.
-        ACCOUNTANT.checkpoint(allocation.gauge, address(0), receiver, assets, SOFT_CHECKPOINT, pendingRewards);
+        ACCOUNTANT().checkpoint(allocation.gauge, address(0), receiver, assets, CHECKPOINT, pendingRewards);
 
         /// 5. Emit the deposit event.
         emit Deposit(caller, receiver, assets, shares);
@@ -86,17 +83,19 @@ contract Vault is ERC4626 {
         /// @dev Update the reward distributor for the owner.
         _updateReward(owner);
 
-        /// @dev Update the reward distributor for the receiver.
-        _updateReward(receiver);
+        if (owner != receiver) {
+            /// @dev Update the reward distributor for the receiver.
+            _updateReward(receiver);
+        }
 
         /// 1. Get the allocation.
-        IAllocator.Allocation memory allocation = ALLOCATOR.getWithdrawAllocation(asset(), assets);
+        IAllocator.Allocation memory allocation = ALLOCATOR().getWithdrawAllocation(asset(), assets);
 
         /// 2. Withdraw the assets from the strategy.
-        uint256 pendingRewards = STRATEGY.withdraw(allocation);
+        uint256 pendingRewards = STRATEGY().withdraw(allocation, CHECKPOINT);
 
         /// 3. Checkpoint the vault. The accountant will deal with minting and burning.
-        ACCOUNTANT.checkpoint(allocation.gauge, owner, address(0), assets, SOFT_CHECKPOINT, pendingRewards);
+        ACCOUNTANT().checkpoint(allocation.gauge, owner, address(0), assets, CHECKPOINT, pendingRewards);
 
         /// 4. Transfer the assets to the receiver.
         SafeERC20.safeTransfer(IERC20(asset()), receiver, assets);
@@ -109,12 +108,12 @@ contract Vault is ERC4626 {
     /// --- ERC20 OVERRIDES
     //////////////////////////////////////////////////////
 
-    function totalSupply() public view virtual override(ERC20, IERC20) returns (uint256) {
-        return ACCOUNTANT.totalSupply(address(this));
+    function totalSupply() public view override(ERC20, IERC20) returns (uint256) {
+        return ACCOUNTANT().totalSupply(address(this));
     }
 
-    function balanceOf(address account) public view virtual override(ERC20, IERC20) returns (uint256) {
-        return ACCOUNTANT.balanceOf(address(this), account);
+    function balanceOf(address account) public view override(ERC20, IERC20) returns (uint256) {
+        return ACCOUNTANT().balanceOf(address(this), account);
     }
 
     function _transfer(address from, address to, uint256 amount) internal override {
@@ -129,10 +128,10 @@ contract Vault is ERC4626 {
             _updateReward(from);
 
             /// @dev Get the pending rewards.
-            uint256 pendingRewards = STRATEGY.pendingRewards(asset());
+            uint256 pendingRewards = STRATEGY().pendingRewards(asset());
 
             /// @dev Checkpoint the vault. The accountant will deal with minting and burning.
-            ACCOUNTANT.checkpoint(asset(), from, to, amount, SOFT_CHECKPOINT, pendingRewards);
+            ACCOUNTANT().checkpoint(asset(), from, to, amount, CHECKPOINT, pendingRewards);
         }
 
         emit Transfer(from, to, amount);
@@ -140,6 +139,6 @@ contract Vault is ERC4626 {
 
     /// @dev Internal function to update the reward distributor.
     function _updateReward(address account) internal {
-        REWARD_DISTRIBUTOR.updateReward(account);
+        REWARD_DISTRIBUTOR().updateReward(account);
     }
 }

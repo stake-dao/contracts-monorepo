@@ -92,6 +92,9 @@ importers:
       '@openzeppelin/contracts':
         specifier: 4.9.0
         version: 4.9.0
+      '@solady':
+        specifier: github:Vectorized/solady#v0.0.288
+        version: solady@https://codeload.github.com/Vectorized/solady/tar.gz/aa7b67ae0a88fd9b17b7ccca1988d215177ecad0
       '@stake-dao/address-book':
         specifier: workspace:*
         version: link:../address-book
@@ -2058,6 +2061,17 @@ packages:
     resolution: {integrity: sha512-qMCMfhY040cVHT43K9BFygqYbUPFZKHOg7K73mtTWJRb8pyP3fzf4Ixd5SzdEJQ6MRUg/WBnOLxghZtKKurENQ==}
     engines: {node: '>=10'}
 
+<<<<<<< HEAD
+=======
+  solady@https://codeload.github.com/Vectorized/solady/tar.gz/aa7b67ae0a88fd9b17b7ccca1988d215177ecad0:
+    resolution: {tarball: https://codeload.github.com/Vectorized/solady/tar.gz/aa7b67ae0a88fd9b17b7ccca1988d215177ecad0}
+    version: 0.0.288
+
+  solady@https://codeload.github.com/vectorized/solady/tar.gz/65823dd7748e6a11b2adb04267ba46a3e64b97db:
+    resolution: {tarball: https://codeload.github.com/vectorized/solady/tar.gz/65823dd7748e6a11b2adb04267ba46a3e64b97db}
+    version: 0.0.264
+
+>>>>>>> 792a852 (feat: add clones immutable args wip)
   solady@https://codeload.github.com/vectorized/solady/tar.gz/8d726fb1499f7f1d7459d05379efddcd500dab1a:
     resolution: {tarball: https://codeload.github.com/vectorized/solady/tar.gz/8d726fb1499f7f1d7459d05379efddcd500dab1a}
     version: 0.0.218
@@ -4703,6 +4717,13 @@ snapshots:
       astral-regex: 2.0.0
       is-fullwidth-code-point: 3.0.0
 
+<<<<<<< HEAD
+=======
+  solady@https://codeload.github.com/Vectorized/solady/tar.gz/aa7b67ae0a88fd9b17b7ccca1988d215177ecad0: {}
+
+  solady@https://codeload.github.com/vectorized/solady/tar.gz/65823dd7748e6a11b2adb04267ba46a3e64b97db: {}
+
+>>>>>>> 792a852 (feat: add clones immutable args wip)
   solady@https://codeload.github.com/vectorized/solady/tar.gz/8d726fb1499f7f1d7459d05379efddcd500dab1a: {}
 
   solady@https://codeload.github.com/vectorized/solady/tar.gz/b12aa65e8cc3740f8b85a2a7a2d5296f57f13149: {}
