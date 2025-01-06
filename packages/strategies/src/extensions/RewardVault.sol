@@ -1,6 +1,3 @@
-/// @title RewardVault
-/// @notice Extension of CoreVault that adds reward distribution functionality
-/// @dev Uses bit packing to optimize storage of reward data
 /// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
@@ -11,6 +8,9 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "src/CoreVault.sol";
 
+/// @title RewardVault
+/// @notice Extension of CoreVault that adds reward distribution functionality
+/// @dev Uses bit packing to optimize storage of reward data
 contract RewardVault is CoreVault {
     using Math for uint256;
     using SafeERC20 for IERC20;
