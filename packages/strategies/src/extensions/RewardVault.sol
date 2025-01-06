@@ -1,13 +1,12 @@
 /// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "src/CoreVault.sol";
-
 import "@solady/src/utils/LibClone.sol";
-
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
+import "src/CoreVault.sol";
 
 contract RewardVault is CoreVault {
     using Math for uint256;
@@ -197,13 +196,13 @@ contract RewardVault is CoreVault {
         }
     }
 
-    function _beforeWithdraw(address caller, address, address owner, uint256, uint256) internal override {
+    function _beforeWithdraw(address caller, address receiver, address, uint256, uint256) internal override {
         /// @dev Update the reward distributor for the caller.
         _updateReward(caller);
 
-        if (caller != owner) {
-            /// @dev Update the reward distributor for the owner.
-            _updateReward(owner);
+        if (caller != receiver) {
+            /// @dev Update the reward distributor for the receiver.
+            _updateReward(receiver);
         }
     }
 }

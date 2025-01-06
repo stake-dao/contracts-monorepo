@@ -9,7 +9,6 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 import "src/interfaces/IStrategy.sol";
 import "src/interfaces/IAccountant.sol";
-import "src/interfaces/IRewardDistributor.sol";
 
 contract CoreVault is ERC4626 {
     /// @notice  Checkpoint flag.
@@ -25,10 +24,6 @@ contract CoreVault is ERC4626 {
 
     function ACCOUNTANT() public view returns (IAccountant) {
         return IAccountant(address(bytes20(LibClone.argsOnClone(address(this), 40, 60))));
-    }
-
-    function REWARD_DISTRIBUTOR() public view returns (IRewardDistributor) {
-        return IRewardDistributor(address(bytes20(LibClone.argsOnClone(address(this), 60, 80))));
     }
 
     /// @notice The error thrown when a transfer is made to the vault.
@@ -49,6 +44,8 @@ contract CoreVault is ERC4626 {
 
     /// @dev Internal function to deposit assets into the vault.
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal override {
+
+        /// @dev Call the before deposit hook.
         _beforeDeposit(caller, receiver, assets, shares);
 
         /// 1. Get the allocation.
@@ -74,6 +71,7 @@ contract CoreVault is ERC4626 {
         internal
         override
     {
+        /// @dev Call the before withdraw hook.
         _beforeWithdraw(caller, receiver, owner, assets, shares);
 
         /// 1. Get the allocation.
