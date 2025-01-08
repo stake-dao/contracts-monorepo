@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 import "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import {FixedPointMathLib} from "solady/src/utils/FixedPointMathLib.sol";
 
 enum Operation {
     Call,
@@ -35,19 +36,31 @@ interface ISafe {
 }
 
 contract SpectraVotingClaimer {
+    using FixedPointMathLib for uint256;
+
     /// @notice The address which will be able to perform the claim
     address public owner;
 
     /// @notice Address which will receive our funds
     address public recipient;
 
-    address immutable SPECTRA_VOTER = address(0x174a1f4135Fab6e7B6Dbe207fF557DFF14799D33);
-    address immutable SPECTRA_VE_NFT = address(0x6a89228055C7C28430692E342F149f37462B478B);
-    address immutable SPECTRA_GOVERNANCE = address(0xa3eeA13183421c9A8BDA0BDEe191B70De8CA445D);
-    address immutable SD_SAFE = address(0xB0552b6860CE5C0202976Db056b5e3Cc4f9CC765);
+    address public immutable SPECTRA_VOTER = address(0x174a1f4135Fab6e7B6Dbe207fF557DFF14799D33);
+    address public immutable SPECTRA_VE_NFT = address(0x6a89228055C7C28430692E342F149f37462B478B);
+    address public immutable SPECTRA_GOVERNANCE = address(0xa3eeA13183421c9A8BDA0BDEe191B70De8CA445D);
+    address public immutable SD_SAFE = address(0xB0552b6860CE5C0202976Db056b5e3Cc4f9CC765);
 
     /// @notice The Stake DAO NFT ID which owns the voting power
-    uint256 immutable SD_SPECTRA_NFT_ID = 592;
+    uint256 public immutable SD_SPECTRA_NFT_ID = 592;
+
+    /// @notice The fee which will be send to SD_TREASURY (10000 = 100%)
+    /// @notice Default is 15%
+    uint256 public immutable FEE = 1_500;
+
+    /// @notice Denominator for fixed point math.
+    uint256 public immutable DENOMINATOR = 10_000;
+
+    /// @notice Stake DAO Treasury
+    address public immutable SD_TREASURY = address(0xB0552b6860CE5C0202976Db056b5e3Cc4f9CC765);
 
     /// @notice Event emitted when a claim occured
     /// @param tokenAddress Address that was claimed.
@@ -56,7 +69,7 @@ contract SpectraVotingClaimer {
     /// @param chainId The pool chain id.
     /// @param amount Amount claimed.
     /// @param timestamp The claim timestamp 
-    event Claimed(address tokenAddress, address poolAddress, uint160 poolId, uint256 chainId, uint256 amount, uint256 timestamp);
+    event Claimed(address tokenAddress, address poolAddress, uint160 poolId, uint256 chainId, uint256 amount, uint256 fees, uint256 timestamp);
 
     constructor(address _recipient) {
         owner = msg.sender;
@@ -84,33 +97,50 @@ contract SpectraVotingClaimer {
                     continue;
                 }
 
+                // Calculate Stake DAO Treasury fees
+                uint256 fees = earned.mulDiv(FEE, DENOMINATOR);
+
                 // Fetch Safe balance before the claim
                 uint256 safeBalanceBeforeClaim = IERC20(rewardTokens[a]).balanceOf(SD_SAFE);
 
-                // Claim rewards
-                // Rewards will be send to our MS
+                // Claim rewards, rewards will be send to the Safe
                 _claim(votingRewardAddress, rewardTokens[a]);
 
-                // Fetch balance after the claim, should be equals to before + earned
+                // Fetch the Safe balance after the claim
                 uint256 safeBalanceAfterClaim = IERC20(rewardTokens[a]).balanceOf(SD_SAFE);
                 if(safeBalanceAfterClaim != (safeBalanceBeforeClaim + earned)) revert BALANCE_CLAIM();
 
-                // Transfer rewards to our recipient
+                // Remove our fees from what we have to send to the recipient
+                earned -= fees;
+
+                // Transfer rewards to the recipient
                 uint256 recipientBalanceBeforeTransfer = IERC20(rewardTokens[a]).balanceOf(recipient);
                 _transferToRecipient(rewardTokens[a], earned);
 
                 // Check balances
                 uint256 safeBalanceAfterTransfer = IERC20(rewardTokens[a]).balanceOf(SD_SAFE);
-                if(safeBalanceBeforeClaim != safeBalanceAfterTransfer) revert BALANCE_TRANSFER();
+                if((safeBalanceBeforeClaim + fees) != safeBalanceAfterTransfer) revert BALANCE_TRANSFER();
 
                 uint256 recipientBalanceAfterTransfer = IERC20(rewardTokens[a]).balanceOf(recipient);
                 if(recipientBalanceAfterTransfer != (recipientBalanceBeforeTransfer + earned)) revert BALANCE_TRANSFER();
+
+                // Transfer fees to treasury
+                uint256 treasuryBalanceBeforeTransfer = IERC20(rewardTokens[a]).balanceOf(SD_TREASURY);
+                
+                _transferToTreasury(rewardTokens[a], fees);
+
+                uint256 treasuryBalanceAfterTransfer = IERC20(rewardTokens[a]).balanceOf(SD_TREASURY);
+                if((treasuryBalanceBeforeTransfer + fees) != treasuryBalanceAfterTransfer) revert BALANCE_TRANSFER();
+
+                // The Safe shouldn't have more or less tokens
+                safeBalanceAfterTransfer = IERC20(rewardTokens[a]).balanceOf(SD_SAFE);
+                if(safeBalanceAfterTransfer != safeBalanceBeforeClaim) revert BALANCE_TRANSFER();
 
                 // Fetch pool address and chain id
                 (address poolAddress, uint256 chainId,) = ISpectraGovernance(SPECTRA_GOVERNANCE).poolsData(poolId);
 
                 // Emit an event to track it (help for the distribution)
-                emit Claimed(rewardTokens[a], poolAddress, poolId, chainId, earned, block.timestamp);
+                emit Claimed(rewardTokens[a], poolAddress, poolId, chainId, earned, fees, block.timestamp);
             }
         }
     }
@@ -169,6 +199,15 @@ contract SpectraVotingClaimer {
     /// @param amount Amount to transfer
     function _transferToRecipient(address token, uint256 amount) internal {
         bytes memory data = abi.encodeWithSignature("transfer(address,uint256)", payable(recipient), amount);
+        require(ISafe(SD_SAFE).execTransactionFromModule(token, 0, data, Operation.Call), "Could not execute token transfer");
+    }
+
+    /// @notice Send some tokens to the Stake DAO Treasury
+    /// @dev Should be called only by the owner and the amount should be what we claimed just before
+    /// @param token Token address to transfer
+    /// @param amount Amount to transfer
+    function _transferToTreasury(address token, uint256 amount) internal {
+        bytes memory data = abi.encodeWithSignature("transfer(address,uint256)", payable(SD_TREASURY), amount);
         require(ISafe(SD_SAFE).execTransactionFromModule(token, 0, data, Operation.Call), "Could not execute token transfer");
     }
 
