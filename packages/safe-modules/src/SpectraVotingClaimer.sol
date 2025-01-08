@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
+import "openzeppelin-contracts/token/ERC20/IERC20.sol";
+
 enum Operation {
     Call,
     DelegateCall
@@ -81,12 +83,27 @@ contract SpectraVotingClaimer {
                     continue;
                 }
 
+                // Fetch Safe balance before the claim
+                uint256 safeBalanceBeforeClaim = IERC20(rewardTokens[a]).balanceOf(SD_SAFE);
+
                 // Claim rewards
                 // Rewards will be send to our MS
                 _claim(votingRewardAddress, rewardTokens[a]);
 
+                // Fetch balance after the claim, should be equals to before + earned
+                uint256 safeBalanceAfterClaim = IERC20(rewardTokens[a]).balanceOf(SD_SAFE);
+                if(safeBalanceAfterClaim != (safeBalanceBeforeClaim + earned)) revert BALANCE_CLAIM();
+
                 // Transfer rewards to our recipient
+                uint256 recipientBalanceBeforeTransfer = IERC20(rewardTokens[a]).balanceOf(recipient);
                 _transferToRecipient(rewardTokens[a], earned);
+
+                // Check balances
+                uint256 safeBalanceAfterTransfer = IERC20(rewardTokens[a]).balanceOf(SD_SAFE);
+                if(safeBalanceBeforeClaim != safeBalanceAfterTransfer) revert BALANCE_TRANSFER();
+
+                uint256 recipientBalanceAfterTransfer = IERC20(rewardTokens[a]).balanceOf(recipient);
+                if(recipientBalanceAfterTransfer != (recipientBalanceBeforeTransfer + earned)) revert BALANCE_TRANSFER();
 
                 // Fetch pool address and chain id
                 (address poolAddress, uint256 chainId,) = ISpectraGovernance(SPECTRA_GOVERNANCE).poolsData(poolId);
@@ -116,7 +133,7 @@ contract SpectraVotingClaimer {
                 }
             }
         }
-        
+
         return false;
     }
 
@@ -164,6 +181,12 @@ contract SpectraVotingClaimer {
 
     /// @notice Error emitted when a zero address is pass
     error ZERO_ADDRESS();
+
+    /// @notice Error emitted when a balance if wrong after a claim
+    error BALANCE_CLAIM();
+
+    /// @notice Error emitted when a balance if wrong after a transfer
+    error BALANCE_TRANSFER();
 
     //////////////////////////////////////////////////////
     /// --- MODIFIERS
