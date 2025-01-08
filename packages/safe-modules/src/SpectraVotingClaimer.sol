@@ -39,7 +39,7 @@ contract SpectraVotingClaimer {
     address public owner;
 
     /// @notice Address which will receive our funds
-    address immutable recipient;
+    address public recipient;
 
     address immutable SPECTRA_VOTER = address(0x174a1f4135Fab6e7B6Dbe207fF557DFF14799D33);
     address immutable SPECTRA_VE_NFT = address(0x6a89228055C7C28430692E342F149f37462B478B);
@@ -66,6 +66,7 @@ contract SpectraVotingClaimer {
     /// @notice Claim pending Spectra voting rewards
     /// @dev Can be called only by the current owner and recipient address mut not be ZERO
     function claim() external onlyOwner {
+        // We must have a recipient otherwise tokens will be stuck in the Safe 
         if(recipient == address(0)) revert ZERO_ADDRESS();
 
         ISpectraVoter voter = ISpectraVoter(SPECTRA_VOTER);
@@ -203,5 +204,13 @@ contract SpectraVotingClaimer {
     function transferOwner(address _newOwner) external onlyOwner {
         if (_newOwner == address(0)) revert ZERO_ADDRESS();
         owner = _newOwner;
+    }
+
+    /// @notice Set a new recipient
+    /// @dev Can be called only by the current owner
+    /// @param _newRecipient new recipient address
+    function changeRecipient(address _newRecipient) external onlyOwner {
+        if (_newRecipient == address(0)) revert ZERO_ADDRESS();
+        recipient = _newRecipient;
     }
 }
