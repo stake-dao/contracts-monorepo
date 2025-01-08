@@ -111,12 +111,11 @@ contract SpectraVotingClaimer {
                 // Emit an event to track it (help for the distribution)
                 emit Claimed(rewardTokens[a], poolAddress, poolId, chainId, earned, block.timestamp);
             }
-            
         }
     }
 
     /// @notice Check if there is something to claim
-    function somethingToClaim() external view returns(bool) {
+    function canClaim() external view returns(bool) {
         ISpectraVoter voter = ISpectraVoter(SPECTRA_VOTER);
         uint256 poolLength = voter.length();
 
