@@ -98,6 +98,28 @@ contract SpectraVotingClaimer {
         }
     }
 
+    /// @notice Check if there is something to claim
+    function somethingToClaim() external view returns(bool) {
+        ISpectraVoter voter = ISpectraVoter(SPECTRA_VOTER);
+        uint256 poolLength = voter.length();
+
+        for(uint256 i = 0; i < poolLength; i++) {
+            uint160 poolId = voter.poolIds(i);
+            address votingRewardAddress = voter.poolToBribe(poolId);
+            address[] memory rewardTokens = _getTokenRewards(votingRewardAddress);
+
+            for(uint256 a = 0; a < rewardTokens.length; a++) {
+                // Check if we have something to claim
+                uint256 earned = ISpectraVotingReward(votingRewardAddress).earned(SPECTRA_VE_NFT, rewardTokens[a], SD_SPECTRA_NFT_ID);
+                if(earned > 0) {
+                    return true;
+                }
+            }
+        }
+        
+        return false;
+    }
+
     /// @notice Get all token rewards associated to a voting reward contract
     /// @param votingRewardAddress Address to the voting reward
     function _getTokenRewards(address votingRewardAddress) internal view returns(address[] memory) {
