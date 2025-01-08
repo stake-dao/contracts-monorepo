@@ -1,0 +1,32 @@
+[profile.default]
+src = "src"
+out = "out"
+libs = ["node_modules"]
+solc = "0.8.19"
+evm_version = "cancun"
+
+verbosity = 3
+optimizers_runs = 200
+
+[etherscan]
+bnb = { key = "${BNBSCAN_KEY}", chain = 56 }
+frax = { key = "${FRAXSCAN_KEY}" }
+base = { key = "${BASESCAN_KEY}" }
+mainnet = { key = "${ETHERSCAN_KEY}" }
+arbitrum = { key = "${ARBISCAN_KEY}" }
+optimism = { key = "${OPTIMISTICSCAN_KEY}" }
+zksync = { key = "${ZKSYNCSCAN_KEY}" }
+polygon = { key = "${POLYGONSCAN_KEY}" }
+polygonzkevm = { key = "${POLYGONZKSCAN_KEY}" }
+
+
+[rpc_endpoints]
+bnb = "https://rpc.ankr.com/bsc"
+frax = "https://frax-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+base = "https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+mainnet = "https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+arbitrum = "https://arb-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+optimism = "https://opt-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+zksync = "https://zksync-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+polygon = "https://polygon-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+polygonzkevm = "https://polygonzkevm-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
