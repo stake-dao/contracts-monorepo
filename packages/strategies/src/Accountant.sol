@@ -71,6 +71,8 @@ contract Accountant {
         uint256 supply = uint128(vaultSupplyAndIntegral & SUPPLY_MASK);
         uint256 integral = uint128((vaultSupplyAndIntegral & INTEGRAL_MASK) >> 128);
 
+        integral += uint128(pendingRewards * 1e18 / supply);
+
         /// 1. Minting.
         if (from == address(0)) {
             supply += amount;
@@ -107,11 +109,6 @@ contract Accountant {
 
             _to.balanceAndRewardsSlot = (toBalance & BALANCE_MASK) | ((integral << 96) & ACCOUNT_INTEGRAL_MASK)
                 | ((toPendingRewards << 192) & ACCOUNT_PENDING_REWARDS_MASK);
-        }
-
-        /// 5. Update the vault integral with the pending rewards not yet distributed.
-        if (pendingRewards > 0) {
-            integral += uint128(pendingRewards * 1e18 / supply);
         }
 
         // Update vault storage
