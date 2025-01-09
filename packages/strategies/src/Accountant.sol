@@ -71,7 +71,9 @@ contract Accountant {
         uint256 supply = uint128(vaultSupplyAndIntegral & SUPPLY_MASK);
         uint256 integral = uint128((vaultSupplyAndIntegral & INTEGRAL_MASK) >> 128);
 
-        integral += uint128(pendingRewards * 1e18 / supply);
+        if (pendingRewards > 0) {
+            integral += uint128(pendingRewards * 1e18 / supply);
+        }
 
         /// 1. Minting.
         if (from == address(0)) {
