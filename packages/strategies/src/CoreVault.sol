@@ -1,6 +1,8 @@
 /// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
+import "forge-std/src/Test.sol";
+
 import "@solady/src/utils/LibClone.sol";
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -61,7 +63,7 @@ contract CoreVault is ERC4626 {
         uint256 pendingRewards = STRATEGY().deposit(allocation, CHECKPOINT);
 
         /// 4. Checkpoint the vault. The accountant will deal with minting and burning.
-        ACCOUNTANT().checkpoint(allocation.gauge, address(0), receiver, assets, CHECKPOINT, pendingRewards);
+        ACCOUNTANT().checkpoint(allocation.gauge, address(0), receiver, assets, pendingRewards);
 
         /// 5. Emit the deposit event.
         emit Deposit(caller, receiver, assets, shares);
@@ -82,7 +84,7 @@ contract CoreVault is ERC4626 {
         uint256 pendingRewards = STRATEGY().withdraw(allocation, CHECKPOINT);
 
         /// 3. Checkpoint the vault. The accountant will deal with minting and burning.
-        ACCOUNTANT().checkpoint(allocation.gauge, owner, address(0), assets, CHECKPOINT, pendingRewards);
+        ACCOUNTANT().checkpoint(allocation.gauge, owner, address(0), assets, pendingRewards);
 
         /// 4. Transfer the assets to the receiver.
         SafeERC20.safeTransfer(IERC20(asset()), receiver, assets);
@@ -97,6 +99,18 @@ contract CoreVault is ERC4626 {
 
     function asset() public view override returns (address) {
         return ASSET();
+    }
+
+    function totalAssets() public view virtual override returns (uint256) {
+        return totalSupply();
+    }
+
+    function convertToAssets(uint256 shares) public view virtual override returns (uint256) {
+        return shares;
+    }
+
+    function convertToShares(uint256 assets) public view virtual override returns (uint256) {
+        return assets;
     }
 
     //////////////////////////////////////////////////////
