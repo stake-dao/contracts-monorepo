@@ -5,6 +5,19 @@ libs = ["node_modules"]
 solc = "0.8.19"
 evm_version = "cancun"
 
+gas_reports = [
+    "RewardVault"
+]
+
+[invariant]
+runs = 1000
+depth = 100
+fail_on_revert = true
+call_override = false
+dictionary_weight = 80
+include_storage = true
+include_push_bytes = true
+
 verbosity = 4
 optimizers_runs = 200
 
