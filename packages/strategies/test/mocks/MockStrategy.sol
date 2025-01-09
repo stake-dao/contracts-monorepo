@@ -4,23 +4,15 @@ pragma solidity 0.8.19;
 import {IStrategy, IAllocator} from "src/interfaces/IStrategy.sol";
 
 contract MockStrategy is IStrategy {
-    function deposit(IAllocator.Allocation memory allocation, bool preCheckpointRewards)
-        external
-        override
-        returns (uint256)
-    {
+    function deposit(IAllocator.Allocation memory, bool) external pure override returns (uint256) {
         return 0;
     }
 
-    function withdraw(IAllocator.Allocation memory allocation, bool preCheckpointRewards)
-        external
-        override
-        returns (uint256)
-    {
+    function withdraw(IAllocator.Allocation memory, bool) external pure returns (uint256) {
         return 0;
     }
 
-    function pendingRewards(address account) external view override returns (uint256) {
+    function pendingRewards(address) external pure override returns (uint256) {
         return 0;
     }
 }
