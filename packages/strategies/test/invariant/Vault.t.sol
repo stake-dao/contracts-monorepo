@@ -47,28 +47,23 @@ contract VaultInvariantTest is StdInvariant, Test {
         );
 
         registry.setVault(address(vault));
-        
+
         // Initialize max share value
         maxShareValue = vault.convertToAssets(1e18);
-        
+
         // Setup handler
         handler = new VaultHandler(token, vault);
-        
+
         // Configure invariant test settings
         targetContract(address(handler));
         targetSender(address(this));
-        
+
         bytes4[] memory selectors = new bytes4[](3);
         selectors[0] = handler.deposit.selector;
         selectors[1] = handler.withdraw.selector;
         selectors[2] = handler.transfer.selector;
-        
-        targetSelector(
-            FuzzSelector({
-                addr: address(handler),
-                selectors: selectors
-            })
-        );
+
+        targetSelector(FuzzSelector({addr: address(handler), selectors: selectors}));
     }
 
     function invariant_totalAssetsMatchAccounting() public view {
@@ -132,5 +127,38 @@ contract VaultInvariantTest is StdInvariant, Test {
 
         // Converting back and forth should not lose value
         assertEq(vault.convertToAssets(shares), assets, "Asset/share conversion must be consistent");
+    }
+
+    function invariant_accountantStateConsistency() public view {
+        // Check total supply consistency
+        assertEq(
+            accountant.totalSupply(address(vault)),
+            vault.totalSupply(),
+            "Accountant total supply must match vault total supply"
+        );
+
+        // Check individual balances consistency
+        for (uint256 i = 0; i < handler.NUM_USERS(); i++) {
+            address user = handler.users(i);
+            assertEq(
+                accountant.balanceOf(address(vault), user),
+                vault.balanceOf(user),
+                "Accountant balance must match vault balance for each user"
+            );
+        }
+
+        // Check that sum of all balances equals total supply in accountant
+        uint256 sumBalances = 0;
+        for (uint256 i = 0; i < handler.NUM_USERS(); i++) {
+            sumBalances += accountant.balanceOf(address(vault), handler.users(i));
+        }
+        assertEq(
+            sumBalances,
+            accountant.totalSupply(address(vault)),
+            "Sum of accountant balances must match accountant total supply"
+        );
+
+        // Verify no "dust" is left in the accountant
+        assertEq(accountant.totalSupply(address(vault)), vault.totalSupply(), "No dust should be left in accountant");
     }
 }
