@@ -36,9 +36,9 @@ contract VaultInvariantTest is StdInvariant, Test {
         strategy = new MockStrategy();
         registry = new MockRegistry();
         allocator = new MockAllocator();
-        accountant = new Accountant(address(registry), address(token), true);
+        accountant = new Accountant(address(registry), address(token));
 
-        vaultImplementation = new RewardVault(true);
+        vaultImplementation = new RewardVault();
         vault = RewardVault(
             LibClone.clone(
                 address(vaultImplementation),

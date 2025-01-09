@@ -14,9 +14,6 @@ import "src/interfaces/IAllocator.sol";
 import "src/interfaces/IAccountant.sol";
 
 contract CoreVault is ERC4626 {
-    /// @notice  Checkpoint flag.
-    bool immutable CHECKPOINT;
-
     function STRATEGY() public view returns (IStrategy) {
         return IStrategy(address(bytes20(LibClone.argsOnClone(address(this), 0, 20))));
     }
@@ -39,12 +36,7 @@ contract CoreVault is ERC4626 {
     /// @notice The error thrown when a transfer is made to the zero address.
     error TransferToZeroAddress();
 
-    constructor(bool softCheckpoint)
-        ERC4626(IERC20(address(0)))
-        ERC20(string.concat("StakeDAO Vault"), string.concat("sd-vault"))
-    {
-        CHECKPOINT = softCheckpoint;
-    }
+    constructor() ERC4626(IERC20(address(0))) ERC20(string.concat("StakeDAO Vault"), string.concat("sd-vault")) {}
 
     /// @dev Internal function to deposit assets into the vault.
     function _deposit(address caller, address receiver, uint256 assets, uint256 shares) internal override {
@@ -60,7 +52,7 @@ contract CoreVault is ERC4626 {
         }
 
         /// 3. Deposit the assets into the strategy.
-        uint256 pendingRewards = STRATEGY().deposit(allocation, CHECKPOINT);
+        uint256 pendingRewards = STRATEGY().deposit(allocation);
 
         /// 4. Checkpoint the vault. The accountant will deal with minting and burning.
         ACCOUNTANT().checkpoint(allocation.gauge, address(0), receiver, assets, pendingRewards);
@@ -81,7 +73,7 @@ contract CoreVault is ERC4626 {
         IAllocator.Allocation memory allocation = ALLOCATOR().getWithdrawAllocation(asset(), assets);
 
         /// 2. Withdraw the assets from the strategy.
-        uint256 pendingRewards = STRATEGY().withdraw(allocation, CHECKPOINT);
+        uint256 pendingRewards = STRATEGY().withdraw(allocation);
 
         /// 3. Checkpoint the vault. The accountant will deal with minting and burning.
         ACCOUNTANT().checkpoint(allocation.gauge, owner, address(0), assets, pendingRewards);
