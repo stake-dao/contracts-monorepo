@@ -2,17 +2,15 @@
 pragma solidity ^0.8.19;
 
 import "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import "./governance/AllowanceManager.sol";
+
 import {FixedPointMathLib} from "solady/src/utils/FixedPointMathLib.sol";
+
+import "./interfaces/ISpectraVoter.sol";
 
 enum Operation {
     Call,
     DelegateCall
-}
-
-interface ISpectraVoter {
-    function length() external view returns(uint256);
-    function poolIds(uint256 poolId) external view returns(uint160);
-    function poolToBribe(uint160 poolId) external view returns(address);
 }
 
 interface ISpectraVotingReward {
@@ -35,11 +33,8 @@ interface ISafe {
     function execTransactionFromModule(address to, uint256 value, bytes calldata data, Operation operation) external returns (bool success);
 }
 
-contract SpectraVotingClaimer {
+contract SpectraVotingClaimer is AllowanceManager {
     using FixedPointMathLib for uint256;
-
-    /// @notice The address which will be able to perform the claim
-    address public owner;
 
     /// @notice Address which will receive our funds
     address public recipient;
@@ -60,7 +55,7 @@ contract SpectraVotingClaimer {
     uint256 public immutable DENOMINATOR = 10_000;
 
     /// @notice Stake DAO Treasury
-    address public immutable SD_TREASURY = address(0xB0552b6860CE5C0202976Db056b5e3Cc4f9CC765);
+    address public immutable SD_TREASURY = address(0x428419Ad92317B09FE00675F181ac09c87D16450);
 
     /// @notice Event emitted when a claim occured
     /// @param tokenAddress Address that was claimed.
@@ -71,14 +66,13 @@ contract SpectraVotingClaimer {
     /// @param timestamp The claim timestamp 
     event Claimed(address tokenAddress, address poolAddress, uint160 poolId, uint256 chainId, uint256 amount, uint256 fees, uint256 timestamp);
 
-    constructor(address _recipient) {
-        owner = msg.sender;
+    constructor(address _recipient) AllowanceManager(msg.sender) {
         recipient = _recipient;
     }
 
     /// @notice Claim pending Spectra voting rewards
     /// @dev Can be called only by the current owner and recipient address mut not be ZERO
-    function claim() external onlyOwner {
+    function claim() external onlyGovernanceOrAllowed {
         // We must have a recipient otherwise tokens will be stuck in the Safe 
         if(recipient == address(0)) revert ZERO_ADDRESS();
 
@@ -97,52 +91,30 @@ contract SpectraVotingClaimer {
                     continue;
                 }
 
-                // Calculate Stake DAO Treasury fees
-                uint256 fees = earned.mulDiv(FEE, DENOMINATOR);
-
-                // Fetch Safe balance before the claim
-                uint256 safeBalanceBeforeClaim = IERC20(rewardTokens[a]).balanceOf(SD_SAFE);
-
-                // Claim rewards, rewards will be send to the Safe
-                _claim(votingRewardAddress, rewardTokens[a]);
-
-                // Fetch the Safe balance after the claim
-                uint256 safeBalanceAfterClaim = IERC20(rewardTokens[a]).balanceOf(SD_SAFE);
-                if(safeBalanceAfterClaim != (safeBalanceBeforeClaim + earned)) revert BALANCE_CLAIM();
-
-                // Remove our fees from what we have to send to the recipient
-                earned -= fees;
-
-                // Transfer rewards to the recipient
-                uint256 recipientBalanceBeforeTransfer = IERC20(rewardTokens[a]).balanceOf(recipient);
-                _transferToRecipient(rewardTokens[a], earned);
-
-                // Check balances
-                uint256 safeBalanceAfterTransfer = IERC20(rewardTokens[a]).balanceOf(SD_SAFE);
-                if((safeBalanceBeforeClaim + fees) != safeBalanceAfterTransfer) revert BALANCE_TRANSFER();
-
-                uint256 recipientBalanceAfterTransfer = IERC20(rewardTokens[a]).balanceOf(recipient);
-                if(recipientBalanceAfterTransfer != (recipientBalanceBeforeTransfer + earned)) revert BALANCE_TRANSFER();
-
-                // Transfer fees to treasury
-                uint256 treasuryBalanceBeforeTransfer = IERC20(rewardTokens[a]).balanceOf(SD_TREASURY);
-                
-                _transferToTreasury(rewardTokens[a], fees);
-
-                uint256 treasuryBalanceAfterTransfer = IERC20(rewardTokens[a]).balanceOf(SD_TREASURY);
-                if((treasuryBalanceBeforeTransfer + fees) != treasuryBalanceAfterTransfer) revert BALANCE_TRANSFER();
-
-                // The Safe shouldn't have more or less tokens
-                safeBalanceAfterTransfer = IERC20(rewardTokens[a]).balanceOf(SD_SAFE);
-                if(safeBalanceAfterTransfer != safeBalanceBeforeClaim) revert BALANCE_TRANSFER();
-
-                // Fetch pool address and chain id
-                (address poolAddress, uint256 chainId,) = ISpectraGovernance(SPECTRA_GOVERNANCE).poolsData(poolId);
-
-                // Emit an event to track it (help for the distribution)
-                emit Claimed(rewardTokens[a], poolAddress, poolId, chainId, earned, fees, block.timestamp);
+                _claimAndDistribute(earned, rewardTokens[a], poolId, votingRewardAddress);
             }
         }
+    }
+
+    function _claimAndDistribute(uint256 earned, address rewardToken, uint160 poolId, address votingRewardAddress) internal {
+        // Calculate Stake DAO Treasury fees
+        uint256 fees = earned.mulDiv(FEE, DENOMINATOR);
+
+        // Claim rewards, rewards will be send to the Safe
+        _claim(votingRewardAddress, rewardToken);
+
+        // Remove our fees from what we have to send to the recipient
+        earned -= fees;
+
+        // Transfer rewards to the recipient & Treasury
+        _transferToRecipient(rewardToken, earned);
+        _transferToTreasury(rewardToken, fees);
+
+        // Fetch pool address and chain id
+        (address poolAddress, uint256 chainId,) = ISpectraGovernance(SPECTRA_GOVERNANCE).poolsData(poolId);
+
+        // Emit an event to track it (help for the distribution)
+        emit Claimed(rewardToken, poolAddress, poolId, chainId, earned, fees, block.timestamp);
     }
 
     /// @notice Check if there is something to claim
@@ -215,9 +187,6 @@ contract SpectraVotingClaimer {
     /// --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
-    /// @notice Error emitted when an onlyOwner function has called by a different address
-    error OWNER();
-
     /// @notice Error emitted when a zero address is pass
     error ZERO_ADDRESS();
 
@@ -227,28 +196,10 @@ contract SpectraVotingClaimer {
     /// @notice Error emitted when a balance if wrong after a transfer
     error BALANCE_TRANSFER();
 
-    //////////////////////////////////////////////////////
-    /// --- MODIFIERS
-    //////////////////////////////////////////////////////
-
-    /// @notice Modifier to check if the caller is the owner
-    modifier onlyOwner() {
-        if (msg.sender != owner) revert OWNER();
-        _;
-    }
-
-    /// @notice Set a new owner that can accept it
-    /// @dev Can be called only by the current owner
-    /// @param _newOwner new owner address
-    function transferOwner(address _newOwner) external onlyOwner {
-        if (_newOwner == address(0)) revert ZERO_ADDRESS();
-        owner = _newOwner;
-    }
-
     /// @notice Set a new recipient
     /// @dev Can be called only by the current owner
     /// @param _newRecipient new recipient address
-    function changeRecipient(address _newRecipient) external onlyOwner {
+    function changeRecipient(address _newRecipient) external onlyGovernanceOrAllowed {
         if (_newRecipient == address(0)) revert ZERO_ADDRESS();
         recipient = _newRecipient;
     }
