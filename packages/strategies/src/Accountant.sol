@@ -59,7 +59,7 @@ contract Accountant {
     function checkpoint(address asset, address from, address to, uint256 amount, uint256 pendingRewards) external {
         if (msg.sender != IRegistry(REGISTRY).vaults(asset)) revert OnlyVault();
 
-        Vault storage _vault = vaults[asset];
+        Vault storage _vault = vaults[msg.sender];
 
         /// 0. Update the vault integral with the pending rewards distributed.
         if (PRE_CHECKPOINT_REWARDS && pendingRewards > 0) {
@@ -92,5 +92,13 @@ contract Accountant {
         if (!PRE_CHECKPOINT_REWARDS && pendingRewards > 0) {
             _vault.integral += uint128(pendingRewards * 1e18 / _vault.supply);
         }
+    }
+
+    function totalSupply(address vault) external view returns (uint256) {
+        return vaults[vault].supply;
+    }
+
+    function balanceOf(address vault, address account) external view returns (uint256) {
+        return accounts[vault][account].balance;
     }
 }

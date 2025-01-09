@@ -21,7 +21,6 @@ contract MockStrategy is IStrategy {
     }
 
     function pendingRewards(address account) external view override returns (uint256) {
-        // TODO: Implement pending rewards logic
         return 0;
     }
 }
