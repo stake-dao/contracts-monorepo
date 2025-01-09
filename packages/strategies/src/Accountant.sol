@@ -39,23 +39,20 @@ contract Accountant {
     address public immutable REWARD_TOKEN;
 
     /// @notice Whether the vault integral is updated before the accounts checkpoint.
-    bool public immutable PRE_CHECKPOINT_REWARDS;
-
     /// @notice Supply of vaults.
     /// @dev Vault address -> PackedVault.
-    mapping(address => PackedVault) public vaults;
+    mapping(address => PackedVault) private vaults;
 
     /// @notice Balances of accounts per vault.
     /// @dev Vault address -> Account address -> PackedAccount.
-    mapping(address => mapping(address => PackedAccount)) public accounts;
+    mapping(address => mapping(address => PackedAccount)) private accounts;
 
     /// @notice The error thrown when the caller is not a vault.
     error OnlyVault();
 
-    constructor(address _registry, address _rewardToken, bool _softCheckpoint) {
+    constructor(address _registry, address _rewardToken) {
         REGISTRY = _registry;
         REWARD_TOKEN = _rewardToken;
-        PRE_CHECKPOINT_REWARDS = _softCheckpoint;
     }
 
     /// @notice Function called by vaults to checkpoint the state of the vault on every account action.
@@ -73,11 +70,6 @@ contract Accountant {
 
         uint256 supply = uint128(vaultSupplyAndIntegral & SUPPLY_MASK);
         uint256 integral = uint128((vaultSupplyAndIntegral & INTEGRAL_MASK) >> 128);
-
-        /// 0. Update the vault integral with the pending rewards distributed.
-        if (PRE_CHECKPOINT_REWARDS && pendingRewards > 0) {
-            integral += uint128(pendingRewards * 1e18 / supply);
-        }
 
         /// 1. Minting.
         if (from == address(0)) {
@@ -118,7 +110,7 @@ contract Accountant {
         }
 
         /// 5. Update the vault integral with the pending rewards not yet distributed.
-        if (!PRE_CHECKPOINT_REWARDS && pendingRewards > 0) {
+        if (pendingRewards > 0) {
             integral += uint128(pendingRewards * 1e18 / supply);
         }
 
