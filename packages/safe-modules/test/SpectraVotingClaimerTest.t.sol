@@ -90,4 +90,51 @@ contract SpectraVotingClaimerTest is Test {
 
         vm.stopPrank();
     }
+
+    function testClaimWithAssets() public {
+        // At the block 24_813_623, we only have USDC and Spectra to claim
+        vm.startPrank(DEPLOYER);
+
+        bool canClaim = spectraVotingClaimer.canClaim();
+        assertEq(canClaim, true);
+
+        // Send some USDC and SPECTRA to the Safe
+        uint256 defaultAmount = 100 ether;
+        deal(USDC, spectraVotingClaimer.SD_SAFE(), defaultAmount);
+        deal(SPECTRA, spectraVotingClaimer.SD_SAFE(), defaultAmount);
+
+        // Fetch all balances before the claim
+        uint256 usdcSafeBalanceBeforeClaim = IERC20(USDC).balanceOf(spectraVotingClaimer.SD_SAFE());
+        uint256 usdcTreasuryBalanceBeforeClaim = IERC20(USDC).balanceOf(spectraVotingClaimer.SD_TREASURY());
+        uint256 usdcRecipientBalanceBeforeClaim = IERC20(USDC).balanceOf(spectraVotingClaimer.recipient());
+
+        uint256 spectraSafeBalanceBeforeClaim = IERC20(SPECTRA).balanceOf(spectraVotingClaimer.SD_SAFE());
+        uint256 spectraTreasuryBalanceBeforeClaim = IERC20(SPECTRA).balanceOf(spectraVotingClaimer.SD_TREASURY());
+        uint256 spectraRecipientBalanceBeforeClaim = IERC20(SPECTRA).balanceOf(spectraVotingClaimer.recipient());
+
+        // Perform the claim
+        spectraVotingClaimer.claim();
+
+        // Fetch balances after the claim
+        uint256 usdcSafeBalanceAfterClaim = IERC20(USDC).balanceOf(spectraVotingClaimer.SD_SAFE());
+        uint256 usdcTreasuryBalanceAfterClaim = IERC20(USDC).balanceOf(spectraVotingClaimer.SD_TREASURY());
+        uint256 usdcRecipientBalanceAfterClaim = IERC20(USDC).balanceOf(spectraVotingClaimer.recipient());
+
+        uint256 spectraSafeBalanceAfterClaim = IERC20(SPECTRA).balanceOf(spectraVotingClaimer.SD_SAFE());
+        uint256 spectraTreasuryBalanceAfterClaim = IERC20(SPECTRA).balanceOf(spectraVotingClaimer.SD_TREASURY());
+        uint256 spectraRecipientBalanceAfterClaim = IERC20(SPECTRA).balanceOf(spectraVotingClaimer.recipient());
+
+        // Compare balances
+        // Should be equals for the Safe
+        assertEq(usdcSafeBalanceBeforeClaim, usdcSafeBalanceAfterClaim);
+        assertEq(spectraSafeBalanceBeforeClaim, spectraSafeBalanceAfterClaim);
+        
+        // And should be higher for the recipient and treasury
+        assertGt(usdcTreasuryBalanceAfterClaim, usdcTreasuryBalanceBeforeClaim);
+        assertGt(spectraTreasuryBalanceAfterClaim, spectraTreasuryBalanceBeforeClaim);
+        assertGt(usdcRecipientBalanceAfterClaim, usdcRecipientBalanceBeforeClaim);
+        assertGt(spectraRecipientBalanceAfterClaim, spectraRecipientBalanceBeforeClaim);
+
+        vm.stopPrank();
+    }
 }
