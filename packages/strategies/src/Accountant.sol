@@ -5,24 +5,32 @@ import "src/interfaces/IRegistry.sol";
 
 /// @notice The source of truth.
 contract Accountant {
-    struct Vault {
-        uint128 supply;
-        uint128 integral;
-        uint64 lastUpdateTime;
-        uint64 pendingRewards;
+    /// @notice Packed vault data structure into 2 slots for gas optimization
+    /// @dev Slot 1: [supply (128) | integral (128)]
+    /// @dev Slot 2: [lastUpdateTime (64) | pendingRewards (64)]
+    struct PackedVault {
+        uint256 slot1;
+        uint128 slot2;
     }
 
-    struct Donation {
-        address vault;
-        uint96 amount;
-        uint64 timestamp;
+    /// @notice Packed account data structure into 1 slot for gas optimization
+    /// @dev [balance (96) | integral (96) | pendingRewards (64)]
+    struct PackedAccount {
+        uint256 slot;
     }
 
-    struct Account {
-        uint96 balance;
-        uint96 integral;
-        uint64 pendingRewards;
-    }
+    /// @dev Bit masks for vault slot 1
+    uint256 private constant SUPPLY_MASK = (1 << 128) - 1;
+    uint256 private constant INTEGRAL_MASK = ((1 << 128) - 1) << 128;
+
+    /// @dev Bit masks for vault slot 2
+    uint128 private constant LAST_UPDATE_TIME_MASK = (1 << 64) - 1;
+    uint128 private constant PENDING_REWARDS_MASK = ((1 << 64) - 1) << 64;
+
+    /// @dev Bit masks for account slot
+    uint256 private constant BALANCE_MASK = (1 << 96) - 1;
+    uint256 private constant ACCOUNT_INTEGRAL_MASK = ((1 << 96) - 1) << 96;
+    uint256 private constant ACCOUNT_PENDING_REWARDS_MASK = ((1 << 64) - 1) << 192;
 
     /// @notice The registry of vaults.
     address public immutable REGISTRY;
@@ -30,16 +38,16 @@ contract Accountant {
     /// @notice The reward token.
     address public immutable REWARD_TOKEN;
 
-    /// @notice Whether the vault integral is updated before the accounts checkpoint. Careful, as false means vault has been harvested before the accounts checkpoint.
+    /// @notice Whether the vault integral is updated before the accounts checkpoint.
     bool public immutable PRE_CHECKPOINT_REWARDS;
 
     /// @notice Supply of vaults.
-    /// @dev Vault address -> Vault.
-    mapping(address => Vault) public vaults;
+    /// @dev Vault address -> PackedVault.
+    mapping(address => PackedVault) public vaults;
 
     /// @notice Balances of accounts per vault.
-    /// @dev Vault address -> Account address -> Account.
-    mapping(address => mapping(address => Account)) public accounts;
+    /// @dev Vault address -> Account address -> PackedAccount.
+    mapping(address => mapping(address => PackedAccount)) public accounts;
 
     /// @notice The error thrown when the caller is not a vault.
     error OnlyVault();
@@ -59,46 +67,70 @@ contract Accountant {
     function checkpoint(address asset, address from, address to, uint256 amount, uint256 pendingRewards) external {
         if (msg.sender != IRegistry(REGISTRY).vaults(asset)) revert OnlyVault();
 
-        Vault storage _vault = vaults[msg.sender];
+        PackedVault storage _vault = vaults[msg.sender];
+        uint256 vaultSlot1 = _vault.slot1;
+        // uint128 vaultSlot2 = _vault.slot2;
+
+        uint256 supply = uint128(vaultSlot1 & SUPPLY_MASK);
+        uint256 integral = uint128((vaultSlot1 & INTEGRAL_MASK) >> 128);
 
         /// 0. Update the vault integral with the pending rewards distributed.
         if (PRE_CHECKPOINT_REWARDS && pendingRewards > 0) {
-            _vault.integral += uint128(pendingRewards * 1e18 / _vault.supply);
+            integral += uint128(pendingRewards * 1e18 / supply);
         }
 
         /// 1. Minting.
         if (from == address(0)) {
-            _vault.supply += uint128(amount);
+            supply += amount;
         }
         /// 2. Transferring. Update the "from" account.
         else {
-            Account storage _from = accounts[msg.sender][from];
-            _from.pendingRewards += uint64((_vault.integral - _from.integral) * _from.balance / _vault.supply);
-            _from.balance -= uint96(amount);
+            PackedAccount storage _from = accounts[msg.sender][from];
+            uint256 fromSlot = _from.slot;
+            uint256 fromBalance = uint96(fromSlot & BALANCE_MASK);
+            uint256 fromIntegral = uint96((fromSlot & ACCOUNT_INTEGRAL_MASK) >> 96);
+            uint256 fromPendingRewards = uint64((fromSlot & ACCOUNT_PENDING_REWARDS_MASK) >> 192);
+
+            fromPendingRewards += uint64((integral - fromIntegral) * fromBalance / supply);
+            fromBalance -= amount;
+
+            _from.slot = (fromBalance & BALANCE_MASK) | ((integral << 96) & ACCOUNT_INTEGRAL_MASK)
+                | ((fromPendingRewards << 192) & ACCOUNT_PENDING_REWARDS_MASK);
         }
 
         /// 3. Burning.
         if (to == address(0)) {
-            _vault.supply -= uint128(amount);
+            supply -= amount;
         }
         /// 4. Transferring. Update the "to" account.
         else {
-            Account storage _to = accounts[msg.sender][to];
-            _to.pendingRewards += uint64((_vault.integral - _to.integral) * _to.balance / _vault.supply);
-            _to.balance += uint96(amount);
+            PackedAccount storage _to = accounts[msg.sender][to];
+            uint256 toSlot = _to.slot;
+            uint256 toBalance = uint96(toSlot & BALANCE_MASK);
+            uint256 toIntegral = uint96((toSlot & ACCOUNT_INTEGRAL_MASK) >> 96);
+            uint256 toPendingRewards = uint64((toSlot & ACCOUNT_PENDING_REWARDS_MASK) >> 192);
+
+            toPendingRewards += uint64((integral - toIntegral) * toBalance / supply);
+            toBalance += amount;
+
+            _to.slot = (toBalance & BALANCE_MASK) | ((integral << 96) & ACCOUNT_INTEGRAL_MASK)
+                | ((toPendingRewards << 192) & ACCOUNT_PENDING_REWARDS_MASK);
         }
 
-        /// 5. Update the vault integral with the pending rewards no yet distributed.
+        /// 5. Update the vault integral with the pending rewards not yet distributed.
         if (!PRE_CHECKPOINT_REWARDS && pendingRewards > 0) {
-            _vault.integral += uint128(pendingRewards * 1e18 / _vault.supply);
+            integral += uint128(pendingRewards * 1e18 / supply);
         }
+
+        // Update vault storage
+        _vault.slot1 = (supply & SUPPLY_MASK) | ((integral << 128) & INTEGRAL_MASK);
     }
 
     function totalSupply(address vault) external view returns (uint256) {
-        return vaults[vault].supply;
+        return uint128(vaults[vault].slot1 & SUPPLY_MASK);
     }
 
     function balanceOf(address vault, address account) external view returns (uint256) {
-        return accounts[vault][account].balance;
+        return uint96(accounts[vault][account].slot & BALANCE_MASK);
     }
 }

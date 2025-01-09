@@ -6,7 +6,8 @@ solc = "0.8.19"
 evm_version = "cancun"
 
 gas_reports = [
-    "RewardVault"
+    "RewardVault",
+    "Accountant"
 ]
 
 [invariant]
