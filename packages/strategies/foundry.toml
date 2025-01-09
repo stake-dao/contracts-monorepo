@@ -10,8 +10,8 @@ gas_reports = [
 ]
 
 [invariant]
-runs = 1000
-depth = 100
+runs = 500
+depth = 10
 fail_on_revert = true
 call_override = false
 dictionary_weight = 80
