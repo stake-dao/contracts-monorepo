@@ -18,7 +18,7 @@ optimism = { key = "${OPTIMISTICSCAN_KEY}" }
 zksync = { key = "${ZKSYNCSCAN_KEY}" }
 polygon = { key = "${POLYGONSCAN_KEY}" }
 polygonzkevm = { key = "${POLYGONZKSCAN_KEY}" }
-
+linea = { key = "${LINEA_KEY}" }
 
 [rpc_endpoints]
 bnb_smart_chain = "https://rpc.ankr.com/bsc"
@@ -29,3 +29,4 @@ optimism = "https://opt-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
 zksync = "https://zksync-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
 polygon = "https://polygon-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
 polygonzkevm = "https://polygonzkevm-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+linea = "https://linea-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"

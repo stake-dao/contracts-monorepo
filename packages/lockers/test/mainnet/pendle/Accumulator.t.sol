@@ -10,6 +10,7 @@ contract AccumulatorTest is BaseAccumulatorTest {
     constructor()
         BaseAccumulatorTest(
             20_031_924,
+            "mainnet",
             PENDLE.LOCKER,
             PENDLE.SDTOKEN,
             Pendle.VEPENDLE,

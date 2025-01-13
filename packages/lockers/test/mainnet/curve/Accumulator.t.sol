@@ -14,7 +14,7 @@ contract AccumulatorTest is BaseAccumulatorTest {
     IVeBoostDelegation public veBoostDelegation = IVeBoostDelegation(0xe1F9C8ebBC80A013cAf0940fdD1A8554d763b9cf);
 
     constructor()
-        BaseAccumulatorTest(20_661_622, CRV.LOCKER, CRV.SDTOKEN, Curve.VECRV, CRV.GAUGE, CRV_USD, CRV.TOKEN)
+        BaseAccumulatorTest(20_661_622, "mainnet", CRV.LOCKER, CRV.SDTOKEN, Curve.VECRV, CRV.GAUGE, CRV_USD, CRV.TOKEN)
     {}
 
     function _deployAccumulator() internal override returns (address payable accumulator) {

@@ -21,6 +21,9 @@ docs/
 coverage
 lcov.info
 
+# for vyper installation + compilation
+venv
+
 .DS_STORE
 
 node_modules/
