@@ -11,28 +11,16 @@ import "address-book/src/protocols/1.sol";
 
 import "src/common/accumulator/BaseAccumulator.sol";
 
-import {ILocker} from "src/common/interfaces/ILocker.sol";
+import {CommonBase} from "test/common/CommonBase.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 
-abstract contract BaseAccumulatorTest is Test {
+abstract contract BaseAccumulatorTest is CommonBase, Test {
     uint256 blockNumber;
-
-    address public locker;
-    address public sdToken;
-    address public veToken;
-
-    ERC20 public rewardToken;
-    ERC20 public strategyRewardToken;
-
-    ILiquidityGauge public liquidityGauge;
-
-    BaseAccumulator public accumulator;
-
-    address public treasuryRecipient = DAO.TREASURY;
-    address public liquidityFeeRecipient = DAO.LIQUIDITY_FEES_RECIPIENT;
+    string chain;
 
     constructor(
         uint256 _blockNumber,
+        string memory _chain,
         address _locker,
         address _sdToken,
         address _veToken,
@@ -41,6 +29,7 @@ abstract contract BaseAccumulatorTest is Test {
         address _strategyRewardToken
     ) {
         blockNumber = _blockNumber;
+        chain = _chain;
         locker = _locker;
         sdToken = _sdToken;
         veToken = _veToken;
@@ -51,7 +40,7 @@ abstract contract BaseAccumulatorTest is Test {
     }
 
     function setUp() public virtual {
-        uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"), blockNumber);
+        uint256 forkId = vm.createFork(vm.rpcUrl(chain), blockNumber);
         vm.selectFork(forkId);
 
         /// Deploy BaseAccumulator Contract.
@@ -112,6 +101,9 @@ abstract contract BaseAccumulatorTest is Test {
     }
 
     function test_claimAll() public virtual {
+        //Check Claimer recipient
+        deal(address(rewardToken), address(this), 0);
+        assertEq(rewardToken.balanceOf(address(this)), 0);
         //Check Dao recipient
         deal(address(rewardToken), address(treasuryRecipient), 0);
         assertEq(rewardToken.balanceOf(address(treasuryRecipient)), 0);

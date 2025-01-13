@@ -8,7 +8,7 @@ import "herdaddy/interfaces/frax/IFraxShares.sol";
 
 contract AccumulatorTest is BaseAccumulatorTest {
     constructor()
-        BaseAccumulatorTest(20_187_867, FXS.LOCKER, FXS.SDTOKEN, Frax.VEFXS, FXS.GAUGE, FXS.TOKEN, FXS.TOKEN)
+        BaseAccumulatorTest(20_187_867, "mainnet", FXS.LOCKER, FXS.SDTOKEN, Frax.VEFXS, FXS.GAUGE, FXS.TOKEN, FXS.TOKEN)
     {}
 
     function _deployAccumulator() internal override returns (address payable accumulator) {

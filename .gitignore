@@ -4,3 +4,5 @@ node_modules/
 cache/
 out/
 broadcast/
+
+.DS_Store
