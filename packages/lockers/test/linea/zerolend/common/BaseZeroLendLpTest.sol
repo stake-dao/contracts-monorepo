@@ -5,9 +5,9 @@ import {BaseZeroLendTest} from "test/linea/zerolend/common/BaseZeroLendTest.sol"
 
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {sdToken as SdToken} from "src/common/token/sdToken.sol";
-import {Locker} from "src/linea/zerolend/lp-token/Locker.sol";
-import {Depositor} from "src/linea/zerolend/lp-token/Depositor.sol";
-import {Accumulator} from "src/linea/zerolend/lp-token/Accumulator.sol";
+import {Locker} from "src/linea/zerolend/zerolp/Locker.sol";
+import {Depositor} from "src/linea/zerolend/zerolp/Depositor.sol";
+import {Accumulator} from "src/linea/zerolend/zerolp/Accumulator.sol";
 
 import {IStrategy} from "herdaddy/interfaces/stake-dao/IStrategy.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";

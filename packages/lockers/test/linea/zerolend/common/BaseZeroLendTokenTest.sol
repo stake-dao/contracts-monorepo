@@ -3,10 +3,10 @@ pragma solidity ^0.8.4;
 
 import {BaseZeroLendTest} from "test/linea/zerolend/common/BaseZeroLendTest.sol";
 
-import "src/linea/zerolend/base-token/Accumulator.sol";
+import "src/linea/zerolend/zero/Accumulator.sol";
 import {sdToken as SdToken} from "src/common/token/sdToken.sol";
-import {Locker} from "src/linea/zerolend/base-token/Locker.sol";
-import {Depositor} from "src/linea/zerolend/base-token/Depositor.sol";
+import {Locker} from "src/linea/zerolend/zero/Locker.sol";
+import {Depositor} from "src/linea/zerolend/zero/Depositor.sol";
 
 import {IStrategy} from "herdaddy/interfaces/stake-dao/IStrategy.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
