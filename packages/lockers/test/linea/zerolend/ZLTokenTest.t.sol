@@ -7,6 +7,9 @@ import "forge-std/src/console.sol";
 
 import {BaseZeroLendTokenTest} from "test/linea/zerolend/common/BaseZeroLendTokenTest.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
+import {ILocker} from "src/common/interfaces/ILocker.sol";
+import {ISdZeroLocker} from "src/common/interfaces/zerolend/ISdZeroLocker.sol";
+import {IZeroBaseLocker} from "src/common/interfaces/zerolend/IZeroBaseLocker.sol";
 
 // end to end tests for the ZeroLend integration
 contract ZeroLendTest is BaseZeroLendTokenTest {
@@ -62,4 +65,38 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
     // TODO test that can deposit to a different address
 
     // TODO test that can deposit to a different address without staking sdZERO
+
+    function test_canReleaseLockedTokensAfterLockEnds() public {
+        _depositTokens();
+
+        uint256 endLockTimestamp =
+            IZeroBaseLocker(address(zeroLockerToken)).locked(ISdZeroLocker(locker).lockerTokenId()).end;
+        uint256 lockerTokenId = ISdZeroLocker(locker).lockerTokenId();
+        uint256 zeroLockedAmount =
+            IZeroBaseLocker(address(zeroLockerToken)).locked(ISdZeroLocker(locker).lockerTokenId()).amount;
+
+        // fast forward 1s before locking should end
+        vm.warp(endLockTimestamp - 1);
+
+        // can't be done before the lock ends
+        vm.prank(ILocker(locker).governance());
+        vm.expectRevert("The lock didn't expire");
+        ISdZeroLocker(locker).release(address(1), lockerTokenId);
+
+        // fast forward to 4 years after locking
+        vm.warp(endLockTimestamp);
+
+        // can't be done right after if not governance
+        vm.expectRevert(ILocker.GOVERNANCE.selector);
+        ISdZeroLocker(locker).release(address(1), lockerTokenId);
+
+        // can be done right after by governance
+        vm.prank(ILocker(locker).governance());
+        ISdZeroLocker(locker).release(address(1), lockerTokenId);
+
+        // the right amount of tokens is withdrawn
+        assertEq(zeroToken.balanceOf(address(1)), zeroLockedAmount);
+    }
+
+    // TODO test rescue of locker NFT sent to the locker by random user
 }
