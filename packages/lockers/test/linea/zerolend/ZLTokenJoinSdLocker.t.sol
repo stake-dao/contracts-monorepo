@@ -58,7 +58,7 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
 
         // ## join StakeDAO
         IZeroLocker(zeroLockerToken).setApprovalForAll(locker, true);
-        ISdZeroDepositor(address(depositor)).joinStakeDaoLocker(_tokenIds);
+        ISdZeroDepositor(address(depositor)).deposit(_tokenIds, true, address(this));
 
         // ## test everything
 
@@ -76,6 +76,8 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
         (uint256[] memory _afterTokenIds,) =
             IOmnichainStakingBase(address(veZero)).getLockedNftDetails(userWithStakedNft);
         assertEq(_afterTokenIds.length, 0);
+
+        // TODO test that userWithStakedNft got sdZERO tokens
     }
 
     // TODO more tests
@@ -94,10 +96,14 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
 
         // ## join StakeDAO
         IZeroLocker(zeroLockerToken).setApprovalForAll(locker, true);
-        ISdZeroDepositor(address(depositor)).joinStakeDaoLocker(_tokenIds);
+        ISdZeroDepositor(address(depositor)).deposit(_tokenIds, true, userWithStakedNft);
         vm.expectRevert(abi.encodeWithSelector(IOmnichainStakingBase.ERC721NonexistentToken.selector, _tokenIds[0]));
-        ISdZeroDepositor(address(depositor)).joinStakeDaoLocker(_tokenIds);
+        ISdZeroDepositor(address(depositor)).deposit(_tokenIds, true, userWithStakedNft);
     }
+
+    // TODO test without staking
+
+    // TODO test with different _user than msg.sender
 
     function _appendNthTokenId(uint256[] memory _tokenIds, uint256 n) internal pure returns (uint256[] memory) {
         // Create a new memory array with length _tokenIds.length + 1
@@ -126,7 +132,7 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
         // ## join StakeDAO
         IZeroLocker(zeroLockerToken).setApprovalForAll(locker, true);
         vm.expectRevert(abi.encodeWithSelector(IOmnichainStakingBase.ERC721NonexistentToken.selector, _tokenIds[1]));
-        ISdZeroDepositor(address(depositor)).joinStakeDaoLocker(_appendNthTokenId(_tokenIds, 1));
+        ISdZeroDepositor(address(depositor)).deposit(_appendNthTokenId(_tokenIds, 1), true, userWithStakedNft);
     }
 
     function test_cantForceSomeoneToJoin() public {
@@ -144,10 +150,12 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
         vm.stopPrank();
 
         vm.expectRevert(abi.encodeWithSelector(ISdZeroLocker.NotOwnerOfToken.selector, _tokenIds[0]));
-        ISdZeroDepositor(address(depositor)).joinStakeDaoLocker(_tokenIds);
+        ISdZeroDepositor(address(depositor)).deposit(_tokenIds, true, userWithStakedNft);
     }
 
-    // can't call joinStakeDaoLocker on the locker directly
+    // can't call deposit on the locker directly
+
+    // test call deposit with empty _tokenIds list
 
     // canPartiallyJoin
 }

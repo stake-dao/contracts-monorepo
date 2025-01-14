@@ -8,5 +8,5 @@ interface ISdZeroLocker is ILocker {
     error NotDepositor();
     error NotOwnerOfToken(uint256 tokenId);
 
-    function joinStakeDaoLocker(address _owner, uint256[] calldata _tokenIds) external returns (uint256);
+    function deposit(address _owner, uint256[] calldata _tokenIds) external returns (uint256);
 }

@@ -83,7 +83,7 @@ contract Locker is VeCRVLocker {
         }
     }
 
-    function joinStakeDaoLocker(address _owner, uint256[] calldata _tokenIds) external returns (uint256 _amount) {
+    function deposit(address _owner, uint256[] calldata _tokenIds) external returns (uint256 _amount) {
         if (msg.sender != depositor) revert NotDepositor();
 
         // unstake locker NFT token
