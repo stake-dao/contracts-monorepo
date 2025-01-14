@@ -45,6 +45,9 @@ abstract contract BaseAccumulatorTest is CommonBase, Test {
 
         /// Deploy BaseAccumulator Contract.
         accumulator = BaseAccumulator(_deployAccumulator());
+        vm.prank(accumulator.governance());
+        accumulator.transferGovernance(address(this));
+        accumulator.acceptGovernance();
 
         address[] memory feeSplitReceivers = new address[](2);
         uint256[] memory feeSplitBps = new uint256[](2);

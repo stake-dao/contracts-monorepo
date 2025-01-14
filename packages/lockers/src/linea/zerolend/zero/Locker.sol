@@ -17,6 +17,7 @@ contract Locker is VeCRVLocker {
 
     IZeroBaseLocker public immutable zeroLocker;
 
+    // TODO rename
     uint256 public lockerTokenId;
 
     error NotDepositor();
@@ -68,14 +69,7 @@ contract Locker is VeCRVLocker {
     }
 
     /// @notice Claim the rewards from the fee distributor.
-    /// @param _feeDistributor Address of the fee distributor.
-    /// @param _token Address of the token to claim.
-    /// @param _recipient Address to send the tokens to.
-    function claimRewards(address _feeDistributor, address _token, address _recipient)
-        external
-        override
-        onlyGovernanceOrAccumulator
-    {
+    function claimRewards(address, address, address) external view override onlyGovernanceOrAccumulator {
         // migrated this code to the Accumulator for more flexibility
         revert();
     }
@@ -105,13 +99,29 @@ contract Locker is VeCRVLocker {
     }
 
     /// @notice Release the tokens from the Voting Escrow contract when the lock expires.
-    /// @param _recipient Address to send the tokens to
-    function release(address _recipient) external override onlyGovernance {
-        // TODO
+    // TODO natspecs dev
+    function release(address) external view override onlyGovernance {
+        // prefer using release(address _recipient, uint256 _tokenId)
+        revert();
+    }
+
+    // TODO natspecs
+    function release(address _recipient, uint256 _tokenId) external onlyGovernance {
+        // Someone could send a locker NFT to this contract, losing it in the process. This function
+        // would make sure any token owned by this contract can be withdrawn.
+        if (IZeroBaseLocker(zeroLocker).ownerOf(_tokenId) == veToken) {
+            IOmnichainStakingBase(veToken).unstakeToken(_tokenId);
+        }
+        IZeroBaseLocker(zeroLocker).withdraw(_tokenId);
+
+        uint256 _balance = IERC20(token).balanceOf(address(this));
+        IERC20(token).safeTransfer(_recipient, _balance);
+
+        emit Released(msg.sender, _balance);
     }
 
     /// @notice Execute an arbitrary transaction as the governance.
-    /// @dev override to allow calling from the accumulator to claim rewards
+    /// @dev Override to allow calling from the accumulator to claim rewards.
     /// @param to Address to send the transaction to.
     /// @param value Amount of ETH to send with the transaction.
     /// @param data Encoded data of the transaction.

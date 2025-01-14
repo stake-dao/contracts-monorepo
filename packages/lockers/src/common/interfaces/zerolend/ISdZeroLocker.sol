@@ -8,5 +8,9 @@ interface ISdZeroLocker is ILocker {
     error NotDepositor();
     error NotOwnerOfToken(uint256 tokenId);
 
+    function lockerTokenId() external returns (uint256);
+
     function deposit(address _owner, uint256[] calldata _tokenIds) external returns (uint256);
+
+    function release(address _recipient, uint256 _tokenId) external;
 }
