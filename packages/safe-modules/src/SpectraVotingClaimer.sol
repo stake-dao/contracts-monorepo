@@ -55,7 +55,7 @@ contract SpectraVotingClaimer is AllowanceManager {
     uint256 public immutable DENOMINATOR = 10_000;
 
     /// @notice Stake DAO Treasury
-    address public immutable SD_TREASURY = address(0x428419Ad92317B09FE00675F181ac09c87D16450);
+    address public immutable SD_TREASURY = address(0x5DA07af8913A4EAf09E5F569c20138b658906c17);
 
     /// @notice Event emitted when a claim occured
     /// @param tokenAddress Address that was claimed.
