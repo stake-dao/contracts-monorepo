@@ -19,6 +19,8 @@ interface IOmnichainStakingBase is IVotes {
     // An omni-chain staking contract that allows users to stake their veNFT
     // and get some voting power. Once staked the voting power is available cross-chain.
 
+    error ERC721NonexistentToken(uint256);
+
     function rewards(address) external view returns (uint256);
 
     function increaseLockAmount(uint256 tokenId, uint256 newLockAmount) external;
@@ -26,4 +28,13 @@ interface IOmnichainStakingBase is IVotes {
     function increaseLockDuration(uint256 tokenId, uint256 newLockDuration) external;
 
     function getReward() external;
+
+    function unstakeToken(uint256 tokenId) external;
+
+    function getLockedNftDetails(address _user)
+        external
+        view
+        returns (uint256[] memory, ILocker.LockedBalance[] memory);
+
+    function lockedTokenIdNfts(address _user, uint256 _index) external view returns (uint256);
 }

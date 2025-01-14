@@ -19,6 +19,9 @@ contract Locker is VeCRVLocker {
 
     uint256 public lockerTokenId;
 
+    error NotDepositor();
+    error NotOwnerOfToken(uint256 tokenId);
+
     constructor(address _zeroLocker, address _governance, address _token, address _veToken)
         VeCRVLocker(_governance, _token, _veToken)
     {
@@ -78,6 +81,30 @@ contract Locker is VeCRVLocker {
         if (_recipient != address(0)) {
             IERC20(_token).safeTransfer(_recipient, IERC20(_token).balanceOf(address(this)));
         }
+    }
+
+    function joinStakeDaoLocker(address _owner, uint256[] calldata _tokenIds) external returns (uint256 _amount) {
+        if (msg.sender != depositor) revert NotDepositor();
+
+        // unstake locker NFT token
+        IOmnichainStakingBase(veToken).unstakeToken(lockerTokenId);
+
+        // verify that msg.sender owns all tokenIds
+        for (uint256 index = 0; index < _tokenIds.length;) {
+            if (zeroLocker.ownerOf(_tokenIds[index]) != _owner) revert NotOwnerOfToken(_tokenIds[index]);
+
+            _amount += zeroLocker.locked(_tokenIds[index]).amount;
+
+            // merge user token into locker token
+            zeroLocker.merge(_tokenIds[index], lockerTokenId);
+
+            unchecked {
+                ++index;
+            }
+        }
+
+        // transfer the token back to the ZEROvp contract
+        zeroLocker.safeTransferFrom(address(this), veToken, lockerTokenId);
     }
 
     /// @notice Release the tokens from the Voting Escrow contract when the lock expires.

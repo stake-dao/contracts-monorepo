@@ -26,6 +26,8 @@ import {IZeroLocker} from "src/common/interfaces/zerolend/IZeroLocker.sol";
  *   # maxtime (4 years?)
  */
 interface IZeroBaseLocker is IZeroLocker {
+    function locked(uint256 _tokenId) external view returns (LockedBalance memory);
+
     /// @notice Get timestamp when `_tokenId`'s lock finishes
     /// @param _tokenId User NFT
     /// @return Epoch time of the lock end
