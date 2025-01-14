@@ -48,10 +48,18 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
         // TODO make the math to test that the amount received by the gauge is exactly what was expected
     }
 
+    // TODO can claim WETH as well if added when claiming
+
     // TODO
     // function test_canClaimRewardsFromGauge() public {}
 
     // TODO test with multiple stakers
 
     // TODO test where withdraw tokens
+
+    // TODO test that can deposit without staking sdZERO
+
+    // TODO test that can deposit to a different address
+
+    // TODO test that can deposit to a different address without staking sdZERO
 }

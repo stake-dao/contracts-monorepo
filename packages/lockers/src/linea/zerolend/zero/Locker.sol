@@ -76,11 +76,8 @@ contract Locker is VeCRVLocker {
         override
         onlyGovernanceOrAccumulator
     {
-        IOmnichainStakingBase(_feeDistributor).getReward();
-
-        if (_recipient != address(0)) {
-            IERC20(_token).safeTransfer(_recipient, IERC20(_token).balanceOf(address(this)));
-        }
+        // migrated this code to the Accumulator for more flexibility
+        revert();
     }
 
     function deposit(address _owner, uint256[] calldata _tokenIds) external returns (uint256 _amount) {
@@ -111,5 +108,21 @@ contract Locker is VeCRVLocker {
     /// @param _recipient Address to send the tokens to
     function release(address _recipient) external override onlyGovernance {
         // TODO
+    }
+
+    /// @notice Execute an arbitrary transaction as the governance.
+    /// @dev override to allow calling from the accumulator to claim rewards
+    /// @param to Address to send the transaction to.
+    /// @param value Amount of ETH to send with the transaction.
+    /// @param data Encoded data of the transaction.
+    function execute(address to, uint256 value, bytes calldata data)
+        external
+        payable
+        override
+        onlyGovernanceOrAccumulator
+        returns (bool, bytes memory)
+    {
+        (bool success, bytes memory result) = to.call{value: value}(data);
+        return (success, result);
     }
 }
