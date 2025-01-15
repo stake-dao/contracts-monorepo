@@ -17,7 +17,7 @@ import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 
 // end to end tests for the ZeroLend integration
 abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
-    // TODO update
+    // TODO update to actual governance
     address GOVERNANCE = address(9);
 
     address zeroLockerToken = 0x08D5FEA625B1dBf9Bae0b97437303a0374ee02F8;
@@ -59,7 +59,6 @@ abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
     }
 
     function _deployLocker() internal returns (address _locker) {
-        // TODO change governance to the actual stake DAO governance
         _locker = address(new Locker(zeroLockerToken, GOVERNANCE, address(zeroToken), address(veZero)));
     }
 
