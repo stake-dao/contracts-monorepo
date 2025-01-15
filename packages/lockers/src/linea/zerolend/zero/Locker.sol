@@ -12,7 +12,6 @@ import {IOmnichainStakingBase} from "src/common/interfaces/zerolend/omnichainsta
 /// @author Stake DAO
 /// @custom:contact contact@stakedao.org
 contract Locker is VeCRVLocker {
-    // TODO is it ok to add this?
     using SafeERC20 for IERC20;
 
     IZeroBaseLocker public immutable zeroLocker;
@@ -27,8 +26,6 @@ contract Locker is VeCRVLocker {
         VeCRVLocker(_governance, _token, _veToken)
     {
         zeroLocker = IZeroBaseLocker(_zeroLocker);
-
-        // TODO make sure this is safe, should be as the locker doesn't hold tokens, it's just a gateway
         IERC20(token).approve(address(veToken), type(uint256).max);
     }
 
@@ -51,8 +48,6 @@ contract Locker is VeCRVLocker {
     // TODO add natspecs
     function increaseLock(uint256 _value, uint256 _unlockTime) external override onlyGovernanceOrDepositor {
         if (_value > 0) {
-            // IVeToken(veToken).increase_amount(_value);
-
             IOmnichainStakingBase(veToken).increaseLockAmount(lockerTokenId, _value);
         }
 
@@ -60,7 +55,6 @@ contract Locker is VeCRVLocker {
             bool _canIncrease = (_unlockTime / 1 weeks * 1 weeks) > (zeroLocker.lockedEnd(lockerTokenId));
 
             if (_canIncrease) {
-                // IVeToken(veToken).increase_unlock_time(_unlockTime);
                 IOmnichainStakingBase(veToken).increaseLockDuration(lockerTokenId, _unlockTime);
             }
         }

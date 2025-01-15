@@ -37,8 +37,7 @@ contract Accumulator is BaseAccumulator {
     //////////////////////////////////////////////////////
 
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4
-    // TODO do we remove the notifySDT variable since we will be using the LiquidityGaugeV4XChain
-    //      we could also set it to false directly below?
+    // TODO natspecs
     function claimAndNotifyAll(bool notifySDT, bool claimFeeStrategy) external override {
         // claim rewards from the locker
         ILocker(locker).execute(ZERO_VP, 0, abi.encodeWithSignature("getReward()"));
