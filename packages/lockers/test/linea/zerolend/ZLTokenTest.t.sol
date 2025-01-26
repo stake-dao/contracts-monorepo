@@ -33,7 +33,7 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
 
         _depositTokens(true, false, address(this));
 
-        // validate that sdZero was minted
+        // check that sdZero was minted
         assertEq(ISdToken(sdToken).balanceOf(address(this)), 1 ether);
         assertEq(liquidityGauge.balanceOf(address(this)), 0);
     }
@@ -43,7 +43,7 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
 
         _depositTokens(true, true, address(this));
 
-        // validate that gauge sdZero was minted and not sdZero
+        // check that gauge sdZero was minted and not sdZero
         assertEq(ISdToken(sdToken).balanceOf(address(this)), 0);
         assertEq(liquidityGauge.balanceOf(address(this)), 1 ether);
     }
@@ -53,7 +53,7 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
 
         _depositTokens(true, false, address(5));
 
-        // validate that gauge sdZero was minted and not sdZero
+        // check that gauge sdZero was minted and not sdZero
         assertEq(ISdToken(sdToken).balanceOf(address(5)), 1 ether);
         assertEq(liquidityGauge.balanceOf(address(5)), 0);
     }
@@ -63,7 +63,7 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
 
         _depositTokens(true, true, address(5));
 
-        // validate that gauge sdZero was minted and not sdZero
+        // check that gauge sdZero was minted and not sdZero
         assertEq(ISdToken(sdToken).balanceOf(address(5)), 0);
         assertEq(liquidityGauge.balanceOf(address(5)), 1 ether);
     }
@@ -150,7 +150,7 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
         _depositTokens(true, true, zeroLendTokenHolder2);
         vm.stopPrank();
 
-        // validate that sdZero was minted
+        // check that sdZero was minted
         assertEq(liquidityGauge.balanceOf(zeroLendTokenHolder1), 1 ether);
         assertEq(liquidityGauge.balanceOf(zeroLendTokenHolder2), 1 ether);
 
