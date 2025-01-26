@@ -45,7 +45,7 @@ contract Deploy is DeployAccumulator {
 
         // Deploy sdZero.
         // TODO confirm name & symbol
-        sdZero = address((new SdToken("Stake DAO ZeroLend", "sdZero")));
+        sdZero = address((new SdToken("Stake DAO ZeroLend", "sdZERO")));
 
         // Deploy gauge.
         // TODO confirm that can't deploy as proxy because LiquidityGaugeV4XChain doesn't have a initialize function

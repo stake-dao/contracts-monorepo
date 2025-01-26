@@ -101,8 +101,8 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
 
         skip(3600 * 24 * 30);
 
-        // manually give 1 WETH to the accumulator
-        deal(address(WETH), address(accumulator), 1 ether);
+        // manually give 1 WETH to the locker
+        deal(address(WETH), address(locker), 1 ether);
         _claimRewards();
 
         // make sure it gets sent to the gauge
@@ -114,8 +114,8 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
 
         skip(3600 * 24 * 30);
 
-        // manually give 1 WETH to the accumulator
-        deal(address(WETH), address(accumulator), 1 ether);
+        // manually give 1 WETH to the locker
+        deal(address(WETH), address(locker), 1 ether);
         _claimRewards();
 
         // go to the end of the reward distribution period of the gauge
@@ -192,7 +192,6 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
 
         uint256 endLockTimestamp =
             ILockerToken(address(zeroLockerToken)).locked(ISdZeroLocker(locker).zeroLockedTokenId()).end;
-        uint256 zeroLockedTokenId = ISdZeroLocker(locker).zeroLockedTokenId();
         uint256 zeroLockedAmount =
             ILockerToken(address(zeroLockerToken)).locked(ISdZeroLocker(locker).zeroLockedTokenId()).amount;
 
@@ -202,54 +201,20 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
         // can't be done before the lock ends
         vm.prank(ILocker(locker).governance());
         vm.expectRevert("The lock didn't expire");
-        ISdZeroLocker(locker).release(address(1), zeroLockedTokenId);
+        ISdZeroLocker(locker).release(address(1));
 
         // fast forward to 4 years after locking
         vm.warp(endLockTimestamp);
 
         // can't be done right after if not governance
         vm.expectRevert(ILocker.GOVERNANCE.selector);
-        ISdZeroLocker(locker).release(address(1), zeroLockedTokenId);
+        ISdZeroLocker(locker).release(address(1));
 
         // can be done right after by governance
         vm.prank(ILocker(locker).governance());
-        ISdZeroLocker(locker).release(address(1), zeroLockedTokenId);
+        ISdZeroLocker(locker).release(address(1));
 
         // the right amount of tokens is withdrawn
-        assertEq(zeroToken.balanceOf(address(1)), zeroLockedAmount);
-    }
-
-    function test_canRescueLockedToken() public {
-        address lockNftHolder = 0x44f4DA18D1e9609E13B3d10cD091e3836C69Bff2;
-        uint256 foreignTokenId = 0xb2bb;
-
-        ILockerToken.LockedBalance memory lockedData = ILockerToken(address(zeroLockerToken)).locked(foreignTokenId);
-
-        uint256 endLockTimestamp = lockedData.end;
-        uint256 zeroLockedAmount = lockedData.amount;
-        // Access other fields as needed
-
-        // user withdraws his NFT
-        vm.prank(lockNftHolder);
-        IZeroVp(address(veZero)).unstakeToken(foreignTokenId);
-
-        // sends it to the locker
-        vm.prank(lockNftHolder);
-        ILockerToken(zeroLockerToken).transferFrom(lockNftHolder, locker, foreignTokenId);
-
-        // locker can't realease the token
-        vm.prank(ILocker(locker).governance());
-        vm.expectRevert("The lock didn't expire");
-        ISdZeroLocker(locker).release(address(1), foreignTokenId);
-
-        // wait for lock to end (4 years is too much but sufficient)
-        vm.warp(endLockTimestamp);
-
-        // locker can release the NFT
-        vm.prank(ILocker(locker).governance());
-        ISdZeroLocker(locker).release(address(1), foreignTokenId);
-
-        // received the zero tokens
         assertEq(zeroToken.balanceOf(address(1)), zeroLockedAmount);
     }
 
