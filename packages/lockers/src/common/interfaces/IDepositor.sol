@@ -5,4 +5,6 @@ interface IDepositor {
     function deposit(uint256 amount, bool lock, bool stake, address user) external;
 
     function setSdTokenOperator(address newOperator) external;
+
+    function transferGovernance(address _governance) external;
 }

@@ -22,4 +22,6 @@ contract Deploy is DeployAccumulator {
         Accumulator(payable(accumulator)).setTransferVotersRewards(true);
         Accumulator(payable(accumulator)).setVotesRewardRecipient(PENDLE.VOTERS_REWARDS_RECIPIENT);
     }
+
+    function _beforeDeploy() internal virtual override {}
 }
