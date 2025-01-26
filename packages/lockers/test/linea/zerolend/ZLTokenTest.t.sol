@@ -72,7 +72,7 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
         accumulator.claimAndNotifyAll(false, false);
     }
 
-    function test_canClaimRewards__() public {
+    function test_canClaimRewards() public {
         _depositTokens(true, true, address(this));
 
         uint256 oneMonth = 3600 * 24 * 30;
