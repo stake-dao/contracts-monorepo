@@ -2,10 +2,10 @@
 pragma solidity ^0.8.0;
 
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
-import {IZeroLocker} from "src/common/interfaces/zerolend/IZeroLocker.sol";
+import {IZeroLocker} from "src/common/interfaces/zerolend/zerolend/IZeroLocker.sol";
 
 /**
- * @title Voting Escrow
+ *   @title Voting Escrow
  *   @author Curve Finance
  *   @notice Votes have a weight depending on time, so that users are
  *   committed to the future of (whatever they are voting for)
@@ -25,7 +25,7 @@ import {IZeroLocker} from "src/common/interfaces/zerolend/IZeroLocker.sol";
  *   # 0 +--------+------> time
  *   # maxtime (4 years?)
  */
-interface IZeroBaseLocker is IZeroLocker {
+interface ILockerToken is IZeroLocker {
     function locked(uint256 _tokenId) external view returns (LockedBalance memory);
 
     /// @notice Get timestamp when `_tokenId`'s lock finishes

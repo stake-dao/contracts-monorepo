@@ -8,11 +8,10 @@ import "forge-std/src/console.sol";
 import {BaseZeroLendTokenTest} from "test/linea/zerolend/common/BaseZeroLendTokenTest.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {ILocker} from "src/common/interfaces/ILocker.sol";
-import {ISdZeroLocker} from "src/common/interfaces/zerolend/ISdZeroLocker.sol";
-import {IZeroBaseLocker} from "src/common/interfaces/zerolend/IZeroBaseLocker.sol";
-import {IZeroLocker} from "src/common/interfaces/zerolend/IZeroLocker.sol";
+import {ISdZeroLocker} from "src/common/interfaces/zerolend/stakedao/ISdZeroLocker.sol";
+import {ILockerToken} from "src/common/interfaces/zerolend/zerolend/ILockerToken.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IOmnichainStakingBase} from "src/common/interfaces/zerolend/omnichainstaking/IOmnichainStakingBase.sol";
+import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
 
 // end to end tests for the ZeroLend integration
 contract ZeroLendTest is BaseZeroLendTokenTest {
@@ -80,7 +79,7 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
         skip(oneMonth);
 
         uint256 balanceBefore = zeroToken.balanceOf(address(liquidityGauge));
-        uint256 earned = IOmnichainStakingBase(address(veZero)).earned(address(locker));
+        uint256 earned = IZeroVp(address(veZero)).earned(address(locker));
 
         _claimRewards();
 
@@ -192,10 +191,10 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
         _depositTokens(true, true, address(this));
 
         uint256 endLockTimestamp =
-            IZeroBaseLocker(address(zeroLockerToken)).locked(ISdZeroLocker(locker).zeroLockedTokenId()).end;
+            ILockerToken(address(zeroLockerToken)).locked(ISdZeroLocker(locker).zeroLockedTokenId()).end;
         uint256 zeroLockedTokenId = ISdZeroLocker(locker).zeroLockedTokenId();
         uint256 zeroLockedAmount =
-            IZeroBaseLocker(address(zeroLockerToken)).locked(ISdZeroLocker(locker).zeroLockedTokenId()).amount;
+            ILockerToken(address(zeroLockerToken)).locked(ISdZeroLocker(locker).zeroLockedTokenId()).amount;
 
         // fast forward 1s before locking should end
         vm.warp(endLockTimestamp - 1);
@@ -224,7 +223,7 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
         address lockNftHolder = 0x44f4DA18D1e9609E13B3d10cD091e3836C69Bff2;
         uint256 foreignTokenId = 0xb2bb;
 
-        IZeroLocker.LockedBalance memory lockedData = IZeroBaseLocker(address(zeroLockerToken)).locked(foreignTokenId);
+        ILockerToken.LockedBalance memory lockedData = ILockerToken(address(zeroLockerToken)).locked(foreignTokenId);
 
         uint256 endLockTimestamp = lockedData.end;
         uint256 zeroLockedAmount = lockedData.amount;
@@ -232,11 +231,11 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
 
         // user withdraws his NFT
         vm.prank(lockNftHolder);
-        IOmnichainStakingBase(address(veZero)).unstakeToken(foreignTokenId);
+        IZeroVp(address(veZero)).unstakeToken(foreignTokenId);
 
         // sends it to the locker
         vm.prank(lockNftHolder);
-        IZeroBaseLocker(zeroLockerToken).transferFrom(lockNftHolder, locker, foreignTokenId);
+        ILockerToken(zeroLockerToken).transferFrom(lockNftHolder, locker, foreignTokenId);
 
         // locker can't realease the token
         vm.prank(ILocker(locker).governance());
