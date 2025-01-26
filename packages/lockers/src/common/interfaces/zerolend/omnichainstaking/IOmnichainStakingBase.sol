@@ -27,6 +27,8 @@ interface IOmnichainStakingBase is IVotes {
 
     function increaseLockDuration(uint256 tokenId, uint256 newLockDuration) external;
 
+    function rewardRate() external returns (uint256);
+
     function getReward() external;
 
     function unstakeToken(uint256 tokenId) external;
@@ -37,4 +39,8 @@ interface IOmnichainStakingBase is IVotes {
         returns (uint256[] memory, ILocker.LockedBalance[] memory);
 
     function lockedTokenIdNfts(address _user, uint256 _index) external view returns (uint256);
+
+    function earned(address account) external view returns (uint256);
+
+    function totalSupply() external view returns (uint256);
 }

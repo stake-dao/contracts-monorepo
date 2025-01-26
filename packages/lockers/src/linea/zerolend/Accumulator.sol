@@ -36,13 +36,14 @@ contract Accumulator is BaseAccumulator {
     /// --- OVERRIDDEN FUNCTIONS
     //////////////////////////////////////////////////////
 
-    /// @notice Claims all rewards tokens for the locker and notify them to the LGV4
-    // TODO natspecs
+    /// @notice Claims all rewards tokens for the locker and notify them to the LGV4.
+    /// @param notifySDT Deactivated, should be false.
+    /// @param claimFeeStrategy Deactivated, should be false.
     function claimAndNotifyAll(bool notifySDT, bool claimFeeStrategy) external override {
-        // claim rewards from the locker
+        // Claim rewards from the locker.
         ILocker(locker).execute(ZERO_VP, 0, abi.encodeWithSignature("getReward()"));
 
-        // transfer rewards to the gauge
+        // Transfer rewards to the gauge.
         ILocker(locker).execute(
             ZERO, 0, abi.encodeWithSignature("transfer(address,uint256)", address(this), IERC20(ZERO).balanceOf(locker))
         );

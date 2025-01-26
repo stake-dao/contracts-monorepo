@@ -7,8 +7,10 @@ import {ILocker} from "src/common/interfaces/ILocker.sol";
 interface ISdZeroLocker is ILocker {
     error NotDepositor();
     error NotOwnerOfToken(uint256 tokenId);
+    error EmptyTokenIdList();
+    error CanOnlyBeCalledOnce();
 
-    function lockerTokenId() external returns (uint256);
+    function zeroLockedTokenId() external returns (uint256);
 
     function deposit(address _owner, uint256[] calldata _tokenIds) external returns (uint256);
 

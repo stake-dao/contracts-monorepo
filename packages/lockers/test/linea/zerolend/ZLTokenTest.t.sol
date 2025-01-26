@@ -10,6 +10,9 @@ import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {ILocker} from "src/common/interfaces/ILocker.sol";
 import {ISdZeroLocker} from "src/common/interfaces/zerolend/ISdZeroLocker.sol";
 import {IZeroBaseLocker} from "src/common/interfaces/zerolend/IZeroBaseLocker.sol";
+import {IZeroLocker} from "src/common/interfaces/zerolend/IZeroLocker.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IOmnichainStakingBase} from "src/common/interfaces/zerolend/omnichainstaking/IOmnichainStakingBase.sol";
 
 // end to end tests for the ZeroLend integration
 contract ZeroLendTest is BaseZeroLendTokenTest {
@@ -21,26 +24,156 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
         _deployZeroIntegration();
     }
 
-    function _depositTokens() public {
+    function _depositTokens(bool _lock, bool _stake, address _user) public {
         zeroToken.approve(address(depositor), 1 ether);
-        depositor.deposit(1 ether, true, false, address(this));
+        depositor.deposit(1 ether, _lock, _stake, _user);
     }
 
-    function test_canDepositTokens() public {
+    function test_canDepositTokensWithoutStaking() public {
         assertEq(zeroToken.balanceOf(address(this)) > 1 ether, true);
 
-        _depositTokens();
+        _depositTokens(true, false, address(this));
 
         // validate that sdZero was minted
         assertEq(ISdToken(sdToken).balanceOf(address(this)), 1 ether);
+        assertEq(liquidityGauge.balanceOf(address(this)), 0);
+    }
+
+    function test_canDepositTokensAndStake() public {
+        assertEq(zeroToken.balanceOf(address(this)) > 1 ether, true);
+
+        _depositTokens(true, true, address(this));
+
+        // validate that gauge sdZero was minted and not sdZero
+        assertEq(ISdToken(sdToken).balanceOf(address(this)), 0);
+        assertEq(liquidityGauge.balanceOf(address(this)), 1 ether);
+    }
+
+    function test_canDepositToDifferentAddressWithoutStaking() public {
+        assertEq(zeroToken.balanceOf(address(this)) > 1 ether, true);
+
+        _depositTokens(true, false, address(5));
+
+        // validate that gauge sdZero was minted and not sdZero
+        assertEq(ISdToken(sdToken).balanceOf(address(5)), 1 ether);
+        assertEq(liquidityGauge.balanceOf(address(5)), 0);
+    }
+
+    function test_canDepositToDifferentAddressAndStake() public {
+        assertEq(zeroToken.balanceOf(address(this)) > 1 ether, true);
+
+        _depositTokens(true, true, address(5));
+
+        // validate that gauge sdZero was minted and not sdZero
+        assertEq(ISdToken(sdToken).balanceOf(address(5)), 0);
+        assertEq(liquidityGauge.balanceOf(address(5)), 1 ether);
     }
 
     function _claimRewards() public {
         accumulator.claimAndNotifyAll(false, false);
     }
 
-    function test_canClaimRewards() public {
-        _depositTokens();
+    function test_canClaimRewards__() public {
+        _depositTokens(true, true, address(this));
+
+        uint256 oneMonth = 3600 * 24 * 30;
+        skip(oneMonth);
+
+        uint256 balanceBefore = zeroToken.balanceOf(address(liquidityGauge));
+        uint256 earned = IOmnichainStakingBase(address(veZero)).earned(address(locker));
+
+        _claimRewards();
+
+        assertEq(
+            zeroToken.balanceOf(address(liquidityGauge)) - balanceBefore,
+            earned
+            // treasury fee
+            - earned * 1e17 / 1e18
+            // SD fee
+            - earned * 5e16 / 1e18
+            // claim fee
+            - earned * 1e15 / 1e18
+        );
+    }
+
+    // fake the adding of WETH as reward, make sure it gets claimed
+    function test_canClaimWethRewards() public {
+        _depositTokens(true, true, address(this));
+
+        skip(3600 * 24 * 30);
+
+        // manually give 1 WETH to the accumulator
+        deal(address(WETH), address(accumulator), 1 ether);
+        _claimRewards();
+
+        // make sure it gets sent to the gauge
+        assertEq(WETH.balanceOf(address(liquidityGauge)), 1 ether);
+    }
+
+    function test_canClaimRewardsFromGauge() public {
+        _depositTokens(true, true, address(this));
+
+        skip(3600 * 24 * 30);
+
+        // manually give 1 WETH to the accumulator
+        deal(address(WETH), address(accumulator), 1 ether);
+        _claimRewards();
+
+        // go to the end of the reward distribution period of the gauge
+        skip(3600 * 24 * 7);
+
+        deal(address(zeroToken), address(this), 0);
+        assertEq(zeroToken.balanceOf(address(this)), 0);
+        assertEq(IERC20(sdToken).balanceOf(address(this)), 0);
+        assertEq(liquidityGauge.balanceOf(address(this)), 1 ether);
+
+        liquidityGauge.claim_rewards();
+
+        // make sure user got the reward
+        assertEq(zeroToken.balanceOf(address(this)) > 0, true);
+
+        // there are some rounding
+        assertEq(WETH.balanceOf(address(this)) > 0.9999 ether, true);
+    }
+
+    function test_multipleStakers() public {
+        address zeroLendTokenHolder1 = 0x4c11F940E2D09eF9D5000668c1C9410f0AaF0833;
+        address zeroLendTokenHolder2 = 0xf18601650f927584a9785d24f1a4D9CfEeba19FA;
+
+        assertEq(zeroToken.balanceOf(zeroLendTokenHolder1) > 1 ether, true);
+        assertEq(zeroToken.balanceOf(zeroLendTokenHolder2) > 1 ether, true);
+
+        vm.startPrank(zeroLendTokenHolder1);
+        _depositTokens(true, true, zeroLendTokenHolder1);
+        vm.stopPrank();
+
+        vm.startPrank(zeroLendTokenHolder2);
+        _depositTokens(true, true, zeroLendTokenHolder2);
+        vm.stopPrank();
+
+        // validate that sdZero was minted
+        assertEq(liquidityGauge.balanceOf(zeroLendTokenHolder1), 1 ether);
+        assertEq(liquidityGauge.balanceOf(zeroLendTokenHolder2), 1 ether);
+
+        skip(3600 * 24 * 30);
+        _claimRewards();
+
+        uint256 zeroTokenBalance1BeforeClaim = zeroToken.balanceOf(zeroLendTokenHolder1);
+        uint256 zeroTokenBalance2BeforeClaim = zeroToken.balanceOf(zeroLendTokenHolder2);
+
+        skip(3600 * 24 * 7);
+        vm.prank(zeroLendTokenHolder1);
+        liquidityGauge.claim_rewards();
+        vm.prank(zeroLendTokenHolder2);
+        liquidityGauge.claim_rewards();
+
+        // make sure users got the rewards
+        assertEq(zeroToken.balanceOf(zeroLendTokenHolder1) > zeroTokenBalance1BeforeClaim, true);
+        assertEq(zeroToken.balanceOf(zeroLendTokenHolder2) > zeroTokenBalance2BeforeClaim, true);
+    }
+
+    function test_canWithdrawTokens() public {
+        _depositTokens(true, true, address(this));
 
         skip(3600 * 24 * 30);
 
@@ -48,32 +181,21 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
 
         assertEq(zeroToken.balanceOf(address(liquidityGauge)) > 0, true);
 
-        // TODO make the math to test that the amount received by the gauge is exactly what was expected
+        uint256 gaugeAmount = liquidityGauge.balanceOf(address(this));
+
+        liquidityGauge.withdraw(gaugeAmount, false);
+
+        assertEq(IERC20(sdToken).balanceOf(address(this)), gaugeAmount);
     }
 
-    // TODO can claim WETH as well if added when claiming
-
-    // TODO
-    // function test_canClaimRewardsFromGauge() public {}
-
-    // TODO test with multiple stakers
-
-    // TODO test where withdraw tokens
-
-    // TODO test that can deposit without staking sdZERO
-
-    // TODO test that can deposit to a different address
-
-    // TODO test that can deposit to a different address without staking sdZERO
-
     function test_canReleaseLockedTokensAfterLockEnds() public {
-        _depositTokens();
+        _depositTokens(true, true, address(this));
 
         uint256 endLockTimestamp =
-            IZeroBaseLocker(address(zeroLockerToken)).locked(ISdZeroLocker(locker).lockerTokenId()).end;
-        uint256 lockerTokenId = ISdZeroLocker(locker).lockerTokenId();
+            IZeroBaseLocker(address(zeroLockerToken)).locked(ISdZeroLocker(locker).zeroLockedTokenId()).end;
+        uint256 zeroLockedTokenId = ISdZeroLocker(locker).zeroLockedTokenId();
         uint256 zeroLockedAmount =
-            IZeroBaseLocker(address(zeroLockerToken)).locked(ISdZeroLocker(locker).lockerTokenId()).amount;
+            IZeroBaseLocker(address(zeroLockerToken)).locked(ISdZeroLocker(locker).zeroLockedTokenId()).amount;
 
         // fast forward 1s before locking should end
         vm.warp(endLockTimestamp - 1);
@@ -81,22 +203,63 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
         // can't be done before the lock ends
         vm.prank(ILocker(locker).governance());
         vm.expectRevert("The lock didn't expire");
-        ISdZeroLocker(locker).release(address(1), lockerTokenId);
+        ISdZeroLocker(locker).release(address(1), zeroLockedTokenId);
 
         // fast forward to 4 years after locking
         vm.warp(endLockTimestamp);
 
         // can't be done right after if not governance
         vm.expectRevert(ILocker.GOVERNANCE.selector);
-        ISdZeroLocker(locker).release(address(1), lockerTokenId);
+        ISdZeroLocker(locker).release(address(1), zeroLockedTokenId);
 
         // can be done right after by governance
         vm.prank(ILocker(locker).governance());
-        ISdZeroLocker(locker).release(address(1), lockerTokenId);
+        ISdZeroLocker(locker).release(address(1), zeroLockedTokenId);
 
         // the right amount of tokens is withdrawn
         assertEq(zeroToken.balanceOf(address(1)), zeroLockedAmount);
     }
 
-    // TODO test rescue of locker NFT sent to the locker by random user
+    function test_canRescueLockedToken() public {
+        address lockNftHolder = 0x44f4DA18D1e9609E13B3d10cD091e3836C69Bff2;
+        uint256 foreignTokenId = 0xb2bb;
+
+        IZeroLocker.LockedBalance memory lockedData = IZeroBaseLocker(address(zeroLockerToken)).locked(foreignTokenId);
+
+        uint256 endLockTimestamp = lockedData.end;
+        uint256 zeroLockedAmount = lockedData.amount;
+        // Access other fields as needed
+
+        // user withdraws his NFT
+        vm.prank(lockNftHolder);
+        IOmnichainStakingBase(address(veZero)).unstakeToken(foreignTokenId);
+
+        // sends it to the locker
+        vm.prank(lockNftHolder);
+        IZeroBaseLocker(zeroLockerToken).transferFrom(lockNftHolder, locker, foreignTokenId);
+
+        // locker can't realease the token
+        vm.prank(ILocker(locker).governance());
+        vm.expectRevert("The lock didn't expire");
+        ISdZeroLocker(locker).release(address(1), foreignTokenId);
+
+        // wait for lock to end (4 years is too much but sufficient)
+        vm.warp(endLockTimestamp);
+
+        // locker can release the NFT
+        vm.prank(ILocker(locker).governance());
+        ISdZeroLocker(locker).release(address(1), foreignTokenId);
+
+        // received the zero tokens
+        assertEq(zeroToken.balanceOf(address(1)), zeroLockedAmount);
+    }
+
+    function test_cantCreateInitialLockMultipleTimes() external {
+        // initial lock was already created
+
+        vm.prank(GOVERNANCE);
+        vm.expectRevert(ISdZeroLocker.CanOnlyBeCalledOnce.selector);
+        // try to create it a second time
+        ILocker(locker).createLock(1, 4 * 365 days);
+    }
 }

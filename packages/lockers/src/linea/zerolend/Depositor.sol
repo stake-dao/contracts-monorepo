@@ -13,8 +13,13 @@ contract Depositor is BaseDepositor {
         BaseDepositor(_token, _locker, _minter, _gauge, 4 * 365 days)
     {}
 
-    // @dev msg.sender needs to allow approve the locker
-    // TODO natspecs
+    /// @notice Deposit ZeroLend stake NFTs, and receive sdToken or sdTokenGauge in return.
+    /// @param _tokenIds Token IDs to deposit.
+    /// @param _stake Whether to stake the sdToken in the gauge.
+    /// @param _user Address of the user to receive the sdToken.
+    /// @dev In order to allow the transfer of the NFT tokens, msg.sender needs to give an approvalForAll to the locker.
+    /// If the stake is true, the sdToken is staked in the gauge that distributes rewards. If the stake is false,
+    /// the sdToken is sent to the user.
     function deposit(uint256[] calldata _tokenIds, bool _stake, address _user) external {
         if (_user == address(0)) revert ADDRESS_ZERO();
 
