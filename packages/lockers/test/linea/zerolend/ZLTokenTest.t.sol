@@ -8,6 +8,7 @@ import "forge-std/src/console.sol";
 import {BaseZeroLendTokenTest} from "test/linea/zerolend/common/BaseZeroLendTokenTest.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {ILocker} from "src/common/interfaces/ILocker.sol";
+import {IDepositor} from "src/common/interfaces/IDepositor.sol";
 import {ISdZeroLocker} from "src/common/interfaces/zerolend/stakedao/ISdZeroLocker.sol";
 import {ILockerToken} from "src/common/interfaces/zerolend/zerolend/ILockerToken.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -66,6 +67,15 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
         // check that gauge sdZero was minted and not sdZero
         assertEq(ISdToken(sdToken).balanceOf(address(5)), 0);
         assertEq(liquidityGauge.balanceOf(address(5)), 1 ether);
+    }
+
+    function test_cantDepositToZeroAddress() public {
+        assertEq(zeroToken.balanceOf(address(this)) > 1 ether, true);
+
+        zeroToken.approve(address(depositor), 1 ether);
+
+        vm.expectRevert(IDepositor.ADDRESS_ZERO.selector);
+        depositor.deposit(1 ether, true, true, address(0));
     }
 
     function _claimRewards() public {
