@@ -9,7 +9,7 @@ library CAKE {
     address public constant GAUGE = 0xE2496134149e6CD3f3A577C2B08A6f54fC23e6e4;
     address public constant ACCUMULATOR = 0xAA14AD0AD8B48406Baf2473692901e47430414F5;
     address public constant EXECUTOR = 0x74B7639503bb632FfE86382af7C5a3121a41613a;
-    address public constant VOTER = 0x3Ac34fe88E434812ddC4A29Caa8234328983a13C;
+    address public constant VOTER = 0x3c7b193aa39a85FDE911465d35CE3A74499F0A7B;
 }
 
 library MAV {

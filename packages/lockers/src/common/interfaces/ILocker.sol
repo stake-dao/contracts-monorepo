@@ -39,6 +39,10 @@ interface ILocker {
 
     function setAngleDepositor(address) external;
 
+    function setPendleDepositor(address) external;
+
+    function pendleDepositor() external view returns (address);
+
     function setDepositor(address) external;
 
     function setFxsDepositor(address) external;
