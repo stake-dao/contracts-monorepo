@@ -25,7 +25,6 @@ contract Depositor is BaseDepositor {
     /// @dev In order to allow the transfer of the NFT tokens, msg.sender needs to give an approvalForAll to the locker.
     /// If stake is true, sdZero tokens are staked in the gauge which distributes rewards. If stake is false,
     /// sdZero tokens are sent to the user.
-    // TODO should this be nonreentrant??
     function deposit(uint256[] calldata _tokenIds, bool _stake, address _user) external {
         if (_user == address(0)) revert ADDRESS_ZERO();
 
