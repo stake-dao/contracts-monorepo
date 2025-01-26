@@ -15,7 +15,7 @@ abstract contract BaseZeroLendTest is CommonBase, Test {
     constructor() {}
 
     function _deployLiquidityGauge(address _sdToken) internal returns (address _liquidityGauge) {
-        // TODO verify that can't deploy as proxy because LiquidityGaugeV4XChain doesn't have a initialize function
+        // TODO confirm that can't deploy as proxy because LiquidityGaugeV4XChain doesn't have a initialize function
         _liquidityGauge = deployCode("vyper/LiquidityGaugeV4XChain.vy", abi.encode(_sdToken, address(this)));
     }
 }
