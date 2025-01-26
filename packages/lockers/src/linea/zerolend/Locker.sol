@@ -8,7 +8,7 @@ import {IZeroBaseLocker} from "src/common/interfaces/zerolend/IZeroBaseLocker.so
 import {IOmnichainStakingBase} from "src/common/interfaces/zerolend/omnichainstaking/IOmnichainStakingBase.sol";
 
 /// @title  Locker
-/// @notice Locker contract for locking tokens for a period of time
+/// @notice Locker contract for locking tokens for a period of time.
 /// @author Stake DAO
 /// @custom:contact contact@stakedao.org
 contract Locker is VeCRVLocker {
@@ -16,11 +16,12 @@ contract Locker is VeCRVLocker {
 
     IZeroBaseLocker public immutable zeroLocker;
 
-    // TODO rename
-    uint256 public lockerTokenId;
+    uint256 public zeroLockedTokenId;
 
     error NotDepositor();
     error NotOwnerOfToken(uint256 tokenId);
+    error EmptyTokenIdList();
+    error CanOnlyBeCalledOnce();
 
     constructor(address _zeroLocker, address _governance, address _token, address _veToken)
         VeCRVLocker(_governance, _token, _veToken)
@@ -33,76 +34,86 @@ contract Locker is VeCRVLocker {
         return "ZERO Locker";
     }
 
-    // TODO add natspecs
-    // TODO analyze the risk of creating multiple lock tokens
-    //      should this method only be called once?
+    /// @notice Creates the  StakeDao lock. Should only be called once.
+    /// @param _value value to be added to the locker as the initial locked ZERO amount.
+    /// @param _unlockTime duration of the initial lock.
+    /// @dev Should only be called once.
+    // TODO is it ok not to mint sdZERO for this initial lock?
     function createLock(uint256 _value, uint256 _unlockTime) external override onlyGovernanceOrDepositor {
+        if (zeroLockedTokenId != 0) revert CanOnlyBeCalledOnce();
+
         IERC20(token).safeApprove(address(zeroLocker), _value);
 
-        // create the lock
-        lockerTokenId = zeroLocker.createLock(_value, _unlockTime, true);
+        zeroLockedTokenId = zeroLocker.createLock(_value, _unlockTime, true);
 
         emit LockCreated(_value, _unlockTime);
     }
 
-    // TODO add natspecs
+    /// @notice Increases the lock amount and/or lock duration of the locker token in the Voting Escrow contract.
+    /// @param _value The amount of tokens to add to the existing lock.
+    /// @param _unlockTime The new unlock time for the lock, in seconds since the epoch. Must be aligned to weeks.
+    /// @custom:emits Emits a `LockIncreased` event on successful lock update.
     function increaseLock(uint256 _value, uint256 _unlockTime) external override onlyGovernanceOrDepositor {
         if (_value > 0) {
-            IOmnichainStakingBase(veToken).increaseLockAmount(lockerTokenId, _value);
+            IOmnichainStakingBase(veToken).increaseLockAmount(zeroLockedTokenId, _value);
         }
 
         if (_unlockTime > 0) {
-            bool _canIncrease = (_unlockTime / 1 weeks * 1 weeks) > (zeroLocker.lockedEnd(lockerTokenId));
+            bool _canIncrease = (_unlockTime / 1 weeks * 1 weeks) > (zeroLocker.lockedEnd(zeroLockedTokenId));
 
             if (_canIncrease) {
-                IOmnichainStakingBase(veToken).increaseLockDuration(lockerTokenId, _unlockTime);
+                IOmnichainStakingBase(veToken).increaseLockDuration(zeroLockedTokenId, _unlockTime);
             }
         }
 
         emit LockIncreased(_value, _unlockTime);
     }
 
-    /// @notice Claim the rewards from the fee distributor.
-    function claimRewards(address, address, address) external view override onlyGovernanceOrAccumulator {
-        // migrated this code to the Accumulator for more flexibility
-        revert();
-    }
+    /// @notice Logic was migrated to the accumulator for more flexibility.
+    function claimRewards(address, address, address) external view override onlyGovernanceOrAccumulator {}
 
-    function deposit(address _owner, uint256[] calldata _tokenIds) external returns (uint256 _amount) {
-        if (msg.sender != depositor) revert NotDepositor();
+    /// @notice Allows depositing a new
+    /// @param _owner Owner of the NFT tokens IDs.
+    /// @param _tokenIds NFT token IDs to deposit.
+    /// @dev This contract needs to be approved by the _owner in order for the NFTs to be merged with the zeroLockedTokenId.
+    function deposit(address _owner, uint256[] calldata _tokenIds)
+        external
+        onlyGovernanceOrDepositor
+        returns (uint256 _amount)
+    {
+        if (_tokenIds.length == 0) revert EmptyTokenIdList();
 
         // unstake locker NFT token
-        IOmnichainStakingBase(veToken).unstakeToken(lockerTokenId);
+        IOmnichainStakingBase(veToken).unstakeToken(zeroLockedTokenId);
 
-        // verify that msg.sender owns all tokenIds
+        // verify that _owner owns all tokenIds
         for (uint256 index = 0; index < _tokenIds.length;) {
             if (zeroLocker.ownerOf(_tokenIds[index]) != _owner) revert NotOwnerOfToken(_tokenIds[index]);
 
             _amount += zeroLocker.locked(_tokenIds[index]).amount;
 
             // merge user token into locker token
-            zeroLocker.merge(_tokenIds[index], lockerTokenId);
+            zeroLocker.merge(_tokenIds[index], zeroLockedTokenId);
 
             unchecked {
                 ++index;
             }
         }
 
-        // transfer the token back to the ZEROvp contract
-        zeroLocker.safeTransferFrom(address(this), veToken, lockerTokenId);
+        // Transfer the token back to the ZEROvp contract.
+        zeroLocker.safeTransferFrom(address(this), veToken, zeroLockedTokenId);
     }
 
     /// @notice Release the tokens from the Voting Escrow contract when the lock expires.
-    // TODO natspecs dev
-    function release(address) external view override onlyGovernance {
-        // prefer using release(address _recipient, uint256 _tokenId)
-        revert();
-    }
+    /// @dev    Prefer using release(address _recipient, uint256 _tokenId).
+    function release(address) external view override onlyGovernance {}
 
-    // TODO natspecs
+    /// @notice Releases ZERO tokens from the Voting Escrow contract when the lock on a token ID expires.
+    /// @param _recipient The address that will receive the ZERO tokens.
+    /// @param _tokenId The ID of the NFT token to unstake.
+    /// @dev Someone could send a locker NFT to this contract, losing it in the process.
+    /// This function ensures any token owned by this contract can be withdrawn.
     function release(address _recipient, uint256 _tokenId) external onlyGovernance {
-        // Someone could send a locker NFT to this contract, losing it in the process. This function
-        // would make sure any token owned by this contract can be withdrawn.
         if (IZeroBaseLocker(zeroLocker).ownerOf(_tokenId) == veToken) {
             IOmnichainStakingBase(veToken).unstakeToken(_tokenId);
         }
@@ -115,10 +126,10 @@ contract Locker is VeCRVLocker {
     }
 
     /// @notice Execute an arbitrary transaction as the governance.
-    /// @dev Override to allow calling from the accumulator to claim rewards.
     /// @param to Address to send the transaction to.
     /// @param value Amount of ETH to send with the transaction.
     /// @param data Encoded data of the transaction.
+    /// @dev Override to allow calling from the accumulator to claim rewards.
     function execute(address to, uint256 value, bytes calldata data)
         external
         payable

@@ -14,17 +14,20 @@ import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {ILocker} from "src/common/interfaces/ILocker.sol";
 import {IDepositor} from "src/common/interfaces/IDepositor.sol";
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // end to end tests for the ZeroLend integration
 abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
-    // TODO update to actual governance
     address GOVERNANCE = address(9);
 
     address zeroLockerToken = 0x08D5FEA625B1dBf9Bae0b97437303a0374ee02F8;
-    ERC20 zeroToken = ERC20(0x78354f8DcCB269a615A7e0a24f9B0718FDC3C7A7);
-    ERC20 veZero = ERC20(0xf374229a18ff691406f99CCBD93e8a3f16B68888);
+    IERC20 zeroToken = IERC20(0x78354f8DcCB269a615A7e0a24f9B0718FDC3C7A7);
+    IERC20 veZero = IERC20(0xf374229a18ff691406f99CCBD93e8a3f16B68888);
 
     address zeroTokenHolder = 0xA05D8213472620292D4D96DCDA2Dd5dB4B65df2f;
+
+    address[] feeSplitReceivers = new address[](2);
+    uint256[] feeSplitFees = new uint256[](2);
 
     constructor() {}
 
@@ -93,5 +96,16 @@ abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
         _createInitialLock();
 
         liquidityGauge.add_reward(address(zeroToken), address(accumulator));
+        liquidityGauge.add_reward(address(WETH), address(accumulator));
+
+        // setup fee split
+        feeSplitReceivers[0] = address(treasuryRecipient);
+        feeSplitFees[0] = 5e16; // 5% to dao
+
+        feeSplitReceivers[1] = address(liquidityFeeRecipient);
+        feeSplitFees[1] = 10e16; // 10% to liquidity
+
+        vm.prank(GOVERNANCE);
+        BaseAccumulator(accumulator).setFeeSplit(feeSplitReceivers, feeSplitFees);
     }
 }

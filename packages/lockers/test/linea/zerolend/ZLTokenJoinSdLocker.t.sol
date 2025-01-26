@@ -7,11 +7,13 @@ import "forge-std/src/console.sol";
 
 import {BaseZeroLendTokenTest} from "test/linea/zerolend/common/BaseZeroLendTokenTest.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
+import {ILocker as ISdLocker} from "src/common/interfaces/ILocker.sol";
 import {IOmnichainStakingBase} from "src/common/interfaces/zerolend/omnichainstaking/IOmnichainStakingBase.sol";
 import {ILocker as IOmnichainLocker} from "src/common/interfaces/zerolend/omnichainstaking/ILocker.sol";
 import {ISdZeroLocker} from "src/common/interfaces/zerolend/ISdZeroLocker.sol";
 import {ISdZeroDepositor} from "src/common/interfaces/zerolend/ISdZeroDepositor.sol";
 import {IZeroLocker} from "src/common/interfaces/zerolend/IZeroLocker.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // end to end tests for the ZeroLend integration
 contract ZeroLendTest is BaseZeroLendTokenTest {
@@ -42,23 +44,35 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
         }
     }
 
+    function _getLockerStartEndTime(address _locker) internal view returns (uint256 _start, uint256 _end) {
+        (, IOmnichainLocker.LockedBalance[] memory _lockedBalances) =
+            IOmnichainStakingBase(address(veZero)).getLockedNftDetails(_locker);
+
+        require(_lockedBalances.length == 1);
+
+        _end = _lockedBalances[0].end;
+        _start = _lockedBalances[0].start;
+    }
+
     function test_canJoinSdWithOldZeroLendLock() public {
         vm.startPrank(userWithStakedNft);
 
         // make sure the user doesn't have unstaked tokens
         assertEq(IZeroLocker(zeroLockerToken).balanceOf(userWithStakedNft), 0);
 
-        (uint256[] memory _tokenIds, uint256 totalUserLockedAmount, uint256 totalUserPower) =
-            _getLockedDetails(userWithStakedNft);
-        (, uint256 totalSdLockedAmount, uint256 totalSdPower) = _getLockedDetails(locker);
+        (uint256[] memory _tokenIds, uint256 totalUserLockedAmount,) = _getLockedDetails(userWithStakedNft);
+        (, uint256 totalSdLockedAmount,) = _getLockedDetails(locker);
 
         for (uint256 index = 0; index < _tokenIds.length; index++) {
             IOmnichainStakingBase(address(veZero)).unstakeToken(_tokenIds[index]);
         }
 
+        // userWithStakedNft should have 0 sdToken before joining
+        assertEq(IERC20(sdToken).balanceOf(userWithStakedNft), 0);
+
         // ## join StakeDAO
         IZeroLocker(zeroLockerToken).setApprovalForAll(locker, true);
-        ISdZeroDepositor(address(depositor)).deposit(_tokenIds, true, address(this));
+        ISdZeroDepositor(address(depositor)).deposit(_tokenIds, true, userWithStakedNft);
 
         // ## test everything
 
@@ -68,8 +82,10 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
 
         // since the user had an end date lower than 4 years and we rebased it
         // with the locker token when merging, we should have a larger total power
-        // TODO check the math to make sure it checks
-        assertEq(afterTotalSdPower >= totalSdPower + totalUserPower, true);
+        (uint256 _start, uint256 _end) = _getLockerStartEndTime(locker);
+        uint256 _diff = _end - _start;
+        uint256 expectedNewPower = _diff * (totalSdLockedAmount + totalUserLockedAmount) / (4 * 365 * 24 * 3600);
+        assertEq(afterTotalSdPower, expectedNewPower);
 
         // user doens't own any NFT and has no locks
         assertEq(IZeroLocker(zeroLockerToken).balanceOf(userWithStakedNft), 0);
@@ -77,10 +93,9 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
             IOmnichainStakingBase(address(veZero)).getLockedNftDetails(userWithStakedNft);
         assertEq(_afterTokenIds.length, 0);
 
-        // TODO test that userWithStakedNft got sdZERO tokens
+        assertEq(IERC20(sdToken).balanceOf(userWithStakedNft), 0);
+        assertEq(liquidityGauge.balanceOf(userWithStakedNft) > 0, true);
     }
-
-    // TODO more tests
 
     function test_cantJoinSdMultipleTimes() public {
         vm.startPrank(userWithStakedNft);
@@ -101,9 +116,48 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
         ISdZeroDepositor(address(depositor)).deposit(_tokenIds, true, userWithStakedNft);
     }
 
-    // TODO test without staking
+    function test_canJoinSdWithOldZeroLendLockAndNotStake() public {
+        vm.startPrank(userWithStakedNft);
 
-    // TODO test with different _user than msg.sender
+        // make sure the user doesn't have unstaked tokens
+        assertEq(IZeroLocker(zeroLockerToken).balanceOf(userWithStakedNft), 0);
+
+        (uint256[] memory _tokenIds, uint256 totalUserLockedAmount,) = _getLockedDetails(userWithStakedNft);
+        (, uint256 totalSdLockedAmount,) = _getLockedDetails(locker);
+
+        for (uint256 index = 0; index < _tokenIds.length; index++) {
+            IOmnichainStakingBase(address(veZero)).unstakeToken(_tokenIds[index]);
+        }
+
+        // userWithStakedNft should have 0 sdToken before joining
+        assertEq(IERC20(sdToken).balanceOf(userWithStakedNft), 0);
+
+        // ## join StakeDAO
+        IZeroLocker(zeroLockerToken).setApprovalForAll(locker, true);
+        ISdZeroDepositor(address(depositor)).deposit(_tokenIds, false, userWithStakedNft);
+
+        // ## test everything
+
+        // locked amount of user was transfered to stake dao
+        (, uint256 afterTotalSdLockedAmount, uint256 afterTotalSdPower) = _getLockedDetails(locker);
+        assertEq(afterTotalSdLockedAmount, totalUserLockedAmount + totalSdLockedAmount);
+
+        // since the user had an end date lower than 4 years and we rebased it
+        // with the locker token when merging, we should have a larger total power
+        (uint256 _start, uint256 _end) = _getLockerStartEndTime(locker);
+        uint256 _diff = _end - _start;
+        uint256 expectedNewPower = _diff * (totalSdLockedAmount + totalUserLockedAmount) / (4 * 365 * 24 * 3600);
+        assertEq(afterTotalSdPower, expectedNewPower);
+
+        // user doens't own any NFT and has no locks
+        assertEq(IZeroLocker(zeroLockerToken).balanceOf(userWithStakedNft), 0);
+        (uint256[] memory _afterTokenIds,) =
+            IOmnichainStakingBase(address(veZero)).getLockedNftDetails(userWithStakedNft);
+        assertEq(_afterTokenIds.length, 0);
+
+        assertEq(IERC20(sdToken).balanceOf(userWithStakedNft) > 0, true);
+        assertEq(liquidityGauge.balanceOf(userWithStakedNft), 0);
+    }
 
     function _appendNthTokenId(uint256[] memory _tokenIds, uint256 n) internal pure returns (uint256[] memory) {
         // Create a new memory array with length _tokenIds.length + 1
@@ -153,9 +207,62 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
         ISdZeroDepositor(address(depositor)).deposit(_tokenIds, true, userWithStakedNft);
     }
 
-    // can't call deposit on the locker directly
+    function test_cantDepositDirectlyToLocker() public {
+        vm.startPrank(userWithStakedNft);
 
-    // test call deposit with empty _tokenIds list
+        (uint256[] memory _tokenIds,,) = _getLockedDetails(userWithStakedNft);
 
-    // canPartiallyJoin
+        for (uint256 index = 0; index < _tokenIds.length; index++) {
+            IOmnichainStakingBase(address(veZero)).unstakeToken(_tokenIds[index]);
+        }
+
+        vm.expectRevert(ISdLocker.GOVERNANCE_OR_DEPOSITOR.selector);
+        ISdZeroLocker(locker).deposit(userWithStakedNft, _tokenIds);
+    }
+
+    function test_emptyTokenIdsList() public {
+        vm.startPrank(userWithStakedNft);
+
+        (uint256[] memory _tokenIds,,) = _getLockedDetails(userWithStakedNft);
+
+        for (uint256 index = 0; index < _tokenIds.length; index++) {
+            IOmnichainStakingBase(address(veZero)).unstakeToken(_tokenIds[index]);
+        }
+
+        uint256[] memory _emptyTokenIdsList;
+
+        // ## join StakeDAO
+        IZeroLocker(zeroLockerToken).setApprovalForAll(locker, true);
+        vm.expectRevert(ISdZeroLocker.EmptyTokenIdList.selector);
+        ISdZeroDepositor(address(depositor)).deposit(_emptyTokenIdsList, true, userWithStakedNft);
+    }
+
+    function test_canPartiallyDepositTokenIds() public {
+        vm.startPrank(userWithStakedNft);
+
+        (uint256[] memory _tokenIds,,) = _getLockedDetails(userWithStakedNft);
+
+        for (uint256 index = 0; index < _tokenIds.length; index++) {
+            IOmnichainStakingBase(address(veZero)).unstakeToken(_tokenIds[index]);
+        }
+
+        uint256[] memory _shorterTokenIdsList = new uint256[](_tokenIds.length - 1);
+
+        for (uint256 index = 0; index < _tokenIds.length - 1; index++) {
+            _shorterTokenIdsList[index] = _tokenIds[index];
+        }
+
+        // ## join StakeDAO
+        IZeroLocker(zeroLockerToken).setApprovalForAll(locker, true);
+        ISdZeroDepositor(address(depositor)).deposit(_shorterTokenIdsList, true, userWithStakedNft);
+
+        // user doens't own any NFT and has no locks
+        assertEq(IZeroLocker(zeroLockerToken).balanceOf(userWithStakedNft), 1);
+        (uint256[] memory _afterTokenIds,) =
+            IOmnichainStakingBase(address(veZero)).getLockedNftDetails(userWithStakedNft);
+        assertEq(_afterTokenIds.length, 0);
+
+        assertEq(IERC20(sdToken).balanceOf(userWithStakedNft), 0);
+        assertEq(liquidityGauge.balanceOf(userWithStakedNft) > 0, true);
+    }
 }
