@@ -7,22 +7,28 @@ import {SafeERC20} from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol"
 import {ILockerToken} from "src/common/interfaces/zerolend/zerolend/ILockerToken.sol";
 import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
 
-/// @title  Locker
-/// @notice Locker contract for locking tokens for a period of time.
+/// @title StakeDAO ZERO Locker
+/// @notice Locker contract for locking ZERO tokens for a period of time.
 /// @author Stake DAO
 /// @custom:contact contact@stakedao.org
 contract Locker is VeCRVLocker {
     using SafeERC20 for IERC20;
-
-    ILockerToken public immutable zeroLocker;
-
-    uint256 public zeroLockedTokenId;
 
     error NotDepositor();
     error NotOwnerOfToken(uint256 tokenId);
     error EmptyTokenIdList();
     error CanOnlyBeCalledOnce();
 
+    ILockerToken public immutable zeroLocker;
+
+    /// @notice Token ID of the locker ERC721 token representing the locked ZERO tokens.
+    uint256 public zeroLockedTokenId;
+
+    /// @notice Constructor
+    /// @param _zeroLocker ZeroLend locker NFT contract.
+    /// @param _governance SD governance.
+    /// @param _token ZERO token.
+    /// @param _veToken ZEROvp token.
     constructor(address _zeroLocker, address _governance, address _token, address _veToken)
         VeCRVLocker(_governance, _token, _veToken)
     {
@@ -31,19 +37,20 @@ contract Locker is VeCRVLocker {
     }
 
     function name() public pure override returns (string memory) {
+        // TODO confirm name
         return "ZERO Locker";
     }
 
-    /// @notice Creates the  StakeDao lock. Should only be called once.
-    /// @param _value value to be added to the locker as the initial locked ZERO amount.
-    /// @param _unlockTime duration of the initial lock.
-    /// @dev Should only be called once.
+    /// @notice Creates the  StakeDao lock.
+    /// @param _value Value to be added to the locker as the initial locked ZERO amount.
+    /// @param _unlockTime Duration of the initial lock.
+    /// @dev Can only be called once.
     // TODO is it ok not to mint sdZERO for this initial lock?
+    // TODO ok to limit to calling it just once?
     function createLock(uint256 _value, uint256 _unlockTime) external override onlyGovernanceOrDepositor {
         if (zeroLockedTokenId != 0) revert CanOnlyBeCalledOnce();
 
         IERC20(token).safeApprove(address(zeroLocker), _value);
-
         zeroLockedTokenId = zeroLocker.createLock(_value, _unlockTime, true);
 
         emit LockCreated(_value, _unlockTime);
@@ -59,6 +66,7 @@ contract Locker is VeCRVLocker {
         }
 
         if (_unlockTime > 0) {
+            // TODO should we extend every time? the voting power is based on lock's start and end not current time.
             bool _canIncrease = (_unlockTime / 1 weeks * 1 weeks) > (zeroLocker.lockedEnd(zeroLockedTokenId));
 
             if (_canIncrease) {
@@ -72,10 +80,11 @@ contract Locker is VeCRVLocker {
     /// @notice Logic was migrated to the accumulator for more flexibility.
     function claimRewards(address, address, address) external view override onlyGovernanceOrAccumulator {}
 
-    /// @notice Allows depositing a new
-    /// @param _owner Owner of the NFT tokens IDs.
+    /// @notice Allows depositing other locked tokens which will increase the current lock.
+    /// @param _owner Owner of the NFT tokens to deposit.
     /// @param _tokenIds NFT token IDs to deposit.
-    /// @dev This contract needs to be approved by the _owner in order for the NFTs to be merged with the zeroLockedTokenId.
+    /// @dev This contract needs to be approved by _owner in order for the NFTs to be merged with the zeroLockedTokenId token.
+    /// @custom:emits Emits a `LockIncreased` event on successful lock update.
     function deposit(address _owner, uint256[] calldata _tokenIds)
         external
         onlyGovernanceOrDepositor
@@ -83,17 +92,25 @@ contract Locker is VeCRVLocker {
     {
         if (_tokenIds.length == 0) revert EmptyTokenIdList();
 
-        // unstake locker NFT token
+        uint256 _lockEnd = zeroLocker.lockedEnd(zeroLockedTokenId);
+
+        // Unstake locker NFT token.
         IZeroVp(veToken).unstakeToken(zeroLockedTokenId);
 
-        // verify that _owner owns all tokenIds
+        // Verify that _owner owns all tokenIds.
         for (uint256 index = 0; index < _tokenIds.length;) {
+            // _owner must own all token IDs.
             if (zeroLocker.ownerOf(_tokenIds[index]) != _owner) revert NotOwnerOfToken(_tokenIds[index]);
 
+            // Keep track of the merged amount.
             _amount += zeroLocker.locked(_tokenIds[index]).amount;
 
-            // merge user token into locker token
+            // Merge user token into locker zeroLockedTokenId.
             zeroLocker.merge(_tokenIds[index], zeroLockedTokenId);
+
+            // Keep track of the maximum lock end time as it will be the lock end time of the merge result.
+            uint256 _currentLockEnd = zeroLocker.lockedEnd(_tokenIds[index]);
+            if (_currentLockEnd > _lockEnd) _lockEnd = _currentLockEnd;
 
             unchecked {
                 ++index;
@@ -102,22 +119,16 @@ contract Locker is VeCRVLocker {
 
         // Transfer the token back to the ZEROvp contract.
         zeroLocker.safeTransferFrom(address(this), veToken, zeroLockedTokenId);
+
+        emit LockIncreased(_amount, _lockEnd);
     }
 
-    /// @notice Release the tokens from the Voting Escrow contract when the lock expires.
-    /// @dev    Prefer using release(address _recipient, uint256 _tokenId).
-    function release(address) external view override onlyGovernance {}
-
-    /// @notice Releases ZERO tokens from the Voting Escrow contract when the lock on a token ID expires.
+    /// @notice Release the tokens from the LockerToken contract when the lock expires.
     /// @param _recipient The address that will receive the ZERO tokens.
-    /// @param _tokenId The ID of the NFT token to unstake.
-    /// @dev Someone could send a locker NFT to this contract, losing it in the process.
-    /// This function ensures any token owned by this contract can be withdrawn.
-    function release(address _recipient, uint256 _tokenId) external onlyGovernance {
-        if (ILockerToken(zeroLocker).ownerOf(_tokenId) == veToken) {
-            IZeroVp(veToken).unstakeToken(_tokenId);
-        }
-        ILockerToken(zeroLocker).withdraw(_tokenId);
+    // TODO it will be imposible to re create a lock, is this ok?
+    function release(address _recipient) external override onlyGovernance {
+        IZeroVp(veToken).unstakeToken(zeroLockedTokenId);
+        ILockerToken(zeroLocker).withdraw(zeroLockedTokenId);
 
         uint256 _balance = IERC20(token).balanceOf(address(this));
         IERC20(token).safeTransfer(_recipient, _balance);

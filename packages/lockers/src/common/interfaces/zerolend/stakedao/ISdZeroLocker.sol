@@ -14,5 +14,5 @@ interface ISdZeroLocker is ILocker {
 
     function deposit(address _owner, uint256[] calldata _tokenIds) external returns (uint256);
 
-    function release(address _recipient, uint256 _tokenId) external;
+    function release(address _recipient) external;
 }
