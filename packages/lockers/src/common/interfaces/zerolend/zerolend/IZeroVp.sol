@@ -13,11 +13,24 @@ pragma solidity ^0.8.19;
 // Twitter: https://twitter.com/zerolendxyz
 
 import {IVotes} from "@openzeppelin/contracts/governance/utils/IVotes.sol";
-import {ILocker} from "./ILocker.sol";
 
-interface IOmnichainStakingBase is IVotes {
+interface IZeroVp is IVotes {
     // An omni-chain staking contract that allows users to stake their veNFT
     // and get some voting power. Once staked the voting power is available cross-chain.
+
+    /**
+     * @notice Structure to store locked balance information
+     * @param amount Amount of tokens locked
+     * @param end End time of the lock period (timestamp)
+     * @param start Start time of the lock period (timestamp)
+     * @param power Additional parameter, potentially for governance or staking power
+     */
+    struct LockedBalance {
+        uint256 amount;
+        uint256 end;
+        uint256 start;
+        uint256 power;
+    }
 
     error ERC721NonexistentToken(uint256);
 
@@ -33,10 +46,7 @@ interface IOmnichainStakingBase is IVotes {
 
     function unstakeToken(uint256 tokenId) external;
 
-    function getLockedNftDetails(address _user)
-        external
-        view
-        returns (uint256[] memory, ILocker.LockedBalance[] memory);
+    function getLockedNftDetails(address _user) external view returns (uint256[] memory, LockedBalance[] memory);
 
     function lockedTokenIdNfts(address _user, uint256 _index) external view returns (uint256);
 

@@ -4,8 +4,8 @@ pragma solidity 0.8.19;
 import "src/common/locker/VeCRVLocker.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
-import {IZeroBaseLocker} from "src/common/interfaces/zerolend/IZeroBaseLocker.sol";
-import {IOmnichainStakingBase} from "src/common/interfaces/zerolend/omnichainstaking/IOmnichainStakingBase.sol";
+import {ILockerToken} from "src/common/interfaces/zerolend/zerolend/ILockerToken.sol";
+import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
 
 /// @title  Locker
 /// @notice Locker contract for locking tokens for a period of time.
@@ -14,7 +14,7 @@ import {IOmnichainStakingBase} from "src/common/interfaces/zerolend/omnichainsta
 contract Locker is VeCRVLocker {
     using SafeERC20 for IERC20;
 
-    IZeroBaseLocker public immutable zeroLocker;
+    ILockerToken public immutable zeroLocker;
 
     uint256 public zeroLockedTokenId;
 
@@ -26,7 +26,7 @@ contract Locker is VeCRVLocker {
     constructor(address _zeroLocker, address _governance, address _token, address _veToken)
         VeCRVLocker(_governance, _token, _veToken)
     {
-        zeroLocker = IZeroBaseLocker(_zeroLocker);
+        zeroLocker = ILockerToken(_zeroLocker);
         IERC20(token).approve(address(veToken), type(uint256).max);
     }
 
@@ -55,14 +55,14 @@ contract Locker is VeCRVLocker {
     /// @custom:emits Emits a `LockIncreased` event on successful lock update.
     function increaseLock(uint256 _value, uint256 _unlockTime) external override onlyGovernanceOrDepositor {
         if (_value > 0) {
-            IOmnichainStakingBase(veToken).increaseLockAmount(zeroLockedTokenId, _value);
+            IZeroVp(veToken).increaseLockAmount(zeroLockedTokenId, _value);
         }
 
         if (_unlockTime > 0) {
             bool _canIncrease = (_unlockTime / 1 weeks * 1 weeks) > (zeroLocker.lockedEnd(zeroLockedTokenId));
 
             if (_canIncrease) {
-                IOmnichainStakingBase(veToken).increaseLockDuration(zeroLockedTokenId, _unlockTime);
+                IZeroVp(veToken).increaseLockDuration(zeroLockedTokenId, _unlockTime);
             }
         }
 
@@ -84,7 +84,7 @@ contract Locker is VeCRVLocker {
         if (_tokenIds.length == 0) revert EmptyTokenIdList();
 
         // unstake locker NFT token
-        IOmnichainStakingBase(veToken).unstakeToken(zeroLockedTokenId);
+        IZeroVp(veToken).unstakeToken(zeroLockedTokenId);
 
         // verify that _owner owns all tokenIds
         for (uint256 index = 0; index < _tokenIds.length;) {
@@ -114,10 +114,10 @@ contract Locker is VeCRVLocker {
     /// @dev Someone could send a locker NFT to this contract, losing it in the process.
     /// This function ensures any token owned by this contract can be withdrawn.
     function release(address _recipient, uint256 _tokenId) external onlyGovernance {
-        if (IZeroBaseLocker(zeroLocker).ownerOf(_tokenId) == veToken) {
-            IOmnichainStakingBase(veToken).unstakeToken(_tokenId);
+        if (ILockerToken(zeroLocker).ownerOf(_tokenId) == veToken) {
+            IZeroVp(veToken).unstakeToken(_tokenId);
         }
-        IZeroBaseLocker(zeroLocker).withdraw(_tokenId);
+        ILockerToken(zeroLocker).withdraw(_tokenId);
 
         uint256 _balance = IERC20(token).balanceOf(address(this));
         IERC20(token).safeTransfer(_recipient, _balance);

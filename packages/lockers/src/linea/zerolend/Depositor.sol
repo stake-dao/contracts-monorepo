@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import "src/common/depositor/BaseDepositor.sol";
-import {ISdZeroLocker} from "src/common/interfaces/zerolend/ISdZeroLocker.sol";
+import {ISdZeroLocker} from "src/common/interfaces/zerolend/stakedao/ISdZeroLocker.sol";
 
 /// @title BaseDepositor
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return
