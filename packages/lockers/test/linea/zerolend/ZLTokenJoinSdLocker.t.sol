@@ -8,6 +8,7 @@ import "forge-std/src/console.sol";
 import {BaseZeroLendTokenTest} from "test/linea/zerolend/common/BaseZeroLendTokenTest.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {ILocker as ISdLocker} from "src/common/interfaces/ILocker.sol";
+import {IDepositor} from "src/common/interfaces/IDepositor.sol";
 import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
 import {ISdZeroLocker} from "src/common/interfaces/zerolend/stakedao/ISdZeroLocker.sol";
 import {ISdZeroDepositor} from "src/common/interfaces/zerolend/stakedao/ISdZeroDepositor.sol";
@@ -168,6 +169,21 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
         extendedArray[_tokenIds.length] = _tokenIds[n];
 
         return extendedArray;
+    }
+
+    function test_cantJoinSdForZeroAddress() public {
+        vm.startPrank(userWithStakedNft);
+
+        (uint256[] memory _tokenIds,,) = _getLockedDetails(userWithStakedNft);
+
+        for (uint256 index = 0; index < _tokenIds.length; index++) {
+            IZeroVp(address(veZero)).unstakeToken(_tokenIds[index]);
+        }
+
+        // ## join StakeDAO
+        IZeroLocker(zeroLockerToken).setApprovalForAll(locker, true);
+        vm.expectRevert(abi.encodeWithSelector(IDepositor.ADDRESS_ZERO.selector));
+        ISdZeroDepositor(address(depositor)).deposit(_appendNthTokenId(_tokenIds, 1), true, address(0));
     }
 
     function test_cantJoinSdWithDuplicateTokenIds() public {
