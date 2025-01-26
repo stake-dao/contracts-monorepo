@@ -19,4 +19,6 @@ contract Deploy is DeployAccumulator {
     }
 
     function _afterDeploy() internal virtual override {}
+
+    function _beforeDeploy() internal virtual override {}
 }

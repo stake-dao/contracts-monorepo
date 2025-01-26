@@ -13,12 +13,15 @@ abstract contract DeployAccumulator is Script {
     function _run(address deployer, address treasury, address liquidityFeeRecipient, address governance) internal {
         vm.startBroadcast(deployer);
 
+        _beforeDeploy();
+
         accumulator = _deployAccumulator();
 
         feeSplitReceivers[0] = address(treasury);
         feeSplitFees[0] = 5e16; // 5% to dao
 
         feeSplitReceivers[1] = address(liquidityFeeRecipient);
+        // TODO this is 10%
         feeSplitFees[1] = 10e16; // 5% to liquidity
 
         BaseAccumulator(accumulator).setFeeSplit(feeSplitReceivers, feeSplitFees);
@@ -33,4 +36,6 @@ abstract contract DeployAccumulator is Script {
     function _deployAccumulator() internal virtual returns (address payable);
 
     function _afterDeploy() internal virtual;
+
+    function _beforeDeploy() internal virtual;
 }
