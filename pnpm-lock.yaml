@@ -10,8 +10,6 @@ importers:
 
   packages/address-book: {}
 
-<<<<<<< HEAD
-<<<<<<< HEAD
   packages/herdaddy:
     dependencies:
       '@openzeppelin/contracts':
@@ -29,12 +27,8 @@ importers:
       solady:
         specifier: github:vectorized/solady
         version: https://codeload.github.com/vectorized/solady/tar.gz/cd51985ded9e70ab1991cea74bf8db972b40ecd3
-=======
-  packages/common: {}
->>>>>>> ad5e2d6 (feat: init new package)
-=======
+
   packages/interfaces: {}
->>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
 
   packages/lockers:
     devDependencies:
@@ -85,10 +79,29 @@ importers:
         version: link:../vyper
       forge-std:
         specifier: github:foundry-rs/forge-std
+<<<<<<< HEAD
         version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/999be66ec94c78090087f674bbf52ce1cca12b75
       solady:
         specifier: github:vectorized/solady
         version: https://codeload.github.com/vectorized/solady/tar.gz/ed83a2ac4940748049e032347b918d38eb78c2b1
+=======
+<<<<<<< ours
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/bf909b22fa55e244796dfa920c9639fdffa1c545
+||||||| ancestor
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/8948d45d3d9022c508b83eb5d26fd3a7a93f2f32
+=======
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/999be66ec94c78090087f674bbf52ce1cca12b75
+>>>>>>> theirs
+      solady:
+        specifier: github:vectorized/solady
+<<<<<<< ours
+        version: https://codeload.github.com/vectorized/solady/tar.gz/be154cdd703f345d378b9934e8f7e3d73c42283a
+||||||| ancestor
+        version: https://codeload.github.com/vectorized/solady/tar.gz/b12aa65e8cc3740f8b85a2a7a2d5296f57f13149
+=======
+        version: https://codeload.github.com/vectorized/solady/tar.gz/ed83a2ac4940748049e032347b918d38eb78c2b1
+>>>>>>> theirs
+>>>>>>> 5615882a (fix: merge main)
 
   packages/strategies:
     devDependencies:
@@ -103,7 +116,7 @@ importers:
         version: link:../address-book
       forge-std:
         specifier: github:foundry-rs/forge-std
-        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/b93cf4bc34ff214c099dc970b153f85ade8c9f66
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/999be66ec94c78090087f674bbf52ce1cca12b75
 
   packages/vyper:
     devDependencies:
@@ -290,7 +303,6 @@ packages:
   '@noble/secp256k1@1.7.1':
     resolution: {integrity: sha512-hOUk6AyBFmqVrv7k5WAw/LpszxVbj9gGN4JRkIX52fdFAj1UA61KXmZDvqVEm+pOyec3+fIeZB02LYa/pWOArw==}
 
-<<<<<<< HEAD
   '@nomicfoundation/edr-darwin-arm64@0.4.1':
     resolution: {integrity: sha512-XuiUUnWAVNw7JYv7nRqDWfpBm21HOxCRBQ8lQnRnmiets9Ss2X5Ul9mvBheIPh/D0wBzwJ8TRtsSrorpwE79cA==}
     engines: {node: '>= 18'}
@@ -320,6 +332,7 @@ packages:
     engines: {node: '>= 18'}
 
   '@nomicfoundation/edr@0.4.1':
+<<<<<<< ours
 <<<<<<< ours
     resolution: {integrity: sha512-NgrMo2rI9r28uidumvd+K2/AJLdxtXsUlJr3hj/pM6S1FCd/HiWaLeLa/cjCVPcE2u1rYAa3W6UFxLCB7S5Dhw==}
 ||||||| ancestor
@@ -358,6 +371,43 @@ packages:
   '@nomicfoundation/edr@0.6.4':
     resolution: {integrity: sha512-YgrSuT3yo5ZQkbvBGqQ7hG+RDvz3YygSkddg4tb1Z0Y6pLXFzwrcEwWaJCFAVeeZxdxGfCgGMUYgRVneK+WXkw==}
 >>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
+>>>>>>> theirs
+||||||| ancestor
+    resolution: {integrity: sha512-NgrMo2rI9r28uidumvd+K2/AJLdxtXsUlJr3hj/pM6S1FCd/HiWaLeLa/cjCVPcE2u1rYAa3W6UFxLCB7S5Dhw==, tarball: https://registry.npmjs.org/@nomicfoundation/edr/-/edr-0.4.1.tgz}
+=======
+  '@nomicfoundation/edr-darwin-arm64@0.6.4':
+    resolution: {integrity: sha512-QNQErISLgssV9+qia8sIjRANqtbW8snSDvjspixT/kSQ5ZSGxxctTg7x72wPSrcu8+EBEveIe5uqENIp5GH8HQ==}
+    engines: {node: '>= 18'}
+
+  '@nomicfoundation/edr-darwin-x64@0.6.4':
+    resolution: {integrity: sha512-cjVmREiwByyc9+oGfvAh49IAw+oVJHF9WWYRD+Tm/ZlSpnEVWxrGNBak2bd/JSYjn+mZE7gmWS4SMRi4nKaLUg==}
+    engines: {node: '>= 18'}
+
+  '@nomicfoundation/edr-linux-arm64-gnu@0.6.4':
+    resolution: {integrity: sha512-96o9kRIVD6W5VkgKvUOGpWyUGInVQ5BRlME2Fa36YoNsRQMaKtmYJEU0ACosYES6ZTpYC8U5sjMulvPtVoEfOA==}
+    engines: {node: '>= 18'}
+
+  '@nomicfoundation/edr-linux-arm64-musl@0.6.4':
+    resolution: {integrity: sha512-+JVEW9e5plHrUfQlSgkEj/UONrIU6rADTEk+Yp9pbe+mzNkJdfJYhs5JYiLQRP4OjxH4QOrXI97bKU6FcEbt5Q==}
+    engines: {node: '>= 18'}
+
+  '@nomicfoundation/edr-linux-x64-gnu@0.6.4':
+    resolution: {integrity: sha512-nzYWW+fO3EZItOeP4CrdMgDXfaGBIBkKg0Y/7ySpUxLqzut40O4Mb0/+quqLAFkacUSWMlFp8nsmypJfOH5zoA==}
+    engines: {node: '>= 18'}
+
+  '@nomicfoundation/edr-linux-x64-musl@0.6.4':
+    resolution: {integrity: sha512-QFRoE9qSQ2boRrVeQ1HdzU+XN7NUgwZ1SIy5DQt4d7jCP+5qTNsq8LBNcqhRBOATgO63nsweNUhxX/Suj5r1Sw==}
+    engines: {node: '>= 18'}
+
+  '@nomicfoundation/edr-win32-x64-msvc@0.6.4':
+    resolution: {integrity: sha512-2yopjelNkkCvIjUgBGhrn153IBPLwnsDeNiq6oA0WkeM8tGmQi4td+PGi9jAriUDAkc59Yoi2q9hYA6efiY7Zw==}
+    engines: {node: '>= 18'}
+
+  '@nomicfoundation/edr@0.6.4':
+    resolution: {integrity: sha512-YgrSuT3yo5ZQkbvBGqQ7hG+RDvz3YygSkddg4tb1Z0Y6pLXFzwrcEwWaJCFAVeeZxdxGfCgGMUYgRVneK+WXkw==}
+>>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
+=======
+    resolution: {integrity: sha512-NgrMo2rI9r28uidumvd+K2/AJLdxtXsUlJr3hj/pM6S1FCd/HiWaLeLa/cjCVPcE2u1rYAa3W6UFxLCB7S5Dhw==}
 >>>>>>> theirs
     engines: {node: '>= 18'}
 
@@ -449,13 +499,24 @@ packages:
   '@openzeppelin/defender-base-client@1.54.6':
     resolution: {integrity: sha512-PTef+rMxkM5VQ7sLwLKSjp2DBakYQd661ZJiSRywx+q/nIpm3B/HYGcz5wPZCA5O/QcEP6TatXXDoeMwimbcnw==}
 <<<<<<< ours
+<<<<<<< ours
     deprecated: This package has been deprecated and will no longer be maintained, please use @openzeppelin/defender-sdk package instead.
 ||||||| ancestor
 =======
 <<<<<<< HEAD
 =======
+||||||| ancestor
+<<<<<<< HEAD
+=======
+=======
+>>>>>>> theirs
     deprecated: This package has been deprecated and will no longer be maintained, please use @openzeppelin/defender-sdk package instead.
+<<<<<<< ours
 >>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
+>>>>>>> theirs
+||||||| ancestor
+>>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
+=======
 >>>>>>> theirs
 
   '@openzeppelin/hardhat-upgrades@1.28.0':
@@ -530,13 +591,8 @@ packages:
   '@types/bn.js@4.11.6':
     resolution: {integrity: sha512-pqr857jrp2kPuO9uRjZ3PwnJTjoQy+fcdxvBTvHm6dkmEL9q+hDD/2j/0ELOBPtPnS8LjCX0gI9nbl8lVkadpg==}
 
-<<<<<<< HEAD
   '@types/bn.js@5.1.5':
     resolution: {integrity: sha512-V46N0zwKRF5Q00AZ6hWtN0T8gGmDUaUzLWQvHFo5yThtVwK/VCenFY3wXVbOvNfajEpsTfQM4IN9k/d6gUVX3A==}
-=======
-  '@types/bn.js@5.1.6':
-    resolution: {integrity: sha512-Xh8vSwUeMKeYYrj3cX4lGQgFSF/N03r+tv4AiLl1SucqV+uTQpxRcnM8AkXKHwYP9ZPXOYXRr2KPXpVlIvqh9w==}
->>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
 
   '@types/concat-stream@1.6.1':
     resolution: {integrity: sha512-eHE4cQPoj6ngxBZMvVf6Hw7Mh4jMW4U9lpGmS5GBPB9RYxlFg+CHaVN7ErNY4W9XfLIEn20b4VDYaIrbq0q4uA==}
@@ -550,13 +606,8 @@ packages:
   '@types/node@10.17.60':
     resolution: {integrity: sha512-F0KIgDJfy2nA3zMLmWGKxcH2ZVEtCZXHHdOQs2gSaQ27+lNeEfGxzkIw90aXswATX7AZ33tahPbzy6KAfUreVw==}
 
-<<<<<<< HEAD
   '@types/node@20.14.9':
     resolution: {integrity: sha512-06OCtnTXtWOZBJlRApleWndH4JsRVs1pDCc8dLSQp+7PpUpX3ePdHyeNSFTeSe7FtKyQkrlPvHwJOW3SLd8Oyg==}
-=======
-  '@types/node@22.9.0':
-    resolution: {integrity: sha512-vuyHg81vvWA1Z1ELfvLko2c8f34gyA0zaic0+Rllc5lbCnbSyuvb2Oxpm6TAUAC/2xZN3QGqxBNggD1nNR2AfQ==}
->>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
 
   '@types/node@8.10.66':
     resolution: {integrity: sha512-tktOkFUA4kXx2hhhrB8bIFb5TbwzS4uOhKEmwiD+NoiL0qtP2OQ9mFldbgD4dV1djrlBYP6eBuQZiWjuHUpqFw==}
@@ -585,8 +636,8 @@ packages:
     resolution: {integrity: sha512-4I7Td01quW/RpocfNayFdFVk1qSuoh0E7JrbRJ16nH01HhKFQ88INq9Sd+nd72zqRySlr9BmDA8xlEJ6vJMrYA==}
     engines: {node: '>=8'}
 
-<<<<<<< HEAD
   ajv@8.16.0:
+<<<<<<< ours
 <<<<<<< ours
     resolution: {integrity: sha512-F0twR8U1ZU67JIEtekUcLkXkoO5mMMmgGD8sK/xUFzJ805jxHQl92hImFAqqXMyMYjSPOyUPAwHYhB72g5sTXw==}
 ||||||| ancestor
@@ -597,6 +648,15 @@ packages:
   ajv@8.17.1:
     resolution: {integrity: sha512-B/gBuNg5SiMTrPkC+A2+cW0RszwxYmn6VYxB/inlBStS5nx6xHIt/ehKRhIMhqusl7a8LjQoZnjCs5vhwxOQ1g==}
 >>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
+>>>>>>> theirs
+||||||| ancestor
+    resolution: {integrity: sha512-F0twR8U1ZU67JIEtekUcLkXkoO5mMMmgGD8sK/xUFzJ805jxHQl92hImFAqqXMyMYjSPOyUPAwHYhB72g5sTXw==, tarball: https://registry.npmjs.org/ajv/-/ajv-8.16.0.tgz}
+=======
+  ajv@8.17.1:
+    resolution: {integrity: sha512-B/gBuNg5SiMTrPkC+A2+cW0RszwxYmn6VYxB/inlBStS5nx6xHIt/ehKRhIMhqusl7a8LjQoZnjCs5vhwxOQ1g==}
+>>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
+=======
+    resolution: {integrity: sha512-F0twR8U1ZU67JIEtekUcLkXkoO5mMMmgGD8sK/xUFzJ805jxHQl92hImFAqqXMyMYjSPOyUPAwHYhB72g5sTXw==}
 >>>>>>> theirs
 
   amazon-cognito-identity-js@6.3.12:
@@ -806,13 +866,6 @@ packages:
     resolution: {integrity: sha512-7VT13fmjotKpGipCW9JEQAusEPE+Ei8nl6/g4FBAmIm0GOOLMua9NDDo/DWp0ZAxCr3cPq5ZpBqmPAQgDda2Pw==}
     engines: {node: '>= 8.10.0'}
 
-<<<<<<< HEAD
-=======
-  chokidar@4.0.1:
-    resolution: {integrity: sha512-n8enUVCED/KVRQlab1hr3MVpcVMvxtZjmEa956u+4YijlmQED223XMSYj2tLuKvr4jcCTzNNMpQDUer72MMmzA==}
-    engines: {node: '>= 14.16.0'}
-
->>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
   chownr@1.1.4:
     resolution: {integrity: sha512-jJ0bqzaylmJtVnNgzTeSOs8DPavpbYgEr/b0YL8/2GO3xJEhInFmhKMUnEJQjZumK7KXGFhUy89PrsJWlakBVg==}
 
@@ -869,8 +922,8 @@ packages:
   command-exists@1.2.9:
     resolution: {integrity: sha512-LTQ/SGc+s0Xc0Fu5WaKnR0YiygZkm9eKFvyS+fRsU7/ZWFF8ykFM6Pc9aCVf1+xasOOZpO3BAVgVrKvsqKHV7w==}
 
-<<<<<<< HEAD
   commander@3.0.2:
+<<<<<<< ours
 <<<<<<< ours
     resolution: {integrity: sha512-Gar0ASD4BDyKC4hl4DwHqDrmvjoxWKZigVnAbn5H1owvm4CxCPdb0HQDehwNYMJpla5+M2tPmPARzhtYuwpHow==}
 ||||||| ancestor
@@ -882,6 +935,16 @@ packages:
     resolution: {integrity: sha512-OkTL9umf+He2DZkUq8f8J9of7yL6RJKI24dVITBmNfZBmri9zYZQrKkuXiKhyfPSu8tUhnVBB1iKXevvnlR4Ww==}
     engines: {node: '>= 12'}
 >>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
+>>>>>>> theirs
+||||||| ancestor
+    resolution: {integrity: sha512-Gar0ASD4BDyKC4hl4DwHqDrmvjoxWKZigVnAbn5H1owvm4CxCPdb0HQDehwNYMJpla5+M2tPmPARzhtYuwpHow==, tarball: https://registry.npmjs.org/commander/-/commander-3.0.2.tgz}
+=======
+  commander@8.3.0:
+    resolution: {integrity: sha512-OkTL9umf+He2DZkUq8f8J9of7yL6RJKI24dVITBmNfZBmri9zYZQrKkuXiKhyfPSu8tUhnVBB1iKXevvnlR4Ww==}
+    engines: {node: '>= 12'}
+>>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
+=======
+    resolution: {integrity: sha512-Gar0ASD4BDyKC4hl4DwHqDrmvjoxWKZigVnAbn5H1owvm4CxCPdb0HQDehwNYMJpla5+M2tPmPARzhtYuwpHow==}
 >>>>>>> theirs
 
   compare-versions@6.1.0:
@@ -925,7 +988,6 @@ packages:
     resolution: {integrity: sha512-t/Ygsytq+R995EJ5PZlD4Cu56sWa8InXySaViRzw9apusqsOO2bQP+SbYzAhR0pFKoB+43lYy8rWban9JSuXnA==}
     engines: {node: '>= 0.4'}
 
-<<<<<<< HEAD
   debug@4.3.4:
     resolution: {integrity: sha512-PRWFHuSU3eDtQJPvnNY7Jcket1j0t5OuOsFzPPzsekD52Zl8qUfFIPEiswXqIvHWGVHOgX+7G/vCNNhehwxfkQ==}
     engines: {node: '>=6.0'}
@@ -937,10 +999,6 @@ packages:
 
   debug@4.3.5:
     resolution: {integrity: sha512-pt0bNEmneDIvdL1Xsd9oDQ/wrQRkXDT4AUWlNZNPKvW5x/jyO9VFXkJUP07vQ2upmw5PlaITaPKc31jK13V+jg==}
-=======
-  debug@4.3.7:
-    resolution: {integrity: sha512-Er2nc/H7RrMXZBFCEim6TCmMk02Z8vLC2Rbi1KEBggpo0fS6l0S1nnapwmIi3yW/+GOJap1Krg4w0Hg80oCqgQ==}
->>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
     engines: {node: '>=6.0'}
     peerDependencies:
       supports-color: '*'
@@ -984,13 +1042,8 @@ packages:
     engines: {node: '>=0.10'}
     hasBin: true
 
-<<<<<<< HEAD
   diff@5.0.0:
     resolution: {integrity: sha512-/VTCrvm5Z0JGty/BWHljh+BAiw3IK+2j87NGMu8Nwc/f48WoDAC395uomO9ZD117ZOBaHmkX1oyLvkVM/aIT3w==}
-=======
-  diff@5.2.0:
-    resolution: {integrity: sha512-uIFDxqpRZGZ6ThOk84hEfqWoHx2devRFvpTZcTHur85vImfaxUbTW9Ryh4CpCuDnToOP1CEtXKIgytHBPVff5A==}
->>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
     engines: {node: '>=0.3.1'}
 
   dotenv@10.0.0:
@@ -1078,6 +1131,7 @@ packages:
 
   ethereumjs-abi@0.6.8:
 <<<<<<< ours
+<<<<<<< ours
     resolution: {integrity: sha512-Tx0r/iXI6r+lRsdvkFDlut0N08jWMnKRZ6Gkq+Nmw75lZe4e6o3EkSnkaBP5NF6+m5PTGAr9JP43N3LyeoglsA==}
     deprecated: This library has been deprecated and usage is discouraged.
 ||||||| ancestor
@@ -1086,9 +1140,20 @@ packages:
 <<<<<<< HEAD
     resolution: {integrity: sha512-Tx0r/iXI6r+lRsdvkFDlut0N08jWMnKRZ6Gkq+Nmw75lZe4e6o3EkSnkaBP5NF6+m5PTGAr9JP43N3LyeoglsA==, tarball: https://registry.npmjs.org/ethereumjs-abi/-/ethereumjs-abi-0.6.8.tgz}
 =======
+||||||| ancestor
+<<<<<<< HEAD
+    resolution: {integrity: sha512-Tx0r/iXI6r+lRsdvkFDlut0N08jWMnKRZ6Gkq+Nmw75lZe4e6o3EkSnkaBP5NF6+m5PTGAr9JP43N3LyeoglsA==, tarball: https://registry.npmjs.org/ethereumjs-abi/-/ethereumjs-abi-0.6.8.tgz}
+=======
+=======
+>>>>>>> theirs
     resolution: {integrity: sha512-Tx0r/iXI6r+lRsdvkFDlut0N08jWMnKRZ6Gkq+Nmw75lZe4e6o3EkSnkaBP5NF6+m5PTGAr9JP43N3LyeoglsA==}
     deprecated: This library has been deprecated and usage is discouraged.
+<<<<<<< ours
 >>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
+>>>>>>> theirs
+||||||| ancestor
+>>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
+=======
 >>>>>>> theirs
 
   ethereumjs-util@6.2.1:
@@ -1127,6 +1192,7 @@ packages:
 =======
     resolution: {integrity: sha512-f3qQ9oQy9j2AhBe/H9VC91wLmKBCCU/gDOnKNAYG5hswO7BLKj09Hc5HYNz9cGI++xlpDCIgDaitVs03ATR84Q==}
 
+<<<<<<< ours
 <<<<<<< HEAD
 =======
   fast-uri@3.0.3:
@@ -1134,6 +1200,15 @@ packages:
 >>>>>>> theirs
 
 >>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
+||||||| ancestor
+<<<<<<< HEAD
+=======
+  fast-uri@3.0.3:
+    resolution: {integrity: sha512-aLrHthzCjH5He4Z2H9YZ+v6Ujb9ocRuW6ZzkJQOrTxleEijANq4v1TsaPaVG1PZcuurEzrLcWRyYBYXD5cEiaw==}
+
+>>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
+=======
+>>>>>>> theirs
   file-uri-to-path@1.0.0:
     resolution: {integrity: sha512-0Zt+s3L7Vf1biwWZ29aARiVYLx7iMGnEUl9x33fbB/j3jR81u/O2LbqK+Bm1CDSNDKVtJ/YjwY7TUd5SkeLQLw==}
 
@@ -1156,13 +1231,8 @@ packages:
   fmix@0.1.0:
     resolution: {integrity: sha512-Y6hyofImk9JdzU8k5INtTXX1cu8LDlePWDFU5sftm9H+zKCr5SGrVjdhkvsim646cw5zD0nADj8oHyXMZmCZ9w==}
 
-<<<<<<< HEAD
   follow-redirects@1.15.6:
     resolution: {integrity: sha512-wWN62YITEaOpSK584EZXJafH1AGpO8RVgElfkuXbTOrPX4fIfOyEpW/CsiNd8JdYrAoOvafRTOEnvsO++qCqFA==}
-=======
-  follow-redirects@1.15.9:
-    resolution: {integrity: sha512-gew4GsXizNgdoRyqmyfMHyAmXsZDk6mHkSxZFCzW9gwlbtOW44CDtYavM+y+72qD/Vq2l550kMF52DT8fOLJqQ==}
->>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
     engines: {node: '>=4.0'}
     peerDependencies:
       debug: '*'
@@ -1177,27 +1247,31 @@ packages:
     resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/07263d193d621c4b2b0ce8b4d54af58f6957d97d}
     version: 1.9.1
 
-<<<<<<< HEAD
   forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/8948d45d3d9022c508b83eb5d26fd3a7a93f2f32:
     resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/8948d45d3d9022c508b83eb5d26fd3a7a93f2f32}
     version: 1.9.0
 
+<<<<<<< HEAD
+  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/999be66ec94c78090087f674bbf52ce1cca12b75:
+    resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/999be66ec94c78090087f674bbf52ce1cca12b75}
+    version: 1.9.5
+=======
+<<<<<<< ours
+  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/bf909b22fa55e244796dfa920c9639fdffa1c545:
+    resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/bf909b22fa55e244796dfa920c9639fdffa1c545}
+    version: 1.9.6
+>>>>>>> 5615882a (fix: merge main)
+
+||||||| ancestor
+=======
   forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/999be66ec94c78090087f674bbf52ce1cca12b75:
     resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/999be66ec94c78090087f674bbf52ce1cca12b75}
     version: 1.9.5
 
+>>>>>>> theirs
   forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/e04104ab93e771441eab03fb76eda1402cb5927b:
     resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/e04104ab93e771441eab03fb76eda1402cb5927b}
     version: 1.9.2
-=======
-  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/b93cf4bc34ff214c099dc970b153f85ade8c9f66:
-    resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/b93cf4bc34ff214c099dc970b153f85ade8c9f66}
-    version: 1.9.5
-
-  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/da591f56d8884c5824c0c1b3103fbcfd81123c4c:
-    resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/da591f56d8884c5824c0c1b3103fbcfd81123c4c}
-    version: 1.9.4
->>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
 
   form-data@2.5.1:
     resolution: {integrity: sha512-m21N3WOmEEURgk6B9GLOE4RuWOFf28Lhh9qGYeNlGq4VDXUlJy2th2slBNU8Gp8EzloYZOibZJ7t5ecIrFSjVA==}
@@ -1313,8 +1387,8 @@ packages:
     peerDependencies:
       hardhat: ^2.0.2
 
-<<<<<<< HEAD
   hardhat@2.22.5:
+<<<<<<< ours
 <<<<<<< ours
     resolution: {integrity: sha512-9Zq+HonbXCSy6/a13GY1cgHglQRfh4qkzmj1tpPlhxJDwNVnhxlReV6K7hCWFKlOrV13EQwsdcD0rjcaQKWRZw==}
 ||||||| ancestor
@@ -1325,6 +1399,15 @@ packages:
   hardhat@2.22.15:
     resolution: {integrity: sha512-BpTGa9PE/sKAaHi4s/S1e9WGv63DR1m7Lzfd60C8gSEchDPfAJssVRSq0MZ2v2k76ig9m0kHAwVLf5teYwu/Mw==}
 >>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
+>>>>>>> theirs
+||||||| ancestor
+    resolution: {integrity: sha512-9Zq+HonbXCSy6/a13GY1cgHglQRfh4qkzmj1tpPlhxJDwNVnhxlReV6K7hCWFKlOrV13EQwsdcD0rjcaQKWRZw==, tarball: https://registry.npmjs.org/hardhat/-/hardhat-2.22.5.tgz}
+=======
+  hardhat@2.22.15:
+    resolution: {integrity: sha512-BpTGa9PE/sKAaHi4s/S1e9WGv63DR1m7Lzfd60C8gSEchDPfAJssVRSq0MZ2v2k76ig9m0kHAwVLf5teYwu/Mw==}
+>>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
+=======
+    resolution: {integrity: sha512-9Zq+HonbXCSy6/a13GY1cgHglQRfh4qkzmj1tpPlhxJDwNVnhxlReV6K7hCWFKlOrV13EQwsdcD0rjcaQKWRZw==}
 >>>>>>> theirs
     hasBin: true
     peerDependencies:
@@ -1405,8 +1488,8 @@ packages:
   ieee754@1.2.1:
     resolution: {integrity: sha512-dcyqhDvX1C46lXZcVqCpK+FtMRQVdIMN6/Df5js2zouUsqG7I6sFxitIC+7KYK29KdXOLHdu9zL4sFnoVQnqaA==}
 
-<<<<<<< HEAD
   immutable@4.3.6:
+<<<<<<< ours
 <<<<<<< ours
     resolution: {integrity: sha512-Ju0+lEMyzMVZarkTn/gqRpdqd5dOPaz1mCZ0SH3JV6iFw81PldE/PEB1hWVEA288HPt4WXW8O7AWxB10M+03QQ==}
 ||||||| ancestor
@@ -1417,6 +1500,15 @@ packages:
   immutable@4.3.7:
     resolution: {integrity: sha512-1hqclzwYwjRDFLjcFxOM5AYkkG0rpFPpr1RLPMEuGczoS7YA8gLhy8SWXYRAA/XwfEHpfo3cw5JGioS32fnMRw==}
 >>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
+>>>>>>> theirs
+||||||| ancestor
+    resolution: {integrity: sha512-Ju0+lEMyzMVZarkTn/gqRpdqd5dOPaz1mCZ0SH3JV6iFw81PldE/PEB1hWVEA288HPt4WXW8O7AWxB10M+03QQ==, tarball: https://registry.npmjs.org/immutable/-/immutable-4.3.6.tgz}
+=======
+  immutable@4.3.7:
+    resolution: {integrity: sha512-1hqclzwYwjRDFLjcFxOM5AYkkG0rpFPpr1RLPMEuGczoS7YA8gLhy8SWXYRAA/XwfEHpfo3cw5JGioS32fnMRw==}
+>>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
+=======
+    resolution: {integrity: sha512-Ju0+lEMyzMVZarkTn/gqRpdqd5dOPaz1mCZ0SH3JV6iFw81PldE/PEB1hWVEA288HPt4WXW8O7AWxB10M+03QQ==}
 >>>>>>> theirs
 
   imul@1.0.1:
@@ -1566,8 +1658,8 @@ packages:
   json-schema-traverse@1.0.0:
     resolution: {integrity: sha512-NM8/P9n3XjXhIZn1lLhkFaACTOURQXjWhV4BA/RnOv8xvgqtqpAX9IO4mRQxSx1Rlo4tqzeqb0sOlruaOy3dug==}
 
-<<<<<<< HEAD
   jsonfile@2.4.0:
+<<<<<<< ours
 <<<<<<< ours
     resolution: {integrity: sha512-PKllAqbgLgxHaj8TElYymKCAgrASebJrWpTnEkOaTowt23VKXXN0sUeriJ+eh7y6ufb/CC5ap11pz71/cM0hUw==}
 ||||||| ancestor
@@ -1579,6 +1671,16 @@ packages:
     resolution: {integrity: sha512-x7fpwxOkbhFCaJDJ8vb1fBY3DdSa4AlITaz+HHILQJzdPMnHEFjxPwVUi1ALIbcIxDE0PNe/0i7frnY8QnBQog==}
     engines: {node: '>=7.10.1'}
 >>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
+>>>>>>> theirs
+||||||| ancestor
+    resolution: {integrity: sha512-PKllAqbgLgxHaj8TElYymKCAgrASebJrWpTnEkOaTowt23VKXXN0sUeriJ+eh7y6ufb/CC5ap11pz71/cM0hUw==, tarball: https://registry.npmjs.org/jsonfile/-/jsonfile-2.4.0.tgz}
+=======
+  json-stream-stringify@3.1.6:
+    resolution: {integrity: sha512-x7fpwxOkbhFCaJDJ8vb1fBY3DdSa4AlITaz+HHILQJzdPMnHEFjxPwVUi1ALIbcIxDE0PNe/0i7frnY8QnBQog==}
+    engines: {node: '>=7.10.1'}
+>>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
+=======
+    resolution: {integrity: sha512-PKllAqbgLgxHaj8TElYymKCAgrASebJrWpTnEkOaTowt23VKXXN0sUeriJ+eh7y6ufb/CC5ap11pz71/cM0hUw==}
 >>>>>>> theirs
 
   jsonfile@4.0.0:
@@ -1653,13 +1755,8 @@ packages:
   minimatch@3.1.2:
     resolution: {integrity: sha512-J7p63hRiAjw1NDEww1W7i37+ByIrOWO5XQQAzZ3VOcL0PNybwpfmV/N05zFAzwQ9USyEcX6t3UO+K5aqBQOIHw==}
 
-<<<<<<< HEAD
   minimatch@5.0.1:
     resolution: {integrity: sha512-nLDxIFRyhDblz3qMuq+SoRZED4+miJ/G+tdDrjkkkRnjAsBexeGpgjLEQ0blJy7rHhR2b93rhQY4SvyWu9v03g==}
-=======
-  minimatch@5.1.6:
-    resolution: {integrity: sha512-lKwV/1brpG6mBUFHtb7NUmtABCb2WZZmm2wNiOA5hAb8VdCS4B3dtMWyvcoViccwAW/COERjXLt0zP1zXUN26g==}
->>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
     engines: {node: '>=10'}
 
   minimist@1.2.8:
@@ -1671,13 +1768,8 @@ packages:
   mnemonist@0.38.5:
     resolution: {integrity: sha512-bZTFT5rrPKtPJxj8KSV0WkPyNxl72vQepqqVUAW2ARUpUSF2qXMB6jZj7hW5/k7C1rtpzqbD/IIbJwLXUjCHeg==}
 
-<<<<<<< HEAD
   mocha@10.5.2:
     resolution: {integrity: sha512-9btlN3JKCefPf+vKd/kcKz2SXxi12z6JswkGfaAF0saQvnsqLJk504ZmbxhSoENge08E9dsymozKgFMTl5PQsA==}
-=======
-  mocha@10.8.2:
-    resolution: {integrity: sha512-VZlYo/WE8t1tstuRmqgeyBgCbJc/lEdopaa+axcKzTBJ+UIdlAB9XnmvTCAH4pwR4ElNInaedhEBmZD8iCSVEg==}
->>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
     engines: {node: '>= 14.0.0'}
     hasBin: true
 
@@ -1686,19 +1778,16 @@ packages:
 
   ms@2.1.3:
     resolution: {integrity: sha512-6FlzubTLZG3J2a/NVCAleEhjzq5oxgHyaCU9yYXvcLsvoVaHJq/s5xXI6/XXP6tz7R9xAOtHnSO/tXtF3WRTlA==}
-<<<<<<< HEAD
 
   murky@https://codeload.github.com/dmfxyz/murky/tar.gz/5feccd1253d7da820f7cccccdedf64471025455d:
     resolution: {tarball: https://codeload.github.com/dmfxyz/murky/tar.gz/5feccd1253d7da820f7cccccdedf64471025455d}
     version: 0.0.0
-=======
->>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
 
   murmur-128@0.2.1:
     resolution: {integrity: sha512-WseEgiRkI6aMFBbj8Cg9yBj/y+OdipwVC7zUo3W2W1JAJITwouUOtpqsmGSg67EQmwwSyod7hsVsWY5LsrfQVg==}
 
-<<<<<<< HEAD
   nan@2.20.0:
+<<<<<<< ours
 <<<<<<< ours
     resolution: {integrity: sha512-bk3gXBZDGILuuo/6sKtr0DQmSThYHLtNCdSdXk9YkxD/jK6X2vmCyyXBBxyqZ4XcnzTyYEAThfX3DCEnLf6igw==}
 ||||||| ancestor
@@ -1709,6 +1798,15 @@ packages:
   nan@2.22.0:
     resolution: {integrity: sha512-nbajikzWTMwsW+eSsNm3QwlOs7het9gGJU5dDZzRTQGk03vyBOauxgI4VakDzE0PtsGTmXPsXTbbjVhRwR5mpw==}
 >>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
+>>>>>>> theirs
+||||||| ancestor
+    resolution: {integrity: sha512-bk3gXBZDGILuuo/6sKtr0DQmSThYHLtNCdSdXk9YkxD/jK6X2vmCyyXBBxyqZ4XcnzTyYEAThfX3DCEnLf6igw==, tarball: https://registry.npmjs.org/nan/-/nan-2.20.0.tgz}
+=======
+  nan@2.22.0:
+    resolution: {integrity: sha512-nbajikzWTMwsW+eSsNm3QwlOs7het9gGJU5dDZzRTQGk03vyBOauxgI4VakDzE0PtsGTmXPsXTbbjVhRwR5mpw==}
+>>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
+=======
+    resolution: {integrity: sha512-bk3gXBZDGILuuo/6sKtr0DQmSThYHLtNCdSdXk9YkxD/jK6X2vmCyyXBBxyqZ4XcnzTyYEAThfX3DCEnLf6igw==}
 >>>>>>> theirs
 
   napi-build-utils@1.0.2:
@@ -1735,8 +1833,8 @@ packages:
       encoding:
         optional: true
 
-<<<<<<< HEAD
   node-gyp-build@4.8.1:
+<<<<<<< ours
 <<<<<<< ours
     resolution: {integrity: sha512-OSs33Z9yWr148JZcbZd5WiAXhh/n9z8TxQcdMhIOlpN9AhWpLfvVFO73+m77bBABQMaY9XSvIa+qk0jlI7Gcaw==}
 ||||||| ancestor
@@ -1747,6 +1845,15 @@ packages:
   node-gyp-build@4.8.2:
     resolution: {integrity: sha512-IRUxE4BVsHWXkV/SFOut4qTlagw2aM8T5/vnTsmrHJvVoKueJHRc/JaFND7QDDc61kLYUJ6qlZM3sqTSyx2dTw==}
 >>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
+>>>>>>> theirs
+||||||| ancestor
+    resolution: {integrity: sha512-OSs33Z9yWr148JZcbZd5WiAXhh/n9z8TxQcdMhIOlpN9AhWpLfvVFO73+m77bBABQMaY9XSvIa+qk0jlI7Gcaw==, tarball: https://registry.npmjs.org/node-gyp-build/-/node-gyp-build-4.8.1.tgz}
+=======
+  node-gyp-build@4.8.2:
+    resolution: {integrity: sha512-IRUxE4BVsHWXkV/SFOut4qTlagw2aM8T5/vnTsmrHJvVoKueJHRc/JaFND7QDDc61kLYUJ6qlZM3sqTSyx2dTw==}
+>>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
+=======
+    resolution: {integrity: sha512-OSs33Z9yWr148JZcbZd5WiAXhh/n9z8TxQcdMhIOlpN9AhWpLfvVFO73+m77bBABQMaY9XSvIa+qk0jlI7Gcaw==}
 >>>>>>> theirs
     hasBin: true
 
@@ -1881,17 +1988,12 @@ packages:
   proxy-from-env@1.1.0:
     resolution: {integrity: sha512-D+zkORCbA9f1tdWRK0RaCR3GPv50cMxcrz4X8k5LTSUD1Dkw47mKJEZQNunItRTkWwgtaUSo1RVFRIG9ZXiFYg==}
 
-<<<<<<< HEAD
   pump@3.0.0:
     resolution: {integrity: sha512-LwZy+p3SFs1Pytd/jYct4wpv49HiYCqd9Rlc5ZVdk0V+8Yzv6jR5Blk3TRmPL1ft69TxP0IMZGJ+WPFU2BFhww==}
 
   punycode@2.3.1:
     resolution: {integrity: sha512-vYt7UD1U9Wg6138shLtLOvdAu+8DsC/ilFtEVHcH+wydcSpNE20AfSOduf6MkRFahL5FY7X1oU7nKVZFtfq8Fg==}
     engines: {node: '>=6'}
-=======
-  pump@3.0.2:
-    resolution: {integrity: sha512-tUPXtzlGM8FE3P0ZL6DVs/3P58k9nk8/jZeQCurTJylQA8qFYzHFfhBJkuqyE0FifOsQ0uKWekiZ5g8wtr28cw==}
->>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
 
   qs@6.12.1:
     resolution: {integrity: sha512-zWmv4RSuB9r2mYQw3zxQuHWeU+42aKi1wWig/j4ele4ygELZ7PEO6MM7rim9oAQH2A5MWfsAVf/jPvTPgCbvUQ==}
@@ -1919,13 +2021,6 @@ packages:
     resolution: {integrity: sha512-hOS089on8RduqdbhvQ5Z37A0ESjsqz6qnRcffsMU3495FuTdqSm+7bhJ29JvIOsBDEEnan5DPu9t3To9VRlMzA==}
     engines: {node: '>=8.10.0'}
 
-<<<<<<< HEAD
-=======
-  readdirp@4.0.2:
-    resolution: {integrity: sha512-yDMz9g+VaZkqBYS/ozoBJwaBhTbZo3UNYQHNRw1D3UFQB8oHB4uS/tAODO+ZLjGWmUbKnIlOWO+aaIiAxrUWHA==}
-    engines: {node: '>= 14.16.0'}
-
->>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
   regexp.prototype.flags@1.5.2:
     resolution: {integrity: sha512-NcDiDkTLuPR+++OCKB0nWafEmhg/Da8aUPLPMQbK+bxKKCm1/S5he+AqYa4PlMCVBalb4/yxIRub6qkEx5yJbw==}
     engines: {node: '>= 0.4'}
@@ -2009,7 +2104,6 @@ packages:
     resolution: {integrity: sha512-BR7VvDCVHO+q2xBEWskxS6DJE1qRnb7DxzUrogb71CWoSficBxYsiAGd+Kl0mmq/MprG9yArRkyrQxTO6XjMzA==}
     hasBin: true
 
-<<<<<<< HEAD
   semver@7.6.2:
     resolution: {integrity: sha512-FNAIBWCx9qcRhoHcgcJ0gvU7SN1lYU2ZXuSfl04bSC5OpvDHFyJCjdNHomPXxjQlCBU67YW64PzY7/VIEH7F2w==}
     engines: {node: '>=10'}
@@ -2017,15 +2111,6 @@ packages:
 
   serialize-javascript@6.0.0:
     resolution: {integrity: sha512-Qr3TosvguFt8ePWqsvRfrKyQXIiW+nGbYpy8XK24NQHE83caxWt+mIymTT19DGFbNWNLfEwsrkSmN64lVWB9ag==}
-=======
-  semver@7.6.3:
-    resolution: {integrity: sha512-oVekP1cKtI+CTDvHWYFUcMtsK/00wmAEfyqKfNdARm8u1wNVhSgaX7A8d4UuIlUI5e84iEwOhs7ZPYRmzU9U6A==}
-    engines: {node: '>=10'}
-    hasBin: true
-
-  serialize-javascript@6.0.2:
-    resolution: {integrity: sha512-Saa1xPByTTq2gdeFZYLLo+RFE35NHZkAbqZeWNd3BpzppeVisAqpDjcp8dyf6uIvEqJRd46jemmyA4iFIeVk8g==}
->>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
 
   set-blocking@2.0.0:
     resolution: {integrity: sha512-KiKBS8AnWGEyLzofFfmvKwpdPzqiy16LvQfK3yv/fVH7Bj13/wl3JSR1J+rfgRE9q7xUJK4qvgS8raSOeLUehw==}
@@ -2068,22 +2153,14 @@ packages:
     resolution: {integrity: sha512-qMCMfhY040cVHT43K9BFygqYbUPFZKHOg7K73mtTWJRb8pyP3fzf4Ixd5SzdEJQ6MRUg/WBnOLxghZtKKurENQ==}
     engines: {node: '>=10'}
 
-<<<<<<< HEAD
-=======
   solady@https://codeload.github.com/Vectorized/solady/tar.gz/aa7b67ae0a88fd9b17b7ccca1988d215177ecad0:
     resolution: {tarball: https://codeload.github.com/Vectorized/solady/tar.gz/aa7b67ae0a88fd9b17b7ccca1988d215177ecad0}
     version: 0.0.288
 
-  solady@https://codeload.github.com/vectorized/solady/tar.gz/65823dd7748e6a11b2adb04267ba46a3e64b97db:
-    resolution: {tarball: https://codeload.github.com/vectorized/solady/tar.gz/65823dd7748e6a11b2adb04267ba46a3e64b97db}
-    version: 0.0.264
-
->>>>>>> 792a852 (feat: add clones immutable args wip)
   solady@https://codeload.github.com/vectorized/solady/tar.gz/8d726fb1499f7f1d7459d05379efddcd500dab1a:
     resolution: {tarball: https://codeload.github.com/vectorized/solady/tar.gz/8d726fb1499f7f1d7459d05379efddcd500dab1a}
     version: 0.0.218
 
-<<<<<<< HEAD
   solady@https://codeload.github.com/vectorized/solady/tar.gz/b12aa65e8cc3740f8b85a2a7a2d5296f57f13149:
     resolution: {tarball: https://codeload.github.com/vectorized/solady/tar.gz/b12aa65e8cc3740f8b85a2a7a2d5296f57f13149}
     version: 0.0.216
@@ -2099,11 +2176,6 @@ packages:
   solc@0.7.3:
     resolution: {integrity: sha512-GAsWNAjGzIDg7VxzP6mPjdurby3IkGCjQcM8GFYZT6RyaoUZKmMU6Y7YwG+tFGhv7dwZ8rmR4iwFDrrD99JwqA==}
     engines: {node: '>=8.0.0'}
-=======
-  solc@0.8.26:
-    resolution: {integrity: sha512-yiPQNVf5rBFHwN6SIf3TUUvVAFKcQqmSUFeq+fb6pNRCo0ZCgpYOZDi3BVoezCPIAcKrVYd/qXlBLUP9wVrZ9g==}
-    engines: {node: '>=10.0.0'}
->>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
     hasBin: true
 
   solidity-ast@0.4.56:
@@ -2281,13 +2353,8 @@ packages:
   unbox-primitive@1.0.2:
     resolution: {integrity: sha512-61pPlCD9h51VoreyJ0BReideM3MDKMKnh6+V9L08331ipq6Q8OFXZYiqP6n/tbHx4s5I9uRhcye6BrbkizkBDw==}
 
-<<<<<<< HEAD
   undici-types@5.26.5:
     resolution: {integrity: sha512-JlCMO+ehdEIKqlFxk6IfVoAUVmgz7cU7zD/h9XZ0qzeosSHmUJVOzSQvvYSYWXkFXC+IfLKSIffhv0sVZup6pA==}
-=======
-  undici-types@6.19.8:
-    resolution: {integrity: sha512-ve2KP6f/JnbPBFyobGHuerC9g1FYGn/F8n1LWTwNxCEzd6IfqTwUQcNXgEtmmQ6DlRrC1hrSrBnCZPokRrDHjw==}
->>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
 
   undici@5.28.4:
     resolution: {integrity: sha512-72RFADWFqKmUb2hmmvNODKL3p9hcB6Gt2DOQMis1SEBaV6a4MH8soBvzg+95CYhCKPFedut2JY9bMfrDl9D23g==}
@@ -2346,13 +2413,8 @@ packages:
     resolution: {integrity: sha512-NsmoXalsWVDMGupxZ5R08ka9flZjjiLvHVAWYOKtiKM8ujtZWr9cRffak+uSE48+Ob8ObalXpwyeUiyDD6QFgg==}
     engines: {node: '>=8'}
 
-<<<<<<< HEAD
   workerpool@6.2.1:
     resolution: {integrity: sha512-ILEIE97kDZvF9Wb9f6h5aXK4swSlKGUcOEGiIYb2OOu/IrDU9iwj0fD//SsA6E5ibwJxpEvhullJY4Sl4GcpAw==}
-=======
-  workerpool@6.5.1:
-    resolution: {integrity: sha512-Fs4dNYcsdpYSAfVxhnl1L5zTksjvOJxtC5hzMNl+1t9B8hTJTdKDyZ5ju7ztgPy+ft9tBFXoOlDNiOT9WUXZlA==}
->>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
 
   wrap-ansi@7.0.0:
     resolution: {integrity: sha512-YVGIj2kamLSTxw6NsZjoBxfSwsn0ycdesmc4p+Q21c5zPuZ1pl+NfxVdxPtdHvmNVOQ6XSYG4AUtyt/Fi7D16Q==}
@@ -2389,13 +2451,8 @@ packages:
     resolution: {integrity: sha512-0pfFzegeDWJHJIAmTLRP2DwHjdF5s7jo9tuztdQxAhINCdvS+3nGINqPd00AphqJR/0LhANUS6/+7SCb98YOfA==}
     engines: {node: '>=10'}
 
-<<<<<<< HEAD
   yargs-parser@20.2.4:
     resolution: {integrity: sha512-WOkpgNhPTlE73h4VFAFsOnomJVaovO8VqLDzy5saChRBFQFBoMYirowyW+Q9HB4HFF4Z7VZTiG3iSzJJA29yRA==}
-=======
-  yargs-parser@20.2.9:
-    resolution: {integrity: sha512-y11nGElTIV+CT3Zv9t7VKl+Q3hTQoT9a1Qzezhhl6Rp21gJ/IVTW7Z3y9EWXhuUBC2Shnf+DX0antecpAwSP8w==}
->>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
     engines: {node: '>=10'}
 
   yargs-unparser@2.0.0:
@@ -3787,17 +3844,27 @@ snapshots:
 
   forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/07263d193d621c4b2b0ce8b4d54af58f6957d97d: {}
 
-<<<<<<< HEAD
   forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/8948d45d3d9022c508b83eb5d26fd3a7a93f2f32: {}
 
+<<<<<<< HEAD
   forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/999be66ec94c78090087f674bbf52ce1cca12b75: {}
+=======
+<<<<<<< ours
+  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/bf909b22fa55e244796dfa920c9639fdffa1c545: {}
+>>>>>>> 5615882a (fix: merge main)
 
   forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/e04104ab93e771441eab03fb76eda1402cb5927b: {}
 =======
   forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/b93cf4bc34ff214c099dc970b153f85ade8c9f66: {}
+||||||| ancestor
+  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/e04104ab93e771441eab03fb76eda1402cb5927b: {}
+=======
+  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/b93cf4bc34ff214c099dc970b153f85ade8c9f66: {}
+=======
+  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/999be66ec94c78090087f674bbf52ce1cca12b75: {}
+>>>>>>> theirs
 
-  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/da591f56d8884c5824c0c1b3103fbcfd81123c4c: {}
->>>>>>> d9b2574 (feat: accountant checkpoint wip wip)
+  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/e04104ab93e771441eab03fb76eda1402cb5927b: {}
 
   form-data@2.5.1:
     dependencies:
@@ -4726,13 +4793,8 @@ snapshots:
       astral-regex: 2.0.0
       is-fullwidth-code-point: 3.0.0
 
-<<<<<<< HEAD
-=======
   solady@https://codeload.github.com/Vectorized/solady/tar.gz/aa7b67ae0a88fd9b17b7ccca1988d215177ecad0: {}
 
-  solady@https://codeload.github.com/vectorized/solady/tar.gz/65823dd7748e6a11b2adb04267ba46a3e64b97db: {}
-
->>>>>>> 792a852 (feat: add clones immutable args wip)
   solady@https://codeload.github.com/vectorized/solady/tar.gz/8d726fb1499f7f1d7459d05379efddcd500dab1a: {}
 
   solady@https://codeload.github.com/vectorized/solady/tar.gz/b12aa65e8cc3740f8b85a2a7a2d5296f57f13149: {}
