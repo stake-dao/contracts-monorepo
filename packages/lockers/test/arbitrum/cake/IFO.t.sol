@@ -8,7 +8,7 @@ import "forge-std/src/console.sol";
 import "address-book/src/dao/42161.sol";
 import "address-book/src/lockers/42161.sol";
 
-import "murky/Merkle.sol";
+import "murky/src/Merkle.sol";
 import "src/arbitrum/cake/IFO.sol";
 
 contract IFOTest is Test {
