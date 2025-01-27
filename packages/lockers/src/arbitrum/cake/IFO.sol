@@ -6,7 +6,7 @@ import {MerkleProofLib} from "solady/src/utils/MerkleProofLib.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "solady/src/utils/FixedPointMathLib.sol";
 
-import {IFOFactory} from "src/bnb/cake/IFOFactory.sol";
+import {IFOFactory} from "src/arbitrum/cake/IFOFactory.sol";
 import {ICakeV3} from "src/common/interfaces/ICakeV3.sol";
 import {IExecutor} from "src/common/interfaces/IExecutor.sol";
 import {ICakeIFOV8} from "src/common/interfaces/ICakeIFOV8.sol";
@@ -21,9 +21,6 @@ contract IFO {
 
     /// @notice Address of the sd ifo factoruy
     IFOFactory public immutable ifoFactory;
-
-    /// @notice Executor
-    IExecutor public immutable executor;
 
     /// @notice Address of the deposit token
     ERC20 public immutable dToken;
@@ -89,11 +86,11 @@ contract IFO {
     /// @notice Throwed if the user has not deposited any dToken
     error NoDeposit();
 
+    /// @notice Throwed if the sale type is not allowed
+    error SaleTypeNotAllowed();
+
     /// @notice Throwed on Auth
     error OnlyFactory();
-
-    /// @notice Throwed if sale type is not allowed
-    error SaleTypeNotAllowed();
 
     /// @notice Throwed if it's not in first period
     error NotInFirstPeriod();
@@ -125,16 +122,8 @@ contract IFO {
     /// @param _dToken Address of the deposit token.
     /// @param _oToken Address of the offering token.
     /// @param _locker Address of the cake locker.
-    /// @param _executor Address of the executor.
     /// @param _ifoFactory Address of the ifo factory.
-    constructor(
-        address _ifo,
-        address _dToken,
-        address _oToken,
-        address _locker,
-        address _executor,
-        address _ifoFactory
-    ) {
+    constructor(address _ifo, address _dToken, address _oToken, address _locker, address _ifoFactory) {
         cakeIFO = ICakeIFOV8(_ifo);
         // check if ifo already started
         uint256 startTimestamp = ICakeIFOV8(cakeIFO).startTimestamp();
@@ -156,7 +145,6 @@ contract IFO {
         firstPeriodStart = _firstPeriodStart;
         firstPeriodEnd = _firstPeriodEnd;
 
-        executor = IExecutor(_executor);
         dToken = ERC20(_dToken);
         oToken = ERC20(_oToken);
         locker = _locker;
