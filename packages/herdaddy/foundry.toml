@@ -2,6 +2,29 @@
 src = "src"
 out = "out"
 tests = "test"
-libs = ["lib"]
+libs = ["node_modules"]
+solc = "0.8.19"
+evm_version = "cancun"
 
-# See more config options https://github.com/foundry-rs/foundry/blob/master/crates/config/README.md#all-options
+verbosity = 3
+optimizers_runs = 200
+
+[etherscan]
+bnb_smart_chain = { key = "${BNBSCAN_KEY}", chain = "56" }
+base = { key = "${BASESCAN_KEY}", chain = "8453" }
+mainnet = { key = "${ETHERSCAN_KEY}", chain = "1" }
+arbitrum = { key = "${ARBISCAN_KEY}", chain = "42161" }
+optimism = { key = "${OPTIMISTICSCAN_KEY}", chain = "10" }
+zksync = { key = "${ZKSYNCSCAN_KEY}", chain = "324" }
+polygon = { key = "${POLYGONSCAN_KEY}", chain = "137" }
+polygonzkevm = { key = "${POLYGONZKSCAN_KEY}", chain = "1101" }
+
+[rpc_endpoints]
+bnb_smart_chain = "https://rpc.ankr.com/bsc"
+base = "https://base-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+mainnet = "https://eth-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+arbitrum = "https://arb-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+optimism = "https://opt-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+zksync = "https://zksync-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+polygon = "https://polygon-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
+polygonzkevm = "https://polygonzkevm-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
