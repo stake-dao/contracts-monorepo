@@ -12,7 +12,7 @@ interface ICakeIFOV8 {
 
     function addresses(uint256) external view returns (address);
 
-    function computeVestingScheduleIdForAddressAndPid(address holder, uint256 pid) external view returns (bytes32);
+    function computeVestingScheduleIdForAddressAndPid(address holder, uint8 pid) external view returns (bytes32);
 
     function depositPool(uint256 amount, uint8 pid) external;
 
@@ -31,4 +31,6 @@ interface ICakeIFOV8 {
     function viewPoolVestingInformation(uint256 pid) external returns (uint256, uint256, uint256, uint256);
 
     function vestingStartTime() external returns (uint256);
+
+    function totalTokensOffered() external view returns (uint256);
 }

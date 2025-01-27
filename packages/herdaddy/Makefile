@@ -35,4 +35,7 @@ coverage-html:
 	@genhtml ./lcov.info.pruned -o report --branch-coverage --output-dir ./coverage
 	@rm ./lcov.info*
 
+deploy:
+	@forge script script/DeployURDDeterministic.sol --rpc-url polygon --account defaultKey --sender 0x8898502BA35AB64b3562aBC509Befb7Eb178D4df --broadcast
+
 .PHONY: test coverage

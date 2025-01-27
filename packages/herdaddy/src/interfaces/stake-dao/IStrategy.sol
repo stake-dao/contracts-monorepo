@@ -22,7 +22,7 @@ interface IStrategy {
     function setRewardDistributor(address gauge, address rewardDistributor) external;
     function addRewardReceiver(address gauge, address rewardReceiver) external;
 
-    // Governance 
+    // Governance
     function setAccumulator(address newAccumulator) external;
     function setFeeRewardToken(address newFeeRewardToken) external;
     function setFeeDistributor(address newFeeDistributor) external;
