@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.19;
+pragma solidity 0.8.28;
 
 import "@solady/src/utils/LibClone.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
@@ -142,7 +142,8 @@ contract RewardVault is CoreVault {
     function notifyRewardAmount(address _rewardsToken, uint256 reward) external {
         _updateReward(address(0));
 
-        if (getRewardsDistributor(_rewardsToken) != msg.sender) revert UnauthorizedRewardsDistributor();
+        require(getRewardsDistributor(_rewardsToken) == msg.sender, UnauthorizedRewardsDistributor());
+
         IERC20(_rewardsToken).safeTransferFrom(msg.sender, address(this), reward);
 
         uint32 currentTime = uint32(block.timestamp);
@@ -202,8 +203,8 @@ contract RewardVault is CoreVault {
 
     /// @inheritdoc ERC20
     function _transfer(address from, address to, uint256 amount) internal override {
-        if (to == address(0)) revert TransferToZeroAddress();
-        if (to == address(this)) revert TransferToVault();
+        require(to != address(0), TransferToZeroAddress());
+        require(to != address(this), TransferToVault());
 
         if (amount > 0) {
             _updateReward(to);
