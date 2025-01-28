@@ -202,7 +202,7 @@ contract RewardVault is CoreVault {
     }
 
     /// @inheritdoc ERC20
-    function _transfer(address from, address to, uint256 amount) internal override {
+    function _update(address from, address to, uint256 amount) internal override(ERC20) {
         require(to != address(0), TransferToZeroAddress());
         require(to != address(this), TransferToVault());
 
