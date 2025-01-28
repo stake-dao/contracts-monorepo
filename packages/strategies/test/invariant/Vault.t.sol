@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.19;
+pragma solidity 0.8.28;
 
 import {Test} from "forge-std/src/Test.sol";
 import {StdInvariant} from "forge-std/src/StdInvariant.sol";
@@ -41,12 +41,13 @@ contract VaultInvariantTest is StdInvariant, Test {
         vaultImplementation = new RewardVault();
         vault = RewardVault(
             LibClone.clone(
-                address(vaultImplementation),
-                abi.encodePacked(address(strategy), address(allocator), address(accountant), address(token))
+                address(vaultImplementation), abi.encodePacked(address(registry), address(accountant), address(token))
             )
         );
 
         registry.setVault(address(vault));
+        registry.setStrategy(address(strategy));
+        registry.setAllocator(address(allocator));
 
         // Initialize max share value
         maxShareValue = vault.convertToAssets(1e18);
