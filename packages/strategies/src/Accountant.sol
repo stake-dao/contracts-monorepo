@@ -2,9 +2,12 @@
 pragma solidity 0.8.28;
 
 import "src/interfaces/IRegistry.sol";
+import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 
 /// @notice The source of truth.
-contract Accountant {
+contract Accountant is ReentrancyGuardTransient {
     /// @notice Packed vault data structure into 2 slots for gas optimization
     /// @dev supplyAndIntegralSlot: [supply (128) | integral (128)]
     /// @dev pendingRewardsSlot: [pendingRewards (64)]
@@ -52,6 +55,7 @@ contract Accountant {
     /// @notice The global harvest integral of all vaults.
     uint256 public globalHarvestIntegral;
 
+    /// @notice The global pending rewards of all vaults.
     uint256 public globalPendingRewards;
 
     /// @notice Whether the vault integral is updated before the accounts checkpoint.
@@ -59,7 +63,7 @@ contract Accountant {
     /// @dev Vault address -> PackedVault.
     mapping(address => PackedVault) private vaults;
 
-    /// @notice Donations
+    /// @notice Donations of accounts.
     mapping(address => PackedDonation) private donations;
 
     /// @notice Balances of accounts per vault.
@@ -149,6 +153,24 @@ contract Accountant {
 
         // Update vault storage
         _vault.supplyAndIntegralSlot = (supply & SUPPLY_MASK) | ((integral << 128) & INTEGRAL_MASK);
+    }
+
+    function donate() external nonReentrant {
+        /// Transfer the pending rewards.
+        SafeERC20.safeTransferFrom(IERC20(REWARD_TOKEN), msg.sender, address(this), globalPendingRewards);
+
+        /// Update the global pending rewards.
+        globalPendingRewards = 0;
+
+        /// Update the donation integral and the donate amount.
+        PackedDonation storage _donation = donations[msg.sender];
+        uint256 donationAndIntegral = _donation.donationAndIntegralSlot;
+
+        uint256 donation = uint128(donationAndIntegral & DONATION_MASK);
+        donation += globalPendingRewards;
+
+        _donation.donationAndIntegralSlot =
+            (donation & DONATION_MASK) | ((globalHarvestIntegral << 128) & DONATION_INTEGRAL_MASK);
     }
 
     function totalSupply(address vault) external view returns (uint256) {

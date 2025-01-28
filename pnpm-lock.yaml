@@ -106,8 +106,8 @@ importers:
   packages/strategies:
     devDependencies:
       '@openzeppelin/contracts':
-        specifier: 4.9.0
-        version: 4.9.0
+        specifier: 5.2.0
+        version: 5.2.0
       '@solady':
         specifier: github:Vectorized/solady#v0.0.288
         version: solady@https://codeload.github.com/Vectorized/solady/tar.gz/aa7b67ae0a88fd9b17b7ccca1988d215177ecad0
@@ -495,6 +495,9 @@ packages:
 
   '@openzeppelin/contracts@4.9.0':
     resolution: {integrity: sha512-DUP74AFGKlic2sQb/CmgrN2aUPMFGxRrmCTUxLHsiU2RzwWqVuMPZBxiAyvlff6Pea77uylAX6B5x9W6evEbhA==}
+
+  '@openzeppelin/contracts@5.2.0':
+    resolution: {integrity: sha512-bxjNie5z89W1Ea0NZLZluFh8PrFNn9DH8DQlujEok2yjsOlraUPKID5p1Wk3qdNbf6XkQ1Os2RvfiHrrXLHWKA==}
 
   '@openzeppelin/defender-base-client@1.54.6':
     resolution: {integrity: sha512-PTef+rMxkM5VQ7sLwLKSjp2DBakYQd661ZJiSRywx+q/nIpm3B/HYGcz5wPZCA5O/QcEP6TatXXDoeMwimbcnw==}
@@ -2977,6 +2980,8 @@ snapshots:
   '@openzeppelin/contracts@3.4.2-solc-0.7': {}
 
   '@openzeppelin/contracts@4.9.0': {}
+
+  '@openzeppelin/contracts@5.2.0': {}
 
   '@openzeppelin/defender-base-client@1.54.6(debug@4.3.5)':
     dependencies:
