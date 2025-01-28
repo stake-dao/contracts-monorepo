@@ -211,7 +211,7 @@ contract RewardVault is CoreVault {
             _updateReward(from);
 
             uint256 pendingRewards = STRATEGY().pendingRewards(asset());
-            ACCOUNTANT().checkpoint(asset(), from, to, amount, pendingRewards);
+            ACCOUNTANT().checkpoint(asset(), from, to, amount, pendingRewards, false);
         }
 
         emit Transfer(from, to, amount);

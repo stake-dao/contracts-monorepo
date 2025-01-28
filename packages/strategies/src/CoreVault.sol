@@ -60,7 +60,7 @@ contract CoreVault is ERC4626 {
         uint256 pendingRewards = STRATEGY().deposit(allocation);
 
         /// 4. Checkpoint the vault. The accountant will deal with minting and burning.
-        ACCOUNTANT().checkpoint(allocation.gauge, address(0), receiver, assets, pendingRewards);
+        ACCOUNTANT().checkpoint(allocation.gauge, address(0), receiver, assets, pendingRewards, allocation.claimRewards);
 
         /// 5. Emit the deposit event.
         emit Deposit(caller, receiver, assets, shares);
@@ -81,7 +81,7 @@ contract CoreVault is ERC4626 {
         uint256 pendingRewards = STRATEGY().withdraw(allocation);
 
         /// 3. Checkpoint the vault. The accountant will deal with minting and burning.
-        ACCOUNTANT().checkpoint(allocation.gauge, owner, address(0), assets, pendingRewards);
+        ACCOUNTANT().checkpoint(allocation.gauge, owner, address(0), assets, pendingRewards, allocation.claimRewards);
 
         /// 4. Transfer the assets to the receiver.
         SafeERC20.safeTransfer(IERC20(asset()), receiver, assets);

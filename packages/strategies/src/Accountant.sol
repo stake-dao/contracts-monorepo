@@ -19,9 +19,18 @@ contract Accountant {
         uint256 balanceAndRewardsSlot; // slot -> balanceAndRewardsSlot
     }
 
+    /// @notice Packed donation data structure into 1 slot for gas optimization
+    /// @dev donationAndIntegralSlot: [donation (128) | integral (128)]
+    struct PackedDonation {
+        uint256 donationAndIntegralSlot;
+    }
+
     /// @dev Bit masks for vault supplyAndIntegralSlot
     uint256 private constant SUPPLY_MASK = (1 << 128) - 1;
     uint256 private constant INTEGRAL_MASK = ((1 << 128) - 1) << 128;
+
+    uint256 private constant DONATION_MASK = (1 << 128) - 1;
+    uint256 private constant DONATION_INTEGRAL_MASK = ((1 << 128) - 1) << 128;
 
     /// @dev Bit masks for account balanceAndRewardsSlot
     uint256 private constant BALANCE_MASK = (1 << 96) - 1;
@@ -40,10 +49,18 @@ contract Accountant {
     /// @notice The donation fee.
     uint256 public donationFee;
 
+    /// @notice The global harvest integral of all vaults.
+    uint256 public globalHarvestIntegral;
+
+    uint256 public globalPendingRewards;
+
     /// @notice Whether the vault integral is updated before the accounts checkpoint.
     /// @notice Supply of vaults.
     /// @dev Vault address -> PackedVault.
     mapping(address => PackedVault) private vaults;
+
+    /// @notice Donations
+    mapping(address => PackedDonation) private donations;
 
     /// @notice Balances of accounts per vault.
     /// @dev Vault address -> Account address -> PackedAccount.
@@ -69,7 +86,10 @@ contract Accountant {
     /// @param to The address of the receiver.
     /// @param amount The amount of tokens transferred.
     /// @param pendingRewards The amount of pending rewards.
-    function checkpoint(address asset, address from, address to, uint256 amount, uint256 pendingRewards) external {
+    /// @param claimed Whether the rewards are claimed or only pending.
+    function checkpoint(address asset, address from, address to, uint256 amount, uint256 pendingRewards, bool claimed)
+        external
+    {
         require(msg.sender == IRegistry(REGISTRY).vaults(asset), OnlyVault());
 
         PackedVault storage _vault = vaults[msg.sender];
@@ -81,6 +101,10 @@ contract Accountant {
         if (pendingRewards > 0) {
             uint256 totalFees = pendingRewards * (harvestFee + donationFee) / 1e18;
             pendingRewards -= totalFees;
+
+            if (!claimed) {
+                globalPendingRewards += pendingRewards;
+            }
 
             integral += uint128(pendingRewards * 1e18 / supply);
         }
