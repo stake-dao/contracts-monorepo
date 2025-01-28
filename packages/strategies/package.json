@@ -2,7 +2,7 @@
   "name": "@stake-dao/strategies",
   "version": "1.0.0",
   "devDependencies": {
-    "@openzeppelin/contracts": "4.9.0",
+    "@openzeppelin/contracts": "5.2.0",
     "@solady": "github:Vectorized/solady#v0.0.288",
     "@stake-dao/address-book": "workspace:*",
     "forge-std": "github:foundry-rs/forge-std"
