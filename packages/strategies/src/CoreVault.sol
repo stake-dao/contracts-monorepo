@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.19;
+pragma solidity 0.8.28;
 
 import "forge-std/src/Test.sol";
 
@@ -12,22 +12,27 @@ import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import "src/interfaces/IStrategy.sol";
 import "src/interfaces/IAllocator.sol";
 import "src/interfaces/IAccountant.sol";
+import "src/interfaces/IRegistry.sol";
 
 contract CoreVault is ERC4626 {
-    function STRATEGY() public view returns (IStrategy) {
-        return IStrategy(address(bytes20(LibClone.argsOnClone(address(this), 0, 20))));
-    }
-
-    function ALLOCATOR() public view returns (IAllocator) {
-        return IAllocator(address(bytes20(LibClone.argsOnClone(address(this), 20, 40))));
+    function REGISTRY() public view returns (IRegistry) {
+        return IRegistry(address(bytes20(LibClone.argsOnClone(address(this), 0, 20))));
     }
 
     function ACCOUNTANT() public view returns (IAccountant) {
-        return IAccountant(address(bytes20(LibClone.argsOnClone(address(this), 40, 60))));
+        return IAccountant(address(bytes20(LibClone.argsOnClone(address(this), 20, 40))));
     }
 
     function ASSET() public view returns (address) {
-        return address(bytes20(LibClone.argsOnClone(address(this), 60, 80)));
+        return address(bytes20(LibClone.argsOnClone(address(this), 40, 60)));
+    }
+
+    function ALLOCATOR() public view returns (IAllocator) {
+        return IAllocator(REGISTRY().ALLOCATOR());
+    }
+
+    function STRATEGY() public view returns (IStrategy) {
+        return IStrategy(REGISTRY().STRATEGY());
     }
 
     /// @notice The error thrown when a transfer is made to the vault.

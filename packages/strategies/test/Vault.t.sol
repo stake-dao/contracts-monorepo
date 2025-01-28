@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.19;
+pragma solidity 0.8.28;
 
 import "forge-std/src/Test.sol";
 
@@ -36,15 +36,17 @@ contract Vault is Test {
         vaultImplementation = new RewardVault();
         vault = RewardVault(
             LibClone.clone(
-                address(vaultImplementation),
-                abi.encodePacked(address(strategy), address(allocator), address(accountant), address(token))
+                address(vaultImplementation), abi.encodePacked(address(registry), address(accountant), address(token))
             )
         );
 
         registry.setVault(address(vault));
+        registry.setStrategy(address(strategy));
+        registry.setAllocator(address(allocator));
     }
 
     function test_setup() public virtual {
+        assertEq(address(vault.REGISTRY()), address(registry));
         assertEq(address(vault.STRATEGY()), address(strategy));
         assertEq(address(vault.ALLOCATOR()), address(allocator));
         assertEq(address(vault.ACCOUNTANT()), address(accountant));

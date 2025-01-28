@@ -1,5 +1,5 @@
 /// SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.19;
+pragma solidity 0.8.28;
 
 import "src/interfaces/IRegistry.sol";
 
@@ -7,10 +7,10 @@ import "src/interfaces/IRegistry.sol";
 contract Accountant {
     /// @notice Packed vault data structure into 2 slots for gas optimization
     /// @dev supplyAndIntegralSlot: [supply (128) | integral (128)]
-    /// @dev timeAndRewardsSlot: [lastUpdateTime (64) | pendingRewards (64)]
+    /// @dev pendingRewardsSlot: [pendingRewards (64)]
     struct PackedVault {
         uint256 supplyAndIntegralSlot; // slot1 -> supplyAndIntegralSlot
-        uint128 timeAndRewardsSlot; // slot2 -> timeAndRewardsSlot
+        uint256 pendingRewards;
     }
 
     /// @notice Packed account data structure into 1 slot for gas optimization
@@ -23,10 +23,6 @@ contract Accountant {
     uint256 private constant SUPPLY_MASK = (1 << 128) - 1;
     uint256 private constant INTEGRAL_MASK = ((1 << 128) - 1) << 128;
 
-    /// @dev Bit masks for vault timeAndRewardsSlot
-    uint128 private constant LAST_UPDATE_TIME_MASK = (1 << 64) - 1;
-    uint128 private constant PENDING_REWARDS_MASK = ((1 << 64) - 1) << 64;
-
     /// @dev Bit masks for account balanceAndRewardsSlot
     uint256 private constant BALANCE_MASK = (1 << 96) - 1;
     uint256 private constant ACCOUNT_INTEGRAL_MASK = ((1 << 96) - 1) << 96;
@@ -37,6 +33,12 @@ contract Accountant {
 
     /// @notice The reward token.
     address public immutable REWARD_TOKEN;
+
+    /// @notice The harvest fee.
+    uint256 public harvestFee;
+
+    /// @notice The donation fee.
+    uint256 public donationFee;
 
     /// @notice Whether the vault integral is updated before the accounts checkpoint.
     /// @notice Supply of vaults.
@@ -53,6 +55,12 @@ contract Accountant {
     constructor(address _registry, address _rewardToken) {
         REGISTRY = _registry;
         REWARD_TOKEN = _rewardToken;
+
+        harvestFee = 0.05e18;
+
+        /// 0.5%
+        donationFee = 0.05e18;
+        /// 0.5%
     }
 
     /// @notice Function called by vaults to checkpoint the state of the vault on every account action.
@@ -62,16 +70,18 @@ contract Accountant {
     /// @param amount The amount of tokens transferred.
     /// @param pendingRewards The amount of pending rewards.
     function checkpoint(address asset, address from, address to, uint256 amount, uint256 pendingRewards) external {
-        if (msg.sender != IRegistry(REGISTRY).vaults(asset)) revert OnlyVault();
+        require(msg.sender == IRegistry(REGISTRY).vaults(asset), OnlyVault());
 
         PackedVault storage _vault = vaults[msg.sender];
         uint256 vaultSupplyAndIntegral = _vault.supplyAndIntegralSlot;
-        // uint128 vaultTimeAndRewards = _vault.timeAndRewardsSlot;
 
         uint256 supply = uint128(vaultSupplyAndIntegral & SUPPLY_MASK);
         uint256 integral = uint128((vaultSupplyAndIntegral & INTEGRAL_MASK) >> 128);
 
         if (pendingRewards > 0) {
+            uint256 totalFees = pendingRewards * (harvestFee + donationFee) / 1e18;
+            pendingRewards -= totalFees;
+
             integral += uint128(pendingRewards * 1e18 / supply);
         }
 
