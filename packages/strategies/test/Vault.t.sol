@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import "forge-std/src/Test.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
 
 import {MockToken} from "test/mocks/MockToken.sol";
 import {MockStrategy} from "test/mocks/MockStrategy.sol";
@@ -9,7 +10,7 @@ import {MockRegistry} from "test/mocks/MockRegistry.sol";
 import {MockAllocator} from "test/mocks/MockAllocator.sol";
 
 import {Accountant} from "src/Accountant.sol";
-import {RewardVault, LibClone} from "src/RewardVault.sol";
+import {RewardVault} from "src/RewardVault.sol";
 
 contract Vault is Test {
     MockToken public token;
@@ -35,8 +36,10 @@ contract Vault is Test {
 
         vaultImplementation = new RewardVault();
         vault = RewardVault(
-            LibClone.clone(
-                address(vaultImplementation), abi.encodePacked(address(registry), address(accountant), address(token))
+            Clones.cloneDeterministicWithImmutableArgs(
+                address(vaultImplementation),
+                abi.encodePacked(address(registry), address(accountant), address(token)),
+                ""
             )
         );
 
@@ -46,6 +49,10 @@ contract Vault is Test {
     }
 
     function test_setup() public virtual {
+        console.log(address(vault.REGISTRY()));
+        console.log(address(vault.ACCOUNTANT()));
+        console.log(address(vault.ASSET()));
+
         assertEq(address(vault.REGISTRY()), address(registry));
         assertEq(address(vault.STRATEGY()), address(strategy));
         assertEq(address(vault.ALLOCATOR()), address(allocator));

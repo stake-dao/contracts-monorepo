@@ -3,8 +3,7 @@ pragma solidity 0.8.28;
 
 import "forge-std/src/Test.sol";
 
-import "@solady/src/utils/LibClone.sol";
-
+import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
@@ -16,15 +15,30 @@ import "src/interfaces/IRegistry.sol";
 
 contract CoreVault is ERC4626 {
     function REGISTRY() public view returns (IRegistry) {
-        return IRegistry(address(bytes20(LibClone.argsOnClone(address(this), 0, 20))));
+        bytes memory args = Clones.fetchCloneArgs(address(this));
+        address registry;
+        assembly {
+            registry := mload(add(add(args, 20), 0))
+        }
+        return IRegistry(registry);
     }
 
     function ACCOUNTANT() public view returns (IAccountant) {
-        return IAccountant(address(bytes20(LibClone.argsOnClone(address(this), 20, 40))));
+        bytes memory args = Clones.fetchCloneArgs(address(this));
+        address accountant;
+        assembly {
+            accountant := mload(add(add(args, 40), 0))
+        }
+        return IAccountant(accountant);
     }
 
     function ASSET() public view returns (address) {
-        return address(bytes20(LibClone.argsOnClone(address(this), 40, 60)));
+        bytes memory args = Clones.fetchCloneArgs(address(this));
+        address token;
+        assembly {
+            token := mload(add(add(args, 60), 0))
+        }
+        return token;
     }
 
     function ALLOCATOR() public view returns (IAllocator) {
