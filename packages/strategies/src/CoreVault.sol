@@ -18,7 +18,7 @@ contract CoreVault is ERC4626 {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         address registry;
         assembly {
-            registry := mload(add(add(args, 20), 0))
+            registry := mload(add(args, 20))
         }
         return IRegistry(registry);
     }
@@ -27,7 +27,7 @@ contract CoreVault is ERC4626 {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         address accountant;
         assembly {
-            accountant := mload(add(add(args, 40), 0))
+            accountant := mload(add(args, 40))
         }
         return IAccountant(accountant);
     }
@@ -36,7 +36,7 @@ contract CoreVault is ERC4626 {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         address token;
         assembly {
-            token := mload(add(add(args, 60), 0))
+            token := mload(add(args, 60))
         }
         return token;
     }
