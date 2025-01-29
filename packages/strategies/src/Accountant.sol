@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import "src/interfaces/IRegistry.sol";
+import "src/libraries/StorageMasks.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
@@ -27,18 +28,6 @@ contract Accountant is ReentrancyGuardTransient {
     struct PackedDonation {
         uint256 donationAndIntegralSlot;
     }
-
-    /// @dev Bit masks for vault supplyAndIntegralSlot
-    uint256 private constant SUPPLY_MASK = (1 << 128) - 1;
-    uint256 private constant INTEGRAL_MASK = ((1 << 128) - 1) << 128;
-
-    uint256 private constant DONATION_MASK = (1 << 128) - 1;
-    uint256 private constant DONATION_INTEGRAL_MASK = ((1 << 128) - 1) << 128;
-
-    /// @dev Bit masks for account balanceAndRewardsSlot
-    uint256 private constant BALANCE_MASK = (1 << 96) - 1;
-    uint256 private constant ACCOUNT_INTEGRAL_MASK = ((1 << 96) - 1) << 96;
-    uint256 private constant ACCOUNT_PENDING_REWARDS_MASK = ((1 << 64) - 1) << 192;
 
     /// @notice The registry of vaults.
     address public immutable REGISTRY;
@@ -89,6 +78,7 @@ contract Accountant is ReentrancyGuardTransient {
         harvestFee = 0.05e18;
 
         /// 0.5%
+
         donationFee = 0.05e18;
         /// 0.5%
     }
@@ -108,8 +98,8 @@ contract Accountant is ReentrancyGuardTransient {
         PackedVault storage _vault = vaults[msg.sender];
         uint256 vaultSupplyAndIntegral = _vault.supplyAndIntegralSlot;
 
-        uint256 supply = uint128(vaultSupplyAndIntegral & SUPPLY_MASK);
-        uint256 integral = uint128((vaultSupplyAndIntegral & INTEGRAL_MASK) >> 128);
+        uint256 supply = uint128(vaultSupplyAndIntegral & StorageMasks.SUPPLY_MASK);
+        uint256 integral = uint128((vaultSupplyAndIntegral & StorageMasks.INTEGRAL_MASK) >> 128);
 
         if (pendingRewards > 0 && supply > 0) {
             if (!claimed) {
@@ -131,15 +121,17 @@ contract Accountant is ReentrancyGuardTransient {
         else {
             PackedAccount storage _from = accounts[msg.sender][from];
             uint256 fromBalanceAndRewards = _from.balanceAndRewardsSlot;
-            uint256 fromBalance = uint96(fromBalanceAndRewards & BALANCE_MASK);
-            uint256 fromIntegral = uint96((fromBalanceAndRewards & ACCOUNT_INTEGRAL_MASK) >> 96);
-            uint256 fromPendingRewards = uint64((fromBalanceAndRewards & ACCOUNT_PENDING_REWARDS_MASK) >> 192);
+            uint256 fromBalance = uint96(fromBalanceAndRewards & StorageMasks.BALANCE_MASK);
+            uint256 fromIntegral = uint96((fromBalanceAndRewards & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 96);
+            uint256 fromPendingRewards =
+                uint64((fromBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
 
             fromPendingRewards += uint64((integral - fromIntegral) * fromBalance / supply);
             fromBalance -= amount;
 
-            _from.balanceAndRewardsSlot = (fromBalance & BALANCE_MASK) | ((integral << 96) & ACCOUNT_INTEGRAL_MASK)
-                | ((fromPendingRewards << 192) & ACCOUNT_PENDING_REWARDS_MASK);
+            _from.balanceAndRewardsSlot = (fromBalance & StorageMasks.BALANCE_MASK)
+                | ((integral << 96) & StorageMasks.ACCOUNT_INTEGRAL_MASK)
+                | ((fromPendingRewards << 192) & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK);
         }
 
         /// 3. Burning.
@@ -150,19 +142,21 @@ contract Accountant is ReentrancyGuardTransient {
         else {
             PackedAccount storage _to = accounts[msg.sender][to];
             uint256 toBalanceAndRewards = _to.balanceAndRewardsSlot;
-            uint256 toBalance = uint96(toBalanceAndRewards & BALANCE_MASK);
-            uint256 toIntegral = uint96((toBalanceAndRewards & ACCOUNT_INTEGRAL_MASK) >> 96);
-            uint256 toPendingRewards = uint64((toBalanceAndRewards & ACCOUNT_PENDING_REWARDS_MASK) >> 192);
+            uint256 toBalance = uint96(toBalanceAndRewards & StorageMasks.BALANCE_MASK);
+            uint256 toIntegral = uint96((toBalanceAndRewards & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 96);
+            uint256 toPendingRewards = uint64((toBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
 
             toPendingRewards += uint64((integral - toIntegral) * toBalance / supply);
             toBalance += amount;
 
-            _to.balanceAndRewardsSlot = (toBalance & BALANCE_MASK) | ((integral << 96) & ACCOUNT_INTEGRAL_MASK)
-                | ((toPendingRewards << 192) & ACCOUNT_PENDING_REWARDS_MASK);
+            _to.balanceAndRewardsSlot = (toBalance & StorageMasks.BALANCE_MASK)
+                | ((integral << 96) & StorageMasks.ACCOUNT_INTEGRAL_MASK)
+                | ((toPendingRewards << 192) & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK);
         }
 
         // Update vault storage
-        _vault.supplyAndIntegralSlot = (supply & SUPPLY_MASK) | ((integral << 128) & INTEGRAL_MASK);
+        _vault.supplyAndIntegralSlot =
+            (supply & StorageMasks.SUPPLY_MASK) | ((integral << 128) & StorageMasks.INTEGRAL_MASK);
     }
 
     function donate() external nonReentrant {
@@ -175,11 +169,11 @@ contract Accountant is ReentrancyGuardTransient {
         PackedDonation storage _donation = donations[msg.sender];
         uint256 donationAndIntegral = _donation.donationAndIntegralSlot;
 
-        uint256 donation = uint128(donationAndIntegral & DONATION_MASK);
+        uint256 donation = uint128(donationAndIntegral & StorageMasks.DONATION_MASK);
         donation += globalPendingRewards;
 
-        _donation.donationAndIntegralSlot =
-            (donation & DONATION_MASK) | ((globalHarvestIntegral << 128) & DONATION_INTEGRAL_MASK);
+        _donation.donationAndIntegralSlot = (donation & StorageMasks.DONATION_MASK)
+            | ((globalHarvestIntegral << 128) & StorageMasks.DONATION_INTEGRAL_MASK);
 
         /// Update the global pending rewards.
         /// @dev Don't set to 0 to avoid extra gas cost from changing storage from non-zero to zero value.
@@ -190,13 +184,13 @@ contract Accountant is ReentrancyGuardTransient {
         PackedDonation storage _donation = donations[msg.sender];
 
         uint256 donationAndIntegral = _donation.donationAndIntegralSlot;
-        uint256 integral = uint128((donationAndIntegral & DONATION_INTEGRAL_MASK) >> 128);
+        uint256 integral = uint128((donationAndIntegral & StorageMasks.DONATION_INTEGRAL_MASK) >> 128);
 
         /// If the integral is not reached, revert to avoid liquidity issue.
         require(globalHarvestIntegral >= integral, HarvestIntegralNotReached());
 
         /// Calculate the premium.
-        uint256 donation = uint128(donationAndIntegral & DONATION_MASK);
+        uint256 donation = uint128(donationAndIntegral & StorageMasks.DONATION_MASK);
 
         /// If there's no donation, revert.
         require(donation > 0, NoDonation());
@@ -208,11 +202,11 @@ contract Accountant is ReentrancyGuardTransient {
 
         /// Reset.
         _donation.donationAndIntegralSlot =
-            (0 & DONATION_MASK) | ((globalHarvestIntegral << 128) & DONATION_INTEGRAL_MASK);
+            (0 & StorageMasks.DONATION_MASK) | ((globalHarvestIntegral << 128) & StorageMasks.DONATION_INTEGRAL_MASK);
     }
 
     function totalSupply(address vault) external view returns (uint256) {
-        return uint128(vaults[vault].supplyAndIntegralSlot & SUPPLY_MASK);
+        return uint128(vaults[vault].supplyAndIntegralSlot & StorageMasks.SUPPLY_MASK);
     }
 
     /// @notice Get the donation amount of an account including the premium.
@@ -220,11 +214,11 @@ contract Accountant is ReentrancyGuardTransient {
         uint256 donationAndIntegral = donations[account].donationAndIntegralSlot;
 
         /// Calculate the premium.
-        donation = uint128(donationAndIntegral & DONATION_MASK);
+        donation = uint128(donationAndIntegral & StorageMasks.DONATION_MASK);
         donation += donation * donationFee / 1e18;
     }
 
     function balanceOf(address vault, address account) external view returns (uint256) {
-        return uint96(accounts[vault][account].balanceAndRewardsSlot & BALANCE_MASK);
+        return uint96(accounts[vault][account].balanceAndRewardsSlot & StorageMasks.BALANCE_MASK);
     }
 }
