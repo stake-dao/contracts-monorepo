@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import {Test} from "forge-std/src/Test.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
 import {StdInvariant} from "forge-std/src/StdInvariant.sol";
 
 import {MockToken} from "test/mocks/MockToken.sol";
@@ -10,7 +11,7 @@ import {MockRegistry} from "test/mocks/MockRegistry.sol";
 import {MockAllocator} from "test/mocks/MockAllocator.sol";
 
 import {Accountant} from "src/Accountant.sol";
-import {RewardVault, LibClone} from "src/RewardVault.sol";
+import {RewardVault} from "src/RewardVault.sol";
 import {VaultHandler} from "test/invariant/handlers/VaultHandler.sol";
 
 contract VaultInvariantTest is StdInvariant, Test {
@@ -40,8 +41,10 @@ contract VaultInvariantTest is StdInvariant, Test {
 
         vaultImplementation = new RewardVault();
         vault = RewardVault(
-            LibClone.clone(
-                address(vaultImplementation), abi.encodePacked(address(registry), address(accountant), address(token))
+            Clones.cloneDeterministicWithImmutableArgs(
+                address(vaultImplementation),
+                abi.encodePacked(address(registry), address(accountant), address(token)),
+                ""
             )
         );
 
