@@ -120,18 +120,18 @@ contract Accountant is ReentrancyGuardTransient {
         /// 2. Transferring. Update the "from" account.
         else {
             PackedAccount storage _from = accounts[msg.sender][from];
-            uint256 fromBalanceAndRewards = _from.balanceAndRewardsSlot;
-            uint256 fromBalance = uint96(fromBalanceAndRewards & StorageMasks.BALANCE_MASK);
-            uint256 fromIntegral = uint96((fromBalanceAndRewards & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 96);
-            uint256 fromPendingRewards =
-                uint64((fromBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
+            uint256 accountBalanceAndRewards = _from.balanceAndRewardsSlot;
 
-            fromPendingRewards += uint64((integral - fromIntegral) * fromBalance / supply);
-            fromBalance -= amount;
+            uint256 balance = uint96(accountBalanceAndRewards & StorageMasks.BALANCE_MASK);
+            uint256 accountIntegral = uint96((accountBalanceAndRewards & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 96);
+            uint256 accountPendingRewards = uint64((accountBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
 
-            _from.balanceAndRewardsSlot = (fromBalance & StorageMasks.BALANCE_MASK)
+            accountPendingRewards += uint64((integral - accountIntegral) * balance / supply);
+            balance -= amount;
+
+            _from.balanceAndRewardsSlot = (balance & StorageMasks.BALANCE_MASK)
                 | ((integral << 96) & StorageMasks.ACCOUNT_INTEGRAL_MASK)
-                | ((fromPendingRewards << 192) & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK);
+                | ((accountPendingRewards << 192) & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK);
         }
 
         /// 3. Burning.
@@ -141,20 +141,21 @@ contract Accountant is ReentrancyGuardTransient {
         /// 4. Transferring. Update the "to" account.
         else {
             PackedAccount storage _to = accounts[msg.sender][to];
-            uint256 toBalanceAndRewards = _to.balanceAndRewardsSlot;
-            uint256 toBalance = uint96(toBalanceAndRewards & StorageMasks.BALANCE_MASK);
-            uint256 toIntegral = uint96((toBalanceAndRewards & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 96);
-            uint256 toPendingRewards = uint64((toBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
+            uint256 accountBalanceAndRewards = _to.balanceAndRewardsSlot;
 
-            toPendingRewards += uint64((integral - toIntegral) * toBalance / supply);
-            toBalance += amount;
+            uint256 balance = uint96(accountBalanceAndRewards & StorageMasks.BALANCE_MASK);
+            uint256 accountIntegral = uint96((accountBalanceAndRewards & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 96);
+            uint256 accountPendingRewards = uint64((accountBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
 
-            _to.balanceAndRewardsSlot = (toBalance & StorageMasks.BALANCE_MASK)
+            accountPendingRewards += uint64((integral - accountIntegral) * balance / supply);
+            balance += amount;
+
+            _to.balanceAndRewardsSlot = (balance & StorageMasks.BALANCE_MASK)
                 | ((integral << 96) & StorageMasks.ACCOUNT_INTEGRAL_MASK)
-                | ((toPendingRewards << 192) & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK);
+                | ((accountPendingRewards << 192) & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK);
         }
 
-        // Update vault storage
+        /// Update vault storage.
         _vault.supplyAndIntegralSlot =
             (supply & StorageMasks.SUPPLY_MASK) | ((integral << 128) & StorageMasks.INTEGRAL_MASK);
     }
