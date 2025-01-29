@@ -102,13 +102,13 @@ contract Accountant is ReentrancyGuardTransient {
         uint256 supply = uint128(vaultSupplyAndIntegral & SUPPLY_MASK);
         uint256 integral = uint128((vaultSupplyAndIntegral & INTEGRAL_MASK) >> 128);
 
-        if (pendingRewards > 0) {
-            uint256 totalFees = pendingRewards * (harvestFee + donationFee) / 1e18;
-            pendingRewards -= totalFees;
-
+        if (pendingRewards > 0 && supply > 0) {
             if (!claimed) {
                 globalPendingRewards += pendingRewards;
             }
+
+            uint256 totalFees = pendingRewards * (harvestFee + donationFee) / 1e18;
+            pendingRewards -= totalFees;
 
             integral += uint128(pendingRewards * 1e18 / supply);
         }
@@ -172,6 +172,30 @@ contract Accountant is ReentrancyGuardTransient {
         /// Update the global pending rewards.
         /// @dev Don't set to 0 to avoid gas cost.
         globalPendingRewards = 1;
+    }
+
+    function claimPremium() external nonReentrant {
+        PackedDonation storage _donation = donations[msg.sender];
+        uint256 donationAndIntegral = _donation.donationAndIntegralSlot;
+
+        uint256 donation = uint128(donationAndIntegral & DONATION_MASK);
+        uint256 integral = uint128((donationAndIntegral & DONATION_INTEGRAL_MASK) >> 128);
+
+        /// If the integral is not reached, return.
+        /// To avoid liquidity issue.
+        if (globalHarvestIntegral < integral) {
+            return;
+        }
+
+        /// Calculate the premium.
+        donation += donation * donationFee / 1e18;
+
+        /// Transfer the original amount + premium.
+        SafeERC20.safeTransfer(IERC20(REWARD_TOKEN), msg.sender, donation);
+
+        /// Reset.
+        _donation.donationAndIntegralSlot =
+            (0 & DONATION_MASK) | ((globalHarvestIntegral << 128) & DONATION_INTEGRAL_MASK);
     }
 
     function totalSupply(address vault) external view returns (uint256) {
