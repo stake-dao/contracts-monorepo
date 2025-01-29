@@ -3,6 +3,8 @@ pragma solidity 0.8.28;
 
 import "src/interfaces/IRegistry.sol";
 import "src/libraries/StorageMasks.sol";
+
+import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
@@ -29,6 +31,9 @@ contract Accountant is ReentrancyGuardTransient {
         uint256 donationAndIntegralSlot;
     }
 
+    /// @notice Scaling factor used for fixed-point arithmetic precision (1e18).
+    uint256 public constant PRECISION = 1e18;
+
     /// @notice The registry of vaults.
     address public immutable REGISTRY;
 
@@ -36,10 +41,13 @@ contract Accountant is ReentrancyGuardTransient {
     address public immutable REWARD_TOKEN;
 
     /// @notice The harvest fee.
-    uint256 public harvestFee;
+    uint256 public harvestFeeBps;
 
     /// @notice The donation fee.
-    uint256 public donationFee;
+    uint256 public donationFeeBps;
+
+    /// @notice The protocol fee.
+    uint256 public protocolFeeBps;
 
     /// @notice The global harvest integral of all vaults.
     uint256 public globalHarvestIntegral;
@@ -75,12 +83,9 @@ contract Accountant is ReentrancyGuardTransient {
         REGISTRY = _registry;
         REWARD_TOKEN = _rewardToken;
 
-        harvestFee = 0.05e18;
-
-        /// 0.5%
-
-        donationFee = 0.05e18;
-        /// 0.5%
+        harvestFeeBps = 0.05e18;
+        donationFeeBps = 0.05e18;
+        protocolFeeBps = 0.15e18;
     }
 
     /// @notice Function called by vaults to checkpoint the state of the vault on every account action.
@@ -107,10 +112,10 @@ contract Accountant is ReentrancyGuardTransient {
                 globalPendingRewards += pendingRewards;
             }
 
-            uint256 totalFees = pendingRewards * (harvestFee + donationFee) / 1e18;
+            uint256 totalFees = Math.mulDiv(pendingRewards, harvestFeeBps + donationFeeBps + protocolFeeBps, 1e18);
             pendingRewards -= totalFees;
 
-            integral += uint128(pendingRewards * 1e18 / supply);
+            integral += uint128(Math.mulDiv(pendingRewards, PRECISION, supply));
         }
 
         /// 1. Minting.
@@ -124,9 +129,10 @@ contract Accountant is ReentrancyGuardTransient {
 
             uint256 balance = uint96(accountBalanceAndRewards & StorageMasks.BALANCE_MASK);
             uint256 accountIntegral = uint96((accountBalanceAndRewards & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 96);
-            uint256 accountPendingRewards = uint64((accountBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
+            uint256 accountPendingRewards =
+                uint64((accountBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
 
-            accountPendingRewards += uint64((integral - accountIntegral) * balance / supply);
+            accountPendingRewards += uint64(Math.mulDiv((integral - accountIntegral), balance, supply));
             balance -= amount;
 
             _from.balanceAndRewardsSlot = (balance & StorageMasks.BALANCE_MASK)
@@ -145,9 +151,10 @@ contract Accountant is ReentrancyGuardTransient {
 
             uint256 balance = uint96(accountBalanceAndRewards & StorageMasks.BALANCE_MASK);
             uint256 accountIntegral = uint96((accountBalanceAndRewards & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 96);
-            uint256 accountPendingRewards = uint64((accountBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
+            uint256 accountPendingRewards =
+                uint64((accountBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
 
-            accountPendingRewards += uint64((integral - accountIntegral) * balance / supply);
+            accountPendingRewards += uint64(Math.mulDiv((integral - accountIntegral), balance, supply));
             balance += amount;
 
             _to.balanceAndRewardsSlot = (balance & StorageMasks.BALANCE_MASK)
@@ -196,7 +203,7 @@ contract Accountant is ReentrancyGuardTransient {
         /// If there's no donation, revert.
         require(donation > 0, NoDonation());
 
-        donation += donation * donationFee / 1e18;
+        donation += Math.mulDiv(donation, donationFeeBps, 1e18);
 
         /// Transfer the original amount + premium.
         SafeERC20.safeTransfer(IERC20(REWARD_TOKEN), msg.sender, donation);
@@ -205,6 +212,10 @@ contract Accountant is ReentrancyGuardTransient {
         _donation.donationAndIntegralSlot =
             (0 & StorageMasks.DONATION_MASK) | ((globalHarvestIntegral << 128) & StorageMasks.DONATION_INTEGRAL_MASK);
     }
+
+    function harvest(address vault) external nonReentrant {}
+
+    function claimProtocolFees() external nonReentrant {}
 
     function totalSupply(address vault) external view returns (uint256) {
         return uint128(vaults[vault].supplyAndIntegralSlot & StorageMasks.SUPPLY_MASK);
@@ -216,7 +227,7 @@ contract Accountant is ReentrancyGuardTransient {
 
         /// Calculate the premium.
         donation = uint128(donationAndIntegral & StorageMasks.DONATION_MASK);
-        donation += donation * donationFee / 1e18;
+        donation += Math.mulDiv(donation, donationFeeBps, PRECISION);
     }
 
     function balanceOf(address vault, address account) external view returns (uint256) {
