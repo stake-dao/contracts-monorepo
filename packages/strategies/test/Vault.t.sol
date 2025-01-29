@@ -49,10 +49,6 @@ contract Vault is Test {
     }
 
     function test_setup() public virtual {
-        console.log(address(vault.REGISTRY()));
-        console.log(address(vault.ACCOUNTANT()));
-        console.log(address(vault.ASSET()));
-
         assertEq(address(vault.REGISTRY()), address(registry));
         assertEq(address(vault.STRATEGY()), address(strategy));
         assertEq(address(vault.ALLOCATOR()), address(allocator));
