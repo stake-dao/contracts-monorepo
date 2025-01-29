@@ -73,6 +73,15 @@ contract Accountant is ReentrancyGuardTransient {
     /// @notice The error thrown when the caller is not a vault.
     error OnlyVault();
 
+    /// @notice The error thrown when there is no donation.
+    error NoDonation();
+
+    /// @notice The error thrown when there is no pending rewards.
+    error NoPendingRewards();
+
+    /// @notice The error thrown when the harvest integral is not reached.
+    error HarvestIntegralNotReached();
+
     constructor(address _registry, address _rewardToken) {
         REGISTRY = _registry;
         REWARD_TOKEN = _rewardToken;
@@ -104,6 +113,7 @@ contract Accountant is ReentrancyGuardTransient {
 
         if (pendingRewards > 0 && supply > 0) {
             if (!claimed) {
+                /// If the rewards are already claimed, there's no need to update the global pending rewards.
                 globalPendingRewards += pendingRewards;
             }
 
@@ -156,6 +166,8 @@ contract Accountant is ReentrancyGuardTransient {
     }
 
     function donate() external nonReentrant {
+        require(globalPendingRewards != 0, NoPendingRewards());
+
         /// Transfer the pending rewards.
         SafeERC20.safeTransferFrom(IERC20(REWARD_TOKEN), msg.sender, address(this), globalPendingRewards - 1);
 
@@ -170,24 +182,25 @@ contract Accountant is ReentrancyGuardTransient {
             (donation & DONATION_MASK) | ((globalHarvestIntegral << 128) & DONATION_INTEGRAL_MASK);
 
         /// Update the global pending rewards.
-        /// @dev Don't set to 0 to avoid gas cost.
+        /// @dev Don't set to 0 to avoid extra gas cost from changing storage from non-zero to zero value.
         globalPendingRewards = 1;
     }
 
-    function claimPremium() external nonReentrant {
+    function claimDonation() external nonReentrant {
         PackedDonation storage _donation = donations[msg.sender];
-        uint256 donationAndIntegral = _donation.donationAndIntegralSlot;
 
-        uint256 donation = uint128(donationAndIntegral & DONATION_MASK);
+        uint256 donationAndIntegral = _donation.donationAndIntegralSlot;
         uint256 integral = uint128((donationAndIntegral & DONATION_INTEGRAL_MASK) >> 128);
 
-        /// If the integral is not reached, return.
-        /// To avoid liquidity issue.
-        if (globalHarvestIntegral < integral) {
-            return;
-        }
+        /// If the integral is not reached, revert to avoid liquidity issue.
+        require(globalHarvestIntegral >= integral, HarvestIntegralNotReached());
 
         /// Calculate the premium.
+        uint256 donation = uint128(donationAndIntegral & DONATION_MASK);
+
+        /// If there's no donation, revert.
+        require(donation > 0, NoDonation());
+
         donation += donation * donationFee / 1e18;
 
         /// Transfer the original amount + premium.
@@ -200,6 +213,15 @@ contract Accountant is ReentrancyGuardTransient {
 
     function totalSupply(address vault) external view returns (uint256) {
         return uint128(vaults[vault].supplyAndIntegralSlot & SUPPLY_MASK);
+    }
+
+    /// @notice Get the donation amount of an account including the premium.
+    function getDonation(address account) external view returns (uint256 donation) {
+        uint256 donationAndIntegral = donations[account].donationAndIntegralSlot;
+
+        /// Calculate the premium.
+        donation = uint128(donationAndIntegral & DONATION_MASK);
+        donation += donation * donationFee / 1e18;
     }
 
     function balanceOf(address vault, address account) external view returns (uint256) {
