@@ -157,10 +157,7 @@ contract Accountant is ReentrancyGuardTransient {
 
     function donate() external nonReentrant {
         /// Transfer the pending rewards.
-        SafeERC20.safeTransferFrom(IERC20(REWARD_TOKEN), msg.sender, address(this), globalPendingRewards);
-
-        /// Update the global pending rewards.
-        globalPendingRewards = 0;
+        SafeERC20.safeTransferFrom(IERC20(REWARD_TOKEN), msg.sender, address(this), globalPendingRewards - 1);
 
         /// Update the donation integral and the donate amount.
         PackedDonation storage _donation = donations[msg.sender];
@@ -171,6 +168,10 @@ contract Accountant is ReentrancyGuardTransient {
 
         _donation.donationAndIntegralSlot =
             (donation & DONATION_MASK) | ((globalHarvestIntegral << 128) & DONATION_INTEGRAL_MASK);
+
+        /// Update the global pending rewards.
+        /// @dev Don't set to 0 to avoid gas cost.
+        globalPendingRewards = 1;
     }
 
     function totalSupply(address vault) external view returns (uint256) {
