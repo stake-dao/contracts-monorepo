@@ -74,12 +74,6 @@ contract Deploy is DeployAccumulator {
         // Planned for future ZeroLend protocol upgrade.
         // liquidityGauge.add_reward(address(WETH), address(accumulator));
 
-        // Create initial lock.
-        // Had to send 1 wei of ZERO to the foundry DefaultSender.
-        // Need to have 1 wei of ZERO for the deployer.
-        IERC20(zeroToken).transfer(locker, 1);
-        ILocker(locker).createLock(1, 4 * 365 days);
-
         // Transfer all governance to DAO for following contracts.
         //  - sdZero only has an operator which was set to the depositor
         //  - gauge (need to call accept_transfer_ownership() from DAO.GOVERNANCE)

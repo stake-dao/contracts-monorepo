@@ -17,7 +17,8 @@ contract Locker is VeCRVLocker {
     error NotDepositor();
     error NotOwnerOfToken(uint256 tokenId);
     error EmptyTokenIdList();
-    error CanOnlyBeCalledOnce();
+    error ZeroValue();
+    error ZeroLockDuration();
 
     ILockerToken public immutable zeroLocker;
 
@@ -33,7 +34,9 @@ contract Locker is VeCRVLocker {
         VeCRVLocker(_governance, _token, _veToken)
     {
         zeroLocker = ILockerToken(_zeroLocker);
-        IERC20(token).approve(address(veToken), type(uint256).max);
+
+        // Required for the increaseLock function.
+        IERC20(token).approve(address(zeroLocker), type(uint256).max);
     }
 
     function name() public pure override returns (string memory) {
@@ -41,39 +44,32 @@ contract Locker is VeCRVLocker {
         return "ZERO Locker";
     }
 
-    /// @notice Creates the  StakeDao lock.
-    /// @param _value Value to be added to the locker as the initial locked ZERO amount.
-    /// @param _unlockTime Duration of the initial lock.
-    /// @dev Can only be called once.
-    // TODO is it ok not to mint sdZERO for this initial lock?
-    // TODO ok to limit to calling it just once?
-    function createLock(uint256 _value, uint256 _unlockTime) external override onlyGovernanceOrDepositor {
-        if (zeroLockedTokenId != 0) revert CanOnlyBeCalledOnce();
-
-        IERC20(token).safeApprove(address(zeroLocker), _value);
-        zeroLockedTokenId = zeroLocker.createLock(_value, _unlockTime, true);
-
-        emit LockCreated(_value, _unlockTime);
-    }
-
-    /// @notice Increases the lock amount and/or lock duration of the locker token in the Voting Escrow contract.
+    /// @notice Increases the lock amount and duration of the locker token in the voting escrow contract.
     /// @param _value The amount of tokens to add to the existing lock.
-    /// @param _unlockTime The new unlock time for the lock, in seconds since the epoch. Must be aligned to weeks.
-    /// @custom:emits Emits a `LockIncreased` event on successful lock update.
-    function increaseLock(uint256 _value, uint256 _unlockTime) external override onlyGovernanceOrDepositor {
-        if (_value > 0) {
-            IZeroVp(veToken).increaseLockAmount(zeroLockedTokenId, _value);
+    /// @param _lockDuration The unlock duration for the lock, in seconds since the epoch. Must be aligned to weeks.
+    /// @custom:emits Emits a `LockIncreased` event on successful lock update and a `LockCreated` on the first execution of this function.
+    function increaseLock(uint256 _value, uint256 _lockDuration) external override onlyGovernanceOrDepositor {
+        if (_value == 0) revert ZeroValue();
+        if (_lockDuration == 0) revert ZeroLockDuration();
+
+        uint256 _unlockTime = block.timestamp + _lockDuration;
+
+        uint256 _newZeroLockedTokenId = zeroLocker.createLock(_value, _lockDuration, false);
+
+        // If the locker was initialized, merge old token ID with new token ID.
+        // Else, we just initialized the locker so we emit the event.
+        if (zeroLockedTokenId != 0) {
+            IZeroVp(veToken).unstakeToken(zeroLockedTokenId);
+            zeroLocker.merge(zeroLockedTokenId, _newZeroLockedTokenId);
+            emit LockIncreased(_value, _unlockTime);
+        } else {
+            emit LockCreated(_value, _unlockTime);
         }
 
-        if (_unlockTime > 0) {
-            bool _canIncrease = (_unlockTime / 1 weeks * 1 weeks) > (zeroLocker.lockedEnd(zeroLockedTokenId));
+        // stake token in ZEROvp contract to receive voting power tokens
+        zeroLocker.safeTransferFrom(address(this), veToken, _newZeroLockedTokenId);
 
-            if (_canIncrease) {
-                IZeroVp(veToken).increaseLockDuration(zeroLockedTokenId, _unlockTime);
-            }
-        }
-
-        emit LockIncreased(_value, _unlockTime);
+        zeroLockedTokenId = _newZeroLockedTokenId;
     }
 
     /// @notice Logic was migrated to the accumulator for more flexibility.
@@ -91,12 +87,7 @@ contract Locker is VeCRVLocker {
     {
         if (_tokenIds.length == 0) revert EmptyTokenIdList();
 
-        // Extend the lock duration of the locker to the maximum amount.
-        // ZeroLend rounds the unlock time to weeks.
-        uint256 unlockTime = ((block.timestamp + 126_144_000) / 1 weeks) * 1 weeks;
-        if (unlockTime > zeroLocker.lockedEnd(zeroLockedTokenId)) {
-            IZeroVp(veToken).increaseLockDuration(zeroLockedTokenId, 126_144_000);
-        }
+        uint256 _lockEnd = zeroLocker.lockedEnd(zeroLockedTokenId);
 
         // Unstake locker NFT token.
         IZeroVp(veToken).unstakeToken(zeroLockedTokenId);
@@ -112,6 +103,10 @@ contract Locker is VeCRVLocker {
             // Merge user token into locker zeroLockedTokenId.
             zeroLocker.merge(_tokenIds[index], zeroLockedTokenId);
 
+            // Keep track of the maximum lock end time as it will be the lock end time of the merge result.
+            uint256 _currentLockEnd = zeroLocker.lockedEnd(_tokenIds[index]);
+            if (_currentLockEnd > _lockEnd) _lockEnd = _currentLockEnd;
+
             unchecked {
                 ++index;
             }
@@ -120,7 +115,7 @@ contract Locker is VeCRVLocker {
         // Transfer the token back to the ZEROvp contract.
         zeroLocker.safeTransferFrom(address(this), veToken, zeroLockedTokenId);
 
-        emit LockIncreased(_amount, unlockTime);
+        emit LockIncreased(_amount, _lockEnd);
     }
 
     /// @notice Release the tokens from the LockerToken contract when the lock expires.

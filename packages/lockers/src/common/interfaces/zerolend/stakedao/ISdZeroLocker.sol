@@ -8,7 +8,6 @@ interface ISdZeroLocker is ILocker {
     error NotDepositor();
     error NotOwnerOfToken(uint256 tokenId);
     error EmptyTokenIdList();
-    error CanOnlyBeCalledOnce();
 
     function zeroLockedTokenId() external returns (uint256);
 
