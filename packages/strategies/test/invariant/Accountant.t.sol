@@ -1,0 +1,147 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+pragma solidity 0.8.28;
+
+import {Test} from "forge-std/src/Test.sol";
+import {StdInvariant} from "forge-std/src/StdInvariant.sol";
+import "@openzeppelin/contracts/proxy/Clones.sol";
+
+import {MockToken} from "test/mocks/MockToken.sol";
+import {MockStrategy} from "test/mocks/MockStrategy.sol";
+import {MockRegistry} from "test/mocks/MockRegistry.sol";
+import {MockAllocator} from "test/mocks/MockAllocator.sol";
+import {Accountant} from "src/Accountant.sol";
+
+import {RewardVault} from "src/RewardVault.sol";
+import {AccountantHandler} from "test/invariant/handlers/AccountantHandler.sol";
+
+contract AccountantInvariantTest is StdInvariant, Test {
+    MockToken public token;
+    MockRegistry public registry;
+    MockStrategy public strategy;
+    MockAllocator public allocator;
+    Accountant public accountant;
+    RewardVault public vault;
+    RewardVault public vaultImplementation;
+    AccountantHandler public handler;
+
+    function setUp() public virtual {
+        // Setup basic contracts
+        token = new MockToken("MockToken", "MTK", 18);
+        strategy = new MockStrategy();
+        registry = new MockRegistry();
+        allocator = new MockAllocator();
+        accountant = new Accountant(address(registry), address(token));
+
+        vaultImplementation = new RewardVault();
+        vault = RewardVault(
+            Clones.cloneDeterministicWithImmutableArgs(
+                address(vaultImplementation),
+                abi.encodePacked(address(registry), address(accountant), address(token)),
+                ""
+            )
+        );
+
+        registry.setVault(address(vault));
+        registry.setStrategy(address(strategy));
+        registry.setAllocator(address(allocator));
+
+        // Setup handler
+        handler = new AccountantHandler(token, accountant, vault);
+
+        // Configure invariant test settings
+        targetContract(address(handler));
+        targetSender(address(this));
+
+        bytes4[] memory selectors = new bytes4[](3);
+        selectors[0] = handler.donate.selector;
+        selectors[1] = handler.claimDonation.selector;
+        selectors[2] = handler.claim.selector;
+
+        targetSelector(FuzzSelector({addr: address(handler), selectors: selectors}));
+    }
+
+    function invariant_supplyConsistency() public {
+        // Check that total supply matches sum of all user balances
+        uint256 totalSupply = accountant.totalSupply(address(vault));
+        uint256 sumBalances = 0;
+
+        for (uint256 i = 0; i < handler.NUM_USERS(); i++) {
+            sumBalances += accountant.balanceOf(address(vault), handler.users(i));
+        }
+
+        assertEq(totalSupply, sumBalances, "Total supply must match sum of all balances");
+        assertEq(totalSupply, vault.totalSupply(), "Accountant and vault total supply must match");
+    }
+
+    function invariant_donationPremiumAccuracy() public {
+        // For each user that has made a donation
+        for (uint256 i = 0; i < handler.NUM_USERS(); i++) {
+            address user = handler.users(i);
+            uint256 donation = handler.userDonations(user);
+
+            if (donation > 0) {
+                uint256 expectedPremium = donation + ((donation * accountant.donationFeeBps()) / 1e18);
+                uint256 actualPremium = accountant.getDonation(user);
+
+                assertEq(actualPremium, expectedPremium, "Claimed donation must equal original amount plus premium");
+            }
+        }
+    }
+
+    function invariant_donationStateConsistency() public {
+        // Verify total donations match sum of user donations
+        uint256 totalDonations = handler.totalDonations();
+        uint256 sumUserDonations = 0;
+
+        for (uint256 i = 0; i < handler.NUM_USERS(); i++) {
+            address user = handler.users(i);
+            sumUserDonations += handler.userDonations(user);
+        }
+
+        assertEq(totalDonations, sumUserDonations, "Total donations must match sum of user donations");
+    }
+
+    function invariant_nonNegativeBalances() public {
+        // Verify all user balances are non-negative
+        for (uint256 i = 0; i < handler.NUM_USERS(); i++) {
+            address user = handler.users(i);
+            assertTrue(accountant.balanceOf(address(vault), user) >= 0, "User balances cannot be negative");
+        }
+
+        // Verify global supplies are non-negative
+        assertTrue(accountant.totalSupply(address(vault)) >= 0, "Total supply cannot be negative");
+
+        // Verify total donations are non-negative
+        assertTrue(handler.totalDonations() >= 0, "Total donations cannot be negative");
+    }
+
+    function invariant_accountantStateConsistency() public {
+        // Check total supply consistency between vault and accountant
+        assertEq(
+            accountant.totalSupply(address(vault)),
+            vault.totalSupply(),
+            "Accountant total supply must match vault total supply"
+        );
+
+        // Check individual balances consistency
+        for (uint256 i = 0; i < handler.NUM_USERS(); i++) {
+            address user = handler.users(i);
+            assertEq(
+                accountant.balanceOf(address(vault), user),
+                vault.balanceOf(user),
+                "Accountant balance must match vault balance for each user"
+            );
+        }
+
+        // Verify no "dust" is left in the accountant
+        uint256 sumBalances = 0;
+        for (uint256 i = 0; i < handler.NUM_USERS(); i++) {
+            sumBalances += accountant.balanceOf(address(vault), handler.users(i));
+        }
+        assertEq(
+            sumBalances,
+            accountant.totalSupply(address(vault)),
+            "Sum of accountant balances must match accountant total supply"
+        );
+    }
+}

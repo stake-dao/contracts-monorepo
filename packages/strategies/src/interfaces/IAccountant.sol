@@ -7,4 +7,9 @@ interface IAccountant {
 
     function totalSupply(address asset) external view returns (uint256);
     function balanceOf(address asset, address account) external view returns (uint256);
+
+    function claim(address[] calldata vaults, address receiver) external;
+    function claim(address[] calldata vaults, address account, address receiver) external;
+    function claimProtocolFees() external;
+    function harvest(address vault) external;
 }
