@@ -135,7 +135,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         nonReentrant
     {
         // Validate caller is the registered vault for this asset
-        if (msg.sender != IRegistry(REGISTRY).vaults(asset)) revert OnlyVault();
+        require(IRegistry(REGISTRY).vaults(asset) == msg.sender, OnlyVault());
 
         PackedVault storage _vault = vaults[msg.sender];
         uint256 vaultSupplyAndIntegral = _vault.supplyAndIntegralSlot;
@@ -304,7 +304,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     ///      3. The donation helps provide liquidity for the reward system
     /// @custom:throws NoPendingRewards If there are no global pending rewards
     function donate() external nonReentrant {
-        if (globalPendingRewards == 0) revert NoPendingRewards();
+        require(globalPendingRewards != 0, NoPendingRewards());
 
         // Transfer pending rewards from donor
         SafeERC20.safeTransferFrom(IERC20(REWARD_TOKEN), msg.sender, address(this), globalPendingRewards);
@@ -344,10 +344,10 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         uint256 donation = uint128(donationAndIntegral & StorageMasks.DONATION_MASK);
 
         // Verify harvest integral has been reached
-        if (globalHarvestIntegral < integral) revert HarvestIntegralNotReached();
+        require(globalHarvestIntegral >= integral, HarvestIntegralNotReached());
 
         // Verify donation exists
-        if (donation == 0) revert NoDonation();
+        require(donation != 0, NoDonation());
 
         // Calculate total claimable amount including premium
         uint256 totalClaimable = donation + Math.mulDiv(donation, donationPremiumPercent, 1e18);
@@ -395,9 +395,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param _harvestFeePercent New harvest fee percentage (scaled by 1e18)
     /// @custom:throws WhatWrongWithYou If total fees would exceed maximum
     function setHarvestFeePercent(uint256 _harvestFeePercent) external onlyOwner {
-        if (_harvestFeePercent + donationPremiumPercent + protocolFeePercent > MAX_FEE_PERCENT) {
-            revert WhatWrongWithYou();
-        }
+        require(_harvestFeePercent + donationPremiumPercent + protocolFeePercent <= MAX_FEE_PERCENT, WhatWrongWithYou());
 
         emit HarvestFeePercentSet(harvestFeePercent, _harvestFeePercent);
         harvestFeePercent = _harvestFeePercent;
@@ -408,9 +406,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param _donationFeePercent New donation premium percentage (scaled by 1e18)
     /// @custom:throws WhatWrongWithYou If total fees would exceed maximum
     function setDonationFeePercent(uint256 _donationFeePercent) external onlyOwner {
-        if (_donationFeePercent + harvestFeePercent + protocolFeePercent > MAX_FEE_PERCENT) {
-            revert WhatWrongWithYou();
-        }
+        require(_donationFeePercent + harvestFeePercent + protocolFeePercent <= MAX_FEE_PERCENT, WhatWrongWithYou());
 
         emit DonationFeePercentSet(donationPremiumPercent, _donationFeePercent);
         donationPremiumPercent = _donationFeePercent;
@@ -421,9 +417,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param _protocolFeePercent New protocol fee percentage (scaled by 1e18)
     /// @custom:throws WhatWrongWithYou If total fees would exceed maximum
     function setProtocolFeePercent(uint256 _protocolFeePercent) external onlyOwner {
-        if (_protocolFeePercent + harvestFeePercent + donationPremiumPercent > MAX_FEE_PERCENT) {
-            revert WhatWrongWithYou();
-        }
+        require(_protocolFeePercent + harvestFeePercent + donationPremiumPercent <= MAX_FEE_PERCENT, WhatWrongWithYou());
 
         emit ProtocolFeePercentSet(protocolFeePercent, _protocolFeePercent);
         protocolFeePercent = _protocolFeePercent;
