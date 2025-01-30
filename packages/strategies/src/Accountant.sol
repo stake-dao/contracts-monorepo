@@ -35,6 +35,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @notice Scaling factor used for fixed-point arithmetic precision (1e18).
     uint256 public constant SCALING_FACTOR = 1e18;
 
+    /// @notice The maximum fee percent.
+    uint256 public constant MAX_FEE_PERCENT = 0.4e18; // 40%
+
     /// @notice The registry of addresses.
     address public immutable REGISTRY;
 
@@ -42,13 +45,13 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     address public immutable REWARD_TOKEN;
 
     /// @notice The harvest fee.
-    uint256 public harvestFeePercent;
+    uint256 public harvestFeePercent = 0.005e18; // 0.5%
 
     /// @notice The donation fee.
-    uint256 public donationFeePercent;
+    uint256 public donationFeePercent = 0.005e18; // 0.5%
 
     /// @notice The protocol fee.
-    uint256 public protocolFeePercent;
+    uint256 public protocolFeePercent = 0.15e18; // 15%
 
     /// @notice The global harvest integral of all vaults.
     uint256 public globalHarvestIntegral;
@@ -112,10 +115,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     constructor(address _owner, address _registry, address _rewardToken) Ownable(_owner) {
         REGISTRY = _registry;
         REWARD_TOKEN = _rewardToken;
-
-        harvestFeePercent = 0.05e18;
-        donationFeePercent = 0.05e18;
-        protocolFeePercent = 0.15e18;
     }
 
     /// @notice Function called by vaults to checkpoint the state of the vault on every account action.
@@ -325,7 +324,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     }
 
     function setHarvestFeePercent(uint256 _harvestFeePercent) external onlyOwner {
-        require(_harvestFeePercent + donationFeePercent + protocolFeePercent <= 1e18, WhatWrongWithYou());
+        require(_harvestFeePercent + donationFeePercent + protocolFeePercent <= MAX_FEE_PERCENT, WhatWrongWithYou());
 
         emit HarvestFeePercentSet(harvestFeePercent, _harvestFeePercent);
 
@@ -333,7 +332,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     }
 
     function setDonationFeePercent(uint256 _donationFeePercent) external onlyOwner {
-        require(_donationFeePercent + harvestFeePercent + protocolFeePercent <= 1e18, WhatWrongWithYou());
+        require(_donationFeePercent + harvestFeePercent + protocolFeePercent <= MAX_FEE_PERCENT, WhatWrongWithYou());
 
         emit DonationFeePercentSet(donationFeePercent, _donationFeePercent);
 
@@ -341,7 +340,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     }
 
     function setProtocolFeePercent(uint256 _protocolFeePercent) external onlyOwner {
-        require(_protocolFeePercent + harvestFeePercent + donationFeePercent <= 1e18, WhatWrongWithYou());
+        require(_protocolFeePercent + harvestFeePercent + donationFeePercent <= MAX_FEE_PERCENT, WhatWrongWithYou());
 
         emit ProtocolFeePercentSet(protocolFeePercent, _protocolFeePercent);
 
