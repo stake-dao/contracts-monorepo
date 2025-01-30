@@ -124,8 +124,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param amount The amount of tokens transferred.
     /// @param pendingRewards The amount of pending rewards.
     /// @param claimed Whether the rewards are claimed or only pending.
+    /// TODO: Maybe remove the reentrancy guard.
     function checkpoint(address asset, address from, address to, uint256 amount, uint256 pendingRewards, bool claimed)
-        external
+        external nonReentrant
     {
         require(msg.sender == IRegistry(REGISTRY).vaults(asset), OnlyVault());
 
