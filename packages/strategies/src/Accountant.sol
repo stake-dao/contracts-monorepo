@@ -13,10 +13,8 @@ import "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 contract Accountant is ReentrancyGuardTransient {
     /// @notice Packed vault data structure into 2 slots for gas optimization
     /// @dev supplyAndIntegralSlot: [supply (128) | integral (128)]
-    /// @dev pendingRewardsSlot: [pendingRewards (64)]
     struct PackedVault {
         uint256 supplyAndIntegralSlot; // slot1 -> supplyAndIntegralSlot
-        uint256 pendingRewards;
     }
 
     /// @notice Packed account data structure into 1 slot for gas optimization
@@ -32,9 +30,9 @@ contract Accountant is ReentrancyGuardTransient {
     }
 
     /// @notice Scaling factor used for fixed-point arithmetic precision (1e18).
-    uint256 public constant PRECISION = 1e18;
+    uint256 public constant SCALING_FACTOR = 1e18;
 
-    /// @notice The registry of vaults.
+    /// @notice The registry of addresses.
     address public immutable REGISTRY;
 
     /// @notice The reward token.
@@ -58,14 +56,17 @@ contract Accountant is ReentrancyGuardTransient {
     /// @notice Whether the vault integral is updated before the accounts checkpoint.
     /// @notice Supply of vaults.
     /// @dev Vault address -> PackedVault.
-    mapping(address => PackedVault) private vaults;
+    mapping(address vault => PackedVault vaultData) private vaults;
 
     /// @notice Donations of accounts.
-    mapping(address => PackedDonation) private donations;
+    mapping(address account => PackedDonation donationData) private donations;
 
     /// @notice Balances of accounts per vault.
     /// @dev Vault address -> Account address -> PackedAccount.
-    mapping(address => mapping(address => PackedAccount)) private accounts;
+    mapping(address vault => mapping(address account => PackedAccount accountData)) private accounts;
+
+    /// @notice The error thrown when the caller is not allowed.
+    error OnlyAllowed();
 
     /// @notice The error thrown when the caller is not a vault.
     error OnlyVault();
@@ -78,6 +79,11 @@ contract Accountant is ReentrancyGuardTransient {
 
     /// @notice The error thrown when the harvest integral is not reached.
     error HarvestIntegralNotReached();
+
+    modifier onlyAllowed() {
+        require(IRegistry(REGISTRY).allowed(msg.sender, msg.sig), OnlyAllowed());
+        _;
+    }
 
     constructor(address _registry, address _rewardToken) {
         REGISTRY = _registry;
@@ -115,7 +121,7 @@ contract Accountant is ReentrancyGuardTransient {
             uint256 totalFees = Math.mulDiv(pendingRewards, harvestFeeBps + donationFeeBps + protocolFeeBps, 1e18);
             pendingRewards -= totalFees;
 
-            integral += uint128(Math.mulDiv(pendingRewards, PRECISION, supply));
+            integral += uint128(Math.mulDiv(pendingRewards, SCALING_FACTOR, supply));
         }
 
         /// 1. Minting.
@@ -132,7 +138,7 @@ contract Accountant is ReentrancyGuardTransient {
             uint256 accountPendingRewards =
                 uint64((accountBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
 
-            accountPendingRewards += uint64(Math.mulDiv((integral - accountIntegral), balance, supply));
+            accountPendingRewards += uint64(Math.mulDiv((integral - accountIntegral), balance, SCALING_FACTOR));
             balance -= amount;
 
             _from.balanceAndRewardsSlot = (balance & StorageMasks.BALANCE_MASK)
@@ -154,7 +160,7 @@ contract Accountant is ReentrancyGuardTransient {
             uint256 accountPendingRewards =
                 uint64((accountBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
 
-            accountPendingRewards += uint64(Math.mulDiv((integral - accountIntegral), balance, supply));
+            accountPendingRewards += uint64(Math.mulDiv((integral - accountIntegral), balance, SCALING_FACTOR));
             balance += amount;
 
             _to.balanceAndRewardsSlot = (balance & StorageMasks.BALANCE_MASK)
@@ -167,11 +173,66 @@ contract Accountant is ReentrancyGuardTransient {
             (supply & StorageMasks.SUPPLY_MASK) | ((integral << 128) & StorageMasks.INTEGRAL_MASK);
     }
 
+    function claim(address[] calldata _vaults, address receiver) external nonReentrant {
+        _claim(_vaults, msg.sender, receiver);
+    }
+
+    function claim(address[] calldata _vaults, address account, address receiver) external onlyAllowed nonReentrant {
+        _claim(_vaults, account, receiver);
+    }
+
+    function _claim(address[] calldata _vaults, address account, address receiver) internal {
+        uint256 amount = 0;
+
+        address vault;
+
+        uint256 vaultSupplyAndIntegral;
+        uint256 integral;
+        uint256 balance;
+
+        uint256 accountIntegral;
+        uint256 accountPendingRewards;
+        uint256 accountBalanceAndRewards;
+
+        uint256 vaultsLength = _vaults.length;
+        for (uint256 i; i < vaultsLength; i++) {
+            vault = _vaults[i];
+
+            PackedVault storage _vault = vaults[vault];
+            PackedAccount storage _account = accounts[vault][account];
+
+            vaultSupplyAndIntegral = _vault.supplyAndIntegralSlot;
+            integral = uint128((vaultSupplyAndIntegral & StorageMasks.INTEGRAL_MASK) >> 128);
+
+            accountBalanceAndRewards = _account.balanceAndRewardsSlot;
+            balance = uint96(accountBalanceAndRewards & StorageMasks.BALANCE_MASK);
+            accountIntegral = uint96((accountBalanceAndRewards & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 96);
+            accountPendingRewards =
+                uint64((accountBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
+
+            if (integral > accountIntegral) {
+                amount += Math.mulDiv(integral - accountIntegral, balance, SCALING_FACTOR);
+            }
+
+            amount += accountPendingRewards;
+
+            /// Update the account storage.
+            _account.balanceAndRewardsSlot = (balance & StorageMasks.BALANCE_MASK)
+            /// Update the account integral.
+            | ((integral << 96) & StorageMasks.ACCOUNT_INTEGRAL_MASK)
+            /// Reset the pending rewards.
+            | ((0 << 192) & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK);
+        }
+
+        /// Transfer the rewards.
+        SafeERC20.safeTransfer(IERC20(REWARD_TOKEN), receiver, amount);
+    }
+
     function donate() external nonReentrant {
         require(globalPendingRewards != 0, NoPendingRewards());
 
         /// Transfer the pending rewards.
-        SafeERC20.safeTransferFrom(IERC20(REWARD_TOKEN), msg.sender, address(this), globalPendingRewards - 1);
+        SafeERC20.safeTransferFrom(IERC20(REWARD_TOKEN), msg.sender, address(this), globalPendingRewards);
 
         /// Update the donation integral and the donate amount.
         PackedDonation storage _donation = donations[msg.sender];
@@ -184,8 +245,7 @@ contract Accountant is ReentrancyGuardTransient {
             | ((globalHarvestIntegral << 128) & StorageMasks.DONATION_INTEGRAL_MASK);
 
         /// Update the global pending rewards.
-        /// @dev Don't set to 0 to avoid extra gas cost from changing storage from non-zero to zero value.
-        globalPendingRewards = 1;
+        globalPendingRewards = 0;
     }
 
     function claimDonation() external nonReentrant {
@@ -227,7 +287,7 @@ contract Accountant is ReentrancyGuardTransient {
 
         /// Calculate the premium.
         donation = uint128(donationAndIntegral & StorageMasks.DONATION_MASK);
-        donation += Math.mulDiv(donation, donationFeeBps, PRECISION);
+        donation += Math.mulDiv(donation, donationFeeBps, 1e18);
     }
 
     function balanceOf(address vault, address account) external view returns (uint256) {
