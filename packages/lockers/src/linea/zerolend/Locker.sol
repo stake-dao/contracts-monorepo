@@ -66,7 +66,6 @@ contract Locker is VeCRVLocker {
         }
 
         if (_unlockTime > 0) {
-            // TODO should we extend every time? the voting power is based on lock's start and end not current time.
             bool _canIncrease = (_unlockTime / 1 weeks * 1 weeks) > (zeroLocker.lockedEnd(zeroLockedTokenId));
 
             if (_canIncrease) {
@@ -92,7 +91,12 @@ contract Locker is VeCRVLocker {
     {
         if (_tokenIds.length == 0) revert EmptyTokenIdList();
 
-        uint256 _lockEnd = zeroLocker.lockedEnd(zeroLockedTokenId);
+        // Extend the lock duration of the locker to the maximum amount.
+        // ZeroLend rounds the unlock time to weeks.
+        uint256 unlockTime = ((block.timestamp + 126_144_000) / 1 weeks) * 1 weeks;
+        if (unlockTime > zeroLocker.lockedEnd(zeroLockedTokenId)) {
+            IZeroVp(veToken).increaseLockDuration(zeroLockedTokenId, 126_144_000);
+        }
 
         // Unstake locker NFT token.
         IZeroVp(veToken).unstakeToken(zeroLockedTokenId);
@@ -108,10 +112,6 @@ contract Locker is VeCRVLocker {
             // Merge user token into locker zeroLockedTokenId.
             zeroLocker.merge(_tokenIds[index], zeroLockedTokenId);
 
-            // Keep track of the maximum lock end time as it will be the lock end time of the merge result.
-            uint256 _currentLockEnd = zeroLocker.lockedEnd(_tokenIds[index]);
-            if (_currentLockEnd > _lockEnd) _lockEnd = _currentLockEnd;
-
             unchecked {
                 ++index;
             }
@@ -120,7 +120,7 @@ contract Locker is VeCRVLocker {
         // Transfer the token back to the ZEROvp contract.
         zeroLocker.safeTransferFrom(address(this), veToken, zeroLockedTokenId);
 
-        emit LockIncreased(_amount, _lockEnd);
+        emit LockIncreased(_amount, unlockTime);
     }
 
     /// @notice Release the tokens from the LockerToken contract when the lock expires.

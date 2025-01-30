@@ -43,30 +43,33 @@ contract Accumulator is BaseAccumulator {
     /// @param notifySDT Deactivated, should be false.
     /// @param claimFeeStrategy Deactivated, should be false.
     function claimAndNotifyAll(bool notifySDT, bool claimFeeStrategy) external override {
+        uint256 lockerZeroBalanceBefore = IERC20(ZERO).balanceOf(locker);
+        uint256 lockerWethBalanceBefore = IERC20(WETH).balanceOf(locker);
+
         // Claim rewards from the locker.
         ILocker(locker).execute(ZERO_VP, 0, abi.encodeWithSignature("getReward()"));
 
         // Get rewards amount.
-        uint256 lockerZeroBalance = IERC20(ZERO).balanceOf(locker);
-        uint256 lockerWethBalance = IERC20(WETH).balanceOf(locker);
+        uint256 zeroReward = IERC20(ZERO).balanceOf(locker) - lockerZeroBalanceBefore;
+        uint256 wethReward = IERC20(WETH).balanceOf(locker) - lockerWethBalanceBefore;
 
         // Transfer rewards to the accumulator.
-        if (lockerZeroBalance > 0) {
+        if (zeroReward > 0) {
             ILocker(locker).execute(
-                ZERO, 0, abi.encodeWithSignature("transfer(address,uint256)", address(this), lockerZeroBalance)
+                ZERO, 0, abi.encodeWithSignature("transfer(address,uint256)", address(this), zeroReward)
             );
         }
-        if (lockerWethBalance > 0) {
+        if (wethReward > 0) {
             ILocker(locker).execute(
-                WETH, 0, abi.encodeWithSignature("transfer(address,uint256)", address(this), lockerWethBalance)
+                WETH, 0, abi.encodeWithSignature("transfer(address,uint256)", address(this), wethReward)
             );
         }
 
         // Transfer rewards to the gauge.
-        if (lockerZeroBalance > 0) {
+        if (zeroReward > 0) {
             notifyReward(ZERO, notifySDT, claimFeeStrategy);
         }
-        if (lockerWethBalance > 0) {
+        if (wethReward > 0) {
             notifyReward(WETH, notifySDT, claimFeeStrategy);
         }
     }
