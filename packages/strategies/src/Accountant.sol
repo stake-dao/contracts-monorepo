@@ -5,9 +5,10 @@ import "src/interfaces/IRegistry.sol";
 import "src/libraries/StorageMasks.sol";
 
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
+
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 
 /// @notice The source of truth.
 contract Accountant is ReentrancyGuardTransient {
@@ -224,6 +225,9 @@ contract Accountant is ReentrancyGuardTransient {
             | ((0 << 192) & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK);
         }
 
+        /// If there's no pending rewards, revert.
+        require(amount != 0, NoPendingRewards());
+
         /// Transfer the rewards.
         SafeERC20.safeTransfer(IERC20(REWARD_TOKEN), receiver, amount);
     }
@@ -273,9 +277,6 @@ contract Accountant is ReentrancyGuardTransient {
             (0 & StorageMasks.DONATION_MASK) | ((globalHarvestIntegral << 128) & StorageMasks.DONATION_INTEGRAL_MASK);
     }
 
-    function harvest(address vault) external nonReentrant {}
-
-    function claimProtocolFees() external nonReentrant {}
 
     function totalSupply(address vault) external view returns (uint256) {
         return uint128(vaults[vault].supplyAndIntegralSlot & StorageMasks.SUPPLY_MASK);
@@ -293,4 +294,12 @@ contract Accountant is ReentrancyGuardTransient {
     function balanceOf(address vault, address account) external view returns (uint256) {
         return uint96(accounts[vault][account].balanceAndRewardsSlot & StorageMasks.BALANCE_MASK);
     }
+
+    //////////////////////////////////////////////////////
+    /// --- TODOS
+    //////////////////////////////////////////////////////
+
+    function harvest(address vault) external nonReentrant {}
+
+    function claimProtocolFees() external nonReentrant {}
 }
