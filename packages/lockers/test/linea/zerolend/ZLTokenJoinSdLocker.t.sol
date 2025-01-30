@@ -26,6 +26,9 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
         vm.selectFork(forkId);
 
         _deployZeroIntegration();
+
+        // Offset the creating vs the actual test
+        vm.warp(block.timestamp + 30 days);
     }
 
     function _getLockedDetails(address _user)
