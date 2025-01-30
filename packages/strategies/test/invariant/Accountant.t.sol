@@ -60,7 +60,7 @@ contract AccountantInvariantTest is StdInvariant, Test {
         targetSelector(FuzzSelector({addr: address(handler), selectors: selectors}));
     }
 
-    function invariant_supplyConsistency() public {
+    function invariant_supplyConsistency() public view {
         // Check that total supply matches sum of all user balances
         uint256 totalSupply = accountant.totalSupply(address(vault));
         uint256 sumBalances = 0;
@@ -73,7 +73,7 @@ contract AccountantInvariantTest is StdInvariant, Test {
         assertEq(totalSupply, vault.totalSupply(), "Accountant and vault total supply must match");
     }
 
-    function invariant_donationPremiumAccuracy() public {
+    function invariant_donationPremiumAccuracy() public view {
         // For each user that has made a donation
         for (uint256 i = 0; i < handler.NUM_USERS(); i++) {
             address user = handler.users(i);
@@ -88,7 +88,7 @@ contract AccountantInvariantTest is StdInvariant, Test {
         }
     }
 
-    function invariant_donationStateConsistency() public {
+    function invariant_donationStateConsistency() public view {
         // Verify total donations match sum of user donations
         uint256 totalDonations = handler.totalDonations();
         uint256 sumUserDonations = 0;
@@ -101,7 +101,7 @@ contract AccountantInvariantTest is StdInvariant, Test {
         assertEq(totalDonations, sumUserDonations, "Total donations must match sum of user donations");
     }
 
-    function invariant_nonNegativeBalances() public {
+    function invariant_nonNegativeBalances() public view {
         // Verify all user balances are non-negative
         for (uint256 i = 0; i < handler.NUM_USERS(); i++) {
             address user = handler.users(i);
@@ -115,7 +115,7 @@ contract AccountantInvariantTest is StdInvariant, Test {
         assertTrue(handler.totalDonations() >= 0, "Total donations cannot be negative");
     }
 
-    function invariant_accountantStateConsistency() public {
+    function invariant_accountantStateConsistency() public view {
         // Check total supply consistency between vault and accountant
         assertEq(
             accountant.totalSupply(address(vault)),
