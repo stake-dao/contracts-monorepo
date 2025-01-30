@@ -118,17 +118,24 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     }
 
     /// @notice Function called by vaults to checkpoint the state of the vault on every account action.
-    /// @param asset The asset address.
-    /// @param from The address of the sender.
-    /// @param to The address of the receiver.
-    /// @param amount The amount of tokens transferred.
-    /// @param pendingRewards The amount of pending rewards.
-    /// @param claimed Whether the rewards are claimed or only pending.
-    /// TODO: Maybe remove the reentrancy guard.
+    /// @dev This function handles four types of operations:
+    ///      1. Minting (from = address(0)): Creates new tokens
+    ///      2. Burning (to = address(0)): Destroys tokens
+    ///      3. Transfers: Updates balances and rewards for both sender and receiver
+    ///      4. Reward Distribution: Processes pending rewards if any exist
+    /// @param asset The underlying asset address of the vault
+    /// @param from The source address (address(0) for minting)
+    /// @param to The destination address (address(0) for burning)
+    /// @param amount The amount of tokens being transferred/minted/burned
+    /// @param pendingRewards New rewards to be distributed to the vault
+    /// @param claimed Whether these rewards were already claimed (true) or need to be added to global pending (false)
+    /// @custom:throws OnlyVault If caller is not the registered vault for the asset
     function checkpoint(address asset, address from, address to, uint256 amount, uint256 pendingRewards, bool claimed)
-        external nonReentrant
+        external
+        nonReentrant
     {
-        require(msg.sender == IRegistry(REGISTRY).vaults(asset), OnlyVault());
+        // Validate caller is the registered vault for this asset
+        if (msg.sender != IRegistry(REGISTRY).vaults(asset)) revert OnlyVault();
 
         PackedVault storage _vault = vaults[msg.sender];
         uint256 vaultSupplyAndIntegral = _vault.supplyAndIntegralSlot;
@@ -136,215 +143,289 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         uint256 supply = uint128(vaultSupplyAndIntegral & StorageMasks.SUPPLY_MASK);
         uint256 integral = uint128((vaultSupplyAndIntegral & StorageMasks.INTEGRAL_MASK) >> 128);
 
+        // Process any pending rewards if they exist and there is supply
         if (pendingRewards > 0 && supply > 0) {
             if (!claimed) {
-                /// If the rewards are already claimed, there's no need to update the global pending rewards.
+                // Only update global pending rewards for unclaimed rewards
                 globalPendingRewards += pendingRewards;
             }
 
+            // Calculate and deduct fees
             uint256 totalFees =
                 Math.mulDiv(pendingRewards, harvestFeePercent + donationPremiumPercent + protocolFeePercent, 1e18);
             pendingRewards -= totalFees;
 
+            // Update integral with new rewards per token
             integral += uint128(Math.mulDiv(pendingRewards, SCALING_FACTOR, supply));
         }
 
-        /// 1. Minting.
+        // Handle token operations
         if (from == address(0)) {
+            // Minting operation
             supply += amount;
-        }
-        /// 2. Transferring. Update the "from" account.
-        else {
-            PackedAccount storage _from = accounts[msg.sender][from];
-            uint256 accountBalanceAndRewards = _from.balanceAndRewardsSlot;
-
-            uint256 balance = uint96(accountBalanceAndRewards & StorageMasks.BALANCE_MASK);
-            uint256 accountIntegral = uint96((accountBalanceAndRewards & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 96);
-            uint256 accountPendingRewards =
-                uint64((accountBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
-
-            accountPendingRewards += uint64(Math.mulDiv((integral - accountIntegral), balance, SCALING_FACTOR));
-            balance -= amount;
-
-            _from.balanceAndRewardsSlot = (balance & StorageMasks.BALANCE_MASK)
-                | ((integral << 96) & StorageMasks.ACCOUNT_INTEGRAL_MASK)
-                | ((accountPendingRewards << 192) & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK);
+        } else {
+            // Update sender's balance and rewards
+            _updateAccountState(msg.sender, from, amount, true, integral);
         }
 
-        /// 3. Burning.
         if (to == address(0)) {
+            // Burning operation
             supply -= amount;
-        }
-        /// 4. Transferring. Update the "to" account.
-        else {
-            PackedAccount storage _to = accounts[msg.sender][to];
-            uint256 accountBalanceAndRewards = _to.balanceAndRewardsSlot;
-
-            uint256 balance = uint96(accountBalanceAndRewards & StorageMasks.BALANCE_MASK);
-            uint256 accountIntegral = uint96((accountBalanceAndRewards & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 96);
-            uint256 accountPendingRewards =
-                uint64((accountBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
-
-            accountPendingRewards += uint64(Math.mulDiv((integral - accountIntegral), balance, SCALING_FACTOR));
-            balance += amount;
-
-            _to.balanceAndRewardsSlot = (balance & StorageMasks.BALANCE_MASK)
-                | ((integral << 96) & StorageMasks.ACCOUNT_INTEGRAL_MASK)
-                | ((accountPendingRewards << 192) & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK);
+        } else {
+            // Update receiver's balance and rewards
+            _updateAccountState(msg.sender, to, amount, false, integral);
         }
 
-        /// Update vault storage.
+        // Update vault storage with new supply and integral
         _vault.supplyAndIntegralSlot =
             (supply & StorageMasks.SUPPLY_MASK) | ((integral << 128) & StorageMasks.INTEGRAL_MASK);
     }
 
+    /// @dev Helper function to update an account's balance and rewards
+    /// @param vault The vault address
+    /// @param account The account to update
+    /// @param amount The amount to add/subtract
+    /// @param isDecrease Whether to decrease (true) or increase (false) the balance
+    /// @param currentIntegral The current reward integral to checkpoint against
+    function _updateAccountState(
+        address vault,
+        address account,
+        uint256 amount,
+        bool isDecrease,
+        uint256 currentIntegral
+    ) private {
+        PackedAccount storage _account = accounts[vault][account];
+        uint256 accountBalanceAndRewards = _account.balanceAndRewardsSlot;
+
+        uint256 balance = uint96(accountBalanceAndRewards & StorageMasks.BALANCE_MASK);
+        uint256 accountIntegral = uint96((accountBalanceAndRewards & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 96);
+        uint256 accountPendingRewards =
+            uint64((accountBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
+
+        // Update pending rewards based on the integral difference
+        accountPendingRewards += uint64(Math.mulDiv((currentIntegral - accountIntegral), balance, SCALING_FACTOR));
+
+        // Update balance
+        balance = isDecrease ? balance - amount : balance + amount;
+
+        // Pack and store updated values
+        _account.balanceAndRewardsSlot = (balance & StorageMasks.BALANCE_MASK)
+            | ((currentIntegral << 96) & StorageMasks.ACCOUNT_INTEGRAL_MASK)
+            | ((accountPendingRewards << 192) & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK);
+    }
+
+    /// @notice Claims rewards from multiple vaults and sends them to a specified receiver
+    /// @dev This is the user-facing claim function that only allows claiming for the sender
+    /// @param _vaults Array of vault addresses to claim rewards from
+    /// @param receiver Address that will receive the claimed rewards
+    /// @custom:throws NoPendingRewards If there are no rewards to claim
     function claim(address[] calldata _vaults, address receiver) external nonReentrant {
         _claim(_vaults, msg.sender, receiver);
     }
 
+    /// @notice Claims rewards on behalf of an account (restricted to allowed callers)
+    /// @dev This is the admin/operator claim function that can claim for any account
+    /// @param _vaults Array of vault addresses to claim rewards from
+    /// @param account Address to claim rewards for
+    /// @param receiver Address that will receive the claimed rewards
+    /// @custom:throws OnlyAllowed If caller is not allowed to claim on behalf of others
+    /// @custom:throws NoPendingRewards If there are no rewards to claim
     function claim(address[] calldata _vaults, address account, address receiver) external onlyAllowed nonReentrant {
         _claim(_vaults, account, receiver);
     }
 
+    /// @dev Internal implementation of the claim functionality
+    /// @dev For each vault:
+    ///      1. Loads the vault and account data
+    ///      2. Calculates new rewards based on integral differences
+    ///      3. Adds any pending rewards
+    ///      4. Updates account state and resets pending rewards
+    /// @param _vaults Array of vault addresses to claim rewards from
+    /// @param account Address to claim rewards for
+    /// @param receiver Address that will receive the claimed rewards
+    /// @custom:throws NoPendingRewards If the total claimed amount is zero
     function _claim(address[] calldata _vaults, address account, address receiver) internal {
         uint256 amount = 0;
-
         address vault;
 
+        // Storage for unpacking vault and account data
         uint256 vaultSupplyAndIntegral;
         uint256 integral;
         uint256 balance;
-
         uint256 accountIntegral;
         uint256 accountPendingRewards;
         uint256 accountBalanceAndRewards;
 
+        // Process each vault
         uint256 vaultsLength = _vaults.length;
         for (uint256 i; i < vaultsLength; i++) {
             vault = _vaults[i];
 
+            // Load storage references
             PackedVault storage _vault = vaults[vault];
             PackedAccount storage _account = accounts[vault][account];
 
+            // Unpack vault data
             vaultSupplyAndIntegral = _vault.supplyAndIntegralSlot;
             integral = uint128((vaultSupplyAndIntegral & StorageMasks.INTEGRAL_MASK) >> 128);
 
+            // Unpack account data
             accountBalanceAndRewards = _account.balanceAndRewardsSlot;
             balance = uint96(accountBalanceAndRewards & StorageMasks.BALANCE_MASK);
             accountIntegral = uint96((accountBalanceAndRewards & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 96);
             accountPendingRewards =
                 uint64((accountBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
 
+            // Add new rewards if integral has increased
             if (integral > accountIntegral) {
                 amount += Math.mulDiv(integral - accountIntegral, balance, SCALING_FACTOR);
             }
 
+            // Add any pending rewards
             amount += accountPendingRewards;
 
-            /// Update the account storage.
+            // Update account storage with new integral and reset pending rewards
             _account.balanceAndRewardsSlot = (balance & StorageMasks.BALANCE_MASK)
-            /// Update the account integral.
-            | ((integral << 96) & StorageMasks.ACCOUNT_INTEGRAL_MASK)
-            /// Reset the pending rewards.
-            | ((0 << 192) & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK);
+                | ((integral << 96) & StorageMasks.ACCOUNT_INTEGRAL_MASK)
+                | ((0 << 192) & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK);
         }
 
-        /// If there's no pending rewards, revert.
-        require(amount != 0, NoPendingRewards());
+        // Revert if no rewards to claim
+        if (amount == 0) revert NoPendingRewards();
 
-        /// Transfer the rewards.
+        // Transfer accumulated rewards to receiver
         SafeERC20.safeTransfer(IERC20(REWARD_TOKEN), receiver, amount);
     }
 
+    /// @notice Allows users to donate their pending rewards to the protocol
+    /// @dev When a user donates:
+    ///      1. Their donation is recorded with the current harvest integral
+    ///      2. They can later claim back their donation plus a premium
+    ///      3. The donation helps provide liquidity for the reward system
+    /// @custom:throws NoPendingRewards If there are no global pending rewards
     function donate() external nonReentrant {
-        require(globalPendingRewards != 0, NoPendingRewards());
+        if (globalPendingRewards == 0) revert NoPendingRewards();
 
-        /// Transfer the pending rewards.
+        // Transfer pending rewards from donor
         SafeERC20.safeTransferFrom(IERC20(REWARD_TOKEN), msg.sender, address(this), globalPendingRewards);
 
-        /// Update the donation integral and the donate amount.
+        // Update donation storage
         PackedDonation storage _donation = donations[msg.sender];
         uint256 donationAndIntegral = _donation.donationAndIntegralSlot;
 
+        // Add to existing donation amount
         uint256 donation = uint128(donationAndIntegral & StorageMasks.DONATION_MASK);
         donation += globalPendingRewards;
 
+        // Store donation with current harvest integral
         _donation.donationAndIntegralSlot = (donation & StorageMasks.DONATION_MASK)
             | ((globalHarvestIntegral << 128) & StorageMasks.DONATION_INTEGRAL_MASK);
 
-        /// Emit the donation event.
         emit Donation(msg.sender, globalPendingRewards);
 
-        /// Update the global pending rewards.
+        // Reset global pending rewards
         globalPendingRewards = 0;
     }
 
+    /// @notice Allows users to claim back their donations plus earned premium
+    /// @dev The claim process:
+    ///      1. Verifies the global harvest integral has reached the donation's integral
+    ///      2. Calculates total claimable amount (original donation + premium)
+    ///      3. Transfers the total amount to the donor
+    ///      4. Resets the donation while preserving the latest harvest integral
+    /// @custom:throws HarvestIntegralNotReached If global harvest integral is less than donation integral
+    /// @custom:throws NoDonation If the user has no donation to claim
     function claimDonation() external nonReentrant {
         PackedDonation storage _donation = donations[msg.sender];
-
         uint256 donationAndIntegral = _donation.donationAndIntegralSlot;
+
+        // Unpack donation data
         uint256 integral = uint128((donationAndIntegral & StorageMasks.DONATION_INTEGRAL_MASK) >> 128);
-
-        /// If the integral is not reached, revert to avoid liquidity issue.
-        require(globalHarvestIntegral >= integral, HarvestIntegralNotReached());
-
-        /// Calculate the premium.
         uint256 donation = uint128(donationAndIntegral & StorageMasks.DONATION_MASK);
 
-        /// If there's no donation, revert.
-        require(donation > 0, NoDonation());
+        // Verify harvest integral has been reached
+        if (globalHarvestIntegral < integral) revert HarvestIntegralNotReached();
 
-        donation += Math.mulDiv(donation, donationPremiumPercent, 1e18);
+        // Verify donation exists
+        if (donation == 0) revert NoDonation();
 
-        /// Transfer the original amount + premium.
-        SafeERC20.safeTransfer(IERC20(REWARD_TOKEN), msg.sender, donation);
+        // Calculate total claimable amount including premium
+        uint256 totalClaimable = donation + Math.mulDiv(donation, donationPremiumPercent, 1e18);
 
-        /// Reset.
+        // Transfer total amount to donor
+        SafeERC20.safeTransfer(IERC20(REWARD_TOKEN), msg.sender, totalClaimable);
+
+        // Reset donation while preserving latest harvest integral
         _donation.donationAndIntegralSlot =
             (0 & StorageMasks.DONATION_MASK) | ((globalHarvestIntegral << 128) & StorageMasks.DONATION_INTEGRAL_MASK);
 
-        /// Emit the claim donation event.
-        emit ClaimDonation(msg.sender, donation);
+        emit ClaimDonation(msg.sender, totalClaimable);
     }
 
+    /// @notice Returns the total supply of tokens in a vault
+    /// @param vault The vault address to query
+    /// @return The total supply of tokens in the vault
     function totalSupply(address vault) external view returns (uint256) {
         return uint128(vaults[vault].supplyAndIntegralSlot & StorageMasks.SUPPLY_MASK);
     }
 
-    /// @notice Get the donation amount of an account including the premium.
+    /// @notice Calculates the claimable donation amount including premium
+    /// @dev The premium is calculated as a percentage of the original donation
+    /// @param account The account to check donation for
+    /// @return donation The total claimable amount (original + premium)
     function getDonation(address account) external view returns (uint256 donation) {
         uint256 donationAndIntegral = donations[account].donationAndIntegralSlot;
 
-        /// Calculate the premium.
+        // Get original donation amount
         donation = uint128(donationAndIntegral & StorageMasks.DONATION_MASK);
+        // Add premium
         donation += Math.mulDiv(donation, donationPremiumPercent, 1e18);
     }
 
+    /// @notice Returns the token balance of an account in a specific vault
+    /// @param vault The vault address to query
+    /// @param account The account address to check
+    /// @return The account's token balance in the vault
     function balanceOf(address vault, address account) external view returns (uint256) {
         return uint96(accounts[vault][account].balanceAndRewardsSlot & StorageMasks.BALANCE_MASK);
     }
 
+    /// @notice Updates the harvest fee percentage
+    /// @dev The total of all fees must not exceed MAX_FEE_PERCENT
+    /// @param _harvestFeePercent New harvest fee percentage (scaled by 1e18)
+    /// @custom:throws WhatWrongWithYou If total fees would exceed maximum
     function setHarvestFeePercent(uint256 _harvestFeePercent) external onlyOwner {
-        require(_harvestFeePercent + donationPremiumPercent + protocolFeePercent <= MAX_FEE_PERCENT, WhatWrongWithYou());
+        if (_harvestFeePercent + donationPremiumPercent + protocolFeePercent > MAX_FEE_PERCENT) {
+            revert WhatWrongWithYou();
+        }
 
         emit HarvestFeePercentSet(harvestFeePercent, _harvestFeePercent);
-
         harvestFeePercent = _harvestFeePercent;
     }
 
+    /// @notice Updates the donation premium percentage
+    /// @dev The total of all fees must not exceed MAX_FEE_PERCENT
+    /// @param _donationFeePercent New donation premium percentage (scaled by 1e18)
+    /// @custom:throws WhatWrongWithYou If total fees would exceed maximum
     function setDonationFeePercent(uint256 _donationFeePercent) external onlyOwner {
-        require(_donationFeePercent + harvestFeePercent + protocolFeePercent <= MAX_FEE_PERCENT, WhatWrongWithYou());
+        if (_donationFeePercent + harvestFeePercent + protocolFeePercent > MAX_FEE_PERCENT) {
+            revert WhatWrongWithYou();
+        }
 
         emit DonationFeePercentSet(donationPremiumPercent, _donationFeePercent);
-
         donationPremiumPercent = _donationFeePercent;
     }
 
+    /// @notice Updates the protocol fee percentage
+    /// @dev The total of all fees must not exceed MAX_FEE_PERCENT
+    /// @param _protocolFeePercent New protocol fee percentage (scaled by 1e18)
+    /// @custom:throws WhatWrongWithYou If total fees would exceed maximum
     function setProtocolFeePercent(uint256 _protocolFeePercent) external onlyOwner {
-        require(_protocolFeePercent + harvestFeePercent + donationPremiumPercent <= MAX_FEE_PERCENT, WhatWrongWithYou());
+        if (_protocolFeePercent + harvestFeePercent + donationPremiumPercent > MAX_FEE_PERCENT) {
+            revert WhatWrongWithYou();
+        }
 
         emit ProtocolFeePercentSet(protocolFeePercent, _protocolFeePercent);
-
         protocolFeePercent = _protocolFeePercent;
     }
 

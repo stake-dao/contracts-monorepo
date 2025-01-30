@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 
 import {Test} from "forge-std/src/Test.sol";
 import {StdInvariant} from "forge-std/src/StdInvariant.sol";
+
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
 import {MockToken} from "test/mocks/MockToken.sol";
@@ -80,7 +81,7 @@ contract AccountantInvariantTest is StdInvariant, Test {
             uint256 donation = handler.userDonations(user);
 
             if (donation > 0) {
-                uint256 expectedPremium = donation + ((donation * accountant.donationFeePercent()) / 1e18);
+                uint256 expectedPremium = donation + ((donation * accountant.donationPremiumPercent()) / 1e18);
                 uint256 actualPremium = accountant.getDonation(user);
 
                 assertEq(actualPremium, expectedPremium, "Claimed donation must equal original amount plus premium");
