@@ -277,7 +277,6 @@ contract Accountant is ReentrancyGuardTransient {
             (0 & StorageMasks.DONATION_MASK) | ((globalHarvestIntegral << 128) & StorageMasks.DONATION_INTEGRAL_MASK);
     }
 
-
     function totalSupply(address vault) external view returns (uint256) {
         return uint128(vaults[vault].supplyAndIntegralSlot & StorageMasks.SUPPLY_MASK);
     }
