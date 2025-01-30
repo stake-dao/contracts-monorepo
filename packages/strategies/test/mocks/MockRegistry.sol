@@ -25,6 +25,10 @@ contract MockRegistry is IRegistry {
         return harvester;
     }
 
+    function allowed(address, bytes4) external pure returns (bool) {
+        return true;
+    }
+
     function setVault(address _vault) external {
         vault = _vault;
     }
