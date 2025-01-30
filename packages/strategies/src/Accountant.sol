@@ -47,8 +47,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @notice The harvest fee.
     uint256 public harvestFeePercent = 0.005e18; // 0.5%
 
-    /// @notice The donation fee.
-    uint256 public donationFeePercent = 0.005e18; // 0.5%
+    /// @notice The donation premium.
+    uint256 public donationPremiumPercent = 0.005e18; // 0.5%
 
     /// @notice The protocol fee.
     uint256 public protocolFeePercent = 0.15e18; // 15%
@@ -142,7 +142,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
             }
 
             uint256 totalFees =
-                Math.mulDiv(pendingRewards, harvestFeePercent + donationFeePercent + protocolFeePercent, 1e18);
+                Math.mulDiv(pendingRewards, harvestFeePercent + donationPremiumPercent + protocolFeePercent, 1e18);
             pendingRewards -= totalFees;
 
             integral += uint128(Math.mulDiv(pendingRewards, SCALING_FACTOR, supply));
@@ -293,7 +293,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         /// If there's no donation, revert.
         require(donation > 0, NoDonation());
 
-        donation += Math.mulDiv(donation, donationFeePercent, 1e18);
+        donation += Math.mulDiv(donation, donationPremiumPercent, 1e18);
 
         /// Transfer the original amount + premium.
         SafeERC20.safeTransfer(IERC20(REWARD_TOKEN), msg.sender, donation);
@@ -316,7 +316,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
         /// Calculate the premium.
         donation = uint128(donationAndIntegral & StorageMasks.DONATION_MASK);
-        donation += Math.mulDiv(donation, donationFeePercent, 1e18);
+        donation += Math.mulDiv(donation, donationPremiumPercent, 1e18);
     }
 
     function balanceOf(address vault, address account) external view returns (uint256) {
@@ -324,7 +324,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     }
 
     function setHarvestFeePercent(uint256 _harvestFeePercent) external onlyOwner {
-        require(_harvestFeePercent + donationFeePercent + protocolFeePercent <= MAX_FEE_PERCENT, WhatWrongWithYou());
+        require(_harvestFeePercent + donationPremiumPercent + protocolFeePercent <= MAX_FEE_PERCENT, WhatWrongWithYou());
 
         emit HarvestFeePercentSet(harvestFeePercent, _harvestFeePercent);
 
@@ -334,13 +334,13 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     function setDonationFeePercent(uint256 _donationFeePercent) external onlyOwner {
         require(_donationFeePercent + harvestFeePercent + protocolFeePercent <= MAX_FEE_PERCENT, WhatWrongWithYou());
 
-        emit DonationFeePercentSet(donationFeePercent, _donationFeePercent);
+        emit DonationFeePercentSet(donationPremiumPercent, _donationFeePercent);
 
-        donationFeePercent = _donationFeePercent;
+        donationPremiumPercent = _donationFeePercent;
     }
 
     function setProtocolFeePercent(uint256 _protocolFeePercent) external onlyOwner {
-        require(_protocolFeePercent + harvestFeePercent + donationFeePercent <= MAX_FEE_PERCENT, WhatWrongWithYou());
+        require(_protocolFeePercent + harvestFeePercent + donationPremiumPercent <= MAX_FEE_PERCENT, WhatWrongWithYou());
 
         emit ProtocolFeePercentSet(protocolFeePercent, _protocolFeePercent);
 
