@@ -3,6 +3,7 @@ pragma solidity 0.8.19;
 
 import {BaseDepositor, ITokenMinter, ILiquidityGauge} from "src/common/depositor/BaseDepositor.sol";
 import {ISdZeroLocker} from "src/common/interfaces/zerolend/stakedao/ISdZeroLocker.sol";
+import {ILocker} from "src/common/interfaces/ILocker.sol";
 
 /// @title Stake DAO ZERO Depositor
 /// @notice Contract that accepts ZERO and locks them in the Locker, minting sdZERO in return
@@ -17,6 +18,16 @@ contract Depositor is BaseDepositor {
     constructor(address _token, address _locker, address _minter, address _gauge)
         BaseDepositor(_token, _locker, _minter, _gauge, 4 * 365 days)
     {}
+
+    /// @notice Locks the tokens held by the contract
+    /// @dev The contract must have tokens to lock
+    function _lockToken(uint256 _amount) internal virtual override {
+        // If there is Token available in the contract transfer it to the locker
+        if (_amount != 0) {
+            /// Increase the lock.
+            ILocker(locker).increaseLock(_amount, MAX_LOCK_DURATION);
+        }
+    }
 
     /// @notice Deposit ZeroLend locker NFTs, and receive sdZero or sdZeroGauge in return.
     /// @param _tokenIds Token IDs to deposit.

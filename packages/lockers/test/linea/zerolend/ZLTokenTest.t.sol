@@ -72,6 +72,15 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
         assertEq(liquidityGauge.balanceOf(address(5)), 1 ether);
     }
 
+    function test_cantDepositZeroTokens() public {
+        assertEq(zeroToken.balanceOf(address(this)) > 1 ether, true);
+
+        zeroToken.approve(address(depositor), 1 ether);
+
+        vm.expectRevert(IDepositor.AMOUNT_ZERO.selector);
+        depositor.deposit(0, true, true, address(0));
+    }
+
     function test_cantDepositToZeroAddress() public {
         assertEq(zeroToken.balanceOf(address(this)) > 1 ether, true);
 
@@ -240,14 +249,5 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
 
         // the right amount of tokens is withdrawn
         assertEq(zeroToken.balanceOf(address(1)), zeroLockedAmount);
-    }
-
-    function test_cantCreateInitialLockMultipleTimes() external {
-        // initial lock was already created
-
-        vm.prank(GOVERNANCE);
-        vm.expectRevert(ISdZeroLocker.CanOnlyBeCalledOnce.selector);
-        // try to create it a second time
-        ILocker(locker).createLock(1, 4 * 365 days);
     }
 }

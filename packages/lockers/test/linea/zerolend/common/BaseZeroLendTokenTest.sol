@@ -79,9 +79,11 @@ abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
 
     function _createInitialLock() internal {
         // we need to initialize the ERC721 token locking
-        zeroToken.transfer(locker, 1);
+        zeroToken.transfer(GOVERNANCE, 1);
         vm.prank(GOVERNANCE);
-        ILocker(locker).createLock(1, 4 * 365 days);
+        zeroToken.approve(address(depositor), 1);
+        vm.prank(GOVERNANCE);
+        depositor.deposit(1, true, true, GOVERNANCE);
     }
 
     function _setupContractGovernance() internal {
