@@ -4,6 +4,8 @@ pragma solidity 0.8.28;
 import "src/interfaces/IRegistry.sol";
 import "src/libraries/StorageMasks.sol";
 
+import "@openzeppelin/contracts/access/Ownable2Step.sol";
+
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 
@@ -11,7 +13,7 @@ import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @notice The source of truth.
-contract Accountant is ReentrancyGuardTransient {
+contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @notice Packed vault data structure into 2 slots for gas optimization
     /// @dev supplyAndIntegralSlot: [supply (128) | integral (128)]
     struct PackedVault {
@@ -81,12 +83,33 @@ contract Accountant is ReentrancyGuardTransient {
     /// @notice The error thrown when the harvest integral is not reached.
     error HarvestIntegralNotReached();
 
+    /// @notice The error thrown when the input is invalid.
+    error WhatWrongWithYou();
+
+    /// @notice The event emitted when an account donates.
+    event Donation(address indexed donator, uint256 amount);
+
+    /// @notice The event emitted when an account claims rewards.
+    event ClaimDonation(address indexed account, uint256 amount);
+
+    /// @notice The event emitted when a vault harvests rewards.
+    event Harvest(address indexed vault, uint256 amount);
+
+    /// @notice The event emitted when the harvest fee percent is set.
+    event HarvestFeePercentSet(uint256 oldHarvestFeePercent, uint256 newHarvestFeePercent);
+
+    /// @notice The event emitted when the donation fee percent is set.
+    event DonationFeePercentSet(uint256 oldDonationFeePercent, uint256 newDonationFeePercent);
+
+    /// @notice The event emitted when the protocol fee percent is set.
+    event ProtocolFeePercentSet(uint256 oldProtocolFeePercent, uint256 newProtocolFeePercent);
+
     modifier onlyAllowed() {
         require(IRegistry(REGISTRY).allowed(msg.sender, msg.sig), OnlyAllowed());
         _;
     }
 
-    constructor(address _registry, address _rewardToken) {
+    constructor(address _owner, address _registry, address _rewardToken) Ownable(_owner) {
         REGISTRY = _registry;
         REWARD_TOKEN = _rewardToken;
 
@@ -119,7 +142,8 @@ contract Accountant is ReentrancyGuardTransient {
                 globalPendingRewards += pendingRewards;
             }
 
-            uint256 totalFees = Math.mulDiv(pendingRewards, harvestFeePercent + donationFeePercent + protocolFeePercent, 1e18);
+            uint256 totalFees =
+                Math.mulDiv(pendingRewards, harvestFeePercent + donationFeePercent + protocolFeePercent, 1e18);
             pendingRewards -= totalFees;
 
             integral += uint128(Math.mulDiv(pendingRewards, SCALING_FACTOR, supply));
@@ -248,6 +272,9 @@ contract Accountant is ReentrancyGuardTransient {
         _donation.donationAndIntegralSlot = (donation & StorageMasks.DONATION_MASK)
             | ((globalHarvestIntegral << 128) & StorageMasks.DONATION_INTEGRAL_MASK);
 
+        /// Emit the donation event.
+        emit Donation(msg.sender, globalPendingRewards);
+
         /// Update the global pending rewards.
         globalPendingRewards = 0;
     }
@@ -275,6 +302,9 @@ contract Accountant is ReentrancyGuardTransient {
         /// Reset.
         _donation.donationAndIntegralSlot =
             (0 & StorageMasks.DONATION_MASK) | ((globalHarvestIntegral << 128) & StorageMasks.DONATION_INTEGRAL_MASK);
+
+        /// Emit the claim donation event.
+        emit ClaimDonation(msg.sender, donation);
     }
 
     function totalSupply(address vault) external view returns (uint256) {
@@ -292,6 +322,30 @@ contract Accountant is ReentrancyGuardTransient {
 
     function balanceOf(address vault, address account) external view returns (uint256) {
         return uint96(accounts[vault][account].balanceAndRewardsSlot & StorageMasks.BALANCE_MASK);
+    }
+
+    function setHarvestFeePercent(uint256 _harvestFeePercent) external onlyOwner {
+        require(_harvestFeePercent + donationFeePercent + protocolFeePercent <= 1e18, WhatWrongWithYou());
+
+        emit HarvestFeePercentSet(harvestFeePercent, _harvestFeePercent);
+
+        harvestFeePercent = _harvestFeePercent;
+    }
+
+    function setDonationFeePercent(uint256 _donationFeePercent) external onlyOwner {
+        require(_donationFeePercent + harvestFeePercent + protocolFeePercent <= 1e18, WhatWrongWithYou());
+
+        emit DonationFeePercentSet(donationFeePercent, _donationFeePercent);
+
+        donationFeePercent = _donationFeePercent;
+    }
+
+    function setProtocolFeePercent(uint256 _protocolFeePercent) external onlyOwner {
+        require(_protocolFeePercent + harvestFeePercent + donationFeePercent <= 1e18, WhatWrongWithYou());
+
+        emit ProtocolFeePercentSet(protocolFeePercent, _protocolFeePercent);
+
+        protocolFeePercent = _protocolFeePercent;
     }
 
     //////////////////////////////////////////////////////
