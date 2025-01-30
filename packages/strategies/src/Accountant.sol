@@ -40,13 +40,13 @@ contract Accountant is ReentrancyGuardTransient {
     address public immutable REWARD_TOKEN;
 
     /// @notice The harvest fee.
-    uint256 public harvestFeeBps;
+    uint256 public harvestFeePercent;
 
     /// @notice The donation fee.
-    uint256 public donationFeeBps;
+    uint256 public donationFeePercent;
 
     /// @notice The protocol fee.
-    uint256 public protocolFeeBps;
+    uint256 public protocolFeePercent;
 
     /// @notice The global harvest integral of all vaults.
     uint256 public globalHarvestIntegral;
@@ -90,9 +90,9 @@ contract Accountant is ReentrancyGuardTransient {
         REGISTRY = _registry;
         REWARD_TOKEN = _rewardToken;
 
-        harvestFeeBps = 0.05e18;
-        donationFeeBps = 0.05e18;
-        protocolFeeBps = 0.15e18;
+        harvestFeePercent = 0.05e18;
+        donationFeePercent = 0.05e18;
+        protocolFeePercent = 0.15e18;
     }
 
     /// @notice Function called by vaults to checkpoint the state of the vault on every account action.
@@ -119,7 +119,7 @@ contract Accountant is ReentrancyGuardTransient {
                 globalPendingRewards += pendingRewards;
             }
 
-            uint256 totalFees = Math.mulDiv(pendingRewards, harvestFeeBps + donationFeeBps + protocolFeeBps, 1e18);
+            uint256 totalFees = Math.mulDiv(pendingRewards, harvestFeePercent + donationFeePercent + protocolFeePercent, 1e18);
             pendingRewards -= totalFees;
 
             integral += uint128(Math.mulDiv(pendingRewards, SCALING_FACTOR, supply));
@@ -267,7 +267,7 @@ contract Accountant is ReentrancyGuardTransient {
         /// If there's no donation, revert.
         require(donation > 0, NoDonation());
 
-        donation += Math.mulDiv(donation, donationFeeBps, 1e18);
+        donation += Math.mulDiv(donation, donationFeePercent, 1e18);
 
         /// Transfer the original amount + premium.
         SafeERC20.safeTransfer(IERC20(REWARD_TOKEN), msg.sender, donation);
@@ -287,7 +287,7 @@ contract Accountant is ReentrancyGuardTransient {
 
         /// Calculate the premium.
         donation = uint128(donationAndIntegral & StorageMasks.DONATION_MASK);
-        donation += Math.mulDiv(donation, donationFeeBps, 1e18);
+        donation += Math.mulDiv(donation, donationFeePercent, 1e18);
     }
 
     function balanceOf(address vault, address account) external view returns (uint256) {
