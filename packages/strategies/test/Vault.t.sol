@@ -32,7 +32,7 @@ contract Vault is Test {
         strategy = new MockStrategy();
         registry = new MockRegistry();
         allocator = new MockAllocator();
-        accountant = new Accountant(address(registry), address(token));
+        accountant = new Accountant(address(this), address(registry), address(token));
 
         vaultImplementation = new RewardVault();
         vault = RewardVault(

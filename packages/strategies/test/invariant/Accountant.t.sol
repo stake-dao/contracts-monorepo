@@ -30,7 +30,7 @@ contract AccountantInvariantTest is StdInvariant, Test {
         strategy = new MockStrategy();
         registry = new MockRegistry();
         allocator = new MockAllocator();
-        accountant = new Accountant(address(registry), address(token));
+        accountant = new Accountant(address(this), address(registry), address(token));
 
         vaultImplementation = new RewardVault();
         vault = RewardVault(
@@ -80,7 +80,7 @@ contract AccountantInvariantTest is StdInvariant, Test {
             uint256 donation = handler.userDonations(user);
 
             if (donation > 0) {
-                uint256 expectedPremium = donation + ((donation * accountant.donationFeeBps()) / 1e18);
+                uint256 expectedPremium = donation + ((donation * accountant.donationFeePercent()) / 1e18);
                 uint256 actualPremium = accountant.getDonation(user);
 
                 assertEq(actualPremium, expectedPremium, "Claimed donation must equal original amount plus premium");
