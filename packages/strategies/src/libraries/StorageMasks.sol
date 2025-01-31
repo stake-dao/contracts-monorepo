@@ -19,4 +19,10 @@ library StorageMasks {
     uint256 constant BALANCE_MASK = (1 << 96) - 1;
     uint256 constant ACCOUNT_INTEGRAL_MASK = ((1 << 96) - 1) << 96;
     uint256 constant ACCOUNT_PENDING_REWARDS_MASK = ((1 << 64) - 1) << 192;
+
+    /// @notice Bit masks for fees
+    /// @dev [harvestFeePercent (16) | donationPremiumPercent (16) | protocolFeePercent (16)]
+    uint256 constant HARVEST_FEE_MASK = (1 << 16) - 1;
+    uint256 constant DONATION_FEE_MASK = ((1 << 16) - 1) << 16;
+    uint256 constant PROTOCOL_FEE_MASK = ((1 << 16) - 1) << 32;
 }

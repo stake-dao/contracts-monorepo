@@ -81,7 +81,7 @@ contract AccountantInvariantTest is StdInvariant, Test {
             uint256 donation = handler.userDonations(user);
 
             if (donation > 0) {
-                uint256 expectedPremium = donation + ((donation * accountant.donationPremiumPercent()) / 1e18);
+                uint256 expectedPremium = donation + ((donation * accountant.getDonationPremiumPercent()) / 1e18);
                 uint256 actualPremium = accountant.getDonation(user);
 
                 assertEq(actualPremium, expectedPremium, "Claimed donation must equal original amount plus premium");
