@@ -53,11 +53,11 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @notice The fees and premiums.
     PackedFees public fees;
 
-    /// @notice The global harvest integral of all vaults.
-    uint256 public globalHarvestIntegral;
-
     /// @notice The global pending rewards of all vaults.
     uint256 public globalPendingRewards;
+
+    /// @notice The global harvest integral of all vaults.
+    uint256 public globalHarvestIntegral;
 
     /// @notice Whether the vault integral is updated before the accounts checkpoint.
     /// @notice Supply of vaults.
@@ -83,11 +83,11 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @notice The error thrown when there is no pending rewards.
     error NoPendingRewards();
 
-    /// @notice The error thrown when the harvest integral is not reached.
-    error HarvestIntegralNotReached();
-
     /// @notice The error thrown when the input is invalid.
     error WhatWrongWithYou();
+
+    /// @notice The error thrown when the harvest integral is not reached.
+    error HarvestIntegralNotReached();
 
     /// @notice The event emitted when an account donates.
     event Donation(address indexed donator, uint256 amount);
@@ -153,9 +153,11 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
                 globalPendingRewards += pendingRewards;
             }
 
-            uint256 harvestFeePercent = uint64(fees.feesSlot & StorageMasks.HARVEST_FEE_MASK);
-            uint256 donationPremiumPercent = uint64((fees.feesSlot & StorageMasks.DONATION_FEE_MASK) >> 64);
-            uint256 protocolFeePercent = uint64((fees.feesSlot & StorageMasks.PROTOCOL_FEE_MASK) >> 128);
+            uint256 feeSlot = fees.feesSlot;
+
+            uint256 harvestFeePercent = uint64(feeSlot & StorageMasks.HARVEST_FEE_MASK);
+            uint256 protocolFeePercent = uint64((feeSlot & StorageMasks.PROTOCOL_FEE_MASK) >> 128);
+            uint256 donationPremiumPercent = uint64((feeSlot & StorageMasks.DONATION_FEE_MASK) >> 64);
 
             // Calculate and deduct fees
             uint256 totalFees =
@@ -453,6 +455,10 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         // Update fees.
         fees.feesSlot = (harvestFeePercent << 64) | (donationPremiumPercent << 96) | (_protocolFeePercent << 128);
     }
+
+    //////////////////////////////////////////////////////
+    /// --- VIEW FUNCTIONS
+    //////////////////////////////////////////////////////
 
     /// @notice Returns the harvest fee percent
     /// @return The harvest fee percent
