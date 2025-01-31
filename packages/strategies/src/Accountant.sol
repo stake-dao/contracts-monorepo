@@ -32,6 +32,12 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         uint256 donationAndIntegralSlot;
     }
 
+    /// @notice Packed fees and premiums data structure into 1 slot for gas optimization
+    /// @dev feesSlot: [harvestFeePercent (16) | donationPremiumPercent (16) | protocolFeePercent (16)]
+    struct PackedFees {
+        uint256 feesSlot;
+    }
+
     /// @notice Scaling factor used for fixed-point arithmetic precision (1e18).
     uint256 public constant SCALING_FACTOR = 1e18;
 
@@ -44,14 +50,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @notice The reward token.
     address public immutable REWARD_TOKEN;
 
-    /// @notice The harvest fee.
-    uint256 public harvestFeePercent = 0.005e18; // 0.5%
-
-    /// @notice The donation premium.
-    uint256 public donationPremiumPercent = 0.005e18; // 0.5%
-
-    /// @notice The protocol fee.
-    uint256 public protocolFeePercent = 0.15e18; // 15%
+    /// @notice The fees and premiums.
+    PackedFees public fees;
 
     /// @notice The global harvest integral of all vaults.
     uint256 public globalHarvestIntegral;
@@ -115,6 +115,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     constructor(address _owner, address _registry, address _rewardToken) Ownable(_owner) {
         REGISTRY = _registry;
         REWARD_TOKEN = _rewardToken;
+
+        /// Fees are set to 0.5% for harvest, 0.5% for donation, and 15% for protocol.
+        fees.feesSlot = (0.005e18 << 16) | (0.005e18 << 32) | (0.15e18 << 48);
     }
 
     /// @notice Function called by vaults to checkpoint the state of the vault on every account action.
@@ -149,6 +152,10 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
                 // Only update global pending rewards for unclaimed rewards
                 globalPendingRewards += pendingRewards;
             }
+
+            uint256 harvestFeePercent = uint16(fees.feesSlot & StorageMasks.HARVEST_FEE_MASK);
+            uint256 donationPremiumPercent = uint16((fees.feesSlot & StorageMasks.DONATION_FEE_MASK) >> 16);
+            uint256 protocolFeePercent = uint16((fees.feesSlot & StorageMasks.PROTOCOL_FEE_MASK) >> 32);
 
             // Calculate and deduct fees
             uint256 totalFees =
@@ -349,6 +356,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         // Verify donation exists
         require(donation != 0, NoDonation());
 
+        // Get donation premium percent
+        uint256 donationPremiumPercent = uint16((fees.feesSlot & StorageMasks.DONATION_FEE_MASK) >> 16);
+
         // Calculate total claimable amount including premium
         uint256 totalClaimable = donation + Math.mulDiv(donation, donationPremiumPercent, 1e18);
 
@@ -378,6 +388,10 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
         // Get original donation amount
         donation = uint128(donationAndIntegral & StorageMasks.DONATION_MASK);
+
+        // Get donation premium percent
+        uint256 donationPremiumPercent = uint16((fees.feesSlot & StorageMasks.DONATION_FEE_MASK) >> 16);
+
         // Add premium
         donation += Math.mulDiv(donation, donationPremiumPercent, 1e18);
     }
@@ -395,10 +409,16 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param _harvestFeePercent New harvest fee percentage (scaled by 1e18)
     /// @custom:throws WhatWrongWithYou If total fees would exceed maximum
     function setHarvestFeePercent(uint256 _harvestFeePercent) external onlyOwner {
+        uint256 harvestFeePercent = getHarvestFeePercent();
+        uint256 donationPremiumPercent = getDonationPremiumPercent();
+        uint256 protocolFeePercent = getProtocolFeePercent();
+
         require(_harvestFeePercent + donationPremiumPercent + protocolFeePercent <= MAX_FEE_PERCENT, WhatWrongWithYou());
 
         emit HarvestFeePercentSet(harvestFeePercent, _harvestFeePercent);
-        harvestFeePercent = _harvestFeePercent;
+
+        // Update fees.
+        fees.feesSlot = (_harvestFeePercent << 16) | (donationPremiumPercent << 32) | (protocolFeePercent << 48);
     }
 
     /// @notice Updates the donation premium percentage
@@ -406,10 +426,15 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param _donationFeePercent New donation premium percentage (scaled by 1e18)
     /// @custom:throws WhatWrongWithYou If total fees would exceed maximum
     function setDonationFeePercent(uint256 _donationFeePercent) external onlyOwner {
+        uint256 harvestFeePercent = getHarvestFeePercent();
+        uint256 protocolFeePercent = getProtocolFeePercent();
+        uint256 donationPremiumPercent = getDonationPremiumPercent();
+
         require(_donationFeePercent + harvestFeePercent + protocolFeePercent <= MAX_FEE_PERCENT, WhatWrongWithYou());
 
         emit DonationFeePercentSet(donationPremiumPercent, _donationFeePercent);
-        donationPremiumPercent = _donationFeePercent;
+
+        fees.feesSlot = (harvestFeePercent << 16) | (_donationFeePercent << 32) | (protocolFeePercent << 48);
     }
 
     /// @notice Updates the protocol fee percentage
@@ -417,10 +442,34 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param _protocolFeePercent New protocol fee percentage (scaled by 1e18)
     /// @custom:throws WhatWrongWithYou If total fees would exceed maximum
     function setProtocolFeePercent(uint256 _protocolFeePercent) external onlyOwner {
+        uint256 harvestFeePercent = getHarvestFeePercent();
+        uint256 donationPremiumPercent = getDonationPremiumPercent();
+        uint256 protocolFeePercent = getProtocolFeePercent();
+
         require(_protocolFeePercent + harvestFeePercent + donationPremiumPercent <= MAX_FEE_PERCENT, WhatWrongWithYou());
 
         emit ProtocolFeePercentSet(protocolFeePercent, _protocolFeePercent);
-        protocolFeePercent = _protocolFeePercent;
+
+        // Update fees.
+        fees.feesSlot = (harvestFeePercent << 16) | (donationPremiumPercent << 32) | (_protocolFeePercent << 48);
+    }
+
+    /// @notice Returns the harvest fee percent
+    /// @return The harvest fee percent
+    function getHarvestFeePercent() public view returns (uint256) {
+        return uint16(fees.feesSlot & StorageMasks.HARVEST_FEE_MASK);
+    }
+
+    /// @notice Returns the donation premium percent
+    /// @return The donation premium percent
+    function getDonationPremiumPercent() public view returns (uint256) {
+        return uint16((fees.feesSlot & StorageMasks.DONATION_FEE_MASK) >> 16);
+    }
+
+    /// @notice Returns the protocol fee percent
+    /// @return The protocol fee percent
+    function getProtocolFeePercent() public view returns (uint256) {
+        return uint16((fees.feesSlot & StorageMasks.PROTOCOL_FEE_MASK) >> 32);
     }
 
     //////////////////////////////////////////////////////

@@ -106,7 +106,10 @@ contract AccountantHandler is Test {
     function getExpectedFees(uint256 amount) public view returns (uint256) {
         return (
             amount
-                * (accountant.harvestFeePercent() + accountant.donationPremiumPercent() + accountant.protocolFeePercent())
+                * (
+                    accountant.getHarvestFeePercent() + accountant.getDonationPremiumPercent()
+                        + accountant.getProtocolFeePercent()
+                )
         ) / 1e18;
     }
 }
