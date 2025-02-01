@@ -431,7 +431,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
         // Verify donation is not too soon
         uint256 timestamp = (donationAndIntegralTimestamp & StorageMasks.DONATION_TIMESTAMP_MASK) >> 192;
-        require(timestamp + 1 days >= block.timestamp, TooSoon());
+        require(timestamp + 1 days <= block.timestamp, TooSoon());
 
         // Verify harvest integral has been reached
         uint256 integral = (donationAndIntegralTimestamp & StorageMasks.DONATION_INTEGRAL_MASK) >> 128;
