@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 /// @title StorageMasks
 /// @notice Library containing bit masks for storage optimization
 library StorageMasks {
-    /// @notice Bit masks for vault supplyAndIntegralSlot
+    /// @notice Bit masks for vault supplyAndIntegralAndPendingRewardsSlot
     /// @dev [supply (96) | integral (96)]
     uint256 constant SUPPLY_MASK = (1 << 96) - 1;
     uint256 constant INTEGRAL_MASK = ((1 << 96) - 1) << 96;

@@ -30,9 +30,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     using SafeCast for uint256;
 
     /// @notice Packed vault data structure into 1 slot for gas optimization
-    /// @dev supplyAndIntegralSlot: [supply (96) | integral (96) | pendingRewards (64)]
+    /// @dev supplyAndIntegralAndPendingRewardsSlot: [supply (96) | integral (96) | pendingRewards (64)]
     struct PackedVault {
-        uint256 supplyAndIntegralSlot; // slot1 -> supplyAndIntegralSlot
+        uint256 supplyAndIntegralAndPendingRewardsSlot; // slot1 -> supplyAndIntegralAndPendingRewardsSlot
     }
 
     /// @notice Packed account data structure into 1 slot for gas optimization
@@ -174,7 +174,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         require(IRegistry(REGISTRY).vaults(asset) == msg.sender, OnlyVault());
 
         PackedVault storage _vault = vaults[msg.sender];
-        uint256 vaultSupplyAndIntegral = _vault.supplyAndIntegralSlot;
+        uint256 vaultSupplyAndIntegral = _vault.supplyAndIntegralAndPendingRewardsSlot;
 
         uint256 supply = uint96(vaultSupplyAndIntegral & StorageMasks.SUPPLY_MASK);
         uint256 integral = uint96((vaultSupplyAndIntegral & StorageMasks.INTEGRAL_MASK) >> 96);
@@ -215,7 +215,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         }
 
         // Update vault storage with new supply and integral
-        _vault.supplyAndIntegralSlot = (supply & StorageMasks.SUPPLY_MASK)
+        _vault.supplyAndIntegralAndPendingRewardsSlot = (supply & StorageMasks.SUPPLY_MASK)
             | ((integral << 96) & StorageMasks.INTEGRAL_MASK)
             | ((pendingRewards << 192) & StorageMasks.PENDING_REWARDS_MASK);
     }
@@ -298,7 +298,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
             PackedAccount storage _account = accounts[vault][account];
 
             // Unpack vault data
-            vaultSupplyAndIntegral = _vault.supplyAndIntegralSlot;
+            vaultSupplyAndIntegral = _vault.supplyAndIntegralAndPendingRewardsSlot;
             integral = uint96((vaultSupplyAndIntegral & StorageMasks.INTEGRAL_MASK) >> 96);
 
             // Unpack account data
@@ -375,7 +375,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param totalFees The total fees to deduct
     function _updateVaultState(address vault, uint256 amount, uint256 totalFees) private {
         PackedVault storage _vault = vaults[vault];
-        uint256 slot = _vault.supplyAndIntegralSlot;
+        uint256 slot = _vault.supplyAndIntegralAndPendingRewardsSlot;
         uint256 supply = uint96(slot & StorageMasks.SUPPLY_MASK);
         uint256 integral = uint96((slot & StorageMasks.INTEGRAL_MASK) >> 96);
         uint256 pendingRewards = uint64((slot & StorageMasks.PENDING_REWARDS_MASK) >> 192);
@@ -390,7 +390,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         integral += amount.mulDiv(SCALING_FACTOR, supply).toUint96();
 
         // Update vault storage
-        _vault.supplyAndIntegralSlot = (supply & StorageMasks.SUPPLY_MASK)
+        _vault.supplyAndIntegralAndPendingRewardsSlot = (supply & StorageMasks.SUPPLY_MASK)
             | ((integral << 96) & StorageMasks.INTEGRAL_MASK) | ((0 << 192) & StorageMasks.PENDING_REWARDS_MASK);
     }
 
@@ -465,7 +465,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param vault The vault address to query
     /// @return The total supply of tokens in the vault
     function totalSupply(address vault) external view returns (uint256) {
-        return uint96(vaults[vault].supplyAndIntegralSlot & StorageMasks.SUPPLY_MASK);
+        return uint96(vaults[vault].supplyAndIntegralAndPendingRewardsSlot & StorageMasks.SUPPLY_MASK);
     }
 
     /// @notice Calculates the claimable donation amount including premium
