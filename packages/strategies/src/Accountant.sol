@@ -180,20 +180,23 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
         // Process any pending rewards if they exist and there is supply
         if (pendingRewards > 0 && supply > 0) {
-            if (!claimed) {
-                // Only update global pending rewards for unclaimed rewards
-                globalPendingRewards += pendingRewards.toUint96();
-            }
 
+            ///TODO: Remove DonationPremium as it doesn't belong here until there's a donation made. Deduct it from ProtocolFeesAccrued when Claiming.
             (uint256 harvestFeePercent, uint256 donationPremiumPercent, uint256 protocolFeePercent) = _loadFees();
-
             // Calculate and deduct fees
             uint256 totalFees =
                 pendingRewards.mulDiv(harvestFeePercent + donationPremiumPercent + protocolFeePercent, 1e18);
-            pendingRewards -= totalFees;
 
             // Update integral with new rewards per token
-            integral += pendingRewards.mulDiv(SCALING_FACTOR, supply).toUint96();
+            integral += (pendingRewards - totalFees).mulDiv(SCALING_FACTOR, supply).toUint96();
+
+            if (claimed) {
+                /// Reset pending rewards to 0, because we don't want to double count them on vault storage.
+                pendingRewards = 0;
+            } else {
+                /// Add to global pending rewards, because we want to double count them on vault storage.
+                globalPendingRewards += pendingRewards.toUint96();
+            }
         }
 
         // Handle token operations
@@ -349,6 +352,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         // Calculate fees
         {
             (uint256 harvestFeePercent, uint256 donationPremiumPercent, uint256 protocolFeePercent) = _loadFees();
+
             uint256 protocolFee = amount.mulDiv(protocolFeePercent, 1e18);
             uint256 harvesterFee = amount.mulDiv(harvestFeePercent, 1e18);
             uint256 donationPremium = amount.mulDiv(donationPremiumPercent, 1e18);
