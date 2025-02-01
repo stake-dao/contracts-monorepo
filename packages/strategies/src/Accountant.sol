@@ -376,9 +376,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     function _updateVaultState(address vault, uint256 amount, uint256 totalFees) private {
         PackedVault storage _vault = vaults[vault];
         uint256 slot = _vault.supplyAndIntegralAndPendingRewardsSlot;
-        uint256 supply = uint96(slot & StorageMasks.SUPPLY_MASK);
-        uint256 integral = uint96((slot & StorageMasks.INTEGRAL_MASK) >> 96);
-        uint256 pendingRewards = uint64((slot & StorageMasks.PENDING_REWARDS_MASK) >> 192);
+        uint256 supply = slot & StorageMasks.SUPPLY_MASK;
+        uint256 integral = (slot & StorageMasks.INTEGRAL_MASK) >> 96;
+        uint256 pendingRewards = (slot & StorageMasks.PENDING_REWARDS_MASK) >> 192;
 
         // Update global harvest integral with pre-fee amount
         globalHarvestIntegral += amount.mulDiv(SCALING_FACTOR, supply).toUint96();
@@ -465,7 +465,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param vault The vault address to query
     /// @return The total supply of tokens in the vault
     function totalSupply(address vault) external view returns (uint256) {
-        return uint96(vaults[vault].supplyAndIntegralAndPendingRewardsSlot & StorageMasks.SUPPLY_MASK);
+        return vaults[vault].supplyAndIntegralAndPendingRewardsSlot & StorageMasks.SUPPLY_MASK;
     }
 
     /// @notice Calculates the claimable donation amount including premium
@@ -489,7 +489,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param account The account address to check
     /// @return The account's token balance in the vault
     function balanceOf(address vault, address account) external view returns (uint256) {
-        return uint96(accounts[vault][account].balanceAndRewardsSlot & StorageMasks.BALANCE_MASK);
+        return accounts[vault][account].balanceAndRewardsSlot & StorageMasks.BALANCE_MASK;
     }
 
     /// @notice Updates the harvest fee percentage
