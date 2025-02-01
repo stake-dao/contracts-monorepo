@@ -9,6 +9,7 @@ import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
+import "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -19,6 +20,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     using Math for uint256;
     using Address for address;
     using SafeERC20 for IERC20;
+    using SafeCast for uint256;
 
     /// @notice Packed vault data structure into 2 slots for gas optimization
     /// @dev supplyAndIntegralSlot: [supply (128) | integral (128)]
@@ -164,8 +166,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         PackedVault storage _vault = vaults[msg.sender];
         uint256 vaultSupplyAndIntegral = _vault.supplyAndIntegralSlot;
 
-        uint256 supply = uint128(vaultSupplyAndIntegral & StorageMasks.SUPPLY_MASK);
-        uint256 integral = uint128((vaultSupplyAndIntegral & StorageMasks.INTEGRAL_MASK) >> 128);
+        uint256 supply = vaultSupplyAndIntegral;
+        uint256 integral = (vaultSupplyAndIntegral & StorageMasks.INTEGRAL_MASK);
 
         // Process any pending rewards if they exist and there is supply
         if (pendingRewards > 0 && supply > 0) {
@@ -182,7 +184,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
             pendingRewards -= totalFees;
 
             // Update integral with new rewards per token
-            integral += uint128(pendingRewards.mulDiv(SCALING_FACTOR, supply));
+            integral += pendingRewards.mulDiv(SCALING_FACTOR, supply).toUint128();
         }
 
         // Handle token operations
@@ -223,13 +225,12 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         PackedAccount storage _account = accounts[vault][account];
         uint256 accountBalanceAndRewards = _account.balanceAndRewardsSlot;
 
-        uint256 balance = uint96(accountBalanceAndRewards & StorageMasks.BALANCE_MASK);
-        uint256 accountIntegral = uint96((accountBalanceAndRewards & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 96);
-        uint256 accountPendingRewards =
-            uint64((accountBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
+        uint256 balance = accountBalanceAndRewards & StorageMasks.BALANCE_MASK;
+        uint256 accountIntegral = (accountBalanceAndRewards & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 96;
+        uint256 accountPendingRewards = (accountBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192;
 
         // Update pending rewards based on the integral difference
-        accountPendingRewards += uint64((currentIntegral - accountIntegral).mulDiv(balance, SCALING_FACTOR));
+        accountPendingRewards += (currentIntegral - accountIntegral).mulDiv(balance, SCALING_FACTOR).toUint64();
 
         // Update balance
         balance = isDecrease ? balance - amount : balance + amount;
@@ -293,14 +294,13 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
             // Unpack vault data
             vaultSupplyAndIntegral = _vault.supplyAndIntegralSlot;
-            integral = uint128((vaultSupplyAndIntegral & StorageMasks.INTEGRAL_MASK) >> 128);
+            integral = (vaultSupplyAndIntegral & StorageMasks.INTEGRAL_MASK) >> 128;
 
             // Unpack account data
             accountBalanceAndRewards = _account.balanceAndRewardsSlot;
-            balance = uint96(accountBalanceAndRewards & StorageMasks.BALANCE_MASK);
-            accountIntegral = uint96((accountBalanceAndRewards & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 96);
-            accountPendingRewards =
-                uint64((accountBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
+            balance = accountBalanceAndRewards & StorageMasks.BALANCE_MASK;
+            accountIntegral = (accountBalanceAndRewards & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 96;
+            accountPendingRewards = (accountBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192;
 
             // Add new rewards if integral has increased
             if (integral > accountIntegral) {
@@ -376,7 +376,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         amount -= totalFees;
 
         // Update vault integral with post-fee amount
-        integral += uint128(amount.mulDiv(SCALING_FACTOR, supply));
+        integral += amount.mulDiv(SCALING_FACTOR, supply).toUint128();
 
         // Update vault storage
         _vault.supplyAndIntegralSlot =
@@ -400,7 +400,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         uint256 donationAndIntegral = _donation.donationAndIntegralSlot;
 
         // Add to existing donation amount
-        uint256 donation = uint128(donationAndIntegral & StorageMasks.DONATION_MASK);
+        uint256 donation = donationAndIntegral & StorageMasks.DONATION_MASK;
         donation += globalPendingRewards;
 
         // Store donation with current harvest integral
@@ -426,8 +426,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         uint256 donationAndIntegral = _donation.donationAndIntegralSlot;
 
         // Unpack donation data
-        uint256 integral = uint128((donationAndIntegral & StorageMasks.DONATION_INTEGRAL_MASK) >> 128);
-        uint256 donation = uint128(donationAndIntegral & StorageMasks.DONATION_MASK);
+        uint256 integral = (donationAndIntegral & StorageMasks.DONATION_INTEGRAL_MASK) >> 128;
+        uint256 donation = donationAndIntegral & StorageMasks.DONATION_MASK;
 
         // Verify harvest integral has been reached
         require(globalHarvestIntegral >= integral, HarvestIntegralNotReached());
@@ -534,27 +534,27 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         returns (uint256 harvestFeePercent, uint256 donationPremiumPercent, uint256 protocolFeePercent)
     {
         uint256 slot = fees.feesSlot;
-        harvestFeePercent = uint64(slot & StorageMasks.HARVEST_FEE_MASK);
-        donationPremiumPercent = uint64((slot & StorageMasks.DONATION_FEE_MASK) >> 64);
-        protocolFeePercent = uint64((slot & StorageMasks.PROTOCOL_FEE_MASK) >> 128);
+        harvestFeePercent = slot & StorageMasks.HARVEST_FEE_MASK;
+        donationPremiumPercent = (slot & StorageMasks.DONATION_FEE_MASK) >> 64;
+        protocolFeePercent = (slot & StorageMasks.PROTOCOL_FEE_MASK) >> 128;
     }
 
     /// @notice Returns the harvest fee percent
     /// @return The harvest fee percent
     function getHarvestFeePercent() public view returns (uint256) {
-        return uint64(fees.feesSlot & StorageMasks.HARVEST_FEE_MASK);
+        return fees.feesSlot & StorageMasks.HARVEST_FEE_MASK;
     }
 
     /// @notice Returns the donation premium percent
     /// @return The donation premium percent
     function getDonationPremiumPercent() public view returns (uint256) {
-        return uint64((fees.feesSlot & StorageMasks.DONATION_FEE_MASK) >> 64);
+        return (fees.feesSlot & StorageMasks.DONATION_FEE_MASK) >> 64;
     }
 
     /// @notice Returns the protocol fee percent
     /// @return The protocol fee percent
     function getProtocolFeePercent() public view returns (uint256) {
-        return uint64((fees.feesSlot & StorageMasks.PROTOCOL_FEE_MASK) >> 128);
+        return (fees.feesSlot & StorageMasks.PROTOCOL_FEE_MASK) >> 128;
     }
 
     /// @notice Claims the protocol fees
