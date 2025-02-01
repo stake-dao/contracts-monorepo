@@ -2,10 +2,12 @@
 pragma solidity 0.8.28;
 
 import "src/interfaces/IRegistry.sol";
+import "src/interfaces/IHarvester.sol";
 import "src/libraries/StorageMasks.sol";
 
 import "@openzeppelin/contracts/access/Ownable2Step.sol";
 
+import "@openzeppelin/contracts/utils/Address.sol";
 import "@openzeppelin/contracts/utils/math/Math.sol";
 import "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 
@@ -14,6 +16,10 @@ import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @notice The source of truth.
 contract Accountant is ReentrancyGuardTransient, Ownable2Step {
+    using Math for uint256;
+    using Address for address;
+    using SafeERC20 for IERC20;
+
     /// @notice Packed vault data structure into 2 slots for gas optimization
     /// @dev supplyAndIntegralSlot: [supply (128) | integral (128)]
     struct PackedVault {
@@ -53,6 +59,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @notice The fees and premiums.
     PackedFees public fees;
 
+    /// @notice The total protocol fees collected but not yet claimed
+    uint256 public protocolFeesAccrued;
+
     /// @notice The global pending rewards of all vaults.
     uint256 public globalPendingRewards;
 
@@ -80,23 +89,35 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @notice The error thrown when there is no donation.
     error NoDonation();
 
+    /// @notice The error thrown when the harvester is not set.
+    error NoHarvester();
+
+    /// @notice The error thrown when the fee receiver is not set.
+    error NoFeeReceiver();
+
     /// @notice The error thrown when there is no pending rewards.
     error NoPendingRewards();
 
     /// @notice The error thrown when the input is invalid.
     error WhatWrongWithYou();
 
+    /// @notice The error thrown when there is nothing to harvest.
+    error NothingToHarvest();
+
     /// @notice The error thrown when the harvest integral is not reached.
     error HarvestIntegralNotReached();
+
+    /// @notice The event emitted when the protocol fees are claimed.
+    event ProtocolFeesClaimed(uint256 amount);
+
+    /// @notice The event emitted when a vault harvests rewards.
+    event Harvest(address indexed vault, uint256 amount);
 
     /// @notice The event emitted when an account donates.
     event Donation(address indexed donator, uint256 amount);
 
     /// @notice The event emitted when an account claims rewards.
     event ClaimDonation(address indexed account, uint256 amount);
-
-    /// @notice The event emitted when a vault harvests rewards.
-    event Harvest(address indexed vault, uint256 amount);
 
     /// @notice The event emitted when the harvest fee percent is set.
     event HarvestFeePercentSet(uint256 oldHarvestFeePercent, uint256 newHarvestFeePercent);
@@ -153,19 +174,15 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
                 globalPendingRewards += pendingRewards;
             }
 
-            uint256 feeSlot = fees.feesSlot;
-
-            uint256 harvestFeePercent = uint64(feeSlot & StorageMasks.HARVEST_FEE_MASK);
-            uint256 protocolFeePercent = uint64((feeSlot & StorageMasks.PROTOCOL_FEE_MASK) >> 128);
-            uint256 donationPremiumPercent = uint64((feeSlot & StorageMasks.DONATION_FEE_MASK) >> 64);
+            (uint256 harvestFeePercent, uint256 donationPremiumPercent, uint256 protocolFeePercent) = _loadFees();
 
             // Calculate and deduct fees
             uint256 totalFees =
-                Math.mulDiv(pendingRewards, harvestFeePercent + donationPremiumPercent + protocolFeePercent, 1e18);
+                pendingRewards.mulDiv(harvestFeePercent + donationPremiumPercent + protocolFeePercent, 1e18);
             pendingRewards -= totalFees;
 
             // Update integral with new rewards per token
-            integral += uint128(Math.mulDiv(pendingRewards, SCALING_FACTOR, supply));
+            integral += uint128(pendingRewards.mulDiv(SCALING_FACTOR, supply));
         }
 
         // Handle token operations
@@ -212,7 +229,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
             uint64((accountBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
 
         // Update pending rewards based on the integral difference
-        accountPendingRewards += uint64(Math.mulDiv((currentIntegral - accountIntegral), balance, SCALING_FACTOR));
+        accountPendingRewards += uint64((currentIntegral - accountIntegral).mulDiv(balance, SCALING_FACTOR));
 
         // Update balance
         balance = isDecrease ? balance - amount : balance + amount;
@@ -287,7 +304,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
             // Add new rewards if integral has increased
             if (integral > accountIntegral) {
-                amount += Math.mulDiv(integral - accountIntegral, balance, SCALING_FACTOR);
+                amount += (integral - accountIntegral).mulDiv(balance, SCALING_FACTOR);
             }
 
             // Add any pending rewards
@@ -303,7 +320,67 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         if (amount == 0) revert NoPendingRewards();
 
         // Transfer accumulated rewards to receiver
-        SafeERC20.safeTransfer(IERC20(REWARD_TOKEN), receiver, amount);
+        IERC20(REWARD_TOKEN).safeTransfer(receiver, amount);
+    }
+
+    /// @notice Harvests rewards from a vault
+    /// @dev This function handles the harvesting of rewards from a vault
+    /// @param vault The address of the vault to harvest rewards from
+    /// @param extraData Additional data required for the harvest operation
+    function harvest(address vault, bytes calldata extraData) external nonReentrant {
+        // Cache REGISTRY to avoid multiple SLOADs
+        address registry = REGISTRY;
+        address harvester = IRegistry(registry).HARVESTER();
+        require(harvester != address(0), NoHarvester());
+
+        // Harvest the asset
+        uint256 amount = abi.decode(
+            harvester.functionDelegateCall(
+                abi.encodeWithSelector(IHarvester.harvest.selector, IRegistry(registry).assets(vault), extraData)
+            ),
+            (uint256)
+        );
+        require(amount != 0, NothingToHarvest());
+
+        // Calculate fees
+        {
+            (uint256 harvestFeePercent, uint256 donationPremiumPercent, uint256 protocolFeePercent) = _loadFees();
+            uint256 protocolFee = amount.mulDiv(protocolFeePercent, 1e18);
+            uint256 harvesterFee = amount.mulDiv(harvestFeePercent, 1e18);
+            uint256 donationPremium = amount.mulDiv(donationPremiumPercent, 1e18);
+
+            // Update protocol fees
+            protocolFeesAccrued += protocolFee;
+
+            // Transfer harvester fee
+            IERC20(REWARD_TOKEN).safeTransfer(msg.sender, harvesterFee);
+
+            // Update vault state
+            _updateVaultState(vault, amount, protocolFee + harvesterFee + donationPremium);
+        }
+
+        emit Harvest(vault, amount);
+    }
+
+    /// @dev Helper function to update vault state during harvest
+    function _updateVaultState(address vault, uint256 amount, uint256 totalFees) private {
+        PackedVault storage _vault = vaults[vault];
+        uint256 slot = _vault.supplyAndIntegralSlot;
+        uint256 supply = uint128(slot & StorageMasks.SUPPLY_MASK);
+        uint256 integral = uint128((slot & StorageMasks.INTEGRAL_MASK) >> 128);
+
+        // Update global harvest integral with pre-fee amount
+        globalHarvestIntegral += amount.mulDiv(SCALING_FACTOR, supply);
+
+        // Update amount after deducting all fees
+        amount -= totalFees;
+
+        // Update vault integral with post-fee amount
+        integral += uint128(amount.mulDiv(SCALING_FACTOR, supply));
+
+        // Update vault storage
+        _vault.supplyAndIntegralSlot =
+            (supply & StorageMasks.SUPPLY_MASK) | ((integral << 128) & StorageMasks.INTEGRAL_MASK);
     }
 
     /// @notice Allows users to donate their pending rewards to the protocol
@@ -316,7 +393,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         require(globalPendingRewards != 0, NoPendingRewards());
 
         // Transfer pending rewards from donor
-        SafeERC20.safeTransferFrom(IERC20(REWARD_TOKEN), msg.sender, address(this), globalPendingRewards);
+        IERC20(REWARD_TOKEN).safeTransferFrom(msg.sender, address(this), globalPendingRewards);
 
         // Update donation storage
         PackedDonation storage _donation = donations[msg.sender];
@@ -362,10 +439,10 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         uint256 donationPremiumPercent = getDonationPremiumPercent();
 
         // Calculate total claimable amount including premium
-        uint256 totalClaimable = donation + Math.mulDiv(donation, donationPremiumPercent, 1e18);
+        uint256 totalClaimable = donation + donation.mulDiv(donationPremiumPercent, 1e18);
 
         // Transfer total amount to donor
-        SafeERC20.safeTransfer(IERC20(REWARD_TOKEN), msg.sender, totalClaimable);
+        IERC20(REWARD_TOKEN).safeTransfer(msg.sender, totalClaimable);
 
         // Reset donation while preserving latest harvest integral
         _donation.donationAndIntegralSlot =
@@ -395,7 +472,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         uint256 donationPremiumPercent = getDonationPremiumPercent();
 
         // Add premium
-        donation += Math.mulDiv(donation, donationPremiumPercent, 1e18);
+        donation += donation.mulDiv(donationPremiumPercent, 1e18);
     }
 
     /// @notice Returns the token balance of an account in a specific vault
@@ -411,10 +488,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param _harvestFeePercent New harvest fee percentage (scaled by 1e18)
     /// @custom:throws WhatWrongWithYou If total fees would exceed maximum
     function setHarvestFeePercent(uint256 _harvestFeePercent) external onlyOwner {
-        uint256 harvestFeePercent = getHarvestFeePercent();
-        uint256 donationPremiumPercent = getDonationPremiumPercent();
-        uint256 protocolFeePercent = getProtocolFeePercent();
-
+        (uint256 harvestFeePercent, uint256 donationPremiumPercent, uint256 protocolFeePercent) = _loadFees();
         require(_harvestFeePercent + donationPremiumPercent + protocolFeePercent <= MAX_FEE_PERCENT, WhatWrongWithYou());
 
         emit HarvestFeePercentSet(harvestFeePercent, _harvestFeePercent);
@@ -428,10 +502,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param _donationFeePercent New donation premium percentage (scaled by 1e18)
     /// @custom:throws WhatWrongWithYou If total fees would exceed maximum
     function setDonationFeePercent(uint256 _donationFeePercent) external onlyOwner {
-        uint256 harvestFeePercent = getHarvestFeePercent();
-        uint256 protocolFeePercent = getProtocolFeePercent();
-        uint256 donationPremiumPercent = getDonationPremiumPercent();
-
+        (uint256 harvestFeePercent, uint256 donationPremiumPercent, uint256 protocolFeePercent) = _loadFees();
         require(_donationFeePercent + harvestFeePercent + protocolFeePercent <= MAX_FEE_PERCENT, WhatWrongWithYou());
 
         emit DonationFeePercentSet(donationPremiumPercent, _donationFeePercent);
@@ -444,10 +515,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param _protocolFeePercent New protocol fee percentage (scaled by 1e18)
     /// @custom:throws WhatWrongWithYou If total fees would exceed maximum
     function setProtocolFeePercent(uint256 _protocolFeePercent) external onlyOwner {
-        uint256 harvestFeePercent = getHarvestFeePercent();
-        uint256 donationPremiumPercent = getDonationPremiumPercent();
-        uint256 protocolFeePercent = getProtocolFeePercent();
-
+        (uint256 harvestFeePercent, uint256 donationPremiumPercent, uint256 protocolFeePercent) = _loadFees();
         require(_protocolFeePercent + harvestFeePercent + donationPremiumPercent <= MAX_FEE_PERCENT, WhatWrongWithYou());
 
         emit ProtocolFeePercentSet(protocolFeePercent, _protocolFeePercent);
@@ -459,6 +527,17 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     //////////////////////////////////////////////////////
     /// --- VIEW FUNCTIONS
     //////////////////////////////////////////////////////
+
+    function _loadFees()
+        internal
+        view
+        returns (uint256 harvestFeePercent, uint256 donationPremiumPercent, uint256 protocolFeePercent)
+    {
+        uint256 slot = fees.feesSlot;
+        harvestFeePercent = uint64(slot & StorageMasks.HARVEST_FEE_MASK);
+        donationPremiumPercent = uint64((slot & StorageMasks.DONATION_FEE_MASK) >> 64);
+        protocolFeePercent = uint64((slot & StorageMasks.PROTOCOL_FEE_MASK) >> 128);
+    }
 
     /// @notice Returns the harvest fee percent
     /// @return The harvest fee percent
@@ -478,11 +557,17 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         return uint64((fees.feesSlot & StorageMasks.PROTOCOL_FEE_MASK) >> 128);
     }
 
-    //////////////////////////////////////////////////////
-    /// --- TODOS
-    //////////////////////////////////////////////////////
+    /// @notice Claims the protocol fees
+    /// @dev The protocol fees are claimed to the fee receiver
+    /// @custom:throws NoFeeReceiver If the fee receiver is not set
+    function claimProtocolFees() external nonReentrant {
+        address feeReceiver = IRegistry(REGISTRY).FEE_RECEIVER();
+        require(feeReceiver != address(0), NoFeeReceiver());
 
-    function harvest(address vault) external nonReentrant {}
+        IERC20(REWARD_TOKEN).safeTransfer(feeReceiver, protocolFeesAccrued);
 
-    function claimProtocolFees() external nonReentrant {}
+        emit ProtocolFeesClaimed(protocolFeesAccrued);
+
+        protocolFeesAccrued = 0;
+    }
 }
