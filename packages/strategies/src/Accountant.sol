@@ -478,7 +478,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         donation = uint96(donationAndIntegralTimestamp & StorageMasks.DONATION_MASK);
 
         // Get donation premium percent
-        uint256 donationPremiumPercent = getDonationPremiumPercent();
+        uint256 donationPremiumPercent = donations[account].donationPremiumPercent;
 
         // Add premium
         donation += donation.mulDiv(donationPremiumPercent, 1e18);
