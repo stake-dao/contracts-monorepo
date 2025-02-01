@@ -11,10 +11,11 @@ library StorageMasks {
     uint256 constant PENDING_REWARDS_MASK = ((1 << 64) - 1) << 192;
 
     /// @notice Bit masks for donation data
-    /// @dev [donation (96) | integral (96) | timestamp (32)]
+    /// @dev [donation (96) | integral (96) | timestamp (40) | premiumPercent (24)]
     uint256 constant DONATION_MASK = (1 << 96) - 1;
     uint256 constant DONATION_INTEGRAL_MASK = ((1 << 96) - 1) << 96;
-    uint256 constant DONATION_TIMESTAMP_MASK = ((1 << 32) - 1) << 192;
+    uint256 constant DONATION_TIMESTAMP_MASK = ((1 << 40) - 1) << 192;
+    uint256 constant DONATION_PREMIUM_PERCENT_MASK = ((1 << 24) - 1) << 232;
 
     /// @notice Bit masks for account balanceAndRewardsSlot
     /// @dev [balance (96) | integral (96) | pendingRewards (64)]
