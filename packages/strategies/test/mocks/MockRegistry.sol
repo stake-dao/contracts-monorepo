@@ -25,6 +25,14 @@ contract MockRegistry is IRegistry {
         return harvester;
     }
 
+    function FEE_RECEIVER() external view returns (address) {
+        return address(0);
+    }
+
+    function assets(address) external pure returns (address) {
+        return address(0);
+    }
+
     function allowed(address, bytes4) external pure returns (bool) {
         return true;
     }
