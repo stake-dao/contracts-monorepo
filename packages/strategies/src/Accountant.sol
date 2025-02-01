@@ -65,10 +65,10 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     uint256 public protocolFeesAccrued;
 
     /// @notice The global pending rewards of all vaults.
-    uint256 public globalPendingRewards;
+    uint96 public globalPendingRewards;
 
     /// @notice The global harvest integral of all vaults.
-    uint256 public globalHarvestIntegral;
+    uint96 public globalHarvestIntegral;
 
     /// @notice Whether the vault integral is updated before the accounts checkpoint.
     /// @notice Supply of vaults.
@@ -176,7 +176,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         if (pendingRewards > 0 && supply > 0) {
             if (!claimed) {
                 // Only update global pending rewards for unclaimed rewards
-                globalPendingRewards += pendingRewards;
+                globalPendingRewards += pendingRewards.toUint96();
             }
 
             (uint256 harvestFeePercent, uint256 donationPremiumPercent, uint256 protocolFeePercent) = _loadFees();
@@ -230,7 +230,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
         uint256 balance = uint96(accountBalanceAndRewards & StorageMasks.BALANCE_MASK);
         uint256 accountIntegral = uint96((accountBalanceAndRewards & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 96);
-        uint256 accountPendingRewards = uint64((accountBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
+        uint256 accountPendingRewards =
+            uint64((accountBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
 
         // Update pending rewards based on the integral difference
         accountPendingRewards += (currentIntegral - accountIntegral).mulDiv(balance, SCALING_FACTOR).toUint64();
@@ -303,7 +304,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
             accountBalanceAndRewards = _account.balanceAndRewardsSlot;
             balance = uint96(accountBalanceAndRewards & StorageMasks.BALANCE_MASK);
             accountIntegral = uint96((accountBalanceAndRewards & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 96);
-            accountPendingRewards = uint64((accountBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
+            accountPendingRewards =
+                uint64((accountBalanceAndRewards & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK) >> 192);
 
             // Add new rewards if integral has increased
             if (integral > accountIntegral) {
@@ -373,7 +375,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         uint256 integral = uint96((slot & StorageMasks.INTEGRAL_MASK) >> 96);
 
         // Update global harvest integral with pre-fee amount
-        globalHarvestIntegral += amount.mulDiv(SCALING_FACTOR, supply);
+        globalHarvestIntegral += amount.mulDiv(SCALING_FACTOR, supply).toUint96();
 
         // Update amount after deducting all fees
         amount -= totalFees;
@@ -403,7 +405,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         uint256 donationAndIntegralTimestamp = _donation.donationAndIntegralTimestampSlot;
 
         // Add to existing donation amount
-        uint256 donation = uint96(donationAndIntegralTimestamp & StorageMasks.DONATION_MASK);
+        uint96 donation = uint96(donationAndIntegralTimestamp & StorageMasks.DONATION_MASK);
         donation += globalPendingRewards;
 
         // Store donation with current harvest integral
