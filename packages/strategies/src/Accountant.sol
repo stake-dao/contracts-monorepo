@@ -1,21 +1,28 @@
 /// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import "src/interfaces/IRegistry.sol";
-import "src/interfaces/IHarvester.sol";
-import "src/libraries/StorageMasks.sol";
+import {IRegistry} from "src/interfaces/IRegistry.sol";
+import {IHarvester} from "src/interfaces/IHarvester.sol";
+import {StorageMasks} from "src/libraries/StorageMasks.sol";
 
-import "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "@openzeppelin/contracts/utils/Address.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 
-/// @notice The source of truth.
+/// @title Accountant - Reward distribution and accounting system
+/// @notice Manages the distribution of rewards across vaults and users
+/// @dev Handles reward accounting, fee collection, and donation tracking with gas-optimized packed storage
+/// @dev Key responsibilities:
+/// - Tracks user balances and rewards across vaults
+/// - Manages protocol fees, harvest fees, and donation premiums
+/// - Handles reward distribution and claiming
+/// - Maintains integral calculations for reward accrual
 contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     using Math for uint256;
     using Address for address;
@@ -46,91 +53,90 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         uint256 feesSlot;
     }
 
-    /// @notice Scaling factor used for fixed-point arithmetic precision (1e18).
+    /// @notice Scaling factor used for fixed-point arithmetic precision (1e18)
     uint256 public constant SCALING_FACTOR = 1e18;
 
-    /// @notice The maximum fee percent.
-    uint256 public constant MAX_FEE_PERCENT = 0.4e18; // 40%
+    /// @notice The maximum fee percent (40%)
+    uint256 public constant MAX_FEE_PERCENT = 0.4e18;
 
-    /// @notice The registry of addresses.
+    /// @notice The registry of addresses
     address public immutable REGISTRY;
 
-    /// @notice The reward token.
+    /// @notice The reward token
     address public immutable REWARD_TOKEN;
 
-    /// @notice The fees and premiums.
+    /// @notice The fees and premiums
     PackedFees public fees;
 
     /// @notice The total protocol fees collected but not yet claimed
     uint256 public protocolFeesAccrued;
 
-    /// @notice The global pending rewards of all vaults.
+    /// @notice The global pending rewards of all vaults
     uint96 public globalPendingRewards;
 
-    /// @notice The global harvest integral of all vaults.
+    /// @notice The global harvest integral of all vaults
     uint96 public globalHarvestIntegral;
 
-    /// @notice Whether the vault integral is updated before the accounts checkpoint.
-    /// @notice Supply of vaults.
-    /// @dev Vault address -> PackedVault.
+    /// @notice Supply of vaults
+    /// @dev Vault address -> PackedVault
     mapping(address vault => PackedVault vaultData) private vaults;
 
-    /// @notice Donations of accounts.
+    /// @notice Donations of accounts
     mapping(address account => PackedDonation donationData) private donations;
 
-    /// @notice Balances of accounts per vault.
-    /// @dev Vault address -> Account address -> PackedAccount.
+    /// @notice Balances of accounts per vault
+    /// @dev Vault address -> Account address -> PackedAccount
     mapping(address vault => mapping(address account => PackedAccount accountData)) private accounts;
 
-    /// @notice The error thrown when the caller is not allowed.
+    /// @notice Error thrown when the caller is not allowed
     error OnlyAllowed();
 
-    /// @notice The error thrown when the caller is not a vault.
+    /// @notice Error thrown when the caller is not a vault
     error OnlyVault();
 
-    /// @notice The error thrown when the donation claim is too soon.
+    /// @notice Error thrown when the donation claim is too soon
     error TooSoon();
 
-    /// @notice The error thrown when there is no donation.
+    /// @notice Error thrown when there is no donation
     error NoDonation();
 
-    /// @notice The error thrown when the harvester is not set.
+    /// @notice Error thrown when the harvester is not set
     error NoHarvester();
 
-    /// @notice The error thrown when the fee receiver is not set.
+    /// @notice Error thrown when the fee receiver is not set
     error NoFeeReceiver();
 
-    /// @notice The error thrown when there is no pending rewards.
+    /// @notice Error thrown when there are no pending rewards
     error NoPendingRewards();
 
-    /// @notice The error thrown when the input is invalid.
+    /// @notice Error thrown when the input is invalid
     error WhatWrongWithYou();
 
-    /// @notice The error thrown when there is nothing to harvest.
+    /// @notice Error thrown when there is nothing to harvest
     error NothingToHarvest();
 
-    /// @notice The error thrown when the harvest integral is not reached.
+    /// @notice Error thrown when the harvest integral is not reached
     error HarvestIntegralNotReached();
 
-    /// @notice The event emitted when the protocol fees are claimed.
+    /// @notice Emitted when protocol fees are claimed
     event ProtocolFeesClaimed(uint256 amount);
 
-    /// @notice The event emitted when a vault harvests rewards.
+    /// @notice Emitted when a vault harvests rewards
     event Harvest(address indexed vault, uint256 amount);
 
-    /// @notice The event emitted when an account donates.
+    /// @notice Emitted when an account donates
     event Donation(address indexed donator, uint256 amount);
 
-    /// @notice The event emitted when an account claims rewards.
+    /// @notice Emitted when an account claims rewards
     event ClaimDonation(address indexed account, uint256 amount);
 
-    /// @notice The event emitted when the harvest fee percent is set.
+    /// @notice Emitted when the harvest fee percent is updated
     event HarvestFeePercentSet(uint256 oldHarvestFeePercent, uint256 newHarvestFeePercent);
 
-    /// @notice The event emitted when the donation fee percent is set.
+    /// @notice Emitted when the donation fee percent is updated
     event DonationFeePercentSet(uint256 oldDonationFeePercent, uint256 newDonationFeePercent);
 
-    /// @notice The event emitted when the protocol fee percent is set.
+    /// @notice Emitted when the protocol fee percent is updated
     event ProtocolFeePercentSet(uint256 oldProtocolFeePercent, uint256 newProtocolFeePercent);
 
     modifier onlyAllowed() {
@@ -146,8 +152,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         fees.feesSlot = (0.005e18 << 64) | (0.005e18 << 96) | (0.15e18 << 128);
     }
 
-    /// @notice Function called by vaults to checkpoint the state of the vault on every account action.
-    /// @dev This function handles four types of operations:
+    /// @notice Checkpoints the state of the vault on every account action
+    /// @dev Handles four types of operations:
     ///      1. Minting (from = address(0)): Creates new tokens
     ///      2. Burning (to = address(0)): Destroys tokens
     ///      3. Transfers: Updates balances and rewards for both sender and receiver
@@ -157,7 +163,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param to The destination address (address(0) for burning)
     /// @param amount The amount of tokens being transferred/minted/burned
     /// @param pendingRewards New rewards to be distributed to the vault
-    /// @param claimed Whether these rewards were already claimed (true) or need to be added to global pending (false)
+    /// @param claimed Whether these rewards were already claimed
     /// @custom:throws OnlyVault If caller is not the registered vault for the asset
     function checkpoint(address asset, address from, address to, uint256 amount, uint256 pendingRewards, bool claimed)
         external
@@ -212,7 +218,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
             (supply & StorageMasks.SUPPLY_MASK) | ((integral << 96) & StorageMasks.INTEGRAL_MASK);
     }
 
-    /// @dev Helper function to update an account's balance and rewards
+    /// @dev Updates an account's balance and rewards
     /// @param vault The vault address
     /// @param account The account to update
     /// @param amount The amount to add/subtract
@@ -245,8 +251,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
             | ((accountPendingRewards << 192) & StorageMasks.ACCOUNT_PENDING_REWARDS_MASK);
     }
 
-    /// @notice Claims rewards from multiple vaults and sends them to a specified receiver
-    /// @dev This is the user-facing claim function that only allows claiming for the sender
+    /// @notice Claims rewards from multiple vaults for the caller
     /// @param _vaults Array of vault addresses to claim rewards from
     /// @param receiver Address that will receive the claimed rewards
     /// @custom:throws NoPendingRewards If there are no rewards to claim
@@ -255,7 +260,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     }
 
     /// @notice Claims rewards on behalf of an account (restricted to allowed callers)
-    /// @dev This is the admin/operator claim function that can claim for any account
     /// @param _vaults Array of vault addresses to claim rewards from
     /// @param account Address to claim rewards for
     /// @param receiver Address that will receive the claimed rewards
@@ -266,11 +270,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     }
 
     /// @dev Internal implementation of the claim functionality
-    /// @dev For each vault:
-    ///      1. Loads the vault and account data
-    ///      2. Calculates new rewards based on integral differences
-    ///      3. Adds any pending rewards
-    ///      4. Updates account state and resets pending rewards
     /// @param _vaults Array of vault addresses to claim rewards from
     /// @param account Address to claim rewards for
     /// @param receiver Address that will receive the claimed rewards
@@ -329,9 +328,10 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     }
 
     /// @notice Harvests rewards from a vault
-    /// @dev This function handles the harvesting of rewards from a vault
     /// @param vault The address of the vault to harvest rewards from
     /// @param extraData Additional data required for the harvest operation
+    /// @custom:throws NoHarvester If the harvester is not set
+    /// @custom:throws NothingToHarvest If no rewards are available to harvest
     function harvest(address vault, bytes calldata extraData) external nonReentrant {
         // Cache REGISTRY to avoid multiple SLOADs
         address registry = REGISTRY;
@@ -367,7 +367,10 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         emit Harvest(vault, amount);
     }
 
-    /// @dev Helper function to update vault state during harvest
+    /// @dev Updates vault state during harvest
+    /// @param vault The vault address to update
+    /// @param amount The total reward amount
+    /// @param totalFees The total fees to deduct
     function _updateVaultState(address vault, uint256 amount, uint256 totalFees) private {
         PackedVault storage _vault = vaults[vault];
         uint256 slot = _vault.supplyAndIntegralSlot;
@@ -388,11 +391,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
             (supply & StorageMasks.SUPPLY_MASK) | ((integral << 96) & StorageMasks.INTEGRAL_MASK);
     }
 
-    /// @notice Allows users to donate their pending rewards to the protocol
-    /// @dev When a user donates:
-    ///      1. Their donation is recorded with the current harvest integral
-    ///      2. They can later claim back their donation plus a premium
-    ///      3. The donation helps provide liquidity for the reward system
+    /// @notice Allows users to donate their pending rewards
+    /// @dev Records donation with current harvest integral for later claiming with premium
     /// @custom:throws NoPendingRewards If there are no global pending rewards
     function donate() external nonReentrant {
         require(globalPendingRewards != 0, NoPendingRewards());
@@ -420,13 +420,10 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     }
 
     /// @notice Allows users to claim back their donations plus earned premium
-    /// @dev The claim process:
-    ///      1. Verifies the global harvest integral has reached the donation's integral
-    ///      2. Calculates total claimable amount (original donation + premium)
-    ///      3. Transfers the total amount to the donor
-    ///      4. Resets the donation while preserving the latest harvest integral
+    /// @dev Verifies harvest integral has been reached and calculates total claimable amount
     /// @custom:throws HarvestIntegralNotReached If global harvest integral is less than donation integral
     /// @custom:throws NoDonation If the user has no donation to claim
+    /// @custom:throws TooSoon If claiming before minimum time period
     function claimDonation() external nonReentrant {
         PackedDonation storage _donation = donations[msg.sender];
         uint256 donationAndIntegralTimestamp = _donation.donationAndIntegralTimestampSlot;
@@ -468,7 +465,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     }
 
     /// @notice Calculates the claimable donation amount including premium
-    /// @dev The premium is calculated as a percentage of the original donation
     /// @param account The account to check donation for
     /// @return donation The total claimable amount (original + premium)
     function getDonation(address account) external view returns (uint256 donation) {
@@ -484,7 +480,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         donation += donation.mulDiv(donationPremiumPercent, 1e18);
     }
 
-    /// @notice Returns the token balance of an account in a specific vault
+    /// @notice Returns the token balance of an account in a vault
     /// @param vault The vault address to query
     /// @param account The account address to check
     /// @return The account's token balance in the vault
@@ -493,7 +489,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     }
 
     /// @notice Updates the harvest fee percentage
-    /// @dev The total of all fees must not exceed MAX_FEE_PERCENT
     /// @param _harvestFeePercent New harvest fee percentage (scaled by 1e18)
     /// @custom:throws WhatWrongWithYou If total fees would exceed maximum
     function setHarvestFeePercent(uint256 _harvestFeePercent) external onlyOwner {
@@ -507,7 +502,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     }
 
     /// @notice Updates the donation premium percentage
-    /// @dev The total of all fees must not exceed MAX_FEE_PERCENT
     /// @param _donationFeePercent New donation premium percentage (scaled by 1e18)
     /// @custom:throws WhatWrongWithYou If total fees would exceed maximum
     function setDonationFeePercent(uint256 _donationFeePercent) external onlyOwner {
@@ -520,7 +514,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     }
 
     /// @notice Updates the protocol fee percentage
-    /// @dev The total of all fees must not exceed MAX_FEE_PERCENT
     /// @param _protocolFeePercent New protocol fee percentage (scaled by 1e18)
     /// @custom:throws WhatWrongWithYou If total fees would exceed maximum
     function setProtocolFeePercent(uint256 _protocolFeePercent) external onlyOwner {
@@ -537,6 +530,10 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// --- VIEW FUNCTIONS
     //////////////////////////////////////////////////////
 
+    /// @dev Loads the current fee percentages from storage
+    /// @return harvestFeePercent The current harvest fee percentage
+    /// @return donationPremiumPercent The current donation premium percentage
+    /// @return protocolFeePercent The current protocol fee percentage
     function _loadFees()
         internal
         view
@@ -548,26 +545,26 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         protocolFeePercent = (slot & StorageMasks.PROTOCOL_FEE_MASK) >> 128;
     }
 
-    /// @notice Returns the harvest fee percent
-    /// @return The harvest fee percent
+    /// @notice Returns the current harvest fee percentage
+    /// @return The harvest fee percentage
     function getHarvestFeePercent() public view returns (uint256) {
         return fees.feesSlot & StorageMasks.HARVEST_FEE_MASK;
     }
 
-    /// @notice Returns the donation premium percent
-    /// @return The donation premium percent
+    /// @notice Returns the current donation premium percentage
+    /// @return The donation premium percentage
     function getDonationPremiumPercent() public view returns (uint256) {
         return (fees.feesSlot & StorageMasks.DONATION_FEE_MASK) >> 64;
     }
 
-    /// @notice Returns the protocol fee percent
-    /// @return The protocol fee percent
+    /// @notice Returns the current protocol fee percentage
+    /// @return The protocol fee percentage
     function getProtocolFeePercent() public view returns (uint256) {
         return (fees.feesSlot & StorageMasks.PROTOCOL_FEE_MASK) >> 128;
     }
 
-    /// @notice Claims the protocol fees
-    /// @dev The protocol fees are claimed to the fee receiver
+    /// @notice Claims accumulated protocol fees
+    /// @dev Transfers fees to the configured fee receiver
     /// @custom:throws NoFeeReceiver If the fee receiver is not set
     function claimProtocolFees() external nonReentrant {
         address feeReceiver = IRegistry(REGISTRY).FEE_RECEIVER();
