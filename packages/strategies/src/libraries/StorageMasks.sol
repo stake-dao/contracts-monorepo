@@ -8,6 +8,7 @@ library StorageMasks {
     /// @dev [supply (96) | integral (96)]
     uint256 constant SUPPLY_MASK = (1 << 96) - 1;
     uint256 constant INTEGRAL_MASK = ((1 << 96) - 1) << 96;
+    uint256 constant PENDING_REWARDS_MASK = ((1 << 64) - 1) << 192;
 
     /// @notice Bit masks for donation data
     /// @dev [donation (96) | integral (96) | timestamp (32)]

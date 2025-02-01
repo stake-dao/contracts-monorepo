@@ -30,7 +30,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     using SafeCast for uint256;
 
     /// @notice Packed vault data structure into 1 slot for gas optimization
-    /// @dev supplyAndIntegralSlot: [supply (96) | integral (96)]
+    /// @dev supplyAndIntegralSlot: [supply (96) | integral (96) | pendingRewards (64)]
     struct PackedVault {
         uint256 supplyAndIntegralSlot; // slot1 -> supplyAndIntegralSlot
     }
@@ -45,6 +45,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @dev donationAndIntegralTimestampSlot: [donation (96) | integral (96) | timestamp (32)]
     struct PackedDonation {
         uint256 donationAndIntegralTimestampSlot; // slot -> donationAndIntegralTimestampSlot
+        uint64 donationPremiumPercent;
     }
 
     /// @notice Packed fees and premiums data structure into 1 slot for gas optimization
@@ -214,8 +215,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         }
 
         // Update vault storage with new supply and integral
-        _vault.supplyAndIntegralSlot =
-            (supply & StorageMasks.SUPPLY_MASK) | ((integral << 96) & StorageMasks.INTEGRAL_MASK);
+        _vault.supplyAndIntegralSlot = (supply & StorageMasks.SUPPLY_MASK)
+            | ((integral << 96) & StorageMasks.INTEGRAL_MASK)
+            | ((pendingRewards << 192) & StorageMasks.PENDING_REWARDS_MASK);
     }
 
     /// @dev Updates an account's balance and rewards
@@ -376,19 +378,20 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         uint256 slot = _vault.supplyAndIntegralSlot;
         uint256 supply = uint96(slot & StorageMasks.SUPPLY_MASK);
         uint256 integral = uint96((slot & StorageMasks.INTEGRAL_MASK) >> 96);
+        uint256 pendingRewards = uint64((slot & StorageMasks.PENDING_REWARDS_MASK) >> 192);
 
         // Update global harvest integral with pre-fee amount
         globalHarvestIntegral += amount.mulDiv(SCALING_FACTOR, supply).toUint96();
 
         // Update amount after deducting all fees
-        amount -= totalFees;
+        amount -= (totalFees + pendingRewards);
 
         // Update vault integral with post-fee amount
         integral += amount.mulDiv(SCALING_FACTOR, supply).toUint96();
 
         // Update vault storage
-        _vault.supplyAndIntegralSlot =
-            (supply & StorageMasks.SUPPLY_MASK) | ((integral << 96) & StorageMasks.INTEGRAL_MASK);
+        _vault.supplyAndIntegralSlot = (supply & StorageMasks.SUPPLY_MASK)
+            | ((integral << 96) & StorageMasks.INTEGRAL_MASK) | ((0 << 192) & StorageMasks.PENDING_REWARDS_MASK);
     }
 
     /// @notice Allows users to donate their pending rewards
@@ -412,6 +415,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         _donation.donationAndIntegralTimestampSlot = (donation & StorageMasks.DONATION_MASK)
             | ((globalHarvestIntegral << 96) & StorageMasks.DONATION_INTEGRAL_MASK)
             | ((block.timestamp << 192) & StorageMasks.DONATION_TIMESTAMP_MASK);
+        _donation.donationPremiumPercent = getDonationPremiumPercent().toUint64();
 
         emit Donation(msg.sender, globalPendingRewards);
 
@@ -441,7 +445,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         require(donation != 0, NoDonation());
 
         // Get donation premium percent
-        uint256 donationPremiumPercent = getDonationPremiumPercent();
+        uint256 donationPremiumPercent = _donation.donationPremiumPercent;
 
         // Calculate total claimable amount including premium
         uint256 totalClaimable = donation + donation.mulDiv(donationPremiumPercent, 1e18);
