@@ -42,10 +42,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     }
 
     /// @notice Packed donation data structure into 1 slot for gas optimization
-    /// @dev donationAndIntegralTimestampSlot: [donation (96) | integral (96) | timestamp (32)]
+    /// @dev donationAndIntegralTimestampSlot: [donation (96) | integral (96) | timestamp (40) | premiumPercent (24)]
     struct PackedDonation {
         uint256 donationAndIntegralTimestampSlot; // slot -> donationAndIntegralTimestampSlot
-        uint64 donationPremiumPercent;
     }
 
     /// @notice Packed fees and premiums data structure into 1 slot for gas optimization
@@ -412,8 +411,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         // Store donation with current harvest integral
         _donation.donationAndIntegralTimestampSlot = (donation & StorageMasks.DONATION_MASK)
             | ((globalHarvestIntegral << 96) & StorageMasks.DONATION_INTEGRAL_MASK)
-            | ((block.timestamp << 192) & StorageMasks.DONATION_TIMESTAMP_MASK);
-        _donation.donationPremiumPercent = getDonationPremiumPercent().toUint64();
+            | ((block.timestamp << 192) & StorageMasks.DONATION_TIMESTAMP_MASK)
+            | ((getDonationPremiumPercent() << 232) & StorageMasks.DONATION_PREMIUM_PERCENT_MASK);
 
         emit Donation(msg.sender, globalPendingRewards);
 
@@ -443,7 +442,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         require(donation != 0, NoDonation());
 
         // Get donation premium percent
-        uint256 donationPremiumPercent = _donation.donationPremiumPercent;
+        uint256 donationPremiumPercent =
+            (donationAndIntegralTimestamp & StorageMasks.DONATION_PREMIUM_PERCENT_MASK) >> 232;
 
         // Calculate total claimable amount including premium
         uint256 totalClaimable = donation + donation.mulDiv(donationPremiumPercent, 1e18);
@@ -476,7 +476,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         donation = donationAndIntegralTimestamp & StorageMasks.DONATION_MASK;
 
         // Get donation premium percent
-        uint256 donationPremiumPercent = donations[account].donationPremiumPercent;
+        uint256 donationPremiumPercent =
+            (donationAndIntegralTimestamp & StorageMasks.DONATION_PREMIUM_PERCENT_MASK) >> 232;
 
         // Add premium
         donation += donation.mulDiv(donationPremiumPercent, 1e18);
