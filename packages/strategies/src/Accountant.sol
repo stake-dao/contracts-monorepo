@@ -35,9 +35,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     }
 
     /// @notice Packed donation data structure into 1 slot for gas optimization
-    /// @dev donationAndIntegralSlot: [donation (128) | integral (128)]
+    /// @dev donationAndIntegralTimestampSlot: [donation (64) | integral (128) | timestamp (64)]
     struct PackedDonation {
-        uint256 donationAndIntegralSlot;
+        uint256 donationAndIntegralTimestampSlot; // slot -> donationAndIntegralTimestampSlot
     }
 
     /// @notice Packed fees and premiums data structure into 1 slot for gas optimization
@@ -87,6 +87,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
     /// @notice The error thrown when the caller is not a vault.
     error OnlyVault();
+
+    /// @notice The error thrown when the donation claim is too soon.
+    error TooSoon();
 
     /// @notice The error thrown when there is no donation.
     error NoDonation();
@@ -397,15 +400,16 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
         // Update donation storage
         PackedDonation storage _donation = donations[msg.sender];
-        uint256 donationAndIntegral = _donation.donationAndIntegralSlot;
+        uint256 donationAndIntegralTimestamp = _donation.donationAndIntegralTimestampSlot;
 
         // Add to existing donation amount
-        uint256 donation = donationAndIntegral & StorageMasks.DONATION_MASK;
+        uint256 donation = donationAndIntegralTimestamp & StorageMasks.DONATION_MASK;
         donation += globalPendingRewards;
 
         // Store donation with current harvest integral
-        _donation.donationAndIntegralSlot = (donation & StorageMasks.DONATION_MASK)
-            | ((globalHarvestIntegral << 128) & StorageMasks.DONATION_INTEGRAL_MASK);
+        _donation.donationAndIntegralTimestampSlot = (donation & StorageMasks.DONATION_MASK)
+            | ((globalHarvestIntegral << 128) & StorageMasks.DONATION_INTEGRAL_MASK)
+            | ((block.timestamp << 192) & StorageMasks.DONATION_TIMESTAMP_MASK);
 
         emit Donation(msg.sender, globalPendingRewards);
 
@@ -423,16 +427,18 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @custom:throws NoDonation If the user has no donation to claim
     function claimDonation() external nonReentrant {
         PackedDonation storage _donation = donations[msg.sender];
-        uint256 donationAndIntegral = _donation.donationAndIntegralSlot;
+        uint256 donationAndIntegralTimestamp = _donation.donationAndIntegralTimestampSlot;
 
-        // Unpack donation data
-        uint256 integral = (donationAndIntegral & StorageMasks.DONATION_INTEGRAL_MASK) >> 128;
-        uint256 donation = donationAndIntegral & StorageMasks.DONATION_MASK;
+        // Verify donation is not too soon
+        uint256 timestamp = (donationAndIntegralTimestamp & StorageMasks.DONATION_TIMESTAMP_MASK) >> 192;
+        require(timestamp + 1 days >= block.timestamp, TooSoon());
 
         // Verify harvest integral has been reached
+        uint256 integral = (donationAndIntegralTimestamp & StorageMasks.DONATION_INTEGRAL_MASK) >> 128;
         require(globalHarvestIntegral >= integral, HarvestIntegralNotReached());
 
         // Verify donation exists
+        uint256 donation = donationAndIntegralTimestamp & StorageMasks.DONATION_MASK;
         require(donation != 0, NoDonation());
 
         // Get donation premium percent
@@ -445,8 +451,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         IERC20(REWARD_TOKEN).safeTransfer(msg.sender, totalClaimable);
 
         // Reset donation while preserving latest harvest integral
-        _donation.donationAndIntegralSlot =
-            (0 & StorageMasks.DONATION_MASK) | ((globalHarvestIntegral << 128) & StorageMasks.DONATION_INTEGRAL_MASK);
+        _donation.donationAndIntegralTimestampSlot = (0 & StorageMasks.DONATION_MASK)
+            | ((globalHarvestIntegral << 128) & StorageMasks.DONATION_INTEGRAL_MASK)
+            | ((block.timestamp << 192) & StorageMasks.DONATION_TIMESTAMP_MASK);
 
         emit ClaimDonation(msg.sender, totalClaimable);
     }
@@ -463,10 +470,10 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param account The account to check donation for
     /// @return donation The total claimable amount (original + premium)
     function getDonation(address account) external view returns (uint256 donation) {
-        uint256 donationAndIntegral = donations[account].donationAndIntegralSlot;
+        uint256 donationAndIntegralTimestamp = donations[account].donationAndIntegralTimestampSlot;
 
         // Get original donation amount
-        donation = uint128(donationAndIntegral & StorageMasks.DONATION_MASK);
+        donation = uint128(donationAndIntegralTimestamp & StorageMasks.DONATION_MASK);
 
         // Get donation premium percent
         uint256 donationPremiumPercent = getDonationPremiumPercent();
