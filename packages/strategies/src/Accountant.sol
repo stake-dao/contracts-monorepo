@@ -74,14 +74,17 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @notice The fees and premiums
     PackedFees public fees;
 
+    /// @notice The premium vesting period
+    uint256 public premiumVestingPeriod = 4 days;
+
     /// @notice The total protocol fees collected but not yet claimed
     uint256 public protocolFeesAccrued;
 
     /// @notice The global pending rewards of all vaults
-    uint96 public globalPendingRewards;
+    uint128 public globalPendingRewards;
 
     /// @notice The global harvest integral of all vaults
-    uint96 public globalHarvestIntegral;
+    uint128 public globalHarvestIntegral;
 
     /// @notice Supply of vaults
     /// @dev Vault address -> PackedVault
@@ -186,22 +189,19 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
         // Process any pending rewards if they exist and there is supply
         if (pendingRewards > 0 && supply > 0) {
-
-            ///TODO: Remove DonationPremium as it doesn't belong here until there's a donation made. Deduct it from ProtocolFeesAccrued when Claiming.
-            (uint256 harvestFeePercent, uint256 donationPremiumPercent, uint256 protocolFeePercent) = _loadFees();
+            (uint256 harvestFeePercent,, uint256 protocolFeePercent) = _loadFees();
             // Calculate and deduct fees
-            uint256 totalFees =
-                pendingRewards.mulDiv(harvestFeePercent + donationPremiumPercent + protocolFeePercent, 1e18);
+            uint256 totalFees = pendingRewards.mulDiv(harvestFeePercent + protocolFeePercent, 1e18);
 
             // Update integral with new rewards per token
-            integral += (pendingRewards - totalFees).mulDiv(SCALING_FACTOR, supply).toUint96();
+            integral += (pendingRewards - totalFees).mulDiv(SCALING_FACTOR, supply).toUint128();
 
             if (claimed) {
                 /// Reset pending rewards to 0, because we don't want to double count them on vault storage.
                 pendingRewards = 0;
             } else {
                 /// Add to global pending rewards, because we want to double count them on vault storage.
-                globalPendingRewards += pendingRewards.toUint96();
+                globalPendingRewards += pendingRewards.toUint128();
             }
         }
 
@@ -387,13 +387,13 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         uint256 pendingRewards = _vault.pendingRewardsSlot >> 256;
 
         // Update global harvest integral with pre-fee amount
-        globalHarvestIntegral += amount.mulDiv(SCALING_FACTOR, supply).toUint96();
+        globalHarvestIntegral += amount.mulDiv(SCALING_FACTOR, supply).toUint128();
 
         // Update amount after deducting all fees
         amount -= (totalFees + pendingRewards);
 
         // Update vault integral with post-fee amount
-        integral += amount.mulDiv(SCALING_FACTOR, supply).toUint96();
+        integral += amount.mulDiv(SCALING_FACTOR, supply).toUint128();
 
         // Update vault storage
         _vault.supplyAndIntegralSlot =
@@ -440,10 +440,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         uint256 donationAndIntegral = _donation.donationAndIntegralSlot;
         uint256 timestampAndPremium = _donation.timestampAndPremiumSlot;
 
-        // Verify donation is not too soon
-        uint256 timestamp = (timestampAndPremium & StorageMasks.DONATION_TIMESTAMP_MASK) >> 192;
-        require(timestamp + 1 days <= block.timestamp, TooSoon());
-
         // Verify harvest integral has been reached
         uint256 integral = (donationAndIntegral & StorageMasks.DONATION_INTEGRAL_MASK) >> 128;
         require(globalHarvestIntegral >= integral, HarvestIntegralNotReached());
@@ -455,18 +451,23 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         // Get donation premium percent
         uint256 donationPremiumPercent = (timestampAndPremium & StorageMasks.DONATION_PREMIUM_PERCENT_MASK) >> 232;
 
+        /// Calculate time elapsed since donation. Full donation is released after premiumVestingPeriod.
+        uint256 timeElapsed = block.timestamp - (timestampAndPremium & StorageMasks.DONATION_TIMESTAMP_MASK) >> 192;
         // Calculate total claimable amount including premium
-        uint256 totalClaimable = donation + donation.mulDiv(donationPremiumPercent, 1e18);
+        uint256 premium = donation.mulDiv(donationPremiumPercent, 1e18).mulDiv(timeElapsed, premiumVestingPeriod);
+
+        /// Deduct premium from protocol fees accrued.
+        protocolFeesAccrued -= premium;
 
         // Transfer total amount to donor
-        IERC20(REWARD_TOKEN).safeTransfer(msg.sender, totalClaimable);
+        IERC20(REWARD_TOKEN).safeTransfer(msg.sender, donation + premium);
 
         // Reset donation while preserving latest harvest integral
         _donation.donationAndIntegralSlot =
             (0 & StorageMasks.DONATION_MASK) | ((globalHarvestIntegral << 128) & StorageMasks.DONATION_INTEGRAL_MASK);
         _donation.timestampAndPremiumSlot = ((block.timestamp << 192) & StorageMasks.DONATION_TIMESTAMP_MASK);
 
-        emit ClaimDonation(msg.sender, totalClaimable);
+        emit ClaimDonation(msg.sender, donation + premium);
     }
 
     /// @notice Returns the total supply of tokens in a vault
