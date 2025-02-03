@@ -4,23 +4,24 @@ pragma solidity 0.8.28;
 /// @title StorageMasks
 /// @notice Library containing bit masks for storage optimization
 library StorageMasks {
-    /// @notice Bit masks for vault supplyAndIntegralAndPendingRewardsSlot
-    /// @dev [supply (96) | integral (96)]
-    uint256 constant SUPPLY_MASK = (1 << 96) - 1;
-    uint256 constant INTEGRAL_MASK = ((1 << 96) - 1) << 96;
+    /// @notice Bit masks for vault supplyAndIntegralSlot
+    /// @dev [supply (128) | integral (128)]
+    uint256 constant SUPPLY_MASK = (1 << 128) - 1;
+    uint256 constant INTEGRAL_MASK = ((1 << 128) - 1) << 128;
     uint256 constant PENDING_REWARDS_MASK = ((1 << 64) - 1) << 192;
 
     /// @notice Bit masks for donation data
-    /// @dev [donation (96) | integral (96) | timestamp (40) | premiumPercent (24)]
-    uint256 constant DONATION_MASK = (1 << 96) - 1;
-    uint256 constant DONATION_INTEGRAL_MASK = ((1 << 96) - 1) << 96;
+    /// @dev donationAndIntegralSlot: [donation (128) | integral (128)]
+    /// @dev timestampAndPremiumSlot: [timestamp (40) | premiumPercent (64)]
+    uint256 constant DONATION_MASK = (1 << 128) - 1;
+    uint256 constant DONATION_INTEGRAL_MASK = ((1 << 128) - 1) << 128;
     uint256 constant DONATION_TIMESTAMP_MASK = ((1 << 40) - 1) << 192;
-    uint256 constant DONATION_PREMIUM_PERCENT_MASK = ((1 << 24) - 1) << 232;
+    uint256 constant DONATION_PREMIUM_PERCENT_MASK = ((1 << 64) - 1) << 192;
 
-    /// @notice Bit masks for account balanceAndRewardsSlot
-    /// @dev [balance (96) | integral (96) | pendingRewards (64)]
-    uint256 constant BALANCE_MASK = (1 << 96) - 1;
-    uint256 constant ACCOUNT_INTEGRAL_MASK = ((1 << 96) - 1) << 96;
+    /// @notice Bit masks for account balanceAndIntegralSlot
+    /// @dev balanceAndIntegralSlot: [balance (128) | integral (128)]
+    uint256 constant BALANCE_MASK = (1 << 128) - 1;
+    uint256 constant ACCOUNT_INTEGRAL_MASK = ((1 << 128) - 1) << 128;
     uint256 constant ACCOUNT_PENDING_REWARDS_MASK = ((1 << 64) - 1) << 192;
 
     /// @notice Bit masks for fees
