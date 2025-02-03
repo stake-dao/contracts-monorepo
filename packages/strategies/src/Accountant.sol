@@ -74,7 +74,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @notice The fees and premiums
     PackedFees public fees;
 
-    /// @notice The premium vesting period
+    /// @notice The premium vesting period for donations rewards.
     uint256 public premiumVestingPeriod = 4 days;
 
     /// @notice The total protocol fees collected but not yet claimed
@@ -430,7 +430,10 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         globalPendingRewards = 0;
     }
 
-    /// @notice Allows users to claim back their donations plus earned premium
+    /// @notice Allows users to claim back their donations plus earned premium.
+    ///    Premium is released linearly over the premiumVestingPeriod.
+    ///    Premium is deducted from the protocol fees accrued.
+    ///    If the account claims before the premiumVestingPeriod, rest of the premium is lost.
     /// @dev Verifies harvest integral has been reached and calculates total claimable amount
     /// @custom:throws HarvestIntegralNotReached If global harvest integral is less than donation integral
     /// @custom:throws NoDonation If the user has no donation to claim
@@ -452,22 +455,33 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         uint256 donationPremiumPercent = (timestampAndPremium & StorageMasks.DONATION_PREMIUM_PERCENT_MASK) >> 232;
 
         /// Calculate time elapsed since donation. Full donation is released after premiumVestingPeriod.
-        uint256 timeElapsed = block.timestamp - (timestampAndPremium & StorageMasks.DONATION_TIMESTAMP_MASK) >> 192;
-        // Calculate total claimable amount including premium
-        uint256 premium = donation.mulDiv(donationPremiumPercent, 1e18).mulDiv(timeElapsed, premiumVestingPeriod);
+        uint256 timeElapsed = Math.min(
+            block.timestamp - (timestampAndPremium & StorageMasks.DONATION_TIMESTAMP_MASK) >> 192, premiumVestingPeriod
+        );
 
-        /// Deduct premium from protocol fees accrued.
-        protocolFeesAccrued -= premium;
+        /// Calculate full premium that would be released if the user claims after the premiumVestingPeriod.
+        uint256 fullPremium = donation.mulDiv(donationPremiumPercent, 1e18);
+
+        /// Calculate net premium that would be released now.
+        uint256 netPremium = fullPremium.mulDiv(timeElapsed, premiumVestingPeriod);
+
+        /// If account claims before the premiumVestingPeriod, we deduct the net premium from the protocol fees accrued.
+        if (fullPremium > netPremium) {
+            protocolFeesAccrued += (fullPremium - netPremium);
+        } else {
+            /// If account claims after the premiumVestingPeriod, we deduct the full premium from the protocol fees accrued.
+            protocolFeesAccrued += fullPremium;
+        }
 
         // Transfer total amount to donor
-        IERC20(REWARD_TOKEN).safeTransfer(msg.sender, donation + premium);
+        IERC20(REWARD_TOKEN).safeTransfer(msg.sender, donation + netPremium);
 
         // Reset donation while preserving latest harvest integral
         _donation.donationAndIntegralSlot =
             (0 & StorageMasks.DONATION_MASK) | ((globalHarvestIntegral << 128) & StorageMasks.DONATION_INTEGRAL_MASK);
         _donation.timestampAndPremiumSlot = ((block.timestamp << 192) & StorageMasks.DONATION_TIMESTAMP_MASK);
 
-        emit ClaimDonation(msg.sender, donation + premium);
+        emit ClaimDonation(msg.sender, donation + netPremium);
     }
 
     /// @notice Returns the total supply of tokens in a vault
