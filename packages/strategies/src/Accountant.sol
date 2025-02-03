@@ -391,16 +391,23 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         // Update global harvested rewards with pre-fee amount
         globalHarvestedRewards += amount.toUint128();
 
-        // Update amount after deducting all fees
-        amount -= (totalFees + pendingRewards);
+        bool updateIntegral = amount > pendingRewards;
+        bool hasPendingRewards = pendingRewards > 0;
 
-        // Update vault integral with post-fee amount
-        integral += amount.mulDiv(SCALING_FACTOR, supply).toUint128();
+        // Only update storage if needed
+        if (updateIntegral || hasPendingRewards) {
+            // Update vault integral with post-fee amount if applicable
+            if (updateIntegral) {
+                integral += (amount - totalFees - pendingRewards).mulDiv(SCALING_FACTOR, supply).toUint128();
+                _vault.supplyAndIntegralSlot =
+                    (supply & StorageMasks.SUPPLY_MASK) | ((integral << 128) & StorageMasks.INTEGRAL_MASK);
+            }
 
-        // Update vault storage
-        _vault.supplyAndIntegralSlot =
-            (supply & StorageMasks.SUPPLY_MASK) | ((integral << 128) & StorageMasks.INTEGRAL_MASK);
-        _vault.pendingRewardsSlot = pendingRewards;
+            // Only reset pending rewards if they were non-zero
+            if (hasPendingRewards) {
+                _vault.pendingRewardsSlot = 0;
+            }
+        }
     }
 
     /// @notice Allows users to donate their pending rewards
