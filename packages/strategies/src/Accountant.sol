@@ -81,7 +81,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
     /// @notice The balance threshold for harvest fee calculation.
     /// @dev If set to 0, maximum harvest fee always applies.
-    uint256 public BALANCE_THRESHOLD;
+    uint256 public HARVEST_URGENCY_THRESHOLD;
 
     /// @notice The total protocol fees collected but not yet claimed.
     uint256 public protocolFeesAccrued;
@@ -113,11 +113,14 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @notice Error thrown when there are no pending rewards.
     error NoPendingRewards();
 
-    /// @notice Error thrown when the input is invalid.
-    error WhatWrongWithYou();
+    /// @notice Error thrown when harvest data length doesn't match vaults length
+    error InvalidHarvestDataLength();
 
-    /// @notice Error thrown when there is nothing to harvest.
-    error NothingToHarvest();
+    /// @notice Error thrown when a fee exceeds the maximum allowed
+    error FeeExceedsMaximum();
+
+    /// @notice Error thrown when harvest fee would exceed protocol fee
+    error HarvestFeeExceedsProtocolFee();
 
     //////////////////////////////////////////////////////
     /// --- EVENTS
@@ -133,7 +136,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     event ProtocolFeePercentSet(uint256 oldProtocolFeePercent, uint256 newProtocolFeePercent);
 
     /// @notice Emitted when the balance threshold is updated.
-    event BalanceThresholdSet(uint256 oldThreshold, uint256 newThreshold);
+    event HarvestUrgencyThresholdSet(uint256 oldThreshold, uint256 newThreshold);
 
     /// @notice Emitted when the harvest fee percent is updated.
     event HarvestFeePercentSet(uint256 oldHarvestFeePercent, uint256 newHarvestFeePercent);
@@ -165,7 +168,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         fees.feesSlot = ((protocolFee + harvestFee) << 128) | (protocolFee << 64) | harvestFee;
 
         /// Set initial balance threshold
-        BALANCE_THRESHOLD = 1000e18; // Example threshold of 1000 tokens
+        HARVEST_URGENCY_THRESHOLD = 1000e18; // Example threshold of 1000 tokens
     }
 
     //////////////////////////////////////////////////////
@@ -300,7 +303,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param _harvestData Array of harvest data for each vault.
     /// @custom:throws NoHarvester If the harvester is not set.
     function harvest(address[] calldata _vaults, bytes[] calldata _harvestData) external nonReentrant {
-        require(_vaults.length == _harvestData.length, WhatWrongWithYou());
+        if (_vaults.length != _harvestData.length) revert InvalidHarvestDataLength();
         _batchHarvest({_vaults: _vaults, harvestData: _harvestData});
     }
 
@@ -423,7 +426,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @notice Returns the current harvest fee based on contract balance
     /// @return The current harvest fee percentage
     function getCurrentHarvestFee() public view returns (uint256) {
-        uint256 threshold = BALANCE_THRESHOLD;
+        uint256 threshold = HARVEST_URGENCY_THRESHOLD;
         // If threshold is 0, always return max harvest fee
         if (threshold == 0) return getHarvestFeePercent();
 
@@ -439,14 +442,19 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
     /// @notice Updates the harvest fee percentage.
     /// @param _harvestFeePercent New harvest fee percentage (scaled by 1e18).
-    /// @custom:throws WhatWrongWithYou If fee would exceed maximum.
+    /// @custom:throws FeeExceedsMaximum If fee would exceed maximum.
     function setHarvestFeePercent(uint256 _harvestFeePercent) external onlyOwner {
         uint256 feeSlot = fees.feesSlot;
         uint256 protocolFeePercent = (feeSlot & StorageMasks.PROTOCOL_FEE_MASK) >> 64;
         uint256 oldHarvestFeePercent = feeSlot & StorageMasks.HARVEST_FEE_MASK;
 
         uint256 totalFee = protocolFeePercent + _harvestFeePercent;
-        require(totalFee <= MAX_FEE_PERCENT, WhatWrongWithYou());
+        if (totalFee > MAX_FEE_PERCENT) revert FeeExceedsMaximum();
+
+        /// Harvest fee must be less than protocol fee.
+        /// @dev This is to prevent the _updateVaultState from taking more fees than the protocol fee
+        /// and break the netDelta invariant.
+        if (_harvestFeePercent >= protocolFeePercent) revert HarvestFeeExceedsProtocolFee();
 
         fees.feesSlot = (totalFee << 128) | (protocolFeePercent << 64) | _harvestFeePercent;
 
@@ -455,9 +463,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
     /// @notice Updates the balance threshold for harvest fee calculation
     /// @param _threshold New balance threshold. Set to 0 to always apply maximum harvest fee.
-    function setBalanceThreshold(uint256 _threshold) external onlyOwner {
-        emit BalanceThresholdSet(BALANCE_THRESHOLD, _threshold);
-        BALANCE_THRESHOLD = _threshold;
+    function setHarvestUrgencyThreshold(uint256 _threshold) external onlyOwner {
+        emit HarvestUrgencyThresholdSet(HARVEST_URGENCY_THRESHOLD, _threshold);
+        HARVEST_URGENCY_THRESHOLD = _threshold;
     }
 
     //////////////////////////////////////////////////////
@@ -471,7 +479,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @custom:throws NoPendingRewards If there are no rewards to claim.
     function claim(address[] calldata _vaults, address receiver, bytes[] calldata harvestData) external nonReentrant {
         if (harvestData.length != 0) {
-            require(harvestData.length == _vaults.length, WhatWrongWithYou());
+            if (harvestData.length != _vaults.length) revert InvalidHarvestDataLength();
             _batchHarvest({_vaults: _vaults, harvestData: harvestData});
         }
         _claim({_vaults: _vaults, account: msg.sender, receiver: receiver});
@@ -490,7 +498,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         nonReentrant
     {
         if (harvestData.length != 0) {
-            require(harvestData.length == _vaults.length, WhatWrongWithYou());
+            if (harvestData.length != _vaults.length) revert InvalidHarvestDataLength();
             _batchHarvest({_vaults: _vaults, harvestData: harvestData});
         }
         _claim({_vaults: _vaults, account: account, receiver: receiver});
@@ -557,16 +565,16 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
     /// @notice Updates the protocol fee percentage.
     /// @param _protocolFeePercent New protocol fee percentage (scaled by 1e18).
-    /// @custom:throws WhatWrongWithYou If fee would exceed maximum.
+    /// @custom:throws FeeExceedsMaximum If fee would exceed maximum.
     function setProtocolFeePercent(uint256 _protocolFeePercent) external onlyOwner {
-        require(_protocolFeePercent <= MAX_FEE_PERCENT, WhatWrongWithYou());
+        if (_protocolFeePercent > MAX_FEE_PERCENT) revert FeeExceedsMaximum();
 
         uint256 feeSlot = fees.feesSlot;
         uint256 oldProtocolFeePercent = (feeSlot & StorageMasks.PROTOCOL_FEE_MASK) >> 64;
         uint256 harvestFeePercent = feeSlot & StorageMasks.HARVEST_FEE_MASK;
 
         uint256 totalFee = _protocolFeePercent + harvestFeePercent;
-        require(totalFee <= MAX_FEE_PERCENT, WhatWrongWithYou());
+        if (totalFee > MAX_FEE_PERCENT) revert FeeExceedsMaximum();
 
         fees.feesSlot = (totalFee << 128) | (_protocolFeePercent << 64) | harvestFeePercent;
 

@@ -13,7 +13,6 @@ contract AccountantHandler is Test {
     address[] public users;
     uint256 public constant NUM_USERS = 10;
 
-
     // Track user rewards
     mapping(address => uint256) public userRewards;
     uint256 public totalUserRewards;
