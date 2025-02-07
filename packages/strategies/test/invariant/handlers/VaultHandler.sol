@@ -2,16 +2,16 @@
 pragma solidity 0.8.28;
 
 import {Test} from "forge-std/src/Test.sol";
-import {MockToken} from "test/mocks/MockToken.sol";
+import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 import {RewardVault} from "src/RewardVault.sol";
 
 contract VaultHandler is Test {
-    MockToken public token;
+    ERC20Mock public token;
     RewardVault public vault;
     address[] public users;
     uint256 public constant NUM_USERS = 10;
 
-    constructor(MockToken _token, RewardVault _vault) {
+    constructor(ERC20Mock _token, RewardVault _vault) {
         token = _token;
         vault = _vault;
 

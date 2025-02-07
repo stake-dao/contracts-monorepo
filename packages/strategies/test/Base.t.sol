@@ -1,0 +1,47 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.8.28;
+
+import "forge-std/src/Test.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
+import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
+import {MockStrategy} from "test/mocks/MockStrategy.sol";
+import {MockRegistry} from "test/mocks/MockRegistry.sol";
+import {MockAllocator} from "test/mocks/MockAllocator.sol";
+
+import {Accountant} from "src/Accountant.sol";
+
+abstract contract BaseTest is Test {
+    using Math for uint256;
+
+    ERC20Mock public rewardToken;
+    ERC20Mock public stakingToken;
+
+    MockStrategy public strategy;
+    MockRegistry public registry;
+    MockAllocator public allocator;
+
+    Accountant public accountant;
+
+    function setUp() public virtual {
+        /// Setup the reward and staking tokens
+        rewardToken = new ERC20Mock("Reward Token", "RT", 18);
+        stakingToken = new ERC20Mock("Staking Token", "ST", 18);
+
+        /// Setup the strategy, registry, allocator, and accountant
+        strategy = new MockStrategy();
+        registry = new MockRegistry();
+        allocator = new MockAllocator();
+        accountant = new Accountant(address(this), address(registry), address(rewardToken));
+
+        /// Set the vault
+        registry.setVault(address(this));
+
+        /// Label the contracts
+        vm.label({account: address(strategy), newLabel: "Strategy"});
+        vm.label({account: address(registry), newLabel: "Registry"});
+        vm.label({account: address(accountant), newLabel: "Accountant"});
+        vm.label({account: address(rewardToken), newLabel: "Reward Token"});
+        vm.label({account: address(stakingToken), newLabel: "Staking Token"});
+    }
+}
