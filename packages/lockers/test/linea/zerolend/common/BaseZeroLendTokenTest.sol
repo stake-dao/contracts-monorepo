@@ -74,7 +74,11 @@ abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
     }
 
     function _deployDepositor() internal returns (address _depositor) {
-        _depositor = address(new Depositor(address(zeroToken), locker, sdToken, address(liquidityGauge)));
+        _depositor = address(
+            new Depositor(
+                address(zeroToken), locker, sdToken, address(liquidityGauge), zeroLockerToken, address(veZero)
+            )
+        );
     }
 
     function _createInitialLock() internal {

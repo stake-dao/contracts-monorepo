@@ -4,20 +4,112 @@ pragma solidity 0.8.19;
 import {BaseDepositor, ITokenMinter, ILiquidityGauge} from "src/common/depositor/BaseDepositor.sol";
 import {ISdZeroLocker} from "src/common/interfaces/zerolend/stakedao/ISdZeroLocker.sol";
 import {ILocker} from "src/common/interfaces/ILocker.sol";
+import {ILockerToken} from "src/common/interfaces/zerolend/zerolend/ILockerToken.sol";
+import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
+
+import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
+
+// TODO make Safe module
 
 /// @title Stake DAO ZERO Depositor
 /// @notice Contract that accepts ZERO and locks them in the Locker, minting sdZERO in return
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
 contract Depositor is BaseDepositor {
+    // TODO does it work for encodeWithSelector?? I'm not sure
+    using SafeERC20 for IERC20;
+
+    error ZeroValue();
+    error ZeroLockDuration();
+    error EmptyTokenIdList();
+    error NotOwnerOfToken(uint256 tokenId);
+
+    ILockerToken public immutable zeroLocker;
+
+    /// @notice Address of the Voting Escrow contract.
+    IZeroVp public immutable veToken;
+
+    /// @notice Token ID of the locker ERC721 token representing the locked ZERO tokens.
+    uint256 public zeroLockedTokenId;
+
     /// @notice Constructor
     /// @param _token ZERO token.
     /// @param _locker SD locker.
     /// @param _minter sdZERO token.
     /// @param _gauge sdZERO-gauge contract.
-    constructor(address _token, address _locker, address _minter, address _gauge)
+    constructor(address _token, address _locker, address _minter, address _gauge, address _zeroLocker, address _veToken)
         BaseDepositor(_token, _locker, _minter, _gauge, 4 * 365 days)
-    {}
+    {
+        zeroLocker = ILockerToken(_zeroLocker);
+
+        veToken = IZeroVp(_veToken);
+
+        // TODO execute it on safeLocker
+        // IERC20(token).approve(address(zeroLocker), type(uint256).max);
+    }
+
+    // TODO implement increaseLock from executeFromModule calls here
+    // TODO natspecs
+    function _lockerIncreaseLock(uint256 _value, uint256 _lockDuration) internal {
+        if (_value == 0) revert ZeroValue();
+        if (_lockDuration == 0) revert ZeroLockDuration();
+
+        uint256 _newZeroLockedTokenId;
+        {
+            uint256 _unlockTime = block.timestamp + _lockDuration;
+
+            (bool _success, bytes memory _data) = ILocker(locker).execute(
+                address(zeroLocker),
+                0,
+                abi.encodeWithSelector(ILockerToken.createLock.selector, _value, _lockDuration, false)
+            );
+
+            if (!_success) revert(); // TODO custom revert
+
+            _newZeroLockedTokenId = abi.decode(_data, (uint256));
+        }
+
+        // If the locker was initialized, merge old token ID with new token ID.
+        // Else, we just initialized the locker so we emit the event.
+        if (zeroLockedTokenId != 0) {
+            // veToken.unstakeToken(zeroLockedTokenId);
+            {
+                (bool _success, bytes memory _data) = ILocker(locker).execute(
+                    address(veToken), 0, abi.encodeWithSelector(IZeroVp.unstakeToken.selector, zeroLockedTokenId)
+                );
+                if (!_success) revert(); // TODO custom error
+            }
+            {
+                (bool _success, bytes memory _data) = ILocker(locker).execute(
+                    address(zeroLocker),
+                    0,
+                    abi.encodeWithSelector(ILockerToken.merge.selector, zeroLockedTokenId, _newZeroLockedTokenId)
+                );
+                if (!_success) revert(); // TODO custom error
+            }
+            // emit LockIncreased(_value, _unlockTime);
+        } else {
+            // emit LockCreated(_value, _unlockTime);
+        }
+
+        // stake token in ZEROvp contract to receive voting power tokens
+        {
+            (bool _success, bytes memory _data) = ILocker(locker).execute(
+                address(zeroLocker),
+                0,
+                // TODO convert to encodeWithSelector
+                abi.encodeWithSignature(
+                    "safeTransferFrom(address,address,uint256)", locker, veToken, _newZeroLockedTokenId
+                )
+            );
+            if (!_success) revert(); // TODO custom error
+        }
+
+        zeroLockedTokenId = _newZeroLockedTokenId;
+    }
+
+    // TODO implement deposit from executeFromModule calls here
 
     /// @notice Locks the tokens held by the contract
     /// @dev The contract must have tokens to lock
@@ -25,8 +117,73 @@ contract Depositor is BaseDepositor {
         // If there is Token available in the contract transfer it to the locker
         if (_amount != 0) {
             /// Increase the lock.
-            ILocker(locker).increaseLock(_amount, MAX_LOCK_DURATION);
+            _lockerIncreaseLock(_amount, MAX_LOCK_DURATION);
         }
+    }
+
+    function _lockerDeposit(uint256[] calldata _tokenIds) internal returns (uint256 _amount) {
+        if (_tokenIds.length == 0) revert EmptyTokenIdList();
+
+        uint256 _lockEnd;
+        {
+            (bool _success, bytes memory _data) = ILocker(locker).execute(
+                address(zeroLocker), 0, abi.encodeWithSelector(ILockerToken.lockedEnd.selector, zeroLockedTokenId)
+            );
+
+            if (!_success) revert(); // TODO custom revert
+
+            _lockEnd = abi.decode(_data, (uint256));
+        }
+
+        {
+            (bool _success, bytes memory _data) = ILocker(locker).execute(
+                address(veToken), 0, abi.encodeWithSelector(IZeroVp.unstakeToken.selector, zeroLockedTokenId)
+            );
+
+            if (!_success) revert(); // TODO custom revert
+        }
+
+        // Verify that _owner owns all tokenIds.
+        for (uint256 index = 0; index < _tokenIds.length;) {
+            // _owner must own all token IDs.
+            if (zeroLocker.ownerOf(_tokenIds[index]) != msg.sender) revert NotOwnerOfToken(_tokenIds[index]);
+
+            // Keep track of the merged amount.
+            _amount += zeroLocker.locked(_tokenIds[index]).amount;
+
+            // Merge user token into locker zeroLockedTokenId.
+            {
+                (bool _success, bytes memory _data) = ILocker(locker).execute(
+                    address(zeroLocker),
+                    0,
+                    abi.encodeWithSelector(ILockerToken.merge.selector, _tokenIds[index], zeroLockedTokenId)
+                );
+
+                if (!_success) revert(); // TODO custom revert
+            }
+
+            // Keep track of the maximum lock end time as it will be the lock end time of the merge result.
+            uint256 _currentLockEnd = zeroLocker.lockedEnd(_tokenIds[index]);
+            if (_currentLockEnd > _lockEnd) _lockEnd = _currentLockEnd;
+
+            unchecked {
+                ++index;
+            }
+        }
+
+        // put token back into staking
+        {
+            (bool _success, bytes memory _data) = ILocker(locker).execute(
+                address(zeroLocker),
+                0,
+                // TODO convert to encodeWithSelector
+                abi.encodeWithSignature("safeTransferFrom(address,address,uint256)", locker, veToken, zeroLockedTokenId)
+            );
+
+            if (!_success) revert(); // TODO custom revert
+        }
+
+        // emit LockIncreased(_amount, _lockEnd);
     }
 
     /// @notice Deposit ZeroLend locker NFTs, and receive sdZero or sdZeroGauge in return.
@@ -39,7 +196,7 @@ contract Depositor is BaseDepositor {
     function deposit(uint256[] calldata _tokenIds, bool _stake, address _user) external {
         if (_user == address(0)) revert ADDRESS_ZERO();
 
-        uint256 _amount = ISdZeroLocker(locker).deposit(msg.sender, _tokenIds);
+        uint256 _amount = _lockerDeposit(_tokenIds); // ISdZeroLocker(locker).deposit(msg.sender, _tokenIds);
 
         // Mint sdtoken to the user if the gauge is not set.
         if (_stake && gauge != address(0)) {
