@@ -47,6 +47,7 @@ contract Accumulator is BaseAccumulator {
         uint256 lockerWethBalanceBefore = IERC20(WETH).balanceOf(locker);
 
         // Claim rewards from the locker.
+        // TODO convert into encodeWithSelector
         ILocker(locker).execute(ZERO_VP, 0, abi.encodeWithSignature("getReward()"));
 
         // Get rewards amount.
@@ -55,11 +56,13 @@ contract Accumulator is BaseAccumulator {
 
         // Transfer rewards to the accumulator.
         if (zeroReward > 0) {
+            // TODO convert into encodeWithSelector
             ILocker(locker).execute(
                 ZERO, 0, abi.encodeWithSignature("transfer(address,uint256)", address(this), zeroReward)
             );
         }
         if (wethReward > 0) {
+            // TODO convert into encodeWithSelector
             ILocker(locker).execute(
                 WETH, 0, abi.encodeWithSignature("transfer(address,uint256)", address(this), wethReward)
             );

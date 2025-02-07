@@ -52,7 +52,8 @@ contract Deploy is DeployAccumulator {
         liquidityGauge = deployCode("vyper/LiquidityGaugeV4XChain.vy", abi.encode(sdZero, DAO.MAIN_DEPLOYER));
 
         // Deploy depositor.
-        depositor = address(new Depositor(address(zeroToken), locker, sdZero, address(liquidityGauge)));
+        depositor =
+            address(new Depositor(address(zeroToken), locker, sdZero, address(liquidityGauge), zeroLockerToken, veZero));
     }
 
     function _deployAccumulator() internal override returns (address payable) {

@@ -19,11 +19,12 @@ contract Locker is VeCRVLocker {
     error EmptyTokenIdList();
     error ZeroValue();
     error ZeroLockDuration();
+    error GOVERNANCE_OR_DEPOSITOR_OR_ACCUMULATOR();
 
     ILockerToken public immutable zeroLocker;
 
-    /// @notice Token ID of the locker ERC721 token representing the locked ZERO tokens.
-    uint256 public zeroLockedTokenId;
+    // /// @notice Token ID of the locker ERC721 token representing the locked ZERO tokens.
+    // uint256 public zeroLockedTokenId;
 
     /// @notice Constructor
     /// @param _zeroLocker ZeroLend locker NFT contract.
@@ -49,27 +50,29 @@ contract Locker is VeCRVLocker {
     /// @param _lockDuration The unlock duration for the lock, in seconds since the epoch. Must be aligned to weeks.
     /// @custom:emits Emits a `LockIncreased` event on successful lock update and a `LockCreated` on the first execution of this function.
     function increaseLock(uint256 _value, uint256 _lockDuration) external override onlyGovernanceOrDepositor {
-        if (_value == 0) revert ZeroValue();
-        if (_lockDuration == 0) revert ZeroLockDuration();
+        revert();
 
-        uint256 _unlockTime = block.timestamp + _lockDuration;
+        // if (_value == 0) revert ZeroValue();
+        // if (_lockDuration == 0) revert ZeroLockDuration();
 
-        uint256 _newZeroLockedTokenId = zeroLocker.createLock(_value, _lockDuration, false);
+        // uint256 _unlockTime = block.timestamp + _lockDuration;
 
-        // If the locker was initialized, merge old token ID with new token ID.
-        // Else, we just initialized the locker so we emit the event.
-        if (zeroLockedTokenId != 0) {
-            IZeroVp(veToken).unstakeToken(zeroLockedTokenId);
-            zeroLocker.merge(zeroLockedTokenId, _newZeroLockedTokenId);
-            emit LockIncreased(_value, _unlockTime);
-        } else {
-            emit LockCreated(_value, _unlockTime);
-        }
+        // uint256 _newZeroLockedTokenId = zeroLocker.createLock(_value, _lockDuration, false);
 
-        // stake token in ZEROvp contract to receive voting power tokens
-        zeroLocker.safeTransferFrom(address(this), veToken, _newZeroLockedTokenId);
+        // // If the locker was initialized, merge old token ID with new token ID.
+        // // Else, we just initialized the locker so we emit the event.
+        // if (zeroLockedTokenId != 0) {
+        //     IZeroVp(veToken).unstakeToken(zeroLockedTokenId);
+        //     zeroLocker.merge(zeroLockedTokenId, _newZeroLockedTokenId);
+        //     emit LockIncreased(_value, _unlockTime);
+        // } else {
+        //     emit LockCreated(_value, _unlockTime);
+        // }
 
-        zeroLockedTokenId = _newZeroLockedTokenId;
+        // // stake token in ZEROvp contract to receive voting power tokens
+        // zeroLocker.safeTransferFrom(address(this), veToken, _newZeroLockedTokenId);
+
+        // zeroLockedTokenId = _newZeroLockedTokenId;
     }
 
     /// @notice Logic was migrated to the accumulator for more flexibility.
@@ -85,50 +88,53 @@ contract Locker is VeCRVLocker {
         onlyGovernanceOrDepositor
         returns (uint256 _amount)
     {
-        if (_tokenIds.length == 0) revert EmptyTokenIdList();
+        revert();
+        // if (_tokenIds.length == 0) revert EmptyTokenIdList();
 
-        uint256 _lockEnd = zeroLocker.lockedEnd(zeroLockedTokenId);
+        // uint256 _lockEnd = zeroLocker.lockedEnd(zeroLockedTokenId);
 
-        // Unstake locker NFT token.
-        IZeroVp(veToken).unstakeToken(zeroLockedTokenId);
+        // // Unstake locker NFT token.
+        // IZeroVp(veToken).unstakeToken(zeroLockedTokenId);
 
-        // Verify that _owner owns all tokenIds.
-        for (uint256 index = 0; index < _tokenIds.length;) {
-            // _owner must own all token IDs.
-            if (zeroLocker.ownerOf(_tokenIds[index]) != _owner) revert NotOwnerOfToken(_tokenIds[index]);
+        // // Verify that _owner owns all tokenIds.
+        // for (uint256 index = 0; index < _tokenIds.length;) {
+        //     // _owner must own all token IDs.
+        //     if (zeroLocker.ownerOf(_tokenIds[index]) != _owner) revert NotOwnerOfToken(_tokenIds[index]);
 
-            // Keep track of the merged amount.
-            _amount += zeroLocker.locked(_tokenIds[index]).amount;
+        //     // Keep track of the merged amount.
+        //     _amount += zeroLocker.locked(_tokenIds[index]).amount;
 
-            // Merge user token into locker zeroLockedTokenId.
-            zeroLocker.merge(_tokenIds[index], zeroLockedTokenId);
+        //     // Merge user token into locker zeroLockedTokenId.
+        //     zeroLocker.merge(_tokenIds[index], zeroLockedTokenId);
 
-            // Keep track of the maximum lock end time as it will be the lock end time of the merge result.
-            uint256 _currentLockEnd = zeroLocker.lockedEnd(_tokenIds[index]);
-            if (_currentLockEnd > _lockEnd) _lockEnd = _currentLockEnd;
+        //     // Keep track of the maximum lock end time as it will be the lock end time of the merge result.
+        //     uint256 _currentLockEnd = zeroLocker.lockedEnd(_tokenIds[index]);
+        //     if (_currentLockEnd > _lockEnd) _lockEnd = _currentLockEnd;
 
-            unchecked {
-                ++index;
-            }
-        }
+        //     unchecked {
+        //         ++index;
+        //     }
+        // }
 
-        // Transfer the token back to the ZEROvp contract.
-        zeroLocker.safeTransferFrom(address(this), veToken, zeroLockedTokenId);
+        // // Transfer the token back to the ZEROvp contract.
+        // zeroLocker.safeTransferFrom(address(this), veToken, zeroLockedTokenId);
 
-        emit LockIncreased(_amount, _lockEnd);
+        // emit LockIncreased(_amount, _lockEnd);
     }
+
+    // TODO remove createLock function
 
     /// @notice Release the tokens from the LockerToken contract when the lock expires.
     /// @param _recipient The address that will receive the ZERO tokens.
     // TODO it will be imposible to re create a lock, is this ok?
     function release(address _recipient) external override onlyGovernance {
-        IZeroVp(veToken).unstakeToken(zeroLockedTokenId);
-        ILockerToken(zeroLocker).withdraw(zeroLockedTokenId);
+        // IZeroVp(veToken).unstakeToken(zeroLockedTokenId);
+        // ILockerToken(zeroLocker).withdraw(zeroLockedTokenId);
 
-        uint256 _balance = IERC20(token).balanceOf(address(this));
-        IERC20(token).safeTransfer(_recipient, _balance);
+        // uint256 _balance = IERC20(token).balanceOf(address(this));
+        // IERC20(token).safeTransfer(_recipient, _balance);
 
-        emit Released(msg.sender, _balance);
+        // emit Released(msg.sender, _balance);
     }
 
     /// @notice Execute an arbitrary transaction as the governance.
@@ -140,9 +146,12 @@ contract Locker is VeCRVLocker {
         external
         payable
         override
-        onlyGovernanceOrAccumulator
         returns (bool, bytes memory)
     {
+        if (msg.sender != governance && msg.sender != depositor && msg.sender != accumulator) {
+            revert GOVERNANCE_OR_DEPOSITOR_OR_ACCUMULATOR();
+        }
+
         (bool success, bytes memory result) = to.call{value: value}(data);
         return (success, result);
     }
