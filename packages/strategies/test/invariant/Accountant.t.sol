@@ -53,10 +53,8 @@ contract AccountantInvariantTest is StdInvariant, Test {
         targetContract(address(handler));
         targetSender(address(this));
 
-        bytes4[] memory selectors = new bytes4[](3);
-        selectors[0] = handler.donate.selector;
-        selectors[1] = handler.claimDonation.selector;
-        selectors[2] = handler.claim.selector;
+        bytes4[] memory selectors = new bytes4[](1);
+        selectors[0] = handler.claim.selector;
 
         targetSelector(FuzzSelector({addr: address(handler), selectors: selectors}));
     }
@@ -74,34 +72,6 @@ contract AccountantInvariantTest is StdInvariant, Test {
         assertEq(totalSupply, vault.totalSupply(), "Accountant and vault total supply must match");
     }
 
-    function invariant_donationPremiumAccuracy() public view {
-        // For each user that has made a donation
-        for (uint256 i = 0; i < handler.NUM_USERS(); i++) {
-            address user = handler.users(i);
-            uint256 donation = handler.userDonations(user);
-
-            if (donation > 0) {
-                uint256 expectedPremium = donation + ((donation * accountant.getDonationPremiumPercent()) / 1e18);
-                uint256 actualPremium = accountant.getDonation(user);
-
-                assertEq(actualPremium, expectedPremium, "Claimed donation must equal original amount plus premium");
-            }
-        }
-    }
-
-    function invariant_donationStateConsistency() public view {
-        // Verify total donations match sum of user donations
-        uint256 totalDonations = handler.totalDonations();
-        uint256 sumUserDonations = 0;
-
-        for (uint256 i = 0; i < handler.NUM_USERS(); i++) {
-            address user = handler.users(i);
-            sumUserDonations += handler.userDonations(user);
-        }
-
-        assertEq(totalDonations, sumUserDonations, "Total donations must match sum of user donations");
-    }
-
     function invariant_nonNegativeBalances() public view {
         // Verify all user balances are non-negative
         for (uint256 i = 0; i < handler.NUM_USERS(); i++) {
@@ -111,9 +81,6 @@ contract AccountantInvariantTest is StdInvariant, Test {
 
         // Verify global supplies are non-negative
         assertTrue(accountant.totalSupply(address(vault)) >= 0, "Total supply cannot be negative");
-
-        // Verify total donations are non-negative
-        assertTrue(handler.totalDonations() >= 0, "Total donations cannot be negative");
     }
 
     function invariant_accountantStateConsistency() public view {

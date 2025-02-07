@@ -9,22 +9,14 @@ library StorageMasks {
     uint256 constant SUPPLY_MASK = (1 << 128) - 1;
     uint256 constant INTEGRAL_MASK = ((1 << 128) - 1) << 128;
 
-    /// @notice Bit masks for donation data
-    /// @dev donationAndIntegralSlot: [donation (128) | integral (128)]
-    /// @dev timestampAndPremiumSlot: [timestamp (40) | premiumPercent (64)]
-    uint256 constant DONATION_MASK = (1 << 128) - 1;
-    uint256 constant DONATION_INTEGRAL_MASK = ((1 << 128) - 1) << 128;
-    uint256 constant DONATION_TIMESTAMP_MASK = ((1 << 40) - 1) << 192;
-    uint256 constant DONATION_PREMIUM_PERCENT_MASK = ((1 << 64) - 1) << 192;
-
     /// @notice Bit masks for account balanceAndIntegralSlot
     /// @dev balanceAndIntegralSlot: [balance (128) | integral (128)]
     uint256 constant BALANCE_MASK = (1 << 128) - 1;
     uint256 constant ACCOUNT_INTEGRAL_MASK = ((1 << 128) - 1) << 128;
 
     /// @notice Bit masks for fees
-    /// @dev [harvestFeePercent (64) | donationPremiumPercent (64) | protocolFeePercent (64)]
+    /// @dev [totalFeePercent (64) | protocolFeePercent (64) | harvestFeePercent (64)]
+    uint256 constant TOTAL_FEE_MASK = ((1 << 64) - 1) << 128;
+    uint256 constant PROTOCOL_FEE_MASK = ((1 << 64) - 1) << 64;
     uint256 constant HARVEST_FEE_MASK = (1 << 64) - 1;
-    uint256 constant DONATION_FEE_MASK = ((1 << 64) - 1) << 64;
-    uint256 constant PROTOCOL_FEE_MASK = ((1 << 64) - 1) << 128;
 }

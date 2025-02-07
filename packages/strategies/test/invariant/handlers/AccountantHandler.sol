@@ -13,9 +13,6 @@ contract AccountantHandler is Test {
     address[] public users;
     uint256 public constant NUM_USERS = 10;
 
-    // Track donations
-    mapping(address => uint256) public userDonations;
-    uint256 public totalDonations;
 
     // Track user rewards
     mapping(address => uint256) public userRewards;
@@ -49,44 +46,8 @@ contract AccountantHandler is Test {
         }
     }
 
-    function donate(uint256 userSeed, uint256 amount) public {
-        address user = users[userSeed % NUM_USERS];
-        amount = bound(amount, 1e18, MAX_DONATION);
-
-        // Mint tokens for donation
-        token.mint(user, amount);
-
-        vm.startPrank(user);
-        token.approve(address(accountant), amount);
-        try accountant.donate() {
-            userDonations[user] += amount;
-            totalDonations += amount;
-        } catch {
-            // If donation fails, burn the minted tokens
-            token.burn(user, amount);
-        }
-        vm.stopPrank();
-    }
-
-    function claimDonation(uint256 userSeed) public {
-        address user = users[userSeed % NUM_USERS];
-        if (userDonations[user] == 0) return;
-
-        uint256 expectedClaim = accountant.getDonation(user);
-
-        vm.prank(user);
-        try accountant.claimDonation() {
-            userDonations[user] = 0;
-        } catch {
-            // If claim fails, keep the donation record
-        }
-    }
-
     function claim(uint256 userSeed) public {
         address user = users[userSeed % NUM_USERS];
-
-        // Only try to claim if user has made donations
-        if (userDonations[user] == 0) return;
 
         address[] memory vaults = new address[](1);
         vaults[0] = address(vault);
@@ -94,7 +55,7 @@ contract AccountantHandler is Test {
         uint256 balanceBefore = token.balanceOf(user);
 
         vm.prank(user);
-        try accountant.claim(vaults, user) {
+        try accountant.claim(vaults, user, new bytes[](vaults.length)) {
             uint256 claimed = token.balanceOf(user) - balanceBefore;
             userRewards[user] += claimed;
             totalUserRewards += claimed;
@@ -104,12 +65,6 @@ contract AccountantHandler is Test {
     }
 
     function getExpectedFees(uint256 amount) public view returns (uint256) {
-        return (
-            amount
-                * (
-                    accountant.getHarvestFeePercent() + accountant.getDonationPremiumPercent()
-                        + accountant.getProtocolFeePercent()
-                )
-        ) / 1e18;
+        return (amount * (accountant.getHarvestFeePercent() + accountant.getProtocolFeePercent())) / 1e18;
     }
 }
