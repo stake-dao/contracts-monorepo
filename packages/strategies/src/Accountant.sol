@@ -1,6 +1,8 @@
 /// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
+// import {console} from "forge-std/src/console.sol";
+
 import {IRegistry} from "src/interfaces/IRegistry.sol";
 import {IHarvester} from "src/interfaces/IHarvester.sol";
 import {StorageMasks} from "src/libraries/StorageMasks.sol";
@@ -10,7 +12,6 @@ import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 
 import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
@@ -27,7 +28,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     using Math for uint256;
     using Address for address;
     using SafeERC20 for IERC20;
-    using SafeCast for uint256;
 
     //////////////////////////////////////////////////////
     /// --- STORAGE STRUCTURES
@@ -206,7 +206,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
             uint256 totalFees = pendingRewards.mulDiv(getTotalFeePercent(), 1e18);
 
             // Update integral with new rewards per token
-            integral += (pendingRewards - totalFees).mulDiv(SCALING_FACTOR, supply).toUint128();
+            integral += (pendingRewards - totalFees).mulDiv(SCALING_FACTOR, supply);
 
             if (!claimed) {
                 _vault.pendingRewards += pendingRewards;
@@ -265,10 +265,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
         uint256 balance = accountBalanceAndIntegral & StorageMasks.BALANCE_MASK;
         uint256 accountIntegral = (accountBalanceAndIntegral & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 128;
-        uint256 accountPendingRewards = _account.pendingRewards;
 
-        // Update pending rewards based on the integral difference
-        accountPendingRewards += (currentIntegral - accountIntegral).mulDiv(balance, SCALING_FACTOR);
+        // Update pending rewards based on the integral difference.
+        _account.pendingRewards += (currentIntegral - accountIntegral).mulDiv(balance, SCALING_FACTOR);
 
         // Update balance
         balance = isDecrease ? balance - amount : balance + amount;
@@ -276,7 +275,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         // Pack and store updated values
         _account.balanceAndIntegralSlot =
             (balance & StorageMasks.BALANCE_MASK) | ((currentIntegral << 128) & StorageMasks.ACCOUNT_INTEGRAL_MASK);
-        _account.pendingRewards = accountPendingRewards;
     }
 
     /// @notice Returns the total supply of tokens in a vault.
@@ -292,6 +290,14 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @return The account's token balance in the vault.
     function balanceOf(address vault, address account) external view returns (uint256) {
         return accounts[vault][account].balanceAndIntegralSlot & StorageMasks.BALANCE_MASK;
+    }
+
+    /// @notice Returns the pending rewards for an account in a vault.
+    /// @param vault The vault address to query.
+    /// @param account The account address to check.
+    /// @return The pending rewards for the account in the vault.
+    function getPendingRewards(address vault, address account) external view returns (uint256) {
+        return accounts[vault][account].pendingRewards;
     }
 
     //////////////////////////////////////////////////////
@@ -401,7 +407,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
             uint256 integral = (vault.supplyAndIntegralSlot & StorageMasks.INTEGRAL_MASK) >> 128;
 
             // Only update the integral if the net extra rewards are positive.
-            integral += (uint256(netDelta) * SCALING_FACTOR) / supply;
+            integral += (uint256(netDelta).mulDiv(SCALING_FACTOR, supply));
 
             /// Update vault storage.
             vault.supplyAndIntegralSlot =

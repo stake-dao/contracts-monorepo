@@ -10,6 +10,10 @@ gas_reports = [
     "Accountant"
 ]
 
+[fuzz]
+runs = 10_000
+
+
 [invariant]
 runs = 500
 depth = 10

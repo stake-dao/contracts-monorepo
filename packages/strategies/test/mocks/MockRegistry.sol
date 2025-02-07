@@ -5,9 +5,11 @@ import {IRegistry} from "src/interfaces/IRegistry.sol";
 
 contract MockRegistry is IRegistry {
     address public vault;
+    bool public isAllowed;
     address public strategy;
     address public allocator;
     address public harvester;
+    address public feeReceiver;
 
     function vaults(address) external view returns (address) {
         return vault;
@@ -26,15 +28,23 @@ contract MockRegistry is IRegistry {
     }
 
     function FEE_RECEIVER() external view returns (address) {
-        return address(0);
+        return feeReceiver;
     }
 
     function assets(address) external pure returns (address) {
         return address(0);
     }
 
-    function allowed(address, bytes4) external pure returns (bool) {
-        return true;
+    function allowed(address, bytes4) external view returns (bool) {
+        return isAllowed;
+    }
+
+    function setAllowed(bool _isAllowed) external {
+        isAllowed = _isAllowed;
+    }
+
+    function setFeeReceiver(address _feeReceiver) external {
+        feeReceiver = _feeReceiver;
     }
 
     function setVault(address _vault) external {

@@ -2,12 +2,12 @@
 pragma solidity 0.8.28;
 
 import {Test} from "forge-std/src/Test.sol";
-import {MockToken} from "test/mocks/MockToken.sol";
+import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 import {Accountant} from "src/Accountant.sol";
 import {RewardVault} from "src/RewardVault.sol";
 
 contract AccountantHandler is Test {
-    MockToken public token;
+    ERC20Mock public token;
     Accountant public accountant;
     RewardVault public vault;
     address[] public users;
@@ -21,7 +21,7 @@ contract AccountantHandler is Test {
     uint256 public constant MAX_DONATION = 1000e18;
     uint256 public constant INITIAL_DEPOSIT = 10000e18;
 
-    constructor(MockToken _token, Accountant _accountant, RewardVault _vault) {
+    constructor(ERC20Mock _token, Accountant _accountant, RewardVault _vault) {
         token = _token;
         accountant = _accountant;
         vault = _vault;
