@@ -35,18 +35,18 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
     /// @notice Packed vault data structure into 2 slots for gas optimization and safety.
     /// @dev supplyAndIntegralSlot: [supply (128) | integral (128)].
-    /// @dev pendingRewardsSlot: direct storage of pending rewards.
+    /// @dev pendingRewards: direct storage of pending rewards.
     struct PackedVault {
         uint256 supplyAndIntegralSlot; // slot1 -> supplyAndIntegralSlot
-        uint256 pendingRewardsSlot; // slot2 -> direct storage of pending rewards
+        uint256 pendingRewards; // direct storage of pending rewards
     }
 
     /// @notice Packed account data structure into 2 slots for gas optimization and safety.
     /// @dev balanceAndIntegralSlot: [balance (128) | integral (128)].
-    /// @dev pendingRewardsSlot: direct storage of pending rewards.
+    /// @dev pendingRewards: direct storage of pending rewards.
     struct PackedAccount {
         uint256 balanceAndIntegralSlot; // slot1 -> balanceAndIntegralSlot
-        uint256 pendingRewardsSlot; // slot2 -> direct storage of pending rewards
+        uint256 pendingRewards; // direct storage of pending rewards
     }
 
     /// @notice Packed fees data structure into 1 slot for gas optimization.
@@ -209,7 +209,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
             integral += (pendingRewards - totalFees).mulDiv(SCALING_FACTOR, supply).toUint128();
 
             if (!claimed) {
-                _vault.pendingRewardsSlot += pendingRewards;
+                _vault.pendingRewards += pendingRewards;
             }
         }
 
@@ -265,7 +265,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
         uint256 balance = accountBalanceAndIntegral & StorageMasks.BALANCE_MASK;
         uint256 accountIntegral = (accountBalanceAndIntegral & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 128;
-        uint256 accountPendingRewards = _account.pendingRewardsSlot;
+        uint256 accountPendingRewards = _account.pendingRewards;
 
         // Update pending rewards based on the integral difference
         accountPendingRewards += (currentIntegral - accountIntegral).mulDiv(balance, SCALING_FACTOR);
@@ -276,7 +276,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         // Pack and store updated values
         _account.balanceAndIntegralSlot =
             (balance & StorageMasks.BALANCE_MASK) | ((currentIntegral << 128) & StorageMasks.ACCOUNT_INTEGRAL_MASK);
-        _account.pendingRewardsSlot = accountPendingRewards;
+        _account.pendingRewards = accountPendingRewards;
     }
 
     /// @notice Returns the total supply of tokens in a vault.
@@ -361,7 +361,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         harvesterFee = amount.mulDiv(currentHarvestFee, 1e18);
 
         PackedVault storage _vault = vaults[vault];
-        uint256 pendingRewards = _vault.pendingRewardsSlot;
+        uint256 pendingRewards = _vault.pendingRewards;
 
         /// Refund the excess harvest fee taken at the checkpoint.
         if (pendingRewards > 0 && currentHarvestFee < getHarvestFeePercent()) {
@@ -414,7 +414,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
         // Reset pending rewards if any.
         if (pendingRewards != 0) {
-            vault.pendingRewardsSlot = 0;
+            vault.pendingRewards = 0;
         }
     }
 
@@ -526,7 +526,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
             uint256 balance = accountData & StorageMasks.BALANCE_MASK;
 
             // Skip if user has no balance and no pending rewards
-            if (balance != 0 || userAccount.pendingRewardsSlot != 0) {
+            if (balance != 0 || userAccount.pendingRewards != 0) {
                 uint256 vaultData = vault.supplyAndIntegralSlot;
                 uint256 accountIntegral = (accountData & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 128;
                 uint256 vaultIntegral = (vaultData & StorageMasks.INTEGRAL_MASK) >> 128;
@@ -536,12 +536,12 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
                     totalAmount += (vaultIntegral - accountIntegral) * balance / SCALING_FACTOR;
                 }
                 // Add any pending rewards
-                totalAmount += userAccount.pendingRewardsSlot;
+                totalAmount += userAccount.pendingRewards;
 
                 // Update account storage with new integral and reset pending rewards
                 userAccount.balanceAndIntegralSlot = (balance & StorageMasks.BALANCE_MASK)
                     | ((vaultIntegral << 128) & StorageMasks.ACCOUNT_INTEGRAL_MASK);
-                userAccount.pendingRewardsSlot = 0;
+                userAccount.pendingRewards = 0;
             }
         }
 
