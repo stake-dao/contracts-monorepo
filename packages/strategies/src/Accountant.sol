@@ -98,11 +98,11 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// --- ERRORS
     //////////////////////////////////////////////////////
 
-    /// @notice Error thrown when the caller is not allowed.
-    error OnlyAllowed();
-
     /// @notice Error thrown when the caller is not a vault.
     error OnlyVault();
+
+    /// @notice Error thrown when the caller is not allowed.
+    error OnlyAllowed();
 
     /// @notice Error thrown when the harvester is not set.
     error NoHarvester();
@@ -113,11 +113,11 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @notice Error thrown when there are no pending rewards.
     error NoPendingRewards();
 
-    /// @notice Error thrown when harvest data length doesn't match vaults length
-    error InvalidHarvestDataLength();
-
     /// @notice Error thrown when a fee exceeds the maximum allowed
     error FeeExceedsMaximum();
+
+    /// @notice Error thrown when harvest data length doesn't match vaults length
+    error InvalidHarvestDataLength();
 
     /// @notice Error thrown when harvest fee would exceed protocol fee
     error HarvestFeeExceedsProtocolFee();
@@ -168,7 +168,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         fees.feesSlot = ((protocolFee + harvestFee) << 128) | (protocolFee << 64) | harvestFee;
 
         /// Set initial balance threshold
-        HARVEST_URGENCY_THRESHOLD = 1000e18; // Example threshold of 1000 tokens
+        HARVEST_URGENCY_THRESHOLD = 0;
     }
 
     //////////////////////////////////////////////////////
@@ -304,13 +304,13 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @custom:throws NoHarvester If the harvester is not set.
     function harvest(address[] calldata _vaults, bytes[] calldata _harvestData) external nonReentrant {
         if (_vaults.length != _harvestData.length) revert InvalidHarvestDataLength();
-        _batchHarvest({_vaults: _vaults, harvestData: _harvestData});
+        _batchHarvest({_vaults: _vaults, harvestData: _harvestData, receiver: msg.sender});
     }
 
     /// @dev Internal implementation of batch harvesting.
     /// @param _vaults Array of vault addresses to harvest from.
     /// @param harvestData Harvest data for each vault.
-    function _batchHarvest(address[] calldata _vaults, bytes[] calldata harvestData) internal {
+    function _batchHarvest(address[] calldata _vaults, bytes[] calldata harvestData, address receiver) internal {
         // Cache registry to avoid multiple SLOADs
         address registry = REGISTRY;
         address harvester = IRegistry(registry).HARVESTER();
@@ -331,7 +331,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
         // Transfer total harvester fee if any
         if (totalHarvesterFee > 0) {
-            IERC20(REWARD_TOKEN).safeTransfer(msg.sender, totalHarvesterFee);
+            IERC20(REWARD_TOKEN).safeTransfer(receiver, totalHarvesterFee);
         }
     }
 
@@ -478,9 +478,14 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param harvestData Optional harvest data for each vault. Empty bytes for vaults that don't need harvesting.
     /// @custom:throws NoPendingRewards If there are no rewards to claim.
     function claim(address[] calldata _vaults, address receiver, bytes[] calldata harvestData) external nonReentrant {
+        /// If receiver is not set, use the caller as the receiver.
+        if (receiver == address(0)) {
+            receiver = msg.sender;
+        }
+
         if (harvestData.length != 0) {
             if (harvestData.length != _vaults.length) revert InvalidHarvestDataLength();
-            _batchHarvest({_vaults: _vaults, harvestData: harvestData});
+            _batchHarvest({_vaults: _vaults, harvestData: harvestData, receiver: receiver});
         }
         _claim({_vaults: _vaults, account: msg.sender, receiver: receiver});
     }
@@ -497,9 +502,14 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         onlyAllowed
         nonReentrant
     {
+        /// If receiver is not set, use the account as the receiver.
+        if (receiver == address(0)) {
+            receiver = account;
+        }
+
         if (harvestData.length != 0) {
             if (harvestData.length != _vaults.length) revert InvalidHarvestDataLength();
-            _batchHarvest({_vaults: _vaults, harvestData: harvestData});
+            _batchHarvest({_vaults: _vaults, harvestData: harvestData, receiver: receiver});
         }
         _claim({_vaults: _vaults, account: account, receiver: receiver});
     }
