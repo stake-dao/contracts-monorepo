@@ -2,8 +2,9 @@
 pragma solidity 0.8.19;
 
 import "src/common/accumulator/BaseAccumulator.sol";
-import {ILocker} from "src/common/interfaces/ILocker.sol";
+import {ILocker} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Enum} from "@safe/contracts/common/Enum.sol";
 
 /// @title StakeDAO ZERO Accumulator
 /// @notice A contract that accumulates ZERO rewards and notifies them to the sdZERO gauge
@@ -48,7 +49,9 @@ contract Accumulator is BaseAccumulator {
 
         // Claim rewards from the locker.
         // TODO convert into encodeWithSelector
-        ILocker(locker).execute(ZERO_VP, 0, abi.encodeWithSignature("getReward()"));
+        ILocker(locker).execTransactionFromModuleReturnData(
+            ZERO_VP, 0, abi.encodeWithSignature("getReward()"), Enum.Operation.Call
+        );
 
         // Get rewards amount.
         uint256 zeroReward = IERC20(ZERO).balanceOf(locker) - lockerZeroBalanceBefore;
@@ -57,14 +60,20 @@ contract Accumulator is BaseAccumulator {
         // Transfer rewards to the accumulator.
         if (zeroReward > 0) {
             // TODO convert into encodeWithSelector
-            ILocker(locker).execute(
-                ZERO, 0, abi.encodeWithSignature("transfer(address,uint256)", address(this), zeroReward)
+            ILocker(locker).execTransactionFromModuleReturnData(
+                ZERO,
+                0,
+                abi.encodeWithSignature("transfer(address,uint256)", address(this), zeroReward),
+                Enum.Operation.Call
             );
         }
         if (wethReward > 0) {
             // TODO convert into encodeWithSelector
-            ILocker(locker).execute(
-                WETH, 0, abi.encodeWithSignature("transfer(address,uint256)", address(this), wethReward)
+            ILocker(locker).execTransactionFromModuleReturnData(
+                WETH,
+                0,
+                abi.encodeWithSignature("transfer(address,uint256)", address(this), wethReward),
+                Enum.Operation.Call
             );
         }
 

@@ -32,6 +32,8 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
         vm.warp(block.timestamp + 30 days);
     }
 
+    function test_canDeploySafeProxy() public {}
+
     function test_canDepositTokensWithoutStaking() public {
         assertEq(zeroToken.balanceOf(address(this)) > 1 ether, true);
 

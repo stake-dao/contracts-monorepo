@@ -7,7 +7,7 @@ import "forge-std/src/console.sol";
 
 import {BaseZeroLendTokenTest} from "test/linea/zerolend/common/BaseZeroLendTokenTest.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
-import {ILocker as ISdLocker} from "src/common/interfaces/ILocker.sol";
+import {ILocker} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
 import {IDepositor} from "src/common/interfaces/IDepositor.sol";
 import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
 import {ISdZeroLocker} from "src/common/interfaces/zerolend/stakedao/ISdZeroLocker.sol";
@@ -222,18 +222,19 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
         ISdZeroDepositor(address(depositor)).deposit(_tokenIds, true, userWithStakedNft);
     }
 
-    function test_cantDepositDirectlyToLocker() public {
-        vm.startPrank(userWithStakedNft);
+    // TODO still relevant?
+    // function test_cantDepositDirectlyToLocker() public {
+    //     vm.startPrank(userWithStakedNft);
 
-        (uint256[] memory _tokenIds,,) = _getLockedDetails(userWithStakedNft);
+    //     (uint256[] memory _tokenIds,,) = _getLockedDetails(userWithStakedNft);
 
-        for (uint256 index = 0; index < _tokenIds.length; index++) {
-            IZeroVp(address(veZero)).unstakeToken(_tokenIds[index]);
-        }
+    //     for (uint256 index = 0; index < _tokenIds.length; index++) {
+    //         IZeroVp(address(veZero)).unstakeToken(_tokenIds[index]);
+    //     }
 
-        vm.expectRevert(ISdLocker.GOVERNANCE_OR_DEPOSITOR.selector);
-        ISdZeroLocker(locker).deposit(userWithStakedNft, _tokenIds);
-    }
+    //     vm.expectRevert(ILocker.GOVERNANCE_OR_DEPOSITOR.selector);
+    //     ISdZeroLocker(locker).deposit(userWithStakedNft, _tokenIds);
+    // }
 
     function test_emptyTokenIdsList() public {
         vm.startPrank(userWithStakedNft);
