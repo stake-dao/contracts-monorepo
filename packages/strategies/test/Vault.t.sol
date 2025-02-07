@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 import "forge-std/src/Test.sol";
 import "@openzeppelin/contracts/proxy/Clones.sol";
 
-import {MockToken} from "test/mocks/MockToken.sol";
+import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 import {MockStrategy} from "test/mocks/MockStrategy.sol";
 import {MockRegistry} from "test/mocks/MockRegistry.sol";
 import {MockAllocator} from "test/mocks/MockAllocator.sol";
@@ -13,7 +13,7 @@ import {Accountant} from "src/Accountant.sol";
 import {RewardVault} from "src/RewardVault.sol";
 
 contract Vault is Test {
-    MockToken public token;
+    ERC20Mock public token;
     MockRegistry public registry;
     MockStrategy public strategy;
     MockAllocator public allocator;
@@ -26,7 +26,7 @@ contract Vault is Test {
     uint256 public constant AMOUNT = 10_000_000 ether;
 
     function setUp() public virtual {
-        token = new MockToken("MockToken", "MTK", 18);
+        token = new ERC20Mock("ERC20Mock", "MTK", 18);
         token.mint(address(this), AMOUNT);
 
         strategy = new MockStrategy();
@@ -55,7 +55,7 @@ contract Vault is Test {
         assertEq(address(vault.ACCOUNTANT()), address(accountant));
         assertEq(address(vault.ASSET()), address(token));
 
-        assertEq(vault.name(), "StakeDAO MockToken Vault");
+        assertEq(vault.name(), "StakeDAO ERC20Mock Vault");
         assertEq(vault.symbol(), "sd-MTK-vault");
         assertEq(vault.decimals(), 18);
     }
