@@ -303,7 +303,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param _harvestData Array of harvest data for each vault.
     /// @custom:throws NoHarvester If the harvester is not set.
     function harvest(address[] calldata _vaults, bytes[] calldata _harvestData) external nonReentrant {
-        if (_vaults.length != _harvestData.length) revert InvalidHarvestDataLength();
+        require(_vaults.length == _harvestData.length, InvalidHarvestDataLength());
         _batchHarvest({_vaults: _vaults, harvestData: _harvestData, receiver: msg.sender});
     }
 
@@ -319,11 +319,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         uint256 totalHarvesterFee;
 
         for (uint256 i; i < _vaults.length; i++) {
-            // Skip if no harvest data provided for this vault
-            if (harvestData[i].length == 0) {
-                continue;
-            }
-
             /// Harvest the vault and increment total harvester fee.
             totalHarvesterFee +=
                 _harvest({vault: _vaults[i], harvestData: harvestData[i], harvester: harvester, registry: registry});
@@ -418,7 +413,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         }
 
         // Reset pending rewards if any.
-        if (pendingRewards > 0) {
+        if (pendingRewards != 0) {
             vault.pendingRewardsSlot = 0;
         }
     }
@@ -449,12 +444,12 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         uint256 oldHarvestFeePercent = feeSlot & StorageMasks.HARVEST_FEE_MASK;
 
         uint256 totalFee = protocolFeePercent + _harvestFeePercent;
-        if (totalFee > MAX_FEE_PERCENT) revert FeeExceedsMaximum();
+        require(totalFee <= MAX_FEE_PERCENT, FeeExceedsMaximum());
 
         /// Harvest fee must be less than protocol fee.
         /// @dev This is to prevent the _updateVaultState from taking more fees than the protocol fee
         /// and break the netDelta invariant.
-        if (_harvestFeePercent >= protocolFeePercent) revert HarvestFeeExceedsProtocolFee();
+        require(_harvestFeePercent < protocolFeePercent, HarvestFeeExceedsProtocolFee());
 
         fees.feesSlot = (totalFee << 128) | (protocolFeePercent << 64) | _harvestFeePercent;
 
@@ -479,12 +474,11 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @custom:throws NoPendingRewards If there are no rewards to claim.
     function claim(address[] calldata _vaults, address receiver, bytes[] calldata harvestData) external nonReentrant {
         /// If receiver is not set, use the caller as the receiver.
-        if (receiver == address(0)) {
-            receiver = msg.sender;
-        }
+        receiver = receiver == address(0) ? msg.sender : receiver;
+
+        require(harvestData.length == 0 || harvestData.length == _vaults.length, InvalidHarvestDataLength());
 
         if (harvestData.length != 0) {
-            if (harvestData.length != _vaults.length) revert InvalidHarvestDataLength();
             _batchHarvest({_vaults: _vaults, harvestData: harvestData, receiver: receiver});
         }
         _claim({_vaults: _vaults, account: msg.sender, receiver: receiver});
@@ -503,12 +497,11 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         nonReentrant
     {
         /// If receiver is not set, use the account as the receiver.
-        if (receiver == address(0)) {
-            receiver = account;
-        }
+        receiver = receiver == address(0) ? account : receiver;
+
+        require(harvestData.length == 0 || harvestData.length == _vaults.length, InvalidHarvestDataLength());
 
         if (harvestData.length != 0) {
-            if (harvestData.length != _vaults.length) revert InvalidHarvestDataLength();
             _batchHarvest({_vaults: _vaults, harvestData: harvestData, receiver: receiver});
         }
         _claim({_vaults: _vaults, account: account, receiver: receiver});
@@ -552,7 +545,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
             }
         }
 
-        if (totalAmount == 0) revert NoPendingRewards();
+        require(totalAmount != 0, NoPendingRewards());
         // Transfer accumulated rewards to receiver
         IERC20(REWARD_TOKEN).safeTransfer(receiver, totalAmount);
     }
@@ -577,14 +570,14 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param _protocolFeePercent New protocol fee percentage (scaled by 1e18).
     /// @custom:throws FeeExceedsMaximum If fee would exceed maximum.
     function setProtocolFeePercent(uint256 _protocolFeePercent) external onlyOwner {
-        if (_protocolFeePercent > MAX_FEE_PERCENT) revert FeeExceedsMaximum();
+        require(_protocolFeePercent <= MAX_FEE_PERCENT, FeeExceedsMaximum());
 
         uint256 feeSlot = fees.feesSlot;
         uint256 oldProtocolFeePercent = (feeSlot & StorageMasks.PROTOCOL_FEE_MASK) >> 64;
         uint256 harvestFeePercent = feeSlot & StorageMasks.HARVEST_FEE_MASK;
 
         uint256 totalFee = _protocolFeePercent + harvestFeePercent;
-        if (totalFee > MAX_FEE_PERCENT) revert FeeExceedsMaximum();
+        require(totalFee <= MAX_FEE_PERCENT, FeeExceedsMaximum());
 
         fees.feesSlot = (totalFee << 128) | (_protocolFeePercent << 64) | harvestFeePercent;
 
@@ -598,7 +591,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         address feeReceiver = IRegistry(REGISTRY).FEE_RECEIVER();
         require(feeReceiver != address(0), NoFeeReceiver());
 
-        IERC20(REWARD_TOKEN).safeTransfer(feeReceiver, protocolFeesAccrued);
+        IERC20(REWARD_TOKEN).transfer(feeReceiver, protocolFeesAccrued);
 
         emit ProtocolFeesClaimed(protocolFeesAccrued);
 
