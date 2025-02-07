@@ -3,11 +3,12 @@ pragma solidity 0.8.19;
 
 import {BaseDepositor, ITokenMinter, ILiquidityGauge} from "src/common/depositor/BaseDepositor.sol";
 import {ISdZeroLocker} from "src/common/interfaces/zerolend/stakedao/ISdZeroLocker.sol";
-import {ILocker} from "src/common/interfaces/ILocker.sol";
+import {ILocker} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
 import {ILockerToken} from "src/common/interfaces/zerolend/zerolend/ILockerToken.sol";
 import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
 
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import {Enum} from "@safe/contracts/common/Enum.sol";
 import {SafeERC20} from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
 
 // TODO make Safe module
@@ -59,10 +60,11 @@ contract Depositor is BaseDepositor {
         {
             uint256 _unlockTime = block.timestamp + _lockDuration;
 
-            (bool _success, bytes memory _data) = ILocker(locker).execute(
+            (bool _success, bytes memory _data) = ILocker(locker).execTransactionFromModuleReturnData(
                 address(zeroLocker),
                 0,
-                abi.encodeWithSelector(ILockerToken.createLock.selector, _value, _lockDuration, false)
+                abi.encodeWithSelector(ILockerToken.createLock.selector, _value, _lockDuration, false),
+                Enum.Operation.Call
             );
 
             if (!_success) revert(); // TODO custom revert
@@ -75,33 +77,38 @@ contract Depositor is BaseDepositor {
         if (zeroLockedTokenId != 0) {
             // veToken.unstakeToken(zeroLockedTokenId);
             {
-                (bool _success, bytes memory _data) = ILocker(locker).execute(
-                    address(veToken), 0, abi.encodeWithSelector(IZeroVp.unstakeToken.selector, zeroLockedTokenId)
+                (bool _success, bytes memory _data) = ILocker(locker).execTransactionFromModuleReturnData(
+                    address(veToken),
+                    0,
+                    abi.encodeWithSelector(IZeroVp.unstakeToken.selector, zeroLockedTokenId),
+                    Enum.Operation.Call
                 );
                 if (!_success) revert(); // TODO custom error
             }
             {
-                (bool _success, bytes memory _data) = ILocker(locker).execute(
+                (bool _success, bytes memory _data) = ILocker(locker).execTransactionFromModuleReturnData(
                     address(zeroLocker),
                     0,
-                    abi.encodeWithSelector(ILockerToken.merge.selector, zeroLockedTokenId, _newZeroLockedTokenId)
+                    abi.encodeWithSelector(ILockerToken.merge.selector, zeroLockedTokenId, _newZeroLockedTokenId),
+                    Enum.Operation.Call
                 );
                 if (!_success) revert(); // TODO custom error
             }
-            // emit LockIncreased(_value, _unlockTime);
+            // TODO emit LockIncreased(_value, _unlockTime);
         } else {
-            // emit LockCreated(_value, _unlockTime);
+            // TODO emit LockCreated(_value, _unlockTime);
         }
 
         // stake token in ZEROvp contract to receive voting power tokens
         {
-            (bool _success, bytes memory _data) = ILocker(locker).execute(
+            (bool _success, bytes memory _data) = ILocker(locker).execTransactionFromModuleReturnData(
                 address(zeroLocker),
                 0,
                 // TODO convert to encodeWithSelector
                 abi.encodeWithSignature(
                     "safeTransferFrom(address,address,uint256)", locker, veToken, _newZeroLockedTokenId
-                )
+                ),
+                Enum.Operation.Call
             );
             if (!_success) revert(); // TODO custom error
         }
@@ -126,8 +133,11 @@ contract Depositor is BaseDepositor {
 
         uint256 _lockEnd;
         {
-            (bool _success, bytes memory _data) = ILocker(locker).execute(
-                address(zeroLocker), 0, abi.encodeWithSelector(ILockerToken.lockedEnd.selector, zeroLockedTokenId)
+            (bool _success, bytes memory _data) = ILocker(locker).execTransactionFromModuleReturnData(
+                address(zeroLocker),
+                0,
+                abi.encodeWithSelector(ILockerToken.lockedEnd.selector, zeroLockedTokenId),
+                Enum.Operation.Call
             );
 
             if (!_success) revert(); // TODO custom revert
@@ -136,8 +146,11 @@ contract Depositor is BaseDepositor {
         }
 
         {
-            (bool _success, bytes memory _data) = ILocker(locker).execute(
-                address(veToken), 0, abi.encodeWithSelector(IZeroVp.unstakeToken.selector, zeroLockedTokenId)
+            (bool _success, bytes memory _data) = ILocker(locker).execTransactionFromModuleReturnData(
+                address(veToken),
+                0,
+                abi.encodeWithSelector(IZeroVp.unstakeToken.selector, zeroLockedTokenId),
+                Enum.Operation.Call
             );
 
             if (!_success) revert(); // TODO custom revert
@@ -153,10 +166,12 @@ contract Depositor is BaseDepositor {
 
             // Merge user token into locker zeroLockedTokenId.
             {
-                (bool _success, bytes memory _data) = ILocker(locker).execute(
+                (bool _success, bytes memory _data) = ILocker(locker).execTransactionFromModuleReturnData(
                     address(zeroLocker),
                     0,
-                    abi.encodeWithSelector(ILockerToken.merge.selector, _tokenIds[index], zeroLockedTokenId)
+                    // TODO convert to encodeWithSelector
+                    abi.encodeWithSelector(ILockerToken.merge.selector, _tokenIds[index], zeroLockedTokenId),
+                    Enum.Operation.Call
                 );
 
                 if (!_success) revert(); // TODO custom revert
@@ -173,11 +188,12 @@ contract Depositor is BaseDepositor {
 
         // put token back into staking
         {
-            (bool _success, bytes memory _data) = ILocker(locker).execute(
+            (bool _success, bytes memory _data) = ILocker(locker).execTransactionFromModuleReturnData(
                 address(zeroLocker),
                 0,
                 // TODO convert to encodeWithSelector
-                abi.encodeWithSignature("safeTransferFrom(address,address,uint256)", locker, veToken, zeroLockedTokenId)
+                abi.encodeWithSignature("safeTransferFrom(address,address,uint256)", locker, veToken, zeroLockedTokenId),
+                Enum.Operation.Call
             );
 
             if (!_success) revert(); // TODO custom revert

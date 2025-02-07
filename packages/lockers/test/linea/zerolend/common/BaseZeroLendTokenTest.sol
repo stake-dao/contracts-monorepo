@@ -11,14 +11,16 @@ import {Depositor} from "src/linea/zerolend/Depositor.sol";
 import {IStrategy} from "herdaddy/interfaces/stake-dao/IStrategy.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
-import {ILocker} from "src/common/interfaces/ILocker.sol";
+import {ILocker, ISafe} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
 import {IDepositor} from "src/common/interfaces/IDepositor.sol";
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeProxyFactory} from "@safe/contracts/proxies/SafeProxyFactory.sol";
+import {Safe} from "@safe/contracts/Safe.sol";
 
 // end to end tests for the ZeroLend integration
 abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
-    address GOVERNANCE = address(9);
+    address GOVERNANCE = address(1234);
 
     address zeroLockerToken = 0x08D5FEA625B1dBf9Bae0b97437303a0374ee02F8;
     IERC20 zeroToken = IERC20(0x78354f8DcCB269a615A7e0a24f9B0718FDC3C7A7);
@@ -44,7 +46,7 @@ abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
 
         sdToken = _deploySdZero();
         liquidityGauge = ILiquidityGauge(_deployLiquidityGauge(sdToken));
-        locker = _deployLocker();
+        locker = _deploySafeLocker();
         accumulator = BaseAccumulator(payable(_deployAccumulator()));
         depositor = IDepositor(_deployDepositor());
 
@@ -61,16 +63,81 @@ abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
         _sdZero = address((new SdToken("Stake DAO ZeroLend", "sdZero")));
     }
 
-    function _deployLocker() internal returns (address _locker) {
-        _locker = address(new Locker(zeroLockerToken, GOVERNANCE, address(zeroToken), address(veZero)));
+    // function _getSetupData() internal pure returns (bytes memory data) {
+    //     data = abi.encodeWithSelector(this.delegateActivateModule.selector);
+    // }
+
+    function _getSafeInitializationData(address[] memory _owners, uint256 _threshold)
+        internal
+        view
+        returns (bytes memory initializer)
+    {
+        // bytes memory data = _getSetupData();
+        initializer = abi.encodeWithSelector(
+            // TODO make delegate call to modules
+            Safe.setup.selector,
+            _owners,
+            _threshold,
+            address(0),
+            abi.encodePacked(),
+            address(0),
+            address(0),
+            0,
+            address(0)
+        );
+    }
+
+    function _deploySafeLocker() internal returns (address _locker) {
+        SafeProxyFactory _safeProxyFactory = SafeProxyFactory(0xC22834581EbC8527d974F8a1c97E1bEA4EF910BC);
+        address safeSingleton = 0xfb1bffC9d739B8D520DaF37dF666da4C687191EA;
+        address[] memory _owners = new address[](1);
+        _owners[0] = GOVERNANCE;
+        uint256 _threshold = 1;
+        bytes memory initializer = _getSafeInitializationData(_owners, _threshold);
+
+        _locker = address(
+            _safeProxyFactory.createProxyWithNonce(
+                safeSingleton, initializer, uint256(keccak256(abi.encodePacked("randomesalt")))
+            )
+        );
+        // _locker = address(new Locker(zeroLockerToken, GOVERNANCE, address(zeroToken), address(veZero)));
+
+        vm.prank(GOVERNANCE);
+        ILocker(_locker).execTransaction(
+            address(zeroToken),
+            0,
+            abi.encodeWithSelector(IERC20.approve.selector, address(zeroLockerToken), type(uint256).max),
+            Enum.Operation.Call,
+            0,
+            0,
+            0,
+            address(0),
+            payable(0),
+            abi.encodePacked(uint256(uint160(GOVERNANCE)), uint8(0), uint256(1))
+        );
+    }
+
+    function _enableModule(address _module) internal {
+        vm.prank(GOVERNANCE);
+        ILocker(locker).execTransaction(
+            locker,
+            0,
+            abi.encodeWithSelector(ISafe.enableModule.selector, _module),
+            Enum.Operation.Call,
+            0,
+            0,
+            0,
+            address(0),
+            payable(0),
+            abi.encodePacked(uint256(uint160(GOVERNANCE)), uint8(0), uint256(1))
+        );
     }
 
     function _deployAccumulator() internal virtual returns (address payable _accumulator) {
         _accumulator = payable(address(new Accumulator(address(liquidityGauge), locker, GOVERNANCE)));
 
-        /// Set up the accumulator in the locker.
-        vm.prank(ILocker(locker).governance());
-        ILocker(locker).setAccumulator(address(accumulator));
+        // Add accumulator as a module on the Safe locker.
+        _enableModule(_accumulator);
     }
 
     function _deployDepositor() internal returns (address _depositor) {
@@ -79,6 +146,9 @@ abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
                 address(zeroToken), locker, sdToken, address(liquidityGauge), zeroLockerToken, address(veZero)
             )
         );
+
+        // Add depositor as a module on the Safe locker.
+        _enableModule(_depositor);
     }
 
     function _createInitialLock() internal {
@@ -92,12 +162,6 @@ abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
 
     function _setupContractGovernance() internal {
         ISdToken(sdToken).setOperator(address(depositor));
-
-        vm.prank(GOVERNANCE);
-        ILocker(locker).setDepositor(address(depositor));
-
-        vm.prank(GOVERNANCE);
-        ILocker(locker).setAccumulator(address(accumulator));
 
         _createInitialLock();
 

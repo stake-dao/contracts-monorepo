@@ -30,7 +30,7 @@ contract ZLTokenAccumulator is BaseZeroLendTokenTest, BaseAccumulatorTest {
 
         sdToken = _deploySdZero();
         liquidityGauge = ILiquidityGauge(_deployLiquidityGauge(sdToken));
-        locker = _deployLocker();
+        locker = _deploySafeLocker();
         accumulator = BaseAccumulator(BaseZeroLendTokenTest._deployAccumulator());
         depositor = IDepositor(_deployDepositor());
 

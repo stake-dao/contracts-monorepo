@@ -7,6 +7,10 @@ openzeppelin-contracts=node_modules/@openzeppelin/contracts
 solidity-examples/=node_modules/@layerzerolabs/endpoint-v1-solidity-examples/contracts/
 murky=node_modules/murky/
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
 >>>>>>> b284c836 (fix: remappings)
+=======
+@safe/contracts/=lib/safe-smart-account/contracts/
+>>>>>>> c8cf29fc (feat: migration to Safe locker)
