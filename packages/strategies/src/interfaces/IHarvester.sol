@@ -2,5 +2,7 @@
 pragma solidity 0.8.28;
 
 interface IHarvester {
-    function harvest(address asset, bytes calldata extraData) external;
+    function harvest(address asset, bytes calldata extraData)
+        external
+        returns (uint256 feeSubjectAmount, uint256 feeExemptAmount);
 }
