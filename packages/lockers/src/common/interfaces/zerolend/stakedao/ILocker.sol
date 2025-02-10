@@ -70,6 +70,29 @@ interface ISafe {
         address payable refundReceiver,
         bytes memory signatures
     ) external returns (bool success);
+
+    /**
+     * @notice Returns a list of Safe owners.
+     * @return Array of Safe owners.
+     */
+    function getOwners() external view returns (address[] memory);
+
+    /**
+     * @notice Adds the owner `owner` to the Safe and updates the threshold to `_threshold`.
+     * @dev This can only be done via a Safe transaction.
+     * @param owner New owner address.
+     * @param _threshold New threshold.
+     */
+    function addOwnerWithThreshold(address owner, uint256 _threshold) external;
+
+    /**
+     * @notice Removes the owner `owner` from the Safe and updates the threshold to `_threshold`.
+     * @dev This can only be done via a Safe transaction.
+     * @param prevOwner Owner that pointed to the owner to be removed in the linked list
+     * @param owner Owner address to be removed.
+     * @param _threshold New threshold.
+     */
+    function removeOwner(address prevOwner, address owner, uint256 _threshold) external;
 }
 
 interface ILocker is ISafe {}
