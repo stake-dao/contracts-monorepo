@@ -23,7 +23,7 @@ Linea
 **⚠️ Important**
 
 - The SDT token is not deployed on Linea so we use the LiquidityGaugeV4XChain.vy implementation which doesn't have any SDT boosting for sdZERO-gauge holders.
-- For better composability and upgradeability, we removed the `claimRewards()` function from the locker and instead, the accumulator calls the `execute(address to, uint256 value, bytes calldata data)` function.
+- For better composability and upgradeability, we removed the locker contract and instead use a Safe multisig contract with Safe Modules which allow the accumulator and depositor to execute calls on the Safe locker through the `execTransactionFromModuleReturnData(...)` function.
 
 ## List of contracts
 
@@ -46,7 +46,7 @@ ZERO locks are tracked through ERC721 NFT tokens, each having a _start_, _end_, 
 
 There are two types of staking. ZERO staking and lpZERO staking. ZERO staking receives ZERO emissions while lpZERO receives protocol revenue (WETH). The StakeDAO locker focuses on ZERO staking as it will soon be updated to also receive 50% of protocol revenue, making it the better choice out of the two systems.
 
-- ZeroLend contracts are highly upgradeable through proxies. It's important to make sure that no breaking changes are introduced, particularly regarding the interfaces used by the locker contract.
+- ZeroLend contracts are highly upgradeable through proxies. It's important to make sure that no breaking changes are introduced.
 
 ## Next steps
 
