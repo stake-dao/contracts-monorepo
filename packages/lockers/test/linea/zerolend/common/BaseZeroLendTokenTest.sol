@@ -5,10 +5,8 @@ import {BaseZeroLendTest} from "test/linea/zerolend/common/BaseZeroLendTest.sol"
 
 import "src/linea/zerolend/Accumulator.sol";
 import {sdToken as SdToken} from "src/common/token/sdToken.sol";
-import {Locker} from "src/linea/zerolend/Locker.sol";
 import {Depositor} from "src/linea/zerolend/Depositor.sol";
 
-import {IStrategy} from "herdaddy/interfaces/stake-dao/IStrategy.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {ILocker, ISafe} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
@@ -69,7 +67,7 @@ abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
 
     function _getSafeInitializationData(address[] memory _owners, uint256 _threshold)
         internal
-        view
+        pure
         returns (bytes memory initializer)
     {
         // bytes memory data = _getSetupData();
