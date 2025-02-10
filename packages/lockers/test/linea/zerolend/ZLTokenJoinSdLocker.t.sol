@@ -8,7 +8,6 @@ import "forge-std/src/console.sol";
 import {BaseZeroLendTokenTest} from "test/linea/zerolend/common/BaseZeroLendTokenTest.sol";
 import {IDepositor} from "src/common/interfaces/IDepositor.sol";
 import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
-import {ISdZeroLocker} from "src/common/interfaces/zerolend/stakedao/ISdZeroLocker.sol";
 import {ISdZeroDepositor} from "src/common/interfaces/zerolend/stakedao/ISdZeroDepositor.sol";
 import {IZeroLocker} from "src/common/interfaces/zerolend/zerolend/IZeroLocker.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -216,7 +215,7 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
 
         vm.stopPrank();
 
-        vm.expectRevert(abi.encodeWithSelector(ISdZeroLocker.NotOwnerOfToken.selector, _tokenIds[0]));
+        vm.expectRevert(abi.encodeWithSelector(ISdZeroDepositor.NotOwnerOfToken.selector, _tokenIds[0]));
         ISdZeroDepositor(address(depositor)).deposit(_tokenIds, true, userWithStakedNft);
     }
 
@@ -233,7 +232,7 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
 
         // ## join StakeDAO
         IZeroLocker(zeroLockerToken).setApprovalForAll(locker, true);
-        vm.expectRevert(ISdZeroLocker.EmptyTokenIdList.selector);
+        vm.expectRevert(ISdZeroDepositor.EmptyTokenIdList.selector);
         ISdZeroDepositor(address(depositor)).deposit(_emptyTokenIdsList, true, userWithStakedNft);
     }
 
