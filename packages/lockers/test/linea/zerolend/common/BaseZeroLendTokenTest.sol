@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
+import "forge-std/src/console.sol";
+
 import {BaseZeroLendTest} from "test/linea/zerolend/common/BaseZeroLendTest.sol";
 
 import "src/linea/zerolend/Accumulator.sol";
@@ -14,7 +16,8 @@ import {IDepositor} from "src/common/interfaces/IDepositor.sol";
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeProxyFactory} from "@safe/contracts/proxies/SafeProxyFactory.sol";
-import {Safe} from "@safe/contracts/Safe.sol";
+import {Safe, Enum} from "@safe/contracts/Safe.sol";
+import {SafeProxy} from "@safe/contracts/proxies/SafeProxy.sol";
 
 // end to end tests for the ZeroLend integration
 abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
@@ -23,6 +26,9 @@ abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
     address zeroLockerToken = 0x08D5FEA625B1dBf9Bae0b97437303a0374ee02F8;
     IERC20 zeroToken = IERC20(0x78354f8DcCB269a615A7e0a24f9B0718FDC3C7A7);
     IERC20 veZero = IERC20(0xf374229a18ff691406f99CCBD93e8a3f16B68888);
+
+    SafeProxyFactory safeProxyFactory = SafeProxyFactory(0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67);
+    address safeSingleton = 0x41675C099F32341bf84BFc5382aF534df5C7461a;
 
     address zeroTokenHolder = 0xA05D8213472620292D4D96DCDA2Dd5dB4B65df2f;
 
@@ -61,10 +67,6 @@ abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
         _sdZero = address((new SdToken("Stake DAO ZeroLend", "sdZero")));
     }
 
-    // function _getSetupData() internal pure returns (bytes memory data) {
-    //     data = abi.encodeWithSelector(this.delegateActivateModule.selector);
-    // }
-
     function _getSafeInitializationData(address[] memory _owners, uint256 _threshold)
         internal
         pure
@@ -72,7 +74,6 @@ abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
     {
         // bytes memory data = _getSetupData();
         initializer = abi.encodeWithSelector(
-            // TODO make delegate call to modules
             Safe.setup.selector,
             _owners,
             _threshold,
@@ -86,19 +87,14 @@ abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
     }
 
     function _deploySafeLocker() internal returns (address _locker) {
-        SafeProxyFactory _safeProxyFactory = SafeProxyFactory(0xC22834581EbC8527d974F8a1c97E1bEA4EF910BC);
-        address safeSingleton = 0xfb1bffC9d739B8D520DaF37dF666da4C687191EA;
+        uint256 _salt = uint256(keccak256(abi.encodePacked()));
         address[] memory _owners = new address[](1);
         _owners[0] = GOVERNANCE;
         uint256 _threshold = 1;
+
         bytes memory initializer = _getSafeInitializationData(_owners, _threshold);
 
-        _locker = address(
-            _safeProxyFactory.createProxyWithNonce(
-                safeSingleton, initializer, uint256(keccak256(abi.encodePacked("randomesalt")))
-            )
-        );
-        // _locker = address(new Locker(zeroLockerToken, GOVERNANCE, address(zeroToken), address(veZero)));
+        _locker = address(safeProxyFactory.createProxyWithNonce(safeSingleton, initializer, _salt));
 
         vm.prank(GOVERNANCE);
         ILocker(_locker).execTransaction(
