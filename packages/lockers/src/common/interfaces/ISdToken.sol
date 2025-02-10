@@ -12,5 +12,9 @@ interface ISdToken {
 
     function operator() external view returns (address);
 
+    function burner() external view returns (address);
+
     function setOperator(address _operator) external;
+
+    function setBurnerOperator(address _burner) external;
 }
