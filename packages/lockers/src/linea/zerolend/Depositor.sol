@@ -19,9 +19,6 @@ contract Depositor is BaseDepositor {
     error NotOwnerOfToken(uint256 tokenId);
     error ExecFromSafeModuleFailed();
 
-    // TODO should events be emited from the SafeLocker?
-    // TODO should we put events in BaseDepositor?
-
     /// @notice Event emitted when a lock is created.
     /// @param value Amount of tokens locked.
     /// @param duration Duration of the lock.

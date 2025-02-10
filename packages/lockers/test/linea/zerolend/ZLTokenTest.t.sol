@@ -7,12 +7,14 @@ import "forge-std/src/console.sol";
 
 import {BaseZeroLendTokenTest} from "test/linea/zerolend/common/BaseZeroLendTokenTest.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
-import {ILocker} from "src/common/interfaces/ILocker.sol";
 import {IDepositor} from "src/common/interfaces/IDepositor.sol";
-import {ISdZeroLocker} from "src/common/interfaces/zerolend/stakedao/ISdZeroLocker.sol";
 import {ILockerToken} from "src/common/interfaces/zerolend/zerolend/ILockerToken.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
+import {ILocker} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
+import {ISdZeroDepositor} from "src/common/interfaces/zerolend/stakedao/ISdZeroDepositor.sol";
+
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Safe, Enum} from "@safe/contracts/Safe.sol";
 
 // end to end tests for the ZeroLend integration
 contract ZeroLendTest is BaseZeroLendTokenTest {
@@ -222,42 +224,87 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
         assertEq(IERC20(sdToken).balanceOf(address(this)), gaugeAmount);
     }
 
+    function _safeReleaseTokens(uint256 _zeroLockedTokenId, address _receiver, bool _expectRevert) internal {
+        vm.startPrank(GOVERNANCE);
+
+        ILocker(locker).execTransaction(
+            address(veZero),
+            0,
+            abi.encodeWithSelector(IZeroVp.unstakeToken.selector, _zeroLockedTokenId),
+            Enum.Operation.Call,
+            0,
+            0,
+            0,
+            address(0),
+            payable(0),
+            abi.encodePacked(uint256(uint160(GOVERNANCE)), uint8(0), uint256(1))
+        );
+
+        if (_expectRevert) {
+            vm.expectRevert("GS013");
+        }
+
+        ILocker(locker).execTransaction(
+            zeroLockerToken,
+            0,
+            abi.encodeWithSignature("withdraw(uint256)", _zeroLockedTokenId),
+            Enum.Operation.Call,
+            0,
+            0,
+            0,
+            address(0),
+            payable(0),
+            abi.encodePacked(uint256(uint160(GOVERNANCE)), uint8(0), uint256(1))
+        );
+
+        ILocker(locker).execTransaction(
+            address(zeroToken),
+            0,
+            abi.encodeWithSelector(IERC20.transfer.selector, _receiver, IERC20(zeroToken).balanceOf(locker)),
+            Enum.Operation.Call,
+            0,
+            0,
+            0,
+            address(0),
+            payable(0),
+            abi.encodePacked(uint256(uint160(GOVERNANCE)), uint8(0), uint256(1))
+        );
+        vm.stopPrank();
+    }
+
     function test_canReleaseLockedTokensAfterLockEnds() public {
-        // TODO reactivate
+        _depositTokens(true, true, address(this));
 
-        // _depositTokens(true, true, address(this));
+        uint256 endLockTimestamp =
+            ILockerToken(address(zeroLockerToken)).locked(ISdZeroDepositor(address(depositor)).zeroLockedTokenId()).end;
+        uint256 zeroLockedAmount = ILockerToken(address(zeroLockerToken)).locked(
+            ISdZeroDepositor(address(depositor)).zeroLockedTokenId()
+        ).amount;
 
-        // console.log("here1");
+        // fast forward to 4 years after locking
+        vm.warp(endLockTimestamp);
 
-        // uint256 endLockTimestamp =
-        //     ILockerToken(address(zeroLockerToken)).locked(ISdZeroLocker(locker).zeroLockedTokenId()).end;
-        // uint256 zeroLockedAmount =
-        //     ILockerToken(address(zeroLockerToken)).locked(ISdZeroLocker(locker).zeroLockedTokenId()).amount;
+        uint256 _zeroLockedTokenId = depositor.zeroLockedTokenId();
 
-        // // fast forward 1s before locking should end
-        // vm.warp(endLockTimestamp - 1);
+        // can be done right after by governance
+        _safeReleaseTokens(_zeroLockedTokenId, address(1), false);
 
-        // console.log("here2");
+        // the right amount of tokens is withdrawn
+        assertEq(zeroToken.balanceOf(address(1)), zeroLockedAmount);
+    }
 
-        // // can't be done before the lock ends
-        // vm.prank(ILocker(locker).governance());
-        // vm.expectRevert("The lock didn't expire");
-        // ISdZeroLocker(locker).release(address(1));
+    function test_cantReleaseLockedTokensBeforeLockEnds() public {
+        _depositTokens(true, true, address(this));
 
-        // // fast forward to 4 years after locking
-        // vm.warp(endLockTimestamp);
-        // console.log("here3");
+        uint256 endLockTimestamp =
+            ILockerToken(address(zeroLockerToken)).locked(ISdZeroDepositor(address(depositor)).zeroLockedTokenId()).end;
 
-        // // can't be done right after if not governance
-        // vm.expectRevert(ILocker.GOVERNANCE.selector);
-        // ISdZeroLocker(locker).release(address(1));
+        // fast forward 1s before locking should end
+        vm.warp(endLockTimestamp - 1);
 
-        // // can be done right after by governance
-        // vm.prank(ILocker(locker).governance());
-        // ISdZeroLocker(locker).release(address(1));
+        uint256 _zeroLockedTokenId = depositor.zeroLockedTokenId();
 
-        // console.log("here4");
-        // // the right amount of tokens is withdrawn
-        // assertEq(zeroToken.balanceOf(address(1)), zeroLockedAmount);
+        // can't be done before the lock ends
+        _safeReleaseTokens(_zeroLockedTokenId, address(1), true);
     }
 }
