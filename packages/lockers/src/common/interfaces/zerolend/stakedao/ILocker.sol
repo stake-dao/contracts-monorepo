@@ -3,7 +3,6 @@ pragma solidity ^0.8.7;
 
 import {Enum} from "@safe/contracts/common/Enum.sol";
 
-// TODO use SafeL2 for interfaces
 interface ISafe {
     /**
      * @notice Enables the module `module` for the Safe.

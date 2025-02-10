@@ -2,19 +2,17 @@
 pragma solidity 0.8.19;
 
 import "forge-std/src/Script.sol";
-
 import "script/common/DeployAccumulator.sol";
-
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {sdToken as SdToken} from "src/common/token/sdToken.sol";
 import {Accumulator} from "src/linea/zerolend/Accumulator.sol";
-import {Locker} from "src/linea/zerolend/Locker.sol";
 import {Depositor} from "src/linea/zerolend/Depositor.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {ILocker} from "src/common/interfaces/ILocker.sol";
 import {IDepositor} from "src/common/interfaces/IDepositor.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
+
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 // TODO create, import and use linea governance addresses
 library DAO {
@@ -40,15 +38,15 @@ contract Deploy is DeployAccumulator {
     }
 
     function _beforeDeploy() internal virtual override {
+        // TODO deploy safe and approve zeroLocker for ZERO
         // Deploy locker.
-        locker = address(new Locker(zeroLockerToken, DAO.MAIN_DEPLOYER, zeroToken, veZero));
+        // locker = address(new Locker(zeroLockerToken, DAO.MAIN_DEPLOYER, zeroToken, veZero));
 
         // Deploy sdZero.
         // TODO confirm name & symbol
         sdZero = address((new SdToken("Stake DAO ZeroLend", "sdZERO")));
 
         // Deploy gauge.
-        // TODO confirm that can't deploy as proxy because LiquidityGaugeV4XChain doesn't have a initialize function
         liquidityGauge = deployCode("vyper/LiquidityGaugeV4XChain.vy", abi.encode(sdZero, DAO.MAIN_DEPLOYER));
 
         // Deploy depositor.

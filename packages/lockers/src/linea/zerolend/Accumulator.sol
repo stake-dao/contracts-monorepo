@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "src/common/accumulator/BaseAccumulator.sol";
+import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {ILocker} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
+import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
+
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Enum} from "@safe/contracts/common/Enum.sol";
+import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 
 /// @title StakeDAO ZERO Accumulator
 /// @notice A contract that accumulates ZERO rewards and notifies them to the sdZERO gauge
@@ -48,9 +51,8 @@ contract Accumulator is BaseAccumulator {
         uint256 lockerWethBalanceBefore = IERC20(WETH).balanceOf(locker);
 
         // Claim rewards from the locker.
-        // TODO convert into encodeWithSelector
         ILocker(locker).execTransactionFromModuleReturnData(
-            ZERO_VP, 0, abi.encodeWithSignature("getReward()"), Enum.Operation.Call
+            ZERO_VP, 0, abi.encodeWithSelector(IZeroVp.getReward.selector), Enum.Operation.Call
         );
 
         // Get rewards amount.
@@ -59,20 +61,18 @@ contract Accumulator is BaseAccumulator {
 
         // Transfer rewards to the accumulator.
         if (zeroReward > 0) {
-            // TODO convert into encodeWithSelector
             ILocker(locker).execTransactionFromModuleReturnData(
                 ZERO,
                 0,
-                abi.encodeWithSignature("transfer(address,uint256)", address(this), zeroReward),
+                abi.encodeWithSelector(IERC20.transfer.selector, address(this), zeroReward),
                 Enum.Operation.Call
             );
         }
         if (wethReward > 0) {
-            // TODO convert into encodeWithSelector
             ILocker(locker).execTransactionFromModuleReturnData(
                 WETH,
                 0,
-                abi.encodeWithSignature("transfer(address,uint256)", address(this), wethReward),
+                abi.encodeWithSelector(IERC20.transfer.selector, address(this), wethReward),
                 Enum.Operation.Call
             );
         }
