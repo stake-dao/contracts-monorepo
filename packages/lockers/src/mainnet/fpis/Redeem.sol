@@ -33,7 +33,7 @@ contract Redeem {
     ///         Claims gauge rewards to msg.sender if they exist.
     ///         Burns the redeemed sdTokens and sends the underlying tokens to msg.sender.
     function redeem() external {
-        // 1. Transfer sdTokens from user -> contract
+        // 1. Transfer sdTokens from user to this contract
         uint256 redeemAmount = IERC20(sdToken).balanceOf(msg.sender);
 
         if (redeemAmount > 0) {
@@ -43,10 +43,10 @@ contract Redeem {
         // 2. Unstake from gauge: claim rewards + withdraw
         uint256 sdTokenGaugeBalance = ILiquidityGauge(sdTokenGauge).balanceOf(msg.sender);
         if (sdTokenGaugeBalance > 0) {
-            // Claim rewards to msg.sender (check how your gauge handles this)
+            // Claim rewards to msg.sender 
             ILiquidityGauge(sdTokenGauge).claim_rewards(msg.sender);
 
-            // Transfer gauge shares user->contract
+            // Transfer gauge shares from user to this contract
             IERC20(sdTokenGauge).safeTransferFrom(msg.sender, address(this), sdTokenGaugeBalance);
 
             // Withdraw staked tokens from gauge to this contract
