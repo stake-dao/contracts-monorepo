@@ -41,11 +41,6 @@ contract Depositor is BaseDepositor {
     /// --- EVENTS
     ////////////////////////////////////////////////////////////////
 
-    /// @notice Emitted when a new lock is created
-    /// @param value Amount of tokens locked
-    /// @param duration Duration of the lock in seconds
-    event LockCreated(uint256 value, uint256 duration);
-
     /// @notice Emitted when an existing lock is increased
     /// @param value Additional amount of tokens locked
     /// @param duration New duration of the lock in seconds
@@ -88,9 +83,7 @@ contract Depositor is BaseDepositor {
             _unstakeNFTFromLocker();
             _merge(zeroLockedTokenId, _newZeroLockedTokenId);
             emit LockIncreased(_amount, _unlockTime);
-        } else {
-            emit LockCreated(_amount, _unlockTime);
-        }
+        } 
 
         _stakeNFTFromLocker(_newZeroLockedTokenId);
         zeroLockedTokenId = _newZeroLockedTokenId;
