@@ -1,49 +1,69 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {BaseDepositor, ITokenMinter, ILiquidityGauge} from "src/common/depositor/BaseDepositor.sol";
-import {ILocker} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
-import {ILockerToken} from "src/common/interfaces/zerolend/zerolend/ILockerToken.sol";
-import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
-
 import {Enum} from "@safe/contracts/libraries/Enum.sol";
 
+import {ILocker} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
+import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
+import {ILockerToken} from "src/common/interfaces/zerolend/zerolend/ILockerToken.sol";
+import {BaseDepositor, ITokenMinter, ILiquidityGauge} from "src/common/depositor/BaseDepositor.sol";
+
 /// @title Stake DAO ZERO Depositor
-/// @notice Contract that accepts ZERO and locks them in the Locker, minting sdZERO in return
+/// @notice Contract responsible for managing ZERO token deposits, locking them in the Locker,
+///         and minting sdZERO tokens in return. 
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
 contract Depositor is BaseDepositor {
+    ////////////////////////////////////////////////////////////////
+    /// --- STATE VARIABLES & CONSTANTS
+    ///////////////////////////////////////////////////////////////
+
+    /// @notice ZeroLend locker NFT contract interface
+    ILockerToken public immutable zeroLocker;
+
+    /// @notice Voting Escrow contract interface for managing voting power
+    IZeroVp public immutable veToken;
+
+    /// @notice Token ID representing the locked ZERO tokens in the locker ERC721
+    uint256 public zeroLockedTokenId;
+
+    ////////////////////////////////////////////////////////////////
+    /// --- ERRORS
+    ///////////////////////////////////////////////////////////////
+
     error ZeroValue();
     error ZeroLockDuration();
     error EmptyTokenIdList();
     error NotOwnerOfToken(uint256 tokenId);
     error ExecFromSafeModuleFailed();
 
-    /// @notice Event emitted when a lock is created.
-    /// @param value Amount of tokens locked.
-    /// @param duration Duration of the lock.
+    ////////////////////////////////////////////////////////////////
+    /// --- EVENTS
+    ////////////////////////////////////////////////////////////////
+
+    /// @notice Emitted when a new lock is created
+    /// @param value Amount of tokens locked
+    /// @param duration Duration of the lock in seconds
     event LockCreated(uint256 value, uint256 duration);
 
-    /// @notice Event emitted when a lock is increased.
-    /// @param value Amount of tokens locked.
-    /// @param duration Duration of the lock.
+    /// @notice Emitted when an existing lock is increased
+    /// @param value Additional amount of tokens locked
+    /// @param duration New duration of the lock in seconds
     event LockIncreased(uint256 value, uint256 duration);
 
-    ILockerToken public immutable zeroLocker;
+  
 
-    /// @notice Address of the Voting Escrow contract.
-    IZeroVp public immutable veToken;
+    ////////////////////////////////////////////////////////////////
+    /// --- CONSTRUCTOR
+    ///////////////////////////////////////////////////////////////
 
-    /// @notice Token ID of the locker ERC721 token representing the locked ZERO tokens.
-    uint256 public zeroLockedTokenId;
-
-    /// @notice Constructor
-    /// @param _token ZERO token.
-    /// @param _locker SD locker.
-    /// @param _minter sdZERO token.
-    /// @param _gauge sdZERO-gauge contract.
-    /// @param _zeroLocker ZeroLend locker NFT contract.
-    /// @param _veToken ZEROvp token.
+    /// @notice Initializes the Depositor contract with required dependencies
+    /// @param _token Address of the ZERO token
+    /// @param _locker Address of the SD locker contract
+    /// @param _minter Address of the sdZERO minter contract
+    /// @param _gauge Address of the sdZERO-gauge contract
+    /// @param _zeroLocker Address of the ZeroLend locker NFT contract
+    /// @param _veToken Address of the ZEROvp token contract
     constructor(address _token, address _locker, address _minter, address _gauge, address _zeroLocker, address _veToken)
         BaseDepositor(_token, _locker, _minter, _gauge, 4 * 365 days)
     {
@@ -51,28 +71,36 @@ contract Depositor is BaseDepositor {
         veToken = IZeroVp(_veToken);
     }
 
-    function _stakeNftTokenFromLocker(uint256 _tokenId) internal {
-        (bool _success, bytes memory _data) = ILocker(locker).execTransactionFromModuleReturnData(
-            address(zeroLocker),
-            0,
-            abi.encodeWithSignature("safeTransferFrom(address,address,uint256)", locker, veToken, _tokenId),
-            Enum.Operation.Call
-        );
-        if (!_success) revert ExecFromSafeModuleFailed();
+    ////////////////////////////////////////////////////////////////
+    /// --- BASE OVERRIDE
+    ///////////////////////////////////////////////////////////////
+
+    /// @notice Locks tokens held by the contract
+    /// @dev Overrides BaseDepositor's _lockToken function
+    /// @param _amount Amount of tokens to lock
+    function _lockToken(uint256 _amount) internal virtual override {
+        if (_amount == 0) revert ZeroValue();
+
+        uint256 _unlockTime = block.timestamp + MAX_LOCK_DURATION;
+        uint256 _newZeroLockedTokenId = _createLock(_amount);
+
+        if (zeroLockedTokenId != 0) {
+            _unstakeNFTFromLocker();
+            _merge(zeroLockedTokenId, _newZeroLockedTokenId);
+            emit LockIncreased(_amount, _unlockTime);
+        } else {
+            emit LockCreated(_amount, _unlockTime);
+        }
+
+        _stakeNFTFromLocker(_newZeroLockedTokenId);
+        zeroLockedTokenId = _newZeroLockedTokenId;
     }
 
-    function _unstakeNftTokenFromLocker() internal {
-        // Unstake zeroLockedTokenId.
-        (bool _success,) = ILocker(locker).execTransactionFromModuleReturnData(
-            address(veToken),
-            0,
-            abi.encodeWithSelector(IZeroVp.unstakeToken.selector, zeroLockedTokenId),
-            Enum.Operation.Call
-        );
-        if (!_success) revert ExecFromSafeModuleFailed();
-    }
-
-    function _createZeroLock(uint256 _amount) internal returns (uint256 _tokenId) {
+    /// @notice Creates a new lock in the ZeroLend locker
+    /// @dev Executes the lock creation through the Safe module
+    /// @param _amount Amount of tokens to lock
+    /// @return _tokenId ID of the newly created lock
+    function _createLock(uint256 _amount) internal returns (uint256 _tokenId) {
         (bool _success, bytes memory _data) = ILocker(locker).execTransactionFromModuleReturnData(
             address(zeroLocker),
             0,
@@ -81,12 +109,13 @@ contract Depositor is BaseDepositor {
         );
 
         if (!_success) revert ExecFromSafeModuleFailed();
-
         _tokenId = abi.decode(_data, (uint256));
     }
 
-    function _mergeWithZeroLockedToken(uint256 _tokenIdFrom, uint256 _tokenIdTo) internal {
-        // Merge _tokenId with zeroLockedTokenId.
+    /// @notice Merges two lock positions
+    /// @param _tokenIdFrom Source token ID to merge from
+    /// @param _tokenIdTo Destination token ID to merge into
+    function _merge(uint256 _tokenIdFrom, uint256 _tokenIdTo) internal {
         (bool _success,) = ILocker(locker).execTransactionFromModuleReturnData(
             address(zeroLocker),
             0,
@@ -96,54 +125,67 @@ contract Depositor is BaseDepositor {
         if (!_success) revert ExecFromSafeModuleFailed();
     }
 
-    /// @notice Locks the tokens held by the contract
-    /// @dev The contract must have tokens to lock
-    /// @param _amount Amount of tokens to deposit.
-    function _lockToken(uint256 _amount) internal virtual override {
-        // If there is Token available in the contract transfer it to the locker
-        if (_amount == 0) revert ZeroValue();
-
-        uint256 _unlockTime = block.timestamp + MAX_LOCK_DURATION;
-
-        uint256 _newZeroLockedTokenId = _createZeroLock(_amount);
-
-        // If the locker was initialized, merge old token ID with new token ID.
-        // Else, we just initialized the locker so we emit the event.
-        if (zeroLockedTokenId != 0) {
-            _unstakeNftTokenFromLocker();
-            _mergeWithZeroLockedToken(zeroLockedTokenId, _newZeroLockedTokenId);
-            emit LockIncreased(_amount, _unlockTime);
-        } else {
-            emit LockCreated(_amount, _unlockTime);
-        }
-
-        // Stake token in ZEROvp contract to receive voting power tokens.
-        _stakeNftTokenFromLocker(_newZeroLockedTokenId);
-
-        zeroLockedTokenId = _newZeroLockedTokenId;
+    /// @notice Unstakes the current locked token from ZEROvp
+    function _unstakeNFTFromLocker() internal {
+        (bool _success,) = ILocker(locker).execTransactionFromModuleReturnData(
+            address(veToken),
+            0,
+            abi.encodeWithSelector(IZeroVp.unstakeToken.selector, zeroLockedTokenId),
+            Enum.Operation.Call
+        );
+        if (!_success) revert ExecFromSafeModuleFailed();
     }
 
-    /// @notice Call the SafeLocker to merge NFT tokens.
-    /// @param _tokenIds Token IDs to deposit.
-    function _lockerDeposit(uint256[] calldata _tokenIds) internal returns (uint256 _amount) {
+    /// @notice Stakes an NFT in the ZEROvp contract
+    /// @param _tokenId Token ID to stake
+    function _stakeNFTFromLocker(uint256 _tokenId) internal {
+        (bool _success,) = ILocker(locker).execTransactionFromModuleReturnData(
+            address(zeroLocker),
+            0,
+            abi.encodeWithSignature("safeTransferFrom(address,address,uint256)", locker, veToken, _tokenId),
+            Enum.Operation.Call
+        );
+        if (!_success) revert ExecFromSafeModuleFailed();
+    }
+
+    ////////////////////////////////////////////////////////////////
+    /// --- NFT DEPOSIT FUNCTIONS
+    ///////////////////////////////////////////////////////////////
+
+    /// @notice Deposits ZeroLend locker NFTs and mints sdZero or sdZeroGauge tokens
+    /// @param _tokenIds Array of token IDs to deposit
+    /// @param _stake If true, stakes sdToken in gauge; if false, sends to user
+    /// @param _user Address to receive the sdToken
+    function deposit(uint256[] calldata _tokenIds, bool _stake, address _user) external {
+        if (_user == address(0)) revert ADDRESS_ZERO();
+
+        uint256 _amount = _mergeLocksAndStake(_tokenIds);
+
+        if (_stake && gauge != address(0)) {
+            // Mint sdToken to this contract and stake in gauge
+            ITokenMinter(minter).mint(address(this), _amount);
+            ILiquidityGauge(gauge).deposit(_amount, _user);
+        } else {
+            // Mint sdToken directly to user
+            ITokenMinter(minter).mint(_user, _amount);
+        }
+    }
+
+    /// @notice Merges multiple locks and stakes the resulting token
+    /// @param _tokenIds Array of token IDs to merge
+    /// @return _amount Total amount of tokens merged
+    function _mergeLocksAndStake(uint256[] calldata _tokenIds) internal returns (uint256 _amount) {
         if (_tokenIds.length == 0) revert EmptyTokenIdList();
 
         uint256 _lockEnd = zeroLocker.lockedEnd(zeroLockedTokenId);
+        _unstakeNFTFromLocker();
 
-        _unstakeNftTokenFromLocker();
-
-        // Verify that _owner owns all tokenIds.
         for (uint256 index = 0; index < _tokenIds.length;) {
-            // _owner must own all token IDs.
             if (zeroLocker.ownerOf(_tokenIds[index]) != msg.sender) revert NotOwnerOfToken(_tokenIds[index]);
 
-            // Keep track of the merged amount.
             _amount += zeroLocker.locked(_tokenIds[index]).amount;
+            _merge(_tokenIds[index], zeroLockedTokenId);
 
-            // Merge user token into locker zeroLockedTokenId.
-            _mergeWithZeroLockedToken(_tokenIds[index], zeroLockedTokenId);
-
-            // Keep track of the maximum lock end time as it will be the lock end time of the merge result.
             uint256 _currentLockEnd = zeroLocker.lockedEnd(_tokenIds[index]);
             if (_currentLockEnd > _lockEnd) _lockEnd = _currentLockEnd;
 
@@ -152,34 +194,7 @@ contract Depositor is BaseDepositor {
             }
         }
 
-        // Put token back into staking.
-        _stakeNftTokenFromLocker(zeroLockedTokenId);
-
+        _stakeNFTFromLocker(zeroLockedTokenId);
         emit LockIncreased(_amount, _lockEnd);
-    }
-
-    /// @notice Deposit ZeroLend locker NFTs, and receive sdZero or sdZeroGauge in return.
-    /// @param _tokenIds Token IDs to deposit.
-    /// @param _stake Whether to stake the sdToken in the gauge.
-    /// @param _user Address of the user to receive the sdToken.
-    /// @dev In order to allow the transfer of the NFT tokens, msg.sender needs to give an approvalForAll to the locker.
-    /// If stake is true, sdZero tokens are staked in the gauge which distributes rewards. If stake is false,
-    /// sdZero tokens are sent to the user.
-    function deposit(uint256[] calldata _tokenIds, bool _stake, address _user) external {
-        if (_user == address(0)) revert ADDRESS_ZERO();
-
-        uint256 _amount = _lockerDeposit(_tokenIds);
-
-        // Mint sdtoken to the user if the gauge is not set.
-        if (_stake && gauge != address(0)) {
-            /// Mint sdToken to this contract.
-            ITokenMinter(minter).mint(address(this), _amount);
-
-            /// Deposit sdToken into gauge for _user.
-            ILiquidityGauge(gauge).deposit(_amount, _user);
-        } else {
-            /// Mint sdToken to _user.
-            ITokenMinter(minter).mint(_user, _amount);
-        }
     }
 }
