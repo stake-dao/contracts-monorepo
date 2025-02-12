@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 
-contract Redeem is ReentrancyGuard {
+contract Redeem {
     using SafeERC20 for IERC20;
 
     /// @notice The token to receive.
@@ -33,7 +32,7 @@ contract Redeem is ReentrancyGuard {
     /// @notice Redeems all sdTokens and gauge shares from msg.sender.
     ///         Claims gauge rewards to msg.sender if they exist.
     ///         Burns the redeemed sdTokens and sends the underlying tokens to msg.sender.
-    function redeem() external nonReentrant {
+    function redeem() external {
         // 1. Transfer sdTokens from user -> contract
         uint256 redeemAmount = IERC20(sdToken).balanceOf(msg.sender);
 
