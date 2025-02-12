@@ -10,5 +10,6 @@
     "@stake-dao/address-book": "workspace:*",
     "@stake-dao/herdaddy": "workspace:*",
     "@stake-dao/vyper": "workspace:*"
+
   }
 }

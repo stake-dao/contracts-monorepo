@@ -57,7 +57,6 @@ contract RedeemTest is Test {
 
         vm.prank(ISdToken(FPIS.SDTOKEN).burner());
         ISdToken(FPIS.SDTOKEN).setBurnerOperator(address(redeem));
-        
     }
 
     function test_initialState() public view {
@@ -77,7 +76,9 @@ contract RedeemTest is Test {
         redeem.redeem();
         vm.stopPrank();
 
-        uint256 expectedBalance = sdTokenGaugeBalance > 0 ? sdTokenBalance + sdTokenGaugeBalance + claimableFromGauge + initialTokenBalance : sdTokenBalance + initialTokenBalance;
+        uint256 expectedBalance = sdTokenGaugeBalance > 0
+            ? sdTokenBalance + sdTokenGaugeBalance + claimableFromGauge + initialTokenBalance
+            : sdTokenBalance + initialTokenBalance;
 
         assertEq(token.balanceOf(DAO.GOVERNANCE), expectedBalance);
         assertEq(initialTokenSupply - (sdTokenBalance + sdTokenGaugeBalance), sdToken.totalSupply());
@@ -87,7 +88,7 @@ contract RedeemTest is Test {
     }
 
     function test_redeemAll() public {
-        for(uint i = 0; i<holders.length; i++){
+        for (uint256 i = 0; i < holders.length; i++) {
             uint256 initialTokenBalance = token.balanceOf(holders[i]);
             uint256 sdTokenBalance = sdToken.balanceOf(holders[i]);
             uint256 sdTokenGaugeBalance = sdTokenGauge.balanceOf(holders[i]);
@@ -99,7 +100,9 @@ contract RedeemTest is Test {
             redeem.redeem();
             vm.stopPrank();
 
-            uint256 expectedBalance = sdTokenGaugeBalance > 0 ? sdTokenBalance + sdTokenGaugeBalance + claimableFromGauge + initialTokenBalance : sdTokenBalance + initialTokenBalance;
+            uint256 expectedBalance = sdTokenGaugeBalance > 0
+                ? sdTokenBalance + sdTokenGaugeBalance + claimableFromGauge + initialTokenBalance
+                : sdTokenBalance + initialTokenBalance;
 
             assertEq(token.balanceOf(holders[i]), expectedBalance);
             assertEq(token.balanceOf(address(redeem)), sdToken.totalSupply());
