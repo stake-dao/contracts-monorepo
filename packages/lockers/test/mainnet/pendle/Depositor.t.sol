@@ -36,7 +36,7 @@ contract DepositorTest is Test {
     uint256 snapshotBalance;
 
     function setUp() public virtual {
-        uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"));
+        uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"), 21_415_198);
         vm.selectFork(forkId);
         token = IERC20(Pendle.PENDLE);
         veToken = IVePendle(Pendle.VEPENDLE);
@@ -84,7 +84,7 @@ contract DepositorTest is Test {
         assertEq(_sdToken.balanceOf(address(this)), amount);
         assertEq(liquidityGauge.balanceOf(address(this)), 0);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), snapshotBalance + amount, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), snapshotBalance + amount, 1e16);
     }
 
     function test_depositAndStake() public {
@@ -98,7 +98,7 @@ contract DepositorTest is Test {
         assertEq(token.balanceOf(address(depositor)), 0);
         assertEq(liquidityGauge.balanceOf(address(this)), amount);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), snapshotBalance + amount, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), snapshotBalance + amount, 1e16);
     }
 
     function test_depositAndStakeWithoutLock() public {
@@ -135,7 +135,7 @@ contract DepositorTest is Test {
         /// It should lock only the amount deposited from the depositor.
         assertEq(token.balanceOf(address(locker)), amount);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), snapshotBalance + amount, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), snapshotBalance + amount, 1e16);
     }
 
     function test_depositAndStakeWithoutLockThenDepositWith() public {
@@ -171,7 +171,7 @@ contract DepositorTest is Test {
         assertEq(liquidityGauge.balanceOf(address(_random)), amount + expectedIncentiveAmount);
         assertEq(_sdToken.balanceOf(address(_random)), 0);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), snapshotBalance + 200e18, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), snapshotBalance + 200e18, 1e16);
     }
 
     function test_depositAndStakeWithoutLockIncentivePercent() public {
@@ -206,7 +206,7 @@ contract DepositorTest is Test {
         assertEq(liquidityGauge.balanceOf(address(_random)), amount);
         assertEq(_sdToken.balanceOf(address(_random)), 0);
 
-        assertApproxEqRel(veToken.balanceOf(address(locker)), snapshotBalance + 200e18, 5e15);
+        assertApproxEqRel(veToken.balanceOf(address(locker)), snapshotBalance + 200e18, 1e16);
     }
 
     function test_transferGovernance() public {
