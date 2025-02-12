@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.7;
 
-import {Enum} from "@safe/contracts/common/Enum.sol";
+import {Enum} from "@safe/contracts/libraries/Enum.sol";
 
 interface ISafe {
     /**

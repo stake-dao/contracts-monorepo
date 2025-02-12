@@ -6,7 +6,7 @@ import {ILocker} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
 import {ILockerToken} from "src/common/interfaces/zerolend/zerolend/ILockerToken.sol";
 import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
 
-import {Enum} from "@safe/contracts/common/Enum.sol";
+import {Enum} from "@safe/contracts/libraries/Enum.sol";
 
 /// @title Stake DAO ZERO Depositor
 /// @notice Contract that accepts ZERO and locks them in the Locker, minting sdZERO in return

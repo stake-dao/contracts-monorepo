@@ -8,9 +8,13 @@ solidity-examples/=node_modules/@layerzerolabs/endpoint-v1-solidity-examples/con
 murky=node_modules/murky/
 <<<<<<< HEAD
 <<<<<<< HEAD
+<<<<<<< HEAD
 
 =======
 >>>>>>> b284c836 (fix: remappings)
 =======
 @safe/contracts/=lib/safe-smart-account/contracts/
 >>>>>>> c8cf29fc (feat: migration to Safe locker)
+=======
+@safe/contracts/=node_modules/@safe/contracts
+>>>>>>> f7c21b2d (refactor remove submodule + update accumulator)

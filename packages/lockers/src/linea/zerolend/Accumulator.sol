@@ -6,7 +6,7 @@ import {ILocker} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
 import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Enum} from "@safe/contracts/common/Enum.sol";
+import {Enum} from "@safe/contracts/libraries/Enum.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 
 /// @title StakeDAO ZERO Accumulator
@@ -44,9 +44,7 @@ contract Accumulator is BaseAccumulator {
     //////////////////////////////////////////////////////
 
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4.
-    /// @param notifySDT Deactivated, should be false.
-    /// @param claimFeeStrategy Deactivated, should be false.
-    function claimAndNotifyAll(bool notifySDT, bool claimFeeStrategy) external override {
+    function claimAndNotifyAll(bool, bool) external override {
         uint256 lockerZeroBalanceBefore = IERC20(ZERO).balanceOf(locker);
         uint256 lockerWethBalanceBefore = IERC20(WETH).balanceOf(locker);
 
@@ -67,7 +65,10 @@ contract Accumulator is BaseAccumulator {
                 abi.encodeWithSelector(IERC20.transfer.selector, address(this), zeroReward),
                 Enum.Operation.Call
             );
+
+            notifyReward(ZERO, false, false);
         }
+
         if (wethReward > 0) {
             ILocker(locker).execTransactionFromModuleReturnData(
                 WETH,
@@ -75,14 +76,8 @@ contract Accumulator is BaseAccumulator {
                 abi.encodeWithSelector(IERC20.transfer.selector, address(this), wethReward),
                 Enum.Operation.Call
             );
-        }
 
-        // Transfer rewards to the gauge.
-        if (zeroReward > 0) {
-            notifyReward(ZERO, notifySDT, claimFeeStrategy);
-        }
-        if (wethReward > 0) {
-            notifyReward(WETH, notifySDT, claimFeeStrategy);
+            notifyReward(WETH, false, false);
         }
     }
 

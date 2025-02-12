@@ -36,6 +36,9 @@ importers:
       '@openzeppelin/contracts':
         specifier: 4.9.0
         version: 4.9.0
+      '@safe':
+        specifier: github:safe-global/safe-smart-account
+        version: '@safe-global/safe-smart-account@https://codeload.github.com/safe-global/safe-smart-account/tar.gz/1c8b24a0a438e8c2cd089a9d830d1688a47a28d5'
       '@stake-dao/address-book':
         specifier: workspace:*
         version: link:../address-book
@@ -412,6 +415,10 @@ packages:
   '@openzeppelin/upgrades-core@1.34.1':
     resolution: {integrity: sha512-LV3hHm60htmP3HJjn2VoGqXNPn1RLFSSInRyXNbm15Z2oWKGxOfAWSC4+okRckum0yVB5g3k4/SEyqjsJRB07A==}
     hasBin: true
+
+  '@safe-global/safe-smart-account@https://codeload.github.com/safe-global/safe-smart-account/tar.gz/1c8b24a0a438e8c2cd089a9d830d1688a47a28d5':
+    resolution: {tarball: https://codeload.github.com/safe-global/safe-smart-account/tar.gz/1c8b24a0a438e8c2cd089a9d830d1688a47a28d5}
+    version: 1.4.1-build.0
 
   '@scure/base@1.1.7':
     resolution: {integrity: sha512-PPNYBslrLNNUQ/Yad37MHYsNQtK67EhWb6WtSvNLLPo7SdVZgkUjD6Dg+5On7zNwmskf8OX7I7Nx5oN+MIWE0g==}
@@ -2700,6 +2707,8 @@ snapshots:
       solidity-ast: 0.4.56
     transitivePeerDependencies:
       - supports-color
+
+  '@safe-global/safe-smart-account@https://codeload.github.com/safe-global/safe-smart-account/tar.gz/1c8b24a0a438e8c2cd089a9d830d1688a47a28d5': {}
 
   '@scure/base@1.1.7': {}
 
