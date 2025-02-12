@@ -43,7 +43,7 @@ contract Redeem {
         // 2. Unstake from gauge: claim rewards + withdraw
         uint256 sdTokenGaugeBalance = ILiquidityGauge(sdTokenGauge).balanceOf(msg.sender);
         if (sdTokenGaugeBalance > 0) {
-            // Claim rewards to msg.sender 
+            // Claim rewards to msg.sender
             ILiquidityGauge(sdTokenGauge).claim_rewards(msg.sender);
 
             // Transfer gauge shares from user to this contract
