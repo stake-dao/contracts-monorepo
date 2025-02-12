@@ -11,20 +11,13 @@ import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {IDepositor} from "src/common/interfaces/IDepositor.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {ILocker, ISafe} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
-
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+// TODO complete
+import {DAO} from "address-book/src/dao/59144.sol";
 
 import {SafeProxyFactory} from "@safe/contracts/proxies/SafeProxyFactory.sol";
 import {Safe, Enum} from "@safe/contracts/Safe.sol";
 import {SafeProxy} from "@safe/contracts/proxies/SafeProxy.sol";
-
-// TODO create, import and use linea governance addresses
-library DAO {
-    address public constant MAIN_DEPLOYER = 0x1804c8AB1F12E6bbf3894d4083f33e07309d1f38;
-    address public constant TREASURY = address(2);
-    address public constant LIQUIDITY_FEES_RECIPIENT = address(3);
-    address public constant GOVERNANCE = address(4);
-}
 
 contract Deploy is DeployAccumulator {
     address sdZero;
@@ -129,8 +122,6 @@ contract Deploy is DeployAccumulator {
             payable(0),
             abi.encodePacked(uint256(uint160(DAO.MAIN_DEPLOYER)), uint8(0), uint256(1))
         );
-
-        address[] memory _owners = ILocker(locker).getOwners();
     }
 
     function _safeApproveZeroLocker() internal {
