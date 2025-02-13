@@ -205,20 +205,33 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
         // Process any pending rewards if they exist and there is supply
         if (pendingRewards > 0 && supply > 0) {
+            // Calculate the new rewards to be added to the vault.
             uint256 newRewards = pendingRewards - _vault.pendingRewards;
 
-            // Only process if claimed or above minimum threshold
-            if (claimed || newRewards > MIN_MEANINGFUL_REWARDS) {
+            if (claimed) {
                 // Calculate total fees in one operation
-                uint256 totalFees = newRewards.mulDiv(getTotalFeePercent(), 1e18);
+                // We charge only protocol fee on the claimed rewards.
+                uint256 totalFees = newRewards.mulDiv(getProtocolFeePercent(), 1e18);
 
-                // Update integral with new rewards per token.
+                // Update integral with new rewards per token
                 integral += (newRewards - totalFees).mulDiv(SCALING_FACTOR, supply);
 
-                // Track pending rewards only for unclaimed rewards
-                if (!claimed) {
-                    _vault.pendingRewards += newRewards;
-                }
+                // Update protocol fees accrued.
+                protocolFeesAccrued += totalFees;
+            }
+            // If the new rewards are above the minimum meaningful rewards,
+            // we update the integral and pending rewards.
+            // Otherwise, we don't update the integral to avoid precision loss. It won't be lost, just delayed.
+            else if (newRewards > MIN_MEANINGFUL_REWARDS) {
+                // Calculate total fees in one operation
+                // We charge protocol and harvest fees on the unclaimed rewards.
+                uint256 totalFees = newRewards.mulDiv(getTotalFeePercent(), 1e18);
+
+                // Update integral with new rewards per token
+                integral += (newRewards - totalFees).mulDiv(SCALING_FACTOR, supply);
+
+                // Update pending rewards.
+                _vault.pendingRewards += newRewards;
             }
         }
 
