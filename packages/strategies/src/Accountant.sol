@@ -205,18 +205,17 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
         // Process any pending rewards if they exist and there is supply
         if (pendingRewards > 0 && supply > 0) {
-            // Calculate the new rewards to be added to the vault.
             uint256 newRewards = pendingRewards - _vault.pendingRewards;
 
-            // If the new rewards are less than the minimum meaningful rewards,
-            // we don't update the integral and pending rewards to avoid precision loss.
-            if (newRewards > MIN_MEANINGFUL_REWARDS) {
+            // Only process if claimed or above minimum threshold
+            if (claimed || newRewards > MIN_MEANINGFUL_REWARDS) {
                 // Calculate total fees in one operation
                 uint256 totalFees = newRewards.mulDiv(getTotalFeePercent(), 1e18);
 
-                // Update integral with new rewards per token
+                // Update integral with new rewards per token.
                 integral += (newRewards - totalFees).mulDiv(SCALING_FACTOR, supply);
 
+                // Track pending rewards only for unclaimed rewards
                 if (!claimed) {
                     _vault.pendingRewards += newRewards;
                 }
