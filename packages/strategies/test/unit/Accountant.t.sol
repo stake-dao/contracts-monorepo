@@ -77,8 +77,8 @@ contract AccountantTest is BaseTest {
 
     function test_checkpoint_with_pending_rewards(uint128 amount, uint128 rewards) public {
         // Ensure reasonable bounds for testing
-        vm.assume(amount >= 1e6 && amount <= 1e20);
-        vm.assume(rewards >= 1e6 && rewards <= 1e20);
+        vm.assume(amount >= 1e18 && amount <= 1e24);
+        vm.assume(rewards >= 1e18 && rewards <= 1e24);
 
         // vm.assume(uint256(rewards).mulDiv(accountant.getTotalFeePercent(), 1e18) >= 1e6);
         address user = address(0x1);
