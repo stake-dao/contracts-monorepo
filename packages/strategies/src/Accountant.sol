@@ -66,6 +66,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @notice The maximum fee percent (40%).
     uint256 public constant MAX_FEE_PERCENT = 0.4e18;
 
+    /// @notice The minimum amount of rewards to be added to the vault.
+    uint256 public constant MIN_MEANINGFUL_REWARDS = 1e18;
+
     /// @notice The registry of addresses.
     address public immutable REGISTRY;
 
@@ -202,18 +205,21 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
         // Process any pending rewards if they exist and there is supply
         if (pendingRewards > 0 && supply > 0) {
-
             // Calculate the new rewards to be added to the vault.
             uint256 newRewards = pendingRewards - _vault.pendingRewards;
 
-            // Calculate total fees in one operation
-            uint256 totalFees = newRewards.mulDiv(getTotalFeePercent(), 1e18);
+            // If the new rewards are less than the minimum meaningful rewards,
+            // we don't update the integral and pending rewards to avoid precision loss.
+            if (newRewards > MIN_MEANINGFUL_REWARDS) {
+                // Calculate total fees in one operation
+                uint256 totalFees = newRewards.mulDiv(getTotalFeePercent(), 1e18);
 
-            // Update integral with new rewards per token
-            integral += (newRewards - totalFees).mulDiv(SCALING_FACTOR, supply);
+                // Update integral with new rewards per token
+                integral += (newRewards - totalFees).mulDiv(SCALING_FACTOR, supply);
 
-            if (!claimed) {
-                _vault.pendingRewards += newRewards;
+                if (!claimed) {
+                    _vault.pendingRewards += newRewards;
+                }
             }
         }
 
