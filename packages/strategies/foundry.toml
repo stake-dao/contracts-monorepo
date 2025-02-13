@@ -12,6 +12,8 @@ gas_reports = [
 
 [fuzz]
 runs = 1000
+max_test_rejects = 1_000_000 # Number of times `vm.assume` can fail
+
 
 
 [invariant]
