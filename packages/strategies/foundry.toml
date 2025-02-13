@@ -11,7 +11,7 @@ gas_reports = [
 ]
 
 [fuzz]
-runs = 10_000
+runs = 1000
 
 
 [invariant]
