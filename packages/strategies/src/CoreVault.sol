@@ -162,7 +162,7 @@ contract CoreVault is ERC20, IERC4626Minimal {
         return assets;
     }
 
-       /// @dev Internal function to deposit assets into the vault.
+    /// @dev Internal function to deposit assets into the vault.
     /// @param account The account providing the assets
     /// @param receiver The account receiving the shares
     /// @param assets The amount of assets to deposit
@@ -188,8 +188,6 @@ contract CoreVault is ERC20, IERC4626Minimal {
         /// 5. Mint shares to receiver
         _mint(receiver, shares);
     }
-
-
 
     //////////////////////////////////////////////////////
     /// --- WITHDRAWAL RELATED FUNCTIONS
@@ -265,7 +263,7 @@ contract CoreVault is ERC20, IERC4626Minimal {
         return assets;
     }
 
-        /// @dev Internal function to withdraw assets from the vault.
+    /// @dev Internal function to withdraw assets from the vault.
     /// @param owner The account that owns the shares
     /// @param receiver The account receiving the assets
     /// @param assets The amount of assets to withdraw
@@ -290,8 +288,6 @@ contract CoreVault is ERC20, IERC4626Minimal {
         _burn(owner, shares);
     }
 
-
- 
     //////////////////////////////////////////////////////
     /// --- ERC20 OVERRIDES
     //////////////////////////////////////////////////////
