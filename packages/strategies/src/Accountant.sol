@@ -189,9 +189,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param to The destination address (address(0) for burning).
     /// @param amount The amount of tokens being transferred/minted/burned.
     /// @param pendingRewards New rewards to be distributed to the vault.
-    /// @param claimed Whether these rewards were already claimed.
+    /// @param harvested Whether these rewards were already harvested.
     /// @custom:throws OnlyVault If caller is not the registered vault for the asset.
-    function checkpoint(address asset, address from, address to, uint256 amount, uint256 pendingRewards, bool claimed)
+    function checkpoint(address asset, address from, address to, uint256 amount, uint256 pendingRewards, bool harvested)
         external
         nonReentrant
     {
@@ -208,9 +208,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
             // Calculate the new rewards to be added to the vault.
             uint256 newRewards = pendingRewards - _vault.pendingRewards;
 
-            if (claimed) {
+            if (harvested) {
                 // Calculate total fees in one operation
-                // We charge only protocol fee on the claimed rewards.
+                // We charge only protocol fee on the harvested rewards.
                 uint256 totalFees = newRewards.mulDiv(getProtocolFeePercent(), 1e18);
 
                 // Update integral with new rewards per token
