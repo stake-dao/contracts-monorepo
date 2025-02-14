@@ -222,7 +222,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
             // If the new rewards are above the minimum meaningful rewards,
             // we update the integral and pending rewards.
             // Otherwise, we don't update the integral to avoid precision loss. It won't be lost, just delayed.
-            else if (newRewards > MIN_MEANINGFUL_REWARDS) {
+            else if (newRewards >= MIN_MEANINGFUL_REWARDS) {
                 // Calculate total fees in one operation
                 // We charge protocol and harvest fees on the unclaimed rewards.
                 uint256 totalFees = newRewards.mulDiv(getTotalFeePercent(), 1e18);
@@ -320,6 +320,13 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @return The pending rewards for the account in the vault.
     function getPendingRewards(address vault, address account) external view returns (uint256) {
         return accounts[vault][account].pendingRewards;
+    }
+
+    /// @notice Returns the pending rewards for a vault.
+    /// @param vault The vault address to query.
+    /// @return The pending rewards for the vault.
+    function getPendingRewards(address vault) external view returns (uint256) {
+        return vaults[vault].pendingRewards;
     }
 
     //////////////////////////////////////////////////////

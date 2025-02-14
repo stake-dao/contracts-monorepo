@@ -78,9 +78,8 @@ contract AccountantTest is BaseTest {
     function test_checkpoint_with_pending_rewards(uint128 amount, uint128 rewards) public {
         // Ensure reasonable bounds for testing
         vm.assume(amount >= 1e18 && amount <= 1e24);
-        vm.assume(rewards >= 1e18 && rewards <= 1e24);
-
-        // vm.assume(uint256(rewards).mulDiv(accountant.getTotalFeePercent(), 1e18) >= 1e6);
+        vm.assume(rewards > 0 && rewards <= 1e24);
+        
         address user = address(0x1);
 
         // Initial mint to user
@@ -89,23 +88,50 @@ contract AccountantTest is BaseTest {
         // Trigger pending rewards
         accountant.checkpoint(address(stakingToken), address(0), user, 0, rewards, false);
 
+        // Calculate expected rewards based on MIN_MEANINGFUL_REWARDS threshold
+        uint256 expectedRewards;
+        if (rewards >= accountant.MIN_MEANINGFUL_REWARDS()) {
+            expectedRewards = uint256(rewards) - uint256(rewards).mulDiv(accountant.getTotalFeePercent(), 1e18);
+
+            // Check that vault pending rewards are correctly updated
+            assertEq(accountant.getPendingRewards(address(this)), rewards);
+        } else {
+            expectedRewards = 0; // No rewards distributed if below threshold
+        }
+        
         // Check rewards are properly accounted
         assertApproxEqRel(
             accountant.getPendingRewards(address(this), user),
-            uint256(rewards) - uint256(rewards).mulDiv(accountant.getTotalFeePercent(), 1e18),
+            expectedRewards,
             1e15
         );
 
+        // Check that protocol fees are not yet accrued since rewards weren't harvested
+        assertEq(accountant.protocolFeesAccrued(), 0);
+
+        /// Add MEANINGFUL_REWARDS to the rewards.
+        rewards += uint128(accountant.MIN_MEANINGFUL_REWARDS());
+
+        // Trigger a new pending rewards.
+        /// This should trigger a new pending rewards, but not double account the rewards if already accounted.
+        accountant.checkpoint(address(stakingToken), address(0), user, 0, rewards, false);
+
+        // Calculate new expected rewards after adding MIN_MEANINGFUL_REWARDS
+        uint256 newExpectedRewards = uint256(rewards) - uint256(rewards).mulDiv(accountant.getTotalFeePercent(), 1e18);
+
+        // Verify that rewards are properly updated and not double-counted
+        assertApproxEqRel(
+            accountant.getPendingRewards(address(this), user),
+            newExpectedRewards,
+            1e15
+        );
+
+        // Verify vault's total pending rewards matches the new rewards amount
+        assertEq(accountant.getPendingRewards(address(this)), rewards);
+
+        // Protocol fees should still be 0 since rewards haven't been harvested
         assertEq(accountant.protocolFeesAccrued(), 0);
     }
-
-    // function test_checkpoint_zero_supply(uint128 rewards) public {
-    // vm.assume(rewards >= 1e6 && rewards <= 1e24);
-
-    // // Should not revert with zero supply
-    // accountant.checkpoint(address(stakingToken), address(0), address(0), 0, rewards, false);
-    // assertEq(accountant.protocolFeesAccrued(), 0);
-    // }
 
     // function test_harvest_process(uint128 amount, uint128 rewards) public {
     // // Ensure reasonable bounds for testing
