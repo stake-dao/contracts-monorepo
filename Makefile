@@ -16,7 +16,7 @@ install:
 	pnpm i
 
 test:
-	@forge test --gas-report --match-contract AccountantTest --match-test test_checkpoint_with_pending_rewards
+	@forge test --gas-report --match-contract AccountantTest --match-test test_harvest
 
 test-f-%:
 	@FOUNDRY_MATCH_TEST=$* make test

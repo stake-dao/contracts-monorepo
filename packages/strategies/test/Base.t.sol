@@ -9,6 +9,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 import {MockStrategy} from "test/mocks/MockStrategy.sol";
 import {MockRegistry} from "test/mocks/MockRegistry.sol";
+import {MockHarvester} from "test/mocks/MockHarvester.sol";
 import {MockAllocator} from "test/mocks/MockAllocator.sol";
 
 import "src/Accountant.sol";
@@ -21,6 +22,7 @@ abstract contract BaseTest is Test {
 
     MockStrategy public strategy;
     MockRegistry public registry;
+    MockHarvester public harvester;
     MockAllocator public allocator;
 
     Accountant public accountant;
@@ -34,14 +36,18 @@ abstract contract BaseTest is Test {
         strategy = new MockStrategy();
         registry = new MockRegistry();
         allocator = new MockAllocator();
+        harvester = new MockHarvester(address(rewardToken));
         accountant = new Accountant(address(this), address(registry), address(rewardToken));
 
         /// Set the vault
         registry.setVault(address(this));
+        registry.setHarvester(address(harvester));
 
         /// Label the contracts
         vm.label({account: address(strategy), newLabel: "Strategy"});
         vm.label({account: address(registry), newLabel: "Registry"});
+        vm.label({account: address(allocator), newLabel: "Allocator"});
+        vm.label({account: address(harvester), newLabel: "Harvester"});
         vm.label({account: address(accountant), newLabel: "Accountant"});
         vm.label({account: address(rewardToken), newLabel: "Reward Token"});
         vm.label({account: address(stakingToken), newLabel: "Staking Token"});

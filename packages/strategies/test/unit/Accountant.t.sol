@@ -79,7 +79,7 @@ contract AccountantTest is BaseTest {
         // Ensure reasonable bounds for testing
         vm.assume(amount >= 1e18 && amount <= 1e24);
         vm.assume(rewards > 0 && rewards <= 1e24);
-        
+
         address user = address(0x1);
 
         // Initial mint to user
@@ -98,13 +98,9 @@ contract AccountantTest is BaseTest {
         } else {
             expectedRewards = 0; // No rewards distributed if below threshold
         }
-        
+
         // Check rewards are properly accounted
-        assertApproxEqRel(
-            accountant.getPendingRewards(address(this), user),
-            expectedRewards,
-            1e15
-        );
+        assertApproxEqRel(accountant.getPendingRewards(address(this), user), expectedRewards, 1e15);
 
         // Check that protocol fees are not yet accrued since rewards weren't harvested
         assertEq(accountant.protocolFeesAccrued(), 0);
@@ -120,11 +116,7 @@ contract AccountantTest is BaseTest {
         uint256 newExpectedRewards = uint256(rewards) - uint256(rewards).mulDiv(accountant.getTotalFeePercent(), 1e18);
 
         // Verify that rewards are properly updated and not double-counted
-        assertApproxEqRel(
-            accountant.getPendingRewards(address(this), user),
-            newExpectedRewards,
-            1e15
-        );
+        assertApproxEqRel(accountant.getPendingRewards(address(this), user), newExpectedRewards, 1e15);
 
         // Verify vault's total pending rewards matches the new rewards amount
         assertEq(accountant.getPendingRewards(address(this)), rewards);
@@ -133,32 +125,56 @@ contract AccountantTest is BaseTest {
         assertEq(accountant.protocolFeesAccrued(), 0);
     }
 
-    // function test_harvest_process(uint128 amount, uint128 rewards) public {
-    // // Ensure reasonable bounds for testing
-    // vm.assume(amount >= 1e6 && amount <= 1e24);
-    // vm.assume(rewards >= 1e6 && rewards <= 1e24);
-    // vm.assume(uint256(rewards).mulDiv(accountant.getTotalFeePercent(), 1e18) >= 1e6);
-    // address user = address(0x1);
+    function test_harvest(uint128 amount, uint128 rewards) public {
+        // Ensure reasonable bounds for testing
+        vm.assume(amount >= 1e6 && amount <= 1e24);
+        vm.assume(rewards >= accountant.MIN_MEANINGFUL_REWARDS() && rewards <= 1e24);
 
-    // // Initial mint to user
-    // accountant.checkpoint(address(stakingToken), address(0), user, amount, 0, false);
+        address[] memory vaults = new address[](1);
+        vaults[0] = address(this);
+        bytes[] memory harvestData = new bytes[](1);
+        harvestData[0] = abi.encode(rewards, 1e18);
 
-    // // Mock rewards and harvest
-    // deal(address(rewardToken), address(this), rewards);
-    // rewardToken.approve(address(accountant), rewards);
+        /// Test that the harvester is not set.
+        registry.setHarvester(address(0));
 
-    // address[] memory vaults = new address[](1);
-    // vaults[0] = address(this);
-    // bytes[] memory harvestData = new bytes[](1);
-    // harvestData[0] = "";
+        vm.expectRevert(Accountant.NoHarvester.selector);
+        accountant.harvest(vaults, harvestData);
 
-    // accountant.harvest(vaults, harvestData);
+        /// Test that the harvester is set.
+        registry.setHarvester(address(harvester));
 
-    // // Verify harvest fees
-    // uint256 expectedProtocolFees = uint256(rewards).mulDiv(accountant.getProtocolFeePercent(), 1e18);
-    // uint256 expectedHarvestFees = uint256(rewards).mulDiv(accountant.getHarvestFeePercent(), 1e18);
-    // assertEq(accountant.protocolFeesAccrued(), expectedProtocolFees + expectedHarvestFees);
-    // }
+        /// Test that the harvest is successful.
+        /// Supply is 0, so the harvest should revert.
+        vm.expectRevert();
+        accountant.harvest(vaults, harvestData);
+
+        address user = address(0x1);
+        address harvester = address(0x2);
+
+        // Initial mint to user
+        accountant.checkpoint(address(stakingToken), address(0), user, amount, 0, false);
+        assertEq(accountant.totalSupply(address(this)), amount);
+
+        /// Check that the reward token balance is 0.
+        assertEq(rewardToken.balanceOf(harvester), 0);
+        assertEq(rewardToken.balanceOf(address(accountant)), 0);
+
+        /// Get the harvest fee.
+        uint256 harvestFee = uint256(rewards).mulDiv(accountant.getCurrentHarvestFee(), 1e18);
+
+        /// Test that the harvest is successful.
+        vm.prank(harvester);
+        accountant.harvest(vaults, harvestData);
+
+        /// Check that the reward token balance is correct.
+        assertEq(rewardToken.balanceOf(harvester), harvestFee);
+        assertEq(rewardToken.balanceOf(address(accountant)), rewards - harvestFee);
+
+        // Verify harvest fees
+        uint256 expectedProtocolFees = uint256(rewards).mulDiv(accountant.getProtocolFeePercent(), 1e18);
+        assertEq(accountant.protocolFeesAccrued(), expectedProtocolFees);
+    }
 
     // function test_claim_rewards(uint128 amount, uint128 rewards) public {
     // // Ensure reasonable bounds for testing
