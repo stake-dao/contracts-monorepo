@@ -53,7 +53,7 @@ contract Vault is Test {
         assertEq(address(vault.STRATEGY()), address(strategy));
         assertEq(address(vault.ALLOCATOR()), address(allocator));
         assertEq(address(vault.ACCOUNTANT()), address(accountant));
-        assertEq(address(vault.ASSET()), address(token));
+        assertEq(address(vault.asset()), address(token));
 
         assertEq(vault.name(), "StakeDAO ERC20Mock Vault");
         assertEq(vault.symbol(), "sd-MTK-vault");
