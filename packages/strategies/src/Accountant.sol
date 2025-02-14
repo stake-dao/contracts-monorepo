@@ -371,6 +371,10 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         private
         returns (uint256 harvesterFee)
     {
+        // Fees should be calculated before the harvest.
+        uint256 currentHarvestFee = getCurrentHarvestFee();
+        uint256 protocolFeePercent = getProtocolFeePercent();
+
         // Harvest the asset
         (uint256 feeSubjectAmount, uint256 feeExemptAmount) = abi.decode(
             harvester.functionDelegateCall(
@@ -381,10 +385,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
         uint256 amount = feeSubjectAmount + feeExemptAmount;
         if (amount == 0) return 0;
-
-        // Calculate fees
-        uint256 currentHarvestFee = getCurrentHarvestFee();
-        uint256 protocolFeePercent = getProtocolFeePercent();
 
         /// We charge protocol fee on the feeable amount.
         uint256 protocolFee = feeSubjectAmount.mulDiv(protocolFeePercent, 1e18);
