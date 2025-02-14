@@ -190,6 +190,37 @@ contract AccountantTest is BaseTest {
         // Verify harvest fees
         uint256 expectedProtocolFees = uint256(rewards).mulDiv(accountant.getProtocolFeePercent(), 1e18);
         assertEq(accountant.protocolFeesAccrued(), expectedProtocolFees);
+
+        /// Reset balance to 0 for simplicity.
+        deal(address(rewardToken), address(accountant), 0);
+        deal(address(rewardToken), address(harvester), 0);
+
+        assertEq(rewardToken.balanceOf(address(accountant)), 0);
+        assertEq(rewardToken.balanceOf(address(harvester)), 0);
+
+        /// Set Fee Exemption.
+        /// 2e18 means half of the rewards are exempted from fees.
+        harvestData[0] = abi.encode(rewards, 2e18);
+
+        /// Harvest fee should be taken from the full rewards.
+        harvestFee = uint256(rewards).mulDiv(accountant.getCurrentHarvestFee(), 1e18);
+
+        uint protocolFees = accountant.protocolFeesAccrued();
+
+        /// Harvest again.
+        vm.prank(harvester);
+        accountant.harvest(vaults, harvestData);
+
+        /// But protocol fees should be taken only from the half of the rewards.
+        expectedProtocolFees = uint256(rewards).mulDiv(accountant.getProtocolFeePercent(), 1e18) / 2;
+
+        /// Check that the reward token balance is correct.
+        assertEq(rewardToken.balanceOf(harvester), harvestFee);
+        assertEq(rewardToken.balanceOf(address(accountant)), rewards - harvestFee);
+
+        /// Check that the protocol fees are correct.
+        /// Difference should be really small because of the rounding of the MockHarvester.
+        assertApproxEqAbs(accountant.protocolFeesAccrued(), protocolFees + expectedProtocolFees, 1);
     }
 
     // function test_claim_rewards(uint128 amount, uint128 rewards) public {
