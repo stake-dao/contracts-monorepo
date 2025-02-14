@@ -298,32 +298,23 @@ contract AccountantTest is BaseTest {
         assertEq(rewardToken.balanceOf(feeReceiver), expectedFees);
     }
 
-    // function test_access_control() public {
-    // // Test OnlyVault modifier
-    // vm.expectRevert(Accountant.OnlyVault.selector);
-    // vm.prank(address(0x1));
-    // accountant.checkpoint(address(stakingToken), address(0), address(0), 0, 0, false);
+    function test_access_control() public {
+        // Test OnlyVault modifier
+        vm.expectRevert(Accountant.OnlyVault.selector);
+        vm.prank(address(0x1));
+        accountant.checkpoint(address(stakingToken), address(0), address(0), 0, 0, false);
 
-    // // Test OnlyOwner modifier
-    // vm.expectRevert(Ownable.OwnableUnauthorizedAccount.selector);
-    // vm.prank(address(0x1));
-    // accountant.setProtocolFeePercent(0.1e18);
-    // }
+        // Test OnlyOwner modifier
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0x1)));
+        vm.prank(address(0x1));
+        accountant.setProtocolFeePercent(0.1e18);
 
-    // function test_edge_cases(uint128 amount) public {
-    // // Use a reasonable minimum amount for testing
-    // vm.assume(amount >= 1e6 && amount <= 1e24);
-    // address user = address(0x1);
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0x1)));
+        vm.prank(address(0x1));
+        accountant.setHarvestFeePercent(0.1e18);
 
-    // // Test zero supply vault
-    // accountant.checkpoint(address(stakingToken), address(0), address(0), 0, amount, false);
-
-    // // Test large reward near MAX_FEE_PERCENT
-    // uint256 largeReward = type(uint128).max;
-    // accountant.checkpoint(address(stakingToken), address(0), user, amount, 0, false);
-    // accountant.checkpoint(address(stakingToken), address(0), address(0), 0, largeReward, false);
-
-    // // Verify no overflow
-    // assertTrue(accountant.protocolFeesAccrued() > 0);
-    // }
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(0x1)));
+        vm.prank(address(0x1));
+        accountant.setHarvestUrgencyThreshold(0.1e18);
+    }
 }
