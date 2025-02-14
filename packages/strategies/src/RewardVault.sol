@@ -110,6 +110,13 @@ contract RewardVault is CoreVault {
         return uint160(rewardData[token].slot2 & StorageMasks.REWARD_PER_TOKEN_STORED_MASK);
     }
 
+    /// @notice Returns the reward amount for the current duration
+    /// @param _rewardsToken The reward token to check
+    /// @return The total rewards for the duration
+    function getRewardForDuration(address _rewardsToken) external view returns (uint256) {
+        return getRewardRate(_rewardsToken) * getRewardsDuration(_rewardsToken);
+    }
+
     //////////////////////////////////////////////////////
     /// --- REWARD CALCULATION FUNCTIONS
     //////////////////////////////////////////////////////
@@ -149,16 +156,15 @@ contract RewardVault is CoreVault {
         return claimable + newEarned;
     }
 
-    /// @notice Returns the reward amount for the current duration
-    /// @param _rewardsToken The reward token to check
-    /// @return The total rewards for the duration
-    function getRewardForDuration(address _rewardsToken) external view returns (uint256) {
-        return getRewardRate(_rewardsToken) * getRewardsDuration(_rewardsToken);
-    }
-
     //////////////////////////////////////////////////////
     /// --- REWARD DISTRIBUTION FUNCTIONS
     //////////////////////////////////////////////////////
+
+    /// @notice Updates reward state for an account
+    /// @param account The account to update rewards for
+    function updateReward(address account) external {
+        _updateReward(account);
+    }
 
     /// @notice Notifies the contract of new reward amount
     /// @param _rewardsToken The reward token being distributed
@@ -196,16 +202,6 @@ contract RewardVault is CoreVault {
         rewardData[_rewardsToken].slot1 = slot1;
         rewardData[_rewardsToken].slot2 = slot2;
     }
-
-    /// @notice Updates reward state for an account
-    /// @param account The account to update rewards for
-    function updateReward(address account) external {
-        _updateReward(account);
-    }
-
-    //////////////////////////////////////////////////////
-    /// --- INTERNAL FUNCTIONS
-    //////////////////////////////////////////////////////
 
     /// @dev Internal function to update reward state
     /// @param account The account to update rewards for
