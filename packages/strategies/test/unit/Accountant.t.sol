@@ -229,6 +229,12 @@ contract AccountantTest is BaseTest {
         vm.assume(rewards >= accountant.MIN_MEANINGFUL_REWARDS() && rewards <= 1e24);
 
         address user = address(0x1);
+        address user2 = address(0x2);
+
+        address[] memory vaults = new address[](1);
+        vaults[0] = address(this);
+        bytes[] memory harvestData = new bytes[](1);
+        harvestData[0] = abi.encode(rewards, 1e18);
 
         // Initial mint to user
         accountant.checkpoint(address(stakingToken), address(0), user, amount, 0, false);
@@ -236,13 +242,14 @@ contract AccountantTest is BaseTest {
         // Generate rewards
         accountant.checkpoint(address(stakingToken), address(0), user, 0, rewards, false);
 
-        // Claim rewards
-        address[] memory vaults = new address[](1);
-        vaults[0] = address(this);
-        bytes[] memory harvestData = new bytes[](1);
-        harvestData[0] = abi.encode(rewards, 1e18);
+        vm.prank(user2);
+        vm.expectRevert(Accountant.NoPendingRewards.selector);
+        accountant.claim(vaults, user2, harvestData);
 
+        /// Get the pending rewards from the checkpoint.
         uint256 pendingRewards = accountant.getPendingRewards(address(this), user);
+
+        /// Since the user harvest as he claims, he also gets the harvest fee.
         uint256 harvestFee = uint256(rewards).mulDiv(accountant.getCurrentHarvestFee(), 1e18);
 
         vm.prank(user);
@@ -250,19 +257,14 @@ contract AccountantTest is BaseTest {
 
         // Verify rewards received.
         assertEq(rewardToken.balanceOf(user), pendingRewards + harvestFee);
+
+        /// No pending rewards.
+        harvestData[0] = "";
+
+        vm.prank(user);
+        vm.expectRevert(Accountant.NoPendingRewards.selector);
+        accountant.claim(vaults, user, harvestData);
     }
-
-    // function test_claim_no_pending_rewards() public {
-    // address user = address(0x1);
-    // vm.prank(user);
-    // address[] memory vaults = new address[](1);
-    // vaults[0] = address(this);
-    // bytes[] memory harvestData = new bytes[](1);
-    // harvestData[0] = "";
-
-    // vm.expectRevert(Accountant.NoPendingRewards.selector);
-    // accountant.claim(vaults, user, harvestData);
-    // }
 
     // function test_protocol_fee_management(uint128 amount, uint128 rewards) public {
     // // Ensure reasonable bounds for testing
