@@ -189,7 +189,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param to The destination address (address(0) for burning).
     /// @param amount The amount of tokens being transferred/minted/burned.
     /// @param pendingRewards New rewards to be distributed to the vault.
-    /// @param harvested Whether these rewards were already harvested.
+    /// @param harvested Whether these rewards were already harvested by the vault and sent to the contract.
     /// @custom:throws OnlyVault If caller is not the registered vault for the asset.
     function checkpoint(address asset, address from, address to, uint256 amount, uint256 pendingRewards, bool harvested)
         external
