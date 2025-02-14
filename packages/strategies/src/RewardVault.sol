@@ -14,7 +14,7 @@ import "src/libraries/StorageMasks.sol";
 ///      - Efficient reward data storage using bit packing
 ///      - Multiple reward token support
 ///      - Reward rate and duration management
-///      - User reward tracking and distribution
+///      - Account reward tracking and distribution
 contract RewardVault is CoreVault {
     using Math for uint256;
     using SafeERC20 for IERC20;
@@ -47,9 +47,9 @@ contract RewardVault is CoreVault {
     /// @notice Mapping of reward token to its packed reward data
     mapping(address => PackedReward) private rewardData;
 
-    /// @notice User reward data mapping
+    /// @notice Account reward data mapping
     /// @dev [rewardPerTokenPaid (128) | claimable (128)]
-    mapping(address => mapping(address => PackedAccount)) private userData;
+    mapping(address => mapping(address => PackedAccount)) private accountData;
 
     //////////////////////////////////////////////////////
     /// --- ERRORS
@@ -81,7 +81,7 @@ contract RewardVault is CoreVault {
         return address(
             uint160(
                 rewardData[token].distributorAndDurationAndLastUpdateAndPeriodFinishSlot
-                    & StorageMasks.REWARD_DISTRIBUTOR_MASK
+                    & StorageMasks.REWARD_DISTRIBUTOR
             )
         );
     }
@@ -91,10 +91,8 @@ contract RewardVault is CoreVault {
     /// @return The duration in seconds
     function getRewardsDuration(address token) public view returns (uint32) {
         return uint32(
-            (
-                rewardData[token].distributorAndDurationAndLastUpdateAndPeriodFinishSlot
-                    & StorageMasks.REWARD_DURATION_MASK
-            ) >> 160
+            (rewardData[token].distributorAndDurationAndLastUpdateAndPeriodFinishSlot & StorageMasks.REWARD_DURATION)
+                >> 160
         );
     }
 
@@ -103,10 +101,8 @@ contract RewardVault is CoreVault {
     /// @return The timestamp of the last update
     function getLastUpdateTime(address token) public view returns (uint32) {
         return uint32(
-            (
-                rewardData[token].distributorAndDurationAndLastUpdateAndPeriodFinishSlot
-                    & StorageMasks.REWARD_LAST_UPDATE_MASK
-            ) >> 192
+            (rewardData[token].distributorAndDurationAndLastUpdateAndPeriodFinishSlot & StorageMasks.REWARD_LAST_UPDATE)
+                >> 192
         );
     }
 
@@ -117,7 +113,7 @@ contract RewardVault is CoreVault {
         return uint32(
             (
                 rewardData[token].distributorAndDurationAndLastUpdateAndPeriodFinishSlot
-                    & StorageMasks.REWARD_PERIOD_FINISH_MASK
+                    & StorageMasks.REWARD_PERIOD_FINISH
             ) >> 224
         );
     }
@@ -126,15 +122,14 @@ contract RewardVault is CoreVault {
     /// @param token The reward token address
     /// @return The rewards per second rate
     function getRewardRate(address token) public view returns (uint128) {
-        return uint128((rewardData[token].rewardRateAndRewardPerTokenStoredSlot & StorageMasks.REWARD_RATE_MASK) >> 128);
+        return uint128((rewardData[token].rewardRateAndRewardPerTokenStoredSlot & StorageMasks.REWARD_RATE) >> 128);
     }
 
     /// @notice Returns the reward per token stored for a given token
     /// @param token The reward token address
     /// @return The accumulated rewards per token
     function getRewardPerTokenStored(address token) public view returns (uint128) {
-        return
-            uint128(rewardData[token].rewardRateAndRewardPerTokenStoredSlot & StorageMasks.REWARD_PER_TOKEN_STORED_MASK);
+        return uint128(rewardData[token].rewardRateAndRewardPerTokenStoredSlot & StorageMasks.REWARD_PER_TOKEN_STORED);
     }
 
     /// @notice Returns the reward amount for the current duration
@@ -175,10 +170,11 @@ contract RewardVault is CoreVault {
     /// @param _rewardsToken The reward token to calculate
     /// @return The total earned rewards
     function earned(address account, address _rewardsToken) public view returns (uint256) {
-        PackedAccount storage userDataValue = userData[account][_rewardsToken];
+        PackedAccount storage accountDataValue = accountData[account][_rewardsToken];
         uint256 rewardPerTokenPaid =
-            userDataValue.rewardPerTokenPaidAndClaimableSlot & StorageMasks.USER_REWARD_PER_TOKEN_MASK;
-        uint256 claimable = (userDataValue.rewardPerTokenPaidAndClaimableSlot & StorageMasks.USER_CLAIMABLE_MASK) >> 128;
+            accountDataValue.rewardPerTokenPaidAndClaimableSlot & StorageMasks.ACCOUNT_REWARD_PER_TOKEN;
+        uint256 claimable =
+            (accountDataValue.rewardPerTokenPaidAndClaimableSlot & StorageMasks.ACCOUNT_CLAIMABLE) >> 128;
 
         uint256 newEarned = balanceOf(account) * (rewardPerToken(_rewardsToken) - rewardPerTokenPaid) / 1e18;
         return claimable + newEarned;
@@ -221,14 +217,14 @@ contract RewardVault is CoreVault {
 
         uint256 distributorAndDurationAndLastUpdateAndPeriodFinishSlot = (
             rewardData[_rewardsToken].distributorAndDurationAndLastUpdateAndPeriodFinishSlot
-                & StorageMasks.REWARD_DISTRIBUTOR_MASK
-        ) | ((uint256(rewardsDuration) << 160) & StorageMasks.REWARD_DURATION_MASK)
-            | ((uint256(currentTime) << 192) & StorageMasks.REWARD_LAST_UPDATE_MASK)
-            | ((uint256(currentTime + rewardsDuration) << 224) & StorageMasks.REWARD_PERIOD_FINISH_MASK);
+                & StorageMasks.REWARD_DISTRIBUTOR
+        ) | ((uint256(rewardsDuration) << 160) & StorageMasks.REWARD_DURATION)
+            | ((uint256(currentTime) << 192) & StorageMasks.REWARD_LAST_UPDATE)
+            | ((uint256(currentTime + rewardsDuration) << 224) & StorageMasks.REWARD_PERIOD_FINISH);
 
         uint256 rewardRateAndRewardPerTokenStoredSlot = (
-            getRewardPerTokenStored(_rewardsToken) & StorageMasks.REWARD_PER_TOKEN_STORED_MASK
-        ) | ((uint256(newRewardRate) << 128) & StorageMasks.REWARD_RATE_MASK);
+            getRewardPerTokenStored(_rewardsToken) & StorageMasks.REWARD_PER_TOKEN_STORED
+        ) | ((uint256(newRewardRate) << 128) & StorageMasks.REWARD_RATE);
 
         rewardData[_rewardsToken].distributorAndDurationAndLastUpdateAndPeriodFinishSlot =
             distributorAndDurationAndLastUpdateAndPeriodFinishSlot;
@@ -245,21 +241,21 @@ contract RewardVault is CoreVault {
 
             rewardData[token].distributorAndDurationAndLastUpdateAndPeriodFinishSlot = (
                 rewardData[token].distributorAndDurationAndLastUpdateAndPeriodFinishSlot
-                    & ~StorageMasks.REWARD_LAST_UPDATE_MASK
-            ) | ((uint256(currentTime) << 192) & StorageMasks.REWARD_LAST_UPDATE_MASK);
+                    & ~StorageMasks.REWARD_LAST_UPDATE
+            ) | ((uint256(currentTime) << 192) & StorageMasks.REWARD_LAST_UPDATE);
 
             rewardData[token].rewardRateAndRewardPerTokenStoredSlot = (
-                rewardData[token].rewardRateAndRewardPerTokenStoredSlot & StorageMasks.REWARD_RATE_MASK
-            ) | (uint128(newRewardPerToken) & StorageMasks.REWARD_PER_TOKEN_STORED_MASK);
+                rewardData[token].rewardRateAndRewardPerTokenStoredSlot & StorageMasks.REWARD_RATE
+            ) | (uint128(newRewardPerToken) & StorageMasks.REWARD_PER_TOKEN_STORED);
 
             if (account != address(0)) {
                 uint256 earnedAmount = earned(account, token);
-                PackedAccount storage userDataValue = userData[account][token];
+                PackedAccount storage accountDataValue = accountData[account][token];
 
-                // Update user data with new reward per token and claimable amount
-                userDataValue.rewardPerTokenPaidAndClaimableSlot = (
-                    uint128(newRewardPerToken) & StorageMasks.USER_REWARD_PER_TOKEN_MASK
-                ) | ((uint256(uint128(earnedAmount)) << 128) & StorageMasks.USER_CLAIMABLE_MASK);
+                // Update account data with new reward per token and claimable amount
+                accountDataValue.rewardPerTokenPaidAndClaimableSlot = (
+                    uint128(newRewardPerToken) & StorageMasks.ACCOUNT_REWARD_PER_TOKEN
+                ) | ((uint256(uint128(earnedAmount)) << 128) & StorageMasks.ACCOUNT_CLAIMABLE);
             }
         }
     }
