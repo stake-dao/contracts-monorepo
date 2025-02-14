@@ -163,6 +163,9 @@ contract AccountantTest is BaseTest {
         /// Get the harvest fee.
         uint256 harvestFee = uint256(rewards).mulDiv(accountant.getCurrentHarvestFee(), 1e18);
 
+        /// Since the balance is 0, the harvest fee should be to maximum.
+        assertEq(accountant.getCurrentHarvestFee(), accountant.getHarvestFeePercent());
+
         /// Test that the harvest is successful.
         vm.prank(harvester);
         accountant.harvest(vaults, harvestData);
@@ -170,6 +173,19 @@ contract AccountantTest is BaseTest {
         /// Check that the reward token balance is correct.
         assertEq(rewardToken.balanceOf(harvester), harvestFee);
         assertEq(rewardToken.balanceOf(address(accountant)), rewards - harvestFee);
+
+        /// Set the harvest urgency threshold to the rewards * 2.
+        accountant.setHarvestUrgencyThreshold(rewards * 2);
+
+        /// Harvest fee should be less than the maximum.
+        assertGt(accountant.getCurrentHarvestFee(), 0);
+        assertLt(accountant.getCurrentHarvestFee(), accountant.getHarvestFeePercent());
+
+        /// Set the harvest urgency threshold to the rewards.
+        accountant.setHarvestUrgencyThreshold(rewards - harvestFee);
+
+        /// Harvest fee should be 0.
+        assertEq(accountant.getCurrentHarvestFee(), 0);
 
         // Verify harvest fees
         uint256 expectedProtocolFees = uint256(rewards).mulDiv(accountant.getProtocolFeePercent(), 1e18);
