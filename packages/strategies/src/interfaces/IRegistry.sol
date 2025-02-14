@@ -11,4 +11,5 @@ interface IRegistry {
     function ALLOCATOR() external view returns (address);
     function HARVESTER() external view returns (address);
     function FEE_RECEIVER() external view returns (address);
+    function ACCOUNTANT() external view returns (address);
 }

@@ -10,9 +10,14 @@ contract MockRegistry is IRegistry {
     address public allocator;
     address public harvester;
     address public feeReceiver;
+    address public accountant;
 
     function vaults(address) external view returns (address) {
         return vault;
+    }
+
+    function ACCOUNTANT() external view returns (address) {
+        return accountant;
     }
 
     function ALLOCATOR() external view returns (address) {
@@ -61,5 +66,9 @@ contract MockRegistry is IRegistry {
 
     function setHarvester(address _harvester) external {
         harvester = _harvester;
+    }
+
+    function setAccountant(address _accountant) external {
+        accountant = _accountant;
     }
 }
