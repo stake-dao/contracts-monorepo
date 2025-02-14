@@ -428,7 +428,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         // netDelta is defined as newRewards + refund - totalFees.
         // Since amount = newRewards + pendingRewards + refund,
         // netDelta = amount - pendingRewards - totalFees.
-        int256 netDelta = int256(amount - pendingRewards - totalFees);
+        int256 netDelta = int256(amount) - int256(pendingRewards) - int256(totalFees);
 
         if (netDelta > 0) {
             /// Unpack supply and integral.
@@ -516,6 +516,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         if (harvestData.length != 0) {
             _batchHarvest({_vaults: _vaults, harvestData: harvestData, receiver: receiver});
         }
+
         _claim({_vaults: _vaults, account: msg.sender, receiver: receiver});
     }
 

@@ -236,22 +236,20 @@ contract AccountantTest is BaseTest {
         // Generate rewards
         accountant.checkpoint(address(stakingToken), address(0), user, 0, rewards, false);
 
-        // Mock reward token balance
-        deal(address(rewardToken), address(accountant), rewards);
-
         // Claim rewards
         address[] memory vaults = new address[](1);
         vaults[0] = address(this);
         bytes[] memory harvestData = new bytes[](1);
-        harvestData[0] = "";
+        harvestData[0] = abi.encode(rewards, 1e18);
 
         uint256 pendingRewards = accountant.getPendingRewards(address(this), user);
+        uint256 harvestFee = uint256(rewards).mulDiv(accountant.getCurrentHarvestFee(), 1e18);
 
         vm.prank(user);
         accountant.claim(vaults, user, harvestData);
 
-        // Verify rewards received
-        assertEq(rewardToken.balanceOf(user), pendingRewards);
+        // Verify rewards received.
+        assertEq(rewardToken.balanceOf(user), pendingRewards + harvestFee);
     }
 
     // function test_claim_no_pending_rewards() public {
