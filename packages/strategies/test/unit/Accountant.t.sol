@@ -266,28 +266,37 @@ contract AccountantTest is BaseTest {
         accountant.claim(vaults, user, harvestData);
     }
 
-    // function test_protocol_fee_management(uint128 amount, uint128 rewards) public {
-    // // Ensure reasonable bounds for testing
-    // vm.assume(amount >= 1e6 && amount <= 1e24);
-    // vm.assume(rewards >= 1e6 && rewards <= 1e24);
-    // vm.assume(uint256(rewards).mulDiv(accountant.getTotalFeePercent(), 1e18) >= 1e6);
-    // address user = address(0x1);
+    function test_protocol_fee_management(uint128 amount, uint128 rewards) public {
+        // Ensure reasonable bounds for testing
+        vm.assume(amount >= 1e6 && amount <= 1e24);
+        vm.assume(rewards >= accountant.MIN_MEANINGFUL_REWARDS() && rewards <= 1e24);
 
-    // // Initial mint and generate rewards
-    // accountant.checkpoint(address(stakingToken), address(0), user, amount, 0, false);
-    // accountant.checkpoint(address(stakingToken), address(0), address(0), 0, rewards, false);
+        address user = address(0x1);
+        address feeReceiver = address(0x2);
 
-    // // Mock reward token balance
-    // deal(address(rewardToken), address(accountant), rewards);
+        // Initial mint and generate rewards
+        accountant.checkpoint(address(stakingToken), address(0), user, amount, 0, true);
+        accountant.checkpoint(address(stakingToken), address(0), address(0), 0, rewards, true);
 
-    // // Verify protocol fees can be claimed
-    // uint256 expectedFees = uint256(rewards).mulDiv(accountant.getTotalFeePercent(), 1e18);
-    // assertEq(accountant.protocolFeesAccrued(), expectedFees);
+        // Mock reward token balance
+        deal(address(rewardToken), address(accountant), rewards);
 
-    // // Claim protocol fees
-    // accountant.claimProtocolFees();
-    // assertEq(accountant.protocolFeesAccrued(), 0);
-    // }
+        // Verify protocol fees can be claimed
+        uint256 expectedFees = uint256(rewards).mulDiv(accountant.getProtocolFeePercent(), 1e18);
+        assertEq(accountant.protocolFeesAccrued(), expectedFees);
+
+        // Claim protocol fees
+        vm.expectRevert(Accountant.NoFeeReceiver.selector);
+        accountant.claimProtocolFees();
+
+        // Set the fee receiver
+        registry.setFeeReceiver(feeReceiver);
+
+        // Claim protocol fees
+        accountant.claimProtocolFees();
+        assertEq(accountant.protocolFeesAccrued(), 0);
+        assertEq(rewardToken.balanceOf(feeReceiver), expectedFees);
+    }
 
     // function test_access_control() public {
     // // Test OnlyVault modifier
