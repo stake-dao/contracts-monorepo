@@ -51,8 +51,3 @@
 - Attempt disallowed calls, such as unauthorized claims on others’ behalf. Confirm revert.
 - Check `OnlyVault` triggers when a non-vault calls `checkpoint`.
 - Check `OnlyAllowed` triggers for restricted calls.
-
-## 8. Edge Cases
-- Zero supply vault: `checkpoint` and harvest calls should not revert.
-- Large reward distribution near `MAX_FEE_PERCENT`. Confirm no overflow.
-- Repeated claims with no new rewards. Confirm revert on subsequent calls.
