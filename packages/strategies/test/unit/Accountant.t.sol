@@ -205,7 +205,7 @@ contract AccountantTest is BaseTest {
         /// Harvest fee should be taken from the full rewards.
         harvestFee = uint256(rewards).mulDiv(accountant.getCurrentHarvestFee(), 1e18);
 
-        uint protocolFees = accountant.protocolFeesAccrued();
+        uint256 protocolFees = accountant.protocolFeesAccrued();
 
         /// Harvest again.
         vm.prank(harvester);
@@ -223,34 +223,36 @@ contract AccountantTest is BaseTest {
         assertApproxEqAbs(accountant.protocolFeesAccrued(), protocolFees + expectedProtocolFees, 1);
     }
 
-    // function test_claim_rewards(uint128 amount, uint128 rewards) public {
-    // // Ensure reasonable bounds for testing
-    // vm.assume(amount >= 1e6 && amount <= 1e24);
-    // vm.assume(rewards >= 1e6 && rewards <= 1e24);
-    // vm.assume(uint256(rewards).mulDiv(accountant.getTotalFeePercent(), 1e18) >= 1e6);
-    // address user = address(0x1);
+    function test_claim_rewards(uint128 amount, uint128 rewards) public {
+        // Ensure reasonable bounds for testing
+        vm.assume(amount >= 1e6 && amount <= 1e24);
+        vm.assume(rewards >= accountant.MIN_MEANINGFUL_REWARDS() && rewards <= 1e24);
 
-    // // Initial mint to user
-    // accountant.checkpoint(address(stakingToken), address(0), user, amount, 0, false);
+        address user = address(0x1);
 
-    // // Generate rewards
-    // accountant.checkpoint(address(stakingToken), address(0), address(0), 0, rewards, false);
+        // Initial mint to user
+        accountant.checkpoint(address(stakingToken), address(0), user, amount, 0, false);
 
-    // // Mock reward token balance
-    // deal(address(rewardToken), address(accountant), rewards);
+        // Generate rewards
+        accountant.checkpoint(address(stakingToken), address(0), user, 0, rewards, false);
 
-    // // Claim rewards
-    // vm.prank(user);
-    // address[] memory vaults = new address[](1);
-    // vaults[0] = address(this);
-    // bytes[] memory harvestData = new bytes[](1);
-    // harvestData[0] = "";
-    // accountant.claim(vaults, user, harvestData);
+        // Mock reward token balance
+        deal(address(rewardToken), address(accountant), rewards);
 
-    // // Verify rewards received
-    // uint256 expectedRewards = uint256(rewards) - uint256(rewards).mulDiv(accountant.getTotalFeePercent(), 1e18);
-    // assertEq(rewardToken.balanceOf(user), expectedRewards);
-    // }
+        // Claim rewards
+        address[] memory vaults = new address[](1);
+        vaults[0] = address(this);
+        bytes[] memory harvestData = new bytes[](1);
+        harvestData[0] = "";
+
+        uint256 pendingRewards = accountant.getPendingRewards(address(this), user);
+
+        vm.prank(user);
+        accountant.claim(vaults, user, harvestData);
+
+        // Verify rewards received
+        assertEq(rewardToken.balanceOf(user), pendingRewards);
+    }
 
     // function test_claim_no_pending_rewards() public {
     // address user = address(0x1);

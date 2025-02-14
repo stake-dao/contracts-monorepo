@@ -16,6 +16,10 @@ contract MockHarvester is IHarvester {
         override
         returns (uint256 feeSubjectAmount, uint256 feeExemptAmount)
     {
+        if (harvestData.length == 0) {
+            return (0, 0);
+        }
+
         (uint256 amount, uint256 randomSplit) = abi.decode(harvestData, (uint256, uint256));
 
         rewardToken.mint(address(this), amount);
