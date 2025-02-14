@@ -200,8 +200,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         PackedVault storage _vault = vaults[msg.sender];
         uint256 vaultSupplyAndIntegral = _vault.supplyAndIntegralSlot;
 
-        uint256 supply = vaultSupplyAndIntegral & StorageMasks.SUPPLY_MASK;
-        uint256 integral = (vaultSupplyAndIntegral & StorageMasks.INTEGRAL_MASK) >> 128;
+        uint256 supply = vaultSupplyAndIntegral & StorageMasks.SUPPLY;
+        uint256 integral = (vaultSupplyAndIntegral & StorageMasks.INTEGRAL) >> 128;
 
         // Process any pending rewards if they exist and there is supply
         if (pendingRewards > 0 && supply > 0) {
@@ -265,8 +265,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         }
 
         // Update vault storage with new supply and integral
-        _vault.supplyAndIntegralSlot =
-            (supply & StorageMasks.SUPPLY_MASK) | ((integral << 128) & StorageMasks.INTEGRAL_MASK);
+        _vault.supplyAndIntegralSlot = (supply & StorageMasks.SUPPLY) | ((integral << 128) & StorageMasks.INTEGRAL);
     }
 
     /// @dev Updates account state during operations.
@@ -285,8 +284,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         PackedAccount storage _account = accounts[vault][account];
         uint256 accountBalanceAndIntegral = _account.balanceAndIntegralSlot;
 
-        uint256 balance = accountBalanceAndIntegral & StorageMasks.BALANCE_MASK;
-        uint256 accountIntegral = (accountBalanceAndIntegral & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 128;
+        uint256 balance = accountBalanceAndIntegral & StorageMasks.BALANCE;
+        uint256 accountIntegral = (accountBalanceAndIntegral & StorageMasks.ACCOUNT_INTEGRAL) >> 128;
 
         // Update pending rewards based on the integral difference.
         _account.pendingRewards += (currentIntegral - accountIntegral).mulDiv(balance, SCALING_FACTOR);
@@ -296,14 +295,14 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
         // Pack and store updated values
         _account.balanceAndIntegralSlot =
-            (balance & StorageMasks.BALANCE_MASK) | ((currentIntegral << 128) & StorageMasks.ACCOUNT_INTEGRAL_MASK);
+            (balance & StorageMasks.BALANCE) | ((currentIntegral << 128) & StorageMasks.ACCOUNT_INTEGRAL);
     }
 
     /// @notice Returns the total supply of tokens in a vault.
     /// @param vault The vault address to query.
     /// @return The total supply of tokens in the vault.
     function totalSupply(address vault) external view returns (uint256) {
-        return vaults[vault].supplyAndIntegralSlot & StorageMasks.SUPPLY_MASK;
+        return vaults[vault].supplyAndIntegralSlot & StorageMasks.SUPPLY;
     }
 
     /// @notice Returns the token balance of an account in a vault.
@@ -311,7 +310,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param account The account address to check.
     /// @return The account's token balance in the vault.
     function balanceOf(address vault, address account) external view returns (uint256) {
-        return accounts[vault][account].balanceAndIntegralSlot & StorageMasks.BALANCE_MASK;
+        return accounts[vault][account].balanceAndIntegralSlot & StorageMasks.BALANCE;
     }
 
     /// @notice Returns the pending rewards for an account in a vault.
@@ -432,15 +431,14 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
         if (netDelta > 0) {
             /// Unpack supply and integral.
-            uint256 supply = vault.supplyAndIntegralSlot & StorageMasks.SUPPLY_MASK;
-            uint256 integral = (vault.supplyAndIntegralSlot & StorageMasks.INTEGRAL_MASK) >> 128;
+            uint256 supply = vault.supplyAndIntegralSlot & StorageMasks.SUPPLY;
+            uint256 integral = (vault.supplyAndIntegralSlot & StorageMasks.INTEGRAL) >> 128;
 
             // Only update the integral if the net extra rewards are positive.
             integral += (uint256(netDelta).mulDiv(SCALING_FACTOR, supply));
 
             /// Update vault storage.
-            vault.supplyAndIntegralSlot =
-                (supply & StorageMasks.SUPPLY_MASK) | ((integral << 128) & StorageMasks.INTEGRAL_MASK);
+            vault.supplyAndIntegralSlot = (supply & StorageMasks.SUPPLY) | ((integral << 128) & StorageMasks.INTEGRAL);
         } else if (netDelta < 0) {
             // If netDelta is negative, too many fees were taken.
             // Adjust the protocol fee accrual accordingly.
@@ -467,7 +465,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @notice Returns the current harvest fee percentage.
     /// @return The harvest fee percentage.
     function getHarvestFeePercent() public view returns (uint256) {
-        return fees.feesSlot & StorageMasks.HARVEST_FEE_MASK;
+        return fees.feesSlot & StorageMasks.HARVEST_FEE;
     }
 
     /// @notice Updates the harvest fee percentage.
@@ -475,8 +473,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @custom:throws FeeExceedsMaximum If fee would exceed maximum.
     function setHarvestFeePercent(uint256 _harvestFeePercent) external onlyOwner {
         uint256 feeSlot = fees.feesSlot;
-        uint256 protocolFeePercent = (feeSlot & StorageMasks.PROTOCOL_FEE_MASK) >> 64;
-        uint256 oldHarvestFeePercent = feeSlot & StorageMasks.HARVEST_FEE_MASK;
+        uint256 protocolFeePercent = (feeSlot & StorageMasks.PROTOCOL_FEE) >> 64;
+        uint256 oldHarvestFeePercent = feeSlot & StorageMasks.HARVEST_FEE;
 
         uint256 totalFee = protocolFeePercent + _harvestFeePercent;
         require(totalFee <= MAX_FEE_PERCENT, FeeExceedsMaximum());
@@ -559,13 +557,13 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
             // Load all storage values at once
             uint256 accountData = userAccount.balanceAndIntegralSlot;
-            uint256 balance = accountData & StorageMasks.BALANCE_MASK;
+            uint256 balance = accountData & StorageMasks.BALANCE;
 
             // Skip if user has no balance and no pending rewards
             if (balance != 0 || userAccount.pendingRewards != 0) {
                 uint256 vaultData = vault.supplyAndIntegralSlot;
-                uint256 accountIntegral = (accountData & StorageMasks.ACCOUNT_INTEGRAL_MASK) >> 128;
-                uint256 vaultIntegral = (vaultData & StorageMasks.INTEGRAL_MASK) >> 128;
+                uint256 accountIntegral = (accountData & StorageMasks.ACCOUNT_INTEGRAL) >> 128;
+                uint256 vaultIntegral = (vaultData & StorageMasks.INTEGRAL) >> 128;
 
                 // Calculate new rewards if integral has increased
                 if (vaultIntegral > accountIntegral) {
@@ -575,8 +573,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
                 totalAmount += userAccount.pendingRewards;
 
                 // Update account storage with new integral and reset pending rewards
-                userAccount.balanceAndIntegralSlot = (balance & StorageMasks.BALANCE_MASK)
-                    | ((vaultIntegral << 128) & StorageMasks.ACCOUNT_INTEGRAL_MASK);
+                userAccount.balanceAndIntegralSlot =
+                    (balance & StorageMasks.BALANCE) | ((vaultIntegral << 128) & StorageMasks.ACCOUNT_INTEGRAL);
                 userAccount.pendingRewards = 0;
             }
         }
@@ -593,13 +591,13 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @notice Returns the current protocol fee percentage.
     /// @return The protocol fee percentage.
     function getProtocolFeePercent() public view returns (uint256) {
-        return (fees.feesSlot & StorageMasks.PROTOCOL_FEE_MASK) >> 64;
+        return (fees.feesSlot & StorageMasks.PROTOCOL_FEE) >> 64;
     }
 
     /// @notice Returns the total fee percentage (protocol + harvest).
     /// @return The total fee percentage.
     function getTotalFeePercent() public view returns (uint256) {
-        return (fees.feesSlot & StorageMasks.TOTAL_FEE_MASK) >> 128;
+        return (fees.feesSlot & StorageMasks.TOTAL_FEE) >> 128;
     }
 
     /// @notice Updates the protocol fee percentage.
@@ -609,8 +607,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         require(_protocolFeePercent <= MAX_FEE_PERCENT, FeeExceedsMaximum());
 
         uint256 feeSlot = fees.feesSlot;
-        uint256 oldProtocolFeePercent = (feeSlot & StorageMasks.PROTOCOL_FEE_MASK) >> 64;
-        uint256 harvestFeePercent = feeSlot & StorageMasks.HARVEST_FEE_MASK;
+        uint256 oldProtocolFeePercent = (feeSlot & StorageMasks.PROTOCOL_FEE) >> 64;
+        uint256 harvestFeePercent = feeSlot & StorageMasks.HARVEST_FEE;
 
         uint256 totalFee = _protocolFeePercent + harvestFeePercent;
         require(totalFee <= MAX_FEE_PERCENT, FeeExceedsMaximum());
