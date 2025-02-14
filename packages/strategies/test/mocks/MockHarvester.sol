@@ -21,7 +21,7 @@ contract MockHarvester is IHarvester {
         rewardToken.mint(address(this), amount);
 
         /// Calculate the fee subject amount.
-        feeSubjectAmount = amount * randomSplit / 1e18;
+        feeSubjectAmount = amount * 1e18 / randomSplit;
 
         /// Calculate the fee exempt amount.
         feeExemptAmount = amount - feeSubjectAmount;
