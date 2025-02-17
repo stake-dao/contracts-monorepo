@@ -347,7 +347,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     function _batchHarvest(address[] calldata _vaults, bytes[] calldata harvestData, address receiver) internal {
         // Cache registry to avoid multiple SLOADs
         address registry = REGISTRY;
-        address harvester = IRegistry(registry).HARVESTER();
+        address harvester = IRegistry(registry).harvester();
         require(harvester != address(0), NoHarvester());
 
         uint256 totalHarvesterFee;
@@ -622,7 +622,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @dev Transfers fees to the configured fee receiver.
     /// @custom:throws NoFeeReceiver If the fee receiver is not set.
     function claimProtocolFees() external nonReentrant {
-        address feeReceiver = IRegistry(REGISTRY).FEE_RECEIVER();
+        address feeReceiver = IRegistry(REGISTRY).feeReceiver();
         require(feeReceiver != address(0), NoFeeReceiver());
 
         IERC20(REWARD_TOKEN).transfer(feeReceiver, protocolFeesAccrued);
