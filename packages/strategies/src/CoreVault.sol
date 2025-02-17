@@ -1,6 +1,8 @@
 /// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
+import {console} from "forge-std/src/console.sol";
+
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -60,6 +62,15 @@ contract CoreVault is ERC20, IERC4626Minimal {
             accountant := mload(add(args, 40))
         }
         return IAccountant(accountant);
+    }
+
+    function GAUGE() public view returns (address) {
+        bytes memory args = Clones.fetchCloneArgs(address(this));
+        address gauge;
+        assembly {
+            gauge := mload(add(args, 60))
+        }
+        return gauge;
     }
 
     /// @notice Returns the allocator contract from registry
@@ -163,7 +174,7 @@ contract CoreVault is ERC20, IERC4626Minimal {
     /// @param shares The amount of shares to mint
     function _deposit(address account, address receiver, uint256 assets, uint256 shares) internal virtual {
         /// 1. Get the allocation.
-        IAllocator.Allocation memory allocation = ALLOCATOR().getDepositAllocation(asset(), assets);
+        IAllocator.Allocation memory allocation = ALLOCATOR().getDepositAllocation(GAUGE(), assets);
 
         /// 2. Transfer the assets to the strategy from the account.
         for (uint256 i = 0; i < allocation.targets.length; i++) {
@@ -174,10 +185,7 @@ contract CoreVault is ERC20, IERC4626Minimal {
         uint256 pendingRewards = STRATEGY().deposit(allocation);
 
         /// 4. Checkpoint the vault. The accountant will deal with minting and burning.
-        ACCOUNTANT().checkpoint(allocation.gauge, address(0), receiver, assets, pendingRewards, allocation.claimRewards);
-
-        /// 5. Mint shares to receiver
-        _mint(receiver, shares);
+        _mint(receiver, shares, pendingRewards, allocation.claimRewards);
     }
 
     //////////////////////////////////////////////////////
@@ -261,19 +269,16 @@ contract CoreVault is ERC20, IERC4626Minimal {
     /// @param shares The amount of shares to burn
     function _withdraw(address owner, address receiver, uint256 assets, uint256 shares) internal virtual {
         /// 1. Get the allocation.
-        IAllocator.Allocation memory allocation = ALLOCATOR().getWithdrawAllocation(asset(), assets);
+        IAllocator.Allocation memory allocation = ALLOCATOR().getWithdrawAllocation(GAUGE(), assets);
 
         /// 2. Withdraw the assets from the strategy.
         uint256 pendingRewards = STRATEGY().withdraw(allocation);
 
         /// 3. Checkpoint the vault. The accountant will deal with minting and burning.
-        ACCOUNTANT().checkpoint(allocation.gauge, owner, address(0), assets, pendingRewards, allocation.claimRewards);
+        _burn(owner, shares, pendingRewards, allocation.claimRewards);
 
         /// 4. Transfer the assets to the receiver.
-        SafeERC20.safeTransfer(IERC20(asset()), receiver, assets);
-
-        /// 5. Burn shares from owner
-        _burn(owner, shares);
+        SafeERC20.safeTransfer(IERC20(asset()), receiver, shares);
     }
 
     //////////////////////////////////////////////////////
@@ -309,5 +314,31 @@ contract CoreVault is ERC20, IERC4626Minimal {
     /// @return The balance from the accountant
     function balanceOf(address account) public view override(ERC20, IERC20) returns (uint256) {
         return ACCOUNTANT().balanceOf(address(this), account);
+    }
+
+    /// @notice Updates the balance of the vault
+    /// @param from The account to transfer from
+    /// @param to The account to transfer to
+    /// @param amount The amount of assets to transfer
+    function _update(address from, address to, uint256 amount) internal override {
+        ACCOUNTANT().checkpoint(GAUGE(), from, to, amount, 0, false);
+    }
+
+    /// @notice Internal function to mint shares to an account
+    /// @param to The account to mint shares to
+    /// @param amount The amount of shares to mint
+    /// @param pendingRewards The amount of pending rewards to add
+    /// @param harvested Whether the mint is due to a harvest
+    function _mint(address to, uint256 amount, uint256 pendingRewards, bool harvested) internal {
+        ACCOUNTANT().checkpoint(GAUGE(), address(0), to, amount, pendingRewards, harvested);
+    }
+
+    /// @notice Internal function to burn shares from an account
+    /// @param from The account to burn shares from
+    /// @param amount The amount of shares to burn
+    /// @param pendingRewards The amount of pending rewards to subtract
+    /// @param harvested Whether the burn is due to a harvest
+    function _burn(address from, uint256 amount, uint256 pendingRewards, bool harvested) internal {
+        ACCOUNTANT().checkpoint(GAUGE(), from, address(0), amount, pendingRewards, harvested);
     }
 }

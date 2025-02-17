@@ -16,6 +16,8 @@ import {VaultHandler} from "test/invariant/handlers/VaultHandler.sol";
 
 contract VaultInvariantTest is StdInvariant, Test {
     ERC20Mock public token;
+    ERC20Mock public rewardToken;
+
     MockRegistry public registry;
     MockStrategy public strategy;
     MockAllocator public allocator;
@@ -34,16 +36,18 @@ contract VaultInvariantTest is StdInvariant, Test {
     function setUp() public virtual {
         // Setup basic contracts
         token = new ERC20Mock("ERC20Mock", "MTK", 18);
+        rewardToken = new ERC20Mock("ERC20Mock", "RTK", 18);
+
         strategy = new MockStrategy();
         registry = new MockRegistry();
         allocator = new MockAllocator();
-        accountant = new Accountant(address(this), address(registry), address(token));
+        accountant = new Accountant(address(this), address(registry), address(rewardToken));
 
         vaultImplementation = new RewardVault();
         vault = RewardVault(
             Clones.cloneDeterministicWithImmutableArgs(
                 address(vaultImplementation),
-                abi.encodePacked(address(registry), address(accountant), address(token)),
+                abi.encodePacked(address(registry), address(accountant), address(token), address(token)),
                 ""
             )
         );
