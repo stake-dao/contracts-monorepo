@@ -1,11 +1,10 @@
 /// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {console} from "forge-std/src/console.sol";
-
 import "@openzeppelin/contracts/proxy/Clones.sol";
 import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
@@ -13,7 +12,6 @@ import "src/interfaces/IRegistry.sol";
 import "src/interfaces/IStrategy.sol";
 import "src/interfaces/IAllocator.sol";
 import "src/interfaces/IAccountant.sol";
-import "src/interfaces/IERC4626Minimal.sol";
 
 /// @title CoreVault - Base Vault Implementation
 /// @notice A minimal ERC4626-compatible vault that delegates accounting to an external Accountant contract
@@ -22,7 +20,7 @@ import "src/interfaces/IERC4626Minimal.sol";
 ///      - Integration with Registry for contract addresses
 ///      - Delegation of accounting to Accountant contract
 ///      - Strategy integration for yield generation
-contract CoreVault is ERC20, IERC4626Minimal {
+contract CoreVault is ERC20, IERC4626 {
     using SafeERC20 for IERC20;
 
     //////////////////////////////////////////////////////
@@ -186,6 +184,9 @@ contract CoreVault is ERC20, IERC4626Minimal {
 
         /// 4. Checkpoint the vault. The accountant will deal with minting and burning.
         _mint(receiver, shares, pendingRewards, allocation.claimRewards);
+
+        /// 5. Emit the Deposit event.
+        emit Deposit(msg.sender, receiver, assets, shares);
     }
 
     //////////////////////////////////////////////////////
@@ -279,42 +280,14 @@ contract CoreVault is ERC20, IERC4626Minimal {
 
         /// 4. Transfer the assets to the receiver.
         SafeERC20.safeTransfer(IERC20(asset()), receiver, shares);
+
+        /// 5. Emit the Withdraw event.
+        emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
 
     //////////////////////////////////////////////////////
     /// --- ERC20 OVERRIDES
     //////////////////////////////////////////////////////
-
-    /// @notice Returns the name of the vault token
-    /// @return The name string including the underlying asset name
-    function name() public view override(ERC20) returns (string memory) {
-        return string.concat("StakeDAO ", IERC20Metadata(asset()).name(), " Vault");
-    }
-
-    /// @notice Returns the symbol of the vault token
-    /// @return The symbol string including the underlying asset symbol
-    function symbol() public view override(ERC20) returns (string memory) {
-        return string.concat("sd-", IERC20Metadata(asset()).symbol(), "-vault");
-    }
-
-    /// @notice Returns the number of decimals of the vault token
-    /// @return The number of decimals matching the underlying asset
-    function decimals() public view override returns (uint8) {
-        return IERC20Metadata(asset()).decimals();
-    }
-
-    /// @notice Returns the total supply of vault shares
-    /// @return The total supply from the accountant
-    function totalSupply() public view override(ERC20, IERC20) returns (uint256) {
-        return ACCOUNTANT().totalSupply(address(this));
-    }
-
-    /// @notice Returns the balance of vault shares for an account
-    /// @param account The account to check the balance for
-    /// @return The balance from the accountant
-    function balanceOf(address account) public view override(ERC20, IERC20) returns (uint256) {
-        return ACCOUNTANT().balanceOf(address(this), account);
-    }
 
     /// @notice Updates the balance of the vault
     /// @param from The account to transfer from
@@ -322,6 +295,9 @@ contract CoreVault is ERC20, IERC4626Minimal {
     /// @param amount The amount of assets to transfer
     function _update(address from, address to, uint256 amount) internal override {
         ACCOUNTANT().checkpoint(GAUGE(), from, to, amount, 0, false);
+
+        /// 2. Emit the Transfer event.
+        emit Transfer(from, to, amount);
     }
 
     /// @notice Internal function to mint shares to an account
@@ -340,5 +316,36 @@ contract CoreVault is ERC20, IERC4626Minimal {
     /// @param harvested Whether the burn is due to a harvest
     function _burn(address from, uint256 amount, uint256 pendingRewards, bool harvested) internal {
         ACCOUNTANT().checkpoint(GAUGE(), from, address(0), amount, pendingRewards, harvested);
+    }
+
+    /// @notice Returns the name of the vault token
+    /// @return The name string including the underlying asset name
+    function name() public view override(ERC20, IERC20Metadata) returns (string memory) {
+        return string.concat("StakeDAO ", IERC20Metadata(asset()).name(), " Vault");
+    }
+
+    /// @notice Returns the symbol of the vault token
+    /// @return The symbol string including the underlying asset symbol
+    function symbol() public view override(ERC20, IERC20Metadata) returns (string memory) {
+        return string.concat("sd-", IERC20Metadata(asset()).symbol(), "-vault");
+    }
+
+    /// @notice Returns the number of decimals of the vault token
+    /// @return The number of decimals matching the underlying asset
+    function decimals() public view override(ERC20, IERC20Metadata) returns (uint8) {
+        return IERC20Metadata(asset()).decimals();
+    }
+
+    /// @notice Returns the total supply of vault shares
+    /// @return The total supply from the accountant
+    function totalSupply() public view override(ERC20, IERC20) returns (uint256) {
+        return ACCOUNTANT().totalSupply(address(this));
+    }
+
+    /// @notice Returns the balance of vault shares for an account
+    /// @param account The account to check the balance for
+    /// @return The balance from the accountant
+    function balanceOf(address account) public view override(ERC20, IERC20) returns (uint256) {
+        return ACCOUNTANT().balanceOf(address(this), account);
     }
 }
