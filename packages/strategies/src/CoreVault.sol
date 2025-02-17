@@ -62,17 +62,6 @@ contract CoreVault is ERC20, IERC4626Minimal {
         return IAccountant(accountant);
     }
 
-    /// @notice Returns the underlying asset address from clone args
-    /// @return The address of the underlying asset token
-    function ASSET() public view returns (address) {
-        bytes memory args = Clones.fetchCloneArgs(address(this));
-        address token;
-        assembly {
-            token := mload(add(args, 60))
-        }
-        return token;
-    }
-
     /// @notice Returns the allocator contract from registry
     /// @return The IAllocator interface of the allocator contract
     function ALLOCATOR() public view returns (IAllocator) {
@@ -97,7 +86,12 @@ contract CoreVault is ERC20, IERC4626Minimal {
 
     /// @notice Returns the address of the underlying token
     function asset() public view returns (address) {
-        return ASSET();
+        bytes memory args = Clones.fetchCloneArgs(address(this));
+        address token;
+        assembly {
+            token := mload(add(args, 60))
+        }
+        return token;
     }
 
     /// @notice Returns the total amount of underlying assets held by the vault
@@ -168,9 +162,6 @@ contract CoreVault is ERC20, IERC4626Minimal {
     /// @param assets The amount of assets to deposit
     /// @param shares The amount of shares to mint
     function _deposit(address account, address receiver, uint256 assets, uint256 shares) internal virtual {
-        /// @dev Call the before deposit hook.
-        _beforeDeposit(account, receiver);
-
         /// 1. Get the allocation.
         IAllocator.Allocation memory allocation = ALLOCATOR().getDepositAllocation(asset(), assets);
 
@@ -269,9 +260,6 @@ contract CoreVault is ERC20, IERC4626Minimal {
     /// @param assets The amount of assets to withdraw
     /// @param shares The amount of shares to burn
     function _withdraw(address owner, address receiver, uint256 assets, uint256 shares) internal virtual {
-        /// @dev Call the before withdraw hook.
-        _beforeWithdraw(owner);
-
         /// 1. Get the allocation.
         IAllocator.Allocation memory allocation = ALLOCATOR().getWithdrawAllocation(asset(), assets);
 
@@ -295,19 +283,19 @@ contract CoreVault is ERC20, IERC4626Minimal {
     /// @notice Returns the name of the vault token
     /// @return The name string including the underlying asset name
     function name() public view override(ERC20) returns (string memory) {
-        return string.concat("StakeDAO ", IERC20Metadata(ASSET()).name(), " Vault");
+        return string.concat("StakeDAO ", IERC20Metadata(asset()).name(), " Vault");
     }
 
     /// @notice Returns the symbol of the vault token
     /// @return The symbol string including the underlying asset symbol
     function symbol() public view override(ERC20) returns (string memory) {
-        return string.concat("sd-", IERC20Metadata(ASSET()).symbol(), "-vault");
+        return string.concat("sd-", IERC20Metadata(asset()).symbol(), "-vault");
     }
 
     /// @notice Returns the number of decimals of the vault token
     /// @return The number of decimals matching the underlying asset
     function decimals() public view override returns (uint8) {
-        return IERC20Metadata(ASSET()).decimals();
+        return IERC20Metadata(asset()).decimals();
     }
 
     /// @notice Returns the total supply of vault shares
@@ -322,17 +310,4 @@ contract CoreVault is ERC20, IERC4626Minimal {
     function balanceOf(address account) public view override(ERC20, IERC20) returns (uint256) {
         return ACCOUNTANT().balanceOf(address(this), account);
     }
-
-    //////////////////////////////////////////////////////
-    /// --- HOOKS
-    //////////////////////////////////////////////////////
-
-    /// @notice Hook called before withdrawals
-    /// @param account The account withdrawing assets
-    function _beforeWithdraw(address account) internal virtual {}
-
-    /// @notice Hook called before deposits
-    /// @param account The account depositing assets
-    /// @param receiver The account receiving shares
-    function _beforeDeposit(address account, address receiver) internal virtual {}
 }
