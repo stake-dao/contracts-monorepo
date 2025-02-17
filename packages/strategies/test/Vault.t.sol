@@ -38,7 +38,7 @@ contract Vault is Test {
         vault = RewardVault(
             Clones.cloneDeterministicWithImmutableArgs(
                 address(vaultImplementation),
-                abi.encodePacked(address(registry), address(accountant), address(token)),
+                abi.encodePacked(address(registry), address(accountant), address(token), address(token)),
                 ""
             )
         );
@@ -49,6 +49,7 @@ contract Vault is Test {
     }
 
     function test_setup() public virtual {
+        assertEq(address(vault.GAUGE()), address(token));
         assertEq(address(vault.REGISTRY()), address(registry));
         assertEq(address(vault.STRATEGY()), address(strategy));
         assertEq(address(vault.ALLOCATOR()), address(allocator));
