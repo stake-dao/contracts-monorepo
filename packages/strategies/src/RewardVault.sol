@@ -65,12 +65,6 @@ contract RewardVault is CoreVault {
     error UnauthorizedRewardsDistributor();
 
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
-    //////////////////////////////////////////////////////
-
-    constructor() CoreVault() {}
-
-    //////////////////////////////////////////////////////
     /// --- REWARD DATA VIEW FUNCTIONS
     //////////////////////////////////////////////////////
 
@@ -231,52 +225,39 @@ contract RewardVault is CoreVault {
         rewardData[_rewardsToken].rewardRateAndRewardPerTokenStoredSlot = rewardRateAndRewardPerTokenStoredSlot;
     }
 
-    /// @dev Internal function to update reward state
-    /// @param account The account to update rewards for
     function _updateReward(address account) internal {
-        for (uint256 i; i < rewardTokens.length; i++) {
+        uint256 len = rewardTokens.length;
+        uint32 currentTime = uint32(block.timestamp);
+
+        for (uint256 i; i < len; i++) {
             address token = rewardTokens[i];
+            PackedReward storage reward = rewardData[token];
+
+            // Cache storage values
+            uint256 distributorSlot = reward.distributorAndDurationAndLastUpdateAndPeriodFinishSlot;
+            uint256 rateSlot = reward.rewardRateAndRewardPerTokenStoredSlot;
+
             uint256 newRewardPerToken = rewardPerToken(token);
-            uint32 currentTime = uint32(block.timestamp);
 
-            rewardData[token].distributorAndDurationAndLastUpdateAndPeriodFinishSlot = (
-                rewardData[token].distributorAndDurationAndLastUpdateAndPeriodFinishSlot
-                    & ~StorageMasks.REWARD_LAST_UPDATE
-            ) | ((uint256(currentTime) << 192) & StorageMasks.REWARD_LAST_UPDATE);
+            // Pack updates into single storage write
+            distributorSlot = (distributorSlot & ~StorageMasks.REWARD_LAST_UPDATE)
+                | ((uint256(currentTime) << 192) & StorageMasks.REWARD_LAST_UPDATE);
 
-            rewardData[token].rewardRateAndRewardPerTokenStoredSlot = (
-                rewardData[token].rewardRateAndRewardPerTokenStoredSlot & StorageMasks.REWARD_RATE
-            ) | (uint128(newRewardPerToken) & StorageMasks.REWARD_PER_TOKEN_STORED);
+            rateSlot = (rateSlot & StorageMasks.REWARD_RATE)
+                | (uint128(newRewardPerToken) & StorageMasks.REWARD_PER_TOKEN_STORED);
+
+            // Single storage write per slot
+            reward.distributorAndDurationAndLastUpdateAndPeriodFinishSlot = distributorSlot;
+            reward.rewardRateAndRewardPerTokenStoredSlot = rateSlot;
 
             if (account != address(0)) {
                 uint256 earnedAmount = earned(account, token);
-                PackedAccount storage accountDataValue = accountData[account][token];
 
-                // Update account data with new reward per token and claimable amount
-                accountDataValue.rewardPerTokenPaidAndClaimableSlot = (
+                // Pack account updates into single write
+                accountData[account][token].rewardPerTokenPaidAndClaimableSlot = (
                     uint128(newRewardPerToken) & StorageMasks.ACCOUNT_REWARD_PER_TOKEN
                 ) | ((uint256(uint128(earnedAmount)) << 128) & StorageMasks.ACCOUNT_CLAIMABLE);
             }
         }
-    }
-
-    //////////////////////////////////////////////////////
-    /// --- HOOKS
-    //////////////////////////////////////////////////////
-
-    /// @notice Hook called before deposits to update rewards
-    /// @param account The account depositing assets
-    /// @param receiver The account receiving shares
-    function _beforeDeposit(address account, address receiver) internal override {
-        _updateReward(account);
-        if (account != receiver) {
-            _updateReward(receiver);
-        }
-    }
-
-    /// @notice Hook called before withdrawals to update rewards
-    /// @param account The account withdrawing assets
-    function _beforeWithdraw(address account) internal override {
-        _updateReward(account);
     }
 }

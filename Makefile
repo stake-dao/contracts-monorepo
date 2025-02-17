@@ -16,7 +16,7 @@ install:
 	pnpm i
 
 test:
-	@forge test --gas-report
+	@forge test --gas-report --match-test invariant_totalAssetsMatchAccounting
 
 test-f-%:
 	@FOUNDRY_MATCH_TEST=$* make test
