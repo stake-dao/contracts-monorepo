@@ -9,7 +9,7 @@ interface IRegistry {
 
     function strategy() external view returns (address);
     function allocator() external view returns (address);
-    function HARVESTER() external view returns (address);
-    function FEE_RECEIVER() external view returns (address);
+    function harvester() external view returns (address);
+    function feeReceiver() external view returns (address);
     function accountant() external view returns (address);
 }
