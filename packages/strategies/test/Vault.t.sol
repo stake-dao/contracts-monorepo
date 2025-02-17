@@ -49,11 +49,11 @@ contract Vault is Test {
     }
 
     function test_setup() public virtual {
-        assertEq(address(vault.GAUGE()), address(token));
+        assertEq(address(vault.gauge()), address(token));
         assertEq(address(vault.REGISTRY()), address(registry));
-        assertEq(address(vault.STRATEGY()), address(strategy));
-        assertEq(address(vault.ALLOCATOR()), address(allocator));
-        assertEq(address(vault.ACCOUNTANT()), address(accountant));
+        assertEq(address(vault.strategy()), address(strategy));
+        assertEq(address(vault.allocator()), address(allocator));
+        assertEq(address(vault.accountant()), address(accountant));
         assertEq(address(vault.asset()), address(token));
 
         assertEq(vault.name(), "StakeDAO ERC20Mock Vault");

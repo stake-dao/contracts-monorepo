@@ -7,9 +7,9 @@ interface IRegistry {
 
     function allowed(address, bytes4 selector) external view returns (bool);
 
-    function STRATEGY() external view returns (address);
-    function ALLOCATOR() external view returns (address);
+    function strategy() external view returns (address);
+    function allocator() external view returns (address);
     function HARVESTER() external view returns (address);
     function FEE_RECEIVER() external view returns (address);
-    function ACCOUNTANT() external view returns (address);
+    function accountant() external view returns (address);
 }
