@@ -52,35 +52,31 @@ contract CoreVault is ERC20, IERC4626 {
     }
 
     /// @notice Returns the accountant contract address from clone args
-    /// @return The IAccountant interface of the accountant contract
-    function ACCOUNTANT() public view returns (IAccountant) {
+    /// @return _accountant The IAccountant interface of the accountant contract
+    function accountant() public view returns (IAccountant _accountant) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
-        address accountant;
         assembly {
-            accountant := mload(add(args, 40))
+            _accountant := mload(add(args, 40))
         }
-        return IAccountant(accountant);
     }
 
-    function GAUGE() public view returns (address) {
+    function gauge() public view returns (address _gauge) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
-        address gauge;
         assembly {
-            gauge := mload(add(args, 60))
+            _gauge := mload(add(args, 60))
         }
-        return gauge;
     }
 
     /// @notice Returns the allocator contract from registry
-    /// @return The IAllocator interface of the allocator contract
-    function ALLOCATOR() public view returns (IAllocator) {
-        return IAllocator(REGISTRY().ALLOCATOR());
+    /// @return _allocator The IAllocator interface of the allocator contract
+    function allocator() public view returns (IAllocator _allocator) {
+        return IAllocator(REGISTRY().allocator());
     }
 
     /// @notice Returns the strategy contract from registry
-    /// @return The IStrategy interface of the strategy contract
-    function STRATEGY() public view returns (IStrategy) {
-        return IStrategy(REGISTRY().STRATEGY());
+    /// @return _strategy The IStrategy interface of the strategy contract
+    function strategy() public view returns (IStrategy _strategy) {
+        return IStrategy(REGISTRY().strategy());
     }
 
     //////////////////////////////////////////////////////
@@ -170,7 +166,7 @@ contract CoreVault is ERC20, IERC4626 {
     /// @param shares The amount of shares to mint
     function _deposit(address account, address receiver, uint256 assets, uint256 shares) internal virtual {
         /// 1. Get the allocation.
-        IAllocator.Allocation memory allocation = ALLOCATOR().getDepositAllocation(GAUGE(), assets);
+        IAllocator.Allocation memory allocation = allocator().getDepositAllocation(gauge(), assets);
 
         /// 2. Transfer the assets to the strategy from the account.
         for (uint256 i = 0; i < allocation.targets.length; i++) {
@@ -178,7 +174,7 @@ contract CoreVault is ERC20, IERC4626 {
         }
 
         /// 3. Deposit the assets into the strategy.
-        uint256 pendingRewards = STRATEGY().deposit(allocation);
+        uint256 pendingRewards = strategy().deposit(allocation);
 
         /// 4. Checkpoint the vault. The accountant will deal with minting and burning.
         _mint(receiver, shares, pendingRewards, allocation.claimRewards);
@@ -267,10 +263,10 @@ contract CoreVault is ERC20, IERC4626 {
     /// @param shares The amount of shares to burn
     function _withdraw(address owner, address receiver, uint256 assets, uint256 shares) internal virtual {
         /// 1. Get the allocation.
-        IAllocator.Allocation memory allocation = ALLOCATOR().getWithdrawAllocation(GAUGE(), assets);
+        IAllocator.Allocation memory allocation = allocator().getWithdrawAllocation(gauge(), assets);
 
         /// 2. Withdraw the assets from the strategy.
-        uint256 pendingRewards = STRATEGY().withdraw(allocation);
+        uint256 pendingRewards = strategy().withdraw(allocation);
 
         /// 3. Checkpoint the vault. The accountant will deal with minting and burning.
         _burn(owner, shares, pendingRewards, allocation.claimRewards);
@@ -292,7 +288,7 @@ contract CoreVault is ERC20, IERC4626 {
     /// @param amount The amount of assets to transfer
     function _update(address from, address to, uint256 amount) internal override {
         /// 1. Update Balances.
-        ACCOUNTANT().checkpoint(GAUGE(), from, to, amount, 0, false);
+        accountant().checkpoint(gauge(), from, to, amount, 0, false);
 
         /// 2. Emit the Transfer event.
         emit Transfer(from, to, amount);
@@ -304,7 +300,7 @@ contract CoreVault is ERC20, IERC4626 {
     /// @param pendingRewards The amount of pending rewards to add
     /// @param harvested Whether the mint is due to a harvest
     function _mint(address to, uint256 amount, uint256 pendingRewards, bool harvested) internal {
-        ACCOUNTANT().checkpoint(GAUGE(), address(0), to, amount, pendingRewards, harvested);
+        accountant().checkpoint(gauge(), address(0), to, amount, pendingRewards, harvested);
     }
 
     /// @notice Internal function to burn shares from an account
@@ -313,7 +309,7 @@ contract CoreVault is ERC20, IERC4626 {
     /// @param pendingRewards The amount of pending rewards to subtract
     /// @param harvested Whether the burn is due to a harvest
     function _burn(address from, uint256 amount, uint256 pendingRewards, bool harvested) internal {
-        ACCOUNTANT().checkpoint(GAUGE(), from, address(0), amount, pendingRewards, harvested);
+        accountant().checkpoint(gauge(), from, address(0), amount, pendingRewards, harvested);
     }
 
     /// @notice Returns the name of the vault token
@@ -337,13 +333,13 @@ contract CoreVault is ERC20, IERC4626 {
     /// @notice Returns the total supply of vault shares
     /// @return The total supply from the accountant
     function totalSupply() public view override(ERC20, IERC20) returns (uint256) {
-        return ACCOUNTANT().totalSupply(address(this));
+        return accountant().totalSupply(address(this));
     }
 
     /// @notice Returns the balance of vault shares for an account
     /// @param account The account to check the balance for
     /// @return The balance from the accountant
     function balanceOf(address account) public view override(ERC20, IERC20) returns (uint256) {
-        return ACCOUNTANT().balanceOf(address(this), account);
+        return accountant().balanceOf(address(this), account);
     }
 }

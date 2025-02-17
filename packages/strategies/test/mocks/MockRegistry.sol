@@ -16,18 +16,6 @@ contract MockRegistry is IRegistry {
         return vault;
     }
 
-    function ACCOUNTANT() external view returns (address) {
-        return accountant;
-    }
-
-    function ALLOCATOR() external view returns (address) {
-        return allocator;
-    }
-
-    function STRATEGY() external view returns (address) {
-        return strategy;
-    }
-
     function HARVESTER() external view returns (address) {
         return harvester;
     }
