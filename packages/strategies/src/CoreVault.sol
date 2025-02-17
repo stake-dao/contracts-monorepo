@@ -98,7 +98,7 @@ contract CoreVault is ERC20, IERC4626 {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         address token;
         assembly {
-            token := mload(add(args, 60))
+            token := mload(add(args, 80))
         }
         return token;
     }
@@ -135,34 +135,32 @@ contract CoreVault is ERC20, IERC4626 {
     /// @param assets The amount of assets to simulate deposit for
     /// @return The amount of shares that would be minted
     function previewDeposit(uint256 assets) public pure returns (uint256) {
-        return convertToShares(assets);
+        return assets;
     }
 
     /// @notice Simulates the amount of assets needed for a mint
     /// @param shares The amount of shares to simulate minting
     /// @return The amount of assets that would be needed
     function previewMint(uint256 shares) public pure returns (uint256) {
-        return convertToAssets(shares);
+        return shares;
     }
 
     /// @notice Deposits assets into the vault and mints shares to receiver
     /// @param assets The amount of assets to deposit
     /// @param receiver The address to receive the minted shares
-    /// @return shares The amount of shares minted
-    function deposit(uint256 assets, address receiver) public returns (uint256 shares) {
-        shares = previewDeposit(assets);
-        _deposit(msg.sender, receiver, assets, shares);
-        return shares;
+    /// @return assets The amount of assets deposited
+    function deposit(uint256 assets, address receiver) public returns (uint256) {
+        _deposit(msg.sender, receiver, assets, assets);
+        return assets;
     }
 
     /// @notice Mints exact shares to receiver by depositing assets
     /// @param shares The amount of shares to mint
     /// @param receiver The address to receive the minted shares
-    /// @return assets The amount of assets deposited
-    function mint(uint256 shares, address receiver) public returns (uint256 assets) {
-        assets = previewMint(shares);
-        _deposit(msg.sender, receiver, assets, shares);
-        return assets;
+    /// @return shares The amount of shares minted
+    function mint(uint256 shares, address receiver) public returns (uint256) {
+        _deposit(msg.sender, receiver, shares, shares);
+        return shares;
     }
 
     /// @dev Internal function to deposit assets into the vault.
@@ -232,35 +230,34 @@ contract CoreVault is ERC20, IERC4626 {
     /// @param assets The amount of assets to withdraw
     /// @param receiver The address to receive the assets
     /// @param owner The address to burn shares from
-    /// @return shares The amount of shares burned
-    function withdraw(uint256 assets, address receiver, address owner) public returns (uint256 shares) {
-        shares = previewWithdraw(assets);
-
+    /// @return assets The amount of assets withdrawn
+    function withdraw(uint256 assets, address receiver, address owner) public returns (uint256) {
         if (msg.sender != owner) {
             uint256 allowed = allowance(owner, msg.sender);
-            if (shares > allowed) revert NotApproved();
-            if (allowed != type(uint256).max) _spendAllowance(owner, msg.sender, shares);
+            if (assets > allowed) revert NotApproved();
+            if (allowed != type(uint256).max) _spendAllowance(owner, msg.sender, assets);
         }
 
-        _withdraw(owner, receiver, assets, shares);
-        return shares;
+        _withdraw(owner, receiver, assets, assets);
+
+        return assets;
     }
 
     /// @notice Redeems shares from owner and sends assets to receiver
     /// @param shares The amount of shares to redeem
     /// @param receiver The address to receive the assets
     /// @param owner The address to burn shares from
-    /// @return assets The amount of assets withdrawn
-    function redeem(uint256 shares, address receiver, address owner) public returns (uint256 assets) {
+    /// @return shares The amount of shares burned
+    function redeem(uint256 shares, address receiver, address owner) public returns (uint256) {
         if (msg.sender != owner) {
             uint256 allowed = allowance(owner, msg.sender);
             if (shares > allowed) revert NotApproved();
             if (allowed != type(uint256).max) _spendAllowance(owner, msg.sender, shares);
         }
 
-        assets = previewRedeem(shares);
-        _withdraw(owner, receiver, assets, shares);
-        return assets;
+        _withdraw(owner, receiver, shares, shares);
+
+        return shares;
     }
 
     /// @dev Internal function to withdraw assets from the vault.
@@ -294,6 +291,7 @@ contract CoreVault is ERC20, IERC4626 {
     /// @param to The account to transfer to
     /// @param amount The amount of assets to transfer
     function _update(address from, address to, uint256 amount) internal override {
+        /// 1. Update Balances.
         ACCOUNTANT().checkpoint(GAUGE(), from, to, amount, 0, false);
 
         /// 2. Emit the Transfer event.
