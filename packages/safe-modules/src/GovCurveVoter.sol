@@ -6,19 +6,8 @@ import "./governance/AllowanceManager.sol";
 
 import {FixedPointMathLib} from "solady/src/utils/FixedPointMathLib.sol";
 
-enum Operation {
-    Call,
-    DelegateCall
-}
-
-interface ISafe {
-    /// @dev Allows a Module to execute a Safe transaction without any further confirmations.
-    /// @param to Destination address of module transaction.
-    /// @param value Ether value of module transaction.
-    /// @param data Data payload of module transaction.
-    /// @param operation Operation type of module transaction.
-    function execTransactionFromModule(address to, uint256 value, bytes calldata data, Operation operation) external returns (bool success);
-}
+import "./interfaces/ISafe.sol";
+import "./interfaces/ISafeOperation.sol";
 
 enum VoterState { Absent, Yea, Nay, Even }
 
@@ -89,7 +78,7 @@ contract GovCurveVoter is AllowanceManager {
         if(pctBase != (_yeaPct+_nayPct)) revert WRONG_PCT();
 
         bytes memory data = abi.encodeWithSignature("votePct(uint256,uint256,uint256,address)", _voteId, _yeaPct, _nayPct, _voter);
-        require(ISafe(SD_SAFE).execTransactionFromModule(SD_VOTER, 0, data, Operation.Call), "Could not execute vote");
+        require(ISafe(SD_SAFE).execTransactionFromModule(SD_VOTER, 0, data, ISafeOperation.Call), "Could not execute vote");
     }
 
     ////////////////////////////////////////////////////////////////

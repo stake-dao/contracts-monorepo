@@ -3,20 +3,8 @@ pragma solidity ^0.8.19;
 
 import "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import "./governance/AllowanceManager.sol";
-
-enum Operation {
-    Call,
-    DelegateCall
-}
-
-interface ISafe {
-    /// @dev Allows a Module to execute a Safe transaction without any further confirmations.
-    /// @param to Destination address of module transaction.
-    /// @param value Ether value of module transaction.
-    /// @param data Data payload of module transaction.
-    /// @param operation Operation type of module transaction.
-    function execTransactionFromModule(address to, uint256 value, bytes calldata data, Operation operation) external returns (bool success);
-}
+import "./interfaces/ISafe.sol";
+import "./interfaces/ISafeOperation.sol";
 
 contract GaugeCurveVoter is AllowanceManager {
 
@@ -44,7 +32,7 @@ contract GaugeCurveVoter is AllowanceManager {
         }
 
         bytes memory data = abi.encodeWithSignature("voteGauges(address[],uint256[])", _gauges, _weights);
-        require(ISafe(SD_SAFE).execTransactionFromModule(_voter, 0, data, Operation.Call), "Could not execute vote");
+        require(ISafe(SD_SAFE).execTransactionFromModule(_voter, 0, data, ISafeOperation.Call), "Could not execute vote");
     }
 
     /// @notice Bundle gauge votes with our strategy contract, _gauges and _weights must have the same length
@@ -65,7 +53,7 @@ contract GaugeCurveVoter is AllowanceManager {
         bytes memory votes_data = abi.encodeWithSignature("vote(address[],uint64[])", _gauges, _weights);
         bytes memory voter_data = abi.encodeWithSignature("execute(address,uint256,bytes)", _underlying_voter, 0, votes_data);
         bytes memory locker_data = abi.encodeWithSignature("execute(address,uint256,bytes)", _locker, 0, voter_data);
-        require(ISafe(SD_SAFE).execTransactionFromModule(_strategy, 0, locker_data, Operation.Call), "Could not execute vote");
+        require(ISafe(SD_SAFE).execTransactionFromModule(_strategy, 0, locker_data, ISafeOperation.Call), "Could not execute vote");
     }
 
     /// @notice Allow or disallow a voter
