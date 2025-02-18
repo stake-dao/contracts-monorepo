@@ -32,8 +32,7 @@ contract RewardVault is IERC4626, ERC20 {
     /// @notice Emitted when a new reward token is added
     /// @param rewardToken The address of the reward token
     /// @param distributor The address of the rewards distributor
-    /// @param rewardsDuration The duration of the rewards period in seconds
-    event RewardTokenAdded(address indexed rewardToken, address indexed distributor, uint32 rewardsDuration);
+    event RewardTokenAdded(address indexed rewardToken, address indexed distributor);
 
     /// @notice Emitted when rewards are notified for distribution
     /// @param _rewardsToken The address of the reward token
@@ -49,6 +48,9 @@ contract RewardVault is IERC4626, ERC20 {
     /// @dev Access control for token operations
     error NotApproved();
 
+    /// @notice Error thrown when the caller is not allowed.
+    error OnlyAllowed();
+
     /// @notice Error thrown when the calculated reward rate exceeds the maximum value
     /// @dev Prevents overflow in reward rate calculations
     error RewardRateOverflow();
@@ -57,9 +59,19 @@ contract RewardVault is IERC4626, ERC20 {
     /// @dev Prevents duplicate reward token entries
     error RewardAlreadyExists();
 
+    /// @notice Error thrown when the maximum number of reward tokens is exceeded.
+    error MaxRewardTokensExceeded();
+
     /// @notice Error thrown when an unauthorized address attempts to distribute rewards
     /// @dev Access control for reward distribution
     error UnauthorizedRewardsDistributor();
+
+    //////////////////////////////////////////////////////
+    /// --- CONSTANTS
+    //////////////////////////////////////////////////////
+
+    /// @notice The maximum number of reward tokens that can be added.
+    uint256 constant MAX_REWARD_TOKEN_COUNT = 10;
 
     //////////////////////////////////////////////////////
     /// --- STORAGE STRUCTURES
@@ -86,6 +98,10 @@ contract RewardVault is IERC4626, ERC20 {
     /// @notice List of active reward tokens
     /// @dev Array of reward token addresses that can be distributed
     address[] public rewardTokens;
+
+    /// @notice Mapping of reward token to its existence
+    /// @dev Used to check if a reward token is already added
+    mapping(address => bool) public isRewardToken;
 
     /// @notice Mapping of reward token to its packed reward data
     /// @dev Stores reward distribution parameters and state for each token
@@ -451,6 +467,35 @@ contract RewardVault is IERC4626, ERC20 {
     /// @param account The account to update rewards for
     function updateReward(address account) external {
         _updateReward(account);
+    }
+
+    /// @notice Adds a new reward token to the vault
+    /// @dev Initializes reward data with distributor and default 7-day duration
+    /// @param _rewardsToken The address of the reward token to add
+    /// @param _distributor The address authorized to distribute rewards
+    function addRewardToken(address _rewardsToken, address _distributor) external {
+        /// 1. Verify caller is authorized and token can be added
+        require(registry().allowed(msg.sender, msg.sig), OnlyAllowed());
+        require(!isRewardToken[_rewardsToken], RewardAlreadyExists());
+        require(rewardTokens.length < MAX_REWARD_TOKEN_COUNT, MaxRewardTokensExceeded());
+
+        /// 2. Add token to tracking arrays and mappings
+        rewardTokens.push(_rewardsToken);
+        isRewardToken[_rewardsToken] = true;
+
+        /// 3. Pack and store reward data
+        /// 3a. Set distributor address in lower 160 bits
+        /// 3b. Set default 7-day duration in bits 160-191
+        uint256 distributorAndDurationAndLastUpdateAndPeriodFinishSlot = (
+            uint160(_distributor) & StorageMasks.REWARD_DISTRIBUTOR
+        ) | ((uint256(7 days) << 160) & StorageMasks.REWARD_DURATION);
+
+        /// 4. Update storage with packed data
+        rewardData[_rewardsToken].distributorAndDurationAndLastUpdateAndPeriodFinishSlot =
+            distributorAndDurationAndLastUpdateAndPeriodFinishSlot;
+
+        /// 5. Emit event for new reward token
+        emit RewardTokenAdded(_rewardsToken, _distributor);
     }
 
     /// @notice Deposits rewards into the vault
