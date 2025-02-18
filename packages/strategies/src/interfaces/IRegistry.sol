@@ -5,7 +5,7 @@ interface IRegistry {
     function vaults(address) external view returns (address);
     function assets(address) external view returns (address);
 
-    function allowed(address, bytes4 selector) external view returns (bool);
+    function allowed(address, address, bytes4 selector) external view returns (bool);
 
     function strategy() external view returns (address);
     function allocator() external view returns (address);
