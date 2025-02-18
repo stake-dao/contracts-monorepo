@@ -6,7 +6,7 @@ import "./governance/AllowanceManager.sol";
 import "./interfaces/ISafe.sol";
 import "./interfaces/ISafeOperation.sol";
 
-contract GaugeCurveVoter is AllowanceManager {
+contract GaugeVoter is AllowanceManager {
 
     /// @notice Stake DAO governance owner
     address public immutable SD_SAFE = address(0xB0552b6860CE5C0202976Db056b5e3Cc4f9CC765);
