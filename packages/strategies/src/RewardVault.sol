@@ -36,22 +36,14 @@ contract RewardVault is IERC4626, ERC20 {
     event RewardTokenAdded(address indexed rewardToken, address indexed distributor, uint32 rewardsDuration);
 
     /// @notice Emitted when rewards are notified for distribution
-    /// @param rewardToken The address of the reward token
-    /// @param reward The amount of rewards to distribute
-    /// @param rewardRate The rate at which rewards will be distributed
-    event RewardsNotified(address indexed rewardToken, uint256 reward, uint128 rewardRate);
+    /// @param _rewardsToken The address of the reward token
+    /// @param _amount The amount of rewards to distribute
+    /// @param _rewardRate The rate at which rewards will be distributed
+    event RewardsDeposited(address indexed _rewardsToken, uint256 _amount, uint128 _rewardRate);
 
     //////////////////////////////////////////////////////
     /// --- ERRORS
     //////////////////////////////////////////////////////
-
-    /// @notice The error thrown when a transfer is made to the vault
-    /// @dev Prevents direct transfers to the vault contract
-    error TransferToVault();
-
-    /// @notice The error thrown when a transfer is made to the zero address
-    /// @dev Prevents burning tokens by transferring to address(0)
-    error TransferToZeroAddress();
 
     /// @notice The error thrown when caller is not the owner or approved
     /// @dev Access control for token operations
@@ -461,11 +453,11 @@ contract RewardVault is IERC4626, ERC20 {
         _updateReward(account);
     }
 
-    /// @notice Notifies the contract of new reward amount
+    /// @notice Deposits rewards into the vault
     /// @dev Handles reward rate updates and token transfers
     /// @param _rewardsToken The reward token being distributed
-    /// @param reward The amount of rewards to distribute
-    function notifyRewardAmount(address _rewardsToken, uint256 reward) external {
+    /// @param _amount The amount of rewards to distribute
+    function depositRewards(address _rewardsToken, uint256 _amount) external {
         /// 1. Update reward state for all tokens before modifying rates
         _updateReward(address(0));
 
@@ -473,7 +465,7 @@ contract RewardVault is IERC4626, ERC20 {
         require(getRewardsDistributor(_rewardsToken) == msg.sender, UnauthorizedRewardsDistributor());
 
         /// 3. Transfer reward tokens from distributor to vault
-        IERC20(_rewardsToken).safeTransferFrom(msg.sender, address(this), reward);
+        IERC20(_rewardsToken).safeTransferFrom(msg.sender, address(this), _amount);
 
         /// 4. Cache current state values
         uint32 currentTime = uint32(block.timestamp);
@@ -484,16 +476,16 @@ contract RewardVault is IERC4626, ERC20 {
         /// 5. Calculate new reward rate based on timing
         if (currentTime >= periodFinish) {
             /// 5a. If previous period is finished, simply distribute new rewards over duration
-            newRewardRate = reward / rewardsDuration;
+            newRewardRate = _amount / rewardsDuration;
         } else {
             /// 5b. If previous period is still active, add remaining rewards to new amount
             uint256 remaining = periodFinish - currentTime;
             uint256 leftover = remaining * getRewardRate(_rewardsToken);
-            newRewardRate = (reward + leftover) / rewardsDuration;
+            newRewardRate = (_amount + leftover) / rewardsDuration;
         }
 
         /// 6. Ensure reward rate doesn't overflow uint128
-        if (newRewardRate > type(uint128).max) revert RewardRateOverflow();
+        require(newRewardRate <= type(uint128).max, RewardRateOverflow());
 
         /// 7. Pack and update first storage slot (distributor, duration, timestamps)
         uint256 distributorAndDurationAndLastUpdateAndPeriodFinishSlot =
@@ -522,7 +514,7 @@ contract RewardVault is IERC4626, ERC20 {
         rewardData[_rewardsToken].rewardRateAndRewardPerTokenStoredSlot = rewardRateAndRewardPerTokenStoredSlot;
 
         /// 10. Emit event with updated values
-        emit RewardsNotified(_rewardsToken, reward, uint128(newRewardRate));
+        emit RewardsDeposited(_rewardsToken, _amount, uint128(newRewardRate));
     }
 
     /// @notice Internal function to update reward state
@@ -629,7 +621,7 @@ contract RewardVault is IERC4626, ERC20 {
     /// --- ERC20 OVERRIDES
     //////////////////////////////////////////////////////
 
-    /// @notice Updates the balance of the vault
+    /// @notice Used by ERC20 transfers to update balances and reward state.
     /// @dev Delegates balance updates to the accountant
     /// @param from The account to transfer from
     /// @param to The account to transfer to
