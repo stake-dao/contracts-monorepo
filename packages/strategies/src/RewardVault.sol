@@ -190,6 +190,8 @@ contract RewardVault is IERC4626, ERC20 {
     /// @param receiver The address to receive the minted shares
     /// @return assets The amount of assets deposited
     function deposit(uint256 assets, address receiver) public returns (uint256) {
+        if (receiver == address(0)) receiver = msg.sender;
+
         _deposit(msg.sender, receiver, assets, assets);
         return assets;
     }
@@ -200,6 +202,8 @@ contract RewardVault is IERC4626, ERC20 {
     /// @param receiver The address to receive the minted shares
     /// @return shares The amount of shares minted
     function mint(uint256 shares, address receiver) public returns (uint256) {
+        if (receiver == address(0)) receiver = msg.sender;
+
         _deposit(msg.sender, receiver, shares, shares);
         return shares;
     }
@@ -211,21 +215,24 @@ contract RewardVault is IERC4626, ERC20 {
     /// @param assets The amount of assets to deposit
     /// @param shares The amount of shares to mint
     function _deposit(address account, address receiver, uint256 assets, uint256 shares) internal virtual {
-        /// 1. Get the allocation.
+        /// 1. Update the reward state for the receiver.
+        _updateReward(receiver);
+
+        /// 2. Get the allocation.
         IAllocator.Allocation memory allocation = allocator().getDepositAllocation(gauge(), assets);
 
-        /// 2. Transfer the assets to the strategy from the account.
+        /// 3. Transfer the assets to the strategy from the account.
         for (uint256 i = 0; i < allocation.targets.length; i++) {
             SafeERC20.safeTransferFrom(IERC20(asset()), account, allocation.targets[i], allocation.amounts[i]);
         }
 
-        /// 3. Deposit the assets into the strategy.
+        /// 4. Deposit the assets into the strategy.
         uint256 pendingRewards = strategy().deposit(allocation);
 
-        /// 4. Checkpoint the vault. The accountant will deal with minting and burning.
+        /// 5. Checkpoint the vault. The accountant will deal with minting and burning.
         _mint(receiver, shares, pendingRewards, allocation.claimRewards);
 
-        /// 5. Emit the Deposit event.
+        /// 6. Emit the Deposit event.
         emit Deposit(msg.sender, receiver, assets, shares);
     }
 
@@ -272,6 +279,8 @@ contract RewardVault is IERC4626, ERC20 {
     /// @param owner The address to burn shares from
     /// @return assets The amount of assets withdrawn
     function withdraw(uint256 assets, address receiver, address owner) public returns (uint256) {
+        if (receiver == address(0)) receiver = owner;
+
         if (msg.sender != owner) {
             uint256 allowed = allowance(owner, msg.sender);
             if (assets > allowed) revert NotApproved();
@@ -290,6 +299,8 @@ contract RewardVault is IERC4626, ERC20 {
     /// @param owner The address to burn shares from
     /// @return shares The amount of shares burned
     function redeem(uint256 shares, address receiver, address owner) public returns (uint256) {
+        if (receiver == address(0)) receiver = owner;
+
         if (msg.sender != owner) {
             uint256 allowed = allowance(owner, msg.sender);
             if (shares > allowed) revert NotApproved();
@@ -308,19 +319,22 @@ contract RewardVault is IERC4626, ERC20 {
     /// @param assets The amount of assets to withdraw
     /// @param shares The amount of shares to burn
     function _withdraw(address owner, address receiver, uint256 assets, uint256 shares) internal virtual {
-        /// 1. Get the allocation.
+        /// 1. Update the reward state for the owner.
+        _updateReward(owner);
+
+        /// 2. Get the allocation.
         IAllocator.Allocation memory allocation = allocator().getWithdrawAllocation(gauge(), assets);
 
-        /// 2. Withdraw the assets from the strategy.
+        /// 3. Withdraw the assets from the strategy.
         uint256 pendingRewards = strategy().withdraw(allocation);
 
-        /// 3. Checkpoint the vault. The accountant will deal with minting and burning.
+        /// 4. Checkpoint the vault. The accountant will deal with minting and burning.
         _burn(owner, shares, pendingRewards, allocation.claimRewards);
 
-        /// 4. Transfer the assets to the receiver.
+        /// 5. Transfer the assets to the receiver.
         SafeERC20.safeTransfer(IERC20(asset()), receiver, shares);
 
-        /// 5. Emit the Withdraw event.
+        /// 6. Emit the Withdraw event.
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
 
@@ -482,25 +496,25 @@ contract RewardVault is IERC4626, ERC20 {
         if (newRewardRate > type(uint128).max) revert RewardRateOverflow();
 
         /// 7. Pack and update first storage slot (distributor, duration, timestamps)
-        uint256 distributorAndDurationAndLastUpdateAndPeriodFinishSlot = (
-            /// 7a. Keep existing distributor address
+        uint256 distributorAndDurationAndLastUpdateAndPeriodFinishSlot =
+        /// 7a. Keep existing distributor address
+        (
             rewardData[_rewardsToken].distributorAndDurationAndLastUpdateAndPeriodFinishSlot
                 & StorageMasks.REWARD_DISTRIBUTOR
-        ) | 
-            /// 7b. Update rewards duration
-            ((uint256(rewardsDuration) << 160) & StorageMasks.REWARD_DURATION) |
-            /// 7c. Set last update time to current
-            ((uint256(currentTime) << 192) & StorageMasks.REWARD_LAST_UPDATE) |
-            /// 7d. Set new period finish time
-            ((uint256(currentTime + rewardsDuration) << 224) & StorageMasks.REWARD_PERIOD_FINISH);
+        )
+        /// 7b. Update rewards duration
+        | ((uint256(rewardsDuration) << 160) & StorageMasks.REWARD_DURATION)
+        /// 7c. Set last update time to current
+        | ((uint256(currentTime) << 192) & StorageMasks.REWARD_LAST_UPDATE)
+        /// 7d. Set new period finish time
+        | ((uint256(currentTime + rewardsDuration) << 224) & StorageMasks.REWARD_PERIOD_FINISH);
 
         /// 8. Pack and update second storage slot (reward rate and rewards per token)
-        uint256 rewardRateAndRewardPerTokenStoredSlot = (
-            /// 8a. Keep existing rewards per token
-            getRewardPerTokenStored(_rewardsToken) & StorageMasks.REWARD_PER_TOKEN_STORED
-        ) | 
-            /// 8b. Set new reward rate
-            ((uint256(newRewardRate) << 128) & StorageMasks.REWARD_RATE);
+        uint256 rewardRateAndRewardPerTokenStoredSlot =
+        /// 8a. Keep existing rewards per token
+        (getRewardPerTokenStored(_rewardsToken) & StorageMasks.REWARD_PER_TOKEN_STORED)
+        /// 8b. Set new reward rate
+        | ((uint256(newRewardRate) << 128) & StorageMasks.REWARD_RATE);
 
         /// 9. Update storage with new values (single SSTORE per slot)
         rewardData[_rewardsToken].distributorAndDurationAndLastUpdateAndPeriodFinishSlot =
@@ -515,34 +529,47 @@ contract RewardVault is IERC4626, ERC20 {
     /// @dev Updates reward accounting for all tokens
     /// @param account The account to update rewards for
     function _updateReward(address account) internal {
+        /// 1. Get total number of reward tokens and current timestamp
         uint256 len = rewardTokens.length;
         uint32 currentTime = uint32(block.timestamp);
 
+        /// 2. Iterate through all reward tokens to update their state
         for (uint256 i; i < len; i++) {
+            /// 2a. Get current token and its reward data
             address token = rewardTokens[i];
             PackedReward storage reward = rewardData[token];
 
-            // Cache storage values
+            /// 2b. Cache storage values to minimize SLOADs
             uint256 distributorSlot = reward.distributorAndDurationAndLastUpdateAndPeriodFinishSlot;
             uint256 rateSlot = reward.rewardRateAndRewardPerTokenStoredSlot;
 
+            /// 3. Calculate new reward per token based on time elapsed
             uint256 newRewardPerToken = rewardPerToken(token);
 
-            // Pack updates into single storage write
+            /// 4. Pack updates for first storage slot (timestamps)
+            /// 4a. Clear last update time bits while preserving other data
+            /// 4b. Set new last update time in the cleared space
             distributorSlot = (distributorSlot & ~StorageMasks.REWARD_LAST_UPDATE)
                 | ((uint256(currentTime) << 192) & StorageMasks.REWARD_LAST_UPDATE);
 
+            /// 5. Pack updates for second storage slot (rates)
+            /// 5a. Keep existing reward rate
+            /// 5b. Update reward per token stored
             rateSlot = (rateSlot & StorageMasks.REWARD_RATE)
                 | (uint128(newRewardPerToken) & StorageMasks.REWARD_PER_TOKEN_STORED);
 
-            // Single storage write per slot
+            /// 6. Update storage with new values (single SSTORE per slot)
             reward.distributorAndDurationAndLastUpdateAndPeriodFinishSlot = distributorSlot;
             reward.rewardRateAndRewardPerTokenStoredSlot = rateSlot;
 
+            /// 7. Update account-specific data if account is provided
             if (account != address(0)) {
+                /// 7a. Calculate earned rewards for account
                 uint256 earnedAmount = earned(account, token);
 
-                // Pack account updates into single write
+                /// 7b. Pack and update account data in single SSTORE
+                /// - Lower 128 bits: new reward per token paid
+                /// - Upper 128 bits: earned amount
                 accountData[account][token].rewardPerTokenPaidAndClaimableSlot = (
                     uint128(newRewardPerToken) & StorageMasks.ACCOUNT_REWARD_PER_TOKEN
                 ) | ((uint256(uint128(earnedAmount)) << 128) & StorageMasks.ACCOUNT_CLAIMABLE);
@@ -611,7 +638,14 @@ contract RewardVault is IERC4626, ERC20 {
         /// 1. Update Balances.
         accountant().checkpoint(gauge(), from, to, amount, 0, false);
 
-        /// 2. Emit the Transfer event.
+        /// 2. Update Reward State.
+        /// @dev No need to check for zero address as the transfer function will handle it.
+        _updateReward(from);
+
+        /// 3. Update Reward State.
+        _updateReward(to);
+
+        /// 4. Emit the Transfer event.
         emit Transfer(from, to, amount);
     }
 
