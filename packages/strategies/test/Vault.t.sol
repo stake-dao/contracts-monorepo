@@ -50,7 +50,7 @@ contract Vault is Test {
 
     function test_setup() public virtual {
         assertEq(address(vault.gauge()), address(token));
-        assertEq(address(vault.REGISTRY()), address(registry));
+        assertEq(address(vault.registry()), address(registry));
         assertEq(address(vault.strategy()), address(strategy));
         assertEq(address(vault.allocator()), address(allocator));
         assertEq(address(vault.accountant()), address(accountant));
