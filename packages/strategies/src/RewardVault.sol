@@ -224,7 +224,7 @@ contract RewardVault is IERC4626, ERC20 {
     /// @param shares The amount of shares to mint
     function _deposit(address account, address receiver, uint256 assets, uint256 shares) internal virtual {
         /// 1. Update the reward state for the receiver.
-        _updateReward(receiver);
+        _updateReward(receiver, address(0));
 
         /// 2. Get the allocation.
         IAllocator.Allocation memory allocation = allocator().getDepositAllocation(gauge(), assets);
@@ -328,7 +328,7 @@ contract RewardVault is IERC4626, ERC20 {
     /// @param shares The amount of shares to burn
     function _withdraw(address owner, address receiver, uint256 assets, uint256 shares) internal virtual {
         /// 1. Update the reward state for the owner.
-        _updateReward(owner);
+        _updateReward(owner, address(0));
 
         /// 2. Get the allocation.
         IAllocator.Allocation memory allocation = allocator().getWithdrawAllocation(gauge(), assets);
@@ -466,7 +466,7 @@ contract RewardVault is IERC4626, ERC20 {
     /// @dev Updates reward accounting for a specific account
     /// @param account The account to update rewards for
     function updateReward(address account) external {
-        _updateReward(account);
+        _updateReward(account, address(0));
     }
 
     /// @notice Adds a new reward token to the vault
@@ -475,7 +475,7 @@ contract RewardVault is IERC4626, ERC20 {
     /// @param _distributor The address authorized to distribute rewards
     function addRewardToken(address _rewardsToken, address _distributor) external {
         /// 1. Verify caller is authorized and token can be added
-        require(registry().allowed(msg.sender, msg.sig), OnlyAllowed());
+        require(registry().allowed(address(this), msg.sender, msg.sig), OnlyAllowed());
         require(!isRewardToken[_rewardsToken], RewardAlreadyExists());
         require(rewardTokens.length < MAX_REWARD_TOKEN_COUNT, MaxRewardTokensExceeded());
 
@@ -504,7 +504,7 @@ contract RewardVault is IERC4626, ERC20 {
     /// @param _amount The amount of rewards to distribute
     function depositRewards(address _rewardsToken, uint256 _amount) external {
         /// 1. Update reward state for all tokens before modifying rates
-        _updateReward(address(0));
+        _updateReward(address(0), address(0));
 
         /// 2. Verify caller is authorized distributor for this reward token
         require(getRewardsDistributor(_rewardsToken) == msg.sender, UnauthorizedRewardsDistributor());
@@ -564,8 +564,9 @@ contract RewardVault is IERC4626, ERC20 {
 
     /// @notice Internal function to update reward state
     /// @dev Updates reward accounting for all tokens
-    /// @param account The account to update rewards for
-    function _updateReward(address account) internal {
+    /// @param _from The account to update rewards for
+    /// @param _to The account to update rewards for
+    function _updateReward(address _from, address _to) internal {
         /// 1. Get total number of reward tokens and current timestamp
         uint256 len = rewardTokens.length;
         uint32 currentTime = uint32(block.timestamp);
@@ -600,14 +601,27 @@ contract RewardVault is IERC4626, ERC20 {
             reward.rewardRateAndRewardPerTokenStoredSlot = rateSlot;
 
             /// 7. Update account-specific data if account is provided
-            if (account != address(0)) {
+            if (_from != address(0)) {
                 /// 7a. Calculate earned rewards for account
-                uint256 earnedAmount = earned(account, token);
+                uint256 earnedAmount = earned(_from, token);
 
                 /// 7b. Pack and update account data in single SSTORE
                 /// - Lower 128 bits: new reward per token paid
                 /// - Upper 128 bits: earned amount
-                accountData[account][token].rewardPerTokenPaidAndClaimableSlot = (
+                accountData[_from][token].rewardPerTokenPaidAndClaimableSlot = (
+                    uint128(newRewardPerToken) & StorageMasks.ACCOUNT_REWARD_PER_TOKEN
+                ) | ((uint256(uint128(earnedAmount)) << 128) & StorageMasks.ACCOUNT_CLAIMABLE);
+            }
+
+            /// 8. Update account-specific data if account is provided
+            if (_to != address(0)) {
+                /// 8a. Calculate earned rewards for account
+                uint256 earnedAmount = earned(_to, token);
+
+                /// 8b. Pack and update account data in single SSTORE
+                /// - Lower 128 bits: new reward per token paid
+                /// - Upper 128 bits: earned amount
+                accountData[_to][token].rewardPerTokenPaidAndClaimableSlot = (
                     uint128(newRewardPerToken) & StorageMasks.ACCOUNT_REWARD_PER_TOKEN
                 ) | ((uint256(uint128(earnedAmount)) << 128) & StorageMasks.ACCOUNT_CLAIMABLE);
             }
@@ -677,10 +691,7 @@ contract RewardVault is IERC4626, ERC20 {
 
         /// 2. Update Reward State.
         /// @dev No need to check for zero address as the transfer function will handle it.
-        _updateReward(from);
-
-        /// 3. Update Reward State.
-        _updateReward(to);
+        _updateReward(from, to);
 
         /// 4. Emit the Transfer event.
         emit Transfer(from, to, amount);
