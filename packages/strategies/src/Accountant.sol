@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-// import {console} from "forge-std/src/console.sol";
+import {console} from "forge-std/src/console.sol";
 
 import {IRegistry} from "src/interfaces/IRegistry.sol";
 import {IHarvester} from "src/interfaces/IHarvester.sol";
@@ -149,7 +149,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     //////////////////////////////////////////////////////
 
     modifier onlyAllowed() {
-        require(IRegistry(REGISTRY).allowed(msg.sender, msg.sig), OnlyAllowed());
+        console.logBytes4(msg.sig);
+        require(IRegistry(REGISTRY).allowed(address(this), msg.sender, msg.sig), OnlyAllowed());
         _;
     }
 

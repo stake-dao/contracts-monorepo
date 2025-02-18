@@ -299,6 +299,14 @@ contract AccountantTest is BaseTest {
     }
 
     function test_access_control() public {
+        address[] memory vaults = new address[](1);
+        vaults[0] = address(this);
+        bytes[] memory harvestData = new bytes[](1);
+
+        vm.expectRevert(Accountant.OnlyAllowed.selector);
+        vm.prank(address(0x1));
+        accountant.claim(vaults, address(this), address(0x1), harvestData);
+
         // Test OnlyVault modifier
         vm.expectRevert(Accountant.OnlyVault.selector);
         vm.prank(address(0x1));

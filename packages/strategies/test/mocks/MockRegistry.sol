@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
+import {console} from "forge-std/src/console.sol";
 import {IRegistry} from "src/interfaces/IRegistry.sol";
 
 contract MockRegistry is IRegistry {
@@ -20,7 +21,7 @@ contract MockRegistry is IRegistry {
         return address(0);
     }
 
-    function allowed(address, bytes4) external view returns (bool) {
+    function allowed(address, address, bytes4) external view returns (bool) {
         return isAllowed;
     }
 
