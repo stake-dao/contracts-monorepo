@@ -1,46 +1,72 @@
 /// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import "@openzeppelin/contracts/proxy/Clones.sol";
-import "@openzeppelin/contracts/utils/math/Math.sol";
-import "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20, IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
-import "src/interfaces/IRegistry.sol";
-import "src/interfaces/IStrategy.sol";
-import "src/interfaces/IAllocator.sol";
-import "src/interfaces/IAccountant.sol";
-import "src/libraries/StorageMasks.sol";
+import {IRegistry} from "src/interfaces/IRegistry.sol";
+import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {IAllocator} from "src/interfaces/IAllocator.sol";
+import {IAccountant} from "src/interfaces/IAccountant.sol";
+import {StorageMasks} from "src/libraries/StorageMasks.sol";
 
-/// @title  - Base Vault Implementation
-/// @notice A minimal ERC4626-compatible vault that delegates accounting to an external Accountant contract
+/// @title Reward Vault
+/// @notice An ERC4626-compatible vault that manages deposits, withdrawals, and reward distributions
 /// @dev Implements core vault functionality with:
 ///      - ERC4626 minimal interface for deposits and withdrawals
 ///      - Integration with Registry for contract addresses
 ///      - Delegation of accounting to Accountant contract
 ///      - Strategy integration for yield generation
+///      - Reward distribution and claiming functionality
 contract RewardVault is IERC4626, ERC20 {
     using Math for uint256;
     using SafeERC20 for IERC20;
 
     //////////////////////////////////////////////////////
+    /// --- EVENTS
+    //////////////////////////////////////////////////////
+
+    /// @notice Emitted when a new reward token is added
+    /// @param rewardToken The address of the reward token
+    /// @param distributor The address of the rewards distributor
+    /// @param rewardsDuration The duration of the rewards period in seconds
+    event RewardTokenAdded(address indexed rewardToken, address indexed distributor, uint32 rewardsDuration);
+
+    /// @notice Emitted when rewards are notified for distribution
+    /// @param rewardToken The address of the reward token
+    /// @param reward The amount of rewards to distribute
+    /// @param rewardRate The rate at which rewards will be distributed
+    event RewardsNotified(address indexed rewardToken, uint256 reward, uint128 rewardRate);
+
+    //////////////////////////////////////////////////////
     /// --- ERRORS
     //////////////////////////////////////////////////////
 
-    /// @notice The error thrown when a transfer is made to the vault.
+    /// @notice The error thrown when a transfer is made to the vault
+    /// @dev Prevents direct transfers to the vault contract
     error TransferToVault();
-    /// @notice The error thrown when a transfer is made to the zero address.
+
+    /// @notice The error thrown when a transfer is made to the zero address
+    /// @dev Prevents burning tokens by transferring to address(0)
     error TransferToZeroAddress();
-    /// @notice The error thrown when caller is not the owner or approved.
+
+    /// @notice The error thrown when caller is not the owner or approved
+    /// @dev Access control for token operations
     error NotApproved();
+
     /// @notice Error thrown when the calculated reward rate exceeds the maximum value
+    /// @dev Prevents overflow in reward rate calculations
     error RewardRateOverflow();
+
     /// @notice Error thrown when attempting to add a reward token that already exists
+    /// @dev Prevents duplicate reward token entries
     error RewardAlreadyExists();
+
     /// @notice Error thrown when an unauthorized address attempts to distribute rewards
+    /// @dev Access control for reward distribution
     error UnauthorizedRewardsDistributor();
 
     //////////////////////////////////////////////////////
@@ -66,19 +92,23 @@ contract RewardVault is IERC4626, ERC20 {
     //////////////////////////////////////////////////////
 
     /// @notice List of active reward tokens
+    /// @dev Array of reward token addresses that can be distributed
     address[] public rewardTokens;
 
     /// @notice Mapping of reward token to its packed reward data
+    /// @dev Stores reward distribution parameters and state for each token
     mapping(address => PackedReward) private rewardData;
 
     /// @notice Account reward data mapping
-    /// @dev [rewardPerTokenPaid (128) | claimable (128)]
+    /// @dev Maps user addresses to their reward state for each token
     mapping(address => mapping(address => PackedAccount)) private accountData;
 
     //////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
+    /// @notice Initializes the vault with basic ERC20 metadata
+    /// @dev Sets up the vault with a standard name and symbol prefix
     constructor() ERC20(string.concat("StakeDAO Vault"), string.concat("sd-vault")) {}
 
     //////////////////////////////////////////////////////
@@ -86,6 +116,8 @@ contract RewardVault is IERC4626, ERC20 {
     //////////////////////////////////////////////////////
 
     /// @notice Returns the address of the underlying token
+    /// @dev Retrieves the token address from the clone's immutable args
+    /// @return The address of the ERC20 token that the vault accepts
     function asset() public view returns (address) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         address token;
@@ -96,11 +128,14 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Returns the total amount of underlying assets held by the vault
+    /// @dev In this implementation, total assets equals total supply for simplicity
+    /// @return The total amount of underlying assets
     function totalAssets() public view returns (uint256) {
         return totalSupply();
     }
 
     /// @notice Converts a given number of assets to the equivalent amount of shares
+    /// @dev 1:1 conversion ratio in this implementation
     /// @param assets The number of assets to convert
     /// @return The amount of shares equivalent to the assets
     function convertToShares(uint256 assets) public pure returns (uint256) {
@@ -108,6 +143,7 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Converts a given number of shares to the equivalent amount of assets
+    /// @dev 1:1 conversion ratio in this implementation
     /// @param shares The number of shares to convert
     /// @return The amount of assets equivalent to the shares
     function convertToAssets(uint256 shares) public pure returns (uint256) {
@@ -119,18 +155,21 @@ contract RewardVault is IERC4626, ERC20 {
     //////////////////////////////////////////////////////
 
     /// @notice Returns the maximum amount of assets that can be deposited
+    /// @dev No upper limit in this implementation
     /// @return The maximum amount of assets (uint256.max)
     function maxDeposit(address) public pure returns (uint256) {
         return type(uint256).max;
     }
 
     /// @notice Returns the maximum amount of shares that can be minted
+    /// @dev No upper limit in this implementation
     /// @return The maximum amount of shares (uint256.max)
     function maxMint(address) public pure returns (uint256) {
         return type(uint256).max;
     }
 
     /// @notice Simulates the amount of shares that would be minted for a deposit
+    /// @dev 1:1 ratio between assets and shares in this implementation
     /// @param assets The amount of assets to simulate deposit for
     /// @return The amount of shares that would be minted
     function previewDeposit(uint256 assets) public pure returns (uint256) {
@@ -138,6 +177,7 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Simulates the amount of assets needed for a mint
+    /// @dev 1:1 ratio between assets and shares in this implementation
     /// @param shares The amount of shares to simulate minting
     /// @return The amount of assets that would be needed
     function previewMint(uint256 shares) public pure returns (uint256) {
@@ -145,6 +185,7 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Deposits assets into the vault and mints shares to receiver
+    /// @dev Handles deposit allocation through strategy and updates rewards
     /// @param assets The amount of assets to deposit
     /// @param receiver The address to receive the minted shares
     /// @return assets The amount of assets deposited
@@ -154,6 +195,7 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Mints exact shares to receiver by depositing assets
+    /// @dev Functionally identical to deposit in this implementation
     /// @param shares The amount of shares to mint
     /// @param receiver The address to receive the minted shares
     /// @return shares The amount of shares minted
@@ -162,7 +204,8 @@ contract RewardVault is IERC4626, ERC20 {
         return shares;
     }
 
-    /// @dev Internal function to deposit assets into the vault.
+    /// @notice Internal function to deposit assets into the vault
+    /// @dev Handles the actual deposit logic including strategy integration
     /// @param account The account providing the assets
     /// @param receiver The account receiving the shares
     /// @param assets The amount of assets to deposit
@@ -187,10 +230,11 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     //////////////////////////////////////////////////////
-    /// --- WITHDRAWAL FUNCTIONALITY
+    /// --- WITHDRAWAL LOGIC
     //////////////////////////////////////////////////////
 
     /// @notice Returns the maximum amount of assets that can be withdrawn by an owner
+    /// @dev Maximum withdrawal is limited to the owner's balance
     /// @param owner The address to check withdrawal limit for
     /// @return The maximum amount of assets that can be withdrawn
     function maxWithdraw(address owner) public view returns (uint256) {
@@ -198,6 +242,7 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Returns the maximum amount of shares that can be redeemed by an owner
+    /// @dev Maximum redemption is limited to the owner's balance
     /// @param owner The address to check redemption limit for
     /// @return The maximum amount of shares that can be redeemed
     function maxRedeem(address owner) public view returns (uint256) {
@@ -205,6 +250,7 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Simulates the amount of shares needed for a withdrawal
+    /// @dev Uses 1:1 conversion ratio in this implementation
     /// @param assets The amount of assets to simulate withdrawal for
     /// @return The amount of shares that would be burned
     function previewWithdraw(uint256 assets) public pure returns (uint256) {
@@ -212,6 +258,7 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Simulates the amount of assets that would be withdrawn for a redemption
+    /// @dev Uses 1:1 conversion ratio in this implementation
     /// @param shares The amount of shares to simulate redemption for
     /// @return The amount of assets that would be returned
     function previewRedeem(uint256 shares) public pure returns (uint256) {
@@ -219,6 +266,7 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Withdraws assets from the vault to receiver by burning shares from owner
+    /// @dev Handles allowance checks and withdrawal allocation through strategy
     /// @param assets The amount of assets to withdraw
     /// @param receiver The address to receive the assets
     /// @param owner The address to burn shares from
@@ -236,6 +284,7 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Redeems shares from owner and sends assets to receiver
+    /// @dev Handles allowance checks and withdrawal allocation through strategy
     /// @param shares The amount of shares to redeem
     /// @param receiver The address to receive the assets
     /// @param owner The address to burn shares from
@@ -252,7 +301,8 @@ contract RewardVault is IERC4626, ERC20 {
         return shares;
     }
 
-    /// @dev Internal function to withdraw assets from the vault.
+    /// @notice Internal function to withdraw assets from the vault
+    /// @dev Handles the actual withdrawal logic including strategy integration
     /// @param owner The account that owns the shares
     /// @param receiver The account receiving the assets
     /// @param assets The amount of assets to withdraw
@@ -275,10 +325,11 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     //////////////////////////////////////////////////////
-    /// --- REWARD FUNCTIONALITY
+    /// --- REWARD LOGIC
     //////////////////////////////////////////////////////
 
     /// @notice Returns the rewards distributor for a given token
+    /// @dev Extracts distributor address from packed storage
     /// @param token The reward token address
     /// @return The address of the rewards distributor
     function getRewardsDistributor(address token) public view returns (address) {
@@ -291,6 +342,7 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Returns the rewards duration for a given token
+    /// @dev Extracts duration from packed storage
     /// @param token The reward token address
     /// @return The duration in seconds
     function getRewardsDuration(address token) public view returns (uint32) {
@@ -301,6 +353,7 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Returns the last update time for a given token
+    /// @dev Extracts last update time from packed storage
     /// @param token The reward token address
     /// @return The timestamp of the last update
     function getLastUpdateTime(address token) public view returns (uint32) {
@@ -311,6 +364,7 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Returns the period finish time for a given token
+    /// @dev Extracts period finish time from packed storage
     /// @param token The reward token address
     /// @return The timestamp when rewards end
     function getPeriodFinish(address token) public view returns (uint32) {
@@ -323,6 +377,7 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Returns the reward rate for a given token
+    /// @dev Extracts reward rate from packed storage
     /// @param token The reward token address
     /// @return The rewards per second rate
     function getRewardRate(address token) public view returns (uint128) {
@@ -330,6 +385,7 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Returns the reward per token stored for a given token
+    /// @dev Extracts reward per token from packed storage
     /// @param token The reward token address
     /// @return The accumulated rewards per token
     function getRewardPerTokenStored(address token) public view returns (uint128) {
@@ -337,6 +393,7 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Returns the reward amount for the current duration
+    /// @dev Calculates total rewards by multiplying rate by duration
     /// @param _rewardsToken The reward token to check
     /// @return The total rewards for the duration
     function getRewardForDuration(address _rewardsToken) external view returns (uint256) {
@@ -344,6 +401,7 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Returns the last applicable time for reward calculation
+    /// @dev Returns the earlier of current time or period finish
     /// @param _rewardsToken The reward token to check
     /// @return The minimum of current time and period finish
     function lastTimeRewardApplicable(address _rewardsToken) public view returns (uint256) {
@@ -351,6 +409,7 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Calculates the current reward per token
+    /// @dev Accounts for time elapsed since last update
     /// @param _rewardsToken The reward token to calculate for
     /// @return The current reward per token rate
     function rewardPerToken(address _rewardsToken) public view returns (uint256) {
@@ -366,6 +425,7 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Calculates the earned rewards for an account
+    /// @dev Includes both stored and newly accumulated rewards
     /// @param account The account to calculate earnings for
     /// @param _rewardsToken The reward token to calculate
     /// @return The total earned rewards
@@ -381,52 +441,79 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Updates reward state for an account
+    /// @dev Updates reward accounting for a specific account
     /// @param account The account to update rewards for
     function updateReward(address account) external {
         _updateReward(account);
     }
 
     /// @notice Notifies the contract of new reward amount
+    /// @dev Handles reward rate updates and token transfers
     /// @param _rewardsToken The reward token being distributed
     /// @param reward The amount of rewards to distribute
     function notifyRewardAmount(address _rewardsToken, uint256 reward) external {
+        /// 1. Update reward state for all tokens before modifying rates
         _updateReward(address(0));
 
+        /// 2. Verify caller is authorized distributor for this reward token
         require(getRewardsDistributor(_rewardsToken) == msg.sender, UnauthorizedRewardsDistributor());
 
+        /// 3. Transfer reward tokens from distributor to vault
         IERC20(_rewardsToken).safeTransferFrom(msg.sender, address(this), reward);
 
+        /// 4. Cache current state values
         uint32 currentTime = uint32(block.timestamp);
         uint32 periodFinish = getPeriodFinish(_rewardsToken);
         uint32 rewardsDuration = getRewardsDuration(_rewardsToken);
         uint256 newRewardRate;
 
+        /// 5. Calculate new reward rate based on timing
         if (currentTime >= periodFinish) {
+            /// 5a. If previous period is finished, simply distribute new rewards over duration
             newRewardRate = reward / rewardsDuration;
         } else {
+            /// 5b. If previous period is still active, add remaining rewards to new amount
             uint256 remaining = periodFinish - currentTime;
             uint256 leftover = remaining * getRewardRate(_rewardsToken);
             newRewardRate = (reward + leftover) / rewardsDuration;
         }
 
+        /// 6. Ensure reward rate doesn't overflow uint128
         if (newRewardRate > type(uint128).max) revert RewardRateOverflow();
 
+        /// 7. Pack and update first storage slot (distributor, duration, timestamps)
         uint256 distributorAndDurationAndLastUpdateAndPeriodFinishSlot = (
+            /// 7a. Keep existing distributor address
             rewardData[_rewardsToken].distributorAndDurationAndLastUpdateAndPeriodFinishSlot
                 & StorageMasks.REWARD_DISTRIBUTOR
-        ) | ((uint256(rewardsDuration) << 160) & StorageMasks.REWARD_DURATION)
-            | ((uint256(currentTime) << 192) & StorageMasks.REWARD_LAST_UPDATE)
-            | ((uint256(currentTime + rewardsDuration) << 224) & StorageMasks.REWARD_PERIOD_FINISH);
+        ) | 
+            /// 7b. Update rewards duration
+            ((uint256(rewardsDuration) << 160) & StorageMasks.REWARD_DURATION) |
+            /// 7c. Set last update time to current
+            ((uint256(currentTime) << 192) & StorageMasks.REWARD_LAST_UPDATE) |
+            /// 7d. Set new period finish time
+            ((uint256(currentTime + rewardsDuration) << 224) & StorageMasks.REWARD_PERIOD_FINISH);
 
+        /// 8. Pack and update second storage slot (reward rate and rewards per token)
         uint256 rewardRateAndRewardPerTokenStoredSlot = (
+            /// 8a. Keep existing rewards per token
             getRewardPerTokenStored(_rewardsToken) & StorageMasks.REWARD_PER_TOKEN_STORED
-        ) | ((uint256(newRewardRate) << 128) & StorageMasks.REWARD_RATE);
+        ) | 
+            /// 8b. Set new reward rate
+            ((uint256(newRewardRate) << 128) & StorageMasks.REWARD_RATE);
 
+        /// 9. Update storage with new values (single SSTORE per slot)
         rewardData[_rewardsToken].distributorAndDurationAndLastUpdateAndPeriodFinishSlot =
             distributorAndDurationAndLastUpdateAndPeriodFinishSlot;
         rewardData[_rewardsToken].rewardRateAndRewardPerTokenStoredSlot = rewardRateAndRewardPerTokenStoredSlot;
+
+        /// 10. Emit event with updated values
+        emit RewardsNotified(_rewardsToken, reward, uint128(newRewardRate));
     }
 
+    /// @notice Internal function to update reward state
+    /// @dev Updates reward accounting for all tokens
+    /// @param account The account to update rewards for
     function _updateReward(address account) internal {
         uint256 len = rewardTokens.length;
         uint32 currentTime = uint32(block.timestamp);
@@ -464,10 +551,11 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     //////////////////////////////////////////////////////
-    /// --- REGISTRY AND EXTERNAL CONTRACTS
+    /// --- REGISTRY AND CLONE IMMUTABLES
     //////////////////////////////////////////////////////
 
     /// @notice Returns the registry contract address from clone args
+    /// @dev Retrieves registry address from immutable clone arguments
     /// @return _registry The IRegistry interface of the registry contract
     function registry() public view returns (IRegistry _registry) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
@@ -477,6 +565,7 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Returns the accountant contract address from clone args
+    /// @dev Retrieves accountant address from immutable clone arguments
     /// @return _accountant The IAccountant interface of the accountant contract
     function accountant() public view returns (IAccountant _accountant) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
@@ -485,6 +574,9 @@ contract RewardVault is IERC4626, ERC20 {
         }
     }
 
+    /// @notice Returns the gauge address from clone args
+    /// @dev Retrieves gauge address from immutable clone arguments
+    /// @return _gauge The address of the gauge contract
     function gauge() public view returns (address _gauge) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         assembly {
@@ -493,12 +585,14 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Returns the allocator contract from registry
+    /// @dev Retrieves current allocator from registry
     /// @return _allocator The IAllocator interface of the allocator contract
     function allocator() public view returns (IAllocator _allocator) {
         return IAllocator(registry().allocator());
     }
 
     /// @notice Returns the strategy contract from registry
+    /// @dev Retrieves current strategy from registry
     /// @return _strategy The IStrategy interface of the strategy contract
     function strategy() public view returns (IStrategy _strategy) {
         return IStrategy(registry().strategy());
@@ -509,6 +603,7 @@ contract RewardVault is IERC4626, ERC20 {
     //////////////////////////////////////////////////////
 
     /// @notice Updates the balance of the vault
+    /// @dev Delegates balance updates to the accountant
     /// @param from The account to transfer from
     /// @param to The account to transfer to
     /// @param amount The amount of assets to transfer
@@ -521,48 +616,55 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Internal function to mint shares to an account
+    /// @dev Delegates minting to the accountant
     /// @param to The account to mint shares to
     /// @param amount The amount of shares to mint
     /// @param pendingRewards The amount of pending rewards to add
-    /// @param harvested Whether the mint is due to a harvest
+    /// @param harvested wether pendingRewards are claimed and available in the accountant
     function _mint(address to, uint256 amount, uint256 pendingRewards, bool harvested) internal {
         accountant().checkpoint(gauge(), address(0), to, amount, pendingRewards, harvested);
     }
 
     /// @notice Internal function to burn shares from an account
+    /// @dev Delegates burning to the accountant
     /// @param from The account to burn shares from
     /// @param amount The amount of shares to burn
     /// @param pendingRewards The amount of pending rewards to subtract
-    /// @param harvested Whether the burn is due to a harvest
+    /// @param harvested wether pendingRewards are claimed and available in the accountant
     function _burn(address from, uint256 amount, uint256 pendingRewards, bool harvested) internal {
         accountant().checkpoint(gauge(), from, address(0), amount, pendingRewards, harvested);
     }
 
     /// @notice Returns the name of the vault token
+    /// @dev Concatenates "StakeDAO" with the underlying asset name
     /// @return The name string including the underlying asset name
     function name() public view override(ERC20, IERC20Metadata) returns (string memory) {
         return string.concat("StakeDAO ", IERC20Metadata(asset()).name(), " Vault");
     }
 
     /// @notice Returns the symbol of the vault token
+    /// @dev Concatenates "sd-" with the underlying asset symbol
     /// @return The symbol string including the underlying asset symbol
     function symbol() public view override(ERC20, IERC20Metadata) returns (string memory) {
         return string.concat("sd-", IERC20Metadata(asset()).symbol(), "-vault");
     }
 
     /// @notice Returns the number of decimals of the vault token
+    /// @dev Matches the decimals of the underlying asset
     /// @return The number of decimals matching the underlying asset
     function decimals() public view override(ERC20, IERC20Metadata) returns (uint8) {
         return IERC20Metadata(asset()).decimals();
     }
 
     /// @notice Returns the total supply of vault shares
+    /// @dev Delegates total supply tracking to the accountant
     /// @return The total supply from the accountant
     function totalSupply() public view override(ERC20, IERC20) returns (uint256) {
         return accountant().totalSupply(address(this));
     }
 
     /// @notice Returns the balance of vault shares for an account
+    /// @dev Delegates balance tracking to the accountant
     /// @param account The account to check the balance for
     /// @return The balance from the accountant
     function balanceOf(address account) public view override(ERC20, IERC20) returns (uint256) {
