@@ -6,8 +6,26 @@ import "forge-std/src/Test.sol";
 import "forge-std/src/console.sol";
 import "../src/GaugeVoter.sol";
 
+struct VeBalance {
+    uint128 bias;
+    uint128 slope;
+}
+
+struct UserPoolData {
+    uint64 weight;
+    VeBalance vote;
+}
+
 interface Safe {
     function enableModule(address module) external;
+}
+
+interface CurveGaugeController {
+    function last_user_vote(address,address) external view returns(uint256);
+}
+
+interface PendleGaugeController {
+    function getUserPoolVote(address,address) external view returns(UserPoolData memory);
 }
 
 contract GaugeVoterTest is Test {
@@ -19,6 +37,18 @@ contract GaugeVoterTest is Test {
     address public constant PENDLE_STRATEGY = address(0xA7641acBc1E85A7eD70ea7bCFFB91afb12AD0c54);
     address public constant PENDLE_LOCKER = address(0xD8fa8dC5aDeC503AcC5e026a98F32Ca5C1Fa289A);
     address public constant PENDLE_VOTER = address(0x44087E105137a5095c008AaB6a6530182821F2F0);
+
+    // Gauge controllers
+    address public constant CURVE_GC = address(0x2F50D538606Fa9EDD2B11E2446BEb18C9D5846bB);
+    address public constant BALANCER_GC = address(0xC128468b7Ce63eA702C1f104D55A2566b13D3ABD);
+    address public constant FRAX_GC = address(0x3669C421b77340B2979d1A00a792CC2ee0FcE737);
+    address public constant FXN_GC = address(0xe60eB8098B34eD775ac44B1ddE864e098C6d7f37);
+
+    // Lockers
+    address public constant CURVE_LOCKER = address(0x52f541764E6e90eeBc5c21Ff570De0e2D63766B6);
+    address public constant BALANCER_LOCKER = address(0xea79d1A83Da6DB43a85942767C389fE0ACf336A5);
+    address public constant FRAX_LOCKER = address(0xCd3a267DE09196C48bbB1d9e842D7D7645cE448f);
+    address public constant FXN_LOCKER = address(0x75736518075a01034fa72D675D36a47e9B06B2Fb);
 
     GaugeVoter gaugeVoter;
 
@@ -48,12 +78,11 @@ contract GaugeVoterTest is Test {
     function testCurveVote() public {
         vm.startPrank(DEPLOYER);
 
-        // Vote with the Safe Module
-        // Définition des tableaux pour la fonction voteGauges
-        address[] memory gaugeAddresses = new address[](47);
-        uint256[] memory weights = new uint256[](47);
+        uint256 nbGauges = 47;
+        address[] memory gaugeAddresses = new address[](nbGauges);
+        uint256[] memory weights = new uint256[](nbGauges);
 
-        // Initialisation des adresses
+        // Init gauge addresses
         gaugeAddresses[0] = address(0xd303994a0Db9b74f3E8fF629ba3097fC7060C331);
         gaugeAddresses[1] = address(0x6eb6B5915432c890dF1999a491A6929998634bAb);
         gaugeAddresses[2] = address(0x4e227d29b33B77113F84bcC189a6F886755a1f24);
@@ -102,56 +131,18 @@ contract GaugeVoterTest is Test {
         gaugeAddresses[45] = address(0xc372CCdD24Bb0753CEB78bBaC4D24EB7dE4aBE4e);
         gaugeAddresses[46] = address(0x5Dd3e384621e00a9fe1868c257c03FA78AE24e47);
 
-        // Initialisation des poids
-        weights[0] = 0;                // 0x0
-        weights[1] = 0;                // 0x0
-        weights[2] = 0;                // 0x0
-        weights[3] = 2005;             // 0x7d5
-        weights[4] = 0;                // 0x0
-        weights[5] = 422;              // 0x1a6
-        weights[6] = 216;              // 0xd8
-        weights[7] = 0;                // 0x0
-        weights[8] = 0;                // 0x0
-        weights[9] = 28;               // 0x1c
-        weights[10] = 251;             // 0xfb
-        weights[11] = 220;             // 0xdc
-        weights[12] = 9;               // 0x9
-        weights[13] = 0;               // 0x0
-        weights[14] = 9;               // 0x9
-        weights[15] = 0;               // 0x0
-        weights[16] = 230;             // 0xe6
-        weights[17] = 230;             // 0xe6
-        weights[18] = 152;             // 0x98
-        weights[19] = 9;               // 0x9
-        weights[20] = 115;             // 0x73
-        weights[21] = 18;              // 0x12
-        weights[22] = 14;              // 0xe
-        weights[23] = 38;              // 0x26
-        weights[24] = 108;             // 0x6c
-        weights[25] = 9;               // 0x9
-        weights[26] = 53;              // 0x35
-        weights[27] = 112;             // 0x70
-        weights[28] = 221;             // 0xdd
-        weights[29] = 47;              // 0x2f
-        weights[30] = 282;             // 0x11a
-        weights[31] = 378;             // 0x17a
-        weights[32] = 337;             // 0x151
-        weights[33] = 56;              // 0x38
-        weights[34] = 34;              // 0x22
-        weights[35] = 255;             // 0xff
-        weights[36] = 57;              // 0x39
-        weights[37] = 236;             // 0xec
-        weights[38] = 781;             // 0x30d
-        weights[39] = 126;             // 0x7e
-        weights[40] = 354;             // 0x162
-        weights[41] = 529;             // 0x211
-        weights[42] = 136;             // 0x88
-        weights[43] = 222;             // 0xde
-        weights[44] = 645;             // 0x285
-        weights[45] = 950;             // 0x3b6
-        weights[46] = 0;               // 0x0
-
+        // Init weights
+        for(uint256 i = 0; i < nbGauges; i++) {
+            weights[i] = 0;
+        }
+        
+        // Vote
         gaugeVoter.vote_with_voter(CURVE_VOTER, gaugeAddresses, weights);
+
+        // Check votes
+        for(uint256 i = 0; i < nbGauges; i++) {
+            assertTrue(checkBasicVotes(CURVE_GC, CURVE_LOCKER, gaugeAddresses[i]));
+        }
         
         vm.stopPrank();
     }
@@ -159,10 +150,11 @@ contract GaugeVoterTest is Test {
     function testBalancerVoter() public {
         vm.startPrank(DEPLOYER);
 
-        address[] memory gaugeAddresses = new address[](22);
-        uint256[] memory weights = new uint256[](22);
+        uint256 nbGauges = 22;
+        address[] memory gaugeAddresses = new address[](nbGauges);
+        uint256[] memory weights = new uint256[](nbGauges);
         
-        // Initialisation des adresses avec checksum
+        // Init gauge addresses
         gaugeAddresses[0] = address(0xDc2Df969EE5E66236B950F5c4c5f8aBe62035df2);
         gaugeAddresses[1] = address(0x80CD37A62A8A58C4Cbf64003410c5cCC4d01519f);
         gaugeAddresses[2] = address(0xbf65b3fA6c208762eD74e82d4AEfCDDfd0323648);
@@ -172,7 +164,7 @@ contract GaugeVoterTest is Test {
         gaugeAddresses[6] = address(0xF22c4C0093a13c193A3162d5B50bC92a8ECB58ef);
         gaugeAddresses[7] = address(0xA00DB7d9c465e95e4AA814A9340B9A161364470a);
         gaugeAddresses[8] = address(0xD449Efa0A587f2cb6BE3AE577Bc167a774525810);
-        gaugeAddresses[9] = address(0x05af3B93FB82ab8691B82a09CBbAe7B8D3Eb5ac1);
+        gaugeAddresses[9] = address(0x5aF3B93Fb82ab8691b82a09CBBae7b8D3eB5Ac11);
         gaugeAddresses[10] = address(0x0d1b58fB1fC10F2160178DE1eAE2d520335ee372);
         gaugeAddresses[11] = address(0x5C0F23A5c1be65Fa710d385814a7Fd1Bda480b1C);
         gaugeAddresses[12] = address(0xd75026F8723b94d9a360A282080492d905c6A558);
@@ -186,90 +178,85 @@ contract GaugeVoterTest is Test {
         gaugeAddresses[20] = address(0x84f7F5cD2218f31B750E7009Bb6fD34e0b945DaC);
         gaugeAddresses[21] = address(0x79eF6103A513951a3b25743DB509E267685726B7);
         
-        // Initialisation des poids
-        weights[0] = 1128;    // 0x468
-        weights[1] = 60;      // 0x3c
-        weights[2] = 0;       // 0x0
-        weights[3] = 125;     // 0x7d
-        weights[4] = 560;     // 0x230
-        weights[5] = 0;       // 0x0
-        weights[6] = 0;       // 0x0
-        weights[7] = 222;     // 0xde
-        weights[8] = 0;       // 0x0
-        weights[9] = 0;       // 0x0
-        weights[10] = 193;    // 0xc1
-        weights[11] = 1159;   // 0x487
-        weights[12] = 1691;   // 0x69b
-        weights[13] = 734;    // 0x2de
-        weights[14] = 96;     // 0x60
-        weights[15] = 106;    // 0x6a
-        weights[16] = 869;    // 0x365
-        weights[17] = 173;    // 0xad
-        weights[18] = 173;    // 0xad
-        weights[19] = 560;    // 0x230
-        weights[20] = 212;    // 0xd4
-        weights[21] = 1903;   // 0x76f
+        // Init weights
+        for(uint256 i = 0; i < nbGauges; i++) {
+            weights[i] = 0;
+        }
 
         gaugeVoter.vote_with_voter(BALANCER_VOTER, gaugeAddresses, weights);
         
+        // Check votes
+        for(uint256 i = 0; i < nbGauges; i++) {
+            assertTrue(checkBasicVotes(BALANCER_GC, BALANCER_LOCKER, gaugeAddresses[i]));
+        }
+
         vm.stopPrank();
     }
 
     function testFraxVote() public {
         vm.startPrank(DEPLOYER);
 
-        address[] memory gaugeAddresses = new address[](6);
-        uint256[] memory weights = new uint256[](6);
+        uint256 nbGauges = 6;
+        address[] memory gaugeAddresses = new address[](nbGauges);
+        uint256[] memory weights = new uint256[](nbGauges);
         
-        // Initialisation des adresses avec checksum
+        // Init gauge addresses
         gaugeAddresses[0] = address(0x83Dc6775c1B0fc7AaA46680D78B04b4a3d4f5650);
-        gaugeAddresses[1] = address(0x0E1E697fD7EC9B3675808bA8AD508FD51CAC756A);
+        gaugeAddresses[1] = address(0xE1e697Fd7EC9b3675808Ba8Ad508fD51cac756a3);
         gaugeAddresses[2] = address(0x4c9AD8c53d0a001E7fF08a3E5E26dE6795bEA5ac);
         gaugeAddresses[3] = address(0x6f82A6551cc351Bc295602C3ea99C78EdACF590C);
         gaugeAddresses[4] = address(0x711d650Cd10dF656C2c28D375649689f137005fA);
         gaugeAddresses[5] = address(0xB4fdD7444E1d86b2035c97124C46b1528802DA35);
         
-        // Initialisation des poids
-        weights[0] = 783;     // 0x30f
-        weights[1] = 2434;    // 0x982
-        weights[2] = 3;       // 0x3
-        weights[3] = 1567;    // 0x61f
-        weights[4] = 1294;    // 0x50e
-        weights[5] = 3919;    // 0xf4f
+        // Init weights
+        for(uint256 i = 0; i < nbGauges; i++) {
+            weights[i] = 0;
+        }
 
         gaugeVoter.vote_with_voter(FRAX_VOTER, gaugeAddresses, weights);
         
+        // Check votes
+        for(uint256 i = 0; i < nbGauges; i++) {
+            assertTrue(checkBasicVotes(FRAX_GC, FRAX_LOCKER, gaugeAddresses[i]));
+        }
+
         vm.stopPrank();
     }
 
     function testFxnVote() public {
         vm.startPrank(DEPLOYER);
 
-        address[] memory gaugeAddresses = new address[](4);
-        uint256[] memory weights = new uint256[](4);
+        uint256 nbGauges = 4;
+        address[] memory gaugeAddresses = new address[](nbGauges);
+        uint256[] memory weights = new uint256[](nbGauges);
         
-        // Initialisation des adresses avec checksum
+        // Init gauge addresses
         gaugeAddresses[0] = address(0xf0A3ECed42Dbd8353569639c0eaa833857aA0A75);
         gaugeAddresses[1] = address(0x61F32964C39Cca4353144A6DB2F8Efdb3216b35B);
         gaugeAddresses[2] = address(0x5b1D12365BEc01b8b672eE45912d1bbc86305dba);
         gaugeAddresses[3] = address(0x9c7003bC16F2A1AA47451C858FEe6480B755363e);
         
-        // Initialisation des poids
-        weights[0] = 0;       // 0x0
-        weights[1] = 0;       // 0x0
-        weights[2] = 965;     // 0x3c5
-        weights[3] = 9035;    // 0x234b
+        // Init weights
+        for(uint256 i = 0; i < nbGauges; i++) {
+            weights[i] = 0;
+        }
 
         gaugeVoter.vote_with_voter(FXN_VOTER, gaugeAddresses, weights);
         
+        // Check votes
+        for(uint256 i = 0; i < nbGauges; i++) {
+            assertTrue(checkBasicVotes(FXN_GC, FXN_LOCKER, gaugeAddresses[i]));
+        }
+
         vm.stopPrank();
     }
 
     function testPendleVote() public {
         vm.startPrank(DEPLOYER);
-        
-        address[] memory gaugeAddresses = new address[](13);
-        uint64[] memory weights = new uint64[](13);
+
+        uint256 nbGauges = 13;
+        address[] memory gaugeAddresses = new address[](nbGauges);
+        uint64[] memory weights = new uint64[](nbGauges);
 
         gaugeAddresses[0] = address(0xcDd26Eb5EB2Ce0f203a84553853667aE69Ca29Ce);
         gaugeAddresses[1] = address(0xE15578523937ed7F08E8F7a1Fa8a021E07025a08);
@@ -285,22 +272,29 @@ contract GaugeVoterTest is Test {
         gaugeAddresses[11] = address(0x4D7356369273c6373E6C5074fe540CB070acfE6b);
         gaugeAddresses[12] = address(0x58612beB0e8a126735b19BB222cbC7fC2C162D2a);
 
-        weights[0] = 2600000000000000000;
-        weights[1] = 0;
-        weights[2] = 950000000000000000;
-        weights[3] = 0;
-        weights[4] = 0;
-        weights[5] = 0;
-        weights[6] = 75000000000000000;
-        weights[7] = 840000000000000000;
-        weights[8] = 500000000000000000;
-        weights[9] = 450000000000000000;
-        weights[10] = 320000000000000000;
-        weights[11] = 1600000000000000000;
-        weights[12] = 450000000000000000;
+        // Init weights
+        for(uint256 i = 0; i < nbGauges; i++) {
+            weights[i] = 0;
+        }
 
+        // Vote
         gaugeVoter.vote_with_strategy(PENDLE_STRATEGY, PENDLE_LOCKER, PENDLE_VOTER, gaugeAddresses, weights);
         
+        // Check votes
+        for(uint256 i = 0; i < nbGauges; i++) {
+            checkPendleVotes(gaugeAddresses[i]);
+        }
+
         vm.stopPrank();
+    }
+
+    function checkBasicVotes(address gc, address locker, address gauge) internal view returns(bool) {
+        uint256 last_vote = CurveGaugeController(gc).last_user_vote(locker, gauge);
+        return last_vote == block.timestamp;
+    }
+
+    function checkPendleVotes(address gauge) internal view returns(bool) {
+        UserPoolData memory userVote = PendleGaugeController(PENDLE_VOTER).getUserPoolVote(PENDLE_LOCKER, gauge);
+        return userVote.weight == 0;
     }
 }
