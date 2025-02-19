@@ -575,57 +575,58 @@ contract RewardVault is IERC4626, ERC20 {
         for (uint256 i; i < len; i++) {
             /// 2a. Get current token and its reward data
             address token = rewardTokens[i];
-            PackedReward storage reward = rewardData[token];
 
-            /// 2b. Cache storage values to minimize SLOADs
-            uint256 distributorSlot = reward.distributorAndDurationAndLastUpdateAndPeriodFinishSlot;
-            uint256 rateSlot = reward.rewardRateAndRewardPerTokenStoredSlot;
-
-            /// 3. Calculate new reward per token based on time elapsed
-            uint256 newRewardPerToken = rewardPerToken(token);
-
-            /// 4. Pack updates for first storage slot (timestamps)
-            /// 4a. Clear last update time bits while preserving other data
-            /// 4b. Set new last update time in the cleared space
-            distributorSlot = (distributorSlot & ~StorageMasks.REWARD_LAST_UPDATE)
-                | ((uint256(currentTime) << 192) & StorageMasks.REWARD_LAST_UPDATE);
-
-            /// 5. Pack updates for second storage slot (rates)
-            /// 5a. Keep existing reward rate
-            /// 5b. Update reward per token stored
-            rateSlot = (rateSlot & StorageMasks.REWARD_RATE)
-                | (uint128(newRewardPerToken) & StorageMasks.REWARD_PER_TOKEN_STORED);
-
-            /// 6. Update storage with new values (single SSTORE per slot)
-            reward.distributorAndDurationAndLastUpdateAndPeriodFinishSlot = distributorSlot;
-            reward.rewardRateAndRewardPerTokenStoredSlot = rateSlot;
+            uint256 newRewardPerToken = _updateRewardToken(token, currentTime);
 
             /// 7. Update account-specific data if account is provided
             if (_from != address(0)) {
-                /// 7a. Calculate earned rewards for account
-                uint256 earnedAmount = earned(_from, token);
-
-                /// 7b. Pack and update account data in single SSTORE
-                /// - Lower 128 bits: new reward per token paid
-                /// - Upper 128 bits: earned amount
-                accountData[_from][token].rewardPerTokenPaidAndClaimableSlot = (
-                    uint128(newRewardPerToken) & StorageMasks.ACCOUNT_REWARD_PER_TOKEN
-                ) | ((uint256(uint128(earnedAmount)) << 128) & StorageMasks.ACCOUNT_CLAIMABLE);
+                _updateAccountData(_from, token, newRewardPerToken);
             }
 
             /// 8. Update account-specific data if account is provided
             if (_to != address(0)) {
-                /// 8a. Calculate earned rewards for account
-                uint256 earnedAmount = earned(_to, token);
-
-                /// 8b. Pack and update account data in single SSTORE
-                /// - Lower 128 bits: new reward per token paid
-                /// - Upper 128 bits: earned amount
-                accountData[_to][token].rewardPerTokenPaidAndClaimableSlot = (
-                    uint128(newRewardPerToken) & StorageMasks.ACCOUNT_REWARD_PER_TOKEN
-                ) | ((uint256(uint128(earnedAmount)) << 128) & StorageMasks.ACCOUNT_CLAIMABLE);
+                _updateAccountData(_to, token, newRewardPerToken);
             }
         }
+    }
+
+    function _updateRewardToken(address token, uint32 currentTime) internal returns (uint256 newRewardPerToken) {
+        PackedReward storage reward = rewardData[token];
+
+        /// 2b. Cache storage values to minimize SLOADs
+        uint256 distributorSlot = reward.distributorAndDurationAndLastUpdateAndPeriodFinishSlot;
+        uint256 rateSlot = reward.rewardRateAndRewardPerTokenStoredSlot;
+
+        /// 3. Calculate new reward per token based on time elapsed
+        newRewardPerToken = rewardPerToken(token);
+
+        /// 4. Pack updates for first storage slot (timestamps)
+        /// 4a. Clear last update time bits while preserving other data
+        /// 4b. Set new last update time in the cleared space
+        distributorSlot = (distributorSlot & ~StorageMasks.REWARD_LAST_UPDATE)
+            | ((uint256(currentTime) << 192) & StorageMasks.REWARD_LAST_UPDATE);
+
+        /// 5. Pack updates for second storage slot (rates)
+        /// 5a. Keep existing reward rate
+        /// 5b. Update reward per token stored
+        rateSlot =
+            (rateSlot & StorageMasks.REWARD_RATE) | (uint128(newRewardPerToken) & StorageMasks.REWARD_PER_TOKEN_STORED);
+
+        /// 6. Update storage with new values (single SSTORE per slot)
+        reward.distributorAndDurationAndLastUpdateAndPeriodFinishSlot = distributorSlot;
+        reward.rewardRateAndRewardPerTokenStoredSlot = rateSlot;
+    }
+
+    function _updateAccountData(address account, address token, uint256 newRewardPerToken) internal {
+        /// 8a. Calculate earned rewards for account
+        uint256 earnedAmount = earned(account, token);
+
+        /// 8b. Pack and update account data in single SSTORE
+        /// - Lower 128 bits: new reward per token paid
+        /// - Upper 128 bits: earned amount
+        accountData[account][token].rewardPerTokenPaidAndClaimableSlot = (
+            uint128(newRewardPerToken) & StorageMasks.ACCOUNT_REWARD_PER_TOKEN
+        ) | ((uint256(uint128(earnedAmount)) << 128) & StorageMasks.ACCOUNT_CLAIMABLE);
     }
 
     //////////////////////////////////////////////////////
