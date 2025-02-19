@@ -51,6 +51,9 @@ contract RewardVault is IERC4626, ERC20 {
     /// @notice Error thrown when the caller is not allowed.
     error OnlyAllowed();
 
+    /// @notice Error thrown when the reward token is not valid
+    error InvalidRewardToken();
+
     /// @notice Error thrown when the calculated reward rate exceeds the maximum value
     /// @dev Prevents overflow in reward rate calculations
     error RewardRateOverflow();
@@ -590,6 +593,11 @@ contract RewardVault is IERC4626, ERC20 {
         }
     }
 
+    /// @notice Internal function to update reward state for a specific token
+    /// @dev Updates reward accounting for a specific token
+    /// @param token The token to update rewards for
+    /// @param currentTime The current timestamp
+    /// @return newRewardPerToken The new reward per token
     function _updateRewardToken(address token, uint32 currentTime) internal returns (uint256 newRewardPerToken) {
         PackedReward storage reward = rewardData[token];
 
@@ -627,6 +635,75 @@ contract RewardVault is IERC4626, ERC20 {
         accountData[account][token].rewardPerTokenPaidAndClaimableSlot = (
             uint128(newRewardPerToken) & StorageMasks.ACCOUNT_REWARD_PER_TOKEN
         ) | ((uint256(uint128(earnedAmount)) << 128) & StorageMasks.ACCOUNT_CLAIMABLE);
+    }
+
+    /// @notice Claims multiple reward tokens in a single transaction
+    /// @param tokens An array of reward tokens to claim
+    /// @param receiver The address to receive the claimed rewards
+    /// @return amounts An array of amounts claimed for each token
+    function claim(address[] calldata tokens, address receiver) public returns (uint256[] memory amounts) {
+        return _claim(msg.sender, tokens, receiver);
+    }
+
+    /// @notice Claims multiple reward tokens in a single transaction
+    /// @param account The account to claim rewards for
+    /// @param tokens An array of reward tokens to claim
+    /// @param receiver The address to receive the claimed rewards
+    /// @return amounts An array of amounts claimed for each token
+    function claim(address account, address[] calldata tokens, address receiver)
+        public
+        returns (uint256[] memory amounts)
+    {
+        require(registry().allowed(address(this), msg.sender, msg.sig), OnlyAllowed());
+
+        return _claim(account, tokens, receiver);
+    }
+
+    /// @notice Internal function to claim multiple reward tokens
+    /// @param account The account to claim rewards for
+    /// @param tokens An array of reward tokens to claim
+    /// @param receiver The address to receive the claimed rewards
+    /// @return amounts An array of amounts claimed for each token
+    function _claim(address account, address[] calldata tokens, address receiver)
+        internal
+        returns (uint256[] memory amounts)
+    {
+        if (receiver == address(0)) receiver = account;
+
+        // 1. Update rewards for the caller once, so that reward accounting is up to date.
+        //    Pass `address(0)` for `_to` because we only need to update the caller's rewards.
+        _updateReward(account, address(0));
+
+        // 2. Prepare an array to record how much of each token is claimed
+        amounts = new uint256[](tokens.length);
+
+        // 3. Loop over each token to claim
+        for (uint256 i = 0; i < tokens.length; i++) {
+            address rewardToken = tokens[i];
+
+            // 3a. Ensure it's a valid reward token
+            require(isRewardToken[rewardToken], InvalidRewardToken());
+
+            // 3b. Read how much the account has earned
+            uint256 accountEarned = earned(account, rewardToken);
+
+            // If nothing is earned, skip to the next token (not strictly necessary)
+            if (accountEarned == 0) continue;
+
+            // 3c. Reset the claimable amount (so accountEarned won't be double-claimed)
+            //     Typically you'd set the rewardPerTokenPaid to the current
+            //     rewardPerToken(), and the claimable portion to zero.
+            accountData[account][rewardToken].rewardPerTokenPaidAndClaimableSlot =
+                uint256(uint128(rewardPerToken(rewardToken))) & StorageMasks.ACCOUNT_REWARD_PER_TOKEN;
+
+            // 3d. Transfer the rewards from the vault to the user
+            SafeERC20.safeTransfer(IERC20(rewardToken), receiver, accountEarned);
+
+            // 3e. Update return array
+            amounts[i] = accountEarned;
+        }
+
+        return amounts;
     }
 
     //////////////////////////////////////////////////////
