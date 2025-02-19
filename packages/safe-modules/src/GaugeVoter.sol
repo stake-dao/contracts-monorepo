@@ -41,7 +41,7 @@ contract GaugeVoter is AllowanceManager {
     /// @param _underlying_voter Underlying voter contract (ie : Pendle)
     /// @param _gauges Array of gauge addresses
     /// @param _weights Array of weights
-    function vote_with_strategy(address _strategy, address _locker, address _underlying_voter, address[] calldata _gauges, uint64[] calldata _weights) external onlyGovernanceOrAllowed {
+    function vote_pendle(address _strategy, address _locker, address _underlying_voter, address[] calldata _gauges, uint64[] calldata _weights) external onlyGovernanceOrAllowed {
         if(!VOTERS_ALLOWED[_strategy]) {
             revert VOTER_NOT_ALLOW();
         }

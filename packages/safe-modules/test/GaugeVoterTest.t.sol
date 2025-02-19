@@ -278,7 +278,7 @@ contract GaugeVoterTest is Test {
         }
 
         // Vote
-        gaugeVoter.vote_with_strategy(PENDLE_STRATEGY, PENDLE_LOCKER, PENDLE_VOTER, gaugeAddresses, weights);
+        gaugeVoter.vote_pendle(PENDLE_STRATEGY, PENDLE_LOCKER, PENDLE_VOTER, gaugeAddresses, weights);
         
         // Check votes
         for(uint256 i = 0; i < nbGauges; i++) {
