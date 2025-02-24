@@ -219,7 +219,7 @@ contract RewardVault is IERC4626, ERC20 {
 
         uint256 pendingRewards = strategy().withdraw(allocation);
 
-        _burn(owner, shares, pendingRewards, allocation.claimRewards);
+        _burn(owner, shares, pendingRewards, allocation.harvested);
 
         SafeERC20.safeTransfer(IERC20(asset()), receiver, shares);
 
