@@ -158,7 +158,7 @@ contract RewardVault is IERC4626, ERC20 {
 
         uint256 pendingRewards = strategy().deposit(allocation);
 
-        _mint(receiver, shares, pendingRewards, allocation.claimRewards);
+        _mint(receiver, shares, pendingRewards, allocation.harvested);
 
         emit Deposit(msg.sender, receiver, assets, shares);
     }
