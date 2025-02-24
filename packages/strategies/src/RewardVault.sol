@@ -7,11 +7,11 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20, IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
-import {IRegistry} from "src/interfaces/IRegistry.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IAllocator} from "src/interfaces/IAllocator.sol";
 import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {StorageMasks} from "src/libraries/StorageMasks.sol";
+import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
 /// @title RewardVault
 /// @notice An ERC4626-compatible vault that manages deposits, withdrawals, and reward distributions.
@@ -65,8 +65,11 @@ contract RewardVault is IERC4626, ERC20 {
     error UnauthorizedRewardsDistributor();
 
     ///////////////////////////////////////////////////////////////
-    /// ~ CONSTANTS
+    /// ~ CONSTANTS & IMMUTABLES
     ///////////////////////////////////////////////////////////////
+
+    /// @notice The protocol ID.
+    bytes4 public immutable PROTOCOL_ID;
 
     /// @notice The maximum number of reward tokens that can be added.
     uint256 constant MAX_REWARD_TOKEN_COUNT = 10;
@@ -107,7 +110,9 @@ contract RewardVault is IERC4626, ERC20 {
 
     /// @notice Initializes the vault with basic ERC20 metadata
     /// @dev Sets up the vault with a standard name and symbol prefix
-    constructor() ERC20(string.concat("StakeDAO Vault"), string.concat("sd-vault")) {}
+    constructor(bytes4 protocolId) ERC20(string.concat("StakeDAO Vault"), string.concat("sd-vault")) {
+        PROTOCOL_ID = protocolId;
+    }
 
     ///////////////////////////////////////////////////////////////
     /// ~ EXTERNAL/PUBLIC USER-FACING - DEPOSIT & MINT
@@ -555,11 +560,11 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     ///////////////////////////////////////////////////////////////
-    /// ~ REGISTRY / CLONE ARGUMENT GETTERS ~
+    /// ~ PROTOCOL_CONTROLLER / CLONE ARGUMENT GETTERS ~
     ///////////////////////////////////////////////////////////////
 
     /// @notice Returns the registry.
-    function registry() public view returns (IRegistry _registry) {
+    function registry() public view returns (IProtocolController _registry) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         assembly {
             _registry := mload(add(args, 20))
@@ -584,12 +589,12 @@ contract RewardVault is IERC4626, ERC20 {
 
     /// @notice Returns the allocator.
     function allocator() public view returns (IAllocator _allocator) {
-        return IAllocator(registry().allocator());
+        return IAllocator(registry().allocator(PROTOCOL_ID));
     }
 
     /// @notice Returns the strategy.
     function strategy() public view returns (IStrategy _strategy) {
-        return IStrategy(registry().strategy());
+        return IStrategy(registry().strategy(PROTOCOL_ID));
     }
 
     ///////////////////////////////////////////////////////////////

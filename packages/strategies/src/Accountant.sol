@@ -3,9 +3,9 @@ pragma solidity 0.8.28;
 
 import {console} from "forge-std/src/console.sol";
 
-import {IRegistry} from "src/interfaces/IRegistry.sol";
 import {IHarvester} from "src/interfaces/IHarvester.sol";
 import {StorageMasks} from "src/libraries/StorageMasks.sol";
+import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
@@ -70,10 +70,13 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     uint256 public constant MIN_MEANINGFUL_REWARDS = 1e18;
 
     /// @notice The registry of addresses.
-    address public immutable REGISTRY;
+    address public immutable PROTOCOL_CONTROLLER;
 
     /// @notice The reward token.
     address public immutable REWARD_TOKEN;
+
+    /// @notice The protocol ID.
+    bytes4 public immutable PROTOCOL_ID;
 
     //////////////////////////////////////////////////////
     /// --- STATE VARIABLES
@@ -150,7 +153,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
     modifier onlyAllowed() {
         console.logBytes4(msg.sig);
-        require(IRegistry(REGISTRY).allowed(address(this), msg.sender, msg.sig), OnlyAllowed());
+        require(IProtocolController(PROTOCOL_CONTROLLER).allowed(address(this), msg.sender, msg.sig), OnlyAllowed());
         _;
     }
 
@@ -163,7 +166,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param _registry The address of the registry contract.
     /// @param _rewardToken The address of the reward token.
     constructor(address _owner, address _registry, address _rewardToken) Ownable(_owner) {
-        REGISTRY = _registry;
+        PROTOCOL_CONTROLLER = _registry;
         REWARD_TOKEN = _rewardToken;
 
         /// Protocol fee is set to 15% and initial harvest fee to 0.5%
@@ -196,7 +199,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         external
         nonReentrant
     {
-        require(IRegistry(REGISTRY).vaults(asset) == msg.sender, OnlyVault());
+        require(IProtocolController(PROTOCOL_CONTROLLER).vaults(asset) == msg.sender, OnlyVault());
 
         PackedVault storage _vault = vaults[msg.sender];
         uint256 vaultSupplyAndIntegral = _vault.supplyAndIntegralSlot;
@@ -347,8 +350,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param harvestData Harvest data for each vault.
     function _batchHarvest(address[] calldata _vaults, bytes[] calldata harvestData, address receiver) internal {
         // Cache registry to avoid multiple SLOADs
-        address registry = REGISTRY;
-        address harvester = IRegistry(registry).harvester();
+        address registry = PROTOCOL_CONTROLLER;
+        address harvester = IProtocolController(registry).harvester(PROTOCOL_ID);
         require(harvester != address(0), NoHarvester());
 
         uint256 totalHarvesterFee;
@@ -378,7 +381,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         // Harvest the asset
         (uint256 feeSubjectAmount, uint256 feeExemptAmount) = abi.decode(
             harvester.functionDelegateCall(
-                abi.encodeWithSelector(IHarvester.harvest.selector, IRegistry(registry).assets(vault), harvestData)
+                abi.encodeWithSelector(
+                    IHarvester.harvest.selector, IProtocolController(registry).assets(vault), harvestData
+                )
             ),
             (uint256, uint256)
         );
@@ -623,7 +628,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @dev Transfers fees to the configured fee receiver.
     /// @custom:throws NoFeeReceiver If the fee receiver is not set.
     function claimProtocolFees() external nonReentrant {
-        address feeReceiver = IRegistry(REGISTRY).feeReceiver();
+        address feeReceiver = IProtocolController(PROTOCOL_CONTROLLER).feeReceiver(PROTOCOL_ID);
         require(feeReceiver != address(0), NoFeeReceiver());
 
         IERC20(REWARD_TOKEN).transfer(feeReceiver, protocolFeesAccrued);
