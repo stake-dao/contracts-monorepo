@@ -427,7 +427,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         private
     {
         // Early return if no state changes needed
-        if (pendingRewards == 0 && amount <= pendingRewards) return;
+        if (pendingRewards == 0 || amount <= pendingRewards) return;
 
         // netDelta is defined as newRewards + refund - totalFees.
         // Since amount = newRewards + pendingRewards + refund,
