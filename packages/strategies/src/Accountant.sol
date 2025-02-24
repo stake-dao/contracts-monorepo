@@ -152,7 +152,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     //////////////////////////////////////////////////////
 
     modifier onlyAllowed() {
-        console.logBytes4(msg.sig);
         require(IProtocolController(PROTOCOL_CONTROLLER).allowed(address(this), msg.sender, msg.sig), OnlyAllowed());
         _;
     }
