@@ -447,7 +447,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         } else if (netDelta < 0) {
             // If netDelta is negative, too many fees were taken.
             // Adjust the protocol fee accrual accordingly.
-            protocolFeesAccrued += uint256(-netDelta);
+            protocolFeesAccrued -= uint256(-netDelta);
         }
 
         // Reset pending rewards if any.
