@@ -2,54 +2,74 @@
 pragma solidity 0.8.28;
 
 import {console} from "forge-std/src/console.sol";
-import {IRegistry} from "src/interfaces/IRegistry.sol";
+import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
-contract MockRegistry is IRegistry {
-    address public vault;
-    bool public isAllowed;
-    address public strategy;
-    address public allocator;
-    address public harvester;
-    address public feeReceiver;
-    address public accountant;
+contract MockRegistry is IProtocolController {
+    bool private _isAllowed;
+    address private _vault;
+    address private _strategy;
+    address private _allocator;
+    address private _harvester;
+    address private _feeReceiver;
+    address private _accountant;
 
     function vaults(address) external view returns (address) {
-        return vault;
+        return _vault;
     }
 
-    function assets(address) external pure returns (address) {
+    function strategy(bytes4) external view override returns (address) {
+        return _strategy;
+    }
+
+    function allocator(bytes4) external view override returns (address) {
+        return _allocator;
+    }
+
+    function harvester(bytes4) external view override returns (address) {
+        return _harvester;
+    }
+
+    function accountant(bytes4) external view override returns (address) {
+        return _accountant;
+    }
+
+    function feeReceiver(bytes4) external view override returns (address) {
+        return _feeReceiver;
+    }
+
+    function assets(address) external pure override returns (address) {
         return address(0);
     }
 
     function allowed(address, address, bytes4) external view returns (bool) {
-        return isAllowed;
+        return _isAllowed;
     }
 
-    function setAllowed(bool _isAllowed) external {
-        isAllowed = _isAllowed;
+    function setAllowed(bool isAllowed_) external {
+        _isAllowed = isAllowed_;
     }
 
-    function setFeeReceiver(address _feeReceiver) external {
-        feeReceiver = _feeReceiver;
+    function setFeeReceiver(address feeReceiver_) external {
+        _feeReceiver = feeReceiver_;
     }
 
-    function setVault(address _vault) external {
-        vault = _vault;
+    function setVault(address vault_) external {
+        _vault = vault_;
     }
 
-    function setStrategy(address _strategy) external {
-        strategy = _strategy;
+    function setStrategy(address strategy_) external {
+        _strategy = strategy_;
     }
 
-    function setAllocator(address _allocator) external {
-        allocator = _allocator;
+    function setAllocator(address allocator_) external {
+        _allocator = allocator_;
     }
 
-    function setHarvester(address _harvester) external {
-        harvester = _harvester;
+    function setHarvester(address harvester_) external {
+        _harvester = harvester_;
     }
 
-    function setAccountant(address _accountant) external {
-        accountant = _accountant;
+    function setAccountant(address accountant_) external {
+        _accountant = accountant_;
     }
 }

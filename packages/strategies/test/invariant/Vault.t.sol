@@ -43,7 +43,7 @@ contract VaultInvariantTest is StdInvariant, Test {
         allocator = new MockAllocator();
         accountant = new Accountant(address(this), address(registry), address(rewardToken));
 
-        vaultImplementation = new RewardVault();
+        vaultImplementation = new RewardVault(bytes4(keccak256("Curve")));
         vault = RewardVault(
             Clones.cloneDeterministicWithImmutableArgs(
                 address(vaultImplementation),

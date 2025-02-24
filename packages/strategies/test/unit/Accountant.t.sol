@@ -11,7 +11,7 @@ contract AccountantTest is BaseTest {
     }
 
     function test_constructor() public view {
-        assertEq(accountant.REGISTRY(), address(registry));
+        assertEq(accountant.PROTOCOL_CONTROLLER(), address(registry));
         assertEq(accountant.REWARD_TOKEN(), address(rewardToken));
         assertEq(accountant.protocolFeesAccrued(), 0);
 
