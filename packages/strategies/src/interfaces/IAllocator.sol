@@ -6,7 +6,7 @@ interface IAllocator {
         address gauge;
         address[] targets;
         uint256[] amounts;
-        bool claimRewards;
+        bool harvested;
     }
 
     function getDepositAllocation(address asset, uint256 amount) external view returns (Allocation memory);
