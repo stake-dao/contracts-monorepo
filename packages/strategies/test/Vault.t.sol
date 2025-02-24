@@ -34,7 +34,7 @@ contract Vault is Test {
         allocator = new MockAllocator();
         accountant = new Accountant(address(this), address(registry), address(token));
 
-        vaultImplementation = new RewardVault();
+        vaultImplementation = new RewardVault(bytes4(keccak256("Curve")));
         vault = RewardVault(
             Clones.cloneDeterministicWithImmutableArgs(
                 address(vaultImplementation),
