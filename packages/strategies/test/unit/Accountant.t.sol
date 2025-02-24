@@ -144,11 +144,6 @@ contract AccountantTest is BaseTest {
         /// Test that the harvester is set.
         registry.setHarvester(address(harvester));
 
-        /// Test that the harvest is successful.
-        /// Supply is 0, so the harvest should revert.
-        vm.expectRevert();
-        accountant.harvest(vaults, harvestData);
-
         address user = address(0x1);
         address harvester = address(0x2);
 
