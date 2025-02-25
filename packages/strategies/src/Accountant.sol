@@ -60,7 +60,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// --- CONSTANTS & IMMUTABLES
     //////////////////////////////////////////////////////
 
-    /// @notice Scaling factor used for fixed-point arithmetic precision (1e27).
+    /// @notice Scaling factor used for fixed-point arithmetic precision (1e18).
     uint256 public constant SCALING_FACTOR = 1e27;
 
     /// @notice The maximum fee percent (40%).
@@ -427,7 +427,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         private
     {
         // Early return if no state changes needed
-        if (pendingRewards == 0 || amount <= pendingRewards) return;
+        if (pendingRewards == 0) return;
 
         // netDelta is defined as newRewards + refund - totalFees.
         // Since amount = newRewards + pendingRewards + refund,
