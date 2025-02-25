@@ -10,7 +10,7 @@ import {BaseDepositor, ITokenMinter, ILiquidityGauge} from "src/common/depositor
 
 /// @title Stake DAO ZERO Depositor
 /// @notice Contract responsible for managing ZERO token deposits, locking them in the Locker,
-///         and minting sdZERO tokens in return. 
+///         and minting sdZERO tokens in return.
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
 contract Depositor is BaseDepositor {
@@ -32,7 +32,6 @@ contract Depositor is BaseDepositor {
     ///////////////////////////////////////////////////////////////
 
     error ZeroValue();
-    error ZeroLockDuration();
     error EmptyTokenIdList();
     error NotOwnerOfToken(uint256 tokenId);
     error ExecFromSafeModuleFailed();
@@ -45,8 +44,6 @@ contract Depositor is BaseDepositor {
     /// @param value Additional amount of tokens locked
     /// @param duration New duration of the lock in seconds
     event LockIncreased(uint256 value, uint256 duration);
-
-  
 
     ////////////////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
@@ -83,7 +80,7 @@ contract Depositor is BaseDepositor {
             _unstakeNFTFromLocker();
             _merge(zeroLockedTokenId, _newZeroLockedTokenId);
             emit LockIncreased(_amount, _unlockTime);
-        } 
+        }
 
         _stakeNFTFromLocker(_newZeroLockedTokenId);
         zeroLockedTokenId = _newZeroLockedTokenId;

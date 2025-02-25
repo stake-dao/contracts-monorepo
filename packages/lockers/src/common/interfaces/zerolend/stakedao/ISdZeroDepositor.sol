@@ -5,7 +5,6 @@ import {IDepositor} from "src/common/interfaces/IDepositor.sol";
 
 interface ISdZeroDepositor is IDepositor {
     error ZeroValue();
-    error ZeroLockDuration();
     error EmptyTokenIdList();
     error NotOwnerOfToken(uint256 tokenId);
     error ExecFromSafeModuleFailed();
