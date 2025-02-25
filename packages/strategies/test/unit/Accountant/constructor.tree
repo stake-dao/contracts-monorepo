@@ -1,0 +1,12 @@
+Accountant__Constructor
+├── when the owner is the zero address
+│   └── it should revert
+├── when the owner is not the zero address
+│   ├── it initializes the owner
+│   └── it emits the OwnershipTransferred event
+├── it initializes the protocol controller
+├── it initializes the reward token
+├── it initializes the fees slot
+├── it sets the protocol fee to default value
+├── it sets the harvest fee to default value
+└── it preserves the harvest urgency threshold value
