@@ -400,7 +400,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         uint256 protocolFeePercent = getProtocolFeePercent();
 
         // Harvest the asset
-        (uint256 feeSubjectAmount, uint256 amount) = abi.decode(
+        (uint256 feeSubjectAmount, uint256 totalAmount) = abi.decode(
             harvester.functionDelegateCall(
                 abi.encodeWithSelector(
                     IHarvester.harvest.selector, IProtocolController(registry).assets(vault), harvestData
@@ -408,7 +408,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
             ),
             (uint256, uint256)
         );
-        if (amount == 0) return 0;
+        if (totalAmount == 0) return 0;
 
         /// We charge protocol fee on the feeable amount.
         uint256 protocolFee = feeSubjectAmount.mulDiv(protocolFeePercent, 1e18);
@@ -417,7 +417,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         protocolFeesAccrued += protocolFee;
 
         /// We charge harvester fee on the total amount.
-        harvesterFee = amount.mulDiv(currentHarvestFee, 1e18);
+        harvesterFee = totalAmount.mulDiv(currentHarvestFee, 1e18);
 
         PackedVault storage _vault = vaults[vault];
         uint256 pendingRewardsSlot = _vault.pendingRewardsSlot;
@@ -425,16 +425,16 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
         /// Refund the excess harvest fee taken at the checkpoint.
         if (pendingRewards > 0 && currentHarvestFee < getHarvestFeePercent()) {
-            amount += pendingRewards.mulDiv(getHarvestFeePercent() - currentHarvestFee, 1e18);
+            totalAmount += pendingRewards.mulDiv(getHarvestFeePercent() - currentHarvestFee, 1e18);
         }
 
         // Update vault state
-        _updateVaultState({vault: _vault, pendingRewards: pendingRewards, amount: amount});
+        _updateVaultState({vault: _vault, pendingRewards: pendingRewards, amount: totalAmount});
 
         /// Always clear pending rewards after harvesting.
         _vault.pendingRewardsSlot = 0;
 
-        emit Harvest(vault, amount);
+        emit Harvest(vault, totalAmount);
     }
 
     /// @dev Updates vault state during harvest.
