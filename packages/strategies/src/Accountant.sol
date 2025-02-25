@@ -179,9 +179,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
         /// set the initial fees to the default values
         fees.feesSlot = _calculateFeesSlot(DEFAULT_PROTOCOL_FEE, DEFAULT_HARVEST_FEE);
-
-        /// Set initial balance threshold
-        HARVEST_URGENCY_THRESHOLD = 0;
     }
 
     //////////////////////////////////////////////////////
