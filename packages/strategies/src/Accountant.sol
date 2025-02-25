@@ -171,6 +171,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param _owner The address of the contract owner.
     /// @param _registry The address of the registry contract.
     /// @param _rewardToken The address of the reward token.
+    /// @custom:throws OwnableInvalidOwner If the owner is the zero address.
+    /// @dev _registry and _rewardToken can be address(0)
     constructor(address _owner, address _registry, address _rewardToken) Ownable(_owner) {
         PROTOCOL_CONTROLLER = _registry;
         REWARD_TOKEN = _rewardToken;
