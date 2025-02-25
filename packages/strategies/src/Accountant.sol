@@ -172,7 +172,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         /// Protocol fee is set to 15% and initial harvest fee to 0.5%
         uint256 protocolFee = 0.15e18;
         uint256 harvestFee = 0.005e18;
-        fees.feesSlot = ((protocolFee + harvestFee) << 128) | (protocolFee << 64) | harvestFee;
+        /// set the initial fees to the default values
+        fees.feesSlot = _calculateFeesSlot(protocolFee, harvestFee);
 
         /// Set initial balance threshold
         HARVEST_URGENCY_THRESHOLD = 0;
@@ -495,7 +496,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         /// and break the netDelta invariant.
         require(_harvestFeePercent < protocolFeePercent, HarvestFeeExceedsProtocolFee());
 
-        fees.feesSlot = (totalFee << 128) | (protocolFeePercent << 64) | _harvestFeePercent;
+        fees.feesSlot = _calculateFeesSlot(protocolFeePercent, _harvestFeePercent);
 
         emit HarvestFeePercentSet(oldHarvestFeePercent, _harvestFeePercent);
     }
@@ -624,7 +625,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         uint256 totalFee = _protocolFeePercent + harvestFeePercent;
         require(totalFee <= MAX_FEE_PERCENT, FeeExceedsMaximum());
 
-        fees.feesSlot = (totalFee << 128) | (_protocolFeePercent << 64) | harvestFeePercent;
+        fees.feesSlot = _calculateFeesSlot(_protocolFeePercent, harvestFeePercent);
 
         emit ProtocolFeePercentSet(oldProtocolFeePercent, _protocolFeePercent);
     }
@@ -642,4 +643,13 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
         protocolFeesAccrued = 0;
     }
+
+    /// @notice Calculates the fees slot.
+    /// @param _protocolFee The protocol fee.
+    /// @param _harvestFee The harvest fee.
+    /// @return The calculatedfees slot.
+    function _calculateFeesSlot(uint256 _protocolFee, uint256 _harvestFee) internal pure returns (uint256) {
+        return ((_protocolFee + _harvestFee) << 128) | (_protocolFee << 64) | _harvestFee;
+    }
+
 }
