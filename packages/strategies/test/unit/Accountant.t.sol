@@ -141,7 +141,6 @@ contract AccountantTest is BaseTest {
         vm.expectRevert(Accountant.NoHarvester.selector);
         accountant.harvest(vaults, harvestData);
 
-        /// Test that the harvester is set.
         registry.setHarvester(address(harvester));
 
         address user = address(0x1);
