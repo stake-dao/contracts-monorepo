@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 
 import {console} from "forge-std/src/console.sol";
 
+import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IHarvester} from "src/interfaces/IHarvester.sol";
 import {StorageMasks} from "src/libraries/StorageMasks.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
@@ -35,10 +36,10 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
     /// @notice Packed vault data structure into 2 slots for gas optimization and safety.
     /// @dev supplyAndIntegralSlot: [supply (128) | integral (128)].
-    /// @dev pendingRewards: direct storage of pending rewards.
+    /// @dev pendingRewards: [fee subject amount (128) | total amount (128)].
     struct PackedVault {
         uint256 supplyAndIntegralSlot; // slot1 -> supplyAndIntegralSlot
-        uint256 pendingRewards; // direct storage of pending rewards
+        uint256 pendingRewardsSlot; // slot2 -> pendingRewards
     }
 
     /// @notice Packed account data structure into 2 slots for gas optimization and safety.
@@ -194,33 +195,47 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param pendingRewards New rewards to be distributed to the vault.
     /// @param harvested Whether these rewards were already harvested by the vault and sent to the contract.
     /// @custom:throws OnlyVault If caller is not the registered vault for the asset.
-    function checkpoint(address asset, address from, address to, uint256 amount, uint256 pendingRewards, bool harvested)
-        external
-        nonReentrant
-    {
+    function checkpoint(
+        address asset,
+        address from,
+        address to,
+        uint256 amount,
+        IStrategy.PendingRewards memory pendingRewards,
+        bool harvested
+    ) external nonReentrant {
         require(IProtocolController(PROTOCOL_CONTROLLER).vaults(asset) == msg.sender, OnlyVault());
 
         PackedVault storage _vault = vaults[msg.sender];
         uint256 vaultSupplyAndIntegral = _vault.supplyAndIntegralSlot;
+        uint256 pendingRewardsSlot = _vault.pendingRewardsSlot;
 
         uint256 supply = vaultSupplyAndIntegral & StorageMasks.SUPPLY;
         uint256 integral = (vaultSupplyAndIntegral & StorageMasks.INTEGRAL) >> 128;
 
         // Process any pending rewards if they exist and there is supply
-        if (pendingRewards > 0 && supply > 0) {
-            // Calculate the new rewards to be added to the vault.
-            uint256 newRewards = pendingRewards - _vault.pendingRewards;
+        if (pendingRewards.totalAmount > 0 && supply > 0) {
+            /// Unpack pending rewards.
+            uint256 feeSubjectAmount = pendingRewardsSlot & StorageMasks.PENDING_REWARDS_FEE_SUBJECT;
+            uint256 totalAmount = (pendingRewardsSlot & StorageMasks.PENDING_REWARDS_TOTAL) >> 128;
 
-            if (harvested) {
+            // Calculate the new rewards to be added to the vault.
+
+            uint256 newRewards = pendingRewards.totalAmount - totalAmount;
+            uint256 newFeeSubjectAmount = pendingRewards.feeSubjectAmount - feeSubjectAmount;
+
+            uint256 totalFees;
+            if (harvested && newRewards > 0) {
                 // Calculate total fees in one operation
                 // We charge only protocol fee on the harvested rewards.
-                uint256 totalFees = newRewards.mulDiv(getProtocolFeePercent(), 1e18);
+                if (newFeeSubjectAmount > 0) {
+                    totalFees = newFeeSubjectAmount.mulDiv(getProtocolFeePercent(), 1e18);
+
+                    // Update protocol fees accrued.
+                    protocolFeesAccrued += totalFees;
+                }
 
                 // Update integral with new rewards per token
                 integral += (newRewards - totalFees).mulDiv(SCALING_FACTOR, supply);
-
-                // Update protocol fees accrued.
-                protocolFeesAccrued += totalFees;
             }
             // If the new rewards are above the minimum meaningful rewards,
             // we update the integral and pending rewards.
@@ -228,13 +243,19 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
             else if (newRewards >= MIN_MEANINGFUL_REWARDS) {
                 // Calculate total fees in one operation
                 // We charge protocol and harvest fees on the unclaimed rewards.
-                uint256 totalFees = newRewards.mulDiv(getTotalFeePercent(), 1e18);
+                if (newFeeSubjectAmount > 0) {
+                    totalFees = newFeeSubjectAmount.mulDiv(getProtocolFeePercent(), 1e18);
+                }
+
+                // Get harvest fee for the unclaimed rewards.
+                totalFees += newRewards.mulDiv(getHarvestFeePercent(), 1e18);
 
                 // Update integral with new rewards per token
                 integral += (newRewards - totalFees).mulDiv(SCALING_FACTOR, supply);
 
-                // Update pending rewards.
-                _vault.pendingRewards += newRewards;
+                // Update pending rewards slot.
+                // Properly pack the fee subject amount and total amount according to their bit positions
+                _vault.pendingRewardsSlot = ((pendingRewards.totalAmount << 128) & StorageMasks.PENDING_REWARDS_TOTAL) | pendingRewards.feeSubjectAmount;
             }
         }
 
@@ -328,7 +349,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param vault The vault address to query.
     /// @return The pending rewards for the vault.
     function getPendingRewards(address vault) external view returns (uint256) {
-        return vaults[vault].pendingRewards;
+        return (vaults[vault].pendingRewardsSlot & StorageMasks.PENDING_REWARDS_TOTAL) >> 128;
     }
 
     //////////////////////////////////////////////////////
@@ -378,7 +399,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         uint256 protocolFeePercent = getProtocolFeePercent();
 
         // Harvest the asset
-        (uint256 feeSubjectAmount, uint256 feeExemptAmount) = abi.decode(
+        (uint256 feeSubjectAmount, uint256 amount) = abi.decode(
             harvester.functionDelegateCall(
                 abi.encodeWithSelector(
                     IHarvester.harvest.selector, IProtocolController(registry).assets(vault), harvestData
@@ -386,8 +407,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
             ),
             (uint256, uint256)
         );
-
-        uint256 amount = feeSubjectAmount + feeExemptAmount;
         if (amount == 0) return 0;
 
         /// We charge protocol fee on the feeable amount.
@@ -400,7 +419,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         harvesterFee = amount.mulDiv(currentHarvestFee, 1e18);
 
         PackedVault storage _vault = vaults[vault];
-        uint256 pendingRewards = _vault.pendingRewards;
+        uint256 pendingRewardsSlot = _vault.pendingRewardsSlot;
+        uint256 pendingRewards = (pendingRewardsSlot & StorageMasks.PENDING_REWARDS_TOTAL) >> 128;
 
         /// Refund the excess harvest fee taken at the checkpoint.
         if (pendingRewards > 0 && currentHarvestFee < getHarvestFeePercent()) {
@@ -427,7 +447,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         private
     {
         // Early return if no state changes needed
-        if (pendingRewards == 0) return;
+        if (pendingRewards == 0 || amount <= pendingRewards) return;
 
         // netDelta is defined as newRewards + refund - totalFees.
         // Since amount = newRewards + pendingRewards + refund,
@@ -452,7 +472,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
         // Reset pending rewards if any.
         if (pendingRewards != 0) {
-            vault.pendingRewards = 0;
+            vault.pendingRewardsSlot = 0;
         }
     }
 

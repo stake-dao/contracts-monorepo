@@ -6,8 +6,12 @@ pragma solidity 0.8.28;
 library StorageMasks {
     /// @notice Bit masks for vault supplyAndIntegralSlot
     /// @dev [supply (128) | integral (128)]
+    /// @dev [fee subject amount (128) | total amount (128)]
     uint256 constant SUPPLY = (1 << 128) - 1;
     uint256 constant INTEGRAL = ((1 << 128) - 1) << 128;
+
+    uint256 constant PENDING_REWARDS_FEE_SUBJECT = (1 << 128) - 1;
+    uint256 constant PENDING_REWARDS_TOTAL = ((1 << 128) - 1) << 128;
 
     /// @notice Bit masks for account balanceAndIntegralSlot
     /// @dev balanceAndIntegralSlot: [balance (128) | integral (128)]
