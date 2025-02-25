@@ -60,8 +60,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// --- CONSTANTS & IMMUTABLES
     //////////////////////////////////////////////////////
 
-    /// @notice Scaling factor used for fixed-point arithmetic precision (1e18).
-    uint256 public constant SCALING_FACTOR = 1e18;
+    /// @notice Scaling factor used for fixed-point arithmetic precision (1e27).
+    uint256 public constant SCALING_FACTOR = 1e27;
 
     /// @notice The maximum fee percent (40%).
     uint256 public constant MAX_FEE_PERCENT = 0.4e18;
