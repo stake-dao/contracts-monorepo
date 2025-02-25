@@ -10,7 +10,7 @@ import {BaseDepositor, ITokenMinter, ILiquidityGauge} from "src/common/depositor
 
 /// @title Stake DAO ZERO Depositor
 /// @notice Contract responsible for managing ZERO token deposits, locking them in the Locker,
-///         and minting sdZERO tokens in return. 
+///         and minting sdZERO tokens in return.
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
 contract Depositor is BaseDepositor {
@@ -45,8 +45,6 @@ contract Depositor is BaseDepositor {
     /// @param value Additional amount of tokens locked
     /// @param duration New duration of the lock in seconds
     event LockIncreased(uint256 value, uint256 duration);
-
-  
 
     ////////////////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
@@ -83,7 +81,7 @@ contract Depositor is BaseDepositor {
             _unstakeNFTFromLocker();
             _merge(zeroLockedTokenId, _newZeroLockedTokenId);
             emit LockIncreased(_amount, _unlockTime);
-        } 
+        }
 
         _stakeNFTFromLocker(_newZeroLockedTokenId);
         zeroLockedTokenId = _newZeroLockedTokenId;
@@ -170,7 +168,6 @@ contract Depositor is BaseDepositor {
     function _mergeLocksAndStake(uint256[] calldata _tokenIds) internal returns (uint256 _amount) {
         if (_tokenIds.length == 0) revert EmptyTokenIdList();
 
-        uint256 _lockEnd = zeroLocker.lockedEnd(zeroLockedTokenId);
         _unstakeNFTFromLocker();
 
         for (uint256 index = 0; index < _tokenIds.length;) {
@@ -179,15 +176,14 @@ contract Depositor is BaseDepositor {
             _amount += zeroLocker.locked(_tokenIds[index]).amount;
             _merge(_tokenIds[index], zeroLockedTokenId);
 
-            uint256 _currentLockEnd = zeroLocker.lockedEnd(_tokenIds[index]);
-            if (_currentLockEnd > _lockEnd) _lockEnd = _currentLockEnd;
-
             unchecked {
                 ++index;
             }
         }
 
         _stakeNFTFromLocker(zeroLockedTokenId);
+
+        uint256 _lockEnd = zeroLocker.lockedEnd(zeroLockedTokenId);
         emit LockIncreased(_amount, _lockEnd);
     }
 }
