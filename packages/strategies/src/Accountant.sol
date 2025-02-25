@@ -79,6 +79,12 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @notice The protocol ID.
     bytes4 public immutable PROTOCOL_ID;
 
+    /// @notice The default protocol fee.
+    uint256 internal constant DEFAULT_PROTOCOL_FEE = 0.15e18;
+
+    /// @notice The default harvest fee.
+    uint256 internal constant DEFAULT_HARVEST_FEE = 0.005e18;
+
     //////////////////////////////////////////////////////
     /// --- STATE VARIABLES
     //////////////////////////////////////////////////////
@@ -169,11 +175,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         PROTOCOL_CONTROLLER = _registry;
         REWARD_TOKEN = _rewardToken;
 
-        /// Protocol fee is set to 15% and initial harvest fee to 0.5%
-        uint256 protocolFee = 0.15e18;
-        uint256 harvestFee = 0.005e18;
         /// set the initial fees to the default values
-        fees.feesSlot = _calculateFeesSlot(protocolFee, harvestFee);
+        fees.feesSlot = _calculateFeesSlot(DEFAULT_PROTOCOL_FEE, DEFAULT_HARVEST_FEE);
 
         /// Set initial balance threshold
         HARVEST_URGENCY_THRESHOLD = 0;
