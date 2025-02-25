@@ -156,7 +156,7 @@ contract RewardVault is IERC4626, ERC20 {
             SafeERC20.safeTransferFrom(IERC20(asset()), account, allocation.targets[i], allocation.amounts[i]);
         }
 
-        uint256 pendingRewards = strategy().deposit(allocation);
+        IStrategy.PendingRewards memory pendingRewards = strategy().deposit(allocation);
 
         _mint(receiver, shares, pendingRewards, allocation.harvested);
 
@@ -217,7 +217,7 @@ contract RewardVault is IERC4626, ERC20 {
 
         IAllocator.Allocation memory allocation = allocator().getWithdrawAllocation(gauge(), assets);
 
-        uint256 pendingRewards = strategy().withdraw(allocation);
+        IStrategy.PendingRewards memory pendingRewards = strategy().withdraw(allocation);
 
         _burn(owner, shares, pendingRewards, allocation.harvested);
 
@@ -605,7 +605,9 @@ contract RewardVault is IERC4626, ERC20 {
     /// @dev Delegates balance updates to the Accountant, then updates rewards.
     function _update(address from, address to, uint256 amount) internal override {
         // 1. Update Balances via Accountant.
-        accountant().checkpoint(gauge(), from, to, amount, 0, false);
+        accountant().checkpoint(
+            gauge(), from, to, amount, IStrategy.PendingRewards({feeSubjectAmount: 0, totalAmount: 0}), false
+        );
 
         // 2. Update Reward State.
         _updateReward(from, to);
@@ -615,12 +617,16 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @dev Mints shares (accountant checkpoint).
-    function _mint(address to, uint256 amount, uint256 pendingRewards, bool harvested) internal {
+    function _mint(address to, uint256 amount, IStrategy.PendingRewards memory pendingRewards, bool harvested)
+        internal
+    {
         accountant().checkpoint(gauge(), address(0), to, amount, pendingRewards, harvested);
     }
 
     /// @dev Burns shares (accountant checkpoint).
-    function _burn(address from, uint256 amount, uint256 pendingRewards, bool harvested) internal {
+    function _burn(address from, uint256 amount, IStrategy.PendingRewards memory pendingRewards, bool harvested)
+        internal
+    {
         accountant().checkpoint(gauge(), from, address(0), amount, pendingRewards, harvested);
     }
 
