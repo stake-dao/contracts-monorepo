@@ -32,7 +32,6 @@ contract Depositor is BaseDepositor {
     ///////////////////////////////////////////////////////////////
 
     error ZeroValue();
-    error ZeroLockDuration();
     error EmptyTokenIdList();
     error NotOwnerOfToken(uint256 tokenId);
     error ExecFromSafeModuleFailed();
