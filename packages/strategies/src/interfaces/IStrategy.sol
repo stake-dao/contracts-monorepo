@@ -4,8 +4,15 @@ pragma solidity 0.8.28;
 import "src/interfaces/IAllocator.sol";
 
 interface IStrategy {
-    function deposit(IAllocator.Allocation memory allocation) external returns (uint256 pendingRewards);
-    function withdraw(IAllocator.Allocation memory allocation) external returns (uint256 pendingRewards);
+    struct PendingRewards {
+        uint256 feeSubjectAmount;
+        uint256 totalAmount;
+    }
 
-    function pendingRewards(address asset) external view returns (uint256);
+    function deposit(IAllocator.Allocation memory allocation) external returns (PendingRewards memory pendingRewards);
+    function withdraw(IAllocator.Allocation memory allocation)
+        external
+        returns (PendingRewards memory pendingRewards);
+
+    function pendingRewards(address asset) external view returns (PendingRewards memory pendingRewards);
 }

@@ -27,9 +27,6 @@ contract MockHarvester is IHarvester {
         /// Calculate the fee subject amount.
         feeSubjectAmount = amount * 1e18 / randomSplit;
 
-        /// Calculate the fee exempt amount.
-        feeExemptAmount = amount - feeSubjectAmount;
-
-        return (feeSubjectAmount, feeExemptAmount);
+        return (feeSubjectAmount, amount);
     }
 }
