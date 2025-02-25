@@ -14,6 +14,10 @@ import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
 contract Accumulator is BaseAccumulator {
+    //////////////////////////////////////////////////////
+    /// --- CONSTANTS
+    //////////////////////////////////////////////////////
+
     /// @notice ZERO token address.
     address public constant ZERO = 0x78354f8DcCB269a615A7e0a24f9B0718FDC3C7A7;
 
@@ -22,6 +26,12 @@ contract Accumulator is BaseAccumulator {
 
     /// @notice ZEROvp (veToken) address.
     address public constant ZERO_VP = 0xf374229a18ff691406f99CCBD93e8a3f16B68888;
+
+    //////////////////////////////////////////////////////
+    /// --- ERRORS
+    //////////////////////////////////////////////////////
+
+    error ExecFromSafeModuleFailed();
 
     //////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
@@ -49,9 +59,11 @@ contract Accumulator is BaseAccumulator {
         uint256 lockerWethBalanceBefore = IERC20(WETH).balanceOf(locker);
 
         // Claim rewards from the locker.
-        ILocker(locker).execTransactionFromModuleReturnData(
+        (bool _success,) = ILocker(locker).execTransactionFromModuleReturnData(
             ZERO_VP, 0, abi.encodeWithSelector(IZeroVp.getReward.selector), Enum.Operation.Call
         );
+
+        if (!_success) revert ExecFromSafeModuleFailed();
 
         // Get rewards amount.
         uint256 zeroReward = IERC20(ZERO).balanceOf(locker) - lockerZeroBalanceBefore;
