@@ -255,7 +255,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
                 // Update pending rewards slot.
                 // Properly pack the fee subject amount and total amount according to their bit positions
-                _vault.pendingRewardsSlot = ((pendingRewards.totalAmount << 128) & StorageMasks.PENDING_REWARDS_TOTAL) | pendingRewards.feeSubjectAmount;
+                _vault.pendingRewardsSlot = ((pendingRewards.totalAmount << 128) & StorageMasks.PENDING_REWARDS_TOTAL)
+                    | pendingRewards.feeSubjectAmount;
             }
         }
 
@@ -428,12 +429,10 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         }
 
         // Update vault state
-        _updateVaultState({
-            vault: _vault,
-            pendingRewards: pendingRewards,
-            amount: amount,
-            totalFees: protocolFee + harvesterFee
-        });
+        _updateVaultState({vault: _vault, pendingRewards: pendingRewards, amount: amount});
+
+        /// Always clear pending rewards after harvesting.
+        _vault.pendingRewardsSlot = 0;
 
         emit Harvest(vault, amount);
     }
@@ -442,38 +441,25 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param vault The vault address to update.
     /// @param pendingRewards Previous pending rewards to be cleared
     /// @param amount The total reward amount.
-    /// @param totalFees The total fees to deduct.
-    function _updateVaultState(PackedVault storage vault, uint256 pendingRewards, uint256 amount, uint256 totalFees)
-        private
-    {
+    //// TODO: Should I add netDelta to protocolFeesAccrued for simplicity?
+    function _updateVaultState(PackedVault storage vault, uint256 pendingRewards, uint256 amount) private {
         // Early return if no state changes needed
-        if (pendingRewards == 0 || amount <= pendingRewards)
-        {
-            vault.pendingRewardsSlot = 0;
-            return;
-        }
+        if (pendingRewards == 0 || amount == pendingRewards) return;
 
         // netDelta is defined as newRewards + refund - totalFees.
         // Since amount = newRewards + pendingRewards + refund,
-        // netDelta = amount - pendingRewards - totalFees.
-        int256 netDelta = int256(amount) - int256(pendingRewards) - int256(totalFees);
+        // netDelta = amount - pendingRewards.
+        uint256 netDelta = amount - pendingRewards;
 
-        if (netDelta > 0) {
-            /// Unpack supply and integral.
-            uint256 supply = vault.supplyAndIntegralSlot & StorageMasks.SUPPLY;
-            uint256 integral = (vault.supplyAndIntegralSlot & StorageMasks.INTEGRAL) >> 128;
+        /// Unpack supply and integral.
+        uint256 supply = vault.supplyAndIntegralSlot & StorageMasks.SUPPLY;
+        uint256 integral = (vault.supplyAndIntegralSlot & StorageMasks.INTEGRAL) >> 128;
 
-            // Only update the integral if the net extra rewards are positive.
-            integral += (uint256(netDelta).mulDiv(SCALING_FACTOR, supply));
+        // Only update the integral if the net extra rewards are positive.
+        integral += (uint256(netDelta).mulDiv(SCALING_FACTOR, supply));
 
-            /// Update vault storage.
-            vault.supplyAndIntegralSlot = (supply & StorageMasks.SUPPLY) | ((integral << 128) & StorageMasks.INTEGRAL);
-        } else if (netDelta < 0) {
-            // If netDelta is negative, too many fees were taken.
-            // Adjust the protocol fee accrual accordingly.
-            protocolFeesAccrued -= uint256(-netDelta);
-        }
-
+        /// Update vault storage.
+        vault.supplyAndIntegralSlot = (supply & StorageMasks.SUPPLY) | ((integral << 128) & StorageMasks.INTEGRAL);
     }
 
     /// @notice Returns the current harvest fee based on contract balance
