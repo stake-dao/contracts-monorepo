@@ -447,7 +447,11 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         private
     {
         // Early return if no state changes needed
-        if (pendingRewards == 0 || amount <= pendingRewards) return;
+        if (pendingRewards == 0 || amount <= pendingRewards)
+        {
+            vault.pendingRewardsSlot = 0;
+            return;
+        }
 
         // netDelta is defined as newRewards + refund - totalFees.
         // Since amount = newRewards + pendingRewards + refund,
@@ -470,10 +474,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
             protocolFeesAccrued -= uint256(-netDelta);
         }
 
-        // Reset pending rewards if any.
-        if (pendingRewards != 0) {
-            vault.pendingRewardsSlot = 0;
-        }
     }
 
     /// @notice Returns the current harvest fee based on contract balance
