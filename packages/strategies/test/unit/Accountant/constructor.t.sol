@@ -9,7 +9,7 @@ contract Accountant__Constructor is Test {
         // it reverts
 
         vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableInvalidOwner.selector, address(0)));
-        new Accountant(address(0), makeAddr("registry"), makeAddr("rewardToken"));
+        new Accountant(address(0), makeAddr("registry"), makeAddr("rewardToken"), bytes4(hex"11"));
     }
 
     function test_GivenOwnerIsNot0(address owner) external {
@@ -24,7 +24,7 @@ contract Accountant__Constructor is Test {
         emit Ownable.OwnershipTransferred(address(0), owner);
 
         // we deploy the accountant and assert the owner is the one we set
-        Accountant accountant = new Accountant(owner, makeAddr("registry"), makeAddr("rewardToken"));
+        Accountant accountant = new Accountant(owner, makeAddr("registry"), makeAddr("rewardToken"), bytes4(hex"11"));
         assertEq(accountant.owner(), owner);
     }
 
@@ -32,7 +32,7 @@ contract Accountant__Constructor is Test {
         // it should revert
 
         vm.expectRevert(abi.encodeWithSelector(Accountant.InvalidProtocolController.selector));
-        new Accountant(makeAddr("owner"), address(0), makeAddr("rewardToken"));
+        new Accountant(makeAddr("owner"), address(0), makeAddr("rewardToken"), bytes4(hex"11"));
     }
 
     function test_GivenProtocolControllerIsNot0(address registry) external {
@@ -41,7 +41,7 @@ contract Accountant__Constructor is Test {
         // we ensure the fuzzed address is not the zero address
         vm.assume(registry != address(0));
 
-        Accountant accountant = new Accountant(makeAddr("owner"), registry, makeAddr("rewardToken"));
+        Accountant accountant = new Accountant(makeAddr("owner"), registry, makeAddr("rewardToken"), bytes4(hex"11"));
         assertEq(accountant.PROTOCOL_CONTROLLER(), registry);
     }
 
@@ -49,7 +49,7 @@ contract Accountant__Constructor is Test {
         // it should revert
 
         vm.expectRevert(abi.encodeWithSelector(Accountant.InvalidRewardToken.selector));
-        new Accountant(makeAddr("owner"), makeAddr("registry"), address(0));
+        new Accountant(makeAddr("owner"), makeAddr("registry"), address(0), bytes4(hex"11"));
     }
 
     function test_GivenRewardTokenIsNot0(address rewardToken) external {
@@ -58,14 +58,15 @@ contract Accountant__Constructor is Test {
         // we ensure the fuzzed address is not the zero address
         vm.assume(rewardToken != address(0));
 
-        Accountant accountant = new Accountant(makeAddr("owner"), makeAddr("registry"), rewardToken);
+        Accountant accountant = new Accountant(makeAddr("owner"), makeAddr("registry"), rewardToken, bytes4(hex"11"));
         assertEq(accountant.REWARD_TOKEN(), rewardToken);
     }
 
     function test_InitializesTheFeesSlot() external {
         // it initializes the fees slot
 
-        Accountant accountant = new Accountant(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"));
+        Accountant accountant =
+            new Accountant(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"), bytes4(hex"11"));
         assertNotEq(accountant.fees(), 0);
     }
 
@@ -118,14 +119,19 @@ contract Accountant__Constructor is Test {
     function test_PreservesHarvestUrgencyThresholdValue() external {
         // it preserves the harvest urgency threshold value
 
-        Accountant accountant = new Accountant(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"));
+        Accountant accountant =
+            new Accountant(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"), bytes4(hex"11"));
         assertEq(accountant.HARVEST_URGENCY_THRESHOLD(), 0);
     }
 }
 
 // Exposes the useful internal functions of the Accountant contract for testing purposes
+// @dev This is not the same AccountantHarness as the generic one used for testing purposes
+//      because we need to have a control over the constructor parameters
 contract AccountantHarness is Accountant {
-    constructor(address owner, address registry, address rewardToken) Accountant(owner, registry, rewardToken) {}
+    constructor(address owner, address registry, address rewardToken)
+        Accountant(owner, registry, rewardToken, bytes4(hex"11"))
+    {}
 
     function exposed_defaultProtocolFee() external pure returns (uint256) {
         return DEFAULT_PROTOCOL_FEE;
