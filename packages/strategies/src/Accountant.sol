@@ -138,6 +138,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @notice Error thrown when the reward token is invalid
     error InvalidRewardToken();
 
+    /// @notice Error thrown when the protocol ID is invalid
+    error InvalidProtocolId();
+
     //////////////////////////////////////////////////////
     /// --- EVENTS
     //////////////////////////////////////////////////////
@@ -174,16 +177,19 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param _owner The address of the contract owner.
     /// @param _registry The address of the registry contract.
     /// @param _rewardToken The address of the reward token.
+    /// @param _protocolId The bytes4 ID of the protocol
     /// @custom:throws OwnableInvalidOwner If the owner is the zero address.
     /// @custom:throws InvalidProtocolController If the protocol controller is the zero address.
     /// @custom:throws InvalidRewardToken If the reward token is the zero address.
-    constructor(address _owner, address _registry, address _rewardToken) Ownable(_owner) {
+    constructor(address _owner, address _registry, address _rewardToken, bytes4 _protocolId) Ownable(_owner) {
         require(_registry != address(0), InvalidProtocolController());
         require(_rewardToken != address(0), InvalidRewardToken());
+        require(_protocolId != bytes4(0), InvalidProtocolId());
 
         /// set the immutable variables
         PROTOCOL_CONTROLLER = _registry;
         REWARD_TOKEN = _rewardToken;
+        PROTOCOL_ID = _protocolId;
 
         /// set the initial fees to the default values, and emit the update events
         fees.feesSlot = _packFeesIntoSlot(DEFAULT_PROTOCOL_FEE, DEFAULT_HARVEST_FEE);
