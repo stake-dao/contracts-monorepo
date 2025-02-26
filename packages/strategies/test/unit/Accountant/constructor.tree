@@ -1,12 +1,18 @@
 Accountant__Constructor
-├── when the owner is the zero address
+├── given owner is 0
 │   └── it should revert
-├── when the owner is not the zero address
+├── given owner is not 0
 │   ├── it initializes the owner
 │   └── it emits the OwnershipTransferred event
-├── it initializes the protocol controller
-├── it initializes the reward token
+├── given protocol controller is 0
+│   └── it should revert
+├── given protocol controller is not 0
+│   ├── it initializes the protocol controller
+├── given reward token is 0
+│   └── it should revert
+├── given reward token is not 0
+│   ├── it initializes the reward token
 ├── it initializes the fees slot
-├── it sets the protocol fee to default value
-├── it sets the harvest fee to default value
-└── it preserves the harvest urgency threshold value
+├── it sets protocol fee to default value
+├── it sets harvest fee to default value
+└── it preserves harvest urgency threshold value

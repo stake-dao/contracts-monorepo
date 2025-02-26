@@ -135,6 +135,12 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @notice Error thrown when harvest fee would exceed protocol fee
     error HarvestFeeExceedsProtocolFee();
 
+    /// @notice Error thrown when the protocol controller is invalid
+    error InvalidProtocolController();
+
+    /// @notice Error thrown when the reward token is invalid
+    error InvalidRewardToken();
+
     //////////////////////////////////////////////////////
     /// --- EVENTS
     //////////////////////////////////////////////////////
@@ -172,8 +178,12 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param _registry The address of the registry contract.
     /// @param _rewardToken The address of the reward token.
     /// @custom:throws OwnableInvalidOwner If the owner is the zero address.
-    /// @dev _registry and _rewardToken can be address(0)
+    /// @custom:throws InvalidProtocolController If the protocol controller is the zero address.
+    /// @custom:throws InvalidRewardToken If the reward token is the zero address.
     constructor(address _owner, address _registry, address _rewardToken) Ownable(_owner) {
+        require(_registry != address(0), InvalidProtocolController());
+        require(_rewardToken != address(0), InvalidRewardToken());
+
         PROTOCOL_CONTROLLER = _registry;
         REWARD_TOKEN = _rewardToken;
 
@@ -653,5 +663,4 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     function _calculateFeesSlot(uint256 _protocolFee, uint256 _harvestFee) internal pure returns (uint256) {
         return ((_protocolFee + _harvestFee) << 128) | (_protocolFee << 64) | _harvestFee;
     }
-
 }
