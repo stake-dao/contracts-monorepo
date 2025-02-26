@@ -1,0 +1,4 @@
+Accountant__getProtocolFeePercent
+├── it returns the default protocol fee
+├── it returns the current protocol fee
+└── it reads the storage
