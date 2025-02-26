@@ -20,6 +20,7 @@ struct DefaultValues {
     bytes4 protocolId;
 }
 
+/// @custom:legacy prefer using Base.t.sol instead
 abstract contract BaseTest is Test {
     using Math for uint256;
 
@@ -31,10 +32,6 @@ abstract contract BaseTest is Test {
     MockHarvester internal harvester;
     MockAllocator internal allocator;
     Accountant internal accountant;
-
-    address internal owner = address(this);
-    address internal vault = makeAddr("vault");
-    bytes4 internal fakeProtocolId = bytes4(bytes("fake_id"));
 
     /*//////////////////////////////////////////////////////////////////////////
                                   SET-UP FUNCTION
@@ -49,10 +46,10 @@ abstract contract BaseTest is Test {
         registry = new MockRegistry();
         allocator = new MockAllocator();
         harvester = new MockHarvester(address(rewardToken));
-        accountant = new Accountant(owner, address(registry), address(rewardToken), fakeProtocolId);
+        accountant = new Accountant(address(this), address(registry), address(rewardToken), bytes4(bytes("fake_id")));
 
         /// Set the vault
-        registry.setVault(vault);
+        registry.setVault(address(this));
         registry.setHarvester(address(harvester));
 
         /// Label the contracts
@@ -63,12 +60,5 @@ abstract contract BaseTest is Test {
         vm.label({account: address(accountant), newLabel: "Accountant"});
         vm.label({account: address(rewardToken), newLabel: "Reward Token"});
         vm.label({account: address(stakingToken), newLabel: "Staking Token"});
-    }
-
-    /*//////////////////////////////////////////////////////////////////////////
-                                      HELPERS
-    //////////////////////////////////////////////////////////////////////////*/
-    function _boundValidProtocolFee(uint256 newProtocolFee) internal view returns (uint256) {
-        return bound(newProtocolFee, 1, accountant.MAX_FEE_PERCENT() - accountant.getHarvestFeePercent());
     }
 }

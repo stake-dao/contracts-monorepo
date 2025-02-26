@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import "test/Base.t.sol";
+import "test/BaseLegacy.t.sol";
 
 contract AccountantTest is BaseTest {
     using Math for uint256;

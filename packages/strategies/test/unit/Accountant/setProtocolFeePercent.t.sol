@@ -1,21 +1,10 @@
 pragma solidity 0.8.28;
 
-import {Test} from "forge-std/src/Test.sol";
+import {BaseTest} from "test/Base.t.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {Accountant} from "src/Accountant.sol";
 
-contract Accountant__setProtocolFeePercent is Test {
-    Accountant accountant;
-    address private owner = makeAddr("owner");
-
-    function setUp() external {
-        accountant = new Accountant(owner, makeAddr("registry"), makeAddr("rewardToken"));
-    }
-
-    function _boundValidProtocolFee(uint256 newProtocolFee) internal view returns (uint256) {
-        return bound(newProtocolFee, 1, accountant.MAX_FEE_PERCENT() - accountant.getHarvestFeePercent());
-    }
-
+contract Accountant__setProtocolFeePercent is BaseTest {
     function test_GivenProtocolFeeIs0() external {
         // it stores the new value
 
@@ -47,7 +36,6 @@ contract Accountant__setProtocolFeePercent is Test {
         );
 
         vm.prank(owner);
-
         vm.expectRevert(abi.encodeWithSelector(Accountant.FeeExceedsMaximum.selector));
         accountant.setProtocolFeePercent(newProtocolFee);
     }
