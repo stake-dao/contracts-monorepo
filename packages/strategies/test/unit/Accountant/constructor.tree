@@ -7,7 +7,7 @@ Accountant__Constructor
 ├── given protocol controller is 0
 │   └── it should revert
 ├── given protocol controller is not 0
-│   ├── it initializes the protocol controller
+│   └── it initializes the protocol controller
 ├── given reward token is 0
 │   └── it should revert
 ├── given reward token is not 0
@@ -15,4 +15,6 @@ Accountant__Constructor
 ├── it initializes the fees slot
 ├── it sets protocol fee to default value
 ├── it sets harvest fee to default value
+├── it emits the ProtocolFeePercentSet event
+├── it emits the HarvestFeePercentSet event
 └── it preserves harvest urgency threshold value
