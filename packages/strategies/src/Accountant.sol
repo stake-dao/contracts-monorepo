@@ -80,9 +80,11 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     bytes4 public immutable PROTOCOL_ID;
 
     /// @notice The default protocol fee.
+    /// @dev The validity of this value is not checked. It must always be valid
     uint256 internal constant DEFAULT_PROTOCOL_FEE = 0.15e18;
 
     /// @notice The default harvest fee.
+    /// @dev The validity of this value is not checked. It must always be valid
     uint256 internal constant DEFAULT_HARVEST_FEE = 0.005e18;
 
     //////////////////////////////////////////////////////
@@ -184,11 +186,14 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         require(_registry != address(0), InvalidProtocolController());
         require(_rewardToken != address(0), InvalidRewardToken());
 
+        /// set the immutable variables
         PROTOCOL_CONTROLLER = _registry;
         REWARD_TOKEN = _rewardToken;
 
-        /// set the initial fees to the default values
+        /// set the initial fees to the default values, and emit the update events
         fees.feesSlot = _calculateFeesSlot(DEFAULT_PROTOCOL_FEE, DEFAULT_HARVEST_FEE);
+        emit HarvestFeePercentSet(0, DEFAULT_HARVEST_FEE);
+        emit ProtocolFeePercentSet(0, DEFAULT_PROTOCOL_FEE);
     }
 
     //////////////////////////////////////////////////////
