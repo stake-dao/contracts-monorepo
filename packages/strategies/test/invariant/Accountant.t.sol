@@ -31,7 +31,7 @@ contract AccountantInvariantTest is StdInvariant, Test {
         strategy = new MockStrategy();
         registry = new MockRegistry();
         allocator = new MockAllocator();
-        accountant = new Accountant(address(this), address(registry), address(token));
+        accountant = new Accountant(address(this), address(registry), address(token), bytes4(bytes("fake_id")));
 
         vaultImplementation = new RewardVault(bytes4(keccak256("Curve")));
         vault = RewardVault(

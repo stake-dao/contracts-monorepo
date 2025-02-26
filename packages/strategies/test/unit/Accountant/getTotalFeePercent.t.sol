@@ -1,21 +1,22 @@
 pragma solidity 0.8.28;
 
-import {Test} from "forge-std/src/Test.sol";
-import {Accountant} from "src/Accountant.sol";
+import {BaseTest} from "test/Base.t.sol";
+import {AccountantHarness} from "test/unit/Accountant/AccountantHarness.sol";
 
-contract Accountant__getTotalFeePercent is Test {
-    AccountantHarness accountant;
+contract Accountant__getTotalFeePercent is BaseTest {
+    AccountantHarness accountantHarness;
 
-    function setUp() external {
-        accountant = new AccountantHarness(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"));
+    function setUp() public override {
+        super.setUp();
+        accountantHarness = new AccountantHarness();
     }
 
     function test_ReturnsTheCorrectValue() external {
         // it returns the default protocol fee
 
         assertEq(
-            accountant.getTotalFeePercent(),
-            accountant.exposed_defaultProtocolFee() + accountant.exposed_defaultHarvestFee()
+            accountantHarness.getTotalFeePercent(),
+            accountantHarness.exposed_defaultProtocolFee() + accountantHarness.exposed_defaultHarvestFee()
         );
     }
 
@@ -24,24 +25,11 @@ contract Accountant__getTotalFeePercent is Test {
 
         // record storage reads/writes
         vm.record();
-        accountant.getTotalFeePercent();
-        (bytes32[] memory reads, bytes32[] memory writes) = vm.accesses(address(accountant));
+        accountantHarness.getTotalFeePercent();
+        (bytes32[] memory reads, bytes32[] memory writes) = vm.accesses(address(accountantHarness));
 
         // ensure the value is read from the storage
         assertEq(reads.length, 1);
         assertEq(writes.length, 0);
-    }
-}
-
-// Exposes the useful internal functions of the Accountant contract for testing purposes
-contract AccountantHarness is Accountant {
-    constructor(address owner, address registry, address rewardToken) Accountant(owner, registry, rewardToken) {}
-
-    function exposed_defaultProtocolFee() external pure returns (uint256) {
-        return DEFAULT_PROTOCOL_FEE;
-    }
-
-    function exposed_defaultHarvestFee() external pure returns (uint256) {
-        return DEFAULT_HARVEST_FEE;
     }
 }
