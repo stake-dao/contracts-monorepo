@@ -1,8 +1,6 @@
 /// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {console} from "forge-std/src/console.sol";
-
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IHarvester} from "src/interfaces/IHarvester.sol";
 import {StorageMasks} from "src/libraries/StorageMasks.sol";
@@ -188,7 +186,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         REWARD_TOKEN = _rewardToken;
 
         /// set the initial fees to the default values, and emit the update events
-        fees.feesSlot = _calculateFeesSlot(DEFAULT_PROTOCOL_FEE, DEFAULT_HARVEST_FEE);
+        fees.feesSlot = _packFeesIntoSlot(DEFAULT_PROTOCOL_FEE, DEFAULT_HARVEST_FEE);
         emit HarvestFeePercentSet(0, DEFAULT_HARVEST_FEE);
         emit ProtocolFeePercentSet(0, DEFAULT_PROTOCOL_FEE);
     }
@@ -481,40 +479,53 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @return The current harvest fee percentage
     function getCurrentHarvestFee() public view returns (uint256) {
         uint256 threshold = HARVEST_URGENCY_THRESHOLD;
+
         // If threshold is 0, always return max harvest fee
         if (threshold == 0) return getHarvestFeePercent();
 
+        // If threshold is not set, return the current harvest fee based on balance
         uint256 balance = IERC20(REWARD_TOKEN).balanceOf(address(this));
         return balance >= threshold ? 0 : getHarvestFeePercent() * (threshold - balance) / threshold;
     }
 
     /// @notice Returns the current harvest fee percentage.
-    /// @return The harvest fee percentage.
+    /// @return _ The harvest fee percentage.
     function getHarvestFeePercent() public view returns (uint256) {
-        return fees.feesSlot & StorageMasks.HARVEST_FEE;
+        return _getHarvestFeePercent(fees.feesSlot);
+    }
+
+    /// @notice Returns the current harvest fee percentage.
+    /// @param feesSlot The packed fees slot.
+    /// @return _ The harvest fee percentage.
+    function _getHarvestFeePercent(uint256 feesSlot) internal pure returns (uint256) {
+        return feesSlot & StorageMasks.HARVEST_FEE;
     }
 
     /// @notice Updates the harvest fee percentage.
-    /// @param _harvestFeePercent New harvest fee percentage (scaled by 1e18).
+    /// @param newHarvestFeePercent New harvest fee percentage (scaled by 1e18).
     /// @custom:throws FeeExceedsMaximum If fee would exceed maximum.
-    function setHarvestFeePercent(uint256 _harvestFeePercent) external onlyOwner {
-        uint256 feeSlot = fees.feesSlot;
-        uint256 protocolFeePercent = (feeSlot & StorageMasks.PROTOCOL_FEE) >> 64;
-        uint256 oldHarvestFeePercent = feeSlot & StorageMasks.HARVEST_FEE;
+    function setHarvestFeePercent(uint256 newHarvestFeePercent) external onlyOwner {
+        // unpack the current stored fees slot
+        uint256 feesSlot = fees.feesSlot;
+        uint256 protocolFeePercent = _getProtocolFeePercent(feesSlot);
+        uint256 oldHarvestFeePercent = _getHarvestFeePercent(feesSlot);
 
-        uint256 totalFee = protocolFeePercent + _harvestFeePercent;
+        // check that the new total fee (protocol + harvest) is valid
+        uint256 totalFee = protocolFeePercent + newHarvestFeePercent;
         require(totalFee <= MAX_FEE_PERCENT, FeeExceedsMaximum());
 
-        fees.feesSlot = _calculateFeesSlot(protocolFeePercent, _harvestFeePercent);
-
-        emit HarvestFeePercentSet(oldHarvestFeePercent, _harvestFeePercent);
+        // pack the new fees into the slot, store it and emit the update event
+        fees.feesSlot = _packFeesIntoSlot(protocolFeePercent, newHarvestFeePercent);
+        emit HarvestFeePercentSet(oldHarvestFeePercent, newHarvestFeePercent);
     }
 
     /// @notice Updates the balance threshold for harvest fee calculation
     /// @param _threshold New balance threshold. Set to 0 to always apply maximum harvest fee.
     function setHarvestUrgencyThreshold(uint256 _threshold) external onlyOwner {
-        emit HarvestUrgencyThresholdSet(HARVEST_URGENCY_THRESHOLD, _threshold);
         HARVEST_URGENCY_THRESHOLD = _threshold;
+
+        // emit the update event
+        emit HarvestUrgencyThresholdSet(HARVEST_URGENCY_THRESHOLD, _threshold);
     }
 
     //////////////////////////////////////////////////////
@@ -610,54 +621,67 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     //////////////////////////////////////////////////////
 
     /// @notice Returns the current protocol fee percentage.
-    /// @return The protocol fee percentage.
+    /// @return _ The protocol fee percentage.
     function getProtocolFeePercent() public view returns (uint256) {
-        return (fees.feesSlot & StorageMasks.PROTOCOL_FEE) >> 64;
+        return _getProtocolFeePercent(fees.feesSlot);
     }
 
-    /// @notice Returns the total fee percentage (protocol + harvest).
-    /// @return The total fee percentage.
-    function getTotalFeePercent() public view returns (uint256) {
-        return (fees.feesSlot & StorageMasks.TOTAL_FEE) >> 128;
+    /// @notice Returns the current protocol fee percentage.
+    /// @param feesSlot The packed fees slot.
+    /// @return _ The protocol fee percentage.
+    function _getProtocolFeePercent(uint256 feesSlot) internal pure returns (uint256) {
+        return (feesSlot & StorageMasks.PROTOCOL_FEE) >> 64;
     }
 
     /// @notice Updates the protocol fee percentage.
-    /// @param _protocolFeePercent New protocol fee percentage (scaled by 1e18).
+    /// @param newProtocolFeePercent New protocol fee percentage (scaled by 1e18).
     /// @custom:throws FeeExceedsMaximum If fee would exceed maximum.
-    function setProtocolFeePercent(uint256 _protocolFeePercent) external onlyOwner {
-        require(_protocolFeePercent <= MAX_FEE_PERCENT, FeeExceedsMaximum());
+    function setProtocolFeePercent(uint256 newProtocolFeePercent) external onlyOwner {
+        // check that the provided protocol fee is valid
+        require(newProtocolFeePercent <= MAX_FEE_PERCENT, FeeExceedsMaximum());
 
+        // check that the total fee (protocol + harvest) is valid
         uint256 feeSlot = fees.feesSlot;
-        uint256 oldProtocolFeePercent = (feeSlot & StorageMasks.PROTOCOL_FEE) >> 64;
-        uint256 harvestFeePercent = feeSlot & StorageMasks.HARVEST_FEE;
-
-        uint256 totalFee = _protocolFeePercent + harvestFeePercent;
+        uint256 harvestFeePercent = _getHarvestFeePercent(feeSlot);
+        uint256 oldProtocolFeePercent = _getProtocolFeePercent(feeSlot);
+        uint256 totalFee = newProtocolFeePercent + harvestFeePercent;
         require(totalFee <= MAX_FEE_PERCENT, FeeExceedsMaximum());
 
-        fees.feesSlot = _calculateFeesSlot(_protocolFeePercent, harvestFeePercent);
+        // pack the new fees into the slot and store it
+        fees.feesSlot = _packFeesIntoSlot(newProtocolFeePercent, harvestFeePercent);
 
-        emit ProtocolFeePercentSet(oldProtocolFeePercent, _protocolFeePercent);
+        // emit the update event
+        emit ProtocolFeePercentSet(oldProtocolFeePercent, newProtocolFeePercent);
     }
 
     /// @notice Claims accumulated protocol fees.
     /// @dev Transfers fees to the configured fee receiver.
     /// @custom:throws NoFeeReceiver If the fee receiver is not set.
     function claimProtocolFees() external nonReentrant {
+        // get the fee receiver from the protocol controller and check that it is valid
         address feeReceiver = IProtocolController(PROTOCOL_CONTROLLER).feeReceiver(PROTOCOL_ID);
         require(feeReceiver != address(0), NoFeeReceiver());
 
-        IERC20(REWARD_TOKEN).transfer(feeReceiver, protocolFeesAccrued);
-
-        emit ProtocolFeesClaimed(protocolFeesAccrued);
-
+        // get the protocol fees accrued until now and reset the stored value
+        uint256 currentAccruedProtocolFees = protocolFeesAccrued;
         protocolFeesAccrued = 0;
+
+        // transfer the accrued protocol fees to the fee receiver and emit the claim event
+        IERC20(REWARD_TOKEN).transfer(feeReceiver, currentAccruedProtocolFees);
+        emit ProtocolFeesClaimed(currentAccruedProtocolFees);
     }
 
-    /// @notice Calculates the fees slot.
+    /// @notice Returns the total fee percentage (protocol + harvest).
+    /// @return _ The total fee percentage.
+    function getTotalFeePercent() public view returns (uint256) {
+        return (fees.feesSlot & StorageMasks.TOTAL_FEE) >> 128;
+    }
+
+    /// @notice Packs protocol and harvest fees into a single storage slot.
     /// @param _protocolFee The protocol fee.
     /// @param _harvestFee The harvest fee.
-    /// @return The calculatedfees slot.
-    function _calculateFeesSlot(uint256 _protocolFee, uint256 _harvestFee) internal pure returns (uint256) {
+    /// @return The packed fees slot containing total, protocol, and harvest fees.
+    function _packFeesIntoSlot(uint256 _protocolFee, uint256 _harvestFee) internal pure returns (uint256) {
         return ((_protocolFee + _harvestFee) << 128) | (_protocolFee << 64) | _harvestFee;
     }
 }
