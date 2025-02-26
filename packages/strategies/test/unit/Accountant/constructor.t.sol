@@ -85,6 +85,36 @@ contract Accountant__Constructor is Test {
         assertEq(accountant.getHarvestFeePercent(), accountant.exposed_defaultHarvestFee());
     }
 
+    function test_EmitsTheProtocolFeePercentSetEvent() external {
+        // it emits the ProtocolFeePercentSet event
+
+        // dummy deployment to expose the default constant value
+        vm.pauseGasMetering();
+        AccountantHarness accountant =
+            new AccountantHarness(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"));
+        vm.resumeGasMetering();
+
+        vm.expectEmit(true, true, true, true, 1);
+        emit Accountant.ProtocolFeePercentSet(0, accountant.exposed_defaultProtocolFee());
+
+        new AccountantHarness(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"));
+    }
+
+    function test_EmitsTheHarvestFeePercentSetEvent() external {
+        // it emits the HarvestFeePercentSet event
+
+        // dummy deployment to expose the default constant value
+        vm.pauseGasMetering();
+        AccountantHarness accountant =
+            new AccountantHarness(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"));
+        vm.resumeGasMetering();
+
+        vm.expectEmit(true, true, true, true, 1);
+        emit Accountant.HarvestFeePercentSet(0, accountant.exposed_defaultHarvestFee());
+
+        new AccountantHarness(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"));
+    }
+
     function test_PreservesHarvestUrgencyThresholdValue() external {
         // it preserves the harvest urgency threshold value
 
@@ -96,10 +126,6 @@ contract Accountant__Constructor is Test {
 // Exposes the useful internal functions of the Accountant contract for testing purposes
 contract AccountantHarness is Accountant {
     constructor(address owner, address registry, address rewardToken) Accountant(owner, registry, rewardToken) {}
-
-    function exposed_calculateFeesSlot(uint256 protocolFee, uint256 harvestFee) external pure returns (uint256) {
-        return _calculateFeesSlot(protocolFee, harvestFee);
-    }
 
     function exposed_defaultProtocolFee() external pure returns (uint256) {
         return DEFAULT_PROTOCOL_FEE;
