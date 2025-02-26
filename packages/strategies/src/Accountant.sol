@@ -134,9 +134,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @notice Error thrown when harvest data length doesn't match vaults length
     error InvalidHarvestDataLength();
 
-    /// @notice Error thrown when harvest fee would exceed protocol fee
-    error HarvestFeeExceedsProtocolFee();
-
     /// @notice Error thrown when the protocol controller is invalid
     error InvalidProtocolController();
 
@@ -507,11 +504,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
         uint256 totalFee = protocolFeePercent + _harvestFeePercent;
         require(totalFee <= MAX_FEE_PERCENT, FeeExceedsMaximum());
-
-        /// Harvest fee must be less than protocol fee.
-        /// @dev This is to prevent the _updateVaultState from taking more fees than the protocol fee
-        /// and break the netDelta invariant.
-        require(_harvestFeePercent < protocolFeePercent, HarvestFeeExceedsProtocolFee());
 
         fees.feesSlot = _calculateFeesSlot(protocolFeePercent, _harvestFeePercent);
 
