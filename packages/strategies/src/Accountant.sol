@@ -69,7 +69,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     uint256 public constant MIN_MEANINGFUL_REWARDS = 1e18;
 
     /// @notice The registry of addresses.
-    address public immutable PROTOCOL_CONTROLLER;
+    IProtocolController public immutable PROTOCOL_CONTROLLER;
 
     /// @notice The reward token.
     address public immutable REWARD_TOKEN;
@@ -165,7 +165,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     //////////////////////////////////////////////////////
 
     modifier onlyAllowed() {
-        require(IProtocolController(PROTOCOL_CONTROLLER).allowed(address(this), msg.sender, msg.sig), OnlyAllowed());
+        require(PROTOCOL_CONTROLLER.allowed(address(this), msg.sender, msg.sig), OnlyAllowed());
         _;
     }
 
@@ -187,7 +187,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         require(_protocolId != bytes4(0), InvalidProtocolId());
 
         /// set the immutable variables
-        PROTOCOL_CONTROLLER = _registry;
+        PROTOCOL_CONTROLLER = IProtocolController(_registry);
         REWARD_TOKEN = _rewardToken;
         PROTOCOL_ID = _protocolId;
 
@@ -222,7 +222,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         IStrategy.PendingRewards memory pendingRewards,
         bool harvested
     ) external nonReentrant {
-        require(IProtocolController(PROTOCOL_CONTROLLER).vaults(asset) == msg.sender, OnlyVault());
+        require(PROTOCOL_CONTROLLER.vaults(asset) == msg.sender, OnlyVault());
 
         PackedVault storage _vault = vaults[msg.sender];
         uint256 vaultSupplyAndIntegral = _vault.supplyAndIntegralSlot;
@@ -390,16 +390,19 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param harvestData Harvest data for each vault.
     function _batchHarvest(address[] calldata _vaults, bytes[] calldata harvestData, address receiver) internal {
         // Cache registry to avoid multiple SLOADs
-        address registry = PROTOCOL_CONTROLLER;
-        address harvester = IProtocolController(registry).harvester(PROTOCOL_ID);
+        address harvester = PROTOCOL_CONTROLLER.harvester(PROTOCOL_ID);
         require(harvester != address(0), NoHarvester());
 
         uint256 totalHarvesterFee;
 
         for (uint256 i; i < _vaults.length; i++) {
             /// Harvest the vault and increment total harvester fee.
-            totalHarvesterFee +=
-                _harvest({vault: _vaults[i], harvestData: harvestData[i], harvester: harvester, registry: registry});
+            totalHarvesterFee += _harvest({
+                vault: _vaults[i],
+                harvestData: harvestData[i],
+                harvester: harvester,
+                registry: address(PROTOCOL_CONTROLLER)
+            });
         }
 
         // Transfer total harvester fee if any
@@ -665,7 +668,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @custom:throws NoFeeReceiver If the fee receiver is not set.
     function claimProtocolFees() external nonReentrant {
         // get the fee receiver from the protocol controller and check that it is valid
-        address feeReceiver = IProtocolController(PROTOCOL_CONTROLLER).feeReceiver(PROTOCOL_ID);
+        address feeReceiver = PROTOCOL_CONTROLLER.feeReceiver(PROTOCOL_ID);
         require(feeReceiver != address(0), NoFeeReceiver());
 
         // get the protocol fees accrued until now and reset the stored value
