@@ -34,7 +34,7 @@ abstract contract BaseTest is Test {
 
     address internal owner = address(this);
     address internal vault = makeAddr("vault");
-    bytes4 internal fakeProtocolId = bytes4(bytes("fake_id"));
+    bytes4 internal protocolId = bytes4(bytes("fake_id"));
 
     /*//////////////////////////////////////////////////////////////////////////
                                   SET-UP FUNCTION
@@ -49,7 +49,7 @@ abstract contract BaseTest is Test {
         registry = new MockRegistry();
         allocator = new MockAllocator();
         harvester = new MockHarvester(address(rewardToken));
-        accountant = new Accountant(owner, address(registry), address(rewardToken), fakeProtocolId);
+        accountant = new Accountant(owner, address(registry), address(rewardToken), protocolId);
 
         /// Set the vault
         registry.setVault(vault);
