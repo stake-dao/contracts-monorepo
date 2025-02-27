@@ -1,0 +1,81 @@
+name: Strategies - Gas Comparison
+
+env:
+  FOUNDRY_PROFILE: "ci"
+
+# This CI workflow is responsible of running the gas comparison for the strategies package.
+# It is triggered
+# - only when the changes are made to the strategies package or the address-book package
+# - when a PR is opened or when a push is made to the main branch
+# - when a PR is opened or when a push is made to the feat/onlyboost-v2 branch
+# - when the workflow is manually triggered
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "packages/strategies/**"
+      - "packages/address-book/**" # dependency
+      - ".github/workflows/strategies_gas-diff.yml" # this file
+    branches:
+      - main
+      # temporary until the merge of onlyboost-v2
+      - feat/onlyboost-v2
+  push:
+    paths:
+      - "packages/strategies/**"
+      - "packages/address-book/**" # dependency
+      - ".github/workflows/strategies_gas-diff.yml" # this file
+    branches:
+      - main
+      # temporary until the merge of onlyboost-v2
+      - feat/onlyboost-v2
+
+jobs:
+  compare_gas:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check out the repo
+        uses: actions/checkout@v4
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Run tests
+        working-directory: packages/strategies
+        # store the gas report in the root of the repository
+        run: forge test --gas-report > ../../gasreport.ansi
+        env:
+          # make fuzzing semi-deterministic to avoid noisy gas cost estimation
+          # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
+          FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
+
+      - name: Compare gas reports
+        uses: Rubilmax/foundry-gas-diff@v3
+        with:
+          summaryQuantile: 0.9 # only display the 10% most significant gas diffs in the summary (defaults to 20%)
+          sortCriteria: avg,max # sort diff rows by criteria
+          sortOrders: desc,asc # and directions
+          ignore: test-foundry/**/* # filter out gas reports from specific paths (test/ is included by default)
+        id: gas_diff
+
+      - name: Add gas diff to sticky comment
+        if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
+        uses: marocchino/sticky-pull-request-comment@v2
+        with:
+          # delete the comment in case changes no longer impact gas costs
+          delete: ${{ !steps.gas_diff.outputs.markdown }}
+          message: ${{ steps.gas_diff.outputs.markdown }}
