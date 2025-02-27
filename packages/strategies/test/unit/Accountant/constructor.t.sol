@@ -42,7 +42,7 @@ contract Accountant__Constructor is Test {
         vm.assume(registry != address(0));
 
         Accountant accountant = new Accountant(makeAddr("owner"), registry, makeAddr("rewardToken"), bytes4(hex"11"));
-        assertEq(accountant.PROTOCOL_CONTROLLER(), registry);
+        assertEq(address(accountant.PROTOCOL_CONTROLLER()), registry);
     }
 
     function test_RevertGiven_RewardTokenIs0() external {
