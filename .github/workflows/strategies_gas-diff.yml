@@ -33,6 +33,12 @@ on:
 jobs:
   compare_gas:
     runs-on: ubuntu-latest
+
+    permissions:
+      contents: write # to upload the gas report as artifact
+      actions: read # to read the artifacts uploaded by another branch
+      pull-requests: write # to post a comment on the PR
+
     steps:
       - name: Check out the repo
         uses: actions/checkout@v4
