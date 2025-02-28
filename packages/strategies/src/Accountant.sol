@@ -541,87 +541,109 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// --- CLAIM OPERATIONS
     //////////////////////////////////////////////////////
 
-    /// @notice Claims rewards from multiple vaults for the caller.
+    /// @notice Claims multiple vault rewards for yourself.
     /// @param _vaults Array of vault addresses to claim rewards from.
-    /// @param receiver Address that will receive the claimed rewards.
     /// @param harvestData Optional harvest data for each vault. Empty bytes for vaults that don't need harvesting.
     /// @custom:throws NoPendingRewards If there are no rewards to claim.
-    function claim(address[] calldata _vaults, address receiver, bytes[] calldata harvestData) external nonReentrant {
-        /// If receiver is not set, use the caller as the receiver.
-        receiver = receiver == address(0) ? msg.sender : receiver;
+    function claim(address[] calldata _vaults, bytes[] calldata harvestData) external nonReentrant {
+        claim(_vaults, harvestData, msg.sender);
+    }
 
+    /// @notice Claims multiple vault rewards for yourself and sends them to a specific address.
+    /// @param _vaults Array of vault addresses to claim rewards from.
+    /// @param harvestData Optional harvest data for each vault. Empty bytes for vaults that don't need harvesting.
+    /// @param receiver Address that will receive the claimed rewards.
+    /// @custom:throws NoPendingRewards If there are no rewards to claim.
+    function claim(address[] calldata _vaults, bytes[] calldata harvestData, address receiver) public nonReentrant {
         require(harvestData.length == 0 || harvestData.length == _vaults.length, InvalidHarvestDataLength());
 
         if (harvestData.length != 0) {
             _batchHarvest({_vaults: _vaults, harvestData: harvestData, receiver: receiver});
         }
 
-        _claim({_vaults: _vaults, account: msg.sender, receiver: receiver});
+        _claim({_vaults: _vaults, accountAddress: msg.sender, receiver: receiver});
     }
 
-    /// @notice Claims rewards on behalf of an account.
+    /// @notice Claims multiple vault rewards on behalf of an account.
     /// @param _vaults Array of vault addresses to claim rewards from.
     /// @param account Address to claim rewards for.
-    /// @param receiver Address that will receive the claimed rewards.
     /// @param harvestData Optional harvest data for each vault. Empty bytes for vaults that don't need harvesting.
+    /// @dev expected to be called by authorized accounts only
     /// @custom:throws OnlyAllowed If caller is not allowed to claim on behalf of others.
     /// @custom:throws NoPendingRewards If there are no rewards to claim.
-    function claim(address[] calldata _vaults, address account, address receiver, bytes[] calldata harvestData)
-        external
+    function claim(address[] calldata _vaults, address account, bytes[] calldata harvestData) external nonReentrant {
+        claim(_vaults, account, harvestData, account);
+    }
+
+    /// @notice Claims multiple vault rewards on behalf of an account and sends them to a specific address.
+    /// @param _vaults Array of vault addresses to claim rewards from.
+    /// @param account Address to claim rewards for.
+    /// @param harvestData Optional harvest data for each vault. Empty bytes for vaults that don't need harvesting.
+    /// @param receiver Address that will receive the claimed rewards.
+    /// @dev expected to be called by authorized accounts only
+    /// @custom:throws OnlyAllowed If caller is not allowed to claim on behalf of others.
+    /// @custom:throws NoPendingRewards If there are no rewards to claim.
+    function claim(address[] calldata _vaults, address account, bytes[] calldata harvestData, address receiver)
+        public
         onlyAllowed
         nonReentrant
     {
-        /// If receiver is not set, use the account as the receiver.
-        receiver = receiver == address(0) ? account : receiver;
-
         require(harvestData.length == 0 || harvestData.length == _vaults.length, InvalidHarvestDataLength());
 
         if (harvestData.length != 0) {
             _batchHarvest({_vaults: _vaults, harvestData: harvestData, receiver: receiver});
         }
-        _claim({_vaults: _vaults, account: account, receiver: receiver});
+
+        _claim({_vaults: _vaults, accountAddress: account, receiver: receiver});
     }
 
     /// @dev Internal implementation of claim functionality.
     /// @param _vaults Array of vault addresses to claim rewards from.
-    /// @param account Address to claim rewards for.
+    /// @param accountAddress Address to claim rewards for.
     /// @param receiver Address that will receive the claimed rewards.
     /// @custom:throws NoPendingRewards If the total claimed amount is zero.
-    function _claim(address[] calldata _vaults, address account, address receiver) internal {
+    function _claim(address[] calldata _vaults, address accountAddress, address receiver) internal {
         uint256 totalAmount;
-        uint256 vaultsLength = _vaults.length;
 
-        // Process each vault
-        for (uint256 i; i < vaultsLength; i++) {
+        // For each vault, check if the account has any rewards to claim
+        for (uint256 i; i < _vaults.length; i++) {
+            // Get the latest vault data
             PackedVault storage vault = vaults[_vaults[i]];
-            PackedAccount storage userAccount = accounts[_vaults[i]][account];
+            // Get the account data for this vault
+            PackedAccount storage account = accounts[_vaults[i]][accountAddress];
 
-            // Load all storage values at once
-            uint256 accountData = userAccount.balanceAndIntegralSlot;
+            // Get the current account data for this vault
+            uint256 accountData = account.balanceAndIntegralSlot;
             uint256 balance = accountData & StorageMasks.BALANCE;
 
-            // Skip if user has no balance and no pending rewards
-            if (balance != 0 || userAccount.pendingRewards != 0) {
-                uint256 vaultData = vault.supplyAndIntegralSlot;
+            // If account has any rewards to claim for this vault, calculate the amount. Otherwise, skip.
+            if (balance != 0 || account.pendingRewards != 0) {
+                // Get vault's and account's integral
                 uint256 accountIntegral = (accountData & StorageMasks.ACCOUNT_INTEGRAL) >> 128;
-                uint256 vaultIntegral = (vaultData & StorageMasks.INTEGRAL) >> 128;
+                uint256 vaultIntegral = (vault.supplyAndIntegralSlot & StorageMasks.INTEGRAL) >> 128;
 
-                // Calculate new rewards if integral has increased
+                // If vault's integral is higher than account's integral, calculate the rewards and update the total.
                 if (vaultIntegral > accountIntegral) {
                     totalAmount += (vaultIntegral - accountIntegral) * balance / SCALING_FACTOR;
                 }
-                // Add any pending rewards
-                totalAmount += userAccount.pendingRewards;
 
-                // Update account storage with new integral and reset pending rewards
-                userAccount.balanceAndIntegralSlot =
+                // In any case, add the pending rewards to the total amount
+                totalAmount += account.pendingRewards;
+
+                // NOTE: update ONLY if the integral of the vault has changed since the last update
+                // Concatenate the new balance and integral into a single storage slot and update the stored value for this vault
+                account.balanceAndIntegralSlot =
                     (balance & StorageMasks.BALANCE) | ((vaultIntegral << 128) & StorageMasks.ACCOUNT_INTEGRAL);
-                userAccount.pendingRewards = 0;
+
+                // reset the stored pending rewards for this vault
+                account.pendingRewards = 0; // ?: conditional if != 0
             }
         }
 
+        // If there is no amount to claim for any vault, revert.
         require(totalAmount != 0, NoPendingRewards());
-        // Transfer accumulated rewards to receiver
+
+        // Transfer accumulated rewards to the receiver
         IERC20(REWARD_TOKEN).safeTransfer(receiver, totalAmount);
     }
 

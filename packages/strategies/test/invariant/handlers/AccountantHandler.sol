@@ -54,7 +54,7 @@ contract AccountantHandler is Test {
         uint256 balanceBefore = token.balanceOf(user);
 
         vm.prank(user);
-        try accountant.claim(vaults, user, new bytes[](vaults.length)) {
+        try accountant.claim(vaults, new bytes[](vaults.length), user) {
             uint256 claimed = token.balanceOf(user) - balanceBefore;
             userRewards[user] += claimed;
             totalUserRewards += claimed;
