@@ -287,7 +287,7 @@ abstract contract BaseAccumulator {
         for (uint256 i = 0; i < splits.length; i++) {
             if (splits[i].receiver == address(0)) revert ZERO_ADDRESS();
 
-            feeSplits.push(Split(splits[i].receiver, uint96(splits[i].fee)));
+            feeSplits.push(Split({receiver: splits[i].receiver, fee: uint96(splits[i].fee)}));
         }
 
         emit FeeSplitUpdated(splits);
