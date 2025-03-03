@@ -13,6 +13,12 @@ contract MockRegistry is IProtocolController {
     address private _feeReceiver;
     address private _accountant;
 
+    function shutdown(address) external {}
+
+    function isShutdown(address) external view returns (bool) {
+        return false;
+    }
+
     function vaults(address) external view returns (address) {
         return _vault;
     }

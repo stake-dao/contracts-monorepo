@@ -21,4 +21,13 @@ contract MockAllocator is IAllocator {
 
         return Allocation({gauge: address(asset), targets: targets, amounts: amounts, harvested: false});
     }
+
+    function getAllocationData(address asset) external view returns (Allocation memory) {
+        address[] memory targets = new address[](1);
+        targets[0] = msg.sender;
+        uint256[] memory amounts = new uint256[](1);
+        amounts[0] = 100;
+
+        return Allocation({gauge: address(asset), targets: targets, amounts: amounts, harvested: false});
+    }
 }
