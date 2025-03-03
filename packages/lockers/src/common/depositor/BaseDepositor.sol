@@ -253,9 +253,8 @@ abstract contract BaseDepositor {
     /// @notice Set the percentage of the lock incentive
     /// @param _lockIncentive Percentage of the lock incentive
     function setFees(uint256 _lockIncentive) external onlyGovernance {
-        if (_lockIncentive >= 0 && _lockIncentive <= 0.003e18) {
-            emit LockIncentiveUpdated(lockIncentivePercent = _lockIncentive);
-        }
+        if (_lockIncentive > 0.003e18) revert LOCK_INCENTIVE_TOO_HIGH();
+        emit LockIncentiveUpdated(lockIncentivePercent = _lockIncentive);
     }
 
     function name() external view returns (string memory) {
