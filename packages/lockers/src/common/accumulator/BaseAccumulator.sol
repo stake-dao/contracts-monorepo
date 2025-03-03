@@ -75,6 +75,30 @@ abstract contract BaseAccumulator {
     /// @notice Error emitted when the fee is invalid
     error INVALID_SPLIT();
 
+    /// @notice Event emitted when the fee split is set
+    event FeeSplitUpdated(Split newFeeSplit);
+
+    /// @notice Event emitted when a new token reward is approved
+    event RewardTokenApproved(address newRewardToken);
+
+    /// @notice Event emitted when the claimer fee is set
+    event ClaimerFeeUpdated(uint256 newClaimerFee);
+
+    /// @notice Event emitted when the SDT distributor is set
+    event SDTDistributorUpdated(address newSDTDistributor);
+
+    /// @notice Event emitted when the fee receiver is set
+    event FeeReceiverUpdated(address newFeeReceiver);
+
+    /// @notice Event emitted when the strategy is set
+    event StrategyUpdated(address newStrategy);
+
+    /// @notice Event emitted when the governance update is proposed
+    event GovernanceUpdateProposed(address newFutureGovernance);
+
+    /// @notice Event emitted when the governance update is accepted
+    event GovernanceUpdateAccepted(address newGovernance);
+
     //////////////////////////////////////////////////////
     /// --- MODIFIERS
     //////////////////////////////////////////////////////
@@ -106,7 +130,7 @@ abstract contract BaseAccumulator {
 
         governance = _governance;
 
-        claimerFee = 0.1e18; // 0.1%
+        claimerFee = 0.001e18; // 0.1%
     }
 
     //////////////////////////////////////////////////////
@@ -200,19 +224,19 @@ abstract contract BaseAccumulator {
 
     function setClaimerFee(uint256 _claimerFee) external onlyGovernance {
         if (_claimerFee > DENOMINATOR) revert FEE_TOO_HIGH();
-        claimerFee = _claimerFee;
+        emit ClaimerFeeUpdated(claimerFee = _claimerFee);
     }
 
     /// @notice Set SDT distributor.
     /// @param _distributor SDT distributor address.
     function setDistributor(address _distributor) external onlyGovernance {
-        sdtDistributor = _distributor;
+        emit SDTDistributorUpdated(sdtDistributor = _distributor);
     }
 
     /// @notice Set fee receiver (from Stategy)
     /// @param _feeReceiver Fee receiver address
     function setFeeReceiver(address _feeReceiver) external onlyGovernance {
-        feeReceiver = _feeReceiver;
+        emit FeeReceiverUpdated(feeReceiver = _feeReceiver);
     }
 
     /// @notice Set a new future governance that can accept it
@@ -221,6 +245,8 @@ abstract contract BaseAccumulator {
     function transferGovernance(address _futureGovernance) external onlyGovernance {
         if (_futureGovernance == address(0)) revert ZERO_ADDRESS();
         futureGovernance = _futureGovernance;
+
+        emit GovernanceUpdateProposed(futureGovernance);
     }
 
     /// @notice Accept the governance
@@ -229,12 +255,16 @@ abstract contract BaseAccumulator {
         governance = futureGovernance;
 
         futureGovernance = address(0);
+
+        emit GovernanceUpdateAccepted(governance);
     }
 
     /// @notice Approve the distribution of a new token reward from the BaseAccumulator.
     /// @param _newTokenReward New token reward to be approved.
     function approveNewTokenReward(address _newTokenReward) external onlyGovernance {
         SafeTransferLib.safeApprove(_newTokenReward, gauge, type(uint256).max);
+
+        emit RewardTokenApproved(_newTokenReward);
     }
 
     /// @notice Set fee split
@@ -243,10 +273,12 @@ abstract contract BaseAccumulator {
     function setFeeSplit(address[] calldata receivers, uint256[] calldata fees) external onlyGovernance {
         if (receivers.length == 0 || receivers.length != fees.length) revert INVALID_SPLIT();
         feeSplit = Split(receivers, fees);
+
+        emit FeeSplitUpdated(feeSplit);
     }
 
     function setStrategy(address _strategy) external onlyGovernance {
-        strategy = _strategy;
+        emit StrategyUpdated(strategy = _strategy);
     }
 
     /// @notice A function that rescue any ERC20 token
