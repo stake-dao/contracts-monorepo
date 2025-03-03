@@ -124,6 +124,10 @@ abstract contract BaseAccumulator {
     /// @param _locker sd locker
     /// @param _governance governance
     constructor(address _gauge, address _rewardToken, address _locker, address _governance) {
+        if (_gauge == address(0) || _locker == address(0) || _governance == address(0) || _rewardToken == address(0)) {
+            revert ZERO_ADDRESS();
+        }
+
         gauge = _gauge;
         locker = _locker;
         rewardToken = _rewardToken;
