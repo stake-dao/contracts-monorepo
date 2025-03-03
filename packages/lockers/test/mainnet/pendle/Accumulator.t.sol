@@ -80,11 +80,11 @@ contract AccumulatorTest is BaseAccumulatorTest {
         uint256 remaining = WETH.balanceOf(address(accumulator));
         uint256 total = treasury + liquidityFee + gauge + claimer + remaining + voters;
 
-        Accumulator.Split memory feeSplit = accumulator.getFeeSplit();
+        BaseAccumulator.Split[] memory feeSplit = accumulator.getFeeSplit();
         assertEq(total * accumulator.claimerFee() / 1e18, claimer);
 
-        assertEq(total * feeSplit.fees[0] / 1e18, treasury);
-        assertEq(total * feeSplit.fees[1] / 1e18, liquidityFee);
+        assertEq(total * feeSplit[0].fee / 1e18, treasury);
+        assertEq(total * feeSplit[1].fee / 1e18, liquidityFee);
 
         assertEq(accumulator.remainingPeriods(), 3);
 

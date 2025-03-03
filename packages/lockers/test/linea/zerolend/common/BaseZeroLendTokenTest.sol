@@ -162,14 +162,11 @@ abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
         liquidityGauge.add_reward(address(zeroToken), address(accumulator));
         liquidityGauge.add_reward(address(WETH), address(accumulator));
 
-        // setup fee split
-        feeSplitReceivers[0] = address(treasuryRecipient);
-        feeSplitFees[0] = 5e16; // 5% to dao
-
-        feeSplitReceivers[1] = address(liquidityFeeRecipient);
-        feeSplitFees[1] = 10e16; // 10% to liquidity
+        BaseAccumulator.Split[] memory splits = new BaseAccumulator.Split[](2);
+        splits[0] = BaseAccumulator.Split(address(treasuryRecipient), 5e16);
+        splits[1] = BaseAccumulator.Split(address(liquidityFeeRecipient), 10e16);
 
         vm.prank(GOVERNANCE);
-        BaseAccumulator(accumulator).setFeeSplit(feeSplitReceivers, feeSplitFees);
+        BaseAccumulator(accumulator).setFeeSplit(splits);
     }
 }
