@@ -58,6 +58,21 @@ abstract contract BaseDepositor {
     /// @notice Throws if the address is zero.
     error ADDRESS_ZERO();
 
+    /// @notice Throws if the lock incentive is too high.
+    error LOCK_INCENTIVE_TOO_HIGH();
+
+    /// @notice Event emitted when the gauge is updated
+    event GaugeUpdated(address newGauge);
+
+    /// @notice Event emitted when the lock incentive is updated
+    event LockIncentiveUpdated(uint256 newLockIncentive);
+
+    /// @notice Event emitted when the governance update is proposed
+    event GovernanceUpdateProposed(address newFutureGovernance);
+
+    /// @notice Event emitted when the governance update is accepted
+    event GovernanceUpdateAccepted(address newGovernance);
+
     ////////////////////////////////////////////////////////////////
     /// --- MODIFIERS
     ///////////////////////////////////////////////////////////////
@@ -201,14 +216,14 @@ abstract contract BaseDepositor {
     /// @notice Transfer the governance to a new address.
     /// @param _governance Address of the new governance.
     function transferGovernance(address _governance) external onlyGovernance {
-        futureGovernance = _governance;
+        emit GovernanceUpdateProposed(futureGovernance = _governance);
     }
 
     /// @notice Accept the governance transfer.
     function acceptGovernance() external {
         if (msg.sender != futureGovernance) revert GOVERNANCE();
 
-        governance = msg.sender;
+        emit GovernanceUpdateAccepted(governance = msg.sender);
 
         futureGovernance = address(0);
     }
@@ -222,7 +237,9 @@ abstract contract BaseDepositor {
     /// @notice Set the gauge to deposit sdToken
     /// @param _gauge gauge address
     function setGauge(address _gauge) external virtual onlyGovernance {
-        gauge = _gauge;
+        /// Set and emit the new gauge.
+        emit GaugeUpdated(gauge = _gauge);
+
         if (_gauge != address(0)) {
             /// Approve sdToken to gauge.
             SafeTransferLib.safeApprove(minter, gauge, type(uint256).max);
@@ -233,8 +250,9 @@ abstract contract BaseDepositor {
     /// @param _lockIncentive Percentage of the lock incentive
     function setFees(uint256 _lockIncentive) external onlyGovernance {
         if (_lockIncentive >= 0 && _lockIncentive <= 0.003e18) {
-            lockIncentivePercent = _lockIncentive;
+            emit LockIncentiveUpdated(lockIncentivePercent = _lockIncentive);
         }
+
     }
 
     function name() external view returns (string memory) {
