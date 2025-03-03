@@ -22,12 +22,12 @@ abstract contract BaseAccumulator {
     /// @param fees Array of fees
     /// @dev First go to the first receiver, then the second, and so on
     struct Split {
-        address[] receivers;
-        uint256[] fees; // Fee in basis points with 1e18 precision
+        address receiver;
+        uint96 fee; // Fee in basis points with 1e18 precision
     }
 
     /// @notice Fee split.
-    Split private feeSplit;
+    Split[] private feeSplits;
 
     /// @notice SDT distributor
     address public sdtDistributor;
@@ -76,7 +76,7 @@ abstract contract BaseAccumulator {
     error INVALID_SPLIT();
 
     /// @notice Event emitted when the fee split is set
-    event FeeSplitUpdated(Split newFeeSplit);
+    event FeeSplitUpdated(Split[] newFeeSplit);
 
     /// @notice Event emitted when a new token reward is approved
     event RewardTokenApproved(address newRewardToken);
@@ -195,11 +195,11 @@ abstract contract BaseAccumulator {
     function _chargeFee(address _token, uint256 _amount) internal virtual returns (uint256 _charged) {
         if (_amount == 0 || _token != rewardToken) return 0;
 
-        Split memory _feeSplit = getFeeSplit();
+        Split[] memory _feeSplit = getFeeSplit();
         uint256 fee;
-        for (uint256 i = 0; i < _feeSplit.receivers.length; i++) {
-            fee = (_amount * _feeSplit.fees[i]) / DENOMINATOR;
-            SafeTransferLib.safeTransfer(_token, _feeSplit.receivers[i], fee);
+        for (uint256 i = 0; i < _feeSplit.length; i++) {
+            fee = (_amount * _feeSplit[i].fee) / DENOMINATOR;
+            SafeTransferLib.safeTransfer(_token, _feeSplit[i].receiver, fee);
 
             _charged += fee;
         }
@@ -222,8 +222,8 @@ abstract contract BaseAccumulator {
     /// --- GOVERNANCE FUNCTIONS
     //////////////////////////////////////////////////////
 
-    function getFeeSplit() public view returns (Split memory) {
-        return feeSplit;
+    function getFeeSplit() public view returns (Split[] memory) {
+        return feeSplits;
     }
 
     function setClaimerFee(uint256 _claimerFee) external onlyGovernance {
@@ -272,20 +272,25 @@ abstract contract BaseAccumulator {
     }
 
     /// @notice Set fee split
-    /// @param receivers array of receivers
-    /// @param fees array of fees
-    function setFeeSplit(address[] calldata receivers, uint256[] calldata fees) external onlyGovernance {
-        if (receivers.length == 0 || receivers.length != fees.length) revert INVALID_SPLIT();
+    /// @param splits array of splits
+    function setFeeSplit(Split[] calldata splits) external onlyGovernance {
+        if (splits.length == 0) revert INVALID_SPLIT();
 
         uint256 totalFees;
-        for (uint256 i = 0; i < fees.length; i++) {
-            totalFees += fees[i];
+        for (uint256 i = 0; i < splits.length; i++) {
+            totalFees += splits[i].fee;
         }
         if (totalFees > DENOMINATOR) revert FEE_TOO_HIGH();
 
-        feeSplit = Split(receivers, fees);
+        delete feeSplits;
 
-        emit FeeSplitUpdated(feeSplit);
+        for (uint256 i = 0; i < splits.length; i++) {
+            if (splits[i].receiver == address(0)) revert ZERO_ADDRESS();
+
+            feeSplits.push(Split(splits[i].receiver, uint96(splits[i].fee)));
+        }
+
+        emit FeeSplitUpdated(splits);
     }
 
     function setStrategy(address _strategy) external onlyGovernance {
