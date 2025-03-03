@@ -83,6 +83,10 @@ abstract contract BaseDepositor {
     }
 
     constructor(address _token, address _locker, address _minter, address _gauge, uint256 _maxLockDuration) {
+        if (_token == address(0) || _locker == address(0) || _minter == address(0) || _gauge == address(0)) {
+            revert ADDRESS_ZERO();
+        }
+
         governance = msg.sender;
 
         token = _token;
@@ -252,7 +256,6 @@ abstract contract BaseDepositor {
         if (_lockIncentive >= 0 && _lockIncentive <= 0.003e18) {
             emit LockIncentiveUpdated(lockIncentivePercent = _lockIncentive);
         }
-
     }
 
     function name() external view returns (string memory) {
