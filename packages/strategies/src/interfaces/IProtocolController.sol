@@ -12,4 +12,5 @@ interface IProtocolController {
     function harvester(bytes4 protocolId) external view returns (address);
     function accountant(bytes4 protocolId) external view returns (address);
     function feeReceiver(bytes4 protocolId) external view returns (address);
+    function isShutdown(address) external view returns (bool);
 }
