@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
+import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IHarvester} from "src/interfaces/IHarvester.sol";
 
 contract MockHarvester is IHarvester {
@@ -14,10 +15,10 @@ contract MockHarvester is IHarvester {
     function harvest(address, bytes memory harvestData)
         external
         override
-        returns (uint256 feeSubjectAmount, uint256 feeExemptAmount)
+        returns (IStrategy.PendingRewards memory pendingRewards)
     {
         if (harvestData.length == 0) {
-            return (0, 0);
+            return pendingRewards;
         }
 
         (uint256 amount, uint256 randomSplit) = abi.decode(harvestData, (uint256, uint256));
@@ -25,8 +26,7 @@ contract MockHarvester is IHarvester {
         rewardToken.mint(address(this), amount);
 
         /// Calculate the fee subject amount.
-        feeSubjectAmount = amount * 1e18 / randomSplit;
-
-        return (feeSubjectAmount, amount);
+        pendingRewards.feeSubjectAmount = amount * 1e18 / randomSplit;
+        pendingRewards.totalAmount = amount;
     }
 }
