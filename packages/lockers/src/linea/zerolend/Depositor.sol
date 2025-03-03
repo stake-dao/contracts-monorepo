@@ -32,6 +32,7 @@ contract Depositor is BaseDepositor {
     ///////////////////////////////////////////////////////////////
 
     error ZeroValue();
+    error ZeroAddress();
     error EmptyTokenIdList();
     error NotOwnerOfToken(uint256 tokenId);
     error ExecFromSafeModuleFailed();
@@ -59,6 +60,10 @@ contract Depositor is BaseDepositor {
     constructor(address _token, address _locker, address _minter, address _gauge, address _zeroLocker, address _veToken)
         BaseDepositor(_token, _locker, _minter, _gauge, 4 * 365 days)
     {
+        if (_zeroLocker == address(0) || _veToken == address(0)) {
+            revert ZeroAddress();
+        }
+
         zeroLocker = ILockerToken(_zeroLocker);
         veToken = IZeroVp(_veToken);
     }
