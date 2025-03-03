@@ -27,7 +27,7 @@ abstract contract BaseAccumulator {
     }
 
     /// @notice Fee split.
-    Split feeSplit;
+    Split private feeSplit;
 
     /// @notice SDT distributor
     address public sdtDistributor;
