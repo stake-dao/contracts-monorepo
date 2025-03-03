@@ -135,7 +135,7 @@ abstract contract BaseDepositor {
 
         /// If _lock is true, lock tokens in the locker contract.
         if (_lock) {
-            /// Transfer tokens to this contract
+            /// Transfer tokens to the locker contract.
             SafeTransferLib.safeTransferFrom(token, msg.sender, locker, _amount);
 
             /// Transfer the balance
@@ -155,7 +155,8 @@ abstract contract BaseDepositor {
                 incentiveToken = 0;
             }
         } else {
-            /// Transfer tokens to the locker contract and lock them.
+
+            /// Transfer tokens to this contract.
             SafeTransferLib.safeTransferFrom(token, msg.sender, address(this), _amount);
 
             /// Compute call incentive and add to incentiveToken
