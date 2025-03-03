@@ -16,7 +16,7 @@ import "solady/src/utils/SafeTransferLib.sol";
 /// @custom:contact contact@stakedao.org
 abstract contract BaseDepositor {
     /// @notice Denominator for fixed point math.
-    uint256 public constant DENOMINATOR = 10_000;
+    uint256 public constant DENOMINATOR = 1e18;
 
     /// @notice Maximum lock duration.
     uint256 public immutable MAX_LOCK_DURATION;
@@ -31,7 +31,7 @@ abstract contract BaseDepositor {
     address public minter;
 
     /// @notice Fee percent to users who spend gas to increase lock.
-    uint256 public lockIncentivePercent = 10;
+    uint256 public lockIncentivePercent = 0.001e18; // 0.1%
 
     /// @notice Incentive accrued in token to users who spend gas to increase lock.
     uint256 public incentiveToken;
@@ -46,7 +46,7 @@ abstract contract BaseDepositor {
     address public futureGovernance;
 
     ////////////////////////////////////////////////////////////////
-    /// --- ERRORS
+    /// --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Throws if caller is not the governance.
@@ -232,7 +232,7 @@ abstract contract BaseDepositor {
     /// @notice Set the percentage of the lock incentive
     /// @param _lockIncentive Percentage of the lock incentive
     function setFees(uint256 _lockIncentive) external onlyGovernance {
-        if (_lockIncentive >= 0 && _lockIncentive <= 30) {
+        if (_lockIncentive >= 0 && _lockIncentive <= 0.003e18) {
             lockIncentivePercent = _lockIncentive;
         }
     }
