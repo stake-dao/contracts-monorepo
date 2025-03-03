@@ -276,6 +276,13 @@ abstract contract BaseAccumulator {
     /// @param fees array of fees
     function setFeeSplit(address[] calldata receivers, uint256[] calldata fees) external onlyGovernance {
         if (receivers.length == 0 || receivers.length != fees.length) revert INVALID_SPLIT();
+
+        uint256 totalFees;
+        for (uint256 i = 0; i < fees.length; i++) {
+            totalFees += fees[i];
+        }
+        if (totalFees > DENOMINATOR) revert FEE_TOO_HIGH();
+
         feeSplit = Split(receivers, fees);
 
         emit FeeSplitUpdated(feeSplit);
