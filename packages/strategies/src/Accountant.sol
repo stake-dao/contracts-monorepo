@@ -37,8 +37,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
 
     /// @notice Vault data structure.
     struct VaultData {
+        uint256 integral;
         uint128 supply;
-        uint128 integral;
         uint128 feeSubjectAmount;
         uint128 totalAmount;
     }
@@ -46,7 +46,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @notice Account data structure for a specific Vault
     struct AccountData {
         uint128 balance;
-        uint128 integral;
+        uint256 integral;
         uint256 pendingRewards;
     }
 
@@ -302,7 +302,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
 
         // Update vault data with new supply and integral
         // TODO: scale down earlier on (before _updateAccountState)
-        _vault.integral = integral.toUint128();
+        _vault.integral = integral;
         _vault.supply = supply;
     }
 
@@ -326,7 +326,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         // Update pending rewards based on the integral difference.
         accountData.pendingRewards += (currentIntegral - accountData.integral).mulDiv(accountBalance, SCALING_FACTOR);
         accountData.balance = isDecrease ? accountBalance - amount : accountBalance + amount;
-        accountData.integral = currentIntegral.toUint128();
+        accountData.integral = currentIntegral;
     }
 
     /// @notice Returns the total supply of tokens in a vault.
@@ -456,7 +456,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         uint256 netDelta = amount - pendingRewards;
 
         // Update the integral
-        vault.integral += netDelta.mulDiv(SCALING_FACTOR, vault.supply).toUint128();
+        vault.integral += netDelta.mulDiv(SCALING_FACTOR, vault.supply);
     }
 
     /// @notice Returns the current harvest fee based on contract balance
@@ -583,8 +583,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
             // If account has any rewards to claim for this vault, calculate the amount. Otherwise, skip.
             if (balance != 0 || account.pendingRewards != 0) {
                 // Get vault's and account's integral
-                uint128 accountIntegral = account.integral;
-                uint128 vaultIntegral = vaults[_vaults[i]].integral;
+                uint256 accountIntegral = account.integral;
+                uint256 vaultIntegral = vaults[_vaults[i]].integral;
 
                 // If vault's integral is higher than account's integral, calculate the rewards and update the total.
                 // TODO: muldiv
