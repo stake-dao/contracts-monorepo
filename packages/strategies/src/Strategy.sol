@@ -117,7 +117,11 @@ abstract contract Strategy is IStrategy {
 
         for (uint256 i = 0; i < allocation.targets.length; i++) {
             if (allocation.amounts[i] > 0) {
-                _deposit(allocation.gauge, allocation.targets[i], allocation.amounts[i]);
+                if (allocation.targets[i] == LOCKER) {
+                    _deposit(allocation.gauge, allocation.amounts[i]);
+                } else {
+                    ISidecar(allocation.targets[i]).deposit(allocation.amounts[i]);
+                }
             }
         }
 
@@ -141,7 +145,11 @@ abstract contract Strategy is IStrategy {
 
         for (uint256 i = 0; i < allocation.targets.length; i++) {
             if (allocation.amounts[i] > 0) {
-                _withdraw(allocation.gauge, allocation.targets[i], allocation.amounts[i], msg.sender);
+                if (allocation.targets[i] == LOCKER) {
+                    _withdraw(allocation.gauge, allocation.amounts[i], msg.sender);
+                } else {
+                    ISidecar(allocation.targets[i]).withdraw(allocation.amounts[i], msg.sender);
+                }
             }
         }
 
@@ -170,11 +178,13 @@ abstract contract Strategy is IStrategy {
 
             if (target == LOCKER) {
                 balance = IBalanceProvider(gauge).balanceOf(LOCKER);
+
+                _withdraw(gauge, balance, vault);
             } else {
                 balance = ISidecar(target).balanceOf();
-            }
 
-            _withdraw(gauge, target, balance, vault);
+                ISidecar(target).withdraw(balance, vault);
+            }
         }
     }
 
@@ -195,16 +205,14 @@ abstract contract Strategy is IStrategy {
 
     /// @notice Deposits assets into a specific target
     /// @dev Must be implemented by derived strategies to handle protocol-specific deposits
-    /// @param gauge The gauge being deposited
-    /// @param target The target to deposit into
+    /// @param gauge The gauge to deposit into
     /// @param amount The amount to deposit
-    function _deposit(address gauge, address target, uint256 amount) internal virtual;
+    function _deposit(address gauge, uint256 amount) internal virtual;
 
     /// @notice Withdraws assets from a specific target
     /// @dev Must be implemented by derived strategies to handle protocol-specific withdrawals
-    /// @param gauge The gauge being withdrawn
-    /// @param target The target to withdraw from
+    /// @param gauge The gauge to withdraw from
     /// @param amount The amount to withdraw
     /// @param receiver The address to receive the withdrawn assets
-    function _withdraw(address gauge, address target, uint256 amount, address receiver) internal virtual;
+    function _withdraw(address gauge, uint256 amount, address receiver) internal virtual {}
 }
