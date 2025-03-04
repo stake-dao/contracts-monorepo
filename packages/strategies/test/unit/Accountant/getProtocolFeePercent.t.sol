@@ -1,7 +1,7 @@
 pragma solidity 0.8.28;
 
 import {BaseTest} from "test/Base.t.sol";
-import {AccountantHarness} from "test/unit/Accountant/AccountantHarness.sol";
+import {AccountantHarness} from "test/unit/Accountant/AccountantHarness.t.sol";
 
 contract Accountant__getProtocolFeePercent is BaseTest {
     AccountantHarness accountantHarness;
@@ -11,7 +11,7 @@ contract Accountant__getProtocolFeePercent is BaseTest {
         accountantHarness = new AccountantHarness();
     }
 
-    function test_ReturnsTheDefaultProtocolFee() external {
+    function test_ReturnsTheDefaultProtocolFee() external view {
         // it returns the default protocol fee
         assertEq(accountantHarness.getProtocolFeePercent(), accountantHarness.exposed_defaultProtocolFee());
     }
@@ -19,7 +19,7 @@ contract Accountant__getProtocolFeePercent is BaseTest {
     function test_ReturnsTheCurrentProtocolFee() external {
         // it returns the current protocol fee
 
-        uint256 newProtocolFee = 0.1e18;
+        uint128 newProtocolFee = 0.1e18;
 
         vm.prank(accountantHarness.owner());
         accountantHarness.setProtocolFeePercent(newProtocolFee);

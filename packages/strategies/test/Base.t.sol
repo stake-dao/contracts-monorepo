@@ -68,7 +68,9 @@ abstract contract BaseTest is Test {
     /*//////////////////////////////////////////////////////////////////////////
                                       HELPERS
     //////////////////////////////////////////////////////////////////////////*/
-    function _boundValidProtocolFee(uint256 newProtocolFee) internal view returns (uint256) {
-        return bound(newProtocolFee, 1, accountant.MAX_FEE_PERCENT() - accountant.getHarvestFeePercent());
+    function _boundValidProtocolFee(uint128 newProtocolFee) internal view returns (uint128) {
+        return
+            uint128(bound(uint256(newProtocolFee), 1, accountant.MAX_FEE_PERCENT() - accountant.getHarvestFeePercent()));
+            
     }
 }
