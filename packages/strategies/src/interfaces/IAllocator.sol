@@ -4,9 +4,9 @@ pragma solidity 0.8.28;
 interface IAllocator {
     struct Allocation {
         address gauge;
+        bool harvested;
         address[] targets;
         uint256[] amounts;
-        bool harvested;
     }
 
     function getDepositAllocation(address asset, uint256 amount) external view returns (Allocation memory);

@@ -5,12 +5,12 @@ import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20, IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IAllocator} from "src/interfaces/IAllocator.sol";
 import {IAccountant} from "src/interfaces/IAccountant.sol";
-import {StorageMasks} from "src/libraries/StorageMasks.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
 /// @title RewardVault
@@ -23,6 +23,7 @@ import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 contract RewardVault is IERC4626, ERC20 {
     using Math for uint256;
     using SafeERC20 for IERC20;
+    using SafeCast for uint256;
 
     ///////////////////////////////////////////////////////////////
     /// ~ EVENTS
@@ -52,9 +53,6 @@ contract RewardVault is IERC4626, ERC20 {
     /// @notice Error thrown when the reward token is not valid
     error InvalidRewardToken();
 
-    /// @notice Error thrown when the calculated reward rate exceeds the maximum value
-    error RewardRateOverflow();
-
     /// @notice Error thrown when attempting to add a reward token that already exists
     error RewardAlreadyExists();
 
@@ -78,18 +76,20 @@ contract RewardVault is IERC4626, ERC20 {
     /// ~ STORAGE STRUCTURES
     ///////////////////////////////////////////////////////////////
 
-    /// @notice Packed reward data structure into 2 slots for gas optimization
-    /// @dev Slot 1: [rewardsDistributor (160) | rewardsDuration (32) | lastUpdateTime (32) | periodFinish (32)]
-    ///      Slot 2: [rewardRate (128) | rewardPerTokenStored (128)]
-    struct PackedReward {
-        uint256 distributorAndDurationAndLastUpdateAndPeriodFinishSlot;
-        uint256 rewardRateAndRewardPerTokenStoredSlot;
+    /// @notice Reward data structure
+    struct RewardData {
+        address rewardsDistributor;
+        uint32 rewardsDuration;
+        uint32 lastUpdateTime;
+        uint32 periodFinish;
+        uint128 rewardRate;
+        uint128 rewardPerTokenStored;
     }
 
-    /// @notice Packed account data structure into 1 slot for gas optimization
-    /// @dev [rewardPerTokenPaid (128) | claimable (128)]
-    struct PackedAccount {
-        uint256 rewardPerTokenPaidAndClaimableSlot;
+    /// @notice Account data structure
+    struct AccountData {
+        uint128 rewardPerTokenPaid;
+        uint128 claimable;
     }
 
     ///////////////////////////////////////////////////////////////
@@ -103,10 +103,10 @@ contract RewardVault is IERC4626, ERC20 {
     mapping(address => bool) public isRewardToken;
 
     /// @notice Mapping of reward token to its packed reward data
-    mapping(address => PackedReward) private rewardData;
+    mapping(address => RewardData) private rewardData;
 
     /// @notice Account reward data mapping
-    mapping(address => mapping(address => PackedAccount)) private accountData;
+    mapping(address => mapping(address => AccountData)) private accountData;
 
     /// @notice Initializes the vault with basic ERC20 metadata
     /// @dev Sets up the vault with a standard name and symbol prefix
@@ -125,7 +125,9 @@ contract RewardVault is IERC4626, ERC20 {
     /// @return The amount of assets deposited.
     function deposit(uint256 assets, address receiver) public returns (uint256) {
         if (receiver == address(0)) receiver = msg.sender;
+
         _deposit(msg.sender, receiver, assets, assets);
+
         return assets;
     }
 
@@ -136,7 +138,9 @@ contract RewardVault is IERC4626, ERC20 {
     /// @return The amount of shares minted.
     function mint(uint256 shares, address receiver) public returns (uint256) {
         if (receiver == address(0)) receiver = msg.sender;
+
         _deposit(msg.sender, receiver, shares, shares);
+
         return shares;
     }
 
@@ -255,14 +259,14 @@ contract RewardVault is IERC4626, ERC20 {
     ///      1. Update rewards for the account.
     ///      2. Reset the claimable amount and transfer out the rewards.
     ///      3. Return claimed amounts.
-    function _claim(address account, address[] calldata tokens_, address receiver)
+    function _claim(address accountAddress, address[] calldata tokens_, address receiver)
         internal
         returns (uint256[] memory amounts)
     {
-        if (receiver == address(0)) receiver = account;
+        if (receiver == address(0)) receiver = accountAddress;
 
         // Make sure reward accounting is up to date.
-        _updateReward(account, address(0));
+        _updateReward(accountAddress, address(0));
 
         amounts = new uint256[](tokens_.length);
 
@@ -270,12 +274,13 @@ contract RewardVault is IERC4626, ERC20 {
             address rewardToken = tokens_[i];
             if (!isRewardToken[rewardToken]) revert InvalidRewardToken();
 
-            uint256 accountEarned = earned(account, rewardToken);
+            uint256 accountEarned = earned(accountAddress, rewardToken);
             if (accountEarned == 0) continue;
 
-            // Reset claimable to zero & set rewardPerTokenPaid to current.
-            accountData[account][rewardToken].rewardPerTokenPaidAndClaimableSlot =
-                uint256(uint128(rewardPerToken(rewardToken))) & StorageMasks.ACCOUNT_REWARD_PER_TOKEN;
+            // Reset claimable to zero & set rewardPerTokenPaid to current
+            AccountData storage account = accountData[accountAddress][rewardToken];
+            account.rewardPerTokenPaid = rewardPerToken(rewardToken);
+            account.claimable = 0;
 
             SafeERC20.safeTransfer(IERC20(rewardToken), receiver, accountEarned);
             amounts[i] = accountEarned;
@@ -287,20 +292,23 @@ contract RewardVault is IERC4626, ERC20 {
     /// @param _rewardsToken The address of the reward token to add.
     /// @param _distributor The address authorized to distribute rewards.
     function addRewardToken(address _rewardsToken, address _distributor) external {
+        // check if the caller is allowed to add a reward token
         require(registry().allowed(address(this), msg.sender, msg.sig), "OnlyAllowed");
+
+        // check if the reward token already exists
         if (isRewardToken[_rewardsToken]) revert RewardAlreadyExists();
+
+        // check if the maximum number of reward tokens is exceeded
         if (rewardTokens.length >= MAX_REWARD_TOKEN_COUNT) revert MaxRewardTokensExceeded();
 
+        // add the reward token to the list of reward tokens
         rewardTokens.push(_rewardsToken);
         isRewardToken[_rewardsToken] = true;
 
-        // Set default 7-day duration in bits 160-191.
-        uint256 distributorAndDurationAndLastUpdateAndPeriodFinishSlot = (
-            uint160(_distributor) & StorageMasks.REWARD_DISTRIBUTOR
-        ) | ((uint256(7 days) << 160) & StorageMasks.REWARD_DURATION);
-
-        rewardData[_rewardsToken].distributorAndDurationAndLastUpdateAndPeriodFinishSlot =
-            distributorAndDurationAndLastUpdateAndPeriodFinishSlot;
+        // Set the reward distributor and duration.
+        RewardData storage reward = rewardData[_rewardsToken];
+        reward.rewardsDistributor = _distributor;
+        reward.rewardsDuration = 7 days;
 
         emit RewardTokenAdded(_rewardsToken, _distributor);
     }
@@ -309,43 +317,41 @@ contract RewardVault is IERC4626, ERC20 {
     /// @dev Handles reward rate updates and token transfers.
     /// @param _rewardsToken The reward token being distributed.
     /// @param _amount The amount of rewards to distribute.
-    function depositRewards(address _rewardsToken, uint256 _amount) external {
+    function depositRewards(address _rewardsToken, uint128 _amount) external {
         // Update reward state for all tokens first.
         _updateReward(address(0), address(0));
 
+        // check if the caller is the authorized distributor
         if (getRewardsDistributor(_rewardsToken) != msg.sender) revert UnauthorizedRewardsDistributor();
 
+        // transfer the rewards to the vault
+        // TODO: external calls at the end of the function
         IERC20(_rewardsToken).safeTransferFrom(msg.sender, address(this), _amount);
 
+        // calculate temporal variables
         uint32 currentTime = uint32(block.timestamp);
         uint32 periodFinish = getPeriodFinish(_rewardsToken);
         uint32 rewardsDuration = getRewardsDuration(_rewardsToken);
-        uint256 newRewardRate;
+        uint128 newRewardRate;
 
+        // get the current reward data
+        RewardData storage reward = rewardData[_rewardsToken];
+
+        // calculate the new reward rate based on the current time and the period finish
         if (currentTime >= periodFinish) {
             newRewardRate = _amount / rewardsDuration;
         } else {
-            uint256 remaining = periodFinish - currentTime;
-            uint256 leftover = remaining * getRewardRate(_rewardsToken);
-            newRewardRate = (_amount + leftover) / rewardsDuration;
+            uint32 remainingTime = periodFinish - currentTime;
+            uint128 remainingRewards = remainingTime * reward.rewardRate;
+            newRewardRate = (_amount + remainingRewards) / rewardsDuration;
         }
 
-        if (newRewardRate > type(uint128).max) revert RewardRateOverflow();
-
-        // First storage slot: distributor, duration, lastUpdate, periodFinish
-        uint256 distributorSlot = (
-            rewardData[_rewardsToken].distributorAndDurationAndLastUpdateAndPeriodFinishSlot
-                & StorageMasks.REWARD_DISTRIBUTOR
-        ) | ((uint256(rewardsDuration) << 160) & StorageMasks.REWARD_DURATION)
-            | ((uint256(currentTime) << 192) & StorageMasks.REWARD_LAST_UPDATE)
-            | ((uint256(currentTime + rewardsDuration) << 224) & StorageMasks.REWARD_PERIOD_FINISH);
-
-        // Second storage slot: rewardRate, rewardPerTokenStored
-        uint256 rateSlot = (getRewardPerTokenStored(_rewardsToken) & StorageMasks.REWARD_PER_TOKEN_STORED)
-            | ((uint256(newRewardRate) << 128) & StorageMasks.REWARD_RATE);
-
-        rewardData[_rewardsToken].distributorAndDurationAndLastUpdateAndPeriodFinishSlot = distributorSlot;
-        rewardData[_rewardsToken].rewardRateAndRewardPerTokenStoredSlot = rateSlot;
+        // Update every reward data except the distributor
+        reward.rewardsDuration = rewardsDuration;
+        reward.lastUpdateTime = currentTime;
+        reward.periodFinish = currentTime + rewardsDuration;
+        reward.rewardRate = newRewardRate;
+        reward.rewardPerTokenStored = getRewardPerTokenStored(_rewardsToken);
 
         emit RewardsDeposited(_rewardsToken, _amount, uint128(newRewardRate));
     }
@@ -363,7 +369,7 @@ contract RewardVault is IERC4626, ERC20 {
 
         for (uint256 i; i < len; i++) {
             address token = rewardTokens[i];
-            uint256 newRewardPerToken = _updateRewardToken(token, currentTime);
+            uint128 newRewardPerToken = _updateRewardToken(token, currentTime);
 
             // Update account-specific data if _from is set
             if (_from != address(0)) {
@@ -377,32 +383,23 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @dev Updates reward token state and returns new rewardPerToken.
-    function _updateRewardToken(address token, uint32 currentTime) internal returns (uint256 newRewardPerToken) {
-        PackedReward storage reward = rewardData[token];
+    function _updateRewardToken(address token, uint32 currentTime) internal returns (uint128 newRewardPerToken) {
+        RewardData storage reward = rewardData[token];
 
+        // get the current reward per token
         newRewardPerToken = rewardPerToken(token);
 
-        // Clear old lastUpdate and set new lastUpdate to currentTime
-        uint256 distributorSlot = (
-            reward.distributorAndDurationAndLastUpdateAndPeriodFinishSlot & ~StorageMasks.REWARD_LAST_UPDATE
-        ) | ((uint256(currentTime) << 192) & StorageMasks.REWARD_LAST_UPDATE);
-
-        // Keep existing reward rate; update rewardPerTokenStored
-        uint256 rateSlot = (reward.rewardRateAndRewardPerTokenStoredSlot & StorageMasks.REWARD_RATE)
-            | (uint128(newRewardPerToken) & StorageMasks.REWARD_PER_TOKEN_STORED);
-
-        reward.distributorAndDurationAndLastUpdateAndPeriodFinishSlot = distributorSlot;
-        reward.rewardRateAndRewardPerTokenStoredSlot = rateSlot;
+        // Update the last update time and reward per token stored
+        reward.lastUpdateTime = currentTime;
+        reward.rewardPerTokenStored = newRewardPerToken;
     }
 
     /// @dev Updates account data with new claimable rewards.
-    function _updateAccountData(address account, address token, uint256 newRewardPerToken) internal {
-        uint256 earnedAmount = earned(account, token);
+    function _updateAccountData(address accountAddress, address token, uint128 newRewardPerToken) internal {
+        AccountData storage account = accountData[accountAddress][token];
 
-        // Lower 128 bits: new rewardPerTokenPaid, Upper 128 bits: earned (claimable)
-        accountData[account][token].rewardPerTokenPaidAndClaimableSlot = (
-            uint128(newRewardPerToken) & StorageMasks.ACCOUNT_REWARD_PER_TOKEN
-        ) | ((uint256(uint128(earnedAmount)) << 128) & StorageMasks.ACCOUNT_CLAIMABLE);
+        account.rewardPerTokenPaid = newRewardPerToken;
+        account.claimable = earned(accountAddress, token);
     }
 
     ///////////////////////////////////////////////////////////////
@@ -477,75 +474,70 @@ contract RewardVault is IERC4626, ERC20 {
 
     /// @notice Returns the distributor address for a given reward token.
     function getRewardsDistributor(address token) public view returns (address) {
-        return address(
-            uint160(
-                rewardData[token].distributorAndDurationAndLastUpdateAndPeriodFinishSlot
-                    & StorageMasks.REWARD_DISTRIBUTOR
-            )
-        );
+        return rewardData[token].rewardsDistributor;
     }
 
     /// @notice Returns the duration of the rewards distribution for a given reward token.
     function getRewardsDuration(address token) public view returns (uint32) {
-        return uint32(
-            (rewardData[token].distributorAndDurationAndLastUpdateAndPeriodFinishSlot & StorageMasks.REWARD_DURATION)
-                >> 160
-        );
+        return rewardData[token].rewardsDuration;
     }
 
     /// @notice Returns the last update time for a given reward token.
     function getLastUpdateTime(address token) public view returns (uint32) {
-        return uint32(
-            (rewardData[token].distributorAndDurationAndLastUpdateAndPeriodFinishSlot & StorageMasks.REWARD_LAST_UPDATE)
-                >> 192
-        );
+        return rewardData[token].lastUpdateTime;
     }
 
     /// @notice Returns the period finish time for a given reward token.
     function getPeriodFinish(address token) public view returns (uint32) {
-        return uint32(
-            (
-                rewardData[token].distributorAndDurationAndLastUpdateAndPeriodFinishSlot
-                    & StorageMasks.REWARD_PERIOD_FINISH
-            ) >> 224
-        );
+        return rewardData[token].periodFinish;
     }
 
     /// @notice Returns the reward rate for a given reward token.
     function getRewardRate(address token) public view returns (uint128) {
-        return uint128((rewardData[token].rewardRateAndRewardPerTokenStoredSlot & StorageMasks.REWARD_RATE) >> 128);
+        return rewardData[token].rewardRate;
     }
 
     /// @notice Returns the reward per token stored for a given reward token.
     function getRewardPerTokenStored(address token) public view returns (uint128) {
-        return uint128(rewardData[token].rewardRateAndRewardPerTokenStoredSlot & StorageMasks.REWARD_PER_TOKEN_STORED);
+        return rewardData[token].rewardPerTokenStored;
     }
 
     /// @notice Returns the last time reward applicable for a given reward token.
     function lastTimeRewardApplicable(address token) public view returns (uint256) {
-        return Math.min(block.timestamp, getPeriodFinish(token));
+        return _lastTimeRewardApplicable(getPeriodFinish(token));
+    }
+
+    /// @notice Returns the last time reward applicable for a given period finish.
+    /// @dev This code is expected to live until February 7, 2106, at 06:28:15 UTC
+    function _lastTimeRewardApplicable(uint32 periodFinish) internal view returns (uint32) {
+        return Math.min(block.timestamp, periodFinish).toUint32();
     }
 
     /// @notice Returns the reward per token for a given reward token.
-    function rewardPerToken(address token) public view returns (uint256) {
-        uint256 _totalSupply = totalSupply();
-        if (_totalSupply == 0) {
-            return getRewardPerTokenStored(token);
-        }
-        return getRewardPerTokenStored(token)
-            + ((lastTimeRewardApplicable(token) - getLastUpdateTime(token)) * getRewardRate(token) * 1e18 / _totalSupply);
+    function rewardPerToken(address token) public view returns (uint128) {
+        uint128 _totalSupply = _safeTotalSupply();
+
+        if (_totalSupply == 0) return getRewardPerTokenStored(token);
+
+        // get the current reward data
+        RewardData storage reward = rewardData[token];
+
+        // calculate the reward per token based on the last update time, the ending period, the reward rate and the total supply
+        return reward.rewardPerTokenStored
+            + (
+                (_lastTimeRewardApplicable(reward.periodFinish) - reward.lastUpdateTime) * reward.rewardRate * 1e18
+                    / _totalSupply
+            );
     }
 
-    /// @notice Returns the earned reward for a given account and reward token.
-    function earned(address account, address token) public view returns (uint256) {
-        PackedAccount storage accountDataValue = accountData[account][token];
-        uint256 rewardPerTokenPaid =
-            accountDataValue.rewardPerTokenPaidAndClaimableSlot & StorageMasks.ACCOUNT_REWARD_PER_TOKEN;
-        uint256 claimable =
-            (accountDataValue.rewardPerTokenPaidAndClaimableSlot & StorageMasks.ACCOUNT_CLAIMABLE) >> 128;
+    /// @notice Returns the earned reward for a given account, including the claimable amount.
+    function earned(address accountAddress, address token) public view returns (uint128) {
+        AccountData storage account = accountData[accountAddress][token];
 
-        uint256 newEarned = balanceOf(account) * (rewardPerToken(token) - rewardPerTokenPaid) / 1e18;
-        return claimable + newEarned;
+        // TODO: MULDIV
+        uint128 newEarned =
+            (balanceOf(accountAddress) * (rewardPerToken(token) - account.rewardPerTokenPaid) / 1e18).toUint128();
+        return account.claimable + newEarned;
     }
 
     /// @notice Returns the reward for a given reward token for the duration of the rewards distribution.
@@ -605,8 +597,9 @@ contract RewardVault is IERC4626, ERC20 {
     /// @dev Delegates balance updates to the Accountant, then updates rewards.
     function _update(address from, address to, uint256 amount) internal override {
         // 1. Update Balances via Accountant.
+        // TODO: remove the unsafe cast to uint128 once the implementation is cleaned up.
         accountant().checkpoint(
-            gauge(), from, to, amount, IStrategy.PendingRewards({feeSubjectAmount: 0, totalAmount: 0}), false
+            gauge(), from, to, uint128(amount), IStrategy.PendingRewards({feeSubjectAmount: 0, totalAmount: 0}), false
         );
 
         // 2. Update Reward State.
@@ -620,14 +613,16 @@ contract RewardVault is IERC4626, ERC20 {
     function _mint(address to, uint256 amount, IStrategy.PendingRewards memory pendingRewards, bool harvested)
         internal
     {
-        accountant().checkpoint(gauge(), address(0), to, amount, pendingRewards, harvested);
+        // TODO: remove the unsafe cast to uint128 once the implementation is cleaned up.
+        accountant().checkpoint(gauge(), address(0), to, uint128(amount), pendingRewards, harvested);
     }
 
     /// @dev Burns shares (accountant checkpoint).
     function _burn(address from, uint256 amount, IStrategy.PendingRewards memory pendingRewards, bool harvested)
         internal
     {
-        accountant().checkpoint(gauge(), from, address(0), amount, pendingRewards, harvested);
+        // TODO: remove the unsafe cast to uint128 once the implementation is cleaned up.
+        accountant().checkpoint(gauge(), from, address(0), uint128(amount), pendingRewards, harvested);
     }
 
     /// @notice Returns the name of the vault.
@@ -648,6 +643,10 @@ contract RewardVault is IERC4626, ERC20 {
     /// @notice Returns the total supply of the vault.
     function totalSupply() public view override(ERC20, IERC20) returns (uint256) {
         return accountant().totalSupply(address(this));
+    }
+
+    function _safeTotalSupply() internal view returns (uint128) {
+        return totalSupply().toUint128();
     }
 
     /// @notice Returns the balance of the vault for a given account.

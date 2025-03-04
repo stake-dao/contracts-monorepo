@@ -10,7 +10,6 @@ Accountant__setProtocolFeePercent
 ├── given protocol fee is equal to the old value
 │   └── it stores the new value
 ├── it never updates the harvest fee
-├── it updates the fees slot
 ├── when it emits the event
 │   └── it emits the new protocol fee
 │   └── it emits the old protocol fee
