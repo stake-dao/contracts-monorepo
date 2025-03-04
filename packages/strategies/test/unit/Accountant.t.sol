@@ -136,7 +136,7 @@ contract AccountantTest is BaseTest {
             expectedRewards = uint256(rewards) - uint256(rewards).mulDiv(accountant.getTotalFeePercent(), 1e18);
 
             // Check that vault pending rewards are correctly updated
-            uint256 totalAmount = accountant.getPendingRewards(address(this));
+            uint128 totalAmount = accountant.getPendingRewards(address(this));
             assertEq(totalAmount, rewards);
         } else {
             expectedRewards = 0; // No rewards distributed if below threshold
@@ -169,7 +169,7 @@ contract AccountantTest is BaseTest {
         assertApproxEqRel(accountant.getPendingRewards(address(this), user), newExpectedRewards, 1e15);
 
         // Verify vault's total pending rewards matches the new rewards amount
-        uint256 totalAmount = accountant.getPendingRewards(address(this));
+        uint128 totalAmount = accountant.getPendingRewards(address(this));
         assertEq(totalAmount, rewards);
 
         // Protocol fees should still be 0 since rewards haven't been harvested
