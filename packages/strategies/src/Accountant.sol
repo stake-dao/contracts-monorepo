@@ -211,22 +211,22 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     ///      2. Burning (to = address(0)): Destroys tokens.
     ///      3. Transfers: Updates balances and rewards for both sender and receiver.
     ///      4. Reward Distribution: Processes pending rewards if any exist.
-    /// @param asset The underlying asset address of the vault.
+    /// @param gauge The underlying gauge address of the vault.
     /// @param from The source address (address(0) for minting).
     /// @param to The destination address (address(0) for burning).
     /// @param amount The amount of tokens being transferred/minted/burned.
     /// @param pendingRewards New rewards to be distributed to the vault.
     /// @param harvested Whether these rewards were already harvested by the vault and sent to the contract.
-    /// @custom:throws OnlyVault If caller is not the registered vault for the asset.
+    /// @custom:throws OnlyVault If caller is not the registered vault for the gauge.
     function checkpoint(
-        address asset,
+        address gauge,
         address from,
         address to,
         uint128 amount,
         IStrategy.PendingRewards calldata pendingRewards,
         bool harvested
     ) external nonReentrant {
-        require(PROTOCOL_CONTROLLER.vaults(asset) == msg.sender, OnlyVault());
+        require(PROTOCOL_CONTROLLER.vaults(gauge) == msg.sender, OnlyVault());
 
         VaultData storage _vault = vaults[msg.sender];
         uint128 supply = _vault.supply;

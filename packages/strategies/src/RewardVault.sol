@@ -219,7 +219,7 @@ contract RewardVault is IERC4626, ERC20 {
     function _withdraw(address owner, address receiver, uint256 assets, uint256 shares) internal {
         _updateReward(owner, address(0));
 
-        IAllocator.Allocation memory allocation = allocator().getWithdrawAllocation(gauge(), assets);
+        IAllocator.Allocation memory allocation = allocator().getWithdrawalAllocation(gauge(), assets);
 
         IStrategy.PendingRewards memory pendingRewards = strategy().withdraw(allocation);
 

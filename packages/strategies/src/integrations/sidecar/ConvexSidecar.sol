@@ -34,7 +34,6 @@ contract ConvexSidecar {
     //////////////////////////////////////////////////////
 
     /// @notice Address of the Minimal Proxy Factory.
-    /// @dev The protocol fee value is stored in the factory in order to easily update it for all the pools.
     function factory() public view returns (ISidecarFactory _factory) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         address factoryAddress;
@@ -61,10 +60,10 @@ contract ConvexSidecar {
     }
 
     /// @notice Convex Reward Token address.
-    function secondaryRewardToken() public view returns (IERC20 _fallbackRewardToken) {
+    function secondaryRewardToken() public view returns (IERC20 _secondaryRewardToken) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         assembly {
-            _fallbackRewardToken := mload(add(args, 80))
+            _secondaryRewardToken := mload(add(args, 80))
         }
     }
 
