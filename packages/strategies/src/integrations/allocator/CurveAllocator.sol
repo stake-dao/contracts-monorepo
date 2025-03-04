@@ -16,8 +16,8 @@ contract CurveAllocator is Allocator {
     /// @notice Address of the Curve Boost Delegation V3 contract
     address public immutable BOOST_DELEGATION_V3;
 
-    /// @notice Address of the Convex Voter Proxy contract
-    address public immutable VOTER_PROXY_CONVEX;
+    /// @notice Address of the Convex Boost Holder contract
+    address public immutable CONVEX_BOOST_HOLDER;
 
     /// @notice Address of the Convex Sidecar Factory contract
     ISidecarFactory public immutable CONVEX_SIDECAR_FACTORY;
@@ -35,7 +35,7 @@ contract CurveAllocator is Allocator {
         address _voterProxyConvex,
         address _convexSidecarFactory
     ) Allocator(_locker, _gateway) {
-        VOTER_PROXY_CONVEX = _voterProxyConvex;
+        CONVEX_BOOST_HOLDER = _voterProxyConvex;
         BOOST_DELEGATION_V3 = _boostDelegationV3;
         CONVEX_SIDECAR_FACTORY = ISidecarFactory(_convexSidecarFactory);
     }
@@ -62,13 +62,13 @@ contract CurveAllocator is Allocator {
         uint256[] memory amounts = new uint256[](2);
 
         /// 4. Get the balance of the locker on the liquidity gauge.
-        uint256 gaugeBalance = IBalanceProvider(gauge).balanceOf(address(VOTER_PROXY_CONVEX));
+        uint256 balanceOfLocker = IBalanceProvider(gauge).balanceOf(LOCKER);
 
         /// 5. Get the optimal amount of lps that must be held by the locker.
-        uint256 opt = getOptimalLockerBalance(gauge);
+        uint256 optimalBalanceOfLocker = getOptimalLockerBalance(gauge);
 
         /// 6. Calculate the amount of lps to deposit into the locker.
-        amounts[1] = opt > gaugeBalance ? Math.min(opt - gaugeBalance, amount) : 0;
+        amounts[1] = optimalBalanceOfLocker > balanceOfLocker ? Math.min(optimalBalanceOfLocker - balanceOfLocker, amount) : 0;
 
         /// 7. Calculate the amount of lps to deposit into the sidecar.
         amounts[0] = amount - amounts[1];
@@ -99,27 +99,27 @@ contract CurveAllocator is Allocator {
         uint256[] memory amounts = new uint256[](2);
 
         /// 4. Get the balance of the sidecar and the locker on the liquidity gauge.
-        uint256 balanceSD = IBalanceProvider(gauge).balanceOf(sidecar);
-        uint256 balanceConvex = IBalanceProvider(gauge).balanceOf(LOCKER);
+        uint256 balanceOfSidecar = IBalanceProvider(gauge).balanceOf(sidecar);
+        uint256 balanceOfLocker = IBalanceProvider(gauge).balanceOf(LOCKER);
 
         /// 5. Calculate the optimal amount of lps that must be held by the locker.
-        uint256 optimalSD = getOptimalLockerBalance(gauge);
+        uint256 optimalBalanceOfLocker = getOptimalLockerBalance(gauge);
 
         /// 6. Calculate the total balance of the sidecar and the locker.
-        uint256 totalBalance = balanceSD + balanceConvex;
+        uint256 totalBalance = balanceOfSidecar + balanceOfLocker;
 
         /// 7. Adjust the withdrawal based on the optimal amount for Stake DAO
         if (totalBalance <= amount) {
             /// 7a. If the total balance is less than or equal to the withdrawal amount, withdraw everything
-            amounts[0] = balanceConvex;
-            amounts[1] = balanceSD;
-        } else if (optimalSD >= balanceSD) {
+            amounts[0] = balanceOfSidecar;
+            amounts[1] = balanceOfLocker;
+        } else if (optimalBalanceOfLocker >= balanceOfLocker) {
             /// 7b. If Stake DAO balance is below optimal, prioritize withdrawing from Convex
-            amounts[0] = Math.min(amount, balanceConvex);
+            amounts[0] = Math.min(amount, balanceOfSidecar);
             amounts[1] = amount > amounts[0] ? amount - amounts[0] : 0;
         } else {
             /// 7c. If Stake DAO balance is above optimal, prioritize withdrawing from Stake DAO
-            amounts[1] = Math.min(amount, balanceSD);
+            amounts[1] = Math.min(amount, balanceOfLocker);
             amounts[0] = amount > amounts[1] ? amount - amounts[1] : 0;
         }
 
@@ -127,21 +127,21 @@ contract CurveAllocator is Allocator {
         return Allocation({gauge: gauge, targets: targets, amounts: amounts, harvested: HARVESTED});
     }
 
-    /// @notice Returns the optimal amount of LP token that must be held by Stake DAO Liquidity Locker
+    /// @notice Returns the optimal amount of LP token that must be held by Stake DAO Locker
     /// @dev Calculates the optimal balance based on the ratio of veBoost between Stake DAO and Convex
     /// @param gauge Address of the Curve gauge
-    /// @return balanceSD Optimal amount of LP token that should be held by Stake DAO Liquidity Locker
-    function getOptimalLockerBalance(address gauge) public view returns (uint256 balanceSD) {
+    /// @return balanceOfLocker Optimal amount of LP token that should be held by Stake DAO Locker
+    function getOptimalLockerBalance(address gauge) public view returns (uint256 balanceOfLocker) {
         // 1. Get the balance of veBoost on Stake DAO and Convex
-        uint256 veBoostSD = IBalanceProvider(BOOST_DELEGATION_V3).balanceOf(LOCKER);
-        uint256 veBoostConvex = IBalanceProvider(BOOST_DELEGATION_V3).balanceOf(VOTER_PROXY_CONVEX);
+        uint256 veBoostOfLocker = IBalanceProvider(BOOST_DELEGATION_V3).balanceOf(LOCKER);
+        uint256 veBoostOfConvex = IBalanceProvider(BOOST_DELEGATION_V3).balanceOf(CONVEX_BOOST_HOLDER);
 
         // 2. Get the balance of the liquidity gauge on Convex
-        uint256 balanceOfConvex = IBalanceProvider(gauge).balanceOf(VOTER_PROXY_CONVEX);
+        uint256 balanceOfConvex = IBalanceProvider(gauge).balanceOf(CONVEX_BOOST_HOLDER);
 
         // 3. Compute the optimal balance for Stake DAO
         if (balanceOfConvex != 0) {
-            balanceSD = balanceOfConvex.mulDiv(veBoostSD, veBoostConvex);
+            balanceOfLocker = balanceOfConvex.mulDiv(veBoostOfLocker, veBoostOfConvex);
         }
     }
 }
