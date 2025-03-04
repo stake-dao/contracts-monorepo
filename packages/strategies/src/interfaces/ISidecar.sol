@@ -1,7 +1,6 @@
 /// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-interface IRewardDistributor {
-    function notifyRewardAmount(address _rewardsToken, uint256 reward) external;
-    function updateReward(address account) external;
+interface ISidecar {
+    function balanceOf() external view returns (uint256);
 }

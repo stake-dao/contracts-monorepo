@@ -10,7 +10,8 @@ interface IAllocator {
     }
 
     function getDepositAllocation(address asset, uint256 amount) external view returns (Allocation memory);
-    function getWithdrawAllocation(address asset, uint256 amount) external view returns (Allocation memory);
+    function getWithdrawalAllocation(address asset, uint256 amount) external view returns (Allocation memory);
+    function getRebalancedAllocation(address asset, uint256 amount) external view returns (Allocation memory);
 
-    function getAllocationData(address asset) external view returns (Allocation memory);
+    function getAllocationTargets(address asset) external view returns (address[] memory);
 }
