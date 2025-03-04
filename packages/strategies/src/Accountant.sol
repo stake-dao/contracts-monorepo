@@ -312,6 +312,14 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         _vault.supplyAndIntegralSlot = (supply & StorageMasks.SUPPLY) | ((integral << 128) & StorageMasks.INTEGRAL);
     }
 
+    // REMOVE ME ASAP
+    error OverflowIntegral(
+        uint256 scalingFactor,
+        uint256 overflowedValue,
+        uint128 overflowedValueCastedToUint128Unsafely,
+        uint256 uint128Max
+    );
+
     /// @dev Updates account state during operations.
     /// @param vault The vault address.
     /// @param account The account to update.
@@ -336,6 +344,12 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
         // Update balance
         balance = isDecrease ? balance - amount : balance + amount;
+
+        // REMOVE ME ASAP -- TESTING PURPOSE
+        require(
+            currentIntegral < type(uint128).max,
+            OverflowIntegral(SCALING_FACTOR, currentIntegral, uint128(currentIntegral), type(uint128).max)
+        );
 
         // Pack and store updated values
         _account.balanceAndIntegralSlot =

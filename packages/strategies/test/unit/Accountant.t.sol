@@ -103,6 +103,11 @@ contract AccountantTest is BaseTest {
         assertEq(accountant.totalSupply(address(this)), amount);
     }
 
+    /**
+     * forge-config: default.fuzz.runs = 4096
+     * forge-config: default.fuzz.dictionary_weight = 100
+     * forge-config: default.fuzz.show-logs = true
+     */
     function test_checkpoint_with_pending_rewards(uint128 amount, uint128 rewards) public {
         // Ensure reasonable bounds for testing
         vm.assume(amount >= 1e18 && amount <= 1e24);
