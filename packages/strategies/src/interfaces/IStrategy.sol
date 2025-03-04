@@ -15,6 +15,4 @@ interface IStrategy {
     function withdraw(IAllocator.Allocation calldata allocation)
         external
         returns (PendingRewards memory pendingRewards);
-
-    function pendingRewards(address asset) external view returns (PendingRewards memory pendingRewards);
 }

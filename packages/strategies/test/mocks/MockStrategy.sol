@@ -12,7 +12,7 @@ contract MockStrategy is IStrategy {
         return PendingRewards({feeSubjectAmount: 0, totalAmount: 0});
     }
 
-    function pendingRewards(address) external pure override returns (PendingRewards memory) {
+    function pendingRewards(address) external pure returns (PendingRewards memory) {
         return PendingRewards({feeSubjectAmount: 0, totalAmount: 0});
     }
 }

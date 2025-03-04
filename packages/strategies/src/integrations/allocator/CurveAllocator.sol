@@ -68,7 +68,8 @@ contract CurveAllocator is Allocator {
         uint256 optimalBalanceOfLocker = getOptimalLockerBalance(gauge);
 
         /// 6. Calculate the amount of lps to deposit into the locker.
-        amounts[1] = optimalBalanceOfLocker > balanceOfLocker ? Math.min(optimalBalanceOfLocker - balanceOfLocker, amount) : 0;
+        amounts[1] =
+            optimalBalanceOfLocker > balanceOfLocker ? Math.min(optimalBalanceOfLocker - balanceOfLocker, amount) : 0;
 
         /// 7. Calculate the amount of lps to deposit into the sidecar.
         amounts[0] = amount - amounts[1];
