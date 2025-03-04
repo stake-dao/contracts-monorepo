@@ -123,6 +123,9 @@ importers:
       '@stake-dao/address-book':
         specifier: workspace:*
         version: link:../address-book
+      '@stake-dao/interfaces':
+        specifier: workspace:*
+        version: link:../interfaces
       forge-std:
         specifier: github:foundry-rs/forge-std
         version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/999be66ec94c78090087f674bbf52ce1cca12b75
