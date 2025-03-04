@@ -9,9 +9,9 @@ interface IAllocator {
         uint256[] amounts;
     }
 
-    function getDepositAllocation(address asset, uint256 amount) external view returns (Allocation memory);
-    function getWithdrawalAllocation(address asset, uint256 amount) external view returns (Allocation memory);
-    function getRebalancedAllocation(address asset, uint256 amount) external view returns (Allocation memory);
+    function getDepositAllocation(address gauge, uint256 amount) external view returns (Allocation memory);
+    function getWithdrawalAllocation(address gauge, uint256 amount) external view returns (Allocation memory);
+    function getRebalancedAllocation(address gauge, uint256 amount) external view returns (Allocation memory);
 
-    function getAllocationTargets(address asset) external view returns (address[] memory);
+    function getAllocationTargets(address gauge) external view returns (address[] memory);
 }

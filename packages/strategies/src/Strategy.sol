@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
 import {ISidecar} from "src/interfaces/ISidecar.sol";
+import {IBalanceProvider} from "src/interfaces/IBalanceProvider.sol";
 import {IStrategy, IAllocator} from "src/interfaces/IStrategy.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
@@ -17,8 +15,6 @@ import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 ///      - Tracks and reports pending rewards
 ///      - Provides emergency shutdown functionality
 abstract contract Strategy is IStrategy {
-    using SafeERC20 for IERC20;
-
     //////////////////////////////////////////////////////
     /// --- IMMUTABLES
     //////////////////////////////////////////////////////
@@ -49,8 +45,8 @@ abstract contract Strategy is IStrategy {
     /// @notice Error thrown when the caller is not allowed to perform the action
     error OnlyAllowed();
 
-    /// @notice Error thrown when trying to interact with a shutdown pool
-    error PoolShutdown();
+    /// @notice Error thrown when trying to interact with a shutdown gauge
+    error GaugeShutdown();
 
     //////////////////////////////////////////////////////
     /// --- MODIFIERS
@@ -108,7 +104,7 @@ abstract contract Strategy is IStrategy {
     /// @param allocation The allocation data specifying where and how much to deposit
     /// @return pendingRewards Any pending rewards generated during the deposit
     /// @custom:throws OnlyVault If the caller is not the registered vault for the gauge
-    /// @custom:throws PoolShutdown If the pool is shutdown
+    /// @custom:throws GaugeShutdown If the pool is shutdown
     function deposit(IAllocator.Allocation memory allocation)
         external
         override
@@ -117,7 +113,7 @@ abstract contract Strategy is IStrategy {
     {
         /// If the pool is shutdown, prefer to call shutdown instead.
         /// TODO: Should we call shutdown instead, directly?
-        require(!PROTOCOL_CONTROLLER.isShutdown(allocation.gauge), PoolShutdown());
+        require(!PROTOCOL_CONTROLLER.isShutdown(allocation.gauge), GaugeShutdown());
 
         for (uint256 i = 0; i < allocation.targets.length; i++) {
             if (allocation.amounts[i] > 0) {
@@ -133,7 +129,7 @@ abstract contract Strategy is IStrategy {
     /// @param allocation The allocation data specifying where and how much to withdraw
     /// @return pendingRewards Any pending rewards generated during the withdrawal
     /// @custom:throws OnlyVault If the caller is not the registered vault for the gauge
-    /// @custom:throws PoolShutdown If the pool is shutdown
+    /// @custom:throws GaugeShutdown If the pool is shutdown
     function withdraw(IAllocator.Allocation memory allocation)
         external
         override
@@ -141,7 +137,7 @@ abstract contract Strategy is IStrategy {
         returns (PendingRewards memory pendingRewards)
     {
         /// If the pool is shutdown, prefer to call shutdown instead.
-        require(!PROTOCOL_CONTROLLER.isShutdown(allocation.gauge), PoolShutdown());
+        require(!PROTOCOL_CONTROLLER.isShutdown(allocation.gauge), GaugeShutdown());
 
         for (uint256 i = 0; i < allocation.targets.length; i++) {
             if (allocation.amounts[i] > 0) {
@@ -173,7 +169,7 @@ abstract contract Strategy is IStrategy {
             target = targets[i];
 
             if (target == LOCKER) {
-                balance = IERC20(gauge).balanceOf(LOCKER);
+                balance = IBalanceProvider(gauge).balanceOf(LOCKER);
             } else {
                 balance = ISidecar(target).balanceOf();
             }
