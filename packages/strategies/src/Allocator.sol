@@ -82,7 +82,7 @@ contract Allocator is IAllocator {
     /// gauge The address of the gauge contract (unused in this implementation)
     /// @return An array containing the target addresses
     /// @dev In this base implementation, the only target is the LOCKER
-    function getAllocationTargets(address /*gauge*/) public view virtual returns (address[] memory) {
+    function getAllocationTargets(address /*gauge*/ ) public view virtual returns (address[] memory) {
         address[] memory targets = new address[](1);
         targets[0] = LOCKER;
 
