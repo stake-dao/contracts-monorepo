@@ -71,6 +71,34 @@ abstract contract BaseTest is Test {
     function _boundValidProtocolFee(uint128 newProtocolFee) internal view returns (uint128) {
         return
             uint128(bound(uint256(newProtocolFee), 1, accountant.MAX_FEE_PERCENT() - accountant.getHarvestFeePercent()));
-            
+    }
+
+    /// @notice Utility function to ensure a fuzzed address has not been previously labeled
+    ///         Sometimes it is useful to ask the fuzzer engineer to use an address that is not already
+    ///         flagged as important in our system. This is what this function does.
+    ///         The Foundry function `getLabel` retrieves the label for an address if it was previously
+    ///         labeled. If not, it returns the address prefixed with `unlabeled:`. The function asks the fuzzer
+    ///         to redraw a value until the function getLabel returns a value with the unlabeled prefix.
+    function _assumeUnlabeledAddress(address fuzzedAddress) internal view {
+        vm.assume(bytes10(bytes(vm.getLabel(fuzzedAddress))) == bytes10(bytes("unlabeled:")));
+    }
+
+    /// @notice This modifier can be used to replace the Accountant contract with the AccountantHarness contract.
+    ///         The AccountantHarness contract surcharges the Accountant contract with additional helpers/setters
+    ///         that must only be used for **testing purposes**. It allows testing contract functions in isolation
+    ///         and/or reading internal data not intended to be exposed natively.
+    ///         Only the runtime code stored for the Accountant contract is replaced with AccountantHarness's code.
+    ///         The storage stays the same, every variables stored at Accountant's construction time will be usable
+    ///         by the AccountantHarness implementation.
+    modifier _cheat_replaceAccountantWithAccountantHarness() {
+        deployCodeTo(
+            "out/AccountantHarness.t.sol/AccountantHarness.json",
+            abi.encode(owner, address(registry), address(rewardToken), protocolId),
+            address(accountant)
+        );
+
+        // the code of AccountantHarness is now stored at address(accountant)
+
+        _;
     }
 }
