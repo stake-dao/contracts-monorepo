@@ -11,6 +11,7 @@ interface ISidecar {
     function deposit(uint256 amount) external;
     function withdraw(uint256 amount, address receiver) external;
     function getPendingRewards() external view returns (uint256);
+    function getRewardTokens() external view returns (address[] memory);
 
     function claim() external returns (uint256);
 
