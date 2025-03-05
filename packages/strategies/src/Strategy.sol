@@ -48,8 +48,8 @@ abstract contract Strategy is IStrategy {
     /// @notice Error thrown when trying to interact with a shutdown gauge
     error GaugeShutdown();
 
-    /// @notice Error thrown when rebalance goes wrong
-    error RebalanceGoneWrong();
+    /// @notice Error thrown when rebalance goes wrong or is not implemented
+    error RebalanceGoneWrongOrNotImplemented();
 
     //////////////////////////////////////////////////////
     /// --- MODIFIERS
@@ -194,7 +194,7 @@ abstract contract Strategy is IStrategy {
     /// @notice Rebalances the strategy
     /// @param gauge The gauge to rebalance
     function rebalance(address gauge) external {
-        require(_rebalance(gauge), RebalanceGoneWrong());
+        require(_rebalance(gauge), RebalanceGoneWrongOrNotImplemented());
     }
 
     //////////////////////////////////////////////////////
