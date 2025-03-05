@@ -1,0 +1,2 @@
+Accountant__balanceOf
+└── it returns the correct user balance for specific vault
