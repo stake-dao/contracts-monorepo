@@ -25,6 +25,10 @@ contract AccountantHarness is Accountant, Test {
         return vaults[vault].integral;
     }
 
+    function exposed_integralUser(address vault, address account) external view returns (uint256) {
+        return accounts[vault][account].integral;
+    }
+
     function _cheat_updateVaultData(address vault, VaultData memory data) external {
         vaults[vault] = data;
     }
