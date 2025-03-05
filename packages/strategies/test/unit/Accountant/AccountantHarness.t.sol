@@ -9,11 +9,39 @@ contract AccountantHarness is Accountant, Test {
         Accountant(_owner, _registry, _rewardToken, _protocolId)
     {}
 
-    function exposed_defaultProtocolFee() external pure returns (uint256) {
+    function exposed_defaultProtocolFee() external pure returns (uint128) {
         return DEFAULT_PROTOCOL_FEE;
     }
 
-    function exposed_defaultHarvestFee() external pure returns (uint256) {
+    function exposed_defaultHarvestFee() external pure returns (uint128) {
         return DEFAULT_HARVEST_FEE;
+    }
+
+    function exposed_feeSubjectAmount(address vault) external view returns (uint128) {
+        return vaults[vault].feeSubjectAmount;
+    }
+
+    function exposed_integral(address vault) external view returns (uint256) {
+        return vaults[vault].integral;
+    }
+
+    function _cheat_updateVaultData(address vault, VaultData memory data) external {
+        vaults[vault] = data;
+    }
+
+    function _cheat_updateUserData(address vault, address account, AccountData memory data) external {
+        accounts[vault][account] = data;
+    }
+
+    function _cheat_updateHarvestUrgencyTreshold(uint256 newValue) external {
+        HARVEST_URGENCY_THRESHOLD = newValue;
+    }
+
+    function _cheat_updateFeesParamsProtocolFeePercent(uint128 value) external {
+        feesParams.protocolFeePercent = value;
+    }
+
+    function _cheat_updateFeesParamsHarvestFeePercent(uint128 value) external {
+        feesParams.harvestFeePercent = value;
     }
 }
