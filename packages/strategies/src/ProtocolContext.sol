@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
+import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
 /// @title ProtocolContext
@@ -53,6 +54,30 @@ abstract contract ProtocolContext {
             LOCKER = GATEWAY;
         } else {
             LOCKER = _locker;
+        }
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- INTERNAL FUNCTIONS
+    //////////////////////////////////////////////////////
+
+    /// @notice Executes a transaction through the gateway/module manager
+    /// @dev Handles the common pattern of executing transactions through the gateway/module manager
+    ///      based on whether LOCKER is the same as GATEWAY
+    /// @param target The address of the contract to interact with
+    /// @param data The calldata to send to the target
+    function _executeTransaction(address target, bytes memory data) internal {
+        if (LOCKER == GATEWAY) {
+            // If locker is the gateway, execute directly on the target
+            IModuleManager(GATEWAY).execTransactionFromModule(target, 0, data, IModuleManager.Operation.Call);
+        } else {
+            // Otherwise execute through the locker's execute function
+            IModuleManager(GATEWAY).execTransactionFromModule(
+                LOCKER,
+                0,
+                abi.encodeWithSignature("execute(address,uint256,bytes)", target, 0, data),
+                IModuleManager.Operation.Call
+            );
         }
     }
 }
