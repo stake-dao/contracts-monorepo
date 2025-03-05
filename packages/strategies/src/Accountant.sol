@@ -102,11 +102,11 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
 
     /// @notice Supply of vaults.
     /// @dev Vault address -> VaultData.
-    mapping(address vault => VaultData vaultData) private vaults;
+    mapping(address vault => VaultData vaultData) internal vaults;
 
     /// @notice Balances of accounts per vault.
     /// @dev Vault address -> Account address -> AccountData.
-    mapping(address vault => mapping(address account => AccountData accountData)) private accounts;
+    mapping(address vault => mapping(address account => AccountData accountData)) internal accounts;
 
     //////////////////////////////////////////////////////
     /// --- ERRORS
