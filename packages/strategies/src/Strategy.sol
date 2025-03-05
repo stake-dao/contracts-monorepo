@@ -4,10 +4,9 @@ pragma solidity 0.8.28;
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {ISidecar} from "src/interfaces/ISidecar.sol";
-import {IBalanceProvider} from "src/interfaces/IBalanceProvider.sol";
 import {IStrategy, IAllocator} from "src/interfaces/IStrategy.sol";
-import {IProtocolController} from "src/interfaces/IProtocolController.sol";
-import {ProtocolContext} from "src/ProtocolContext.sol";
+import {IBalanceProvider} from "src/interfaces/IBalanceProvider.sol";
+import {IProtocolController, ProtocolContext} from "src/ProtocolContext.sol";
 
 /// @title Strategy - Abstract Base Strategy Contract
 /// @notice A base contract for implementing protocol-specific strategies
@@ -246,7 +245,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// --- INTERNAL VIRTUAL FUNCTIONS
     //////////////////////////////////////////////////////
 
-    /// @notice Synchronizes the strategy state and collects pending rewards
+    /// @notice Synchronizes state of pending rewards.
     /// @dev Must be implemented by derived strategies to handle protocol-specific reward collection
     /// @param gauge The gauge to synchronize
     /// @return Pending rewards collected during synchronization

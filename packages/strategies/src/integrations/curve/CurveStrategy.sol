@@ -5,7 +5,6 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import "src/Strategy.sol";
 import {IMinter} from "@interfaces/curve/IMinter.sol";
-import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
 import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 
 /// @title CurveStrategy - Curve Protocol Integration Strategy
@@ -81,19 +80,7 @@ contract CurveStrategy is Strategy {
     /// @param amount The amount of tokens to deposit
     function _deposit(address gauge, uint256 amount) internal override {
         bytes memory data = abi.encodeWithSignature("deposit(uint256)", amount);
-
-        if (LOCKER == GATEWAY) {
-            // If locker is the gateway, execute directly on the gauge
-            IModuleManager(GATEWAY).execTransactionFromModule(gauge, 0, data, IModuleManager.Operation.Call);
-        } else {
-            // Otherwise execute through the locker's execute function
-            IModuleManager(GATEWAY).execTransactionFromModule(
-                LOCKER,
-                0,
-                abi.encodeWithSignature("execute(address,uint256,bytes)", gauge, 0, data),
-                IModuleManager.Operation.Call
-            );
-        }
+        _executeTransaction(gauge, data);
     }
 
     /// @notice Withdraws tokens from a Curve gauge
@@ -103,18 +90,6 @@ contract CurveStrategy is Strategy {
     /// @param receiver The address that will receive the withdrawn tokens
     function _withdraw(address gauge, uint256 amount, address receiver) internal override {
         bytes memory data = abi.encodeWithSignature("withdraw(uint256,address)", amount, receiver);
-
-        if (LOCKER == GATEWAY) {
-            // If locker is the gateway, execute directly on the gauge
-            IModuleManager(GATEWAY).execTransactionFromModule(gauge, 0, data, IModuleManager.Operation.Call);
-        } else {
-            // Otherwise execute through the locker's execute function
-            IModuleManager(GATEWAY).execTransactionFromModule(
-                LOCKER,
-                0,
-                abi.encodeWithSignature("execute(address,uint256,bytes)", gauge, 0, data),
-                IModuleManager.Operation.Call
-            );
-        }
+        _executeTransaction(gauge, data);
     }
 }
