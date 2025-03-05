@@ -136,7 +136,7 @@ contract AccountantTest is BaseTest {
             expectedRewards = uint256(rewards) - uint256(rewards).mulDiv(accountant.getTotalFeePercent(), 1e18);
 
             // Check that vault pending rewards are correctly updated
-            uint256 totalAmount = accountant.getPendingRewards(address(this));
+            uint128 totalAmount = accountant.getPendingRewards(address(this));
             assertEq(totalAmount, rewards);
         } else {
             expectedRewards = 0; // No rewards distributed if below threshold
@@ -169,7 +169,7 @@ contract AccountantTest is BaseTest {
         assertApproxEqRel(accountant.getPendingRewards(address(this), user), newExpectedRewards, 1e15);
 
         // Verify vault's total pending rewards matches the new rewards amount
-        uint256 totalAmount = accountant.getPendingRewards(address(this));
+        uint128 totalAmount = accountant.getPendingRewards(address(this));
         assertEq(totalAmount, rewards);
 
         // Protocol fees should still be 0 since rewards haven't been harvested
@@ -310,7 +310,7 @@ contract AccountantTest is BaseTest {
 
         vm.prank(user2);
         vm.expectRevert(Accountant.NoPendingRewards.selector);
-        accountant.claim(vaults, user2, harvestData);
+        accountant.claim(vaults, harvestData, user2);
 
         /// Get the pending rewards from the checkpoint.
         uint256 pendingRewards = accountant.getPendingRewards(address(this), user);
@@ -319,7 +319,7 @@ contract AccountantTest is BaseTest {
         uint256 harvestFee = uint256(rewards).mulDiv(accountant.getCurrentHarvestFee(), 1e18);
 
         vm.prank(user);
-        accountant.claim(vaults, user, harvestData);
+        accountant.claim(vaults, harvestData, user);
 
         // Verify rewards received.
         assertEq(rewardToken.balanceOf(user), pendingRewards + harvestFee);
@@ -329,7 +329,7 @@ contract AccountantTest is BaseTest {
 
         vm.prank(user);
         vm.expectRevert(Accountant.NoPendingRewards.selector);
-        accountant.claim(vaults, user, harvestData);
+        accountant.claim(vaults, harvestData, user);
     }
 
     function test_protocol_fee_management(uint128 amount, uint128 rewards) public {
@@ -385,7 +385,7 @@ contract AccountantTest is BaseTest {
 
         vm.expectRevert(Accountant.OnlyAllowed.selector);
         vm.prank(address(0x1));
-        accountant.claim(vaults, address(this), address(0x1), harvestData);
+        accountant.claim(vaults, address(this), harvestData, address(0x1));
 
         // Test OnlyVault modifier
         vm.expectRevert(Accountant.OnlyVault.selector);

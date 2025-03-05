@@ -5,12 +5,14 @@ import "src/interfaces/IAllocator.sol";
 
 interface IStrategy {
     struct PendingRewards {
-        uint256 feeSubjectAmount;
-        uint256 totalAmount;
+        uint128 feeSubjectAmount;
+        uint128 totalAmount;
     }
 
-    function deposit(IAllocator.Allocation memory allocation) external returns (PendingRewards memory pendingRewards);
-    function withdraw(IAllocator.Allocation memory allocation)
+    function deposit(IAllocator.Allocation calldata allocation)
+        external
+        returns (PendingRewards memory pendingRewards);
+    function withdraw(IAllocator.Allocation calldata allocation)
         external
         returns (PendingRewards memory pendingRewards);
 

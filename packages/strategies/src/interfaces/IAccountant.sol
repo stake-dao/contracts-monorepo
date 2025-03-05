@@ -8,16 +8,20 @@ interface IAccountant {
         address gauge,
         address from,
         address to,
-        uint256 amount,
-        IStrategy.PendingRewards memory pendingRewards,
+        uint128 amount,
+        IStrategy.PendingRewards calldata pendingRewards,
         bool claimed
     ) external;
 
-    function totalSupply(address asset) external view returns (uint256);
-    function balanceOf(address asset, address account) external view returns (uint256);
+    function totalSupply(address asset) external view returns (uint128);
+    function balanceOf(address asset, address account) external view returns (uint128);
 
-    function claim(address[] calldata vaults, address receiver) external;
-    function claim(address[] calldata vaults, address account, address receiver) external;
+    function claim(address[] calldata _vaults, bytes[] calldata harvestData) external;
+    function claim(address[] calldata _vaults, bytes[] calldata harvestData, address receiver) external;
+    function claim(address[] calldata _vaults, address account, bytes[] calldata harvestData) external;
+    function claim(address[] calldata _vaults, address account, bytes[] calldata harvestData, address receiver)
+        external;
+
     function claimProtocolFees() external;
-    function harvest(address vault) external;
+    function harvest(address[] calldata _vaults, bytes[] calldata _harvestData) external;
 }

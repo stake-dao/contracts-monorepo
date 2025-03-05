@@ -3,13 +3,14 @@ pragma solidity 0.8.28;
 
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IHarvester} from "src/interfaces/IHarvester.sol";
-import {StorageMasks} from "src/libraries/StorageMasks.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
+import {IAccountant} from "src/interfaces/IAccountant.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 
@@ -23,8 +24,10 @@ import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step
 ///      - Manages protocol fees and dynamic harvest fees.
 ///      - Handles reward distribution and claiming.
 ///      - Maintains integral calculations for reward accrual.
-contract Accountant is ReentrancyGuardTransient, Ownable2Step {
+contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     using Math for uint256;
+    using Math for uint128;
+    using SafeCast for uint256;
     using Address for address;
     using SafeERC20 for IERC20;
 
@@ -32,41 +35,39 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// --- STORAGE STRUCTURES
     //////////////////////////////////////////////////////
 
-    /// @notice Packed vault data structure into 2 slots for gas optimization and safety.
-    /// @dev supplyAndIntegralSlot: [supply (128) | integral (128)].
-    /// @dev pendingRewards: [fee subject amount (128) | total amount (128)].
-    struct PackedVault {
-        uint256 supplyAndIntegralSlot; // slot1 -> supplyAndIntegralSlot
-        uint256 pendingRewardsSlot; // slot2 -> pendingRewards
+    /// @notice Vault data structure.
+    struct VaultData {
+        uint256 integral;
+        uint128 supply;
+        uint128 feeSubjectAmount;
+        uint128 totalAmount;
     }
 
-    /// @notice Packed account data structure into 2 slots for gas optimization and safety.
-    /// @dev balanceAndIntegralSlot: [balance (128) | integral (128)].
-    /// @dev pendingRewards: direct storage of pending rewards.
-    struct PackedAccount {
-        uint256 balanceAndIntegralSlot; // slot1 -> balanceAndIntegralSlot
-        uint256 pendingRewards; // direct storage of pending rewards
+    /// @notice Account data structure for a specific Vault
+    struct AccountData {
+        uint128 balance;
+        uint256 integral;
+        uint256 pendingRewards;
     }
 
-    /// @notice Packed fees data structure into 1 slot for gas optimization.
-    /// @dev feesSlot: [totalFeePercent (64) | protocolFeePercent (64) | harvestFeePercent (64)].
-    /// @dev All fees are capped at MAX_FEE_PERCENT (0.4e18) which fits in 64 bits.
-    struct PackedFees {
-        uint256 feesSlot;
+    /// @notice Struct that defines the fees parameters.
+    struct FeesParams {
+        uint128 protocolFeePercent;
+        uint128 harvestFeePercent;
     }
 
     //////////////////////////////////////////////////////
     /// --- CONSTANTS & IMMUTABLES
     //////////////////////////////////////////////////////
 
-    /// @notice Scaling factor used for fixed-point arithmetic precision (1e18).
-    uint256 public constant SCALING_FACTOR = 1e27;
+    /// @notice RAY scaling factor used for fixed-point arithmetic precision.
+    uint128 public constant SCALING_FACTOR = 1e27;
 
     /// @notice The maximum fee percent (40%).
-    uint256 public constant MAX_FEE_PERCENT = 0.4e18;
+    uint128 public constant MAX_FEE_PERCENT = 0.4e18;
 
     /// @notice The minimum amount of rewards to be added to the vault.
-    uint256 public constant MIN_MEANINGFUL_REWARDS = 1e18;
+    uint128 public constant MIN_MEANINGFUL_REWARDS = 1e18;
 
     /// @notice The registry of addresses.
     IProtocolController public immutable PROTOCOL_CONTROLLER;
@@ -79,18 +80,18 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
     /// @notice The default protocol fee.
     /// @dev The validity of this value is not checked. It must always be valid
-    uint256 internal constant DEFAULT_PROTOCOL_FEE = 0.15e18;
+    uint128 internal constant DEFAULT_PROTOCOL_FEE = 0.15e18;
 
     /// @notice The default harvest fee.
     /// @dev The validity of this value is not checked. It must always be valid
-    uint256 internal constant DEFAULT_HARVEST_FEE = 0.005e18;
+    uint128 internal constant DEFAULT_HARVEST_FEE = 0.005e18;
 
     //////////////////////////////////////////////////////
     /// --- STATE VARIABLES
     //////////////////////////////////////////////////////
 
-    /// @notice The fees.
-    PackedFees public fees;
+    /// @notice The feesParams struct.
+    FeesParams public feesParams;
 
     /// @notice The balance threshold for harvest fee calculation.
     /// @dev If set to 0, maximum harvest fee always applies.
@@ -100,12 +101,12 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     uint256 public protocolFeesAccrued;
 
     /// @notice Supply of vaults.
-    /// @dev Vault address -> PackedVault.
-    mapping(address vault => PackedVault vaultData) private vaults;
+    /// @dev Vault address -> VaultData.
+    mapping(address vault => VaultData vaultData) private vaults;
 
     /// @notice Balances of accounts per vault.
-    /// @dev Vault address -> Account address -> PackedAccount.
-    mapping(address vault => mapping(address account => PackedAccount accountData)) private accounts;
+    /// @dev Vault address -> Account address -> AccountData.
+    mapping(address vault => mapping(address account => AccountData accountData)) private accounts;
 
     //////////////////////////////////////////////////////
     /// --- ERRORS
@@ -152,13 +153,13 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     event Harvest(address indexed vault, uint256 amount);
 
     /// @notice Emitted when the protocol fee percent is updated.
-    event ProtocolFeePercentSet(uint256 oldProtocolFeePercent, uint256 newProtocolFeePercent);
+    event ProtocolFeePercentSet(uint128 oldProtocolFeePercent, uint128 newProtocolFeePercent);
 
     /// @notice Emitted when the balance threshold is updated.
     event HarvestUrgencyThresholdSet(uint256 oldThreshold, uint256 newThreshold);
 
     /// @notice Emitted when the harvest fee percent is updated.
-    event HarvestFeePercentSet(uint256 oldHarvestFeePercent, uint256 newHarvestFeePercent);
+    event HarvestFeePercentSet(uint128 oldHarvestFeePercent, uint128 newHarvestFeePercent);
 
     //////////////////////////////////////////////////////
     /// --- MODIFIERS
@@ -192,7 +193,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         PROTOCOL_ID = _protocolId;
 
         /// set the initial fees to the default values, and emit the update events
-        fees.feesSlot = _packFeesIntoSlot(DEFAULT_PROTOCOL_FEE, DEFAULT_HARVEST_FEE);
+        feesParams = FeesParams({protocolFeePercent: DEFAULT_PROTOCOL_FEE, harvestFeePercent: DEFAULT_HARVEST_FEE});
         emit HarvestFeePercentSet(0, DEFAULT_HARVEST_FEE);
         emit ProtocolFeePercentSet(0, DEFAULT_PROTOCOL_FEE);
     }
@@ -218,36 +219,28 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         address asset,
         address from,
         address to,
-        uint256 amount,
-        IStrategy.PendingRewards memory pendingRewards,
+        uint128 amount,
+        IStrategy.PendingRewards calldata pendingRewards,
         bool harvested
     ) external nonReentrant {
         require(PROTOCOL_CONTROLLER.vaults(asset) == msg.sender, OnlyVault());
 
-        PackedVault storage _vault = vaults[msg.sender];
-        uint256 vaultSupplyAndIntegral = _vault.supplyAndIntegralSlot;
-        uint256 pendingRewardsSlot = _vault.pendingRewardsSlot;
-
-        uint256 supply = vaultSupplyAndIntegral & StorageMasks.SUPPLY;
-        uint256 integral = (vaultSupplyAndIntegral & StorageMasks.INTEGRAL) >> 128;
+        VaultData storage _vault = vaults[msg.sender];
+        uint128 supply = _vault.supply;
+        uint256 integral = _vault.integral;
 
         // Process any pending rewards if they exist and there is supply
         if (pendingRewards.totalAmount > 0 && supply > 0) {
-            /// Unpack pending rewards.
-            uint256 feeSubjectAmount = pendingRewardsSlot & StorageMasks.PENDING_REWARDS_FEE_SUBJECT;
-            uint256 totalAmount = (pendingRewardsSlot & StorageMasks.PENDING_REWARDS_TOTAL) >> 128;
-
             // Calculate the new rewards to be added to the vault.
+            uint128 newRewards = pendingRewards.totalAmount - _vault.totalAmount;
+            uint128 newFeeSubjectAmount = pendingRewards.feeSubjectAmount - _vault.feeSubjectAmount;
 
-            uint256 newRewards = pendingRewards.totalAmount - totalAmount;
-            uint256 newFeeSubjectAmount = pendingRewards.feeSubjectAmount - feeSubjectAmount;
-
-            uint256 totalFees;
+            uint128 totalFees;
             if (harvested && newRewards > 0) {
                 // Calculate total fees in one operation
                 // We charge only protocol fee on the harvested rewards.
                 if (newFeeSubjectAmount > 0) {
-                    totalFees = newFeeSubjectAmount.mulDiv(getProtocolFeePercent(), 1e18);
+                    totalFees = newFeeSubjectAmount.mulDiv(getProtocolFeePercent(), 1e18).toUint128();
 
                     // Update protocol fees accrued.
                     protocolFeesAccrued += totalFees;
@@ -263,19 +256,18 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
                 // Calculate total fees in one operation
                 // We charge protocol and harvest fees on the unclaimed rewards.
                 if (newFeeSubjectAmount > 0) {
-                    totalFees = newFeeSubjectAmount.mulDiv(getProtocolFeePercent(), 1e18);
+                    totalFees = newFeeSubjectAmount.mulDiv(getProtocolFeePercent(), 1e18).toUint128();
                 }
 
                 // Get harvest fee for the unclaimed rewards.
-                totalFees += newRewards.mulDiv(getHarvestFeePercent(), 1e18);
+                totalFees += newRewards.mulDiv(getHarvestFeePercent(), 1e18).toUint128();
 
                 // Update integral with new rewards per token
                 integral += (newRewards - totalFees).mulDiv(SCALING_FACTOR, supply);
 
-                // Update pending rewards slot.
-                // Properly pack the fee subject amount and total amount according to their bit positions
-                _vault.pendingRewardsSlot = ((pendingRewards.totalAmount << 128) & StorageMasks.PENDING_REWARDS_TOTAL)
-                    | pendingRewards.feeSubjectAmount;
+                // Update the total amount and the fee subject amount of the Vault
+                _vault.totalAmount = pendingRewards.totalAmount;
+                _vault.feeSubjectAmount = pendingRewards.feeSubjectAmount;
             }
         }
 
@@ -308,8 +300,10 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
             });
         }
 
-        // Update vault storage with new supply and integral
-        _vault.supplyAndIntegralSlot = (supply & StorageMasks.SUPPLY) | ((integral << 128) & StorageMasks.INTEGRAL);
+        // Update vault data with new supply and integral
+        // TODO: scale down earlier on (before _updateAccountState)
+        _vault.integral = integral;
+        _vault.supply = supply;
     }
 
     /// @dev Updates account state during operations.
@@ -321,46 +315,39 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     function _updateAccountState(
         address vault,
         address account,
-        uint256 amount,
+        uint128 amount,
         bool isDecrease,
         uint256 currentIntegral
     ) private {
-        PackedAccount storage _account = accounts[vault][account];
-        uint256 accountBalanceAndIntegral = _account.balanceAndIntegralSlot;
-
-        uint256 balance = accountBalanceAndIntegral & StorageMasks.BALANCE;
-        uint256 accountIntegral = (accountBalanceAndIntegral & StorageMasks.ACCOUNT_INTEGRAL) >> 128;
+        AccountData storage accountData = accounts[vault][account];
+        // cache the balance in the stack for gas optimization
+        uint128 accountBalance = accountData.balance;
 
         // Update pending rewards based on the integral difference.
-        _account.pendingRewards += (currentIntegral - accountIntegral).mulDiv(balance, SCALING_FACTOR);
-
-        // Update balance
-        balance = isDecrease ? balance - amount : balance + amount;
-
-        // Pack and store updated values
-        _account.balanceAndIntegralSlot =
-            (balance & StorageMasks.BALANCE) | ((currentIntegral << 128) & StorageMasks.ACCOUNT_INTEGRAL);
+        accountData.pendingRewards += (currentIntegral - accountData.integral).mulDiv(accountBalance, SCALING_FACTOR);
+        accountData.balance = isDecrease ? accountBalance - amount : accountBalance + amount;
+        accountData.integral = currentIntegral;
     }
 
     /// @notice Returns the total supply of tokens in a vault.
     /// @param vault The vault address to query.
-    /// @return The total supply of tokens in the vault.
-    function totalSupply(address vault) external view returns (uint256) {
-        return vaults[vault].supplyAndIntegralSlot & StorageMasks.SUPPLY;
+    /// @return _ The total supply of tokens in the vault.
+    function totalSupply(address vault) external view returns (uint128) {
+        return vaults[vault].supply;
     }
 
     /// @notice Returns the token balance of an account in a vault.
     /// @param vault The vault address to query.
     /// @param account The account address to check.
-    /// @return The account's token balance in the vault.
-    function balanceOf(address vault, address account) external view returns (uint256) {
-        return accounts[vault][account].balanceAndIntegralSlot & StorageMasks.BALANCE;
+    /// @return _ The account's token balance in the vault.
+    function balanceOf(address vault, address account) external view returns (uint128) {
+        return accounts[vault][account].balance;
     }
 
     /// @notice Returns the pending rewards for an account in a vault.
     /// @param vault The vault address to query.
     /// @param account The account address to check.
-    /// @return The pending rewards for the account in the vault.
+    /// @return _ The pending rewards for the account in the vault.
     function getPendingRewards(address vault, address account) external view returns (uint256) {
         return accounts[vault][account].pendingRewards;
     }
@@ -368,8 +355,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @notice Returns the pending rewards for a vault.
     /// @param vault The vault address to query.
     /// @return The pending rewards for the vault.
-    function getPendingRewards(address vault) external view returns (uint256) {
-        return (vaults[vault].pendingRewardsSlot & StorageMasks.PENDING_REWARDS_TOTAL) >> 128;
+    function getPendingRewards(address vault) external view returns (uint128) {
+        return vaults[vault].totalAmount;
     }
 
     //////////////////////////////////////////////////////
@@ -419,7 +406,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     {
         // Fees should be calculated before the harvest.
         uint256 currentHarvestFee = getCurrentHarvestFee();
-        uint256 protocolFeePercent = getProtocolFeePercent();
 
         // Harvest the asset
         (uint256 feeSubjectAmount, uint256 totalAmount) = abi.decode(
@@ -432,18 +418,14 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         );
         if (totalAmount == 0) return 0;
 
-        /// We charge protocol fee on the feeable amount.
-        uint256 protocolFee = feeSubjectAmount.mulDiv(protocolFeePercent, 1e18);
-
-        /// Update protocol fees accrued.
-        protocolFeesAccrued += protocolFee;
+        /// We charge protocol fee on the feeable amount and update the accrued fees.
+        protocolFeesAccrued += feeSubjectAmount.mulDiv(feesParams.protocolFeePercent, 1e18);
 
         /// We charge harvester fee on the total amount.
         harvesterFee = totalAmount.mulDiv(currentHarvestFee, 1e18);
 
-        PackedVault storage _vault = vaults[vault];
-        uint256 pendingRewardsSlot = _vault.pendingRewardsSlot;
-        uint256 pendingRewards = (pendingRewardsSlot & StorageMasks.PENDING_REWARDS_TOTAL) >> 128;
+        VaultData storage _vault = vaults[vault];
+        uint256 pendingRewards = _vault.totalAmount;
 
         /// Refund the excess harvest fee taken at the checkpoint.
         if (pendingRewards > 0 && currentHarvestFee < getHarvestFeePercent()) {
@@ -454,7 +436,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         _updateVaultState({vault: _vault, pendingRewards: pendingRewards, amount: totalAmount});
 
         /// Always clear pending rewards after harvesting.
-        _vault.pendingRewardsSlot = 0;
+        _vault.feeSubjectAmount = 0;
+        _vault.totalAmount = 0;
 
         emit Harvest(vault, totalAmount);
     }
@@ -463,8 +446,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// @param vault The vault address to update.
     /// @param pendingRewards Previous pending rewards to be cleared
     /// @param amount The total reward amount.
-    //// TODO: Should I add netDelta to protocolFeesAccrued for simplicity?
-    function _updateVaultState(PackedVault storage vault, uint256 pendingRewards, uint256 amount) private {
+    function _updateVaultState(VaultData storage vault, uint256 pendingRewards, uint256 amount) private {
         // Early return if no state changes needed
         if (pendingRewards == 0 || amount == pendingRewards) return;
 
@@ -473,59 +455,44 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
         // netDelta = amount - pendingRewards.
         uint256 netDelta = amount - pendingRewards;
 
-        /// Unpack supply and integral.
-        uint256 supply = vault.supplyAndIntegralSlot & StorageMasks.SUPPLY;
-        uint256 integral = (vault.supplyAndIntegralSlot & StorageMasks.INTEGRAL) >> 128;
-
-        // Only update the integral if the net extra rewards are positive.
-        integral += (uint256(netDelta).mulDiv(SCALING_FACTOR, supply));
-
-        /// Update vault storage.
-        vault.supplyAndIntegralSlot = (supply & StorageMasks.SUPPLY) | ((integral << 128) & StorageMasks.INTEGRAL);
+        // Update the integral
+        vault.integral += netDelta.mulDiv(SCALING_FACTOR, vault.supply);
     }
 
     /// @notice Returns the current harvest fee based on contract balance
-    /// @return The current harvest fee percentage
+    /// @return _ The current harvest fee percentage
     function getCurrentHarvestFee() public view returns (uint256) {
         uint256 threshold = HARVEST_URGENCY_THRESHOLD;
+        uint128 currentHarvestFee = feesParams.harvestFeePercent;
 
         // If threshold is 0, always return max harvest fee
-        if (threshold == 0) return getHarvestFeePercent();
+        if (threshold == 0) return currentHarvestFee;
 
         // If threshold is not set, return the current harvest fee based on balance
         uint256 balance = IERC20(REWARD_TOKEN).balanceOf(address(this));
-        return balance >= threshold ? 0 : getHarvestFeePercent() * (threshold - balance) / threshold;
+        return balance >= threshold ? 0 : currentHarvestFee * (threshold - balance) / threshold;
     }
 
     /// @notice Returns the current harvest fee percentage.
     /// @return _ The harvest fee percentage.
-    function getHarvestFeePercent() public view returns (uint256) {
-        return _getHarvestFeePercent(fees.feesSlot);
-    }
-
-    /// @notice Returns the current harvest fee percentage.
-    /// @param feesSlot The packed fees slot.
-    /// @return _ The harvest fee percentage.
-    function _getHarvestFeePercent(uint256 feesSlot) internal pure returns (uint256) {
-        return feesSlot & StorageMasks.HARVEST_FEE;
+    function getHarvestFeePercent() public view returns (uint128) {
+        return feesParams.harvestFeePercent;
     }
 
     /// @notice Updates the harvest fee percentage.
     /// @param newHarvestFeePercent New harvest fee percentage (scaled by 1e18).
     /// @custom:throws FeeExceedsMaximum If fee would exceed maximum.
-    function setHarvestFeePercent(uint256 newHarvestFeePercent) external onlyOwner {
-        // unpack the current stored fees slot
-        uint256 feesSlot = fees.feesSlot;
-        uint256 protocolFeePercent = _getProtocolFeePercent(feesSlot);
-        uint256 oldHarvestFeePercent = _getHarvestFeePercent(feesSlot);
+    function setHarvestFeePercent(uint128 newHarvestFeePercent) external onlyOwner {
+        FeesParams storage currentFees = feesParams;
 
         // check that the new total fee (protocol + harvest) is valid
-        uint256 totalFee = protocolFeePercent + newHarvestFeePercent;
+        uint256 totalFee = currentFees.protocolFeePercent + newHarvestFeePercent;
         require(totalFee <= MAX_FEE_PERCENT, FeeExceedsMaximum());
 
-        // pack the new fees into the slot, store it and emit the update event
-        fees.feesSlot = _packFeesIntoSlot(protocolFeePercent, newHarvestFeePercent);
-        emit HarvestFeePercentSet(oldHarvestFeePercent, newHarvestFeePercent);
+        // set the new protocol fee percent
+        feesParams.harvestFeePercent = newHarvestFeePercent;
+
+        emit HarvestFeePercentSet(currentFees.harvestFeePercent, newHarvestFeePercent);
     }
 
     /// @notice Updates the balance threshold for harvest fee calculation
@@ -541,87 +508,105 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
     /// --- CLAIM OPERATIONS
     //////////////////////////////////////////////////////
 
-    /// @notice Claims rewards from multiple vaults for the caller.
+    /// @notice Claims multiple vault rewards for yourself.
     /// @param _vaults Array of vault addresses to claim rewards from.
-    /// @param receiver Address that will receive the claimed rewards.
     /// @param harvestData Optional harvest data for each vault. Empty bytes for vaults that don't need harvesting.
     /// @custom:throws NoPendingRewards If there are no rewards to claim.
-    function claim(address[] calldata _vaults, address receiver, bytes[] calldata harvestData) external nonReentrant {
-        /// If receiver is not set, use the caller as the receiver.
-        receiver = receiver == address(0) ? msg.sender : receiver;
+    function claim(address[] calldata _vaults, bytes[] calldata harvestData) external nonReentrant {
+        claim(_vaults, harvestData, msg.sender);
+    }
 
+    /// @notice Claims multiple vault rewards for yourself and sends them to a specific address.
+    /// @param _vaults Array of vault addresses to claim rewards from.
+    /// @param harvestData Optional harvest data for each vault. Empty bytes for vaults that don't need harvesting.
+    /// @param receiver Address that will receive the claimed rewards.
+    /// @custom:throws NoPendingRewards If there are no rewards to claim.
+    function claim(address[] calldata _vaults, bytes[] calldata harvestData, address receiver) public nonReentrant {
         require(harvestData.length == 0 || harvestData.length == _vaults.length, InvalidHarvestDataLength());
 
         if (harvestData.length != 0) {
             _batchHarvest({_vaults: _vaults, harvestData: harvestData, receiver: receiver});
         }
 
-        _claim({_vaults: _vaults, account: msg.sender, receiver: receiver});
+        _claim({_vaults: _vaults, accountAddress: msg.sender, receiver: receiver});
     }
 
-    /// @notice Claims rewards on behalf of an account.
+    /// @notice Claims multiple vault rewards on behalf of an account.
     /// @param _vaults Array of vault addresses to claim rewards from.
     /// @param account Address to claim rewards for.
-    /// @param receiver Address that will receive the claimed rewards.
     /// @param harvestData Optional harvest data for each vault. Empty bytes for vaults that don't need harvesting.
+    /// @dev expected to be called by authorized accounts only
     /// @custom:throws OnlyAllowed If caller is not allowed to claim on behalf of others.
     /// @custom:throws NoPendingRewards If there are no rewards to claim.
-    function claim(address[] calldata _vaults, address account, address receiver, bytes[] calldata harvestData)
-        external
+    function claim(address[] calldata _vaults, address account, bytes[] calldata harvestData) external nonReentrant {
+        claim(_vaults, account, harvestData, account);
+    }
+
+    /// @notice Claims multiple vault rewards on behalf of an account and sends them to a specific address.
+    /// @param _vaults Array of vault addresses to claim rewards from.
+    /// @param account Address to claim rewards for.
+    /// @param harvestData Optional harvest data for each vault. Empty bytes for vaults that don't need harvesting.
+    /// @param receiver Address that will receive the claimed rewards.
+    /// @dev expected to be called by authorized accounts only
+    /// @custom:throws OnlyAllowed If caller is not allowed to claim on behalf of others.
+    /// @custom:throws NoPendingRewards If there are no rewards to claim.
+    function claim(address[] calldata _vaults, address account, bytes[] calldata harvestData, address receiver)
+        public
         onlyAllowed
         nonReentrant
     {
-        /// If receiver is not set, use the account as the receiver.
-        receiver = receiver == address(0) ? account : receiver;
-
         require(harvestData.length == 0 || harvestData.length == _vaults.length, InvalidHarvestDataLength());
 
         if (harvestData.length != 0) {
             _batchHarvest({_vaults: _vaults, harvestData: harvestData, receiver: receiver});
         }
-        _claim({_vaults: _vaults, account: account, receiver: receiver});
+
+        _claim({_vaults: _vaults, accountAddress: account, receiver: receiver});
     }
 
     /// @dev Internal implementation of claim functionality.
     /// @param _vaults Array of vault addresses to claim rewards from.
-    /// @param account Address to claim rewards for.
+    /// @param accountAddress Address to claim rewards for.
     /// @param receiver Address that will receive the claimed rewards.
     /// @custom:throws NoPendingRewards If the total claimed amount is zero.
-    function _claim(address[] calldata _vaults, address account, address receiver) internal {
+    function _claim(address[] calldata _vaults, address accountAddress, address receiver) internal {
         uint256 totalAmount;
-        uint256 vaultsLength = _vaults.length;
 
-        // Process each vault
-        for (uint256 i; i < vaultsLength; i++) {
-            PackedVault storage vault = vaults[_vaults[i]];
-            PackedAccount storage userAccount = accounts[_vaults[i]][account];
+        // For each vault, check if the account has any rewards to claim
+        for (uint256 i; i < _vaults.length; i++) {
+            // Get the account data for this vault
+            AccountData storage account = accounts[_vaults[i]][accountAddress];
 
-            // Load all storage values at once
-            uint256 accountData = userAccount.balanceAndIntegralSlot;
-            uint256 balance = accountData & StorageMasks.BALANCE;
+            // Get the current balance for this vault
+            uint128 balance = account.balance;
 
-            // Skip if user has no balance and no pending rewards
-            if (balance != 0 || userAccount.pendingRewards != 0) {
-                uint256 vaultData = vault.supplyAndIntegralSlot;
-                uint256 accountIntegral = (accountData & StorageMasks.ACCOUNT_INTEGRAL) >> 128;
-                uint256 vaultIntegral = (vaultData & StorageMasks.INTEGRAL) >> 128;
+            // If account has any rewards to claim for this vault, calculate the amount. Otherwise, skip.
+            if (balance != 0 || account.pendingRewards != 0) {
+                // Get vault's and account's integral
+                uint256 accountIntegral = account.integral;
+                uint256 vaultIntegral = vaults[_vaults[i]].integral;
 
-                // Calculate new rewards if integral has increased
+                // If vault's integral is higher than account's integral, calculate the rewards and update the total.
+                // TODO: muldiv
                 if (vaultIntegral > accountIntegral) {
                     totalAmount += (vaultIntegral - accountIntegral) * balance / SCALING_FACTOR;
                 }
-                // Add any pending rewards
-                totalAmount += userAccount.pendingRewards;
 
-                // Update account storage with new integral and reset pending rewards
-                userAccount.balanceAndIntegralSlot =
-                    (balance & StorageMasks.BALANCE) | ((vaultIntegral << 128) & StorageMasks.ACCOUNT_INTEGRAL);
-                userAccount.pendingRewards = 0;
+                // In any case, add the pending rewards to the total amount
+                totalAmount += account.pendingRewards;
+
+                // Update account's integral with the current value of Vault's integral
+                account.integral = vaultIntegral;
+
+                // reset the stored pending rewards for this vault
+                account.pendingRewards = 0;
             }
         }
 
+        // If there is no amount to claim for any vault, revert.
         require(totalAmount != 0, NoPendingRewards());
-        // Transfer accumulated rewards to receiver
+
+        // Transfer accumulated rewards to the receiver
         IERC20(REWARD_TOKEN).safeTransfer(receiver, totalAmount);
     }
 
@@ -631,36 +616,28 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
     /// @notice Returns the current protocol fee percentage.
     /// @return _ The protocol fee percentage.
-    function getProtocolFeePercent() public view returns (uint256) {
-        return _getProtocolFeePercent(fees.feesSlot);
-    }
-
-    /// @notice Returns the current protocol fee percentage.
-    /// @param feesSlot The packed fees slot.
-    /// @return _ The protocol fee percentage.
-    function _getProtocolFeePercent(uint256 feesSlot) internal pure returns (uint256) {
-        return (feesSlot & StorageMasks.PROTOCOL_FEE) >> 64;
+    function getProtocolFeePercent() public view returns (uint128) {
+        return feesParams.protocolFeePercent;
     }
 
     /// @notice Updates the protocol fee percentage.
     /// @param newProtocolFeePercent New protocol fee percentage (scaled by 1e18).
     /// @custom:throws FeeExceedsMaximum If fee would exceed maximum.
-    function setProtocolFeePercent(uint256 newProtocolFeePercent) external onlyOwner {
+    function setProtocolFeePercent(uint128 newProtocolFeePercent) external onlyOwner {
         // check that the provided protocol fee is valid
         require(newProtocolFeePercent <= MAX_FEE_PERCENT, FeeExceedsMaximum());
 
+        FeesParams storage currentFees = feesParams;
+
         // check that the total fee (protocol + harvest) is valid
-        uint256 feeSlot = fees.feesSlot;
-        uint256 harvestFeePercent = _getHarvestFeePercent(feeSlot);
-        uint256 oldProtocolFeePercent = _getProtocolFeePercent(feeSlot);
-        uint256 totalFee = newProtocolFeePercent + harvestFeePercent;
+        uint128 totalFee = newProtocolFeePercent + currentFees.harvestFeePercent;
         require(totalFee <= MAX_FEE_PERCENT, FeeExceedsMaximum());
 
-        // pack the new fees into the slot and store it
-        fees.feesSlot = _packFeesIntoSlot(newProtocolFeePercent, harvestFeePercent);
-
         // emit the update event
-        emit ProtocolFeePercentSet(oldProtocolFeePercent, newProtocolFeePercent);
+        emit ProtocolFeePercentSet(currentFees.protocolFeePercent, newProtocolFeePercent);
+
+        // set the new protocol fee percent
+        currentFees.protocolFeePercent = newProtocolFeePercent;
     }
 
     /// @notice Claims accumulated protocol fees.
@@ -682,15 +659,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step {
 
     /// @notice Returns the total fee percentage (protocol + harvest).
     /// @return _ The total fee percentage.
-    function getTotalFeePercent() public view returns (uint256) {
-        return (fees.feesSlot & StorageMasks.TOTAL_FEE) >> 128;
-    }
-
-    /// @notice Packs protocol and harvest fees into a single storage slot.
-    /// @param _protocolFee The protocol fee.
-    /// @param _harvestFee The harvest fee.
-    /// @return The packed fees slot containing total, protocol, and harvest fees.
-    function _packFeesIntoSlot(uint256 _protocolFee, uint256 _harvestFee) internal pure returns (uint256) {
-        return ((_protocolFee + _harvestFee) << 128) | (_protocolFee << 64) | _harvestFee;
+    function getTotalFeePercent() external view returns (uint128) {
+        return feesParams.protocolFeePercent + feesParams.harvestFeePercent;
     }
 }

@@ -12,7 +12,7 @@ Accountant__Constructor
 │   └── it should revert
 ├── given reward token is not 0
 │   ├── it initializes the reward token
-├── it initializes the fees slot
+├── it initializes the fees params
 ├── it sets protocol fee to default value
 ├── it sets harvest fee to default value
 ├── it emits the ProtocolFeePercentSet event

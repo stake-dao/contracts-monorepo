@@ -62,12 +62,13 @@ contract Accountant__Constructor is Test {
         assertEq(accountant.REWARD_TOKEN(), rewardToken);
     }
 
-    function test_InitializesTheFeesSlot() external {
+    function test_InitializesTheFeesParams() external {
         // it initializes the fees slot
 
         Accountant accountant =
             new Accountant(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"), bytes4(hex"11"));
-        assertNotEq(accountant.fees(), 0);
+        assertNotEq(accountant.getProtocolFeePercent(), 0);
+        assertNotEq(accountant.getHarvestFeePercent(), 0);
     }
 
     function test_SetsProtocolFeeToDefaultValue() external {
@@ -133,11 +134,11 @@ contract AccountantHarness is Accountant {
         Accountant(owner, registry, rewardToken, bytes4(hex"11"))
     {}
 
-    function exposed_defaultProtocolFee() external pure returns (uint256) {
+    function exposed_defaultProtocolFee() external pure returns (uint128) {
         return DEFAULT_PROTOCOL_FEE;
     }
 
-    function exposed_defaultHarvestFee() external pure returns (uint256) {
+    function exposed_defaultHarvestFee() external pure returns (uint128) {
         return DEFAULT_HARVEST_FEE;
     }
 }
