@@ -241,7 +241,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
                 // We charge only protocol fee on the harvested rewards.
                 if (newFeeSubjectAmount > 0) {
                     totalFees = newFeeSubjectAmount.mulDiv(getProtocolFeePercent(), 1e18).toUint128();
-
                     // Update protocol fees accrued.
                     protocolFeesAccrued += totalFees;
                 }
@@ -281,8 +280,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
                 vault: msg.sender,
                 account: from,
                 amount: amount,
-                isDecrease: true,
-                currentIntegral: integral
+                currentIntegral: integral,
+                isDecrease: true
             });
         }
 
@@ -295,8 +294,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
                 vault: msg.sender,
                 account: to,
                 amount: amount,
-                isDecrease: false,
-                currentIntegral: integral
+                currentIntegral: integral,
+                isDecrease: false
             });
         }
 
@@ -323,7 +322,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         uint128 accountBalance = accountData.balance;
 
         // Update pending rewards based on the integral difference.
-        accountData.pendingRewards += (currentIntegral - accountData.integral).mulDiv(accountBalance, SCALING_FACTOR);
+        accountData.pendingRewards +=
+            (currentIntegral - accountData.integral).mulDiv(uint256(accountBalance), SCALING_FACTOR);
         accountData.balance = isDecrease ? accountBalance - amount : accountBalance + amount;
         accountData.integral = currentIntegral;
     }
