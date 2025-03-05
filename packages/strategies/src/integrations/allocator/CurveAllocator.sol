@@ -140,9 +140,12 @@ contract CurveAllocator is Allocator {
         // 2. Get the balance of the liquidity gauge on Convex
         uint256 balanceOfConvex = IBalanceProvider(gauge).balanceOf(CONVEX_BOOST_HOLDER);
 
-        // 3. Compute the optimal balance for Stake DAO
-        if (balanceOfConvex != 0) {
-            balanceOfLocker = balanceOfConvex.mulDiv(veBoostOfLocker, veBoostOfConvex);
+        // 3. If there is no balance of Convex, return 0
+        if (balanceOfConvex == 0) {
+            return 0;
         }
+
+        // 4. Compute the optimal balance for Stake DAO
+        balanceOfLocker = balanceOfConvex.mulDiv(veBoostOfLocker, veBoostOfConvex);
     }
 }

@@ -215,4 +215,18 @@ abstract contract Strategy is IStrategy {
     /// @param amount The amount to withdraw
     /// @param receiver The address to receive the withdrawn assets
     function _withdraw(address gauge, uint256 amount, address receiver) internal virtual {}
+
+    /// @notice Returns the balance of the strategy
+    /// @param gauge The gauge to get the balance of
+    /// @return balance The balance of the strategy
+    function balanceOf(address gauge) internal view virtual returns (uint256 balance) {
+        balance = IBalanceProvider(gauge).balanceOf(LOCKER);
+
+        address allocator = PROTOCOL_CONTROLLER.allocator(PROTOCOL_ID);
+        address[] memory targets = IAllocator(allocator).getAllocationTargets(gauge);
+
+        for (uint256 i = 0; i < targets.length; i++) {
+            balance += ISidecar(targets[i]).balanceOf();
+        }
+    }
 }
