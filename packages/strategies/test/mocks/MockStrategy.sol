@@ -15,4 +15,8 @@ contract MockStrategy is IStrategy {
     function pendingRewards(address) external pure returns (PendingRewards memory) {
         return PendingRewards({feeSubjectAmount: 0, totalAmount: 0});
     }
+
+    function balanceOf(address) external pure returns (uint256) {
+        return 0;
+    }
 }

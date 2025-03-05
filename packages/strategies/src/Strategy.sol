@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import {ISidecar} from "src/interfaces/ISidecar.sol";
 import {IBalanceProvider} from "src/interfaces/IBalanceProvider.sol";
 import {IStrategy, IAllocator} from "src/interfaces/IStrategy.sol";
@@ -15,6 +17,8 @@ import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 ///      - Tracks and reports pending rewards
 ///      - Provides emergency shutdown functionality
 abstract contract Strategy is IStrategy {
+    using SafeERC20 for IERC20;
+
     //////////////////////////////////////////////////////
     /// --- IMMUTABLES
     //////////////////////////////////////////////////////
@@ -47,6 +51,9 @@ abstract contract Strategy is IStrategy {
 
     /// @notice Error thrown when trying to interact with a shutdown gauge
     error GaugeShutdown();
+
+    /// @notice Error thrown when rebalance is not needed
+    error RebalanceNotNeeded();
 
     /// @notice Error thrown when rebalance goes wrong or is not implemented
     error RebalanceGoneWrongOrNotImplemented();
@@ -194,7 +201,64 @@ abstract contract Strategy is IStrategy {
     /// @notice Rebalances the strategy
     /// @param gauge The gauge to rebalance
     function rebalance(address gauge) external {
-        require(_rebalance(gauge), RebalanceGoneWrongOrNotImplemented());
+        /// 1. Get the allocator.
+        address allocator = PROTOCOL_CONTROLLER.allocator(PROTOCOL_ID);
+
+        /// 2. Get the asset.
+        IERC20 asset = IERC20(PROTOCOL_CONTROLLER.asset(gauge));
+
+        /// 3. Snapshot the current balance.
+        uint256 currentBalance = balanceOf(gauge);
+
+        /// 4. Get the allocation amounts for the gauge.
+        IAllocator.Allocation memory allocation = IAllocator(allocator).getDepositAllocation(gauge, currentBalance);
+
+        /// 5. Ensure the allocation has more than one target.
+        require(allocation.targets.length > 1, RebalanceNotNeeded());
+
+        /// 6. Withdraw the amounts from the gauge.
+        address target;
+        uint256 balance;
+        for (uint256 i = 0; i < allocation.targets.length; i++) {
+            target = allocation.targets[i];
+
+            if (target == LOCKER) {
+                balance = IBalanceProvider(gauge).balanceOf(LOCKER);
+                _withdraw(gauge, balance, address(this));
+            } else {
+                balance = ISidecar(target).balanceOf();
+                ISidecar(target).withdraw(balance, address(this));
+            }
+        }
+
+        /// 7. Deposit the amounts into the gauge with new allocations
+        for (uint256 i = 0; i < allocation.targets.length; i++) {
+            target = allocation.targets[i];
+            asset.safeTransfer(target, allocation.amounts[i]);
+
+            if (target == LOCKER) {
+                _deposit(gauge, allocation.amounts[i]);
+            } else {
+                ISidecar(target).deposit(allocation.amounts[i]);
+            }
+        }
+
+        /// 8. Return true if the balance is the same as the current balance, meaning the rebalance was successful.
+        require(currentBalance == balanceOf(gauge), RebalanceGoneWrongOrNotImplemented());
+    }
+
+    /// @notice Returns the balance of the strategy
+    /// @param gauge The gauge to get the balance of
+    /// @return balance The balance of the strategy
+    function balanceOf(address gauge) public view virtual returns (uint256 balance) {
+        balance = IBalanceProvider(gauge).balanceOf(LOCKER);
+
+        address allocator = PROTOCOL_CONTROLLER.allocator(PROTOCOL_ID);
+        address[] memory targets = IAllocator(allocator).getAllocationTargets(gauge);
+
+        for (uint256 i = 0; i < targets.length; i++) {
+            balance += ISidecar(targets[i]).balanceOf();
+        }
     }
 
     //////////////////////////////////////////////////////
@@ -206,12 +270,6 @@ abstract contract Strategy is IStrategy {
     /// @param gauge The gauge to synchronize
     /// @return Pending rewards collected during synchronization
     function _sync(address gauge) internal virtual returns (PendingRewards memory);
-
-    /// @notice Rebalances the strategy
-    /// @dev Must be implemented by derived strategies to handle protocol-specific rebalancing
-    /// @param gauge The gauge to rebalance
-    /// @return True if rebalance was successful, false otherwise
-    function _rebalance(address gauge) internal virtual returns (bool);
 
     /// @notice Deposits assets into a specific target
     /// @dev Must be implemented by derived strategies to handle protocol-specific deposits
@@ -225,18 +283,4 @@ abstract contract Strategy is IStrategy {
     /// @param amount The amount to withdraw
     /// @param receiver The address to receive the withdrawn assets
     function _withdraw(address gauge, uint256 amount, address receiver) internal virtual {}
-
-    /// @notice Returns the balance of the strategy
-    /// @param gauge The gauge to get the balance of
-    /// @return balance The balance of the strategy
-    function balanceOf(address gauge) internal view virtual returns (uint256 balance) {
-        balance = IBalanceProvider(gauge).balanceOf(LOCKER);
-
-        address allocator = PROTOCOL_CONTROLLER.allocator(PROTOCOL_ID);
-        address[] memory targets = IAllocator(allocator).getAllocationTargets(gauge);
-
-        for (uint256 i = 0; i < targets.length; i++) {
-            balance += ISidecar(targets[i]).balanceOf();
-        }
-    }
 }
