@@ -15,4 +15,6 @@ interface IStrategy {
     function withdraw(IAllocator.Allocation calldata allocation)
         external
         returns (PendingRewards memory pendingRewards);
+
+    function balanceOf(address gauge) external view returns (uint256 balance);
 }

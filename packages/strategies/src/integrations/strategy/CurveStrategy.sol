@@ -2,7 +2,6 @@
 pragma solidity 0.8.28;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import "src/Strategy.sol";
 import {IMinter} from "@interfaces/curve/IMinter.sol";
@@ -18,7 +17,6 @@ import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 ///      - Executes transactions through a gateway/module manager pattern
 contract CurveStrategy is Strategy {
     using SafeCast for uint256;
-    using SafeERC20 for IERC20;
 
     //////////////////////////////////////////////////////
     /// --- CONSTANTS & IMMUTABLES
@@ -119,51 +117,5 @@ contract CurveStrategy is Strategy {
                 IModuleManager.Operation.Call
             );
         }
-    }
-
-    /// @notice Rebalances assets in a Curve gauge
-    /// @param gauge The address of the Curve gauge to rebalance
-    function _rebalance(address gauge) internal override returns (bool) {
-        /// 1. Get the allocator.
-        address allocator = PROTOCOL_CONTROLLER.allocator(PROTOCOL_ID);
-
-        /// 2. Get the asset.
-        IERC20 asset = IERC20(PROTOCOL_CONTROLLER.asset(gauge));
-
-        /// 3. Snapshot the current balance.
-        uint256 currentBalance = balanceOf(gauge);
-
-        /// 4. Get the allocation amounts for the gauge.
-        IAllocator.Allocation memory allocation = IAllocator(allocator).getDepositAllocation(gauge, currentBalance);
-
-        /// 5. Withdraw the amounts from the gauge.
-        address target;
-        uint256 balance;
-        for (uint256 i = 0; i < allocation.targets.length; i++) {
-            target = allocation.targets[i];
-
-            if (target == LOCKER) {
-                balance = IBalanceProvider(gauge).balanceOf(LOCKER);
-                _withdraw(gauge, balance, address(this));
-            } else {
-                balance = ISidecar(target).balanceOf();
-                ISidecar(target).withdraw(balance, address(this));
-            }
-        }
-
-        /// 6. Deposit the amounts into the gauge with new allocations
-        for (uint256 i = 0; i < allocation.targets.length; i++) {
-            target = allocation.targets[i];
-            asset.safeTransfer(target, allocation.amounts[i]);
-
-            if (target == LOCKER) {
-                _deposit(gauge, allocation.amounts[i]);
-            } else {
-                ISidecar(target).deposit(allocation.amounts[i]);
-            }
-        }
-
-        /// 7. Return true if the balance is the same as the current balance, meaning the rebalance was successful.
-        return currentBalance == balanceOf(gauge);
     }
 }
