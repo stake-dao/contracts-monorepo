@@ -1,0 +1,5 @@
+Accountant__getCurrentHarvestFee
+├── it returns the harvest fee percent when the threshold is 0
+├── it returns 0 when the ERC20 balance is higher than the treshold
+├── it calculates the current harvest fee when the ERC20 balance is lower than the treshold
+└── it revert when the ERC20 contract reverts
