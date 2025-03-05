@@ -5,7 +5,9 @@ import {Accountant} from "src/Accountant.sol";
 
 // Exposes the useful internal functions of the Accountant contract for testing purposes
 contract AccountantHarness is Accountant, Test {
-    constructor() Accountant(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"), bytes4(hex"11")) {}
+    constructor(address _owner, address _registry, address _rewardToken, bytes4 _protocolId)
+        Accountant(_owner, _registry, _rewardToken, _protocolId)
+    {}
 
     function exposed_defaultProtocolFee() external pure returns (uint256) {
         return DEFAULT_PROTOCOL_FEE;
