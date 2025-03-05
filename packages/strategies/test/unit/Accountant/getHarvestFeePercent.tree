@@ -1,0 +1,3 @@
+Accountant__getHarvestFeePercent
+├── it returns the correct value
+└── it reads the storage
