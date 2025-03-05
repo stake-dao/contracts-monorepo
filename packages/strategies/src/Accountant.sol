@@ -301,7 +301,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         }
 
         // Update vault data with new supply and integral
-        // TODO: scale down earlier on (before _updateAccountState)
         _vault.integral = integral;
         _vault.supply = supply;
     }
@@ -418,24 +417,25 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         );
         if (totalAmount == 0) return 0;
 
-        /// We charge protocol fee on the feeable amount and update the accrued fees.
+        // We charge protocol fee on the feeable amount and update the accrued fees.
         protocolFeesAccrued += feeSubjectAmount.mulDiv(feesParams.protocolFeePercent, 1e18);
 
-        /// We charge harvester fee on the total amount.
+        // We charge harvester fee on the total amount.
         harvesterFee = totalAmount.mulDiv(currentHarvestFee, 1e18);
 
         VaultData storage _vault = vaults[vault];
         uint256 pendingRewards = _vault.totalAmount;
 
-        /// Refund the excess harvest fee taken at the checkpoint.
-        if (pendingRewards > 0 && currentHarvestFee < getHarvestFeePercent()) {
-            totalAmount += pendingRewards.mulDiv(getHarvestFeePercent() - currentHarvestFee, 1e18);
+        // Refund the excess harvest fee taken at the checkpoint.
+        uint128 currentHarvestFeePercent = feesParams.harvestFeePercent;
+        if (pendingRewards > 0 && currentHarvestFee < currentHarvestFeePercent) {
+            totalAmount += pendingRewards.mulDiv(currentHarvestFeePercent - currentHarvestFee, 1e18);
         }
 
         // Update vault state
         _updateVaultState({vault: _vault, pendingRewards: pendingRewards, amount: totalAmount});
 
-        /// Always clear pending rewards after harvesting.
+        // Always clear pending rewards after harvesting.
         _vault.feeSubjectAmount = 0;
         _vault.totalAmount = 0;
 
@@ -462,15 +462,15 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @notice Returns the current harvest fee based on contract balance
     /// @return _ The current harvest fee percentage
     function getCurrentHarvestFee() public view returns (uint256) {
-        uint256 threshold = HARVEST_URGENCY_THRESHOLD;
-        uint128 currentHarvestFee = feesParams.harvestFeePercent;
+        uint256 harvestTreshold = HARVEST_URGENCY_THRESHOLD;
+        uint128 currentHarvestFeePercent = feesParams.harvestFeePercent;
 
         // If threshold is 0, always return max harvest fee
-        if (threshold == 0) return currentHarvestFee;
+        if (harvestTreshold == 0) return currentHarvestFeePercent;
 
         // If threshold is not set, return the current harvest fee based on balance
         uint256 balance = IERC20(REWARD_TOKEN).balanceOf(address(this));
-        return balance >= threshold ? 0 : currentHarvestFee * (threshold - balance) / threshold;
+        return balance >= harvestTreshold ? 0 : currentHarvestFeePercent * (harvestTreshold - balance) / harvestTreshold;
     }
 
     /// @notice Returns the current harvest fee percentage.
@@ -486,22 +486,23 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         FeesParams storage currentFees = feesParams;
 
         // check that the new total fee (protocol + harvest) is valid
-        uint256 totalFee = currentFees.protocolFeePercent + newHarvestFeePercent;
+        uint256 totalFee = uint256(currentFees.protocolFeePercent) + uint256(newHarvestFeePercent);
         require(totalFee <= MAX_FEE_PERCENT, FeeExceedsMaximum());
+
+        // emit the harvest event before updating the storage pointer
+        emit HarvestFeePercentSet(currentFees.harvestFeePercent, newHarvestFeePercent);
 
         // set the new protocol fee percent
         feesParams.harvestFeePercent = newHarvestFeePercent;
-
-        emit HarvestFeePercentSet(currentFees.harvestFeePercent, newHarvestFeePercent);
     }
 
     /// @notice Updates the balance threshold for harvest fee calculation
     /// @param _threshold New balance threshold. Set to 0 to always apply maximum harvest fee.
     function setHarvestUrgencyThreshold(uint256 _threshold) external onlyOwner {
-        HARVEST_URGENCY_THRESHOLD = _threshold;
-
-        // emit the update event
+        // emit the update event before updating the stored value
         emit HarvestUrgencyThresholdSet(HARVEST_URGENCY_THRESHOLD, _threshold);
+
+        HARVEST_URGENCY_THRESHOLD = _threshold;
     }
 
     //////////////////////////////////////////////////////
