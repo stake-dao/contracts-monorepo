@@ -7,6 +7,7 @@ import {ISidecar} from "src/interfaces/ISidecar.sol";
 import {IBalanceProvider} from "src/interfaces/IBalanceProvider.sol";
 import {IStrategy, IAllocator} from "src/interfaces/IStrategy.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
+import {ProtocolContext} from "src/ProtocolContext.sol";
 
 /// @title Strategy - Abstract Base Strategy Contract
 /// @notice A base contract for implementing protocol-specific strategies
@@ -16,28 +17,16 @@ import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 ///      - Manages gauge allocations across different targets
 ///      - Tracks and reports pending rewards
 ///      - Provides emergency shutdown functionality
-abstract contract Strategy is IStrategy {
+abstract contract Strategy is IStrategy, ProtocolContext {
     using SafeERC20 for IERC20;
 
     //////////////////////////////////////////////////////
     /// --- IMMUTABLES
     //////////////////////////////////////////////////////
 
-    /// @notice The protocol identifier
-    bytes4 public immutable PROTOCOL_ID;
-
     /// @notice The accountant contract address
     /// @dev Responsible for tracking rewards and fees
     address public immutable ACCOUNTANT;
-
-    /// @notice The locker contract address
-    address public immutable LOCKER;
-
-    /// @notice The gateway contract address
-    address public immutable GATEWAY;
-
-    /// @notice The protocol controller contract
-    IProtocolController public immutable PROTOCOL_CONTROLLER;
 
     //////////////////////////////////////////////////////
     /// --- ERRORS
@@ -91,18 +80,10 @@ abstract contract Strategy is IStrategy {
     /// @param _accountant The address of the accountant contract
     /// @param _locker The address of the locker contract
     /// @param _gateway The address of the gateway contract
-    constructor(address _registry, bytes4 _protocolId, address _accountant, address _locker, address _gateway) {
-        GATEWAY = _gateway;
+    constructor(address _registry, bytes4 _protocolId, address _accountant, address _locker, address _gateway)
+        ProtocolContext(_protocolId, _registry, _locker, _gateway)
+    {
         ACCOUNTANT = _accountant;
-        PROTOCOL_ID = _protocolId;
-        PROTOCOL_CONTROLLER = IProtocolController(_registry);
-
-        /// In some cases (L2s), the locker is the same as the gateway.
-        if (_locker == address(0)) {
-            LOCKER = GATEWAY;
-        } else {
-            LOCKER = _locker;
-        }
     }
 
     //////////////////////////////////////////////////////

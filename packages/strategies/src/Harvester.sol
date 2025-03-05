@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {ISidecar} from "src/interfaces/ISidecar.sol";
+import {ProtocolContext} from "src/ProtocolContext.sol";
 import {IHarvester} from "src/interfaces/IHarvester.sol";
 import {IStrategy, IAllocator} from "src/interfaces/IStrategy.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
@@ -11,28 +12,8 @@ import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 /// @title Harvester
 /// @author Stake DAO
 /// @notice Contract implementing the IHarvester interface for harvesting rewards from gauges
-abstract contract Harvester is IHarvester {
+abstract contract Harvester is IHarvester, ProtocolContext {
     using SafeCast for uint256;
-
-    //////////////////////////////////////////////////////
-    /// --- IMMUTABLES
-    //////////////////////////////////////////////////////
-
-    /// @notice The protocol identifier
-    bytes4 public immutable PROTOCOL_ID;
-
-    /// @notice The locker contract
-    address public immutable LOCKER;
-
-    /// @notice The protocol controller contract
-    IProtocolController public immutable PROTOCOL_CONTROLLER;
-
-    //////////////////////////////////////////////////////
-    /// --- ERRORS
-    //////////////////////////////////////////////////////
-
-    /// @notice Error thrown when the locker address is zero
-    error ZeroAddress();
 
     //////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
@@ -42,14 +23,10 @@ abstract contract Harvester is IHarvester {
     /// @param _protocolId The protocol identifier
     /// @param _protocolController The protocol controller contract address
     /// @param _locker The locker contract address
-    /// @custom:throws ZeroAddress If the locker address is zero
-    constructor(bytes4 _protocolId, address _protocolController, address _locker) {
-        require(_locker != address(0) && _protocolController != address(0), ZeroAddress());
-
-        LOCKER = _locker;
-        PROTOCOL_ID = _protocolId;
-        PROTOCOL_CONTROLLER = IProtocolController(_protocolController);
-    }
+    /// @param _gateway The gateway contract address
+    constructor(bytes4 _protocolId, address _protocolController, address _locker, address _gateway)
+        ProtocolContext(_protocolId, _protocolController, _locker, _gateway)
+    {}
 
     //////////////////////////////////////////////////////
     /// --- EXTERNAL FUNCTIONS
