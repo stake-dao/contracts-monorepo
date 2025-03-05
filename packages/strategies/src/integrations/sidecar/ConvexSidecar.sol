@@ -1,33 +1,33 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.28;
 
-/// From @interfaces package.
 import {IBooster} from "@interfaces/convex/IBooster.sol";
 import {IBaseRewardPool} from "@interfaces/convex/IBaseRewardPool.sol";
 import {IStashTokenWrapper} from "@interfaces/convex/IStashTokenWrapper.sol";
 
-/// From @openzeppelin/contracts.
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-/// From src/interfaces.
-import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
+import "src/interfaces/ISidecar.sol";
 
 /// @notice Sidecar for Convex.
 /// @dev For each PID, a minimal proxy is deployed using this contract as implementation.
-contract ConvexSidecar {
+contract ConvexSidecar is ISidecar {
     using Math for uint256;
     using SafeERC20 for IERC20;
 
     /// @notice The protocol ID.
     bytes4 public constant PROTOCOL_ID = bytes4(keccak256("CURVE"));
 
-    /// @notice Error emitted when contract is not initialized
-    error FACTORY();
-
     /// @notice Error emitted when caller is not strategy
-    error STRATEGY();
+    error OnlyStrategy();
+
+    /// @notice Error emitted when caller is not accountant
+    error OnlyAccountant();
+
+    /// @notice Error emitted when contract is not initialized
+    error AlreadyInitialized();
 
     //////////////////////////////////////////////////////
     /// --- IMMUTABLES
@@ -43,11 +43,26 @@ contract ConvexSidecar {
         return ISidecarFactory(factoryAddress);
     }
 
-    /// @notice Staking token address.
-    function token() public view returns (IERC20 _token) {
+    /// @notice Protocol controller address.
+    function protocolController() public view returns (IProtocolController _protocolController) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         assembly {
-            _token := mload(add(args, 40))
+            _protocolController := mload(add(args, 40))
+        }
+    }
+
+    function accountant() public view returns (address _accountant) {
+        bytes memory args = Clones.fetchCloneArgs(address(this));
+        assembly {
+            _accountant := mload(add(args, 80))
+        }
+    }
+
+    /// @notice Staking token address.
+    function asset() public view returns (IERC20 _asset) {
+        bytes memory args = Clones.fetchCloneArgs(address(this));
+        assembly {
+            _asset := mload(add(args, 60))
         }
     }
 
@@ -55,23 +70,22 @@ contract ConvexSidecar {
     function rewardToken() public view returns (IERC20 _rewardToken) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         assembly {
-            _rewardToken := mload(add(args, 60))
+            _rewardToken := mload(add(args, 80))
+        }
+    }
+
+    function rewardReceiver() public view returns (address _rewardReceiver) {
+        bytes memory args = Clones.fetchCloneArgs(address(this));
+        assembly {
+            _rewardReceiver := mload(add(args, 100))
         }
     }
 
     /// @notice Convex Reward Token address.
-    function secondaryRewardToken() public view returns (IERC20 _secondaryRewardToken) {
+    function CVX() public view returns (IERC20 _cvx) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         assembly {
-            _secondaryRewardToken := mload(add(args, 80))
-        }
-    }
-
-    /// @notice Strategy address.
-    function strategy() public view returns (address _strategy) {
-        bytes memory args = Clones.fetchCloneArgs(address(this));
-        assembly {
-            _strategy := mload(add(args, 100))
+            _cvx := mload(add(args, 100))
         }
     }
 
@@ -108,18 +122,20 @@ contract ConvexSidecar {
     //////////////////////////////////////////////////////
 
     modifier onlyStrategy() {
-        if (msg.sender != strategy()) revert STRATEGY();
+        require(msg.sender == protocolController().strategy(PROTOCOL_ID), OnlyStrategy());
         _;
     }
 
-    modifier onlyFactory() {
-        if (msg.sender != address(factory())) revert FACTORY();
+    modifier onlyAccountant() {
+        require(msg.sender == accountant(), OnlyAccountant());
         _;
     }
 
     /// @notice Initialize the contract by approving the ConvexCurve booster to spend the LP token.
-    function initialize() external onlyFactory {
-        token().safeIncreaseAllowance(address(booster()), type(uint256).max);
+    function initialize() external {
+        require(asset().allowance(address(this), address(booster())) == 0, AlreadyInitialized());
+
+        asset().safeIncreaseAllowance(address(booster()), type(uint256).max);
     }
 
     //////////////////////////////////////////////////////
@@ -131,56 +147,61 @@ contract ConvexSidecar {
     /// @dev The reason there's an empty address parameter is to keep flexibility for future implementations.
     /// Not all fallbacks will be minimal proxies, so we need to keep the same function signature.
     /// Only callable by the strategy.
-    function deposit(address, uint256 amount) external onlyStrategy {
+    function deposit(uint256 amount) external onlyStrategy {
         /// Deposit the LP token into Convex and stake it (true) to receive rewards.
         booster().deposit(pid(), amount, true);
     }
 
     /// @notice Withdraw LP token from Convex.
     /// @param amount Amount of LP token to withdraw.
+    /// @param receiver Address to receive the LP token.
     /// Only callable by the strategy.
-    function withdraw(address, uint256 amount) external onlyStrategy {
+    function withdraw(uint256 amount, address receiver) external onlyStrategy {
         /// Withdraw from Convex gauge without claiming rewards (false).
         baseRewardPool().withdrawAndUnwrap(amount, false);
 
-        /// Send the LP token to the strategy.
-        token().safeTransfer(msg.sender, amount);
+        /// Send the LP token to the receiver.
+        asset().safeTransfer(receiver, amount);
     }
 
-    /// @notice Claim rewards from Convex.
-    /// @param _claimExtraRewards If true, claim extra rewards.
-    /// @return rewardTokenAmount Amount of reward token claimed.
-    function claim(bool _claimExtraRewards) external onlyStrategy returns (uint256 rewardTokenAmount) {
-        address[] memory extraRewardTokens;
+    function claimExtraRewards() external {
+        address[] memory extraRewardTokens = getRewardTokens();
 
         /// We can save gas by not claiming extra rewards if we don't need them, there's no extra rewards, or not enough rewards worth to claim.
-        if (_claimExtraRewards) {
-            extraRewardTokens = getRewardTokens();
+        if (extraRewardTokens.length > 0) {
+            baseRewardPool().getReward(address(this), true);
         }
 
-        /// Claim rewardToken, secondaryRewardToken and _extraRewardTokens if _claimExtraRewards is true.
-        baseRewardPool().getReward(address(this), _claimExtraRewards);
+        /// It'll claim rewardToken but we'll leave it here for clarity until the claim() function is called by the strategy.
+        baseRewardPool().getReward(address(this), true);
 
-        rewardTokenAmount = rewardToken().balanceOf(address(this));
-
-        /// Send the reward token to the strategy.
-        rewardToken().safeTransfer(msg.sender, rewardTokenAmount);
-
-        /// TODO: Send to Reward Receiver or Treasury.
-        /// secondaryRewardToken().safeTransfer(msg.sender, fallbackRewardTokenAmount);
+        /// Send the reward token to the reward receiver.
+        CVX().safeTransfer(rewardReceiver(), CVX().balanceOf(address(this)));
 
         /// Handle the extra reward tokens.
         for (uint256 i = 0; i < extraRewardTokens.length;) {
             uint256 _balance = IERC20(extraRewardTokens[i]).balanceOf(address(this));
             if (_balance > 0) {
                 /// Send the whole balance to the strategy.
-                IERC20(extraRewardTokens[i]).safeTransfer(msg.sender, _balance);
+                IERC20(extraRewardTokens[i]).safeTransfer(rewardReceiver(), _balance);
             }
 
             unchecked {
                 ++i;
             }
         }
+    }
+
+    /// @notice Claim rewards from Convex.
+    /// @return rewardTokenAmount Amount of reward token claimed.
+    function claim() external onlyAccountant returns (uint256 rewardTokenAmount) {
+        /// Claim rewardToken.
+        baseRewardPool().getReward(address(this), false);
+
+        rewardTokenAmount = rewardToken().balanceOf(address(this));
+
+        /// Send the reward token to the accountant.
+        rewardToken().safeTransfer(msg.sender, rewardTokenAmount);
     }
 
     /// @notice Get the reward tokens from the base reward pool.
@@ -212,6 +233,12 @@ contract ConvexSidecar {
         }
 
         return tokens;
+    }
+
+    /// @notice Get the amount of reward token earned by the strategy.
+    /// @return The amount of reward token earned by the strategy.
+    function getPendingRewards() public view returns (uint256) {
+        return baseRewardPool().earned(address(this)) + rewardToken().balanceOf(address(this));
     }
 
     /// @notice Get the balance of the LP token on Convex held by this contract.

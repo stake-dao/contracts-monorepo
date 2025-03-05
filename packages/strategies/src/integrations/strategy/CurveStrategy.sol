@@ -68,8 +68,8 @@ contract CurveStrategy is Strategy {
 
                 pendingRewards.feeSubjectAmount += pendingRewardsAmount.toUint128();
             } else {
-                // For sidecar contracts, use their earned() function
-                pendingRewardsAmount = ISidecar(target).earned();
+                // For sidecar contracts, use their getPendingRewards() function
+                pendingRewardsAmount = ISidecar(target).getPendingRewards();
             }
 
             pendingRewards.totalAmount += pendingRewardsAmount.toUint128();
