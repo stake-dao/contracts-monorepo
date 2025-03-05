@@ -17,8 +17,16 @@ contract ConvexSidecar is ISidecar {
     using Math for uint256;
     using SafeERC20 for IERC20;
 
+    //////////////////////////////////////////////////////
+    /// --- CONSTANTS & IMMUTABLES
+    //////////////////////////////////////////////////////
+
     /// @notice The protocol ID.
     bytes4 public constant PROTOCOL_ID = bytes4(keccak256("CURVE"));
+
+    //////////////////////////////////////////////////////
+    /// --- ERRORS
+    //////////////////////////////////////////////////////
 
     /// @notice Error emitted when caller is not strategy
     error OnlyStrategy();
@@ -30,7 +38,7 @@ contract ConvexSidecar is ISidecar {
     error AlreadyInitialized();
 
     //////////////////////////////////////////////////////
-    /// --- IMMUTABLES
+    /// --- ISIDECAR IMMUTABLES
     //////////////////////////////////////////////////////
 
     /// @notice Address of the Minimal Proxy Factory.
@@ -80,6 +88,10 @@ contract ConvexSidecar is ISidecar {
             _rewardReceiver := mload(add(args, 100))
         }
     }
+
+    //////////////////////////////////////////////////////
+    /// --- CONVEX IMMUTABLES
+    //////////////////////////////////////////////////////
 
     /// @notice Convex Reward Token address.
     function CVX() public view returns (IERC20 _cvx) {
@@ -139,7 +151,7 @@ contract ConvexSidecar is ISidecar {
     }
 
     //////////////////////////////////////////////////////
-    /// --- DEPOSIT/WITHDRAW/CLAIM
+    /// --- ISIDECAR OPERATIONS
     //////////////////////////////////////////////////////
 
     /// @notice Deposit LP token into Convex.
@@ -164,34 +176,6 @@ contract ConvexSidecar is ISidecar {
         asset().safeTransfer(receiver, amount);
     }
 
-    function claimExtraRewards() external {
-        address[] memory extraRewardTokens = getRewardTokens();
-
-        /// We can save gas by not claiming extra rewards if we don't need them, there's no extra rewards, or not enough rewards worth to claim.
-        if (extraRewardTokens.length > 0) {
-            baseRewardPool().getReward(address(this), true);
-        }
-
-        /// It'll claim rewardToken but we'll leave it here for clarity until the claim() function is called by the strategy.
-        baseRewardPool().getReward(address(this), true);
-
-        /// Send the reward token to the reward receiver.
-        CVX().safeTransfer(rewardReceiver(), CVX().balanceOf(address(this)));
-
-        /// Handle the extra reward tokens.
-        for (uint256 i = 0; i < extraRewardTokens.length;) {
-            uint256 _balance = IERC20(extraRewardTokens[i]).balanceOf(address(this));
-            if (_balance > 0) {
-                /// Send the whole balance to the strategy.
-                IERC20(extraRewardTokens[i]).safeTransfer(rewardReceiver(), _balance);
-            }
-
-            unchecked {
-                ++i;
-            }
-        }
-    }
-
     /// @notice Claim rewards from Convex.
     /// @return rewardTokenAmount Amount of reward token claimed.
     function claim() external onlyAccountant returns (uint256 rewardTokenAmount) {
@@ -202,6 +186,11 @@ contract ConvexSidecar is ISidecar {
 
         /// Send the reward token to the accountant.
         rewardToken().safeTransfer(msg.sender, rewardTokenAmount);
+    }
+
+    /// @notice Get the balance of the LP token on Convex held by this contract.
+    function balanceOf() public view returns (uint256) {
+        return baseRewardPool().balanceOf(address(this));
     }
 
     /// @notice Get the reward tokens from the base reward pool.
@@ -241,8 +230,35 @@ contract ConvexSidecar is ISidecar {
         return baseRewardPool().earned(address(this)) + rewardToken().balanceOf(address(this));
     }
 
-    /// @notice Get the balance of the LP token on Convex held by this contract.
-    function balanceOf() public view returns (uint256) {
-        return baseRewardPool().balanceOf(address(this));
+    //////////////////////////////////////////////////////
+    /// --- CONVEX OPERATIONS
+    //////////////////////////////////////////////////////
+
+    function claimExtraRewards() external {
+        address[] memory extraRewardTokens = getRewardTokens();
+
+        /// We can save gas by not claiming extra rewards if we don't need them, there's no extra rewards, or not enough rewards worth to claim.
+        if (extraRewardTokens.length > 0) {
+            baseRewardPool().getReward(address(this), true);
+        }
+
+        /// It'll claim rewardToken but we'll leave it here for clarity until the claim() function is called by the strategy.
+        baseRewardPool().getReward(address(this), true);
+
+        /// Send the reward token to the reward receiver.
+        CVX().safeTransfer(rewardReceiver(), CVX().balanceOf(address(this)));
+
+        /// Handle the extra reward tokens.
+        for (uint256 i = 0; i < extraRewardTokens.length;) {
+            uint256 _balance = IERC20(extraRewardTokens[i]).balanceOf(address(this));
+            if (_balance > 0) {
+                /// Send the whole balance to the strategy.
+                IERC20(extraRewardTokens[i]).safeTransfer(rewardReceiver(), _balance);
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
     }
 }
