@@ -54,7 +54,6 @@ contract CurveStrategy is Strategy {
     function _sync(address gauge) internal view override returns (PendingRewards memory pendingRewards) {
         address allocator = PROTOCOL_CONTROLLER.allocator(PROTOCOL_ID);
 
-        /// 3. Get the allocation data for the gauge.
         address[] memory targets = IAllocator(allocator).getAllocationTargets(gauge);
 
         uint256 pendingRewardsAmount;
