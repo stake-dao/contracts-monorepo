@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {Strategy, IAllocator, ISidecar} from "src/Strategy.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 import {IMinter} from "@interfaces/curve/IMinter.sol";
+import {Strategy, IAllocator, ISidecar} from "src/Strategy.sol";
 import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
 import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 
@@ -15,6 +16,8 @@ import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 ///      - Handles deposits and withdrawals through Curve liquidity gauges and Sidecar contracts
 ///      - Executes transactions through a gateway/module manager pattern
 contract CurveStrategy is Strategy {
+    using SafeCast for uint256;
+
     //////////////////////////////////////////////////////
     /// --- CONSTANTS & IMMUTABLES
     //////////////////////////////////////////////////////
@@ -63,13 +66,13 @@ contract CurveStrategy is Strategy {
                 pendingRewardsAmount =
                     ILiquidityGauge(gauge).integrate_fraction(LOCKER) - IMinter(MINTER).minted(gauge, LOCKER);
 
-                pendingRewards.feeSubjectAmount += pendingRewardsAmount;
+                pendingRewards.feeSubjectAmount += pendingRewardsAmount.toUint128();
             } else {
                 // For sidecar contracts, use their earned() function
                 pendingRewardsAmount = ISidecar(target).earned();
             }
 
-            pendingRewards.totalAmount += pendingRewardsAmount;
+            pendingRewards.totalAmount += pendingRewardsAmount.toUint128();
         }
     }
 
