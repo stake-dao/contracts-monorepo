@@ -59,7 +59,7 @@ abstract contract BaseTest is Test {
         // `clearMockedCalls` can be used to clear the mocked calls in a specific test (https://book.getfoundry.sh/cheatcodes/clear-mocked-calls)
         bytes[] memory mocks = new bytes[](1);
         mocks[0] = abi.encode(address(rewardToken));
-        vm.mockCalls(address(registry), abi.encodeWithSelector(MockRegistry.assets.selector), mocks);
+        vm.mockCalls(address(registry), abi.encodeWithSelector(MockRegistry.asset.selector), mocks);
 
         /// Label the contracts
         vm.label({account: address(strategy), newLabel: "Strategy"});

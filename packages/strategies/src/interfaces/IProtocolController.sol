@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 interface IProtocolController {
     function vaults(address) external view returns (address);
-    function assets(address) external view returns (address);
+    function asset(address) external view returns (address);
 
     function allowed(address, address, bytes4 selector) external view returns (bool);
 

@@ -130,6 +130,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @notice Error thrown when a fee exceeds the maximum allowed
     error FeeExceedsMaximum();
 
+    /// @notice Error thrown when the vault is invalid
+    error InvalidVault();
+
     /// @notice Error thrown when harvest data length doesn't match vaults length
     error InvalidHarvestDataLength();
 
@@ -365,32 +368,29 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// --- HARVEST OPERATIONS
     //////////////////////////////////////////////////////
 
-    /// @notice Harvests rewards from multiple vaults.
-    /// @param _vaults Array of vault addresses to harvest from.
-    /// @param _harvestData Array of harvest data for each vault.
+    /// @notice Harvests rewards from multiple gauges.
+    /// @param _gauges Array of gauges to harvest from.
+    /// @param _harvestData Array of harvest data for each gauge.
     /// @custom:throws NoHarvester If the harvester is not set.
-    function harvest(address[] calldata _vaults, bytes[] calldata _harvestData) external {
-        require(_vaults.length == _harvestData.length, InvalidHarvestDataLength());
-        _batchHarvest({_vaults: _vaults, harvestData: _harvestData, receiver: msg.sender});
+    function harvest(address[] calldata _gauges, bytes[] calldata _harvestData) external nonReentrant {
+        require(_gauges.length == _harvestData.length, InvalidHarvestDataLength());
+        _batchHarvest({_gauges: _gauges, harvestData: _harvestData, receiver: msg.sender});
     }
 
     /// @dev Internal implementation of batch harvesting.
-    /// @param _vaults Array of vault addresses to harvest from.
-    /// @param harvestData Harvest data for each vault.
-    function _batchHarvest(address[] calldata _vaults, bytes[] calldata harvestData, address receiver)
-        internal
-        nonReentrant
-    {
+    /// @param _gauges Array of gauges to harvest from.
+    /// @param harvestData Harvest data for each gauge.
+    function _batchHarvest(address[] calldata _gauges, bytes[] calldata harvestData, address receiver) internal {
         // Cache registry to avoid multiple SLOADs
         address harvester = PROTOCOL_CONTROLLER.harvester(PROTOCOL_ID);
         require(harvester != address(0), NoHarvester());
 
         uint256 totalHarvesterFee;
 
-        for (uint256 i; i < _vaults.length; i++) {
-            /// Harvest the vault and increment total harvester fee.
+        for (uint256 i; i < _gauges.length; i++) {
+            /// Harvest the gauge and increment total harvester fee.
             totalHarvesterFee += _harvest({
-                vault: _vaults[i],
+                gauge: _gauges[i],
                 harvestData: harvestData[i],
                 harvester: harvester,
                 registry: address(PROTOCOL_CONTROLLER)
@@ -405,10 +405,13 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
 
     /// @dev Internal implementation of single vault harvesting.
     /// @return harvesterFee The harvester fee for this harvest operation.
-    function _harvest(address vault, bytes calldata harvestData, address harvester, address registry)
+    function _harvest(address gauge, bytes calldata harvestData, address harvester, address registry)
         private
         returns (uint256 harvesterFee)
     {
+        address vault = PROTOCOL_CONTROLLER.vaults(gauge);
+        require(vault != address(0), InvalidVault());
+
         // Fees should be calculated before the harvest.
         uint256 currentHarvestFee = getCurrentHarvestFee();
 
@@ -417,11 +420,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
 
         // Harvest the asset
         (uint256 feeSubjectAmount, uint256 totalAmount) = abi.decode(
-            harvester.functionDelegateCall(
-                abi.encodeWithSelector(
-                    IHarvester.harvest.selector, IProtocolController(registry).assets(vault), harvestData
-                )
-            ),
+            harvester.functionDelegateCall(abi.encodeWithSelector(IHarvester.harvest.selector, gauge, harvestData)),
             (uint256, uint256)
         );
         if (totalAmount == 0) return 0;
@@ -522,72 +521,76 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     //////////////////////////////////////////////////////
 
     /// @notice Claims multiple vault rewards for yourself.
-    /// @param _vaults Array of vault addresses to claim rewards from.
-    /// @param harvestData Optional harvest data for each vault. Empty bytes for vaults that don't need harvesting.
+    /// @param _gauges Array of gauges to claim rewards from.
+    /// @param harvestData Optional harvest data for each gauge. Empty bytes for gauges that don't need harvesting.
     /// @custom:throws NoPendingRewards If there are no rewards to claim.
-    function claim(address[] calldata _vaults, bytes[] calldata harvestData) external {
-        claim(_vaults, harvestData, msg.sender);
+    function claim(address[] calldata _gauges, bytes[] calldata harvestData) external nonReentrant {
+        claim(_gauges, harvestData, msg.sender);
     }
 
     /// @notice Claims multiple vault rewards for yourself and sends them to a specific address.
-    /// @param _vaults Array of vault addresses to claim rewards from.
-    /// @param harvestData Optional harvest data for each vault. Empty bytes for vaults that don't need harvesting.
+    /// @param _gauges Array of gauges to claim rewards from.
+    /// @param harvestData Optional harvest data for each gauge. Empty bytes for gauges that don't need harvesting.
     /// @param receiver Address that will receive the claimed rewards.
     /// @custom:throws NoPendingRewards If there are no rewards to claim.
-    function claim(address[] calldata _vaults, bytes[] calldata harvestData, address receiver) public {
-        require(harvestData.length == 0 || harvestData.length == _vaults.length, InvalidHarvestDataLength());
+    function claim(address[] calldata _gauges, bytes[] calldata harvestData, address receiver) public nonReentrant {
+        require(harvestData.length == 0 || harvestData.length == _gauges.length, InvalidHarvestDataLength());
 
         if (harvestData.length != 0) {
-            _batchHarvest({_vaults: _vaults, harvestData: harvestData, receiver: receiver});
+            _batchHarvest({_gauges: _gauges, harvestData: harvestData, receiver: receiver});
         }
 
-        _claim({_vaults: _vaults, accountAddress: msg.sender, receiver: receiver});
+        _claim({_gauges: _gauges, accountAddress: msg.sender, receiver: receiver});
     }
 
     /// @notice Claims multiple vault rewards on behalf of an account.
-    /// @param _vaults Array of vault addresses to claim rewards from.
+    /// @param _gauges Array of gauges to claim rewards from.
     /// @param account Address to claim rewards for.
-    /// @param harvestData Optional harvest data for each vault. Empty bytes for vaults that don't need harvesting.
+    /// @param harvestData Optional harvest data for each gauge. Empty bytes for gauges that don't need harvesting.
     /// @dev expected to be called by authorized accounts only
     /// @custom:throws OnlyAllowed If caller is not allowed to claim on behalf of others.
     /// @custom:throws NoPendingRewards If there are no rewards to claim.
-    function claim(address[] calldata _vaults, address account, bytes[] calldata harvestData) external {
-        claim(_vaults, account, harvestData, account);
+    function claim(address[] calldata _gauges, address account, bytes[] calldata harvestData) external nonReentrant {
+        claim(_gauges, account, harvestData, account);
     }
 
     /// @notice Claims multiple vault rewards on behalf of an account and sends them to a specific address.
-    /// @param _vaults Array of vault addresses to claim rewards from.
+    /// @param _gauges Array of gauges to claim rewards from.
     /// @param account Address to claim rewards for.
-    /// @param harvestData Optional harvest data for each vault. Empty bytes for vaults that don't need harvesting.
+    /// @param harvestData Optional harvest data for each gauge. Empty bytes for gauges that don't need harvesting.
     /// @param receiver Address that will receive the claimed rewards.
     /// @dev expected to be called by authorized accounts only
     /// @custom:throws OnlyAllowed If caller is not allowed to claim on behalf of others.
     /// @custom:throws NoPendingRewards If there are no rewards to claim.
-    function claim(address[] calldata _vaults, address account, bytes[] calldata harvestData, address receiver)
+    function claim(address[] calldata _gauges, address account, bytes[] calldata harvestData, address receiver)
         public
         onlyAllowed
     {
-        require(harvestData.length == 0 || harvestData.length == _vaults.length, InvalidHarvestDataLength());
+        require(harvestData.length == 0 || harvestData.length == _gauges.length, InvalidHarvestDataLength());
 
         if (harvestData.length != 0) {
-            _batchHarvest({_vaults: _vaults, harvestData: harvestData, receiver: receiver});
+            _batchHarvest({_gauges: _gauges, harvestData: harvestData, receiver: receiver});
         }
 
-        _claim({_vaults: _vaults, accountAddress: account, receiver: receiver});
+        _claim({_gauges: _gauges, accountAddress: account, receiver: receiver});
     }
 
     /// @dev Internal implementation of claim functionality.
-    /// @param _vaults Array of vault addresses to claim rewards from.
+    /// @param _gauges Array of gauges to claim rewards from.
     /// @param accountAddress Address to claim rewards for.
     /// @param receiver Address that will receive the claimed rewards.
     /// @custom:throws NoPendingRewards If the total claimed amount is zero.
-    function _claim(address[] calldata _vaults, address accountAddress, address receiver) internal nonReentrant {
+    function _claim(address[] calldata _gauges, address accountAddress, address receiver) internal {
         uint256 totalAmount;
 
-        // For each vault, check if the account has any rewards to claim
-        for (uint256 i; i < _vaults.length; i++) {
-            // Get the account data for this vault
-            AccountData storage account = accounts[_vaults[i]][accountAddress];
+        address vault;
+        // For each gauge, check if the account has any rewards to claim
+        for (uint256 i; i < _gauges.length; i++) {
+            vault = PROTOCOL_CONTROLLER.vaults(_gauges[i]);
+            require(vault != address(0), InvalidVault());
+
+            // Get the account data for this gauge
+            AccountData storage account = accounts[vault][accountAddress];
 
             // Get the current balance for this vault
             uint128 balance = account.balance;
@@ -596,7 +599,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
             if (balance != 0 || account.pendingRewards != 0) {
                 // Get vault's and account's integral
                 uint256 accountIntegral = account.integral;
-                uint256 vaultIntegral = vaults[_vaults[i]].integral;
+                uint256 vaultIntegral = vaults[vault].integral;
 
                 // If vault's integral is higher than account's integral, calculate the rewards and update the total.
                 // TODO: muldiv

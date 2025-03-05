@@ -128,7 +128,7 @@ contract CurveStrategy is Strategy {
         address allocator = PROTOCOL_CONTROLLER.allocator(PROTOCOL_ID);
 
         /// 2. Get the asset.
-        IERC20 asset = IERC20(PROTOCOL_CONTROLLER.assets(gauge));
+        IERC20 asset = IERC20(PROTOCOL_CONTROLLER.asset(gauge));
 
         /// 3. Snapshot the current balance.
         uint256 currentBalance = balanceOf(gauge);
