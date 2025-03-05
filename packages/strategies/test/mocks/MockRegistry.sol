@@ -43,7 +43,7 @@ contract MockRegistry is IProtocolController {
         return _feeReceiver;
     }
 
-    function assets(address) external pure override returns (address) {
+    function asset(address) external pure override returns (address) {
         return address(0);
     }
 
