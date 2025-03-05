@@ -48,6 +48,9 @@ abstract contract Strategy is IStrategy {
     /// @notice Error thrown when trying to interact with a shutdown gauge
     error GaugeShutdown();
 
+    /// @notice Error thrown when rebalance goes wrong
+    error RebalanceGoneWrong();
+
     //////////////////////////////////////////////////////
     /// --- MODIFIERS
     //////////////////////////////////////////////////////
@@ -188,6 +191,12 @@ abstract contract Strategy is IStrategy {
         }
     }
 
+    /// @notice Rebalances the strategy
+    /// @param gauge The gauge to rebalance
+    function rebalance(address gauge) external {
+        require(_rebalance(gauge), RebalanceGoneWrong());
+    }
+
     //////////////////////////////////////////////////////
     /// --- INTERNAL VIRTUAL FUNCTIONS
     //////////////////////////////////////////////////////
@@ -201,7 +210,8 @@ abstract contract Strategy is IStrategy {
     /// @notice Rebalances the strategy
     /// @dev Must be implemented by derived strategies to handle protocol-specific rebalancing
     /// @param gauge The gauge to rebalance
-    function _rebalance(address gauge) internal virtual;
+    /// @return True if rebalance was successful, false otherwise
+    function _rebalance(address gauge) internal virtual returns (bool);
 
     /// @notice Deposits assets into a specific target
     /// @dev Must be implemented by derived strategies to handle protocol-specific deposits
