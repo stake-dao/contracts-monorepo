@@ -8,7 +8,8 @@ contract Accountant__getProtocolFeePercent is BaseTest {
 
     function setUp() public override {
         super.setUp();
-        accountantHarness = new AccountantHarness();
+        accountantHarness =
+            new AccountantHarness(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"), bytes4(hex"11"));
     }
 
     function test_ReturnsTheDefaultProtocolFee() external view {

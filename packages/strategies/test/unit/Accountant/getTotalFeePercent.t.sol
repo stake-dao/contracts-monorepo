@@ -8,7 +8,8 @@ contract Accountant__getTotalFeePercent is BaseTest {
 
     function setUp() public override {
         super.setUp();
-        accountantHarness = new AccountantHarness();
+        accountantHarness =
+            new AccountantHarness(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"), bytes4(hex"11"));
     }
 
     function test_ReturnsTheCorrectValue(uint128 newProtocolFee, uint128 newHarvestFee) external {
