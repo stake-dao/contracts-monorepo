@@ -5,6 +5,7 @@ import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {IBooster} from "@interfaces/convex/IBooster.sol";
+
 import {SidecarFactory} from "src/SidecarFactory.sol";
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
 
@@ -20,6 +21,9 @@ contract ConvexSidecarFactory is SidecarFactory {
 
     /// @notice Error emitted when the pool is shutdown
     error PoolShutdown();
+
+    /// @notice Error emitted when the reward receiver is not set
+    error VaultNotDeployed();
 
     /// @notice Constructor
     /// @param _cvx Address of the CVX token
@@ -76,8 +80,11 @@ contract ConvexSidecarFactory is SidecarFactory {
         // Get the LP token and base reward pool from Convex
         (address lpToken,,, address baseRewardPool,,) = IBooster(BOOSTER).poolInfo(pid);
 
+        address rewardReceiver = PROTOCOL_CONTROLLER.rewardReceiver(gauge);
+        require(rewardReceiver == address(0), VaultNotDeployed());
+
         // Encode the immutable arguments for the clone
-        bytes memory data = abi.encodePacked(lpToken, REWARD_TOKEN, STRATEGY, CVX, BOOSTER, baseRewardPool, pid);
+        bytes memory data = abi.encodePacked(lpToken, rewardReceiver, baseRewardPool, pid);
 
         // Create a deterministic salt based on the token and gauge
         bytes32 salt = keccak256(abi.encodePacked(lpToken, gauge));

@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {ISidecar} from "src/interfaces/ISidecar.sol";
+import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
 /// @title Sidecar - Abstract Base Sidecar Contract
@@ -21,6 +22,9 @@ abstract contract Sidecar is ISidecar {
 
     /// @notice The accountant contract address
     address public immutable ACCOUNTANT;
+
+    /// @notice The reward token address
+    IERC20 public immutable REWARD_TOKEN;
 
     /// @notice The protocol controller contract
     IProtocolController public immutable PROTOCOL_CONTROLLER;
@@ -81,6 +85,7 @@ abstract contract Sidecar is ISidecar {
         PROTOCOL_ID = _protocolId;
         ACCOUNTANT = _accountant;
         PROTOCOL_CONTROLLER = IProtocolController(_protocolController);
+        REWARD_TOKEN = IERC20(IAccountant(_accountant).REWARD_TOKEN());
         STRATEGY = PROTOCOL_CONTROLLER.strategy(PROTOCOL_ID);
     }
 
@@ -125,10 +130,6 @@ abstract contract Sidecar is ISidecar {
     /// @notice Returns the asset of the sidecar
     /// @return The asset of the sidecar
     function asset() public view virtual returns (IERC20);
-
-    /// @notice Returns the reward token of the sidecar
-    /// @return The reward token of the sidecar
-    function rewardToken() public view virtual returns (IERC20);
 
     /// @notice Returns the reward receiver of the sidecar
     /// @return The reward receiver of the sidecar
