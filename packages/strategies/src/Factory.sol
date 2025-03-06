@@ -16,7 +16,6 @@ import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 ///      - Registers vaults with the protocol controller
 ///      - Sets up reward tokens for vaults
 abstract contract Factory is ProtocolContext {
-
     //////////////////////////////////////////////////////
     /// --- IMMUTABLES
     //////////////////////////////////////////////////////
@@ -51,7 +50,7 @@ abstract contract Factory is ProtocolContext {
     error InvalidDeployment();
 
     /// @notice Error thrown when the gauge has been already used
-    error GaugeAlreadyUsed();
+    error AlreadyDeployed();
 
     //////////////////////////////////////////////////////
     /// --- EVENTS
@@ -72,10 +71,23 @@ abstract contract Factory is ProtocolContext {
     /// @param _rewardToken Address of the main reward token
     /// @param _vaultImplementation Address of the reward vault implementation
     /// @param _protocolId Protocol identifier
-    constructor(address _protocolController, address _rewardToken, address _vaultImplementation, bytes4 _protocolId) {
+    constructor(
+        address _protocolController,
+        address _rewardToken,
+        address _vaultImplementation,
+        address _rewardReceiverImplementation,
+        bytes4 _protocolId
+    ) {
+        require(
+            _protocolController != address(0) && _rewardToken != address(0) && _vaultImplementation != address(0)
+                && _rewardReceiverImplementation != address(0),
+            ZeroAddress()
+        );
+
         PROTOCOL_ID = _protocolId;
         REWARD_TOKEN = _rewardToken;
         REWARD_VAULT_IMPLEMENTATION = _vaultImplementation;
+        REWARD_RECEIVER_IMPLEMENTATION = _rewardReceiverImplementation;
         PROTOCOL_CONTROLLER = IProtocolController(_protocolController);
 
         ACCOUNTANT = PROTOCOL_CONTROLLER.accountant(PROTOCOL_ID);
@@ -87,59 +99,63 @@ abstract contract Factory is ProtocolContext {
 
     /// @notice Create a new vault for a given gauge
     /// @dev Deploys a vault and reward receiver for the gauge, registers them, and sets up reward tokens
-    /// @param _gauge Address of the gauge
+    /// @param gauge Address of the gauge
     /// @return vault Address of the deployed vault
     /// @return rewardReceiver Address of the deployed reward receiver
     /// @custom:throws InvalidGauge If the gauge is not valid
     /// @custom:throws InvalidDeployment If the deployment is not valid
     /// @custom:throws GaugeAlreadyUsed If the gauge has already been used
-    function createVault(address _gauge) public virtual returns (address vault, address rewardReceiver) {
-        // Perform checks on the gauge to make sure it's valid and can be used
-        require(_isValidGauge(_gauge), InvalidGauge());
-        require(_isValidDeployment(_gauge), InvalidDeployment());
-        require(PROTOCOL_CONTROLLER.vaults(_gauge) == address(0), GaugeAlreadyUsed());
+    function createVault(address gauge) public virtual returns (address vault, address rewardReceiver) {
+        /// Perform checks on the gauge to make sure it's valid and can be used
+        require(_isValidGauge(gauge), InvalidGauge());
+        require(_isValidDeployment(gauge), InvalidDeployment());
+        require(PROTOCOL_CONTROLLER.vaults(gauge) == address(0), AlreadyDeployed());
 
-        // Get the asset address from the gauge
-        address _asset = _getAsset(_gauge);
+        /// Get the asset address from the gauge
+        address asset = _getAsset(gauge);
 
-        // Prepare the initialization data for the vault
-        // The vault needs: registry, accountant, gauge, and asset
-        bytes memory data = abi.encodePacked(address(PROTOCOL_CONTROLLER), ACCOUNTANT, _gauge, _asset);
+        /// Prepare the initialization data for the vault
+        /// The vault needs: registry, accountant, gauge, and asset
+        bytes memory data = abi.encodePacked(address(PROTOCOL_CONTROLLER), ACCOUNTANT, gauge, asset);
 
-        // Generate a deterministic salt based on the gauge and asset
-        bytes32 salt = keccak256(abi.encodePacked(_asset, _gauge));
+        /// Generate a deterministic salt based on the gauge and asset
+        bytes32 salt = keccak256(abi.encodePacked(asset, gauge));
 
-        // Clone the vault implementation with the initialization data
+        /// Clone the vault implementation with the initialization data
         vault = Clones.cloneDeterministicWithImmutableArgs(REWARD_VAULT_IMPLEMENTATION, data, salt);
 
-        // Prepare the initialization data for the reward receiver
-        // The reward receiver needs: vault
+        /// Prepare the initialization data for the reward receiver
+        /// The reward receiver needs: vault
         data = abi.encodePacked(vault);
 
-        // Generate a deterministic salt based on the vault
+        /// Generate a deterministic salt based on the vault
         salt = keccak256(abi.encodePacked(vault));
 
-        // Deploy Reward Receiver.
+        /// Deploy Reward Receiver.
         rewardReceiver = Clones.cloneDeterministicWithImmutableArgs(REWARD_RECEIVER_IMPLEMENTATION, data, salt);
 
-        // Register the vault in the protocol controller
-        _registerVault(_gauge, vault, _asset, rewardReceiver);
+        /// Initialize the vault.
+        /// @dev Can be approval if needed etc.
+        _initializeVault(vault, asset, gauge);
 
-        // Add extra reward tokens to the vault
-        _setupRewardTokens(vault, _gauge, rewardReceiver);
+        /// Register the vault in the protocol controller
+        _registerVault(gauge, vault, asset, rewardReceiver);
 
-        emit VaultDeployed(vault, _asset, _gauge);
+        /// Add extra reward tokens to the vault
+        _setupRewardTokens(vault, gauge, rewardReceiver);
+
+        emit VaultDeployed(vault, asset, gauge);
     }
 
     /// @notice Sync reward tokens for a gauge
     /// @dev Updates the reward tokens for an existing vault
-    /// @param _gauge Address of the gauge
+    /// @param gauge Address of the gauge
     /// @custom:throws InvalidGauge If the gauge is not valid or has no associated vault
-    function syncRewardTokens(address _gauge) external {
-        address vault = PROTOCOL_CONTROLLER.vaults(_gauge);
+    function syncRewardTokens(address gauge) external {
+        address vault = PROTOCOL_CONTROLLER.vaults(gauge);
         require(vault != address(0), InvalidGauge());
 
-        _setupRewardTokens(vault, _gauge, PROTOCOL_CONTROLLER.rewardReceiver(_gauge));
+        _setupRewardTokens(vault, gauge, PROTOCOL_CONTROLLER.rewardReceiver(gauge));
     }
 
     //////////////////////////////////////////////////////
@@ -148,9 +164,9 @@ abstract contract Factory is ProtocolContext {
 
     /// @notice Get the asset address from a gauge
     /// @dev Must be implemented by derived factories to handle protocol-specific asset retrieval
-    /// @param _gauge Address of the gauge
+    /// @param gauge Address of the gauge
     /// @return The address of the asset associated with the gauge
-    function _getAsset(address _gauge) internal view virtual returns (address);
+    function _getAsset(address gauge) internal view virtual returns (address);
 
     /// @notice Check if a deployment is valid
     /// @dev Can be overridden by derived factories to add additional deployment validation
@@ -159,33 +175,39 @@ abstract contract Factory is ProtocolContext {
         return true;
     }
 
+    /// @notice Initialize the vault
+    /// @param vault Address of the vault
+    /// @param asset Address of the asset
+    /// @param gauge Address of the gauge
+    function _initializeVault(address vault, address asset, address gauge) internal virtual;
+
     /// @notice Register the vault in the protocol controller
-    /// @param _gauge Address of the gauge
-    /// @param _vault Address of the vault
-    /// @param _asset Address of the asset
-    /// @param _rewardReceiver Address of the reward receiver
-    function _registerVault(address _gauge, address _vault, address _asset, address _rewardReceiver) internal {
-        PROTOCOL_CONTROLLER.registerVault(_gauge, _vault, _asset, _rewardReceiver, PROTOCOL_ID);
+    /// @param gauge Address of the gauge
+    /// @param vault Address of the vault
+    /// @param asset Address of the asset
+    /// @param rewardReceiver Address of the reward receiver
+    function _registerVault(address gauge, address vault, address asset, address rewardReceiver) internal {
+        PROTOCOL_CONTROLLER.registerVault(gauge, vault, asset, rewardReceiver, PROTOCOL_ID);
     }
 
     /// @notice Setup reward tokens for the vault
     /// @dev Must be implemented by derived factories to handle protocol-specific reward token setup
-    /// @param _vault Address of the vault
-    /// @param _gauge Address of the gauge
-    /// @param _rewardReceiver Address of the reward receiver
-    function _setupRewardTokens(address _vault, address _gauge, address _rewardReceiver) internal virtual;
+    /// @param vault Address of the vault
+    /// @param gauge Address of the gauge
+    /// @param rewardReceiver Address of the reward receiver
+    function _setupRewardTokens(address vault, address gauge, address rewardReceiver) internal virtual;
 
     /// @notice Check if a gauge is valid
     /// @dev Must be implemented by derived factories to handle protocol-specific gauge validation
-    /// @param _gauge Address of the gauge
+    /// @param gauge Address of the gauge
     /// @return isValid True if the gauge is valid
-    function _isValidGauge(address _gauge) internal view virtual returns (bool);
+    function _isValidGauge(address gauge) internal view virtual returns (bool);
 
     /// @notice Check if a token is valid as a reward token
     /// @dev Validates that the token is not zero address and not the main reward token
-    /// @param _token Address of the token
+    /// @param token Address of the token
     /// @return isValid True if the token is valid
-    function _isValidToken(address _token) internal view virtual returns (bool) {
-        return _token != address(0) && _token != REWARD_TOKEN;
+    function _isValidToken(address token) internal view virtual returns (bool) {
+        return token != address(0) && token != REWARD_TOKEN;
     }
 }

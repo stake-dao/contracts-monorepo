@@ -8,7 +8,7 @@ import {IStashTokenWrapper} from "@interfaces/convex/IStashTokenWrapper.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import {ISidecarFactory, Sidecar} from "src/Sidecar.sol";
+import {Sidecar} from "src/Sidecar.sol";
 
 /// @notice Sidecar for Convex.
 /// @dev For each PID, a minimal proxy is deployed using this contract as implementation.
@@ -18,16 +18,6 @@ contract ConvexSidecar is Sidecar {
     //////////////////////////////////////////////////////
     /// --- ISIDECAR CLONE IMMUTABLES
     //////////////////////////////////////////////////////
-
-    /// @notice Address of the Minimal Proxy Factory.
-    function factory() public view override returns (ISidecarFactory _factory) {
-        bytes memory args = Clones.fetchCloneArgs(address(this));
-        address factoryAddress;
-        assembly {
-            factoryAddress := mload(add(args, 20))
-        }
-        return ISidecarFactory(factoryAddress);
-    }
 
     /// @notice Staking token address.
     function asset() public view override returns (IERC20 _asset) {
@@ -101,7 +91,7 @@ contract ConvexSidecar is Sidecar {
     //////////////////////////////////////////////////////
 
     /// @notice Initialize the contract by approving the ConvexCurve booster to spend the LP token.
-    function initialize() external override {
+    function _initialize() internal override {
         require(asset().allowance(address(this), address(booster())) == 0, AlreadyInitialized());
 
         asset().safeIncreaseAllowance(address(booster()), type(uint256).max);
@@ -116,7 +106,7 @@ contract ConvexSidecar is Sidecar {
     /// @dev The reason there's an empty address parameter is to keep flexibility for future implementations.
     /// Not all fallbacks will be minimal proxies, so we need to keep the same function signature.
     /// Only callable by the strategy.
-    function deposit(uint256 amount) external override onlyStrategy {
+    function _deposit(uint256 amount) internal override {
         /// Deposit the LP token into Convex and stake it (true) to receive rewards.
         booster().deposit(pid(), amount, true);
     }
@@ -124,8 +114,7 @@ contract ConvexSidecar is Sidecar {
     /// @notice Withdraw LP token from Convex.
     /// @param amount Amount of LP token to withdraw.
     /// @param receiver Address to receive the LP token.
-    /// Only callable by the strategy.
-    function withdraw(uint256 amount, address receiver) external override onlyStrategy {
+    function _withdraw(uint256 amount, address receiver) internal override {
         /// Withdraw from Convex gauge without claiming rewards (false).
         baseRewardPool().withdrawAndUnwrap(amount, false);
 
@@ -135,7 +124,7 @@ contract ConvexSidecar is Sidecar {
 
     /// @notice Claim rewards from Convex.
     /// @return rewardTokenAmount Amount of reward token claimed.
-    function claim() external override onlyAccountant returns (uint256 rewardTokenAmount) {
+    function _claim() internal override returns (uint256 rewardTokenAmount) {
         /// Claim rewardToken.
         baseRewardPool().getReward(address(this), false);
 

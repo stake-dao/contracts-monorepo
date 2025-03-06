@@ -24,4 +24,6 @@ interface IAccountant {
 
     function claimProtocolFees() external;
     function harvest(address[] calldata _vaults, bytes[] calldata _harvestData) external;
+
+    function REWARD_TOKEN() external view returns (address);
 }
