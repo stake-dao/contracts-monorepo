@@ -15,6 +15,5 @@ interface ISidecar {
 
     function claim() external returns (uint256);
 
-    function factory() external view returns (ISidecarFactory);
     function asset() external view returns (IERC20);
 }
