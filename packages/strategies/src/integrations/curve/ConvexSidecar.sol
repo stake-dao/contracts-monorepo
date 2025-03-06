@@ -9,40 +9,20 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "src/interfaces/ISidecar.sol";
+import "src/Sidecar.sol";
 
 /// @notice Sidecar for Convex.
 /// @dev For each PID, a minimal proxy is deployed using this contract as implementation.
-contract ConvexSidecar is ISidecar {
+contract ConvexSidecar is Sidecar {
     using Math for uint256;
     using SafeERC20 for IERC20;
 
     //////////////////////////////////////////////////////
-    /// --- CONSTANTS & IMMUTABLES
-    //////////////////////////////////////////////////////
-
-    /// @notice The protocol ID.
-    bytes4 public constant PROTOCOL_ID = bytes4(keccak256("CURVE"));
-
-    //////////////////////////////////////////////////////
-    /// --- ERRORS
-    //////////////////////////////////////////////////////
-
-    /// @notice Error emitted when caller is not strategy
-    error OnlyStrategy();
-
-    /// @notice Error emitted when caller is not accountant
-    error OnlyAccountant();
-
-    /// @notice Error emitted when contract is not initialized
-    error AlreadyInitialized();
-
-    //////////////////////////////////////////////////////
-    /// --- ISIDECAR IMMUTABLES
+    /// --- ISIDECAR CLONE IMMUTABLES
     //////////////////////////////////////////////////////
 
     /// @notice Address of the Minimal Proxy Factory.
-    function factory() public view returns (ISidecarFactory _factory) {
+    function factory() public view override returns (ISidecarFactory _factory) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         address factoryAddress;
         assembly {
@@ -51,41 +31,26 @@ contract ConvexSidecar is ISidecar {
         return ISidecarFactory(factoryAddress);
     }
 
-    /// @notice Protocol controller address.
-    function protocolController() public view returns (IProtocolController _protocolController) {
-        bytes memory args = Clones.fetchCloneArgs(address(this));
-        assembly {
-            _protocolController := mload(add(args, 40))
-        }
-    }
-
-    function accountant() public view returns (address _accountant) {
-        bytes memory args = Clones.fetchCloneArgs(address(this));
-        assembly {
-            _accountant := mload(add(args, 80))
-        }
-    }
-
     /// @notice Staking token address.
-    function asset() public view returns (IERC20 _asset) {
+    function asset() public view override returns (IERC20 _asset) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         assembly {
-            _asset := mload(add(args, 60))
+            _asset := mload(add(args, 40))
         }
     }
 
     /// @notice Reward token address.
-    function rewardToken() public view returns (IERC20 _rewardToken) {
+    function rewardToken() public view override returns (IERC20 _rewardToken) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         assembly {
-            _rewardToken := mload(add(args, 80))
+            _rewardToken := mload(add(args, 60))
         }
     }
 
-    function rewardReceiver() public view returns (address _rewardReceiver) {
+    function rewardReceiver() public view override returns (address _rewardReceiver) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         assembly {
-            _rewardReceiver := mload(add(args, 100))
+            _rewardReceiver := mload(add(args, 80))
         }
     }
 
@@ -104,21 +69,17 @@ contract ConvexSidecar is ISidecar {
     /// @notice Convex Entry point contract.
     function booster() public view returns (IBooster _booster) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
-        address boosterAddress;
         assembly {
-            boosterAddress := mload(add(args, 120))
+            _booster := mload(add(args, 120))
         }
-        return IBooster(boosterAddress);
     }
 
     /// @notice Staking Convex LP contract address.
     function baseRewardPool() public view returns (IBaseRewardPool _baseRewardPool) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
-        address baseRewardPoolAddress;
         assembly {
-            baseRewardPoolAddress := mload(add(args, 140))
+            _baseRewardPool := mload(add(args, 140))
         }
-        return IBaseRewardPool(baseRewardPoolAddress);
     }
 
     /// @notice Identifier of the pool on Convex.
@@ -130,28 +91,18 @@ contract ConvexSidecar is ISidecar {
     }
 
     //////////////////////////////////////////////////////
-    /// --- MODIFIERS & INITIALIZATION
+    /// --- INITIALIZATION
     //////////////////////////////////////////////////////
 
-    modifier onlyStrategy() {
-        require(msg.sender == protocolController().strategy(PROTOCOL_ID), OnlyStrategy());
-        _;
-    }
-
-    modifier onlyAccountant() {
-        require(msg.sender == accountant(), OnlyAccountant());
-        _;
-    }
-
     /// @notice Initialize the contract by approving the ConvexCurve booster to spend the LP token.
-    function initialize() external {
+    function initialize() external override {
         require(asset().allowance(address(this), address(booster())) == 0, AlreadyInitialized());
 
         asset().safeIncreaseAllowance(address(booster()), type(uint256).max);
     }
 
     //////////////////////////////////////////////////////
-    /// --- ISIDECAR OPERATIONS
+    /// --- ISIDECAR OPERATIONS OVERRIDE
     //////////////////////////////////////////////////////
 
     /// @notice Deposit LP token into Convex.
@@ -159,7 +110,7 @@ contract ConvexSidecar is ISidecar {
     /// @dev The reason there's an empty address parameter is to keep flexibility for future implementations.
     /// Not all fallbacks will be minimal proxies, so we need to keep the same function signature.
     /// Only callable by the strategy.
-    function deposit(uint256 amount) external onlyStrategy {
+    function deposit(uint256 amount) external override onlyStrategy {
         /// Deposit the LP token into Convex and stake it (true) to receive rewards.
         booster().deposit(pid(), amount, true);
     }
@@ -168,7 +119,7 @@ contract ConvexSidecar is ISidecar {
     /// @param amount Amount of LP token to withdraw.
     /// @param receiver Address to receive the LP token.
     /// Only callable by the strategy.
-    function withdraw(uint256 amount, address receiver) external onlyStrategy {
+    function withdraw(uint256 amount, address receiver) external override onlyStrategy {
         /// Withdraw from Convex gauge without claiming rewards (false).
         baseRewardPool().withdrawAndUnwrap(amount, false);
 
@@ -178,7 +129,7 @@ contract ConvexSidecar is ISidecar {
 
     /// @notice Claim rewards from Convex.
     /// @return rewardTokenAmount Amount of reward token claimed.
-    function claim() external onlyAccountant returns (uint256 rewardTokenAmount) {
+    function claim() external override onlyAccountant returns (uint256 rewardTokenAmount) {
         /// Claim rewardToken.
         baseRewardPool().getReward(address(this), false);
 
@@ -189,13 +140,13 @@ contract ConvexSidecar is ISidecar {
     }
 
     /// @notice Get the balance of the LP token on Convex held by this contract.
-    function balanceOf() public view returns (uint256) {
+    function balanceOf() public view override returns (uint256) {
         return baseRewardPool().balanceOf(address(this));
     }
 
     /// @notice Get the reward tokens from the base reward pool.
     /// @return Array of all extra reward tokens.
-    function getRewardTokens() public view returns (address[] memory) {
+    function getRewardTokens() public view override returns (address[] memory) {
         // Check if there is extra rewards
         uint256 extraRewardsLength = baseRewardPool().extraRewardsLength();
 
@@ -226,12 +177,12 @@ contract ConvexSidecar is ISidecar {
 
     /// @notice Get the amount of reward token earned by the strategy.
     /// @return The amount of reward token earned by the strategy.
-    function getPendingRewards() public view returns (uint256) {
+    function getPendingRewards() public view override returns (uint256) {
         return baseRewardPool().earned(address(this)) + rewardToken().balanceOf(address(this));
     }
 
     //////////////////////////////////////////////////////
-    /// --- CONVEX OPERATIONS
+    /// --- EXTRA CONVEX OPERATIONS
     //////////////////////////////////////////////////////
 
     function claimExtraRewards() external {

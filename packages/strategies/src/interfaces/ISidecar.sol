@@ -17,6 +17,4 @@ interface ISidecar {
 
     function factory() external view returns (ISidecarFactory);
     function asset() external view returns (IERC20);
-    function protocolController() external view returns (IProtocolController);
-    function accountant() external view returns (address);
 }
