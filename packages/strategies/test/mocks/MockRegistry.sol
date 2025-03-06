@@ -14,6 +14,16 @@ contract MockRegistry is IProtocolController {
     address private _accountant;
     address private _rewardReceiver;
 
+    bool private _permissionSetter;
+
+    function permissionSetters(address) external view returns (bool) {
+        return _permissionSetter;
+    }
+
+    function setPermissionSetter(address, bool) external {}
+
+    function setPermission(address, address, bytes4, bool) external {}
+
     function registerVault(address, address, address, address, bytes4) external {}
 
     function setRewardReceiver(address rewardReceiver_) external {

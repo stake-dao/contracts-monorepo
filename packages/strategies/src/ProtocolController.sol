@@ -47,6 +47,9 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @notice Mapping of contract to caller to function selector to permission
     mapping(address => mapping(address => mapping(bytes4 => bool))) private _permissions;
 
+    /// @notice Mapping of addresses that can set permissions
+    mapping(address => bool) public permissionSetters;
+
     //////////////////////////////////////////////////////
     /// --- ERRORS & EVENTS
     //////////////////////////////////////////////////////
@@ -69,11 +72,17 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @notice Event emitted when a registrar permission is set
     event RegistrarPermissionSet(address indexed registrar, bool allowed);
 
+    /// @notice Event emitted when a permission setter is set
+    event PermissionSetterSet(address indexed setter, bool allowed);
+
     /// @notice Thrown when a non-registrar calls a registrar-only function
     error OnlyRegistrar();
 
     /// @notice Thrown when a zero address is used
     error ZeroAddress();
+
+    /// @notice Thrown when an unauthorized address tries to set permissions
+    error NotPermissionSetter();
 
     //////////////////////////////////////////////////////
     /// --- MODIFIERS
@@ -82,6 +91,12 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @notice Modifier to restrict function access to registrars or owner
     modifier onlyRegistrar() {
         require(registrar[msg.sender], OnlyRegistrar());
+        _;
+    }
+
+    /// @notice Modifier to restrict function access to permission setters or owner
+    modifier onlyPermissionSetter() {
+        require(permissionSetters[msg.sender] || msg.sender == owner(), NotPermissionSetter());
         _;
     }
 
@@ -105,12 +120,24 @@ contract ProtocolController is IProtocolController, Ownable2Step {
         emit RegistrarPermissionSet(_registrar, _allowed);
     }
 
+    /// @notice Sets or revokes permission setter status for an address
+    /// @param _setter The permission setter address
+    /// @param _allowed Whether the address is allowed to set permissions
+    function setPermissionSetter(address _setter, bool _allowed) external onlyOwner {
+        require(_setter != address(0), ZeroAddress());
+        permissionSetters[_setter] = _allowed;
+        emit PermissionSetterSet(_setter, _allowed);
+    }
+
     /// @notice Sets a permission for a contract, caller, and function selector
     /// @param _contract The contract address
     /// @param _caller The caller address
     /// @param _selector The function selector
     /// @param _allowed Whether the caller is allowed to call the function
-    function setPermission(address _contract, address _caller, bytes4 _selector, bool _allowed) external onlyOwner {
+    function setPermission(address _contract, address _caller, bytes4 _selector, bool _allowed)
+        external
+        onlyPermissionSetter
+    {
         require(_contract != address(0) && _caller != address(0), ZeroAddress());
         _permissions[_contract][_caller][_selector] = _allowed;
         emit PermissionSet(_contract, _caller, _selector, _allowed);
