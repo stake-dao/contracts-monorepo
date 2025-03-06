@@ -16,6 +16,19 @@ contract ConvexSidecar is Sidecar {
     using SafeERC20 for IERC20;
 
     //////////////////////////////////////////////////////
+    /// ---  IMPLEMENTATION IMMUTABLES
+    //////////////////////////////////////////////////////
+
+    /// @notice Convex Reward Token address.
+    IERC20 public immutable CVX;
+
+    /// @notice Convex Booster address.
+    IBooster public immutable BOOSTER;
+
+    /// @notice Error emitted when a zero address is provided
+    error ZeroAddress();
+
+    //////////////////////////////////////////////////////
     /// --- ISIDECAR CLONE IMMUTABLES
     //////////////////////////////////////////////////////
 
@@ -27,14 +40,6 @@ contract ConvexSidecar is Sidecar {
         }
     }
 
-    /// @notice Reward token address.
-    function rewardToken() public view override returns (IERC20 _rewardToken) {
-        bytes memory args = Clones.fetchCloneArgs(address(this));
-        assembly {
-            _rewardToken := mload(add(args, 60))
-        }
-    }
-
     function rewardReceiver() public view override returns (address _rewardReceiver) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         assembly {
@@ -43,24 +48,8 @@ contract ConvexSidecar is Sidecar {
     }
 
     //////////////////////////////////////////////////////
-    /// --- CONVEX IMMUTABLES
+    /// --- CONVEX CLONE IMMUTABLES
     //////////////////////////////////////////////////////
-
-    /// @notice Convex Reward Token address.
-    function CVX() public view returns (IERC20 _cvx) {
-        bytes memory args = Clones.fetchCloneArgs(address(this));
-        assembly {
-            _cvx := mload(add(args, 100))
-        }
-    }
-
-    /// @notice Convex Entry point contract.
-    function booster() public view returns (IBooster _booster) {
-        bytes memory args = Clones.fetchCloneArgs(address(this));
-        assembly {
-            _booster := mload(add(args, 120))
-        }
-    }
 
     /// @notice Staking Convex LP contract address.
     function baseRewardPool() public view returns (IBaseRewardPool _baseRewardPool) {
@@ -82,9 +71,14 @@ contract ConvexSidecar is Sidecar {
     /// --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
-    constructor(bytes4 _protocolId, address _accountant, address _protocolController)
+    constructor(bytes4 _protocolId, address _accountant, address _protocolController, address _cvx, address _booster)
         Sidecar(_protocolId, _accountant, _protocolController)
-    {}
+    {
+        require(_cvx != address(0) && _booster != address(0), ZeroAddress());
+
+        CVX = IERC20(_cvx);
+        BOOSTER = IBooster(_booster);
+    }
 
     //////////////////////////////////////////////////////
     /// --- INITIALIZATION
@@ -92,9 +86,9 @@ contract ConvexSidecar is Sidecar {
 
     /// @notice Initialize the contract by approving the ConvexCurve booster to spend the LP token.
     function _initialize() internal override {
-        require(asset().allowance(address(this), address(booster())) == 0, AlreadyInitialized());
+        require(asset().allowance(address(this), address(BOOSTER)) == 0, AlreadyInitialized());
 
-        asset().safeIncreaseAllowance(address(booster()), type(uint256).max);
+        asset().safeIncreaseAllowance(address(BOOSTER), type(uint256).max);
     }
 
     //////////////////////////////////////////////////////
@@ -108,7 +102,7 @@ contract ConvexSidecar is Sidecar {
     /// Only callable by the strategy.
     function _deposit(uint256 amount) internal override {
         /// Deposit the LP token into Convex and stake it (true) to receive rewards.
-        booster().deposit(pid(), amount, true);
+        BOOSTER.deposit(pid(), amount, true);
     }
 
     /// @notice Withdraw LP token from Convex.
@@ -128,10 +122,10 @@ contract ConvexSidecar is Sidecar {
         /// Claim rewardToken.
         baseRewardPool().getReward(address(this), false);
 
-        rewardTokenAmount = rewardToken().balanceOf(address(this));
+        rewardTokenAmount = REWARD_TOKEN.balanceOf(address(this));
 
         /// Send the reward token to the accountant.
-        rewardToken().safeTransfer(msg.sender, rewardTokenAmount);
+        REWARD_TOKEN.safeTransfer(msg.sender, rewardTokenAmount);
     }
 
     /// @notice Get the balance of the LP token on Convex held by this contract.
@@ -173,7 +167,7 @@ contract ConvexSidecar is Sidecar {
     /// @notice Get the amount of reward token earned by the strategy.
     /// @return The amount of reward token earned by the strategy.
     function getPendingRewards() public view override returns (uint256) {
-        return baseRewardPool().earned(address(this)) + rewardToken().balanceOf(address(this));
+        return baseRewardPool().earned(address(this)) + REWARD_TOKEN.balanceOf(address(this));
     }
 
     //////////////////////////////////////////////////////
@@ -192,7 +186,7 @@ contract ConvexSidecar is Sidecar {
         baseRewardPool().getReward(address(this), true);
 
         /// Send the reward token to the reward receiver.
-        CVX().safeTransfer(rewardReceiver(), CVX().balanceOf(address(this)));
+        CVX.safeTransfer(rewardReceiver(), CVX.balanceOf(address(this)));
 
         /// Handle the extra reward tokens.
         for (uint256 i = 0; i < extraRewardTokens.length;) {

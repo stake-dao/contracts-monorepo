@@ -5,6 +5,7 @@ import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
 import {RewardVault} from "src/RewardVault.sol";
 import {ProtocolContext} from "src/ProtocolContext.sol";
+import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
 /// @title Factory - Abstract Base Factory Contract
@@ -68,29 +69,31 @@ abstract contract Factory is ProtocolContext {
 
     /// @notice Initializes the factory with protocol controller, reward token, and vault implementation
     /// @param _protocolController Address of the protocol controller
-    /// @param _rewardToken Address of the main reward token
     /// @param _vaultImplementation Address of the reward vault implementation
+    /// @param _rewardReceiverImplementation Address of the reward receiver implementation
     /// @param _protocolId Protocol identifier
+    /// @param _locker Address of the locker
+    /// @param _gateway Address of the gateway
     constructor(
         address _protocolController,
-        address _rewardToken,
         address _vaultImplementation,
         address _rewardReceiverImplementation,
-        bytes4 _protocolId
-    ) {
+        bytes4 _protocolId,
+        address _locker,
+        address _gateway
+    ) ProtocolContext(_protocolId, _protocolController, _locker, _gateway) {
         require(
-            _protocolController != address(0) && _rewardToken != address(0) && _vaultImplementation != address(0)
+            _protocolController != address(0) && _vaultImplementation != address(0)
                 && _rewardReceiverImplementation != address(0),
             ZeroAddress()
         );
 
-        PROTOCOL_ID = _protocolId;
-        REWARD_TOKEN = _rewardToken;
         REWARD_VAULT_IMPLEMENTATION = _vaultImplementation;
         REWARD_RECEIVER_IMPLEMENTATION = _rewardReceiverImplementation;
         PROTOCOL_CONTROLLER = IProtocolController(_protocolController);
 
         ACCOUNTANT = PROTOCOL_CONTROLLER.accountant(PROTOCOL_ID);
+        REWARD_TOKEN = IAccountant(ACCOUNTANT).REWARD_TOKEN();
     }
 
     //////////////////////////////////////////////////////
