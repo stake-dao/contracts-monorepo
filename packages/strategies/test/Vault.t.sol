@@ -34,7 +34,7 @@ contract Vault is Test {
         allocator = new MockAllocator();
         accountant = new Accountant(address(this), address(registry), address(token), bytes4(bytes("fake_id")));
 
-        vaultImplementation = new RewardVault(bytes4(keccak256("Curve")));
+        vaultImplementation = new RewardVault(bytes4(keccak256("Curve")), address(registry), address(accountant));
         vault = RewardVault(
             Clones.cloneDeterministicWithImmutableArgs(
                 address(vaultImplementation),
@@ -50,10 +50,10 @@ contract Vault is Test {
 
     function test_setup() public virtual {
         assertEq(address(vault.gauge()), address(token));
-        assertEq(address(vault.registry()), address(registry));
+        assertEq(address(vault.PROTOCOL_CONTROLLER()), address(registry));
         assertEq(address(vault.strategy()), address(strategy));
         assertEq(address(vault.allocator()), address(allocator));
-        assertEq(address(vault.accountant()), address(accountant));
+        assertEq(address(vault.ACCOUNTANT()), address(accountant));
         assertEq(address(vault.asset()), address(token));
 
         assertEq(vault.name(), "StakeDAO ERC20Mock Vault");
