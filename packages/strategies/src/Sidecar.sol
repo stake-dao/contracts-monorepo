@@ -1,134 +1,169 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {ISidecar} from "src/interfaces/ISidecar.sol";
-import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
 /// @title Sidecar - Abstract Base Sidecar Contract
 /// @notice A base contract for implementing protocol-specific sidecars
-/// @dev Provides core functionality for protocol-specific sidecar implementations
-///      Key responsibilities:
-///      - Handles deposits and withdrawals through protocol-specific implementations
-///      - Manages protocol-specific reward claiming
-///      - Provides access control for strategy and accountant interactions
+/// @dev Provides core functionality for depositing, withdrawing, and managing assets across different protocols
 abstract contract Sidecar is ISidecar {
     using SafeERC20 for IERC20;
 
-    /// @notice The protocol ID.
+    //////////////////////////////////////////////////////
+    /// --- IMMUTABLES
+    //////////////////////////////////////////////////////
+
+    /// @notice The protocol identifier
     bytes4 public immutable PROTOCOL_ID;
 
-    /// @notice The accountant address.
+    /// @notice The accountant contract address
     address public immutable ACCOUNTANT;
 
-    /// @notice The protocol controller address.
+    /// @notice The protocol controller contract
     IProtocolController public immutable PROTOCOL_CONTROLLER;
+
+    /// @notice The strategy contract address
+    address public immutable STRATEGY;
+
+    //////////////////////////////////////////////////////
+    /// --- STORAGE
+    //////////////////////////////////////////////////////
+
+    /// @notice Whether the sidecar has been initialized
+    bool private _initialized;
 
     //////////////////////////////////////////////////////
     /// --- ERRORS
     //////////////////////////////////////////////////////
 
-    /// @notice Error emitted when caller is not strategy
+    /// @notice Error thrown when the caller is not the strategy
     error OnlyStrategy();
 
-    /// @notice Error emitted when caller is not accountant
+    /// @notice Error thrown when the caller is not the accountant
     error OnlyAccountant();
 
-    /// @notice Error emitted when contract is not initialized
+    /// @notice Error thrown when the sidecar is already initialized
     error AlreadyInitialized();
 
-    /// @notice Error emitted when zero address is provided
-    error ZeroAddress();
+    /// @notice Error thrown when the sidecar is not initialized
+    error NotInitialized();
 
     //////////////////////////////////////////////////////
     /// --- MODIFIERS
     //////////////////////////////////////////////////////
 
-    /// @notice Ensures the caller is the accountant
-    modifier onlyAccountant() {
-        require(msg.sender == ACCOUNTANT, OnlyAccountant());
-        _;
-    }
-
-    /// @notice Ensures the caller is the strategy registered for the protocol
+    /// @notice Ensures the caller is the strategy
+    /// @custom:throws OnlyStrategy If the caller is not the strategy
     modifier onlyStrategy() {
-        require(msg.sender == PROTOCOL_CONTROLLER.strategy(PROTOCOL_ID), OnlyStrategy());
+        if (msg.sender != STRATEGY) revert OnlyStrategy();
         _;
     }
 
-    //////////////////////////////////////////////////////
-    /// --- ISIDECAR IMMUTABLES
-    //////////////////////////////////////////////////////
-
-    /// @notice Address of the Minimal Proxy Factory.
-    function factory() public view virtual returns (ISidecarFactory);
-
-    /// @notice Staking token address.
-    function asset() public view virtual returns (IERC20);
-
-    /// @notice Reward token address.
-    function rewardToken() public view virtual returns (IERC20);
-
-    /// @notice Reward receiver address.
-    function rewardReceiver() public view virtual returns (address);
+    /// @notice Ensures the caller is the accountant
+    /// @custom:throws OnlyAccountant If the caller is not the accountant
+    modifier onlyAccountant() {
+        if (msg.sender != ACCOUNTANT) revert OnlyAccountant();
+        _;
+    }
 
     //////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
-    /// @notice Constructor
-    /// @param _protocolId The protocol ID
-    /// @param _accountant The accountant address
-    /// @param _protocolController The protocol controller address
+    /// @notice Initializes the sidecar with protocol ID, accountant, and protocol controller
+    /// @param _protocolId The identifier for the protocol this sidecar interacts with
+    /// @param _accountant The address of the accountant contract
+    /// @param _protocolController The address of the protocol controller
     constructor(bytes4 _protocolId, address _accountant, address _protocolController) {
-        require(_accountant != address(0) && _protocolController != address(0), ZeroAddress());
-
         PROTOCOL_ID = _protocolId;
         ACCOUNTANT = _accountant;
         PROTOCOL_CONTROLLER = IProtocolController(_protocolController);
+        STRATEGY = PROTOCOL_CONTROLLER.strategy(PROTOCOL_ID);
     }
 
     //////////////////////////////////////////////////////
-    /// --- INITIALIZATION
+    /// --- EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////
 
-    /// @notice Initialize the contract
+    /// @notice Initializes the sidecar
+    /// @dev Can only be called once
+    /// @custom:throws AlreadyInitialized If the sidecar is already initialized
+    function initialize() external {
+        if (_initialized) revert AlreadyInitialized();
+        _initialized = true;
+        _initialize();
+    }
+
+    /// @notice Deposits assets into the sidecar
+    /// @param amount The amount to deposit
+    /// @custom:throws OnlyStrategy If the caller is not the strategy
+    function deposit(uint256 amount) external onlyStrategy {
+        _deposit(amount);
+    }
+
+    /// @notice Withdraws assets from the sidecar
+    /// @param amount The amount to withdraw
+    /// @param receiver The address to receive the withdrawn assets
+    /// @custom:throws OnlyStrategy If the caller is not the strategy
+    function withdraw(uint256 amount, address receiver) external onlyStrategy {
+        _withdraw(amount, receiver);
+    }
+
+    /// @notice Claims pending rewards from the sidecar
+    /// @custom:throws OnlyAccountant If the caller is not the accountant
+    function claim() external onlyAccountant returns (uint256) {
+        return _claim();
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- IMMUTABLES
+    //////////////////////////////////////////////////////
+
+    /// @notice Returns the asset of the sidecar
+    /// @return The asset of the sidecar
+    function asset() public view virtual returns (IERC20);
+
+    /// @notice Returns the reward token of the sidecar
+    /// @return The reward token of the sidecar
+    function rewardToken() public view virtual returns (IERC20);
+
+    /// @notice Returns the reward receiver of the sidecar
+    /// @return The reward receiver of the sidecar
+    function rewardReceiver() public view virtual returns (address);
+
+    //////////////////////////////////////////////////////
+    /// --- INTERNAL VIRTUAL FUNCTIONS
+    //////////////////////////////////////////////////////
+
+    /// @notice Initializes the sidecar
     /// @dev Must be implemented by derived sidecars to handle protocol-specific initialization
-    function initialize() external virtual;
+    function _initialize() internal virtual;
 
-    //////////////////////////////////////////////////////
-    /// --- ISIDECAR OPERATIONS
-    //////////////////////////////////////////////////////
+    /// @notice Deposits assets into the sidecar
+    /// @dev Must be implemented by derived sidecars to handle protocol-specific deposits
+    /// @param amount The amount to deposit
+    function _deposit(uint256 amount) internal virtual;
 
-    /// @notice Deposit tokens into the protocol
-    /// @param amount Amount of tokens to deposit
-    /// @dev Only callable by the strategy
-    function deposit(uint256 amount) external virtual;
+    /// @notice Claims pending rewards from the sidecar
+    /// @dev Must be implemented by derived sidecars to handle protocol-specific claims
+    function _claim() internal virtual returns (uint256);
 
-    /// @notice Withdraw tokens from the protocol
-    /// @param amount Amount of tokens to withdraw
-    /// @param receiver Address to receive the tokens
-    /// @dev Only callable by the strategy
-    function withdraw(uint256 amount, address receiver) external virtual;
+    /// @notice Withdraws assets from the sidecar
+    /// @dev Must be implemented by derived sidecars to handle protocol-specific withdrawals
+    /// @param amount The amount to withdraw
+    /// @param receiver The address to receive the withdrawn assets
+    function _withdraw(uint256 amount, address receiver) internal virtual;
 
-    /// @notice Claim rewards from the protocol
-    /// @return Amount of reward token claimed
-    /// @dev Only callable by the accountant
-    function claim() external virtual returns (uint256);
-
-    /// @notice Get the balance of tokens in the protocol
-    /// @return The balance of tokens
+    /// @notice Returns the balance of the sidecar
+    /// @dev Must be implemented by derived sidecars to handle protocol-specific balance calculation
+    /// @return The balance of the sidecar
     function balanceOf() public view virtual returns (uint256);
 
-    /// @notice Get the amount of pending rewards
-    /// @return The amount of pending rewards
+    /// @notice Returns the pending rewards of the sidecar
+    /// @dev Must be implemented by derived sidecars to handle protocol-specific reward calculation
+    /// @return The pending rewards of the sidecar
     function getPendingRewards() public view virtual returns (uint256);
-
-    /// @notice Get the reward tokens from the protocol
-    /// @return Array of reward token addresses
-    function getRewardTokens() public view virtual returns (address[] memory);
 }
