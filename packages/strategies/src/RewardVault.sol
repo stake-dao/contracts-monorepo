@@ -47,6 +47,9 @@ contract RewardVault is IERC4626, ERC20 {
     /// @notice The error thrown when caller is not the owner or approved
     error NotApproved();
 
+    /// @notice The error thrown when the address is zero
+    error ZeroAddress();
+
     /// @notice Error thrown when the caller is not allowed.
     error OnlyAllowed();
 
@@ -68,6 +71,12 @@ contract RewardVault is IERC4626, ERC20 {
 
     /// @notice The protocol ID.
     bytes4 public immutable PROTOCOL_ID;
+
+    /// @notice The protocol controller address.
+    IAccountant public immutable ACCOUNTANT;
+
+    /// @notice The protocol controller address.
+    IProtocolController public immutable PROTOCOL_CONTROLLER;
 
     /// @notice The maximum number of reward tokens that can be added.
     uint256 constant MAX_REWARD_TOKEN_COUNT = 10;
@@ -110,8 +119,14 @@ contract RewardVault is IERC4626, ERC20 {
 
     /// @notice Initializes the vault with basic ERC20 metadata
     /// @dev Sets up the vault with a standard name and symbol prefix
-    constructor(bytes4 protocolId) ERC20(string.concat("StakeDAO Vault"), string.concat("sd-vault")) {
+    constructor(bytes4 protocolId, address protocolController, address accountant)
+        ERC20(string.concat("StakeDAO Vault"), string.concat("sd-vault"))
+    {
+        require(accountant != address(0) && protocolController != address(0), ZeroAddress());
+
         PROTOCOL_ID = protocolId;
+        ACCOUNTANT = IAccountant(accountant);
+        PROTOCOL_CONTROLLER = IProtocolController(protocolController);
     }
 
     ///////////////////////////////////////////////////////////////
@@ -251,7 +266,7 @@ contract RewardVault is IERC4626, ERC20 {
         public
         returns (uint256[] memory amounts)
     {
-        require(registry().allowed(address(this), msg.sender, msg.sig), "OnlyAllowed");
+        require(PROTOCOL_CONTROLLER.allowed(address(this), msg.sender, msg.sig), "OnlyAllowed");
         return _claim(account, tokens, receiver);
     }
 
@@ -293,7 +308,7 @@ contract RewardVault is IERC4626, ERC20 {
     /// @param _distributor The address authorized to distribute rewards.
     function addRewardToken(address _rewardsToken, address _distributor) external {
         // check if the caller is allowed to add a reward token
-        require(registry().allowed(address(this), msg.sender, msg.sig), "OnlyAllowed");
+        require(PROTOCOL_CONTROLLER.allowed(address(this), msg.sender, msg.sig), "OnlyAllowed");
 
         // check if the reward token already exists
         if (isRewardToken[_rewardsToken]) revert RewardAlreadyExists();
@@ -555,22 +570,6 @@ contract RewardVault is IERC4626, ERC20 {
     /// ~ PROTOCOL_CONTROLLER / CLONE ARGUMENT GETTERS ~
     ///////////////////////////////////////////////////////////////
 
-    /// @notice Returns the registry.
-    function registry() public view returns (IProtocolController _registry) {
-        bytes memory args = Clones.fetchCloneArgs(address(this));
-        assembly {
-            _registry := mload(add(args, 20))
-        }
-    }
-
-    /// @notice Returns the accountant.
-    function accountant() public view returns (IAccountant _accountant) {
-        bytes memory args = Clones.fetchCloneArgs(address(this));
-        assembly {
-            _accountant := mload(add(args, 40))
-        }
-    }
-
     /// @notice Returns the gauge.
     function gauge() public view returns (address _gauge) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
@@ -581,12 +580,12 @@ contract RewardVault is IERC4626, ERC20 {
 
     /// @notice Returns the allocator.
     function allocator() public view returns (IAllocator _allocator) {
-        return IAllocator(registry().allocator(PROTOCOL_ID));
+        return IAllocator(PROTOCOL_CONTROLLER.allocator(PROTOCOL_ID));
     }
 
     /// @notice Returns the strategy.
     function strategy() public view returns (IStrategy _strategy) {
-        return IStrategy(registry().strategy(PROTOCOL_ID));
+        return IStrategy(PROTOCOL_CONTROLLER.strategy(PROTOCOL_ID));
     }
 
     ///////////////////////////////////////////////////////////////
@@ -598,7 +597,7 @@ contract RewardVault is IERC4626, ERC20 {
     function _update(address from, address to, uint256 amount) internal override {
         // 1. Update Balances via Accountant.
         // TODO: remove the unsafe cast to uint128 once the implementation is cleaned up.
-        accountant().checkpoint(
+        ACCOUNTANT.checkpoint(
             gauge(), from, to, uint128(amount), IStrategy.PendingRewards({feeSubjectAmount: 0, totalAmount: 0}), false
         );
 
@@ -614,7 +613,7 @@ contract RewardVault is IERC4626, ERC20 {
         internal
     {
         // TODO: remove the unsafe cast to uint128 once the implementation is cleaned up.
-        accountant().checkpoint(gauge(), address(0), to, uint128(amount), pendingRewards, harvested);
+        ACCOUNTANT.checkpoint(gauge(), address(0), to, uint128(amount), pendingRewards, harvested);
     }
 
     /// @dev Burns shares (accountant checkpoint).
@@ -622,7 +621,7 @@ contract RewardVault is IERC4626, ERC20 {
         internal
     {
         // TODO: remove the unsafe cast to uint128 once the implementation is cleaned up.
-        accountant().checkpoint(gauge(), from, address(0), uint128(amount), pendingRewards, harvested);
+        ACCOUNTANT.checkpoint(gauge(), from, address(0), uint128(amount), pendingRewards, harvested);
     }
 
     /// @notice Returns the name of the vault.
@@ -642,7 +641,7 @@ contract RewardVault is IERC4626, ERC20 {
 
     /// @notice Returns the total supply of the vault.
     function totalSupply() public view override(ERC20, IERC20) returns (uint256) {
-        return accountant().totalSupply(address(this));
+        return ACCOUNTANT.totalSupply(address(this));
     }
 
     function _safeTotalSupply() internal view returns (uint128) {
@@ -651,6 +650,6 @@ contract RewardVault is IERC4626, ERC20 {
 
     /// @notice Returns the balance of the vault for a given account.
     function balanceOf(address account) public view override(ERC20, IERC20) returns (uint256) {
-        return accountant().balanceOf(address(this), account);
+        return ACCOUNTANT.balanceOf(address(this), account);
     }
 }
