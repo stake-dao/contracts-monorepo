@@ -77,6 +77,22 @@ abstract contract Sidecar is ISidecar {
     function rewardReceiver() public view virtual returns (address);
 
     //////////////////////////////////////////////////////
+    /// --- CONSTRUCTOR
+    //////////////////////////////////////////////////////
+
+    /// @notice Constructor
+    /// @param _protocolId The protocol ID
+    /// @param _accountant The accountant address
+    /// @param _protocolController The protocol controller address
+    constructor(bytes4 _protocolId, address _accountant, address _protocolController) {
+        require(_accountant != address(0) && _protocolController != address(0), ZeroAddress());
+
+        PROTOCOL_ID = _protocolId;
+        ACCOUNTANT = _accountant;
+        PROTOCOL_CONTROLLER = IProtocolController(_protocolController);
+    }
+
+    //////////////////////////////////////////////////////
     /// --- INITIALIZATION
     //////////////////////////////////////////////////////
 
