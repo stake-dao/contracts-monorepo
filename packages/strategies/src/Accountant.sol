@@ -366,7 +366,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @param _vaults Array of vault addresses to harvest from.
     /// @param _harvestData Array of harvest data for each vault.
     /// @custom:throws NoHarvester If the harvester is not set.
-    function harvest(address[] calldata _vaults, bytes[] calldata _harvestData) external nonReentrant {
+    function harvest(address[] calldata _vaults, bytes[] calldata _harvestData) external {
         require(_vaults.length == _harvestData.length, InvalidHarvestDataLength());
         _batchHarvest({_vaults: _vaults, harvestData: _harvestData, receiver: msg.sender});
     }
@@ -374,7 +374,10 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @dev Internal implementation of batch harvesting.
     /// @param _vaults Array of vault addresses to harvest from.
     /// @param harvestData Harvest data for each vault.
-    function _batchHarvest(address[] calldata _vaults, bytes[] calldata harvestData, address receiver) internal {
+    function _batchHarvest(address[] calldata _vaults, bytes[] calldata harvestData, address receiver)
+        internal
+        nonReentrant
+    {
         // Cache registry to avoid multiple SLOADs
         address harvester = PROTOCOL_CONTROLLER.harvester(PROTOCOL_ID);
         require(harvester != address(0), NoHarvester());
@@ -513,7 +516,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @param _vaults Array of vault addresses to claim rewards from.
     /// @param harvestData Optional harvest data for each vault. Empty bytes for vaults that don't need harvesting.
     /// @custom:throws NoPendingRewards If there are no rewards to claim.
-    function claim(address[] calldata _vaults, bytes[] calldata harvestData) external nonReentrant {
+    function claim(address[] calldata _vaults, bytes[] calldata harvestData) external {
         claim(_vaults, harvestData, msg.sender);
     }
 
@@ -522,7 +525,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @param harvestData Optional harvest data for each vault. Empty bytes for vaults that don't need harvesting.
     /// @param receiver Address that will receive the claimed rewards.
     /// @custom:throws NoPendingRewards If there are no rewards to claim.
-    function claim(address[] calldata _vaults, bytes[] calldata harvestData, address receiver) public nonReentrant {
+    function claim(address[] calldata _vaults, bytes[] calldata harvestData, address receiver) public {
         require(harvestData.length == 0 || harvestData.length == _vaults.length, InvalidHarvestDataLength());
 
         if (harvestData.length != 0) {
@@ -539,7 +542,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @dev expected to be called by authorized accounts only
     /// @custom:throws OnlyAllowed If caller is not allowed to claim on behalf of others.
     /// @custom:throws NoPendingRewards If there are no rewards to claim.
-    function claim(address[] calldata _vaults, address account, bytes[] calldata harvestData) external nonReentrant {
+    function claim(address[] calldata _vaults, address account, bytes[] calldata harvestData) external {
         claim(_vaults, account, harvestData, account);
     }
 
@@ -554,7 +557,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     function claim(address[] calldata _vaults, address account, bytes[] calldata harvestData, address receiver)
         public
         onlyAllowed
-        nonReentrant
     {
         require(harvestData.length == 0 || harvestData.length == _vaults.length, InvalidHarvestDataLength());
 
@@ -570,7 +572,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @param accountAddress Address to claim rewards for.
     /// @param receiver Address that will receive the claimed rewards.
     /// @custom:throws NoPendingRewards If the total claimed amount is zero.
-    function _claim(address[] calldata _vaults, address accountAddress, address receiver) internal {
+    function _claim(address[] calldata _vaults, address accountAddress, address receiver) internal nonReentrant {
         uint256 totalAmount;
 
         // For each vault, check if the account has any rewards to claim
