@@ -33,7 +33,7 @@ contract AccountantInvariantTest is StdInvariant, Test {
         allocator = new MockAllocator();
         accountant = new Accountant(address(this), address(registry), address(token), bytes4(bytes("fake_id")));
 
-        vaultImplementation = new RewardVault(bytes4(keccak256("Curve")));
+        vaultImplementation = new RewardVault(bytes4(keccak256("Curve")), address(registry), address(accountant));
         vault = RewardVault(
             Clones.cloneDeterministicWithImmutableArgs(
                 address(vaultImplementation),
