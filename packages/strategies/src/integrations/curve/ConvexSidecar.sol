@@ -5,16 +5,14 @@ import {IBooster} from "@interfaces/convex/IBooster.sol";
 import {IBaseRewardPool} from "@interfaces/convex/IBaseRewardPool.sol";
 import {IStashTokenWrapper} from "@interfaces/convex/IStashTokenWrapper.sol";
 
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
-import "src/Sidecar.sol";
+import {ISidecarFactory, Sidecar} from "src/Sidecar.sol";
 
 /// @notice Sidecar for Convex.
 /// @dev For each PID, a minimal proxy is deployed using this contract as implementation.
 contract ConvexSidecar is Sidecar {
-    using Math for uint256;
     using SafeERC20 for IERC20;
 
     //////////////////////////////////////////////////////
@@ -89,6 +87,14 @@ contract ConvexSidecar is Sidecar {
             _pid := mload(add(args, 160))
         }
     }
+
+    //////////////////////////////////////////////////////
+    /// --- CONSTRUCTOR
+    //////////////////////////////////////////////////////
+
+    constructor(bytes4 _protocolId, address _accountant, address _protocolController)
+        Sidecar(_protocolId, _accountant, _protocolController)
+    {}
 
     //////////////////////////////////////////////////////
     /// --- INITIALIZATION

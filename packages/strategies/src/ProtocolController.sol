@@ -27,6 +27,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     struct Gauge {
         address vault;
         address asset;
+        address rewardReceiver;
         bytes4 protocolId;
         bool isShutdown;
     }
@@ -99,7 +100,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @param _registrar The registrar address
     /// @param _allowed Whether the registrar is allowed to register vaults
     function setRegistrar(address _registrar, bool _allowed) external onlyOwner {
-        if (_registrar == address(0)) revert ZeroAddress();
+        require(_registrar != address(0), ZeroAddress());
         registrar[_registrar] = _allowed;
         emit RegistrarPermissionSet(_registrar, _allowed);
     }
@@ -110,7 +111,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @param _selector The function selector
     /// @param _allowed Whether the caller is allowed to call the function
     function setPermission(address _contract, address _caller, bytes4 _selector, bool _allowed) external onlyOwner {
-        if (_contract == address(0) || _caller == address(0)) revert ZeroAddress();
+        require(_contract != address(0) && _caller != address(0), ZeroAddress());
         _permissions[_contract][_caller][_selector] = _allowed;
         emit PermissionSet(_contract, _caller, _selector, _allowed);
     }
@@ -123,7 +124,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @param protocolId The protocol identifier
     /// @param _strategy The strategy address
     function setStrategy(bytes4 protocolId, address _strategy) external onlyOwner {
-        if (_strategy == address(0)) revert ZeroAddress();
+        require(_strategy != address(0), ZeroAddress());
         _protocolComponents[protocolId].strategy = _strategy;
         emit ProtocolComponentSet(protocolId, "Strategy", _strategy);
     }
@@ -132,7 +133,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @param protocolId The protocol identifier
     /// @param _allocator The allocator address
     function setAllocator(bytes4 protocolId, address _allocator) external onlyOwner {
-        if (_allocator == address(0)) revert ZeroAddress();
+        require(_allocator != address(0), ZeroAddress());
         _protocolComponents[protocolId].allocator = _allocator;
         emit ProtocolComponentSet(protocolId, "Allocator", _allocator);
     }
@@ -141,7 +142,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @param protocolId The protocol identifier
     /// @param _harvester The harvester address
     function setHarvester(bytes4 protocolId, address _harvester) external onlyOwner {
-        if (_harvester == address(0)) revert ZeroAddress();
+        require(_harvester != address(0), ZeroAddress());
         _protocolComponents[protocolId].harvester = _harvester;
         emit ProtocolComponentSet(protocolId, "Harvester", _harvester);
     }
@@ -150,7 +151,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @param protocolId The protocol identifier
     /// @param _accountant The accountant address
     function setAccountant(bytes4 protocolId, address _accountant) external onlyOwner {
-        if (_accountant == address(0)) revert ZeroAddress();
+        require(_accountant != address(0), ZeroAddress());
         _protocolComponents[protocolId].accountant = _accountant;
         emit ProtocolComponentSet(protocolId, "Accountant", _accountant);
     }
@@ -159,7 +160,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @param protocolId The protocol identifier
     /// @param _feeReceiver The fee receiver address
     function setFeeReceiver(bytes4 protocolId, address _feeReceiver) external onlyOwner {
-        if (_feeReceiver == address(0)) revert ZeroAddress();
+        require(_feeReceiver != address(0), ZeroAddress());
         _protocolComponents[protocolId].feeReceiver = _feeReceiver;
         emit ProtocolComponentSet(protocolId, "FeeReceiver", _feeReceiver);
     }
@@ -172,16 +173,24 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @param _gauge The gauge address
     /// @param _vault The vault address
     /// @param _asset The asset address
+    /// @param _rewardReceiver The reward receiver address
     /// @param _protocolId The protocol identifier for the gauge
     /// @dev Can be called by the owner or by authorized registrar contracts
-    function registerVault(address _gauge, address _vault, address _asset, bytes4 _protocolId) external onlyRegistrar {
-        if (_gauge == address(0) || _vault == address(0) || _asset == address(0)) revert ZeroAddress();
+    function registerVault(address _gauge, address _vault, address _asset, address _rewardReceiver, bytes4 _protocolId)
+        external
+        onlyRegistrar
+    {
+        require(
+            _gauge != address(0) && _vault != address(0) && _asset != address(0) && _rewardReceiver != address(0),
+            ZeroAddress()
+        );
 
         // Optimized storage writing
         Gauge storage g = gauge[_gauge];
         g.vault = _vault;
         g.asset = _asset;
         g.protocolId = _protocolId;
+        g.rewardReceiver = _rewardReceiver;
 
         emit VaultRegistered(_gauge, _vault, _asset, _protocolId);
     }
@@ -251,6 +260,13 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @return The vault address
     function vaults(address _gauge) external view returns (address) {
         return gauge[_gauge].vault;
+    }
+
+    /// @notice Returns the reward receiver address for a gauge
+    /// @param _gauge The gauge address
+    /// @return The reward receiver address
+    function rewardReceiver(address _gauge) external view returns (address) {
+        return gauge[_gauge].rewardReceiver;
     }
 
     /// @notice Returns the asset address for a gauge
