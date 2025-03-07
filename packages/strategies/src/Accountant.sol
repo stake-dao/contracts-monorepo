@@ -142,6 +142,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @notice Error thrown when the protocol ID is invalid
     error InvalidProtocolId();
 
+    /// @notice Error thrown when the harvester has not transferred the correct amount of tokens to the Accountant contract
+    error HarvestTokenNotReceived();
+
     //////////////////////////////////////////////////////
     /// --- EVENTS
     //////////////////////////////////////////////////////
@@ -409,6 +412,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         // Fees should be calculated before the harvest.
         uint256 currentHarvestFee = getCurrentHarvestFee();
 
+        // Fetch the balance of the Accountant contract before harvesting
+        uint256 balanceBefore = IERC20(REWARD_TOKEN).balanceOf(address(this));
+
         // Harvest the asset
         (uint256 feeSubjectAmount, uint256 totalAmount) = abi.decode(
             harvester.functionDelegateCall(
@@ -419,6 +425,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
             (uint256, uint256)
         );
         if (totalAmount == 0) return 0;
+
+        // Check that the harvester has transferred the correct amount of reward tokens to this contract
+        require(IERC20(REWARD_TOKEN).balanceOf(address(this)) >= balanceBefore + totalAmount, HarvestTokenNotReceived());
 
         // We charge protocol fee on the feeable amount and update the accrued fees.
         protocolFeesAccrued += feeSubjectAmount.mulDiv(feesParams.protocolFeePercent, 1e18);
