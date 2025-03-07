@@ -1,6 +1,8 @@
 /// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
+import {console} from "forge-std/src/console.sol";
+
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IHarvester} from "src/interfaces/IHarvester.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
@@ -372,7 +374,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @param _gauges Array of gauges to harvest from.
     /// @param _harvestData Array of harvest data for each gauge.
     /// @custom:throws NoHarvester If the harvester is not set.
-    function harvest(address[] calldata _gauges, bytes[] calldata _harvestData) external nonReentrant {
+    function harvest(address[] calldata _gauges, bytes[] calldata _harvestData) external  {
         require(_gauges.length == _harvestData.length, InvalidHarvestDataLength());
         _batchHarvest({_gauges: _gauges, harvestData: _harvestData, receiver: msg.sender});
     }
@@ -380,7 +382,10 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @dev Internal implementation of batch harvesting.
     /// @param _gauges Array of gauges to harvest from.
     /// @param harvestData Harvest data for each gauge.
-    function _batchHarvest(address[] calldata _gauges, bytes[] calldata harvestData, address receiver) internal {
+    function _batchHarvest(address[] calldata _gauges, bytes[] calldata harvestData, address receiver)
+        internal
+        nonReentrant
+    {
         // Cache registry to avoid multiple SLOADs
         address harvester = PROTOCOL_CONTROLLER.harvester(PROTOCOL_ID);
         require(harvester != address(0), NoHarvester());
@@ -524,7 +529,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @param _gauges Array of gauges to claim rewards from.
     /// @param harvestData Optional harvest data for each gauge. Empty bytes for gauges that don't need harvesting.
     /// @custom:throws NoPendingRewards If there are no rewards to claim.
-    function claim(address[] calldata _gauges, bytes[] calldata harvestData) external nonReentrant {
+    function claim(address[] calldata _gauges, bytes[] calldata harvestData) external {
         claim(_gauges, harvestData, msg.sender);
     }
 
@@ -533,7 +538,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @param harvestData Optional harvest data for each gauge. Empty bytes for gauges that don't need harvesting.
     /// @param receiver Address that will receive the claimed rewards.
     /// @custom:throws NoPendingRewards If there are no rewards to claim.
-    function claim(address[] calldata _gauges, bytes[] calldata harvestData, address receiver) public nonReentrant {
+    function claim(address[] calldata _gauges, bytes[] calldata harvestData, address receiver) public {
         require(harvestData.length == 0 || harvestData.length == _gauges.length, InvalidHarvestDataLength());
 
         if (harvestData.length != 0) {
@@ -550,7 +555,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @dev expected to be called by authorized accounts only
     /// @custom:throws OnlyAllowed If caller is not allowed to claim on behalf of others.
     /// @custom:throws NoPendingRewards If there are no rewards to claim.
-    function claim(address[] calldata _gauges, address account, bytes[] calldata harvestData) external nonReentrant {
+    function claim(address[] calldata _gauges, address account, bytes[] calldata harvestData) external {
         claim(_gauges, account, harvestData, account);
     }
 
@@ -580,7 +585,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @param accountAddress Address to claim rewards for.
     /// @param receiver Address that will receive the claimed rewards.
     /// @custom:throws NoPendingRewards If the total claimed amount is zero.
-    function _claim(address[] calldata _gauges, address accountAddress, address receiver) internal {
+    function _claim(address[] calldata _gauges, address accountAddress, address receiver) internal nonReentrant {
         uint256 totalAmount;
 
         address vault;
