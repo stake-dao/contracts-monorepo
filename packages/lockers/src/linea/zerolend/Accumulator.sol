@@ -59,7 +59,8 @@ contract Accumulator is BaseAccumulator {
         uint256 lockerWethBalanceBefore = IERC20(WETH).balanceOf(locker);
 
         // Claim rewards from the locker.
-        (bool _success,) = ILocker(locker).execTransactionFromModuleReturnData(
+        bool _success;
+        (_success,) = ILocker(locker).execTransactionFromModuleReturnData(
             ZERO_VP, 0, abi.encodeWithSelector(IZeroVp.getReward.selector), Enum.Operation.Call
         );
 
@@ -71,23 +72,25 @@ contract Accumulator is BaseAccumulator {
 
         // Transfer rewards to the accumulator.
         if (zeroReward > 0) {
-            ILocker(locker).execTransactionFromModuleReturnData(
+            (_success,) = ILocker(locker).execTransactionFromModuleReturnData(
                 ZERO,
                 0,
                 abi.encodeWithSelector(IERC20.transfer.selector, address(this), zeroReward),
                 Enum.Operation.Call
             );
+            if (!_success) revert ExecFromSafeModuleFailed();
 
             notifyReward(ZERO, false, false);
         }
 
         if (wethReward > 0) {
-            ILocker(locker).execTransactionFromModuleReturnData(
+            (_success,) = ILocker(locker).execTransactionFromModuleReturnData(
                 WETH,
                 0,
                 abi.encodeWithSelector(IERC20.transfer.selector, address(this), wethReward),
                 Enum.Operation.Call
             );
+            if (!_success) revert ExecFromSafeModuleFailed();
 
             notifyReward(WETH, false, false);
         }
