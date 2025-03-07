@@ -8,7 +8,7 @@ contract ERC20Mock is MockERC20 {
         initialize(name_, symbol_, decimals_);
     }
 
-    function mint(address to, uint256 amount) public {
+    function mint(address to, uint256 amount) public virtual {
         _mint(to, amount);
     }
 

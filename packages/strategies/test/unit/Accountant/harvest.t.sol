@@ -4,6 +4,7 @@ import {BaseTest, Math} from "test/Base.t.sol";
 import {Accountant} from "src/Accountant.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {AccountantHarness} from "test/unit/Accountant/AccountantHarness.t.sol";
+import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 
 contract Accountant__Harvest is BaseTest {
     using Math for uint256;
@@ -48,6 +49,88 @@ contract Accountant__Harvest is BaseTest {
         vm.expectRevert(Accountant.NoHarvester.selector);
 
         accountant.harvest(vaults, harvestData);
+    }
+
+    function test_RevertIfRewardTokenMintReverts(uint256 rewards, uint128 amount, address _harvester)
+        external
+        _cheat_replaceAccountantWithAccountantHarness
+    {
+        // it revert if reward token not received
+
+        AccountantHarness accountantHarness = AccountantHarness(address(accountant));
+
+        // Ensure reasonable testing data (1e24 < uint128.max)
+        _assumeUnlabeledAddress(_harvester);
+        amount = uint128(bound(uint256(amount), 1e6, 1e24));
+        rewards = bound(rewards, accountantHarness.MIN_MEANINGFUL_REWARDS(), 1e24);
+
+        // We are putting the contract into a state where some reward token has been mint
+        // Those two functions are testing-only function that shortcut the expected flow (calling checkpoint)
+        accountantHarness._cheat_updateUserData(
+            vault, makeAddr("user"), Accountant.AccountData({balance: amount, integral: 0, pendingRewards: 0})
+        );
+        accountantHarness._cheat_updateVaultData(
+            vault, Accountant.VaultData({integral: 0, supply: amount, feeSubjectAmount: 0, totalAmount: 0})
+        );
+
+        /// Construct realistic vaults/harvest data and call the harvest function as the _harvester
+        address[] memory vaults = new address[](1);
+        vaults[0] = vault;
+        bytes[] memory harvestData = new bytes[](1);
+        harvestData[0] = abi.encode(rewards, 1e18);
+
+        vm.mockCallRevert(
+            address(rewardToken),
+            abi.encodeWithSelector(ERC20Mock.mint.selector, address(accountantHarness), rewards),
+            "UNEXPECTED_ERROR_IN_ERC20"
+        );
+
+        vm.prank(_harvester);
+        vm.expectRevert("UNEXPECTED_ERROR_IN_ERC20");
+        accountantHarness.harvest(vaults, harvestData);
+    }
+
+    function test_RevertIfRewardTokenNotReceived(uint256 rewards, uint128 amount, address _harvester)
+        external
+        _cheat_replaceAccountantWithAccountantHarness
+    {
+        // it revert if reward token not received
+
+        AccountantHarness accountantHarness = AccountantHarness(address(accountant));
+
+        // Ensure reasonable testing data (1e24 < uint128.max)
+        _assumeUnlabeledAddress(_harvester);
+        amount = uint128(bound(uint256(amount), 1e6, 1e24));
+        rewards = bound(rewards, accountantHarness.MIN_MEANINGFUL_REWARDS(), 1e24);
+
+        // We are putting the contract into a state where some reward token has been mint
+        // Those two functions are testing-only function that shortcut the expected flow (calling checkpoint)
+        accountantHarness._cheat_updateUserData(
+            vault, makeAddr("user"), Accountant.AccountData({balance: amount, integral: 0, pendingRewards: 0})
+        );
+        accountantHarness._cheat_updateVaultData(
+            vault, Accountant.VaultData({integral: 0, supply: amount, feeSubjectAmount: 0, totalAmount: 0})
+        );
+
+        /// Construct realistic vaults/harvest data and call the harvest function as the _harvester
+        address[] memory vaults = new address[](1);
+        vaults[0] = vault;
+        bytes[] memory harvestData = new bytes[](1);
+        harvestData[0] = abi.encode(rewards, 1e18);
+
+        // Next time the mint() method of the rewardToken is called
+        // - It will call the mint() method of the maliciousERC20 instead
+        // - The maliciousERC20 will do absolutely nothing
+        // - The accountant.harvest() function MUST revert because the reward token is not received
+        vm.mockFunction(
+            address(rewardToken),
+            address(new ERC20MaliciousMintlessToken()),
+            abi.encodeWithSelector(ERC20Mock.mint.selector)
+        );
+
+        vm.prank(_harvester);
+        vm.expectRevert(abi.encodeWithSelector(Accountant.HarvestTokenNotReceived.selector));
+        accountantHarness.harvest(vaults, harvestData);
     }
 
     function test_DoesNothingIfVaultAndHarvestDataAreEmpty() external {
@@ -104,7 +187,6 @@ contract Accountant__Harvest is BaseTest {
         bytes[] memory harvestData = new bytes[](1);
         harvestData[0] = abi.encode(rewards, 1e18);
 
-        // address _harvester = address(0x2);
         vm.prank(_harvester);
         accountantHarness.harvest(vaults, harvestData);
 
@@ -245,5 +327,13 @@ contract Accountant__Harvest is BaseTest {
         harvestData[0] = abi.encode(0, 1e18);
 
         accountantHarness.harvest(vaults, harvestData);
+    }
+}
+
+contract ERC20MaliciousMintlessToken is ERC20Mock {
+    constructor() ERC20Mock("Malicious ERC20", "MAL", 18) {}
+
+    function mint(address, uint256) public override {
+        // does nothing
     }
 }

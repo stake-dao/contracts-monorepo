@@ -55,6 +55,12 @@ abstract contract BaseTest is Test {
         registry.setVault(vault);
         registry.setHarvester(address(harvester));
 
+        // Mock the registry `assets` function used to fetch the vault's asset to always return the staking token in our tests
+        // `clearMockedCalls` can be used to clear the mocked calls in a specific test (https://book.getfoundry.sh/cheatcodes/clear-mocked-calls)
+        bytes[] memory mocks = new bytes[](1);
+        mocks[0] = abi.encode(address(rewardToken));
+        vm.mockCalls(address(registry), abi.encodeWithSelector(MockRegistry.assets.selector), mocks);
+
         /// Label the contracts
         vm.label({account: address(strategy), newLabel: "Strategy"});
         vm.label({account: address(registry), newLabel: "Registry"});
