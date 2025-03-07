@@ -1,0 +1,35 @@
+Accountant__claim
+│   ├── given vaults and harvest
+│   │   ├── it reverts on reentrancy
+│   │   └── it uses the sender as receiver
+│   ├── given vaults and harvest and receiver
+│   │   ├── it reverts on reentrancy
+│   │   ├── it reverts if harvest data is non null and not equal to vaults
+│   │   └── it uses the sender as account
+│   ├── given vaults and harvest and account
+│   │   ├── it reverts on reentrancy
+│   │   └── it uses the account as receiver
+│   ├── given vaults and accounts and harvest and receiver
+│   │   ├── it reverts on reentrancy
+│   │   ├── it reverts if not allowed
+│   │   └── it reverts if harvest data is non null and not equal to vaults
+│   ├── given untouched vaults and account with pending rewards
+│   │   ├── it send the pending rewards to the receiver
+│   │   ├── it updates account integral with vault integral
+│   │   └── it reset account pending rewards
+│   ├── given untouched vaults and account without pending rewards
+│   │   └── it reverts
+│   ├── given updated vaults and account without pending rewards but balance
+│   │   ├── it sends calculated rewards to the receiver
+│   │   └── it updates account integral with vault integral
+│   ├── given updated vaults and account with pending rewards and balance
+│   │   ├── it sends calculated and pending rewards to the receiver
+│   │   ├── it updates account integral with vault integral
+│   │   └── it reset account pending rewards
+│   ├── it calculates and send correct rewards from mixed vaults
+├── it reverts if there are no pending rewards
+├── it reverts the ERC20 transfer revert
+└── it emit the ERC20 transfer event to the receiver
+
+
+reverts if account balance > accountant balance

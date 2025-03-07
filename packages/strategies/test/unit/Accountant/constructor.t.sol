@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 import {Test} from "forge-std/src/Test.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {Accountant} from "src/Accountant.sol";
+import {AccountantHarness} from "test/unit/Accountant/AccountantHarness.t.sol";
 
 contract Accountant__Constructor is Test {
     function test_RevertGiven_OwnerIs0() external {
@@ -75,7 +76,7 @@ contract Accountant__Constructor is Test {
         // it sets the protocol fee to default value
 
         AccountantHarness accountant =
-            new AccountantHarness(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"));
+            new AccountantHarness(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"), bytes4(hex"11"));
         assertEq(accountant.getProtocolFeePercent(), accountant.exposed_defaultProtocolFee());
     }
 
@@ -83,7 +84,7 @@ contract Accountant__Constructor is Test {
         // it sets the harvest fee to default value
 
         AccountantHarness accountant =
-            new AccountantHarness(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"));
+            new AccountantHarness(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"), bytes4(hex"11"));
         assertEq(accountant.getHarvestFeePercent(), accountant.exposed_defaultHarvestFee());
     }
 
@@ -93,13 +94,13 @@ contract Accountant__Constructor is Test {
         // dummy deployment to expose the default constant value
         vm.pauseGasMetering();
         AccountantHarness accountant =
-            new AccountantHarness(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"));
+            new AccountantHarness(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"), bytes4(hex"11"));
         vm.resumeGasMetering();
 
         vm.expectEmit(true, true, true, true, 1);
         emit Accountant.ProtocolFeePercentSet(0, accountant.exposed_defaultProtocolFee());
 
-        new AccountantHarness(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"));
+        new AccountantHarness(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"), bytes4(hex"11"));
     }
 
     function test_EmitsTheHarvestFeePercentSetEvent() external {
@@ -108,13 +109,13 @@ contract Accountant__Constructor is Test {
         // dummy deployment to expose the default constant value
         vm.pauseGasMetering();
         AccountantHarness accountant =
-            new AccountantHarness(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"));
+            new AccountantHarness(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"), bytes4(hex"11"));
         vm.resumeGasMetering();
 
         vm.expectEmit(true, true, true, true, 1);
         emit Accountant.HarvestFeePercentSet(0, accountant.exposed_defaultHarvestFee());
 
-        new AccountantHarness(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"));
+        new AccountantHarness(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"), bytes4(hex"11"));
     }
 
     function test_PreservesHarvestUrgencyThresholdValue() external {
@@ -123,22 +124,5 @@ contract Accountant__Constructor is Test {
         Accountant accountant =
             new Accountant(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"), bytes4(hex"11"));
         assertEq(accountant.HARVEST_URGENCY_THRESHOLD(), 0);
-    }
-}
-
-// Exposes the useful internal functions of the Accountant contract for testing purposes
-// @dev This is not the same AccountantHarness as the generic one used for testing purposes
-//      because we need to have a control over the constructor parameters
-contract AccountantHarness is Accountant {
-    constructor(address owner, address registry, address rewardToken)
-        Accountant(owner, registry, rewardToken, bytes4(hex"11"))
-    {}
-
-    function exposed_defaultProtocolFee() external pure returns (uint128) {
-        return DEFAULT_PROTOCOL_FEE;
-    }
-
-    function exposed_defaultHarvestFee() external pure returns (uint128) {
-        return DEFAULT_HARVEST_FEE;
     }
 }
