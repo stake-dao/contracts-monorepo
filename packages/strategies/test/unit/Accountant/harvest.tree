@@ -1,6 +1,8 @@
 Accountant__Harvest
 ├── it revert if harvest and vaults length not equal
 ├── it revert if harvester incorrect
+├── it revert if reward token mint reverts
+├── it revert if reward token not received
 ├── it does nothing if vault and harvest data are empty
 ├── it transfers the harvest fee to the caller if there are some
 ├── it reset vault amount after harvesting
