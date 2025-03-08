@@ -4,7 +4,6 @@ pragma solidity 0.8.28;
 import {console} from "forge-std/src/console.sol";
 
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {IHarvester} from "src/interfaces/IHarvester.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {IAccountant} from "src/interfaces/IAccountant.sol";
 
@@ -120,8 +119,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @notice Error thrown when the caller is not allowed.
     error OnlyAllowed();
 
-    /// @notice Error thrown when the harvester is not set.
-    error NoHarvester();
+    /// @notice Error thrown when the strategy is not set.
+    error NoStrategy();
 
     /// @notice Error thrown when the fee receiver is not set.
     error NoFeeReceiver();
@@ -373,8 +372,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @notice Harvests rewards from multiple gauges.
     /// @param _gauges Array of gauges to harvest from.
     /// @param _harvestData Array of harvest data for each gauge.
-    /// @custom:throws NoHarvester If the harvester is not set.
-    function harvest(address[] calldata _gauges, bytes[] calldata _harvestData) external  {
+    /// @custom:throws NoStrategy If the harvester is not set.
+    function harvest(address[] calldata _gauges, bytes[] calldata _harvestData) external {
         require(_gauges.length == _harvestData.length, InvalidHarvestDataLength());
         _batchHarvest({_gauges: _gauges, harvestData: _harvestData, receiver: msg.sender});
     }
@@ -386,9 +385,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         internal
         nonReentrant
     {
-        // Cache registry to avoid multiple SLOADs
-        address harvester = PROTOCOL_CONTROLLER.harvester(PROTOCOL_ID);
-        require(harvester != address(0), NoHarvester());
+        // Cache strategy to avoid multiple SLOADs
+        address strategy = PROTOCOL_CONTROLLER.strategy(PROTOCOL_ID);
+        require(strategy != address(0), NoStrategy());
 
         uint256 totalHarvesterFee;
 
@@ -397,7 +396,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
             totalHarvesterFee += _harvest({
                 gauge: _gauges[i],
                 harvestData: harvestData[i],
-                harvester: harvester,
+                strategy: strategy,
                 registry: address(PROTOCOL_CONTROLLER)
             });
         }
@@ -410,7 +409,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
 
     /// @dev Internal implementation of single vault harvesting.
     /// @return harvesterFee The harvester fee for this harvest operation.
-    function _harvest(address gauge, bytes calldata harvestData, address harvester, address registry)
+    function _harvest(address gauge, bytes calldata harvestData, address strategy, address registry)
         private
         returns (uint256 harvesterFee)
     {
@@ -424,38 +423,39 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         uint256 balanceBefore = IERC20(REWARD_TOKEN).balanceOf(address(this));
 
         // Harvest the asset
-        (uint256 feeSubjectAmount, uint256 totalAmount) = abi.decode(
-            harvester.functionDelegateCall(abi.encodeWithSelector(IHarvester.harvest.selector, gauge, harvestData)),
-            (uint256, uint256)
-        );
-        if (totalAmount == 0) return 0;
+        IStrategy.PendingRewards memory pendingRewards = IStrategy(strategy).harvest(gauge, harvestData);
+        if (pendingRewards.totalAmount == 0) return 0;
 
         // Check that the harvester has transferred the correct amount of reward tokens to this contract
-        require(IERC20(REWARD_TOKEN).balanceOf(address(this)) >= balanceBefore + totalAmount, HarvestTokenNotReceived());
+        require(
+            IERC20(REWARD_TOKEN).balanceOf(address(this)) >= balanceBefore + pendingRewards.totalAmount,
+            HarvestTokenNotReceived()
+        );
 
         // We charge protocol fee on the feeable amount and update the accrued fees.
-        protocolFeesAccrued += feeSubjectAmount.mulDiv(feesParams.protocolFeePercent, 1e18);
+        protocolFeesAccrued += pendingRewards.feeSubjectAmount.mulDiv(feesParams.protocolFeePercent, 1e18);
 
         // We charge harvester fee on the total amount.
-        harvesterFee = totalAmount.mulDiv(currentHarvestFee, 1e18);
+        harvesterFee = pendingRewards.totalAmount.mulDiv(currentHarvestFee, 1e18);
 
         VaultData storage _vault = vaults[vault];
-        uint256 pendingRewards = _vault.totalAmount;
+        uint256 vaultPendingRewards = _vault.totalAmount;
 
         // Refund the excess harvest fee taken at the checkpoint.
         uint128 currentHarvestFeePercent = feesParams.harvestFeePercent;
-        if (pendingRewards > 0 && currentHarvestFee < currentHarvestFeePercent) {
-            totalAmount += pendingRewards.mulDiv(currentHarvestFeePercent - currentHarvestFee, 1e18);
+        if (vaultPendingRewards > 0 && currentHarvestFee < currentHarvestFeePercent) {
+            pendingRewards.totalAmount +=
+                vaultPendingRewards.mulDiv(currentHarvestFeePercent - currentHarvestFee, 1e18).toUint128();
         }
 
         // Update vault state
-        _updateVaultState({vault: _vault, pendingRewards: pendingRewards, amount: totalAmount});
+        _updateVaultState({vault: _vault, pendingRewards: vaultPendingRewards, amount: pendingRewards.totalAmount});
 
         // Always clear pending rewards after harvesting.
         _vault.feeSubjectAmount = 0;
         _vault.totalAmount = 0;
 
-        emit Harvest(vault, totalAmount);
+        emit Harvest(vault, pendingRewards.totalAmount);
     }
 
     /// @dev Updates vault state during harvest.
