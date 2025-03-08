@@ -3,11 +3,15 @@ pragma solidity 0.8.28;
 
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 import {IStrategy, IAllocator} from "src/interfaces/IStrategy.sol";
+import {TransientSlot} from "@openzeppelin/contracts/utils/TransientSlot.sol";
 
 contract MockStrategy is IStrategy {
-    ERC20Mock public immutable rewardToken;
+    using TransientSlot for *;
 
-    uint256 public flushAmount;
+    /// @dev Slot for the flush amount in transient storage
+    bytes32 private constant FLUSH_AMOUNT_SLOT = keccak256("strategy.flush.amount");
+
+    ERC20Mock public immutable rewardToken;
 
     constructor(address rewardToken_) {
         rewardToken = ERC20Mock(rewardToken_);
@@ -36,7 +40,9 @@ contract MockStrategy is IStrategy {
 
         (uint256 amount, uint256 randomSplit) = abi.decode(harvestData, (uint256, uint256));
 
-        flushAmount += amount;
+        // Update flush amount in transient storage
+        uint256 currentFlushAmount = FLUSH_AMOUNT_SLOT.asUint256().tload();
+        FLUSH_AMOUNT_SLOT.asUint256().tstore(currentFlushAmount + amount);
 
         /// Calculate the fee subject amount.
         pendingRewards.feeSubjectAmount = uint128(amount * 1e18 / randomSplit);
@@ -44,8 +50,13 @@ contract MockStrategy is IStrategy {
     }
 
     function flush() external override {
+        // Get flush amount from transient storage
+        uint256 flushAmount = FLUSH_AMOUNT_SLOT.asUint256().tload();
+
         rewardToken.mint(msg.sender, flushAmount);
-        flushAmount = 0;
+
+        // Reset the flush amount in transient storage
+        FLUSH_AMOUNT_SLOT.asUint256().tstore(0);
     }
 
     function balanceOf(address) external pure returns (uint256) {

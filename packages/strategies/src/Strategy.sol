@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {TransientSlot} from "@openzeppelin/contracts/utils/TransientSlot.sol";
 
 import {ISidecar} from "src/interfaces/ISidecar.sol";
 import {IStrategy, IAllocator} from "src/interfaces/IStrategy.sol";
@@ -20,10 +21,10 @@ import {IProtocolController, ProtocolContext} from "src/ProtocolContext.sol";
 abstract contract Strategy is IStrategy, ProtocolContext {
     using SafeCast for uint256;
     using SafeERC20 for IERC20;
+    using TransientSlot for *;
 
-    /// Transient storage for the amount to flush
-    /// @dev TODO: Replace with a transient storage pattern
-    uint256 private flushAmount;
+    /// @dev Slot for the flush amount in transient storage
+    bytes32 private constant FLUSH_AMOUNT_SLOT = keccak256("strategy.flush.amount");
 
     //////////////////////////////////////////////////////
     /// --- ERRORS
@@ -174,7 +175,10 @@ abstract contract Strategy is IStrategy, ProtocolContext {
             if (target == LOCKER) {
                 pendingRewardsAmount = _harvest(gauge, extraData);
                 pendingRewards.feeSubjectAmount = pendingRewardsAmount.toUint128();
-                flushAmount += pendingRewardsAmount;
+
+                // Update flush amount in transient storage
+                uint256 currentFlushAmount = FLUSH_AMOUNT_SLOT.asUint256().tload();
+                FLUSH_AMOUNT_SLOT.asUint256().tstore(currentFlushAmount + pendingRewardsAmount);
             } else {
                 pendingRewardsAmount = ISidecar(target).claim();
             }
@@ -188,11 +192,14 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @notice Flushes the reward token to the locker
     /// @dev Only allowed to be called by the accountant during harvest operation
     function flush() public onlyAccountant {
+        // Get flush amount from transient storage
+        uint256 flushAmount = FLUSH_AMOUNT_SLOT.asUint256().tload();
+
         bytes memory data = abi.encodeWithSelector(IERC20.transfer.selector, ACCOUNTANT, flushAmount);
         _executeTransaction(address(REWARD_TOKEN), data);
 
-        /// Reset the flush amount.
-        flushAmount = 0;
+        // Reset the flush amount in transient storage
+        FLUSH_AMOUNT_SLOT.asUint256().tstore(0);
     }
 
     /// @notice Shuts down the strategy by withdrawing all the assets and sending them to the vault
