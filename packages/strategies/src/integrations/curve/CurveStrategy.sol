@@ -94,8 +94,7 @@ contract CurveStrategy is Strategy {
 
     /// @notice Harvests rewards from a Curve gauge
     /// @param gauge The address of the Curve gauge to harvest from
-    /// @return pendingRewards The pending rewards after harvesting
-    function _harvest(address gauge, bytes calldata) internal override returns (uint256) {
+    function _harvest(address gauge, bytes calldata) internal override returns (uint256 rewardAmount) {
         /// 1. Snapshot the balance before minting.
         uint256 _before = IERC20(REWARD_TOKEN).balanceOf(address(LOCKER));
 
@@ -103,13 +102,6 @@ contract CurveStrategy is Strategy {
         IMinter(MINTER).mint_for(gauge, address(LOCKER));
 
         /// 3. Calculate the reward amount.
-        uint256 rewardAmount = IERC20(REWARD_TOKEN).balanceOf(address(LOCKER)) - _before;
-
-        /// 4. Transfer the rewards to the accountant.
-        bytes memory data = abi.encodeWithSignature("transfer(address,uint256)", address(ACCOUNTANT), rewardAmount);
-        _executeTransaction(REWARD_TOKEN, data);
-
-        /// 5. Return the reward amount.
-        return rewardAmount;
+        rewardAmount = IERC20(REWARD_TOKEN).balanceOf(address(LOCKER)) - _before;
     }
 }
