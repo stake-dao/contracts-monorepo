@@ -185,6 +185,16 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         return pendingRewards;
     }
 
+    /// @notice Flushes the reward token to the locker
+    /// @dev Only allowed to be called by the accountant during harvest operation
+    function flush() public onlyAccountant {
+        bytes memory data = abi.encodeWithSelector(IERC20.transfer.selector, ACCOUNTANT, flushAmount);
+        _executeTransaction(address(REWARD_TOKEN), data);
+
+        /// Reset the flush amount.
+        flushAmount = 0;
+    }
+
     /// @notice Shuts down the strategy by withdrawing all the assets and sending them to the vault
     /// @param gauge The gauge to shut down
     /// @dev Only allowed to be called by permissioned addresses, or anyone if the gauge/system is shutdown
@@ -309,10 +319,4 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @param amount The amount to withdraw
     /// @param receiver The address to receive the withdrawn assets
     function _withdraw(address gauge, uint256 amount, address receiver) internal virtual {}
-
-    /// @notice Flushes the reward token to the locker
-    function flush() public onlyAccountant {
-        bytes memory data = abi.encodeWithSelector(IERC20.transfer.selector, LOCKER, flushAmount);
-        _executeTransaction(address(REWARD_TOKEN), data);
-    }
 }
