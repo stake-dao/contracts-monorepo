@@ -187,12 +187,12 @@ contract AccountantTest is BaseTest {
         harvestData[0] = abi.encode(rewards, 1e18);
 
         /// Test that the harvester is not set.
-        registry.setHarvester(address(0));
+        registry.setStrategy(address(0));
 
-        vm.expectRevert(Accountant.NoHarvester.selector);
+        vm.expectRevert(Accountant.NoStrategy.selector);
         accountant.harvest(vaults, harvestData);
 
-        registry.setHarvester(address(harvester));
+        registry.setStrategy(address(strategy));
 
         address user = address(0x1);
         address harvester = address(0x2);

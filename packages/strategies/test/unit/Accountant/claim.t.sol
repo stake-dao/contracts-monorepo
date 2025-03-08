@@ -1,4 +1,3 @@
-
 pragma solidity 0.8.28;
 
 import {console} from "forge-std/src/console.sol";
@@ -317,7 +316,7 @@ contract Accountant__claim is BaseTest {
             mocks[i] = abi.encode(vaults[i]);
         }
 
-        /// Mock the registry `vaults` used to fetch which vault is associated to a gauge and returns 
+        /// Mock the registry `vaults` used to fetch which vault is associated to a gauge and returns
         /// the vaults instead.
         vm.mockCalls(address(registry), abi.encodeWithSelector(MockRegistry.vaults.selector), mocks);
 
@@ -363,7 +362,6 @@ contract Accountant__claim is BaseTest {
         accountantHarness._cheat_updateUserData(
             vaults[3], address(this), Accountant.AccountData({balance: 0, integral: 1e21, pendingRewards: 0})
         );
-
 
         // claim the rewards
         _cheat_allowSender();

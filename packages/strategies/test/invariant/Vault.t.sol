@@ -38,7 +38,7 @@ contract VaultInvariantTest is StdInvariant, Test {
         token = new ERC20Mock("ERC20Mock", "MTK", 18);
         rewardToken = new ERC20Mock("ERC20Mock", "RTK", 18);
 
-        strategy = new MockStrategy();
+        strategy = new MockStrategy(address(rewardToken));
         registry = new MockRegistry();
         allocator = new MockAllocator();
         accountant = new Accountant(address(this), address(registry), address(rewardToken), bytes4(bytes("fake_id")));

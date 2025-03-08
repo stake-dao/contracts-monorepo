@@ -92,4 +92,9 @@ contract CurveStrategy is Strategy {
         bytes memory data = abi.encodeWithSignature("withdraw(uint256,address)", amount, receiver);
         _executeTransaction(gauge, data);
     }
+
+    /// @notice Harvests rewards from a Curve gauge
+    /// @param gauge The address of the Curve gauge to harvest from
+    /// @return pendingRewards The pending rewards after harvesting
+    function _harvest(address gauge, bytes calldata) internal view override returns (uint256) {}
 }

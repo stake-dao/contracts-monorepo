@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {ISidecar} from "src/interfaces/ISidecar.sol";
@@ -17,6 +18,7 @@ import {IProtocolController, ProtocolContext} from "src/ProtocolContext.sol";
 ///      - Tracks and reports pending rewards
 ///      - Provides emergency shutdown functionality
 abstract contract Strategy is IStrategy, ProtocolContext {
+    using SafeCast for uint256;
     using SafeERC20 for IERC20;
 
     //////////////////////////////////////////////////////
@@ -33,6 +35,9 @@ abstract contract Strategy is IStrategy, ProtocolContext {
 
     /// @notice Error thrown when the caller is not the vault for the gauge
     error OnlyVault();
+
+    /// @notice Error thrown when the caller is not the accountant for the strategy
+    error OnlyAccountant();
 
     /// @notice Error thrown when the caller is not allowed to perform the action
     error OnlyAllowed();
@@ -55,6 +60,13 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @custom:throws OnlyVault If the caller is not the registered vault for the gauge
     modifier onlyVault(address gauge) {
         require(PROTOCOL_CONTROLLER.vaults(gauge) == msg.sender, OnlyVault());
+        _;
+    }
+
+    /// @notice Ensures the caller is the accountant for the strategy
+    /// @custom:throws OnlyAccountant If the caller is not the accountant for the strategy
+    modifier onlyAccountant() {
+        require(ACCOUNTANT == msg.sender, OnlyAccountant());
         _;
     }
 
@@ -144,6 +156,39 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         }
 
         pendingRewards = _sync(allocation.gauge);
+    }
+
+    /// @notice Harvests rewards from a gauge
+    /// @param gauge The gauge address to harvest from
+    /// @param extraData Additional data needed for harvesting (protocol-specific)
+    /// @return pendingRewards The pending rewards after harvesting
+    /// @dev Called using delegatecall from the Accountant contract
+    /// @dev Essentialy the same implementation as Strategy.sync() but this function claims rewards and returns them
+    function harvest(address gauge, bytes calldata extraData)
+        external
+        override
+        onlyAccountant
+        returns (IStrategy.PendingRewards memory pendingRewards)
+    {
+        address allocator = PROTOCOL_CONTROLLER.allocator(PROTOCOL_ID);
+
+        address[] memory targets = IAllocator(allocator).getAllocationTargets(gauge);
+
+        uint256 pendingRewardsAmount;
+        for (uint256 i = 0; i < targets.length; i++) {
+            address target = targets[i];
+
+            if (target == LOCKER) {
+                pendingRewardsAmount = _harvest(gauge, extraData);
+                pendingRewards.feeSubjectAmount = pendingRewardsAmount.toUint128();
+            } else {
+                pendingRewardsAmount = ISidecar(target).claim();
+            }
+
+            pendingRewards.totalAmount += pendingRewardsAmount.toUint128();
+        }
+
+        return pendingRewards;
     }
 
     /// @notice Shuts down the strategy by withdrawing all the assets and sending them to the vault
@@ -250,6 +295,13 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @param gauge The gauge to synchronize
     /// @return Pending rewards collected during synchronization
     function _sync(address gauge) internal virtual returns (PendingRewards memory);
+
+    /// @notice Harvests rewards from a specific target
+    /// @dev Must be implemented by derived strategies to handle protocol-specific reward collection
+    /// @param gauge The gauge to harvest rewards from
+    /// @param extraData Additional data needed for harvesting (protocol-specific)
+    /// @return pendingRewards The pending rewards collected during harvesting
+    function _harvest(address gauge, bytes calldata extraData) internal virtual returns (uint256 pendingRewards);
 
     /// @notice Deposits assets into a specific target
     /// @dev Must be implemented by derived strategies to handle protocol-specific deposits
