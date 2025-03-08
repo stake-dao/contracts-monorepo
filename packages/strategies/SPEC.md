@@ -4,7 +4,7 @@
 
 Stake DAO V2 is a modular, gas-efficient yield optimization protocol designed to source rewards from various DeFi platforms (Curve, Balancer, Pendle, etc.) while providing a unified user experience. The system employs a component-based architecture with clear separation of concerns to enable flexible reward streaming, multi-chain deployment, and seamless protocol integrations.
 
-![System Architecture Diagram](https://hackmd.io/_uploads/SJt3osFjyx.png)
+![System Architecture Diagram](https://hackmd.io/_uploads/B1DB63Kske.png)
 
 ### Core Design Principles
 
