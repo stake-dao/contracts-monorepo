@@ -22,14 +22,6 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     using SafeERC20 for IERC20;
 
     //////////////////////////////////////////////////////
-    /// --- IMMUTABLES
-    //////////////////////////////////////////////////////
-
-    /// @notice The accountant contract address
-    /// @dev Responsible for tracking rewards and fees
-    address public immutable ACCOUNTANT;
-
-    //////////////////////////////////////////////////////
     /// --- ERRORS
     //////////////////////////////////////////////////////
 
@@ -85,17 +77,14 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
-    /// @notice Initializes the strategy with registry, protocol ID, and accountant
+    /// @notice Initializes the strategy with registry, protocol ID, and locker and gateway
     /// @param _registry The address of the protocol controller
     /// @param _protocolId The identifier for the protocol this strategy interacts with
-    /// @param _accountant The address of the accountant contract
     /// @param _locker The address of the locker contract
     /// @param _gateway The address of the gateway contract
-    constructor(address _registry, bytes4 _protocolId, address _accountant, address _locker, address _gateway)
+    constructor(address _registry, bytes4 _protocolId, address _locker, address _gateway)
         ProtocolContext(_protocolId, _registry, _locker, _gateway)
-    {
-        ACCOUNTANT = _accountant;
-    }
+    {}
 
     //////////////////////////////////////////////////////
     /// --- EXTERNAL FUNCTIONS
