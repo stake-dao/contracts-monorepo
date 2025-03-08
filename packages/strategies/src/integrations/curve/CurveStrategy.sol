@@ -35,11 +35,10 @@ contract CurveStrategy is Strategy {
 
     /// @notice Initializes the CurveStrategy contract
     /// @param _registry The address of the protocol controller registry
-    /// @param _accountant The address of the accountant contract
     /// @param _locker The address of the locker contract
     /// @param _gateway The address of the gateway contract
-    constructor(address _registry, address _accountant, address _locker, address _gateway)
-        Strategy(_registry, CURVE_PROTOCOL_ID, _accountant, _locker, _gateway)
+    constructor(address _registry, address _locker, address _gateway)
+        Strategy(_registry, CURVE_PROTOCOL_ID, _locker, _gateway)
     {}
 
     //////////////////////////////////////////////////////
@@ -96,5 +95,21 @@ contract CurveStrategy is Strategy {
     /// @notice Harvests rewards from a Curve gauge
     /// @param gauge The address of the Curve gauge to harvest from
     /// @return pendingRewards The pending rewards after harvesting
-    function _harvest(address gauge, bytes calldata) internal view override returns (uint256) {}
+    function _harvest(address gauge, bytes calldata) internal override returns (uint256) {
+        /// 1. Snapshot the balance before minting.
+        uint256 _before = IERC20(REWARD_TOKEN).balanceOf(address(LOCKER));
+
+        /// 2. Mint the rewards of the gauge to the locker.
+        IMinter(MINTER).mint_for(gauge, address(LOCKER));
+
+        /// 3. Calculate the reward amount.
+        uint256 rewardAmount = IERC20(REWARD_TOKEN).balanceOf(address(LOCKER)) - _before;
+
+        /// 4. Transfer the rewards to the accountant.
+        bytes memory data = abi.encodeWithSignature("transfer(address,uint256)", address(ACCOUNTANT), rewardAmount);
+        _executeTransaction(REWARD_TOKEN, data);
+
+        /// 5. Return the reward amount.
+        return rewardAmount;
+    }
 }

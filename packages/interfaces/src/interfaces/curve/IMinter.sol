@@ -2,6 +2,6 @@
 pragma solidity ^0.8.19;
 
 interface IMinter {
-    function mint(address gauge, address account, uint256 amount) external;
+    function mint_for(address gauge, address account) external;
     function minted(address gauge, address account) external view returns (uint256);
 }

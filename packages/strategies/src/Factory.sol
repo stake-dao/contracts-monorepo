@@ -21,14 +21,6 @@ abstract contract Factory is ProtocolContext {
     /// --- IMMUTABLES
     //////////////////////////////////////////////////////
 
-    /// @notice Accountant address
-    /// @dev Responsible for tracking rewards and fees
-    address public immutable ACCOUNTANT;
-
-    /// @notice Main reward token address
-    /// @dev The primary token used for rewards in the protocol
-    address public immutable REWARD_TOKEN;
-
     /// @notice Reward vault implementation address
     /// @dev The implementation contract that will be cloned for each new vault
     address public immutable REWARD_VAULT_IMPLEMENTATION;

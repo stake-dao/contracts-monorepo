@@ -2,6 +2,8 @@
 pragma solidity 0.8.28;
 
 import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
+
+import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
 /// @title ProtocolContext
@@ -21,6 +23,12 @@ abstract contract ProtocolContext {
 
     /// @notice The gateway contract address
     address public immutable GATEWAY;
+
+    /// @notice The accountant contract address
+    address public immutable ACCOUNTANT;
+
+    /// @notice The reward token address
+    address public immutable REWARD_TOKEN;
 
     /// @notice The protocol controller contract
     IProtocolController public immutable PROTOCOL_CONTROLLER;
@@ -47,6 +55,8 @@ abstract contract ProtocolContext {
 
         GATEWAY = _gateway;
         PROTOCOL_ID = _protocolId;
+        ACCOUNTANT = IProtocolController(_protocolController).accountant(_protocolId);
+        REWARD_TOKEN = IAccountant(ACCOUNTANT).REWARD_TOKEN();
         PROTOCOL_CONTROLLER = IProtocolController(_protocolController);
 
         // In some cases (L2s), the locker is the same as the gateway.
