@@ -29,7 +29,7 @@ contract Vault is Test {
         token = new ERC20Mock("ERC20Mock", "MTK", 18);
         token.mint(address(this), AMOUNT);
 
-        strategy = new MockStrategy();
+        strategy = new MockStrategy(address(token));
         registry = new MockRegistry();
         allocator = new MockAllocator();
         accountant = new Accountant(address(this), address(registry), address(token), bytes4(bytes("fake_id")));

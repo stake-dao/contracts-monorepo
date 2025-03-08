@@ -43,10 +43,10 @@ contract Accountant__Harvest is BaseTest {
         // we mock the call to the protocol controller to return an invalid harvester
         vm.mockCall(
             address(accountant.PROTOCOL_CONTROLLER()),
-            abi.encodeWithSelector(IProtocolController.harvester.selector, accountant.PROTOCOL_ID()),
+            abi.encodeWithSelector(IProtocolController.strategy.selector, accountant.PROTOCOL_ID()),
             abi.encode(address(0))
         );
-        vm.expectRevert(Accountant.NoHarvester.selector);
+        vm.expectRevert(Accountant.NoStrategy.selector);
 
         accountant.harvest(vaults, harvestData);
     }
