@@ -394,14 +394,14 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         // Fetch the balance of the Accountant contract before harvesting.
         uint256 balanceBefore = IERC20(REWARD_TOKEN).balanceOf(address(this));
 
+        // Fees should be calculated before the harvest
+        uint256 currentHarvestFee = getCurrentHarvestFee();
+
         // First pass: harvest all gauges and update vault states
         for (uint256 i; i < _gauges.length; i++) {
             address gauge = _gauges[i];
             address vault = PROTOCOL_CONTROLLER.vaults(gauge);
             require(vault != address(0), InvalidVault());
-
-            // Fees should be calculated before the harvest
-            uint256 currentHarvestFee = getCurrentHarvestFee();
 
             // Harvest the asset (this accumulates rewards in the strategy contract)
             IStrategy.PendingRewards memory pendingRewards = IStrategy(strategy).harvest(gauge, harvestData[i]);
