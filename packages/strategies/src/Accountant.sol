@@ -1,7 +1,5 @@
-/// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
-
-import {console} from "forge-std/src/console.sol";
 
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
