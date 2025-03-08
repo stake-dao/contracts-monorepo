@@ -419,6 +419,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         IStrategy.PendingRewards memory pendingRewards = IStrategy(strategy).harvest(gauge, harvestData);
         if (pendingRewards.totalAmount == 0) return 0;
 
+        /// @dev TODO: Implement batching before flushing. This is temporary implementation.
+        IStrategy(strategy).flush();
+
         // Check that the harvester has transferred the correct amount of reward tokens to this contract
         require(
             IERC20(REWARD_TOKEN).balanceOf(address(this)) >= balanceBefore + pendingRewards.totalAmount,

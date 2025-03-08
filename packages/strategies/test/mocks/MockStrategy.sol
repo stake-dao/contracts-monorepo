@@ -7,6 +7,8 @@ import {IStrategy, IAllocator} from "src/interfaces/IStrategy.sol";
 contract MockStrategy is IStrategy {
     ERC20Mock public immutable rewardToken;
 
+    uint256 public flushAmount;
+
     constructor(address rewardToken_) {
         rewardToken = ERC20Mock(rewardToken_);
     }
@@ -34,11 +36,16 @@ contract MockStrategy is IStrategy {
 
         (uint256 amount, uint256 randomSplit) = abi.decode(harvestData, (uint256, uint256));
 
-        rewardToken.mint(msg.sender, amount);
+        flushAmount += amount;
 
         /// Calculate the fee subject amount.
         pendingRewards.feeSubjectAmount = uint128(amount * 1e18 / randomSplit);
         pendingRewards.totalAmount = uint128(amount);
+    }
+
+    function flush() external override {
+        rewardToken.mint(msg.sender, flushAmount);
+        flushAmount = 0;
     }
 
     function balanceOf(address) external pure returns (uint256) {

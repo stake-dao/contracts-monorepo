@@ -21,6 +21,10 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     using SafeCast for uint256;
     using SafeERC20 for IERC20;
 
+    /// Transient storage for the amount to flush
+    /// @dev TODO: Replace with a transient storage pattern
+    uint256 private flushAmount;
+
     //////////////////////////////////////////////////////
     /// --- ERRORS
     //////////////////////////////////////////////////////
@@ -170,6 +174,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
             if (target == LOCKER) {
                 pendingRewardsAmount = _harvest(gauge, extraData);
                 pendingRewards.feeSubjectAmount = pendingRewardsAmount.toUint128();
+                flushAmount += pendingRewardsAmount;
             } else {
                 pendingRewardsAmount = ISidecar(target).claim();
             }
@@ -304,4 +309,10 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @param amount The amount to withdraw
     /// @param receiver The address to receive the withdrawn assets
     function _withdraw(address gauge, uint256 amount, address receiver) internal virtual {}
+
+    /// @notice Flushes the reward token to the locker
+    function flush() public onlyAccountant {
+        bytes memory data = abi.encodeWithSelector(IERC20.transfer.selector, LOCKER, flushAmount);
+        _executeTransaction(address(REWARD_TOKEN), data);
+    }
 }
