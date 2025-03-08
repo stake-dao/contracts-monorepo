@@ -19,4 +19,5 @@ interface IStrategy {
     function balanceOf(address gauge) external view returns (uint256 balance);
 
     function harvest(address gauge, bytes calldata extraData) external returns (PendingRewards memory pendingRewards);
+    function flush() external;
 }
