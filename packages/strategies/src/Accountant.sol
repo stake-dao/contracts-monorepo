@@ -391,12 +391,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
 
         for (uint256 i; i < _gauges.length; i++) {
             /// Harvest the gauge and increment total harvester fee.
-            totalHarvesterFee += _harvest({
-                gauge: _gauges[i],
-                harvestData: harvestData[i],
-                strategy: strategy,
-                registry: address(PROTOCOL_CONTROLLER)
-            });
+            totalHarvesterFee += _harvest({gauge: _gauges[i], harvestData: harvestData[i], strategy: strategy});
         }
 
         // Transfer total harvester fee if any
@@ -407,7 +402,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
 
     /// @dev Internal implementation of single vault harvesting.
     /// @return harvesterFee The harvester fee for this harvest operation.
-    function _harvest(address gauge, bytes calldata harvestData, address strategy, address registry)
+    function _harvest(address gauge, bytes calldata harvestData, address strategy)
         private
         returns (uint256 harvesterFee)
     {
