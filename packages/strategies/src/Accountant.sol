@@ -373,85 +373,86 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @custom:throws NoStrategy If the harvester is not set.
     function harvest(address[] calldata _gauges, bytes[] calldata _harvestData) external {
         require(_gauges.length == _harvestData.length, InvalidHarvestDataLength());
-        _batchHarvest({_gauges: _gauges, harvestData: _harvestData, receiver: msg.sender});
+        _harvest(_gauges, _harvestData, msg.sender);
     }
 
     /// @dev Internal implementation of batch harvesting.
     /// @param _gauges Array of gauges to harvest from.
     /// @param harvestData Harvest data for each gauge.
-    function _batchHarvest(address[] calldata _gauges, bytes[] calldata harvestData, address receiver)
-        internal
-        nonReentrant
-    {
+    /// @param receiver Address that will receive the harvester fee.
+    /// @dev This implementation optimizes gas by:
+    ///      1. Batching all harvests before calling flush() only once at the end
+    ///      2. Collecting all rewards in a single transfer from the Strategy
+    function _harvest(address[] memory _gauges, bytes[] memory harvestData, address receiver) internal nonReentrant {
         // Cache strategy to avoid multiple SLOADs
         address strategy = PROTOCOL_CONTROLLER.strategy(PROTOCOL_ID);
         require(strategy != address(0), NoStrategy());
 
         uint256 totalHarvesterFee;
+        uint256 totalRewardsAmount;
 
+        // Fetch the balance of the Accountant contract before harvesting.
+        uint256 balanceBefore = IERC20(REWARD_TOKEN).balanceOf(address(this));
+
+        // First pass: harvest all gauges and update vault states
         for (uint256 i; i < _gauges.length; i++) {
-            /// Harvest the gauge and increment total harvester fee.
-            totalHarvesterFee += _harvest({gauge: _gauges[i], harvestData: harvestData[i], strategy: strategy});
+            address gauge = _gauges[i];
+            address vault = PROTOCOL_CONTROLLER.vaults(gauge);
+            require(vault != address(0), InvalidVault());
+
+            // Fees should be calculated before the harvest
+            uint256 currentHarvestFee = getCurrentHarvestFee();
+
+            // Harvest the asset (this accumulates rewards in the strategy contract)
+            IStrategy.PendingRewards memory pendingRewards = IStrategy(strategy).harvest(gauge, harvestData[i]);
+            if (pendingRewards.totalAmount == 0) continue;
+
+            // Track total rewards
+            totalRewardsAmount += pendingRewards.totalAmount;
+
+            // We charge protocol fee on the feeable amount and update the accrued fees
+            protocolFeesAccrued += pendingRewards.feeSubjectAmount.mulDiv(feesParams.protocolFeePercent, 1e18);
+
+            // We charge harvester fee on the total amount
+            uint256 harvesterFee = pendingRewards.totalAmount.mulDiv(currentHarvestFee, 1e18);
+            totalHarvesterFee += harvesterFee;
+
+            VaultData storage _vault = vaults[vault];
+            uint256 vaultPendingRewards = _vault.totalAmount;
+
+            // Refund the excess harvest fee taken at the checkpoint
+            uint128 currentHarvestFeePercent = feesParams.harvestFeePercent;
+            if (vaultPendingRewards > 0 && currentHarvestFee < currentHarvestFeePercent) {
+                pendingRewards.totalAmount +=
+                    vaultPendingRewards.mulDiv(currentHarvestFeePercent - currentHarvestFee, 1e18).toUint128();
+            }
+
+            // Update vault state
+            _updateVaultState({vault: _vault, pendingRewards: vaultPendingRewards, amount: pendingRewards.totalAmount});
+
+            // Always clear pending rewards after harvesting
+            _vault.feeSubjectAmount = 0;
+            _vault.totalAmount = 0;
+
+            emit Harvest(vault, pendingRewards.totalAmount);
         }
+
+        // If no valid harvests, return early
+        if (totalRewardsAmount == 0) return;
+
+        // Flush all accumulated rewards at once
+        IStrategy(strategy).flush();
+
+        // Check that the harvester has transferred the correct amount of reward tokens to this contract
+        require(
+            IERC20(REWARD_TOKEN).balanceOf(address(this)) >= balanceBefore + totalRewardsAmount,
+            HarvestTokenNotReceived()
+        );
 
         // Transfer total harvester fee if any
         if (totalHarvesterFee > 0) {
             IERC20(REWARD_TOKEN).safeTransfer(receiver, totalHarvesterFee);
         }
-    }
-
-    /// @dev Internal implementation of single vault harvesting.
-    /// @return harvesterFee The harvester fee for this harvest operation.
-    function _harvest(address gauge, bytes calldata harvestData, address strategy)
-        private
-        returns (uint256 harvesterFee)
-    {
-        address vault = PROTOCOL_CONTROLLER.vaults(gauge);
-        require(vault != address(0), InvalidVault());
-
-        // Fees should be calculated before the harvest.
-        uint256 currentHarvestFee = getCurrentHarvestFee();
-
-        // Fetch the balance of the Accountant contract before harvesting
-        uint256 balanceBefore = IERC20(REWARD_TOKEN).balanceOf(address(this));
-
-        // Harvest the asset
-        IStrategy.PendingRewards memory pendingRewards = IStrategy(strategy).harvest(gauge, harvestData);
-        if (pendingRewards.totalAmount == 0) return 0;
-
-        /// @dev TODO: Implement batching before flushing. This is temporary implementation.
-        IStrategy(strategy).flush();
-
-        // Check that the harvester has transferred the correct amount of reward tokens to this contract
-        require(
-            IERC20(REWARD_TOKEN).balanceOf(address(this)) >= balanceBefore + pendingRewards.totalAmount,
-            HarvestTokenNotReceived()
-        );
-
-        // We charge protocol fee on the feeable amount and update the accrued fees.
-        protocolFeesAccrued += pendingRewards.feeSubjectAmount.mulDiv(feesParams.protocolFeePercent, 1e18);
-
-        // We charge harvester fee on the total amount.
-        harvesterFee = pendingRewards.totalAmount.mulDiv(currentHarvestFee, 1e18);
-
-        VaultData storage _vault = vaults[vault];
-        uint256 vaultPendingRewards = _vault.totalAmount;
-
-        // Refund the excess harvest fee taken at the checkpoint.
-        uint128 currentHarvestFeePercent = feesParams.harvestFeePercent;
-        if (vaultPendingRewards > 0 && currentHarvestFee < currentHarvestFeePercent) {
-            pendingRewards.totalAmount +=
-                vaultPendingRewards.mulDiv(currentHarvestFeePercent - currentHarvestFee, 1e18).toUint128();
-        }
-
-        // Update vault state
-        _updateVaultState({vault: _vault, pendingRewards: vaultPendingRewards, amount: pendingRewards.totalAmount});
-
-        // Always clear pending rewards after harvesting.
-        _vault.feeSubjectAmount = 0;
-        _vault.totalAmount = 0;
-
-        emit Harvest(vault, pendingRewards.totalAmount);
     }
 
     /// @dev Updates vault state during harvest.
@@ -538,7 +539,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         require(harvestData.length == 0 || harvestData.length == _gauges.length, InvalidHarvestDataLength());
 
         if (harvestData.length != 0) {
-            _batchHarvest({_gauges: _gauges, harvestData: harvestData, receiver: receiver});
+            _harvest(_gauges, harvestData, receiver);
         }
 
         _claim({_gauges: _gauges, accountAddress: msg.sender, receiver: receiver});
@@ -570,7 +571,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         require(harvestData.length == 0 || harvestData.length == _gauges.length, InvalidHarvestDataLength());
 
         if (harvestData.length != 0) {
-            _batchHarvest({_gauges: _gauges, harvestData: harvestData, receiver: receiver});
+            _harvest(_gauges, harvestData, receiver);
         }
 
         _claim({_gauges: _gauges, accountAddress: account, receiver: receiver});
