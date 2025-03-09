@@ -1,0 +1,12 @@
+Strategy__deposit
+├── it reverts if not called by the vault
+├── it reverts if the gauge is shutdown
+├── when depositing to locker
+│   ├── it correctly deposits the specified amount
+│   ├── it updates balances correctly
+│   └── it returns correct pending rewards
+├── when depositing to sidecars
+│   ├── it correctly calls the sidecar deposit function
+│   ├── it passes the correct amount to the sidecar
+│   └── it returns correct pending rewards
+└── it correctly handles zero amount deposits
