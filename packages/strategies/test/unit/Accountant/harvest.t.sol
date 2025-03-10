@@ -1,12 +1,12 @@
 pragma solidity 0.8.28;
 
-import {BaseTest, Math} from "test/Base.t.sol";
+import {AccountantBaseTest, Math} from "test/AccountantBaseTest.t.sol";
 import {Accountant} from "src/Accountant.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {AccountantHarness} from "test/unit/Accountant/AccountantHarness.t.sol";
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 
-contract Accountant__Harvest is BaseTest {
+contract Accountant__Harvest is AccountantBaseTest {
     using Math for uint256;
 
     function test_RevertIfHarvestAndVaultsLengthNotEqual(uint256 vaultLength, uint256 harvestDataLength) external {

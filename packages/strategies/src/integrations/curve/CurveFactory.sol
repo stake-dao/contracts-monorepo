@@ -117,6 +117,6 @@ contract CurveFactory is Factory {
         bytes memory data = abi.encodeWithSignature("approve(address,uint256)", _gauge, type(uint256).max);
 
         /// Execute the transaction.
-        _executeTransaction(_asset, data);
+        require(_executeTransaction(_asset, data), ApproveFailed());
     }
 }

@@ -76,13 +76,13 @@ abstract contract ProtocolContext {
     ///      based on whether LOCKER is the same as GATEWAY
     /// @param target The address of the contract to interact with
     /// @param data The calldata to send to the target
-    function _executeTransaction(address target, bytes memory data) internal {
+    function _executeTransaction(address target, bytes memory data) internal returns (bool success) {
         if (LOCKER == GATEWAY) {
             // If locker is the gateway, execute directly on the target
-            IModuleManager(GATEWAY).execTransactionFromModule(target, 0, data, IModuleManager.Operation.Call);
+            success = IModuleManager(GATEWAY).execTransactionFromModule(target, 0, data, IModuleManager.Operation.Call);
         } else {
             // Otherwise execute through the locker's execute function
-            IModuleManager(GATEWAY).execTransactionFromModule(
+            success = IModuleManager(GATEWAY).execTransactionFromModule(
                 LOCKER,
                 0,
                 abi.encodeWithSignature("execute(address,uint256,bytes)", target, 0, data),

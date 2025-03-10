@@ -42,6 +42,18 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @notice Error thrown when trying to interact with a shutdown gauge
     error GaugeShutdown();
 
+    /// @notice Error thrown when the flush fails
+    error FlushFailed();
+
+    /// @notice Error thrown when the deposit fails
+    error DepositFailed();
+
+    /// @notice Error thrown when the withdraw fails
+    error WithdrawFailed();
+
+    /// @notice Error thrown when the approve fails
+    error ApproveFailed();
+
     /// @notice Error thrown when rebalance is not needed
     error RebalanceNotNeeded();
 
@@ -196,7 +208,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         uint256 flushAmount = FLUSH_AMOUNT_SLOT.asUint256().tload();
 
         bytes memory data = abi.encodeWithSelector(IERC20.transfer.selector, ACCOUNTANT, flushAmount);
-        _executeTransaction(address(REWARD_TOKEN), data);
+        require(_executeTransaction(address(REWARD_TOKEN), data), FlushFailed());
 
         // Reset the flush amount in transient storage
         FLUSH_AMOUNT_SLOT.asUint256().tstore(0);
