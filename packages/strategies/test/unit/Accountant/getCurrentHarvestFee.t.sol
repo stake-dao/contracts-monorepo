@@ -1,11 +1,11 @@
 pragma solidity 0.8.28;
 
 import {Accountant} from "src/Accountant.sol";
-import {BaseTest} from "test/Base.t.sol";
+import {AccountantBaseTest} from "test/AccountantBaseTest.t.sol";
 import {stdStorage, StdStorage, StdUtils} from "forge-std/src/Test.sol";
 // import "forge-std/src/StdUtils.sol";
 
-contract Accountant__getCurrentHarvestFee is BaseTest {
+contract Accountant__getCurrentHarvestFee is AccountantBaseTest {
     using stdStorage for StdStorage;
 
     // utility function to override the HARVEST_URGENCY_THRESHOLD storage slot by hand

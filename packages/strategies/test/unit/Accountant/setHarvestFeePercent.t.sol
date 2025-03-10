@@ -1,10 +1,10 @@
 pragma solidity 0.8.28;
 
-import {BaseTest} from "test/Base.t.sol";
+import {AccountantBaseTest} from "test/AccountantBaseTest.t.sol";
 import {Accountant} from "src/Accountant.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 
-contract Accountant__setHarvestFeePercent is BaseTest {
+contract Accountant__setHarvestFeePercent is AccountantBaseTest {
     function test_RevertWhenTotalFeeExceedTheMaxFeePercent(uint128 newHarvestFeePercent) external {
         // it revert when total fee exceed the max fee percent
 
