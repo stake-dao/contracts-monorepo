@@ -1,9 +1,9 @@
 pragma solidity 0.8.28;
 
-import {BaseTest} from "test/Base.t.sol";
+import {AccountantBaseTest} from "test/AccountantBaseTest.t.sol";
 import {AccountantHarness} from "test/unit/Accountant/AccountantHarness.t.sol";
 
-contract Accountant__getTotalFeePercent is BaseTest {
+contract Accountant__getTotalFeePercent is AccountantBaseTest {
     AccountantHarness accountantHarness;
 
     function setUp() public override {

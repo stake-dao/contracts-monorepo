@@ -79,7 +79,7 @@ contract CurveStrategy is Strategy {
     /// @param amount The amount of tokens to deposit
     function _deposit(address gauge, uint256 amount) internal override {
         bytes memory data = abi.encodeWithSignature("deposit(uint256)", amount);
-        _executeTransaction(gauge, data);
+        require(_executeTransaction(gauge, data), DepositFailed());
     }
 
     /// @notice Withdraws tokens from a Curve gauge
@@ -89,7 +89,7 @@ contract CurveStrategy is Strategy {
     /// @param receiver The address that will receive the withdrawn tokens
     function _withdraw(address gauge, uint256 amount, address receiver) internal override {
         bytes memory data = abi.encodeWithSignature("withdraw(uint256,address)", amount, receiver);
-        _executeTransaction(gauge, data);
+        require(_executeTransaction(gauge, data), WithdrawFailed());
     }
 
     /// @notice Harvests rewards from a Curve gauge
