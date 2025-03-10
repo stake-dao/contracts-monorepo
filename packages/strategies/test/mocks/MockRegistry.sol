@@ -12,6 +12,29 @@ contract MockRegistry is IProtocolController {
     address private _harvester;
     address private _feeReceiver;
     address private _accountant;
+    address private _rewardReceiver;
+
+    bool private _permissionSetter;
+
+    function permissionSetters(address) external view returns (bool) {
+        return _permissionSetter;
+    }
+
+    function setPermissionSetter(address, bool) external {}
+
+    function setPermission(address, address, bytes4, bool) external {}
+
+    function registerVault(address, address, address, address, bytes4) external {}
+
+    function setRewardReceiver(address rewardReceiver_) external {
+        _rewardReceiver = rewardReceiver_;
+    }
+
+    function shutdown(address) external {}
+
+    function isShutdown(address) external view returns (bool) {
+        return false;
+    }
 
     function vaults(address) external view returns (address) {
         return _vault;
@@ -37,12 +60,16 @@ contract MockRegistry is IProtocolController {
         return _feeReceiver;
     }
 
-    function assets(address) external pure override returns (address) {
+    function asset(address) external pure override returns (address) {
         return address(0);
     }
 
     function allowed(address, address, bytes4) external view returns (bool) {
         return _isAllowed;
+    }
+
+    function rewardReceiver(address) external view override returns (address) {
+        return _rewardReceiver;
     }
 
     function setAllowed(bool isAllowed_) external {

@@ -1,8 +1,7 @@
-/// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {IHarvester} from "src/interfaces/IHarvester.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {IAccountant} from "src/interfaces/IAccountant.sol";
 
@@ -118,8 +117,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @notice Error thrown when the caller is not allowed.
     error OnlyAllowed();
 
-    /// @notice Error thrown when the harvester is not set.
-    error NoHarvester();
+    /// @notice Error thrown when the strategy is not set.
+    error NoStrategy();
 
     /// @notice Error thrown when the fee receiver is not set.
     error NoFeeReceiver();
@@ -129,6 +128,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
 
     /// @notice Error thrown when a fee exceeds the maximum allowed
     error FeeExceedsMaximum();
+
+    /// @notice Error thrown when the vault is invalid
+    error InvalidVault();
 
     /// @notice Error thrown when harvest data length doesn't match vaults length
     error InvalidHarvestDataLength();
@@ -211,22 +213,22 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     ///      2. Burning (to = address(0)): Destroys tokens.
     ///      3. Transfers: Updates balances and rewards for both sender and receiver.
     ///      4. Reward Distribution: Processes pending rewards if any exist.
-    /// @param asset The underlying asset address of the vault.
+    /// @param gauge The underlying gauge address of the vault.
     /// @param from The source address (address(0) for minting).
     /// @param to The destination address (address(0) for burning).
     /// @param amount The amount of tokens being transferred/minted/burned.
     /// @param pendingRewards New rewards to be distributed to the vault.
     /// @param harvested Whether these rewards were already harvested by the vault and sent to the contract.
-    /// @custom:throws OnlyVault If caller is not the registered vault for the asset.
+    /// @custom:throws OnlyVault If caller is not the registered vault for the gauge.
     function checkpoint(
-        address asset,
+        address gauge,
         address from,
         address to,
         uint128 amount,
         IStrategy.PendingRewards calldata pendingRewards,
         bool harvested
     ) external nonReentrant {
-        require(PROTOCOL_CONTROLLER.vaults(asset) == msg.sender, OnlyVault());
+        require(PROTOCOL_CONTROLLER.vaults(gauge) == msg.sender, OnlyVault());
 
         VaultData storage _vault = vaults[msg.sender];
         uint128 supply = _vault.supply;
@@ -365,93 +367,92 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// --- HARVEST OPERATIONS
     //////////////////////////////////////////////////////
 
-    /// @notice Harvests rewards from multiple vaults.
-    /// @param _vaults Array of vault addresses to harvest from.
-    /// @param _harvestData Array of harvest data for each vault.
-    /// @custom:throws NoHarvester If the harvester is not set.
-    function harvest(address[] calldata _vaults, bytes[] calldata _harvestData) external {
-        require(_vaults.length == _harvestData.length, InvalidHarvestDataLength());
-        _batchHarvest({_vaults: _vaults, harvestData: _harvestData, receiver: msg.sender});
+    /// @notice Harvests rewards from multiple gauges.
+    /// @param _gauges Array of gauges to harvest from.
+    /// @param _harvestData Array of harvest data for each gauge.
+    /// @custom:throws NoStrategy If the harvester is not set.
+    function harvest(address[] calldata _gauges, bytes[] calldata _harvestData) external {
+        require(_gauges.length == _harvestData.length, InvalidHarvestDataLength());
+        _harvest(_gauges, _harvestData, msg.sender);
     }
 
     /// @dev Internal implementation of batch harvesting.
-    /// @param _vaults Array of vault addresses to harvest from.
-    /// @param harvestData Harvest data for each vault.
-    function _batchHarvest(address[] calldata _vaults, bytes[] calldata harvestData, address receiver)
-        internal
-        nonReentrant
-    {
-        // Cache registry to avoid multiple SLOADs
-        address harvester = PROTOCOL_CONTROLLER.harvester(PROTOCOL_ID);
-        require(harvester != address(0), NoHarvester());
+    /// @param _gauges Array of gauges to harvest from.
+    /// @param harvestData Harvest data for each gauge.
+    /// @param receiver Address that will receive the harvester fee.
+    /// @dev This implementation optimizes gas by:
+    ///      1. Batching all harvests before calling flush() only once at the end
+    ///      2. Collecting all rewards in a single transfer from the Strategy
+    function _harvest(address[] memory _gauges, bytes[] memory harvestData, address receiver) internal nonReentrant {
+        // Cache strategy to avoid multiple SLOADs
+        address strategy = PROTOCOL_CONTROLLER.strategy(PROTOCOL_ID);
+        require(strategy != address(0), NoStrategy());
 
         uint256 totalHarvesterFee;
+        uint256 totalRewardsAmount;
 
-        for (uint256 i; i < _vaults.length; i++) {
-            /// Harvest the vault and increment total harvester fee.
-            totalHarvesterFee += _harvest({
-                vault: _vaults[i],
-                harvestData: harvestData[i],
-                harvester: harvester,
-                registry: address(PROTOCOL_CONTROLLER)
-            });
+        // Fetch the balance of the Accountant contract before harvesting.
+        uint256 balanceBefore = IERC20(REWARD_TOKEN).balanceOf(address(this));
+
+        // Fees should be calculated before the harvest
+        uint256 currentHarvestFee = getCurrentHarvestFee();
+
+        // First pass: harvest all gauges and update vault states
+        for (uint256 i; i < _gauges.length; i++) {
+            address gauge = _gauges[i];
+            address vault = PROTOCOL_CONTROLLER.vaults(gauge);
+            require(vault != address(0), InvalidVault());
+
+            // Harvest the asset (this accumulates rewards in the strategy contract)
+            IStrategy.PendingRewards memory pendingRewards = IStrategy(strategy).harvest(gauge, harvestData[i]);
+            if (pendingRewards.totalAmount == 0) continue;
+
+            // Track total rewards
+            totalRewardsAmount += pendingRewards.totalAmount;
+
+            // We charge protocol fee on the feeable amount and update the accrued fees
+            protocolFeesAccrued += pendingRewards.feeSubjectAmount.mulDiv(feesParams.protocolFeePercent, 1e18);
+
+            // We charge harvester fee on the total amount
+            uint256 harvesterFee = pendingRewards.totalAmount.mulDiv(currentHarvestFee, 1e18);
+            totalHarvesterFee += harvesterFee;
+
+            VaultData storage _vault = vaults[vault];
+            uint256 vaultPendingRewards = _vault.totalAmount;
+
+            // Refund the excess harvest fee taken at the checkpoint
+            uint128 currentHarvestFeePercent = feesParams.harvestFeePercent;
+            if (vaultPendingRewards > 0 && currentHarvestFee < currentHarvestFeePercent) {
+                pendingRewards.totalAmount +=
+                    vaultPendingRewards.mulDiv(currentHarvestFeePercent - currentHarvestFee, 1e18).toUint128();
+            }
+
+            // Update vault state
+            _updateVaultState({vault: _vault, pendingRewards: vaultPendingRewards, amount: pendingRewards.totalAmount});
+
+            // Always clear pending rewards after harvesting
+            _vault.feeSubjectAmount = 0;
+            _vault.totalAmount = 0;
+
+            emit Harvest(vault, pendingRewards.totalAmount);
         }
+
+        // If no valid harvests, return early
+        if (totalRewardsAmount == 0) return;
+
+        // Flush all accumulated rewards at once
+        IStrategy(strategy).flush();
+
+        // Check that the harvester has transferred the correct amount of reward tokens to this contract
+        require(
+            IERC20(REWARD_TOKEN).balanceOf(address(this)) >= balanceBefore + totalRewardsAmount,
+            HarvestTokenNotReceived()
+        );
 
         // Transfer total harvester fee if any
         if (totalHarvesterFee > 0) {
             IERC20(REWARD_TOKEN).safeTransfer(receiver, totalHarvesterFee);
         }
-    }
-
-    /// @dev Internal implementation of single vault harvesting.
-    /// @return harvesterFee The harvester fee for this harvest operation.
-    function _harvest(address vault, bytes calldata harvestData, address harvester, address registry)
-        private
-        returns (uint256 harvesterFee)
-    {
-        // Fees should be calculated before the harvest.
-        uint256 currentHarvestFee = getCurrentHarvestFee();
-
-        // Fetch the balance of the Accountant contract before harvesting
-        uint256 balanceBefore = IERC20(REWARD_TOKEN).balanceOf(address(this));
-
-        // Harvest the asset
-        (uint256 feeSubjectAmount, uint256 totalAmount) = abi.decode(
-            harvester.functionDelegateCall(
-                abi.encodeWithSelector(
-                    IHarvester.harvest.selector, IProtocolController(registry).assets(vault), harvestData
-                )
-            ),
-            (uint256, uint256)
-        );
-        if (totalAmount == 0) return 0;
-
-        // Check that the harvester has transferred the correct amount of reward tokens to this contract
-        require(IERC20(REWARD_TOKEN).balanceOf(address(this)) >= balanceBefore + totalAmount, HarvestTokenNotReceived());
-
-        // We charge protocol fee on the feeable amount and update the accrued fees.
-        protocolFeesAccrued += feeSubjectAmount.mulDiv(feesParams.protocolFeePercent, 1e18);
-
-        // We charge harvester fee on the total amount.
-        harvesterFee = totalAmount.mulDiv(currentHarvestFee, 1e18);
-
-        VaultData storage _vault = vaults[vault];
-        uint256 pendingRewards = _vault.totalAmount;
-
-        // Refund the excess harvest fee taken at the checkpoint.
-        uint128 currentHarvestFeePercent = feesParams.harvestFeePercent;
-        if (pendingRewards > 0 && currentHarvestFee < currentHarvestFeePercent) {
-            totalAmount += pendingRewards.mulDiv(currentHarvestFeePercent - currentHarvestFee, 1e18);
-        }
-
-        // Update vault state
-        _updateVaultState({vault: _vault, pendingRewards: pendingRewards, amount: totalAmount});
-
-        // Always clear pending rewards after harvesting.
-        _vault.feeSubjectAmount = 0;
-        _vault.totalAmount = 0;
-
-        emit Harvest(vault, totalAmount);
     }
 
     /// @dev Updates vault state during harvest.
@@ -522,72 +523,76 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     //////////////////////////////////////////////////////
 
     /// @notice Claims multiple vault rewards for yourself.
-    /// @param _vaults Array of vault addresses to claim rewards from.
-    /// @param harvestData Optional harvest data for each vault. Empty bytes for vaults that don't need harvesting.
+    /// @param _gauges Array of gauges to claim rewards from.
+    /// @param harvestData Optional harvest data for each gauge. Empty bytes for gauges that don't need harvesting.
     /// @custom:throws NoPendingRewards If there are no rewards to claim.
-    function claim(address[] calldata _vaults, bytes[] calldata harvestData) external {
-        claim(_vaults, harvestData, msg.sender);
+    function claim(address[] calldata _gauges, bytes[] calldata harvestData) external {
+        claim(_gauges, harvestData, msg.sender);
     }
 
     /// @notice Claims multiple vault rewards for yourself and sends them to a specific address.
-    /// @param _vaults Array of vault addresses to claim rewards from.
-    /// @param harvestData Optional harvest data for each vault. Empty bytes for vaults that don't need harvesting.
+    /// @param _gauges Array of gauges to claim rewards from.
+    /// @param harvestData Optional harvest data for each gauge. Empty bytes for gauges that don't need harvesting.
     /// @param receiver Address that will receive the claimed rewards.
     /// @custom:throws NoPendingRewards If there are no rewards to claim.
-    function claim(address[] calldata _vaults, bytes[] calldata harvestData, address receiver) public {
-        require(harvestData.length == 0 || harvestData.length == _vaults.length, InvalidHarvestDataLength());
+    function claim(address[] calldata _gauges, bytes[] calldata harvestData, address receiver) public {
+        require(harvestData.length == 0 || harvestData.length == _gauges.length, InvalidHarvestDataLength());
 
         if (harvestData.length != 0) {
-            _batchHarvest({_vaults: _vaults, harvestData: harvestData, receiver: receiver});
+            _harvest(_gauges, harvestData, receiver);
         }
 
-        _claim({_vaults: _vaults, accountAddress: msg.sender, receiver: receiver});
+        _claim({_gauges: _gauges, accountAddress: msg.sender, receiver: receiver});
     }
 
     /// @notice Claims multiple vault rewards on behalf of an account.
-    /// @param _vaults Array of vault addresses to claim rewards from.
+    /// @param _gauges Array of gauges to claim rewards from.
     /// @param account Address to claim rewards for.
-    /// @param harvestData Optional harvest data for each vault. Empty bytes for vaults that don't need harvesting.
+    /// @param harvestData Optional harvest data for each gauge. Empty bytes for gauges that don't need harvesting.
     /// @dev expected to be called by authorized accounts only
     /// @custom:throws OnlyAllowed If caller is not allowed to claim on behalf of others.
     /// @custom:throws NoPendingRewards If there are no rewards to claim.
-    function claim(address[] calldata _vaults, address account, bytes[] calldata harvestData) external {
-        claim(_vaults, account, harvestData, account);
+    function claim(address[] calldata _gauges, address account, bytes[] calldata harvestData) external {
+        claim(_gauges, account, harvestData, account);
     }
 
     /// @notice Claims multiple vault rewards on behalf of an account and sends them to a specific address.
-    /// @param _vaults Array of vault addresses to claim rewards from.
+    /// @param _gauges Array of gauges to claim rewards from.
     /// @param account Address to claim rewards for.
-    /// @param harvestData Optional harvest data for each vault. Empty bytes for vaults that don't need harvesting.
+    /// @param harvestData Optional harvest data for each gauge. Empty bytes for gauges that don't need harvesting.
     /// @param receiver Address that will receive the claimed rewards.
     /// @dev expected to be called by authorized accounts only
     /// @custom:throws OnlyAllowed If caller is not allowed to claim on behalf of others.
     /// @custom:throws NoPendingRewards If there are no rewards to claim.
-    function claim(address[] calldata _vaults, address account, bytes[] calldata harvestData, address receiver)
+    function claim(address[] calldata _gauges, address account, bytes[] calldata harvestData, address receiver)
         public
         onlyAllowed
     {
-        require(harvestData.length == 0 || harvestData.length == _vaults.length, InvalidHarvestDataLength());
+        require(harvestData.length == 0 || harvestData.length == _gauges.length, InvalidHarvestDataLength());
 
         if (harvestData.length != 0) {
-            _batchHarvest({_vaults: _vaults, harvestData: harvestData, receiver: receiver});
+            _harvest(_gauges, harvestData, receiver);
         }
 
-        _claim({_vaults: _vaults, accountAddress: account, receiver: receiver});
+        _claim({_gauges: _gauges, accountAddress: account, receiver: receiver});
     }
 
     /// @dev Internal implementation of claim functionality.
-    /// @param _vaults Array of vault addresses to claim rewards from.
+    /// @param _gauges Array of gauges to claim rewards from.
     /// @param accountAddress Address to claim rewards for.
     /// @param receiver Address that will receive the claimed rewards.
     /// @custom:throws NoPendingRewards If the total claimed amount is zero.
-    function _claim(address[] calldata _vaults, address accountAddress, address receiver) internal nonReentrant {
+    function _claim(address[] calldata _gauges, address accountAddress, address receiver) internal nonReentrant {
         uint256 totalAmount;
 
-        // For each vault, check if the account has any rewards to claim
-        for (uint256 i; i < _vaults.length; i++) {
-            // Get the account data for this vault
-            AccountData storage account = accounts[_vaults[i]][accountAddress];
+        address vault;
+        // For each gauge, check if the account has any rewards to claim
+        for (uint256 i; i < _gauges.length; i++) {
+            vault = PROTOCOL_CONTROLLER.vaults(_gauges[i]);
+            require(vault != address(0), InvalidVault());
+
+            // Get the account data for this gauge
+            AccountData storage account = accounts[vault][accountAddress];
 
             // Get the current balance for this vault
             uint128 balance = account.balance;
@@ -596,7 +601,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
             if (balance != 0 || account.pendingRewards != 0) {
                 // Get vault's and account's integral
                 uint256 accountIntegral = account.integral;
-                uint256 vaultIntegral = vaults[_vaults[i]].integral;
+                uint256 vaultIntegral = vaults[vault].integral;
 
                 // If vault's integral is higher than account's integral, calculate the rewards and update the total.
                 // TODO: muldiv

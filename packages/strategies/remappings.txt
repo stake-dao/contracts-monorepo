@@ -1,3 +1,4 @@
 forge-std=node_modules/forge-std/
 address-book=node_modules/@stake-dao/address-book/
 @openzeppelin/contracts=node_modules/@openzeppelin/contracts
+@interfaces=node_modules/@stake-dao/interfaces/src/interfaces

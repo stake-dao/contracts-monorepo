@@ -8,7 +8,6 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 import {MockStrategy} from "test/mocks/MockStrategy.sol";
 import {MockRegistry} from "test/mocks/MockRegistry.sol";
-import {MockHarvester} from "test/mocks/MockHarvester.sol";
 import {MockAllocator} from "test/mocks/MockAllocator.sol";
 
 import "src/Accountant.sol";
@@ -29,7 +28,6 @@ abstract contract BaseTest is Test {
 
     MockStrategy internal strategy;
     MockRegistry internal registry;
-    MockHarvester internal harvester;
     MockAllocator internal allocator;
     Accountant internal accountant;
 
@@ -42,27 +40,25 @@ abstract contract BaseTest is Test {
         stakingToken = new ERC20Mock("Staking Token", "ST", 18);
 
         /// Setup the strategy, registry, allocator, and accountant
-        strategy = new MockStrategy();
+        strategy = new MockStrategy(address(rewardToken));
         registry = new MockRegistry();
         allocator = new MockAllocator();
-        harvester = new MockHarvester(address(rewardToken));
         accountant = new Accountant(address(this), address(registry), address(rewardToken), bytes4(bytes("fake_id")));
 
         /// Set the vault
         registry.setVault(address(this));
-        registry.setHarvester(address(harvester));
+        registry.setStrategy(address(strategy));
 
         // Mock the registry `assets` function used to fetch the vault's asset to always return the staking token in our tests
         // `clearMockedCalls` can be used to clear the mocked calls in a specific test (https://book.getfoundry.sh/cheatcodes/clear-mocked-calls)
         bytes[] memory mocks = new bytes[](1);
         mocks[0] = abi.encode(address(rewardToken));
-        vm.mockCalls(address(registry), abi.encodeWithSelector(MockRegistry.assets.selector), mocks);
+        vm.mockCalls(address(registry), abi.encodeWithSelector(MockRegistry.asset.selector), mocks);
 
         /// Label the contracts
         vm.label({account: address(strategy), newLabel: "Strategy"});
         vm.label({account: address(registry), newLabel: "Registry"});
         vm.label({account: address(allocator), newLabel: "Allocator"});
-        vm.label({account: address(harvester), newLabel: "Harvester"});
         vm.label({account: address(accountant), newLabel: "Accountant"});
         vm.label({account: address(rewardToken), newLabel: "Reward Token"});
         vm.label({account: address(stakingToken), newLabel: "Staking Token"});

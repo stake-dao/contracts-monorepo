@@ -1,5 +1,7 @@
 pragma solidity 0.8.28;
 
+import {console} from "forge-std/src/console.sol";
+
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {BaseTest} from "test/Base.t.sol";
 import {AccountantHarness} from "test/unit/Accountant/AccountantHarness.t.sol";
@@ -8,7 +10,7 @@ import {MockRegistry} from "test/mocks/MockRegistry.sol";
 import {IERC20} from "forge-std/src/interfaces/IERC20.sol";
 
 contract Accountant__claim is BaseTest {
-    function test_GivenVaultsAndHarvest(uint256 pendingRewards, uint256 accountantBalance)
+    function test_GivenVaultsAndHarvestBis(uint256 pendingRewards, uint256 accountantBalance)
         external
         _cheat_replaceAccountantWithAccountantHarness
     {
@@ -304,6 +306,20 @@ contract Accountant__claim is BaseTest {
         vaults[2] = makeAddr("vault3");
         vaults[3] = makeAddr("vault4");
 
+        address[] memory gauges = new address[](vaults.length);
+        for (uint256 i; i < vaults.length; i++) {
+            gauges[i] = vaults[i];
+        }
+
+        bytes[] memory mocks = new bytes[](gauges.length);
+        for (uint256 i; i < gauges.length; i++) {
+            mocks[i] = abi.encode(vaults[i]);
+        }
+
+        /// Mock the registry `vaults` used to fetch which vault is associated to a gauge and returns
+        /// the vaults instead.
+        vm.mockCalls(address(registry), abi.encodeWithSelector(MockRegistry.vaults.selector), mocks);
+
         AccountantHarness accountantHarness = AccountantHarness(address(accountant));
         deal(address(rewardToken), address(accountantHarness), type(uint256).max);
 
@@ -349,7 +365,7 @@ contract Accountant__claim is BaseTest {
 
         // claim the rewards
         _cheat_allowSender();
-        accountant.claim(vaults, address(this), harvestData, makeAddr("receiver"));
+        accountant.claim(gauges, address(this), harvestData, makeAddr("receiver"));
 
         // regression check -- if this test fails, the claim function has been modified
         uint256 expectedReceiverBalance = 10e17 + 1.10989 * 10e11;
