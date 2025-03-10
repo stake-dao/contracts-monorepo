@@ -1,10 +1,10 @@
 pragma solidity 0.8.28;
 
-import {BaseTest} from "test/Base.t.sol";
+import {AccountantBaseTest} from "test/AccountantBaseTest.t.sol";
 import {stdStorage, StdStorage} from "forge-std/src/Test.sol";
 import {AccountantHarness} from "test/unit/Accountant/AccountantHarness.t.sol";
 
-contract Accountant__getHarvestFeePercent is BaseTest {
+contract Accountant__getHarvestFeePercent is AccountantBaseTest {
     using stdStorage for StdStorage;
 
     function test_ReturnsTheCorrectValue(uint128 newHarvestFeePercent)

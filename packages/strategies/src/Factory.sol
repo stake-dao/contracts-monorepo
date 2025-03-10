@@ -36,6 +36,9 @@ abstract contract Factory is ProtocolContext {
     /// @notice Error thrown when the gauge is not a valid candidate
     error InvalidGauge();
 
+    /// @notice Error thrown when the approve fails
+    error ApproveFailed();
+
     /// @notice Error thrown when the token is not valid
     error InvalidToken();
 

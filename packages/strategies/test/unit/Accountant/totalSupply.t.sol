@@ -1,10 +1,10 @@
 pragma solidity 0.8.28;
 
 import {Accountant} from "src/Accountant.sol";
-import {BaseTest} from "test/Base.t.sol";
+import {AccountantBaseTest} from "test/AccountantBaseTest.t.sol";
 import {AccountantHarness} from "test/unit/Accountant/AccountantHarness.t.sol";
 
-contract Accountant__totalSupply is BaseTest {
+contract Accountant__totalSupply is AccountantBaseTest {
     function test_ReturnsTheCorrectVaultSupplyAmount(uint128 supply)
         external
         _cheat_replaceAccountantWithAccountantHarness

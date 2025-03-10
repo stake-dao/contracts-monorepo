@@ -1,10 +1,10 @@
 pragma solidity 0.8.28;
 
-import {BaseTest} from "test/Base.t.sol";
+import {AccountantBaseTest} from "test/AccountantBaseTest.t.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {Accountant} from "src/Accountant.sol";
 
-contract Accountant__setProtocolFeePercent is BaseTest {
+contract Accountant__setProtocolFeePercent is AccountantBaseTest {
     function test_GivenProtocolFeeIs0() external {
         // it stores the new value
 
