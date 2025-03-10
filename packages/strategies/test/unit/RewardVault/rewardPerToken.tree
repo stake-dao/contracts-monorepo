@@ -1,0 +1,3 @@
+RewardVault__rewardPerToken
+├── it returns the reward per token stored when total supply is 0
+└── it calculates the reward per token based on its data

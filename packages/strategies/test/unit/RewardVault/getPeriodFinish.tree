@@ -1,0 +1,2 @@
+RewardVault__getPeriodFinish
+└── it returns the period finish time for a given reward token
