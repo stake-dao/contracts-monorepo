@@ -1,0 +1,2 @@
+RewardVault__gauge
+└── it returns the immutable gauge address passed to the clone

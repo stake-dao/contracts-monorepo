@@ -1,0 +1,2 @@
+RewardVault__getRewardsDistributor
+└── it returns the distributor address for a given reward token

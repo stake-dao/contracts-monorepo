@@ -10,7 +10,6 @@ import {MockStrategy} from "test/mocks/MockStrategy.sol";
 /// @title AccountantBaseTest
 /// @notice Base test contract specifically for Accountant tests
 abstract contract AccountantBaseTest is BaseTest {
-
     MockStrategy internal strategy;
     Accountant internal accountant;
 

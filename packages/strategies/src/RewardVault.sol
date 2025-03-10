@@ -109,13 +109,13 @@ contract RewardVault is IERC4626, ERC20 {
     address[] public rewardTokens;
 
     /// @notice Mapping of reward token to its existence
-    mapping(address => bool) public isRewardToken;
+    mapping(address rewardToken => bool isRewardToken) public isRewardToken;
 
-    /// @notice Mapping of reward token to its packed reward data
-    mapping(address => RewardData) private rewardData;
+    /// @notice Mapping of reward token to its reward data
+    mapping(address rewardToken => RewardData rewardData) public rewardData;
 
     /// @notice Account reward data mapping
-    mapping(address => mapping(address => AccountData)) private accountData;
+    mapping(address accountAddress => mapping(address rewardToken => AccountData accountData)) private accountData;
 
     /// @notice Initializes the vault with basic ERC20 metadata
     /// @dev Sets up the vault with a standard name and symbol prefix
@@ -171,8 +171,9 @@ contract RewardVault is IERC4626, ERC20 {
 
         IAllocator.Allocation memory allocation = allocator().getDepositAllocation(gauge(), assets);
 
-        for (uint256 i = 0; i < allocation.targets.length; i++) {
-            SafeERC20.safeTransferFrom(IERC20(asset()), account, allocation.targets[i], allocation.amounts[i]);
+        IERC20 _asset = IERC20(asset());
+        for (uint256 i; i < allocation.targets.length; i++) {
+            SafeERC20.safeTransferFrom(_asset, account, allocation.targets[i], allocation.amounts[i]);
         }
 
         IStrategy.PendingRewards memory pendingRewards = strategy().deposit(allocation);
@@ -266,7 +267,7 @@ contract RewardVault is IERC4626, ERC20 {
         public
         returns (uint256[] memory amounts)
     {
-        require(PROTOCOL_CONTROLLER.allowed(address(this), msg.sender, msg.sig), "OnlyAllowed");
+        require(PROTOCOL_CONTROLLER.allowed(address(this), msg.sender, msg.sig), OnlyAllowed());
         return _claim(account, tokens, receiver);
     }
 
@@ -285,7 +286,7 @@ contract RewardVault is IERC4626, ERC20 {
 
         amounts = new uint256[](tokens_.length);
 
-        for (uint256 i = 0; i < tokens_.length; i++) {
+        for (uint256 i; i < tokens_.length; i++) {
             address rewardToken = tokens_[i];
             if (!isRewardToken[rewardToken]) revert InvalidRewardToken();
 
@@ -308,7 +309,7 @@ contract RewardVault is IERC4626, ERC20 {
     /// @param _distributor The address authorized to distribute rewards.
     function addRewardToken(address _rewardsToken, address _distributor) external {
         // check if the caller is allowed to add a reward token
-        require(PROTOCOL_CONTROLLER.allowed(address(this), msg.sender, msg.sig), "OnlyAllowed");
+        require(PROTOCOL_CONTROLLER.allowed(address(this), msg.sender, msg.sig), OnlyAllowed());
 
         // check if the reward token already exists
         if (isRewardToken[_rewardsToken]) revert RewardAlreadyExists();
@@ -317,13 +318,13 @@ contract RewardVault is IERC4626, ERC20 {
         if (rewardTokens.length >= MAX_REWARD_TOKEN_COUNT) revert MaxRewardTokensExceeded();
 
         // add the reward token to the list of reward tokens
-        rewardTokens.push(_rewardsToken);
+        rewardTokens.push(_rewardsToken); // ?:
         isRewardToken[_rewardsToken] = true;
 
         // Set the reward distributor and duration.
         RewardData storage reward = rewardData[_rewardsToken];
         reward.rewardsDistributor = _distributor;
-        reward.rewardsDuration = 7 days;
+        reward.rewardsDuration = 7 days; // TODO: constant
 
         emit RewardTokenAdded(_rewardsToken, _distributor);
     }
@@ -345,8 +346,8 @@ contract RewardVault is IERC4626, ERC20 {
 
         // calculate temporal variables
         uint32 currentTime = uint32(block.timestamp);
-        uint32 periodFinish = getPeriodFinish(_rewardsToken);
-        uint32 rewardsDuration = getRewardsDuration(_rewardsToken);
+        uint32 periodFinish = getPeriodFinish(_rewardsToken); // TODO: Optimize this after reward pointer (line +5)
+        uint32 rewardsDuration = getRewardsDuration(_rewardsToken); // TODO: Optimize this after reward pointer (line +4)
         uint128 newRewardRate;
 
         // get the current reward data
@@ -366,7 +367,7 @@ contract RewardVault is IERC4626, ERC20 {
         reward.lastUpdateTime = currentTime;
         reward.periodFinish = currentTime + rewardsDuration;
         reward.rewardRate = newRewardRate;
-        reward.rewardPerTokenStored = getRewardPerTokenStored(_rewardsToken);
+        reward.rewardPerTokenStored = getRewardPerTokenStored(_rewardsToken); // TODO: refacto/opt
 
         emit RewardsDeposited(_rewardsToken, _amount, uint128(newRewardRate));
     }
@@ -386,7 +387,7 @@ contract RewardVault is IERC4626, ERC20 {
             address token = rewardTokens[i];
             uint128 newRewardPerToken = _updateRewardToken(token, currentTime);
 
-            // Update account-specific data if _from is set
+            // Update account-specific data if _from is set // ?: weird behavior?
             if (_from != address(0)) {
                 _updateAccountData(_from, token, newRewardPerToken);
             }
@@ -459,12 +460,12 @@ contract RewardVault is IERC4626, ERC20 {
 
     /// @notice Returns the amount of shares that would be received for a given amount of assets.
     function previewWithdraw(uint256 assets) public pure returns (uint256) {
-        return convertToShares(assets);
+        return assets;
     }
 
     /// @notice Returns the amount of assets that would be received for a given amount of shares.
     function previewRedeem(uint256 shares) public pure returns (uint256) {
-        return convertToAssets(shares);
+        return shares;
     }
 
     /// @notice Returns the maximum amount of assets that can be deposited.
@@ -596,7 +597,6 @@ contract RewardVault is IERC4626, ERC20 {
     /// @dev Delegates balance updates to the Accountant, then updates rewards.
     function _update(address from, address to, uint256 amount) internal override {
         // 1. Update Balances via Accountant.
-        // TODO: remove the unsafe cast to uint128 once the implementation is cleaned up.
         ACCOUNTANT.checkpoint(
             gauge(), from, to, uint128(amount), IStrategy.PendingRewards({feeSubjectAmount: 0, totalAmount: 0}), false
         );
@@ -612,7 +612,6 @@ contract RewardVault is IERC4626, ERC20 {
     function _mint(address to, uint256 amount, IStrategy.PendingRewards memory pendingRewards, bool harvested)
         internal
     {
-        // TODO: remove the unsafe cast to uint128 once the implementation is cleaned up.
         ACCOUNTANT.checkpoint(gauge(), address(0), to, uint128(amount), pendingRewards, harvested);
     }
 
@@ -620,7 +619,6 @@ contract RewardVault is IERC4626, ERC20 {
     function _burn(address from, uint256 amount, IStrategy.PendingRewards memory pendingRewards, bool harvested)
         internal
     {
-        // TODO: remove the unsafe cast to uint128 once the implementation is cleaned up.
         ACCOUNTANT.checkpoint(gauge(), from, address(0), uint128(amount), pendingRewards, harvested);
     }
 
