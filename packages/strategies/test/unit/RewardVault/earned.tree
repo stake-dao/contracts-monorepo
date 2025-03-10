@@ -1,0 +1,2 @@
+RewardVault__earned
+└── it returns the earned reward and claimable amount for a given account

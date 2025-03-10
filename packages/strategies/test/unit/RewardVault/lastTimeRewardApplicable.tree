@@ -1,0 +1,2 @@
+RewardVault__lastTimeRewardApplicable
+└── it returns the last time reward applicable for a given reward token
