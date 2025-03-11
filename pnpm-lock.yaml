@@ -38,7 +38,7 @@ importers:
         version: 4.9.0
       '@safe':
         specifier: github:safe-global/safe-smart-account
-        version: '@safe-global/safe-smart-account@https://codeload.github.com/safe-global/safe-smart-account/tar.gz/1c8b24a0a438e8c2cd089a9d830d1688a47a28d5'
+        version: '@safe-global/safe-smart-account@https://codeload.github.com/safe-global/safe-smart-account/tar.gz/460f730925c181f9a1700b0f2bec0640b87e8533'
       '@stake-dao/address-book':
         specifier: workspace:*
         version: link:../address-book
@@ -77,17 +77,10 @@ importers:
         version: link:../vyper
       forge-std:
         specifier: github:foundry-rs/forge-std
-<<<<<<< HEAD
-        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/bf909b22fa55e244796dfa920c9639fdffa1c545
-      solady:
-        specifier: github:vectorized/solady
-        version: https://codeload.github.com/vectorized/solady/tar.gz/be154cdd703f345d378b9934e8f7e3d73c42283a
-=======
         version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/999be66ec94c78090087f674bbf52ce1cca12b75
       solady:
         specifier: github:vectorized/solady
         version: https://codeload.github.com/vectorized/solady/tar.gz/ed83a2ac4940748049e032347b918d38eb78c2b1
->>>>>>> b284c836 (fix: remappings)
 
   packages/vyper:
     devDependencies:
@@ -416,8 +409,8 @@ packages:
     resolution: {integrity: sha512-LV3hHm60htmP3HJjn2VoGqXNPn1RLFSSInRyXNbm15Z2oWKGxOfAWSC4+okRckum0yVB5g3k4/SEyqjsJRB07A==}
     hasBin: true
 
-  '@safe-global/safe-smart-account@https://codeload.github.com/safe-global/safe-smart-account/tar.gz/1c8b24a0a438e8c2cd089a9d830d1688a47a28d5':
-    resolution: {tarball: https://codeload.github.com/safe-global/safe-smart-account/tar.gz/1c8b24a0a438e8c2cd089a9d830d1688a47a28d5}
+  '@safe-global/safe-smart-account@https://codeload.github.com/safe-global/safe-smart-account/tar.gz/460f730925c181f9a1700b0f2bec0640b87e8533':
+    resolution: {tarball: https://codeload.github.com/safe-global/safe-smart-account/tar.gz/460f730925c181f9a1700b0f2bec0640b87e8533}
     version: 1.4.1-build.0
 
   '@scure/base@1.1.7':
@@ -1040,15 +1033,9 @@ packages:
     resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/8948d45d3d9022c508b83eb5d26fd3a7a93f2f32}
     version: 1.9.0
 
-<<<<<<< HEAD
-  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/bf909b22fa55e244796dfa920c9639fdffa1c545:
-    resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/bf909b22fa55e244796dfa920c9639fdffa1c545}
-    version: 1.9.6
-=======
   forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/999be66ec94c78090087f674bbf52ce1cca12b75:
     resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/999be66ec94c78090087f674bbf52ce1cca12b75}
     version: 1.9.5
->>>>>>> b284c836 (fix: remappings)
 
   forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/e04104ab93e771441eab03fb76eda1402cb5927b:
     resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/e04104ab93e771441eab03fb76eda1402cb5927b}
@@ -1839,10 +1826,6 @@ packages:
   solady@https://codeload.github.com/vectorized/solady/tar.gz/b12aa65e8cc3740f8b85a2a7a2d5296f57f13149:
     resolution: {tarball: https://codeload.github.com/vectorized/solady/tar.gz/b12aa65e8cc3740f8b85a2a7a2d5296f57f13149}
     version: 0.0.216
-
-  solady@https://codeload.github.com/vectorized/solady/tar.gz/be154cdd703f345d378b9934e8f7e3d73c42283a:
-    resolution: {tarball: https://codeload.github.com/vectorized/solady/tar.gz/be154cdd703f345d378b9934e8f7e3d73c42283a}
-    version: 0.1.7
 
   solady@https://codeload.github.com/vectorized/solady/tar.gz/cd51985ded9e70ab1991cea74bf8db972b40ecd3:
     resolution: {tarball: https://codeload.github.com/vectorized/solady/tar.gz/cd51985ded9e70ab1991cea74bf8db972b40ecd3}
@@ -2708,7 +2691,7 @@ snapshots:
     transitivePeerDependencies:
       - supports-color
 
-  '@safe-global/safe-smart-account@https://codeload.github.com/safe-global/safe-smart-account/tar.gz/1c8b24a0a438e8c2cd089a9d830d1688a47a28d5': {}
+  '@safe-global/safe-smart-account@https://codeload.github.com/safe-global/safe-smart-account/tar.gz/460f730925c181f9a1700b0f2bec0640b87e8533': {}
 
   '@scure/base@1.1.7': {}
 
@@ -3525,11 +3508,7 @@ snapshots:
 
   forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/8948d45d3d9022c508b83eb5d26fd3a7a93f2f32: {}
 
-<<<<<<< HEAD
-  forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/bf909b22fa55e244796dfa920c9639fdffa1c545: {}
-=======
   forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/999be66ec94c78090087f674bbf52ce1cca12b75: {}
->>>>>>> b284c836 (fix: remappings)
 
   forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/e04104ab93e771441eab03fb76eda1402cb5927b: {}
 
@@ -4463,8 +4442,6 @@ snapshots:
   solady@https://codeload.github.com/vectorized/solady/tar.gz/8d726fb1499f7f1d7459d05379efddcd500dab1a: {}
 
   solady@https://codeload.github.com/vectorized/solady/tar.gz/b12aa65e8cc3740f8b85a2a7a2d5296f57f13149: {}
-
-  solady@https://codeload.github.com/vectorized/solady/tar.gz/be154cdd703f345d378b9934e8f7e3d73c42283a: {}
 
   solady@https://codeload.github.com/vectorized/solady/tar.gz/cd51985ded9e70ab1991cea74bf8db972b40ecd3: {}
 

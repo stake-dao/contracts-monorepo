@@ -155,7 +155,6 @@ abstract contract BaseDepositor {
                 incentiveToken = 0;
             }
         } else {
-
             /// Transfer tokens to this contract.
             SafeTransferLib.safeTransferFrom(token, msg.sender, address(this), _amount);
 

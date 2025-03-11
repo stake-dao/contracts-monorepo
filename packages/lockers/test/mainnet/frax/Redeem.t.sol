@@ -39,7 +39,7 @@ contract RedeemTest is Test {
     ];
 
     function setUp() public virtual {
-        vm.createSelectFork(vm.rpcUrl("mainnet"));
+        vm.createSelectFork(vm.rpcUrl("mainnet"), 21831769);
 
         token = ERC20(FPIS.TOKEN);
         sdToken = ERC20(FPIS.SDTOKEN);
