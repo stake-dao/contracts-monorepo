@@ -1,9 +1,9 @@
 pragma solidity 0.8.28;
 
-import {RewardVaultBaseTest} from "test/RewardVaultBaseTest.sol";
+contract RewardVault__earned {
+    function skip_test_ReturnsTheEarnedRewardAndClaimableAmountForAGivenAccount() external {}
 
-contract RewardVault__earned is RewardVaultBaseTest {
-    function test_ReturnsTheEarnedRewardAndClaimableAmountForAGivenAccount() external {
-        // it returns the earned reward and claimable amount for a given account
-    }
+    function skip_test_ReturnsZeroWhenNoBalanceAndNoClaimable() external {}
+
+    function skip_test_ReturnsOnlyClaimableWhenNoBalance() external {}
 }
