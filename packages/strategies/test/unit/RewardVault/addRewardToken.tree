@@ -1,5 +1,6 @@
 RewardVault__addRewardToken
 ├── it revert if caller is not allowed
+├── it revert if protocol controller reverts
 ├── it revert if reward token already exists
 ├── it revert if max reward token count is exceeded
 ├── it adds the reward token to the list of reward tokens
