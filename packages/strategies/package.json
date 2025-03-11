@@ -6,6 +6,6 @@
     "@solady": "github:Vectorized/solady#v0.0.288",
     "@stake-dao/address-book": "workspace:*",
     "@stake-dao/interfaces": "workspace:*",
-    "forge-std": "github:foundry-rs/forge-std"
+        "forge-std": "github:foundry-rs/forge-std#v1.9.5"
   }
 }
