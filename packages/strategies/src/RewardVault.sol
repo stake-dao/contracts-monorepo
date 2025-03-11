@@ -118,7 +118,7 @@ contract RewardVault is IERC4626, ERC20 {
     mapping(address rewardToken => RewardData rewardData) public rewardData;
 
     /// @notice Account reward data mapping
-    mapping(address accountAddress => mapping(address rewardToken => AccountData accountData)) accountData;
+    mapping(address accountAddress => mapping(address rewardToken => AccountData accountData)) public accountData;
 
     /// @notice Initializes the vault with basic ERC20 metadata
     /// @dev Sets up the vault with a standard name and symbol prefix
