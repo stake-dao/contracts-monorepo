@@ -289,11 +289,11 @@ contract RewardVault is IERC4626, ERC20 {
             address rewardToken = tokens_[i];
             if (!isRewardToken[rewardToken]) revert InvalidRewardToken();
 
-            uint256 accountEarned = earned(accountAddress, rewardToken);
+            AccountData storage account = accountData[accountAddress][rewardToken];
+            uint256 accountEarned = _earned(accountAddress, rewardToken, account.claimable, account.rewardPerTokenPaid);
             if (accountEarned == 0) continue;
 
             // Reset claimable to zero & set rewardPerTokenPaid to current
-            AccountData storage account = accountData[accountAddress][rewardToken];
             account.rewardPerTokenPaid = rewardPerToken(rewardToken);
             account.claimable = 0;
 
@@ -413,8 +413,8 @@ contract RewardVault is IERC4626, ERC20 {
     function _updateAccountData(address accountAddress, address token, uint128 newRewardPerToken) internal {
         AccountData storage account = accountData[accountAddress][token];
 
+        account.claimable = _earned(accountAddress, token, account.claimable, account.rewardPerTokenPaid);
         account.rewardPerTokenPaid = newRewardPerToken;
-        account.claimable = earned(accountAddress, token);
     }
 
     ///////////////////////////////////////////////////////////////
@@ -546,13 +546,30 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Returns the earned reward for a given account, including the claimable amount.
-    function earned(address accountAddress, address token) public view returns (uint128) {
+    /// @param accountAddress The address of the account to calculate the earned reward for.
+    /// @param token The address of the reward token to calculate the earned reward for.
+    /// @return _ The earned reward for the given account and reward token.
+    function earned(address accountAddress, address token) external view returns (uint128) {
         AccountData storage account = accountData[accountAddress][token];
 
-        // TODO: MULDIV
+        return _earned(accountAddress, token, account.claimable, account.rewardPerTokenPaid);
+    }
+
+    /// @notice Returns the earned reward for a given account, including the claimable amount.
+    /// @param accountAddress The address of the account to calculate the earned reward for.
+    /// @param token The address of the reward token to calculate the earned reward for.
+    /// @param userClaimable The claimable amount for the given account and reward token.
+    /// @param userRewardPerTokenPaid The reward per token paid for the given account and reward token.
+    /// @return _ The earned reward for the given account and reward token.
+    function _earned(address accountAddress, address token, uint128 userClaimable, uint128 userRewardPerTokenPaid)
+        internal
+        view
+        returns (uint128)
+    {
         uint128 newEarned =
-            (balanceOf(accountAddress) * (rewardPerToken(token) - account.rewardPerTokenPaid) / 1e18).toUint128();
-        return account.claimable + newEarned;
+            balanceOf(accountAddress).mulDiv(rewardPerToken(token) - userRewardPerTokenPaid, 1e18).toUint128();
+
+        return userClaimable + newEarned;
     }
 
     /// @notice Returns the reward for a given reward token for the duration of the rewards distribution.
