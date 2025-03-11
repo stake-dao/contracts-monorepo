@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.6.0;
 
-library SPECTRA {
+library ZERO {
     address public constant TOKEN = 0x78354f8DcCB269a615A7e0a24f9B0718FDC3C7A7;
     address public constant SDTOKEN = 0x930b866491549F6F5716CEA94723187e45e22ee5;
     address public constant LOCKER = 0xC0295F271c4fD531d436F55b0ceF4Cc316188046;
