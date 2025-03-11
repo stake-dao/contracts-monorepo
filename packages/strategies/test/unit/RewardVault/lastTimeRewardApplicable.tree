@@ -1,2 +1,5 @@
 RewardVault__lastTimeRewardApplicable
-└── it returns the last time reward applicable for a given reward token
+├── when block timestamp is lower than reward periodFinish
+│   └── it returns block timestamp
+└── when reward periodFinish is lower than block timestamp
+    └── it returns reward periodFinish
