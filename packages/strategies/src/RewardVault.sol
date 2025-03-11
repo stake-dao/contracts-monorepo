@@ -90,17 +90,25 @@ contract RewardVault is IERC4626, ERC20 {
 
     /// @notice Reward data structure
     struct RewardData {
+        // address of the authorized rewards distributor
         address rewardsDistributor;
+        // duration of the rewards distribution
         uint32 rewardsDuration;
+        // timestamp at which the rewards was last updated
         uint32 lastUpdateTime;
+        // timestamp at which the rewards period will finish
         uint32 periodFinish;
+        // number of rewards distributed per second
         uint128 rewardRate;
+        // total rewards accumulated per token since the last update, used as a baseline for calculating new rewards
         uint128 rewardPerTokenStored;
     }
 
     /// @notice Account data structure
     struct AccountData {
+        // total rewards paid out to the account since the last update
         uint128 rewardPerTokenPaid;
+        // total rewards currently available for the account to claim
         uint128 claimable;
     }
 
