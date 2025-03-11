@@ -2,92 +2,61 @@
 pragma solidity 0.8.28;
 
 import {Strategy} from "src/Strategy.sol";
+import {MockSidecar} from "test/mocks/MockSidecar.sol";
 import {StrategyBaseTest} from "test/StrategyBaseTest.t.sol";
 import {StrategyHarness} from "test/unit/Strategy/StrategyHarness.t.sol";
-
+import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 contract Strategy__balanceOf is StrategyBaseTest {
     address internal gauge;
 
     function setUp() public override {
         super.setUp();
-        gauge = makeAddr("gauge");
+        gauge = address(stakingToken);
+
+        // Mock the vault function of the IProtocolController interface
+        vm.mockCall(
+            address(registry),
+            abi.encodeWithSelector(IProtocolController.vaults.selector, gauge),
+            abi.encode(address(vault))
+        );
     }
 
     function test_CorrectlyRetrievesBalanceFromLocker(uint256 lockerBalance) public {
-        strategy._cheat_setLockerBalance(gauge, lockerBalance);
+        stakingToken.mint(address(locker), lockerBalance);
 
-        address[] memory emptyTargets = new address[](0);
-        strategy._cheat_setAllocationTargets(gauge, address(allocator), emptyTargets);
+        address[] memory targets = new address[](1);
+        targets[0] = address(locker);
+        strategy._cheat_setAllocationTargets(gauge, address(allocator), targets);
 
+        /// 1. It correctly retrieves the balance from the locker.
+        /// 2. It correctly retrieve allocation targets.
         assertEq(strategy.balanceOf(gauge), lockerBalance);
-    }
 
-    function test_CorrectlyRetrievesAllocator() public {
-        strategy._cheat_setLockerBalance(gauge, 0);
+        /// Mock the allocator to return an empty address.
+        vm.mockCall(address(registry), abi.encodeWithSelector(IProtocolController.allocator.selector, protocolId), abi.encode(address(0)));
 
-        address[] memory emptyTargets = new address[](0);
-        strategy._cheat_setAllocationTargets(gauge, address(allocator), emptyTargets);
-
+        /// 3. It correctly retrieves the allocator.
+        /// Thus reverting if wrong.
+        vm.expectRevert();
         strategy.balanceOf(gauge);
-
-        assertTrue(true);
     }
 
-    function test_CorrectlyRetrievesAllocationTargets() public {
-        strategy._cheat_setLockerBalance(gauge, 0);
+    function test_ReturnsTotalBalanceAcrossAllTargets() public {
 
-        address[] memory targets = new address[](2);
-        targets[0] = makeAddr("target1");
-        targets[1] = makeAddr("target2");
+        address[] memory targets = new address[](3);
+        targets[0] = address(locker);
+        targets[1] = address(new MockSidecar(gauge, address(rewardToken), accountant));
+        targets[2] = address(new MockSidecar(gauge, address(rewardToken), accountant));
 
+
+        stakingToken.mint(address(locker), 100);
+        stakingToken.mint(targets[1], 200);
+        stakingToken.mint(targets[2], 300);
+
+        /// Mock the allocator to return the correct targets.
         strategy._cheat_setAllocationTargets(gauge, address(allocator), targets);
 
-        strategy._cheat_setSidecarBalance(targets[0], 0);
-        strategy._cheat_setSidecarBalance(targets[1], 0);
-
-        strategy.balanceOf(gauge);
-
-        assertTrue(true);
-    }
-
-    function test_CorrectlySumsBalancesFromAllSidecars(uint128 balance1, uint128 balance2) public {
-        strategy._cheat_setLockerBalance(gauge, 0);
-
-        address[] memory targets = new address[](2);
-        targets[0] = makeAddr("target1");
-        targets[1] = makeAddr("target2");
-
-        strategy._cheat_setAllocationTargets(gauge, address(allocator), targets);
-
-        strategy._cheat_setSidecarBalance(targets[0], balance1);
-        strategy._cheat_setSidecarBalance(targets[1], balance2);
-
-        assertEq(strategy.balanceOf(gauge), uint256(balance1) + uint256(balance2));
-    }
-
-    function test_ReturnsTotalBalanceAcrossAllTargets(uint128 lockerBalance, uint128 balance1, uint128 balance2)
-        public
-    {
-        strategy._cheat_setLockerBalance(gauge, lockerBalance);
-
-        address[] memory targets = new address[](2);
-        targets[0] = makeAddr("target1");
-        targets[1] = makeAddr("target2");
-
-        strategy._cheat_setAllocationTargets(gauge, address(allocator), targets);
-
-        strategy._cheat_setSidecarBalance(targets[0], balance1);
-        strategy._cheat_setSidecarBalance(targets[1], balance2);
-
-        assertEq(strategy.balanceOf(gauge), uint256(lockerBalance) + uint256(balance1) + uint256(balance2));
-    }
-
-    function test_ReturnsOnlyLockerBalanceWhenNoSidecarsExist(uint256 lockerBalance) public {
-        strategy._cheat_setLockerBalance(gauge, lockerBalance);
-
-        address[] memory emptyTargets = new address[](0);
-        strategy._cheat_setAllocationTargets(gauge, address(allocator), emptyTargets);
-
-        assertEq(strategy.balanceOf(gauge), lockerBalance);
+        /// 1. It correctly sums the balances from all targets.
+        assertEq(strategy.balanceOf(gauge), 600);
     }
 }

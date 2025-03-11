@@ -1,9 +1,7 @@
 Strategy__balanceOf
 ├── it correctly retrieves balance from the locker
-├── it correctly retrieves the allocator
 ├── it correctly retrieves allocation targets
+├── it correctly retrieves the allocator
 ├── when multiple targets exist
 │   ├── it correctly sums balances from all sidecars
 │   └── it returns the total balance across all targets
-└── when no sidecars exist
-    └── it returns only the locker balance
