@@ -1,6 +1,7 @@
+.vscode/
 node_modules/
 .env
-
+.env.local
 cache/
 out/
 broadcast/

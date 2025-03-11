@@ -4,12 +4,12 @@
   "devDependencies": {
     "@layerzerolabs/solidity-examples": "github:LayerZero-Labs/endpoint-v1-solidity-examples",
     "@openzeppelin/contracts": "4.9.0",
-    "forge-std": "github:foundry-rs/forge-std",
+    "forge-std": "github:foundry-rs/forge-std#v1.9.5",
     "murky": "github:dmfxyz/murky",
-    "solady": "github:vectorized/solady",
+    "@solady": "github:Vectorized/solady#v0.0.288",
     "@stake-dao/address-book": "workspace:*",
     "@stake-dao/herdaddy": "workspace:*",
     "@stake-dao/vyper": "workspace:*",
-    "@safe": "github:safe-global/safe-smart-account"
+    "@safe-global/safe-smart-account": "github:safe-global/safe-smart-account"
   }
 }

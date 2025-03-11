@@ -34,7 +34,7 @@ contract Deploy is DeployAccumulator {
 
     function run() public {
         vm.createSelectFork("linea");
-        _run(DAO.MAIN_DEPLOYER, DAO.TREASURY, DAO.LIQUIDITY_FEES_RECIPIENT, DAO.GOVERNANCE);
+        _run(DAO.MAIN_DEPLOYER, DAO.TREASURY, DAO.TREASURY, DAO.GOVERNANCE);
     }
 
     function _getSafeInitializationData(address[] memory _owners, uint256 _threshold)

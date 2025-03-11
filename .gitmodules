@@ -1,3 +1,0 @@
-[submodule "packages/lockers/lib/safe-smart-account"]
-	path = packages/lockers/lib/safe-smart-account
-	url = https://github.com/safe-global/safe-smart-account

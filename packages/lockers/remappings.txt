@@ -1,4 +1,5 @@
-solady=node_modules/solady/
+solady=node_modules/@solady/
+@safe=node_modules/@safe-global/safe-smart-account
 forge-std=node_modules/forge-std/
 herdaddy=node_modules/@stake-dao/herdaddy/src/
 address-book=node_modules/@stake-dao/address-book/
