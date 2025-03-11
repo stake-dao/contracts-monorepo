@@ -299,13 +299,15 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @param gauge The gauge to get the balance of
     /// @return balance The balance of the strategy
     function balanceOf(address gauge) public view virtual returns (uint256 balance) {
-        balance = IBalanceProvider(gauge).balanceOf(LOCKER);
-
         address allocator = PROTOCOL_CONTROLLER.allocator(PROTOCOL_ID);
         address[] memory targets = IAllocator(allocator).getAllocationTargets(gauge);
 
         for (uint256 i = 0; i < targets.length; i++) {
-            balance += ISidecar(targets[i]).balanceOf();
+            if (targets[i] == LOCKER) {
+                balance += IBalanceProvider(gauge).balanceOf(targets[i]);
+            } else {
+                balance += ISidecar(targets[i]).balanceOf();
+            }
         }
     }
 

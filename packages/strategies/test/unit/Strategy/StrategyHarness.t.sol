@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
+import "test/mocks/ITokenMinter.sol";
 import {Test} from "forge-std/src/Test.sol";
 
 import "src/Strategy.sol";
@@ -24,7 +25,7 @@ contract StrategyHarness is Strategy, Test {
         return FLUSH_AMOUNT_SLOT.asUint256().tload();
     }
 
-    function exposed_setFlushAmount(uint256 amount) external {
+    function _cheat_setFlushAmount(uint256 amount) external {
         FLUSH_AMOUNT_SLOT.asUint256().tstore(amount);
     }
 
@@ -36,12 +37,6 @@ contract StrategyHarness is Strategy, Test {
     function _cheat_setSyncRewards(uint128 feeSubjectAmount, uint128 totalAmount) external {
         _mockSyncRewards.feeSubjectAmount = feeSubjectAmount;
         _mockSyncRewards.totalAmount = totalAmount;
-    }
-
-    function _cheat_setLockerBalance(address gauge, uint256 balance) external {
-        vm.mockCall(
-            address(gauge), abi.encodeWithSelector(IBalanceProvider.balanceOf.selector, LOCKER), abi.encode(balance)
-        );
     }
 
     function _cheat_setAllocationTargets(address gauge, address allocator, address[] memory targets) external {
@@ -64,7 +59,13 @@ contract StrategyHarness is Strategy, Test {
         return _mockHarvestAmount;
     }
 
-    function _deposit(address, uint256) internal override {}
+    function _deposit(address target, uint256 amount) internal override {
+        ITokenMinter(target).mint(address(LOCKER), amount);
+        require(IERC20(target).balanceOf(address(LOCKER)) >= amount, DepositFailed());
+    }
 
-    function _withdraw(address, uint256, address) internal override {}
+    function _withdraw(address target, uint256 amount, address receiver) internal override {
+        bytes memory data = abi.encodeWithSignature("transfer(address,uint256)", receiver, amount);
+        require(_executeTransaction(target, data), WithdrawFailed());
+    }
 }
