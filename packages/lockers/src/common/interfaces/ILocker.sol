@@ -2,6 +2,15 @@
 pragma solidity ^0.8.7;
 
 interface ILocker {
+    /// @notice Throws if caller is not the governance.
+    error GOVERNANCE();
+
+    /// @notice Throws if caller is not the governance or depositor.
+    error GOVERNANCE_OR_DEPOSITOR();
+
+    /// @notice Throws if caller is not the governance or depositor.
+    error GOVERNANCE_OR_ACCUMULATOR();
+
     function createLock(uint256, uint256) external;
 
     function claimAllRewards(address[] calldata _tokens, address _recipient) external;

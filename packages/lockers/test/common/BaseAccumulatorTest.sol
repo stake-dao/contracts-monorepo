@@ -11,28 +11,16 @@ import "address-book/src/protocols/1.sol";
 
 import "src/common/accumulator/BaseAccumulator.sol";
 
-import {ILocker} from "src/common/interfaces/ILocker.sol";
+import {CommonBase} from "test/common/CommonBase.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 
-abstract contract BaseAccumulatorTest is Test {
+abstract contract BaseAccumulatorTest is CommonBase, Test {
     uint256 blockNumber;
-
-    address public locker;
-    address public sdToken;
-    address public veToken;
-
-    ERC20 public rewardToken;
-    ERC20 public strategyRewardToken;
-
-    ILiquidityGauge public liquidityGauge;
-
-    BaseAccumulator public accumulator;
-
-    address public treasuryRecipient = DAO.TREASURY;
-    address public liquidityFeeRecipient = DAO.LIQUIDITY_FEES_RECIPIENT;
+    string chain;
 
     constructor(
         uint256 _blockNumber,
+        string memory _chain,
         address _locker,
         address _sdToken,
         address _veToken,
@@ -41,6 +29,7 @@ abstract contract BaseAccumulatorTest is Test {
         address _strategyRewardToken
     ) {
         blockNumber = _blockNumber;
+        chain = _chain;
         locker = _locker;
         sdToken = _sdToken;
         veToken = _veToken;
@@ -51,22 +40,20 @@ abstract contract BaseAccumulatorTest is Test {
     }
 
     function setUp() public virtual {
-        uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"), blockNumber);
+        uint256 forkId = vm.createFork(vm.rpcUrl(chain), blockNumber);
         vm.selectFork(forkId);
 
         /// Deploy BaseAccumulator Contract.
         accumulator = BaseAccumulator(_deployAccumulator());
+        vm.prank(accumulator.governance());
+        accumulator.transferGovernance(address(this));
+        accumulator.acceptGovernance();
 
-        address[] memory feeSplitReceivers = new address[](2);
-        uint256[] memory feeSplitBps = new uint256[](2);
+        BaseAccumulator.Split[] memory splits = new BaseAccumulator.Split[](2);
+        splits[0] = BaseAccumulator.Split(treasuryRecipient, 5e16);
+        splits[1] = BaseAccumulator.Split(liquidityFeeRecipient, 10e16);
 
-        feeSplitReceivers[0] = treasuryRecipient;
-        feeSplitReceivers[1] = liquidityFeeRecipient;
-
-        feeSplitBps[0] = 5e16;
-        feeSplitBps[1] = 10e16;
-
-        accumulator.setFeeSplit(feeSplitReceivers, feeSplitBps);
+        accumulator.setFeeSplit(splits);
 
         ILiquidityGauge.Reward memory rewardData = liquidityGauge.reward_data(address(rewardToken));
 
@@ -102,16 +89,19 @@ abstract contract BaseAccumulatorTest is Test {
         rewardData = liquidityGauge.reward_data(address(strategyRewardToken));
         assertEq(rewardData.distributor, address(accumulator));
 
-        BaseAccumulator.Split memory split = accumulator.getFeeSplit();
+        BaseAccumulator.Split[] memory splits = accumulator.getFeeSplit();
 
-        assertEq(split.receivers[0], treasuryRecipient);
-        assertEq(split.receivers[1], liquidityFeeRecipient);
+        assertEq(splits[0].receiver, treasuryRecipient);
+        assertEq(splits[1].receiver, liquidityFeeRecipient);
 
-        assertEq(split.fees[0], 5e16); // 5%
-        assertEq(split.fees[1], 10e16); // 10%
+        assertEq(splits[0].fee, 5e16); // 5%
+        assertEq(splits[1].fee, 10e16); // 10%
     }
 
     function test_claimAll() public virtual {
+        //Check Claimer recipient
+        deal(address(rewardToken), address(this), 0);
+        assertEq(rewardToken.balanceOf(address(this)), 0);
         //Check Dao recipient
         deal(address(rewardToken), address(treasuryRecipient), 0);
         assertEq(rewardToken.balanceOf(address(treasuryRecipient)), 0);
@@ -132,12 +122,12 @@ abstract contract BaseAccumulatorTest is Test {
         uint256 remaining = rewardToken.balanceOf(address(accumulator));
         uint256 total = treasury + liquidityFee + gauge + claimer + remaining;
 
-        BaseAccumulator.Split memory feeSplit = accumulator.getFeeSplit();
+        BaseAccumulator.Split[] memory feeSplit = accumulator.getFeeSplit();
 
         assertEq(total * accumulator.claimerFee() / 1e18, claimer);
 
-        assertEq(total * feeSplit.fees[0] / 1e18, treasury);
-        assertEq(total * feeSplit.fees[1] / 1e18, liquidityFee);
+        assertEq(total * feeSplit[0].fee / 1e18, treasury);
+        assertEq(total * feeSplit[1].fee / 1e18, liquidityFee);
 
         skip(1 weeks);
 
@@ -150,9 +140,11 @@ abstract contract BaseAccumulatorTest is Test {
         if (rewardToken != strategyRewardToken) {
             assertEq(ERC20(strategyRewardToken).balanceOf(address(liquidityGauge)), _before + 1_000e18);
         } else {
-            uint256 _treasuryFee = 1_000e18 * feeSplit.fees[0] / 1e18;
-            uint256 _liquidityFee = 1_000e18 * feeSplit.fees[1] / 1e18;
-            uint256 _claimerFee = 1_000e18 * accumulator.claimerFee() / 1e18;
+            uint256 _treasuryFee = (1_000e18 * uint256(feeSplit[0].fee)) / 1e18;
+
+            uint256 _liquidityFee = (1_000e18 * uint256(feeSplit[1].fee)) / 1e18;
+
+            uint256 _claimerFee = (1_000e18 * accumulator.claimerFee()) / 1e18;
 
             assertEq(ERC20(strategyRewardToken).balanceOf(address(treasuryRecipient)), treasury + _treasuryFee);
             assertEq(ERC20(strategyRewardToken).balanceOf(address(liquidityFeeRecipient)), liquidityFee + _liquidityFee);
@@ -164,23 +156,19 @@ abstract contract BaseAccumulatorTest is Test {
     }
 
     function test_setters() public {
-        address[] memory feeSplitReceivers = new address[](2);
-        uint256[] memory feeSplitFees = new uint256[](2);
+        BaseAccumulator.Split[] memory splits = new BaseAccumulator.Split[](2);
+        splits[0] = BaseAccumulator.Split(address(treasuryRecipient), 100);
+        splits[1] = BaseAccumulator.Split(address(liquidityFeeRecipient), 50);
 
-        feeSplitReceivers[0] = address(treasuryRecipient);
-        feeSplitFees[0] = 100; // 5% to dao
+        accumulator.setFeeSplit(splits);
 
-        feeSplitReceivers[1] = address(liquidityFeeRecipient);
-        feeSplitFees[1] = 50; // 5% to liquidity
+        splits = accumulator.getFeeSplit();
 
-        accumulator.setFeeSplit(feeSplitReceivers, feeSplitFees);
-        BaseAccumulator.Split memory split = accumulator.getFeeSplit();
+        assertEq(splits[0].receiver, address(treasuryRecipient));
+        assertEq(splits[1].receiver, address(liquidityFeeRecipient));
 
-        assertEq(split.receivers[0], address(treasuryRecipient));
-        assertEq(split.receivers[1], address(liquidityFeeRecipient));
-
-        assertEq(split.fees[0], 100);
-        assertEq(split.fees[1], 50);
+        assertEq(splits[0].fee, 100);
+        assertEq(splits[1].fee, 50);
 
         accumulator.setClaimerFee(1000e15);
         assertEq(accumulator.claimerFee(), 1000e15);

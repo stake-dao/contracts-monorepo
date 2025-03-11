@@ -7,21 +7,18 @@ import "src/common/accumulator/BaseAccumulator.sol";
 abstract contract DeployAccumulator is Script {
     address payable internal accumulator;
 
-    address[] feeSplitReceivers = new address[](2);
-    uint256[] feeSplitFees = new uint256[](2);
-
     function _run(address deployer, address treasury, address liquidityFeeRecipient, address governance) internal {
         vm.startBroadcast(deployer);
 
+        _beforeDeploy();
+
         accumulator = _deployAccumulator();
 
-        feeSplitReceivers[0] = address(treasury);
-        feeSplitFees[0] = 5e16; // 5% to dao
+        BaseAccumulator.Split[] memory splits = new BaseAccumulator.Split[](2);
+        splits[0] = BaseAccumulator.Split(address(treasury), 5e16);
+        splits[1] = BaseAccumulator.Split(address(liquidityFeeRecipient), 10e16);
 
-        feeSplitReceivers[1] = address(liquidityFeeRecipient);
-        feeSplitFees[1] = 10e16; // 5% to liquidity
-
-        BaseAccumulator(accumulator).setFeeSplit(feeSplitReceivers, feeSplitFees);
+        BaseAccumulator(accumulator).setFeeSplit(splits);
 
         _afterDeploy();
 
@@ -33,4 +30,6 @@ abstract contract DeployAccumulator is Script {
     function _deployAccumulator() internal virtual returns (address payable);
 
     function _afterDeploy() internal virtual;
+
+    function _beforeDeploy() internal virtual;
 }

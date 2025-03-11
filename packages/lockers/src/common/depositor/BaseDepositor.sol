@@ -16,7 +16,7 @@ import "solady/src/utils/SafeTransferLib.sol";
 /// @custom:contact contact@stakedao.org
 abstract contract BaseDepositor {
     /// @notice Denominator for fixed point math.
-    uint256 public constant DENOMINATOR = 10_000;
+    uint256 public constant DENOMINATOR = 1e18;
 
     /// @notice Maximum lock duration.
     uint256 public immutable MAX_LOCK_DURATION;
@@ -31,7 +31,7 @@ abstract contract BaseDepositor {
     address public minter;
 
     /// @notice Fee percent to users who spend gas to increase lock.
-    uint256 public lockIncentivePercent = 10;
+    uint256 public lockIncentivePercent = 0.001e18; // 0.1%
 
     /// @notice Incentive accrued in token to users who spend gas to increase lock.
     uint256 public incentiveToken;
@@ -46,7 +46,7 @@ abstract contract BaseDepositor {
     address public futureGovernance;
 
     ////////////////////////////////////////////////////////////////
-    /// --- ERRORS
+    /// --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Throws if caller is not the governance.
@@ -58,6 +58,21 @@ abstract contract BaseDepositor {
     /// @notice Throws if the address is zero.
     error ADDRESS_ZERO();
 
+    /// @notice Throws if the lock incentive is too high.
+    error LOCK_INCENTIVE_TOO_HIGH();
+
+    /// @notice Event emitted when the gauge is updated
+    event GaugeUpdated(address newGauge);
+
+    /// @notice Event emitted when the lock incentive is updated
+    event LockIncentiveUpdated(uint256 newLockIncentive);
+
+    /// @notice Event emitted when the governance update is proposed
+    event GovernanceUpdateProposed(address newFutureGovernance);
+
+    /// @notice Event emitted when the governance update is accepted
+    event GovernanceUpdateAccepted(address newGovernance);
+
     ////////////////////////////////////////////////////////////////
     /// --- MODIFIERS
     ///////////////////////////////////////////////////////////////
@@ -68,6 +83,10 @@ abstract contract BaseDepositor {
     }
 
     constructor(address _token, address _locker, address _minter, address _gauge, uint256 _maxLockDuration) {
+        if (_token == address(0) || _locker == address(0) || _minter == address(0) || _gauge == address(0)) {
+            revert ADDRESS_ZERO();
+        }
+
         governance = msg.sender;
 
         token = _token;
@@ -116,7 +135,7 @@ abstract contract BaseDepositor {
 
         /// If _lock is true, lock tokens in the locker contract.
         if (_lock) {
-            /// Transfer tokens to this contract
+            /// Transfer tokens to the locker contract.
             SafeTransferLib.safeTransferFrom(token, msg.sender, locker, _amount);
 
             /// Transfer the balance
@@ -136,7 +155,7 @@ abstract contract BaseDepositor {
                 incentiveToken = 0;
             }
         } else {
-            /// Transfer tokens to the locker contract and lock them.
+            /// Transfer tokens to this contract.
             SafeTransferLib.safeTransferFrom(token, msg.sender, address(this), _amount);
 
             /// Compute call incentive and add to incentiveToken
@@ -201,14 +220,14 @@ abstract contract BaseDepositor {
     /// @notice Transfer the governance to a new address.
     /// @param _governance Address of the new governance.
     function transferGovernance(address _governance) external onlyGovernance {
-        futureGovernance = _governance;
+        emit GovernanceUpdateProposed(futureGovernance = _governance);
     }
 
     /// @notice Accept the governance transfer.
     function acceptGovernance() external {
         if (msg.sender != futureGovernance) revert GOVERNANCE();
 
-        governance = msg.sender;
+        emit GovernanceUpdateAccepted(governance = msg.sender);
 
         futureGovernance = address(0);
     }
@@ -222,7 +241,9 @@ abstract contract BaseDepositor {
     /// @notice Set the gauge to deposit sdToken
     /// @param _gauge gauge address
     function setGauge(address _gauge) external virtual onlyGovernance {
-        gauge = _gauge;
+        /// Set and emit the new gauge.
+        emit GaugeUpdated(gauge = _gauge);
+
         if (_gauge != address(0)) {
             /// Approve sdToken to gauge.
             SafeTransferLib.safeApprove(minter, gauge, type(uint256).max);
@@ -232,9 +253,8 @@ abstract contract BaseDepositor {
     /// @notice Set the percentage of the lock incentive
     /// @param _lockIncentive Percentage of the lock incentive
     function setFees(uint256 _lockIncentive) external onlyGovernance {
-        if (_lockIncentive >= 0 && _lockIncentive <= 30) {
-            lockIncentivePercent = _lockIncentive;
-        }
+        if (_lockIncentive > 0.003e18) revert LOCK_INCENTIVE_TOO_HIGH();
+        emit LockIncentiveUpdated(lockIncentivePercent = _lockIncentive);
     }
 
     function name() external view returns (string memory) {

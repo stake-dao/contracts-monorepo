@@ -22,12 +22,12 @@ abstract contract BaseAccumulator {
     /// @param fees Array of fees
     /// @dev First go to the first receiver, then the second, and so on
     struct Split {
-        address[] receivers;
-        uint256[] fees; // Fee in basis points with 1e18 precision
+        address receiver;
+        uint96 fee; // Fee in basis points with 1e18 precision
     }
 
     /// @notice Fee split.
-    Split feeSplit;
+    Split[] private feeSplits;
 
     /// @notice SDT distributor
     address public sdtDistributor;
@@ -75,6 +75,30 @@ abstract contract BaseAccumulator {
     /// @notice Error emitted when the fee is invalid
     error INVALID_SPLIT();
 
+    /// @notice Event emitted when the fee split is set
+    event FeeSplitUpdated(Split[] newFeeSplit);
+
+    /// @notice Event emitted when a new token reward is approved
+    event RewardTokenApproved(address newRewardToken);
+
+    /// @notice Event emitted when the claimer fee is set
+    event ClaimerFeeUpdated(uint256 newClaimerFee);
+
+    /// @notice Event emitted when the SDT distributor is set
+    event SDTDistributorUpdated(address newSDTDistributor);
+
+    /// @notice Event emitted when the fee receiver is set
+    event FeeReceiverUpdated(address newFeeReceiver);
+
+    /// @notice Event emitted when the strategy is set
+    event StrategyUpdated(address newStrategy);
+
+    /// @notice Event emitted when the governance update is proposed
+    event GovernanceUpdateProposed(address newFutureGovernance);
+
+    /// @notice Event emitted when the governance update is accepted
+    event GovernanceUpdateAccepted(address newGovernance);
+
     //////////////////////////////////////////////////////
     /// --- MODIFIERS
     //////////////////////////////////////////////////////
@@ -100,13 +124,17 @@ abstract contract BaseAccumulator {
     /// @param _locker sd locker
     /// @param _governance governance
     constructor(address _gauge, address _rewardToken, address _locker, address _governance) {
+        if (_gauge == address(0) || _locker == address(0) || _governance == address(0) || _rewardToken == address(0)) {
+            revert ZERO_ADDRESS();
+        }
+
         gauge = _gauge;
         locker = _locker;
         rewardToken = _rewardToken;
 
         governance = _governance;
 
-        claimerFee = 1e15; // 0.1%
+        claimerFee = 0.001e18; // 0.1%
     }
 
     //////////////////////////////////////////////////////
@@ -167,11 +195,11 @@ abstract contract BaseAccumulator {
     function _chargeFee(address _token, uint256 _amount) internal virtual returns (uint256 _charged) {
         if (_amount == 0 || _token != rewardToken) return 0;
 
-        Split memory _feeSplit = getFeeSplit();
+        Split[] memory _feeSplit = getFeeSplit();
         uint256 fee;
-        for (uint256 i = 0; i < _feeSplit.receivers.length; i++) {
-            fee = (_amount * _feeSplit.fees[i]) / DENOMINATOR;
-            SafeTransferLib.safeTransfer(_token, _feeSplit.receivers[i], fee);
+        for (uint256 i = 0; i < _feeSplit.length; i++) {
+            fee = (_amount * _feeSplit[i].fee) / DENOMINATOR;
+            SafeTransferLib.safeTransfer(_token, _feeSplit[i].receiver, fee);
 
             _charged += fee;
         }
@@ -194,25 +222,25 @@ abstract contract BaseAccumulator {
     /// --- GOVERNANCE FUNCTIONS
     //////////////////////////////////////////////////////
 
-    function getFeeSplit() public view returns (Split memory) {
-        return feeSplit;
+    function getFeeSplit() public view returns (Split[] memory) {
+        return feeSplits;
     }
 
     function setClaimerFee(uint256 _claimerFee) external onlyGovernance {
         if (_claimerFee > DENOMINATOR) revert FEE_TOO_HIGH();
-        claimerFee = _claimerFee;
+        emit ClaimerFeeUpdated(claimerFee = _claimerFee);
     }
 
     /// @notice Set SDT distributor.
     /// @param _distributor SDT distributor address.
     function setDistributor(address _distributor) external onlyGovernance {
-        sdtDistributor = _distributor;
+        emit SDTDistributorUpdated(sdtDistributor = _distributor);
     }
 
     /// @notice Set fee receiver (from Stategy)
     /// @param _feeReceiver Fee receiver address
     function setFeeReceiver(address _feeReceiver) external onlyGovernance {
-        feeReceiver = _feeReceiver;
+        emit FeeReceiverUpdated(feeReceiver = _feeReceiver);
     }
 
     /// @notice Set a new future governance that can accept it
@@ -221,6 +249,8 @@ abstract contract BaseAccumulator {
     function transferGovernance(address _futureGovernance) external onlyGovernance {
         if (_futureGovernance == address(0)) revert ZERO_ADDRESS();
         futureGovernance = _futureGovernance;
+
+        emit GovernanceUpdateProposed(futureGovernance);
     }
 
     /// @notice Accept the governance
@@ -229,24 +259,42 @@ abstract contract BaseAccumulator {
         governance = futureGovernance;
 
         futureGovernance = address(0);
+
+        emit GovernanceUpdateAccepted(governance);
     }
 
     /// @notice Approve the distribution of a new token reward from the BaseAccumulator.
     /// @param _newTokenReward New token reward to be approved.
     function approveNewTokenReward(address _newTokenReward) external onlyGovernance {
         SafeTransferLib.safeApprove(_newTokenReward, gauge, type(uint256).max);
+
+        emit RewardTokenApproved(_newTokenReward);
     }
 
     /// @notice Set fee split
-    /// @param receivers array of receivers
-    /// @param fees array of fees
-    function setFeeSplit(address[] calldata receivers, uint256[] calldata fees) external onlyGovernance {
-        if (receivers.length == 0 || receivers.length != fees.length) revert INVALID_SPLIT();
-        feeSplit = Split(receivers, fees);
+    /// @param splits array of splits
+    function setFeeSplit(Split[] calldata splits) external onlyGovernance {
+        if (splits.length == 0) revert INVALID_SPLIT();
+
+        uint256 totalFees;
+        for (uint256 i = 0; i < splits.length; i++) {
+            totalFees += splits[i].fee;
+        }
+        if (totalFees > DENOMINATOR) revert FEE_TOO_HIGH();
+
+        delete feeSplits;
+
+        for (uint256 i = 0; i < splits.length; i++) {
+            if (splits[i].receiver == address(0)) revert ZERO_ADDRESS();
+
+            feeSplits.push(Split({receiver: splits[i].receiver, fee: uint96(splits[i].fee)}));
+        }
+
+        emit FeeSplitUpdated(splits);
     }
 
     function setStrategy(address _strategy) external onlyGovernance {
-        strategy = _strategy;
+        emit StrategyUpdated(strategy = _strategy);
     }
 
     /// @notice A function that rescue any ERC20 token

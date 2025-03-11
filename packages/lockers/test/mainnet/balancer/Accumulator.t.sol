@@ -13,7 +13,7 @@ contract AccumulatorTest is BaseAccumulatorTest {
     IVeBoostDelegation public veBoostDelegation = IVeBoostDelegation(0xda9846665Bdb44b0d0CAFFd0d1D4A539932BeBdf);
 
     constructor()
-        BaseAccumulatorTest(20_237_852, BAL.LOCKER, BAL.SDTOKEN, Balancer.VEBAL, BAL.GAUGE, USDC, Balancer.BAL)
+        BaseAccumulatorTest(20_237_852, "mainnet", BAL.LOCKER, BAL.SDTOKEN, Balancer.VEBAL, BAL.GAUGE, USDC, Balancer.BAL)
     {}
 
     function _deployAccumulator() internal override returns (address payable accumulator) {
