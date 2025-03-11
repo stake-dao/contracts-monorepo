@@ -79,7 +79,10 @@ contract RewardVault is IERC4626, ERC20 {
     IProtocolController public immutable PROTOCOL_CONTROLLER;
 
     /// @notice The maximum number of reward tokens that can be added.
-    uint256 constant MAX_REWARD_TOKEN_COUNT = 10;
+    uint256 internal constant MAX_REWARD_TOKEN_COUNT = 10;
+
+    /// @notice The default rewards duration.
+    uint32 public constant DEFAULT_REWARDS_DURATION = 7 days;
 
     ///////////////////////////////////////////////////////////////
     /// ~ STORAGE STRUCTURES
@@ -115,7 +118,7 @@ contract RewardVault is IERC4626, ERC20 {
     mapping(address rewardToken => RewardData rewardData) public rewardData;
 
     /// @notice Account reward data mapping
-    mapping(address accountAddress => mapping(address rewardToken => AccountData accountData)) private accountData;
+    mapping(address accountAddress => mapping(address rewardToken => AccountData accountData)) accountData;
 
     /// @notice Initializes the vault with basic ERC20 metadata
     /// @dev Sets up the vault with a standard name and symbol prefix
@@ -318,13 +321,13 @@ contract RewardVault is IERC4626, ERC20 {
         if (rewardTokens.length >= MAX_REWARD_TOKEN_COUNT) revert MaxRewardTokensExceeded();
 
         // add the reward token to the list of reward tokens
-        rewardTokens.push(_rewardsToken); // ?:
+        rewardTokens.push(_rewardsToken);
         isRewardToken[_rewardsToken] = true;
 
         // Set the reward distributor and duration.
         RewardData storage reward = rewardData[_rewardsToken];
         reward.rewardsDistributor = _distributor;
-        reward.rewardsDuration = 7 days; // TODO: constant
+        reward.rewardsDuration = DEFAULT_REWARDS_DURATION;
 
         emit RewardTokenAdded(_rewardsToken, _distributor);
     }
