@@ -521,6 +521,16 @@ contract RewardVault is IERC4626, ERC20 {
         return rewardData[token].rewardPerTokenStored;
     }
 
+    /// @notice Returns the reward per token paid for a given reward token and account.
+    function getRewardPerTokenPaid(address token, address account) public view returns (uint128) {
+        return accountData[account][token].rewardPerTokenPaid;
+    }
+
+    /// @notice Returns the claimable amount for a given reward token and account.
+    function getClaimable(address token, address account) public view returns (uint128) {
+        return accountData[account][token].claimable;
+    }
+
     /// @notice Returns the last time reward applicable for a given reward token.
     function lastTimeRewardApplicable(address token) public view returns (uint256) {
         return _lastTimeRewardApplicable(getPeriodFinish(token));
