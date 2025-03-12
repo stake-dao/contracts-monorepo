@@ -17,9 +17,7 @@ contract Strategy__withdraw is StrategyBaseTest {
 
     function test_RevertGaugeShutdown() public {
         vm.mockCall(
-            address(registry),
-            abi.encodeWithSelector(IProtocolController.isShutdown.selector, gauge),
-            abi.encode(true)
+            address(registry), abi.encodeWithSelector(IProtocolController.isShutdown.selector, gauge), abi.encode(true)
         );
 
         vm.expectRevert(abi.encodeWithSelector(Strategy.GaugeShutdown.selector));

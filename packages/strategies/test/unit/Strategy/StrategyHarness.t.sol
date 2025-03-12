@@ -10,23 +10,31 @@ import "src/Strategy.sol";
 contract StrategyHarness is Strategy, Test {
     using TransientSlot for *;
 
-    bytes32 private constant FLUSH_AMOUNT_SLOT = keccak256("strategy.flush.amount");
-
     // Storage for cheat values
     uint256 private _mockHarvestAmount;
+    uint256 private _mockFlushAmount;
+
     IStrategy.PendingRewards private _mockSyncRewards;
 
     constructor(address _registry, bytes4 _protocolId, address _locker, address _gateway)
         Strategy(_registry, _protocolId, _locker, _gateway)
     {}
 
+    function _getFlushAmount() internal view override returns (uint256) {
+        return _mockFlushAmount;
+    }
+
+    function _setFlushAmount(uint256 amount) internal override {
+        _mockFlushAmount = amount;
+    }
+
     // Expose transient storage access
     function exposed_getFlushAmount() external view returns (uint256) {
-        return FLUSH_AMOUNT_SLOT.asUint256().tload();
+        return _getFlushAmount();
     }
 
     function _cheat_setFlushAmount(uint256 amount) external {
-        FLUSH_AMOUNT_SLOT.asUint256().tstore(amount);
+        _setFlushAmount(amount);
     }
 
     // Cheat functions to set mock return values
