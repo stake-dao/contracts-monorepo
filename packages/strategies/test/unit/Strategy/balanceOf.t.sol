@@ -6,12 +6,10 @@ import {MockSidecar} from "test/mocks/MockSidecar.sol";
 import {StrategyBaseTest} from "test/StrategyBaseTest.t.sol";
 import {StrategyHarness} from "test/unit/Strategy/StrategyHarness.t.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
-contract Strategy__balanceOf is StrategyBaseTest {
-    address internal gauge;
 
+contract Strategy__balanceOf is StrategyBaseTest {
     function setUp() public override {
         super.setUp();
-        gauge = address(stakingToken);
 
         // Mock the vault function of the IProtocolController interface
         vm.mockCall(
@@ -33,7 +31,11 @@ contract Strategy__balanceOf is StrategyBaseTest {
         assertEq(strategy.balanceOf(gauge), lockerBalance);
 
         /// Mock the allocator to return an empty address.
-        vm.mockCall(address(registry), abi.encodeWithSelector(IProtocolController.allocator.selector, protocolId), abi.encode(address(0)));
+        vm.mockCall(
+            address(registry),
+            abi.encodeWithSelector(IProtocolController.allocator.selector, protocolId),
+            abi.encode(address(0))
+        );
 
         /// 3. It correctly retrieves the allocator.
         /// Thus reverting if wrong.
@@ -42,12 +44,10 @@ contract Strategy__balanceOf is StrategyBaseTest {
     }
 
     function test_ReturnsTotalBalanceAcrossAllTargets() public {
-
         address[] memory targets = new address[](3);
         targets[0] = address(locker);
         targets[1] = address(new MockSidecar(gauge, address(rewardToken), accountant));
         targets[2] = address(new MockSidecar(gauge, address(rewardToken), accountant));
-
 
         stakingToken.mint(address(locker), 100);
         stakingToken.mint(targets[1], 200);
