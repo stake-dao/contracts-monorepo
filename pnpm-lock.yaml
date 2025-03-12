@@ -50,6 +50,9 @@ importers:
       '@stake-dao/herdaddy':
         specifier: workspace:*
         version: link:../herdaddy
+      '@stake-dao/interfaces':
+        specifier: workspace:*
+        version: link:../interfaces
       '@stake-dao/vyper':
         specifier: workspace:*
         version: link:../vyper
