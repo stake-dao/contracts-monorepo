@@ -124,6 +124,4 @@ contract Strategy__harvest is StrategyBaseTest {
         assertEq(pendingRewards.totalAmount, 0);
         assertEq(strategy.exposed_getFlushAmount(), 0);
     }
-
-
 }

@@ -57,9 +57,6 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @notice Error thrown when rebalance is not needed
     error RebalanceNotNeeded();
 
-    /// @notice Error thrown when rebalance goes wrong or is not implemented
-    error RebalanceGoneWrongOrNotImplemented();
-
     //////////////////////////////////////////////////////
     /// --- MODIFIERS
     //////////////////////////////////////////////////////
@@ -259,7 +256,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         uint256 currentBalance = balanceOf(gauge);
 
         /// 4. Get the allocation amounts for the gauge.
-        IAllocator.Allocation memory allocation = IAllocator(allocator).getDepositAllocation(gauge, currentBalance);
+        IAllocator.Allocation memory allocation = IAllocator(allocator).getRebalancedAllocation(gauge, currentBalance);
 
         /// 5. Ensure the allocation has more than one target.
         require(allocation.targets.length > 1, RebalanceNotNeeded());
@@ -290,9 +287,6 @@ abstract contract Strategy is IStrategy, ProtocolContext {
                 ISidecar(target).deposit(allocation.amounts[i]);
             }
         }
-
-        /// 8. Return true if the balance is the same as the current balance, meaning the rebalance was successful.
-        require(currentBalance == balanceOf(gauge), RebalanceGoneWrongOrNotImplemented());
     }
 
     /// @notice Returns the balance of the strategy
