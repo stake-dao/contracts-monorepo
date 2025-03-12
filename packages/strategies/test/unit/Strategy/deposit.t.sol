@@ -3,53 +3,9 @@ pragma solidity 0.8.28;
 
 import {Strategy} from "src/Strategy.sol";
 import {StrategyBaseTest} from "test/StrategyBaseTest.t.sol";
-import {StrategyHarness} from "test/unit/Strategy/StrategyHarness.t.sol";
-import {IAllocator} from "src/interfaces/IAllocator.sol";
-import {ISidecar} from "src/interfaces/ISidecar.sol";
-import {MockSidecar} from "test/mocks/MockSidecar.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
 contract Strategy__deposit is StrategyBaseTest {
-    address internal gauge;
-    address internal sidecar1;
-    address internal sidecar2;
-
-    IAllocator.Allocation internal allocation;
-
-    function setUp() public override {
-        super.setUp();
-
-        gauge = address(stakingToken);
-        sidecar1 = address(new MockSidecar(gauge, address(rewardToken), accountant));
-        sidecar2 = address(new MockSidecar(gauge, address(rewardToken), accountant));
-
-        // Mock the vault function of the IProtocolController interface
-        vm.mockCall(
-            address(registry),
-            abi.encodeWithSelector(IProtocolController.vaults.selector, gauge),
-            abi.encode(address(vault))
-        );
-
-        address[] memory targets = new address[](3);
-        targets[0] = address(locker);
-        targets[1] = sidecar1;
-        targets[2] = sidecar2;
-
-        uint256[] memory amounts = new uint256[](3);
-        amounts[0] = 100;
-        amounts[1] = 200;
-        amounts[2] = 300;
-
-        allocation = IAllocator.Allocation({gauge: gauge, harvested: false, targets: targets, amounts: amounts});
-
-        // Mock AllocationTargets
-        vm.mockCall(
-            address(allocator),
-            abi.encodeWithSelector(IAllocator.getAllocationTargets.selector, gauge),
-            abi.encode(targets)
-        );
-    }
-
     function test_RevertsIfNotCalledByVault() public {
         vm.prank(makeAddr("not_vault"));
 
@@ -82,7 +38,6 @@ contract Strategy__deposit is StrategyBaseTest {
         rewardToken.mint(address(locker), 50);
         rewardToken.mint(address(sidecar1), 20);
         rewardToken.mint(address(sidecar2), 30);
-
 
         vm.prank(vault);
         Strategy.PendingRewards memory rewards = strategy.deposit(allocation);

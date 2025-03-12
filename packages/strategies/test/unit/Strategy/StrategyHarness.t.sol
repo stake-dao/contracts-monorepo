@@ -30,8 +30,9 @@ contract StrategyHarness is Strategy, Test {
     }
 
     // Cheat functions to set mock return values
-    function _cheat_setHarvestAmount(uint256 amount) external {
+    function _cheat_setLockerHarvestAmount(uint256 amount) external {
         _mockHarvestAmount = amount;
+        ITokenMinter(address(REWARD_TOKEN)).mint(LOCKER, amount);
     }
 
     function _cheat_setSyncRewards(uint128 feeSubjectAmount, uint128 totalAmount) external {
