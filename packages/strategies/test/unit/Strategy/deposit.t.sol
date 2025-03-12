@@ -39,6 +39,11 @@ contract Strategy__deposit is StrategyBaseTest {
         rewardToken.mint(address(sidecar1), 20);
         rewardToken.mint(address(sidecar2), 30);
 
+        /// Cheat the staking token balances.
+        stakingToken.mint(address(locker), 100);
+        stakingToken.mint(address(sidecar1), 200);
+        stakingToken.mint(address(sidecar2), 300);
+
         vm.prank(vault);
         Strategy.PendingRewards memory rewards = strategy.deposit(allocation);
 
