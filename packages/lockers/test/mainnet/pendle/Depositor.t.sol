@@ -19,7 +19,7 @@ import "src/mainnet/pendle/Depositor.sol";
 contract DepositorTest is Test {
     uint256 private constant MIN_LOCK_DURATION = 1 weeks;
 
-    uint256 private constant MAX_LOCK_DURATION = 4 * 365 days;
+    uint256 private constant MAX_LOCK_DURATION = 104 weeks;
 
     address public constant OLD_DEPOSITOR = 0xf7F64f63ec693C6a3A79fCe4b222Bca2595cAcEf;
 
