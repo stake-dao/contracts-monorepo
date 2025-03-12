@@ -27,7 +27,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     bytes32 private constant FLUSH_AMOUNT_SLOT = keccak256("strategy.flush.amount");
 
     //////////////////////////////////////////////////////
-    /// --- ERRORS
+    /// --- ERRORS & EVENTS
     //////////////////////////////////////////////////////
 
     /// @notice Error thrown when the caller is not the vault for the gauge
@@ -56,6 +56,12 @@ abstract contract Strategy is IStrategy, ProtocolContext {
 
     /// @notice Error thrown when rebalance is not needed
     error RebalanceNotNeeded();
+
+    /// @notice Event emitted when the strategy is shutdown
+    event Shutdown(address indexed gauge);
+
+    /// @notice Event emitted when the strategy is rebalanced
+    event Rebalance(address indexed gauge, address[] targets, uint256[] amounts);
 
     //////////////////////////////////////////////////////
     /// --- MODIFIERS
@@ -117,7 +123,6 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         returns (PendingRewards memory pendingRewards)
     {
         /// If the pool is shutdown, prefer to call shutdown instead.
-        /// TODO: Should we call shutdown instead, directly?
         require(!PROTOCOL_CONTROLLER.isShutdown(allocation.gauge), GaugeShutdown());
 
         for (uint256 i = 0; i < allocation.targets.length; i++) {
@@ -241,6 +246,9 @@ abstract contract Strategy is IStrategy, ProtocolContext {
                 ISidecar(target).withdraw(balance, vault);
             }
         }
+
+        /// 5. Emit the shutdown event.
+        emit Shutdown(gauge);
     }
 
     /// @notice Rebalances the strategy
@@ -287,6 +295,9 @@ abstract contract Strategy is IStrategy, ProtocolContext {
                 ISidecar(target).deposit(allocation.amounts[i]);
             }
         }
+
+        /// 8. Emit the rebalance event.
+        emit Rebalance(gauge, allocation.targets, allocation.amounts);
     }
 
     /// @notice Returns the balance of the strategy
