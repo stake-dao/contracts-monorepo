@@ -16,7 +16,7 @@ install:
 	pnpm i
 
 test:
-	@forge test
+	@forge test --show-progress --gas-report
 
 test-f-%:
 	@FOUNDRY_MATCH_TEST=$* make test

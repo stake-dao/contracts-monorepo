@@ -24,7 +24,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     using TransientSlot for *;
 
     /// @dev Slot for the flush amount in transient storage
-    bytes32 private constant FLUSH_AMOUNT_SLOT = keccak256("strategy.flush.amount");
+    bytes32 internal constant FLUSH_AMOUNT_SLOT = keccak256("strategy.flush.amount");
 
     //////////////////////////////////////////////////////
     /// --- ERRORS & EVENTS
@@ -191,8 +191,8 @@ abstract contract Strategy is IStrategy, ProtocolContext {
                 pendingRewards.feeSubjectAmount = pendingRewardsAmount.toUint128();
 
                 // Update flush amount in transient storage
-                uint256 currentFlushAmount = FLUSH_AMOUNT_SLOT.asUint256().tload();
-                FLUSH_AMOUNT_SLOT.asUint256().tstore(currentFlushAmount + pendingRewardsAmount);
+                uint256 currentFlushAmount = _getFlushAmount();
+                _setFlushAmount(currentFlushAmount + pendingRewardsAmount);
             } else {
                 pendingRewardsAmount = ISidecar(target).claim();
             }
@@ -207,13 +207,13 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @dev Only allowed to be called by the accountant during harvest operation
     function flush() public onlyAccountant {
         // Get flush amount from transient storage
-        uint256 flushAmount = FLUSH_AMOUNT_SLOT.asUint256().tload();
+        uint256 flushAmount = _getFlushAmount();
 
         bytes memory data = abi.encodeWithSelector(IERC20.transfer.selector, ACCOUNTANT, flushAmount);
         require(_executeTransaction(address(REWARD_TOKEN), data), FlushFailed());
 
         // Reset the flush amount in transient storage
-        FLUSH_AMOUNT_SLOT.asUint256().tstore(0);
+        _setFlushAmount(0);
     }
 
     /// @notice Shuts down the strategy by withdrawing all the assets and sending them to the vault
@@ -319,6 +319,18 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     //////////////////////////////////////////////////////
     /// --- INTERNAL VIRTUAL FUNCTIONS
     //////////////////////////////////////////////////////
+
+    /// @notice Gets the flush amount from transient storage
+    /// @return The flush amount
+    function _getFlushAmount() internal view virtual returns (uint256) {
+        return FLUSH_AMOUNT_SLOT.asUint256().tload();
+    }
+
+    /// @notice Sets the flush amount in transient storage
+    /// @param amount The amount to set
+    function _setFlushAmount(uint256 amount) internal virtual {
+        FLUSH_AMOUNT_SLOT.asUint256().tstore(amount);
+    }
 
     /// @notice Synchronizes state of pending rewards.
     /// @dev Must be implemented by derived strategies to handle protocol-specific reward collection
