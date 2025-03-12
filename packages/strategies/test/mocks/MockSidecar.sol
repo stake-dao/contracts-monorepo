@@ -15,15 +15,17 @@ contract MockSidecar is ISidecar {
         accountant = accountant_;
     }
 
-    function deposit(uint256 amount) external {
-        ITokenMinter(address(asset)).mint(address(this), amount);
+    error DepositFailed();
+
+    function deposit(uint256 amount) external view {
+        require(asset.balanceOf(address(this)) >= amount, DepositFailed());
     }
 
     function withdraw(uint256 amount, address receiver) external {
         asset.transfer(receiver, amount);
     }
 
-    function balanceOf() external view returns (uint256) {
+    function balanceOf() public view returns (uint256) {
         return asset.balanceOf(address(this));
     }
 

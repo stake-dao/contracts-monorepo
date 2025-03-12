@@ -32,7 +32,7 @@ contract MockRegistry is IProtocolController {
 
     function shutdown(address) external {}
 
-    function isShutdown(address) external view returns (bool) {
+    function isShutdown(address) external pure returns (bool) {
         return false;
     }
 

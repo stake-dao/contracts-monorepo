@@ -41,6 +41,13 @@ abstract contract StrategyBaseTest is BaseTest {
 
         allocation = IAllocator.Allocation({gauge: gauge, harvested: false, targets: targets, amounts: amounts});
 
+        /// Mock the asset function of the IProtocolController interface
+        vm.mockCall(
+            address(registry),
+            abi.encodeWithSelector(IProtocolController.asset.selector, gauge),
+            abi.encode(address(stakingToken))
+        );
+
         // Mock the vault function of the IProtocolController interface
         vm.mockCall(
             address(registry),

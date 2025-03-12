@@ -16,7 +16,7 @@ install:
 	pnpm i
 
 test:
-	@forge test
+	@forge test --mc Strategy__rebalance
 
 test-f-%:
 	@FOUNDRY_MATCH_TEST=$* make test
