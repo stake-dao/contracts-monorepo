@@ -33,7 +33,7 @@ contract RewardVaultHarness is RewardVault, Test {
         accountData[account][rewardToken] = _accountData;
     }
 
-    function _expose_MAX_REWARD_TOKEN_COUNT() external view returns (uint256) {
+    function _expose_MAX_REWARD_TOKEN_COUNT() external pure returns (uint256) {
         return MAX_REWARD_TOKEN_COUNT;
     }
 }
