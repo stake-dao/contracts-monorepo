@@ -9,6 +9,7 @@ import "test/unit/RewardVault/RewardVaultHarness.t.sol";
 /// @notice Base test contract specifically for RewardVault tests
 abstract contract RewardVaultBaseTest is BaseTest {
     RewardVault internal rewardVault;
+    RewardVaultHarness internal rewardVaultHarness;
 
     address internal protocolController;
     address internal immutable accountant = makeAddr("accountant");
@@ -21,13 +22,18 @@ abstract contract RewardVaultBaseTest is BaseTest {
         protocolController = address(registry);
     }
 
-    /// @notice Replace Strategy with RewardVaultHarness for testing
-    modifier _cheat_replaceRewardVaultWithRewardVaultHarness() {
+    function _replaceRewardVaultWithRewardVaultHarness(address customRewardVaultAddress) internal {
         _deployHarnessCode(
             "out/RewardVaultHarness.t.sol/RewardVaultHarness.json",
             abi.encode(protocolId, address(registry), accountant),
-            address(rewardVault)
+            customRewardVaultAddress
         );
+        rewardVaultHarness = RewardVaultHarness(customRewardVaultAddress);
+    }
+
+    modifier _cheat_replaceRewardVaultWithRewardVaultHarness() {
+        _replaceRewardVaultWithRewardVaultHarness(address(rewardVault));
+
         _;
     }
 }

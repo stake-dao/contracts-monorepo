@@ -6,5 +6,5 @@ RewardVault__withdraw
 ├── it tells the strategy to withdraw the assets
 ├── it tells the accoutant to burn the tokens
 ├── it transfers the assets to the receiver
-├── it emits a withdraw event
+├── it emits the event
 └── it returns the amount of shares burned
