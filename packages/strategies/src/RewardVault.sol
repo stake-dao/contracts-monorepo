@@ -218,22 +218,15 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Redeems `shares` from `owner` and sends assets to `receiver`.
-    /// @dev Checks allowances and calls strategy withdrawal logic.
+    /// @dev Checks allowances and calls strategy withdrawal logic. Due to the 1:1
+    ///      relationship of the assets and the shares, the redeem function is a
+    ///      wrapper of the withdraw function.
     /// @param shares The amount of shares to redeem.
     /// @param receiver The address to receive the assets.
     /// @param owner The address to burn shares from.
     /// @return The amount of shares burned.
-    function redeem(uint256 shares, address receiver, address owner) public returns (uint256) {
-        if (receiver == address(0)) receiver = owner;
-
-        if (msg.sender != owner) {
-            uint256 allowed = allowance(owner, msg.sender);
-            if (shares > allowed) revert NotApproved();
-            if (allowed != type(uint256).max) _spendAllowance(owner, msg.sender, shares);
-        }
-
-        _withdraw(owner, receiver, shares, shares);
-        return shares;
+    function redeem(uint256 shares, address receiver, address owner) external returns (uint256) {
+        return withdraw(shares, receiver, owner);
     }
 
     /// @dev Internal function to withdraw assets from the vault.
