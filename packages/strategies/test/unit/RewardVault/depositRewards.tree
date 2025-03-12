@@ -1,9 +1,7 @@
 RewardVault__depositRewards
-├── it updates the reward for all tokens
 ├── it revert if caller is not authorized distributor
-├── it transfers the rewards to the sender
 ├── it revert if the transfer reverts
-├── it calculates and store the new reward rate
-├── it updates the time variables of the reward data
-├── it calculates and updates the new reward per token stored
+├── it updates the last update time and reward per token stored for all tokens
+├── it transfers the rewards from the sender to the vault
+├── it updates the reward data of the given token
 └── it emit the reward deposited event

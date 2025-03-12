@@ -348,8 +348,11 @@ contract RewardVault is IERC4626, ERC20 {
         // Update reward state for all tokens first.
         _updateReward(address(0), address(0));
 
+        // get the current reward data
+        RewardData storage reward = rewardData[_rewardsToken];
+
         // check if the caller is the authorized distributor
-        if (getRewardsDistributor(_rewardsToken) != msg.sender) revert UnauthorizedRewardsDistributor();
+        if (reward.rewardsDistributor != msg.sender) revert UnauthorizedRewardsDistributor();
 
         // transfer the rewards to the vault
         // TODO: external calls at the end of the function
@@ -357,12 +360,9 @@ contract RewardVault is IERC4626, ERC20 {
 
         // calculate temporal variables
         uint32 currentTime = uint32(block.timestamp);
-        uint32 periodFinish = getPeriodFinish(_rewardsToken); // TODO: Optimize this after reward pointer (line +5)
-        uint32 rewardsDuration = getRewardsDuration(_rewardsToken); // TODO: Optimize this after reward pointer (line +4)
+        uint32 periodFinish = reward.periodFinish;
+        uint32 rewardsDuration = reward.rewardsDuration;
         uint128 newRewardRate;
-
-        // get the current reward data
-        RewardData storage reward = rewardData[_rewardsToken];
 
         // calculate the new reward rate based on the current time and the period finish
         if (currentTime >= periodFinish) {
@@ -373,14 +373,12 @@ contract RewardVault is IERC4626, ERC20 {
             newRewardRate = (_amount + remainingRewards) / rewardsDuration;
         }
 
-        // Update every reward data except the distributor
-        reward.rewardsDuration = rewardsDuration;
+        // Update the reward data
         reward.lastUpdateTime = currentTime;
         reward.periodFinish = currentTime + rewardsDuration;
         reward.rewardRate = newRewardRate;
-        reward.rewardPerTokenStored = getRewardPerTokenStored(_rewardsToken); // TODO: refacto/opt
 
-        emit RewardsDeposited(_rewardsToken, _amount, uint128(newRewardRate));
+        emit RewardsDeposited(_rewardsToken, _amount, newRewardRate);
     }
 
     ///////////////////////////////////////////////////////////////
@@ -500,7 +498,7 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Returns the distributor address for a given reward token.
-    function getRewardsDistributor(address token) public view returns (address) {
+    function getRewardsDistributor(address token) external view returns (address) {
         return rewardData[token].rewardsDistributor;
     }
 
@@ -554,10 +552,10 @@ contract RewardVault is IERC4626, ERC20 {
     function rewardPerToken(address token) public view returns (uint128) {
         uint128 _totalSupply = _safeTotalSupply();
 
-        if (_totalSupply == 0) return getRewardPerTokenStored(token);
-
         // get the current reward data
         RewardData storage reward = rewardData[token];
+
+        if (_totalSupply == 0) return reward.rewardPerTokenStored;
 
         // calculate the reward per token based on the last update time, the ending period, the reward rate and the total supply
         return reward.rewardPerTokenStored
