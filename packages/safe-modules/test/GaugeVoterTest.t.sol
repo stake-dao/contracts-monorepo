@@ -34,7 +34,6 @@ contract GaugeVoterTest is Test {
     address public constant BALANCER_VOTER = address(0xff09A9b50A4E9b9AB95D2DCb552E8469f9c891Ff);
     address public constant FRAX_VOTER = address(0xaE26E4478FF6BbC555EAE020AFFea3B505fC4D05);
     address public constant FXN_VOTER = address(0x5181291355Abe5F3f1812a0aA888A73B9A16c91F);
-    address public constant PENDLE_STRATEGY = address(0xA7641acBc1E85A7eD70ea7bCFFB91afb12AD0c54);
     address public constant PENDLE_LOCKER = address(0xD8fa8dC5aDeC503AcC5e026a98F32Ca5C1Fa289A);
     address public constant PENDLE_VOTER = address(0x44087E105137a5095c008AaB6a6530182821F2F0);
 
@@ -71,7 +70,6 @@ contract GaugeVoterTest is Test {
         gaugeVoter.toggle_voter(BALANCER_VOTER, true);
         gaugeVoter.toggle_voter(FRAX_VOTER, true);
         gaugeVoter.toggle_voter(FXN_VOTER, true);
-        gaugeVoter.toggle_voter(PENDLE_STRATEGY, true);
         vm.stopPrank();
     }
 
@@ -278,7 +276,7 @@ contract GaugeVoterTest is Test {
         }
 
         // Vote
-        gaugeVoter.vote_pendle(PENDLE_STRATEGY, PENDLE_LOCKER, PENDLE_VOTER, gaugeAddresses, weights);
+        gaugeVoter.vote_pendle(gaugeAddresses, weights);
         
         // Check votes
         for(uint256 i = 0; i < nbGauges; i++) {

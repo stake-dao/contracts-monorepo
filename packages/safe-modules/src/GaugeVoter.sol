@@ -10,6 +10,11 @@ contract GaugeVoter is AllowanceManager {
 
     /// @notice Stake DAO governance owner
     address public immutable SD_SAFE = address(0xB0552b6860CE5C0202976Db056b5e3Cc4f9CC765);
+    
+    // Pendle data
+    address public immutable PENDLE_LOCKER = address(0xD8fa8dC5aDeC503AcC5e026a98F32Ca5C1Fa289A);
+    address public immutable PENDLE_VOTER = address(0x44087E105137a5095c008AaB6a6530182821F2F0);
+    address public immutable PENDLE_STRATEGY = address(0xA7641acBc1E85A7eD70ea7bCFFB91afb12AD0c54);
 
     /// @notice Voter contracts allowed
     mapping(address => bool) public VOTERS_ALLOWED;
@@ -36,24 +41,17 @@ contract GaugeVoter is AllowanceManager {
     }
 
     /// @notice Bundle gauge votes with our strategy contract, _gauges and _weights must have the same length
-    /// @param _strategy Forward the vote calldata from the Strategy contract
-    /// @param _locker Locker address from where the gauge votes should be send
-    /// @param _underlying_voter Underlying voter contract (ie : Pendle)
     /// @param _gauges Array of gauge addresses
     /// @param _weights Array of weights
-    function vote_pendle(address _strategy, address _locker, address _underlying_voter, address[] calldata _gauges, uint64[] calldata _weights) external onlyGovernanceOrAllowed {
-        if(!VOTERS_ALLOWED[_strategy]) {
-            revert VOTER_NOT_ALLOW();
-        }
-
+    function vote_pendle(address[] calldata _gauges, uint64[] calldata _weights) external onlyGovernanceOrAllowed {
         if(_gauges.length != _weights.length) {
             revert WRONG_DATA();
         }
 
         bytes memory votes_data = abi.encodeWithSignature("vote(address[],uint64[])", _gauges, _weights);
-        bytes memory voter_data = abi.encodeWithSignature("execute(address,uint256,bytes)", _underlying_voter, 0, votes_data);
-        bytes memory locker_data = abi.encodeWithSignature("execute(address,uint256,bytes)", _locker, 0, voter_data);
-        require(ISafe(SD_SAFE).execTransactionFromModule(_strategy, 0, locker_data, ISafeOperation.Call), "Could not execute vote");
+        bytes memory voter_data = abi.encodeWithSignature("execute(address,uint256,bytes)", PENDLE_VOTER, 0, votes_data);
+        bytes memory locker_data = abi.encodeWithSignature("execute(address,uint256,bytes)", PENDLE_LOCKER, 0, voter_data);
+        require(ISafe(SD_SAFE).execTransactionFromModule(PENDLE_STRATEGY, 0, locker_data, ISafeOperation.Call), "Could not execute vote");
     }
 
     /// @notice Allow or disallow a voter
