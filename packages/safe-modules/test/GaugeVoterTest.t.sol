@@ -282,7 +282,7 @@ contract GaugeVoterTest is Test {
         
         // Check votes
         for(uint256 i = 0; i < nbGauges; i++) {
-            checkPendleVotes(gaugeAddresses[i]);
+            assertTrue(checkPendleVotes(gaugeAddresses[i]));
         }
 
         vm.stopPrank();
