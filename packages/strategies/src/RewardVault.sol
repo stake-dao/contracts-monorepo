@@ -158,16 +158,13 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Mints exact `shares` to `receiver` by depositing assets.
-    /// @dev Functionally identical to deposit in this 1:1 implementation.
+    /// @dev Due to the 1:1 relationship between the assets and the shares,
+    ///      the mint function is a wrapper of the deposit function.
     /// @param shares The amount of shares to mint.
     /// @param receiver The address to receive the minted shares.
     /// @return The amount of shares minted.
     function mint(uint256 shares, address receiver) public returns (uint256) {
-        if (receiver == address(0)) receiver = msg.sender;
-
-        _deposit(msg.sender, receiver, shares, shares);
-
-        return shares;
+        return deposit(shares, receiver);
     }
 
     /// @dev Internal function to deposit assets into the vault.
