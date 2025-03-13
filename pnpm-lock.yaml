@@ -92,6 +92,9 @@ importers:
       '@openzeppelin/contracts':
         specifier: 5.2.0
         version: 5.2.0
+      '@safe-global/safe-smart-account':
+        specifier: github:safe-global/safe-smart-account
+        version: https://codeload.github.com/safe-global/safe-smart-account/tar.gz/b75e2509ba4968f97c427f2657996a0711b7a4cf
       '@solady':
         specifier: github:Vectorized/solady#v0.0.288
         version: solady@https://codeload.github.com/Vectorized/solady/tar.gz/aa7b67ae0a88fd9b17b7ccca1988d215177ecad0
@@ -437,6 +440,10 @@ packages:
 
   '@safe-global/safe-smart-account@https://codeload.github.com/safe-global/safe-smart-account/tar.gz/460f730925c181f9a1700b0f2bec0640b87e8533':
     resolution: {tarball: https://codeload.github.com/safe-global/safe-smart-account/tar.gz/460f730925c181f9a1700b0f2bec0640b87e8533}
+    version: 1.4.1-build.0
+
+  '@safe-global/safe-smart-account@https://codeload.github.com/safe-global/safe-smart-account/tar.gz/b75e2509ba4968f97c427f2657996a0711b7a4cf':
+    resolution: {tarball: https://codeload.github.com/safe-global/safe-smart-account/tar.gz/b75e2509ba4968f97c427f2657996a0711b7a4cf}
     version: 1.4.1-build.0
 
   '@scure/base@1.1.7':
@@ -2720,6 +2727,8 @@ snapshots:
       - supports-color
 
   '@safe-global/safe-smart-account@https://codeload.github.com/safe-global/safe-smart-account/tar.gz/460f730925c181f9a1700b0f2bec0640b87e8533': {}
+
+  '@safe-global/safe-smart-account@https://codeload.github.com/safe-global/safe-smart-account/tar.gz/b75e2509ba4968f97c427f2657996a0711b7a4cf': {}
 
   '@scure/base@1.1.7': {}
 
