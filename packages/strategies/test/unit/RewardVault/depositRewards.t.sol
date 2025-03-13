@@ -13,6 +13,7 @@ contract RewardVault__depositRewards is RewardVaultBaseTest {
         // it revert if caller is not authorized distributor
 
         vm.assume(caller != expectedDistributor);
+        vm.assume(expectedDistributor != address(0));
 
         // store a fake reward data for the token with the expected distributor
         RewardVault.RewardData memory rewardData = RewardVault.RewardData({
@@ -25,6 +26,9 @@ contract RewardVault__depositRewards is RewardVaultBaseTest {
         });
         rewardVaultHarness._cheat_override_reward_data(token, rewardData);
 
+        // mock the total supply to return the expected value(calling the accountant.totalSupply() function)
+        vm.mockCall(address(accountant), abi.encodeWithSelector(Accountant.totalSupply.selector), abi.encode(1e20));
+
         // expect the deposit to revert with the UnauthorizedRewardsDistributor error because the caller is not the expected distributor
         vm.expectRevert(abi.encodeWithSelector(RewardVault.UnauthorizedRewardsDistributor.selector));
         vm.prank(caller);
@@ -36,6 +40,7 @@ contract RewardVault__depositRewards is RewardVaultBaseTest {
         _cheat_replaceRewardVaultWithRewardVaultHarness
     {
         // it revert if the transfer reverts
+        vm.assume(distributor != address(0));
 
         // assume the account is not the zero address, and set some constants for the test
         uint256 TOTAL_SUPPLY = 1e18;
@@ -100,6 +105,8 @@ contract RewardVault__depositRewards is RewardVaultBaseTest {
     {
         // it updates the reward for all tokens
 
+        vm.assume(distributor != address(0));
+
         // assume the account is not the zero address, and set some constants for the test
         uint256 TOTAL_SUPPLY = 1e18;
         uint32 CAMPAIGN_DURATION = 10 days;
@@ -162,6 +169,9 @@ contract RewardVault__depositRewards is RewardVaultBaseTest {
     {
         // it transfers the rewards from the sender to the vault
 
+        vm.assume(distributor != address(0));
+        _assumeUnlabeledAddress(distributor);
+
         // assume the account is not the zero address, and set some constants for the test
         uint256 TOTAL_SUPPLY = 1e18;
         uint32 CAMPAIGN_DURATION = 10 days;
@@ -217,6 +227,8 @@ contract RewardVault__depositRewards is RewardVaultBaseTest {
         _cheat_replaceRewardVaultWithRewardVaultHarness
     {
         // it updates the reward for all tokens
+
+        vm.assume(distributor != address(0));
 
         // assume the account is not the zero address, and set some constants for the test
         uint256 TOTAL_SUPPLY = 1e18;
@@ -279,6 +291,8 @@ contract RewardVault__depositRewards is RewardVaultBaseTest {
         _cheat_replaceRewardVaultWithRewardVaultHarness
     {
         // it emit the reward deposited event
+
+        vm.assume(distributor != address(0));
 
         // assume the account is not the zero address, and set some constants for the test
         uint256 TOTAL_SUPPLY = 1e18;
