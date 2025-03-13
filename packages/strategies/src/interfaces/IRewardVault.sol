@@ -32,8 +32,6 @@ interface IRewardVault {
 
     function getRewardTokens() external view returns (address[] memory);
 
-    function checkpoint(address account) external;
-
     function lastTimeRewardApplicable(address token) external view returns (uint256);
 
     function rewardPerToken(address token) external view returns (uint128);
