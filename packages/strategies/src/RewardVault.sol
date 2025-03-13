@@ -121,9 +121,6 @@ contract RewardVault is IERC4626, ERC20 {
     /// @notice List of active reward tokens
     address[] public rewardTokens;
 
-    /// @notice Mapping of reward token to its existence
-    mapping(address rewardToken => bool isRewardToken) public isRewardToken;
-
     /// @notice Mapping of reward token to its reward data
     mapping(address rewardToken => RewardData rewardData) public rewardData;
 
@@ -331,7 +328,7 @@ contract RewardVault is IERC4626, ERC20 {
         amounts = new uint256[](tokens.length);
         for (uint256 i; i < tokens.length; i++) {
             address rewardToken = tokens[i];
-            if (!isRewardToken[rewardToken]) revert InvalidRewardToken();
+            if (!isRewardToken(rewardToken)) revert InvalidRewardToken();
 
             // calculate the earned amount for the account on the reward token
             AccountData storage account = accountData[accountAddress][rewardToken];
@@ -350,28 +347,33 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Adds a new reward token to the vault.
-    /// @param _rewardsToken The address of the reward token to add.
-    /// @param _distributor The address authorized to distribute rewards.
+    /// @param rewardsToken The address of the reward token to add.
+    /// @param distributor The address authorized to distribute rewards.
     /// @custom:reverts OnlyAllowed if the caller is not allowed to add a reward token.
+    /// @custom:reverts ZeroAddress if the distributor is the zero address.
     /// @custom:reverts RewardAlreadyExists if the reward token already exists.
     /// @custom:reverts MaxRewardTokensExceeded if the maximum number of reward tokens is exceeded.
-    function addRewardToken(address _rewardsToken, address _distributor) external onlyAllowed {
-        // check if the reward token already exists
-        if (isRewardToken[_rewardsToken]) revert RewardAlreadyExists();
+    function addRewardToken(address rewardsToken, address distributor) external onlyAllowed {
+        // ensure that the distributor is not the zero address
+        require(distributor != address(0), ZeroAddress());
 
-        // check if the maximum number of reward tokens is exceeded
-        if (rewardTokens.length >= MAX_REWARD_TOKEN_COUNT) revert MaxRewardTokensExceeded();
+        // ensure that the maximum number of reward tokens is not exceeded
+        require(rewardTokens.length < MAX_REWARD_TOKEN_COUNT, MaxRewardTokensExceeded());
+
+        // get the reward data for the reward token
+        RewardData storage reward = rewardData[rewardsToken];
+
+        // ensure that the reward token does not already exist
+        require(_isRewardToken(reward) == false, RewardAlreadyExists());
 
         // add the reward token to the list of reward tokens
-        rewardTokens.push(_rewardsToken);
-        isRewardToken[_rewardsToken] = true;
+        rewardTokens.push(rewardsToken);
 
         // Set the reward distributor and duration.
-        RewardData storage reward = rewardData[_rewardsToken];
-        reward.rewardsDistributor = _distributor;
+        reward.rewardsDistributor = distributor;
         reward.rewardsDuration = DEFAULT_REWARDS_DURATION;
 
-        emit RewardTokenAdded(_rewardsToken, _distributor);
+        emit RewardTokenAdded(rewardsToken, distributor);
     }
 
     /// @notice Deposits rewards into the vault.
@@ -467,9 +469,29 @@ contract RewardVault is IERC4626, ERC20 {
         account.rewardPerTokenPaid = newRewardPerToken;
     }
 
+    /// @notice Returns true if the reward token is valid.
+    /// @dev The check is based on the assumption that the distributor is always set for a
+    ///      active address and it can not be zero.
+    /// @param reward The address of the reward token to check.
+    /// @return _ True if the reward token is valid, false otherwise.
+    function _isRewardToken(RewardData storage reward) internal view returns (bool) {
+        return reward.rewardsDistributor != address(0);
+    }
+
     ///////////////////////////////////////////////////////////////
     /// ~ VIEW / PURE METHODS ~
     ///////////////////////////////////////////////////////////////
+
+    /// @notice Checks if a reward token exists.
+    /// @dev The check is based on the assumption that the distributor is always set for a
+    ///      active address and it can not be zero.
+    /// @param rewardToken The address of the reward token to check.
+    /// @return _ True if the reward token exists, false otherwise.
+    function isRewardToken(address rewardToken) public view returns (bool) {
+        RewardData storage reward = rewardData[rewardToken];
+
+        return _isRewardToken(reward);
+    }
 
     /// @notice Returns the address of the underlying token.
     /// @dev Retrieves the token address from the clone's immutable args.
@@ -550,9 +572,9 @@ contract RewardVault is IERC4626, ERC20 {
     }
 
     /// @notice Returns the maximum amount of assets that can be deposited.
-    /// @param __ This parameter is not used and is included to satisfy the interface. Pass whatever you want to.
+    /// @dev The parameter is not used and is included to satisfy the interface. Pass whatever you want to.
     /// @return _ The maximum amount of assets that can be deposited.
-    function maxDeposit(address __) public pure returns (uint256) {
+    function maxDeposit(address) public pure returns (uint256) {
         return type(uint256).max;
     }
 

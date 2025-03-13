@@ -16,6 +16,14 @@ contract RewardVault__addRewardToken is RewardVaultBaseTest {
         rewardVault.addRewardToken(makeAddr("rewardToken"), makeAddr("distributor"));
     }
 
+    function test_RevertIfDistributorIs0() external {
+        // it revert if distributor is 0
+
+        vm.expectRevert(RewardVault.ZeroAddress.selector);
+        _mock_allowed_authorize_caller();
+        rewardVault.addRewardToken(makeAddr("rewardToken"), address(0));
+    }
+
     function test_RevertIfProtocolControllerReverts() external {
         // it revert if protocol controller reverts
 
@@ -92,6 +100,9 @@ contract RewardVault__addRewardToken is RewardVaultBaseTest {
     ) external {
         // it initialize the reward data with the given distibutor and default duration
 
+        vm.assume(rewardToken != address(0));
+        vm.assume(distributor != address(0));
+
         _mock_allowed_authorize_caller();
         rewardVault.addRewardToken(rewardToken, distributor);
 
@@ -103,6 +114,9 @@ contract RewardVault__addRewardToken is RewardVaultBaseTest {
 
     function test_EmitsTheRewardTokenAddedEvent(address rewardToken, address distributor) external {
         // it emits the reward token added event
+
+        vm.assume(rewardToken != address(0));
+        vm.assume(distributor != address(0));
 
         vm.expectEmit(true, true, true, true);
         emit RewardVault.RewardTokenAdded(rewardToken, distributor);
