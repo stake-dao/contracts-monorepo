@@ -48,10 +48,6 @@ contract MockRegistry is IProtocolController {
         return _allocator;
     }
 
-    function harvester(bytes4) external view override returns (address) {
-        return _harvester;
-    }
-
     function accountant(bytes4) external view override returns (address) {
         return _accountant;
     }
