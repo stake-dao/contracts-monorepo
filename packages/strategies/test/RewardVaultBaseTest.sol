@@ -33,6 +33,7 @@ abstract contract RewardVaultBaseTest is BaseTest {
 
     modifier _cheat_replaceRewardVaultWithRewardVaultHarness() {
         _replaceRewardVaultWithRewardVaultHarness(address(rewardVault));
+        vm.label({account: address(rewardVaultHarness), newLabel: "RewardVaultHarness"});
 
         _;
     }
