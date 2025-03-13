@@ -1,10 +1,44 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
+/// @title IRewardVault
+/// @notice Interface for the RewardVault contract
 interface IRewardVault {
-    function addRewardToken(address _rewardsToken, address _distributor) external;
-    function depositRewards(address _rewardsToken, uint256 _amount) external;
-    function isRewardToken(address _token) external view returns (bool);
+    function addRewardToken(address rewardsToken, address distributor) external;
+
+    function depositRewards(address _rewardsToken, uint128 _amount) external;
+
+    function claim(address[] calldata tokens, address receiver) external returns (uint256[] memory amounts);
+
+    function claim(address account, address[] calldata tokens, address receiver)
+        external
+        returns (uint256[] memory amounts);
+
+    function getRewardsDistributor(address token) external view returns (address);
+
+    function getRewardsDuration(address token) external view returns (uint32);
+
+    function getLastUpdateTime(address token) external view returns (uint32);
+
+    function getPeriodFinish(address token) external view returns (uint32);
+
+    function getRewardRate(address token) external view returns (uint128);
+
+    function getRewardPerTokenStored(address token) external view returns (uint128);
+
+    function getRewardPerTokenPaid(address token, address account) external view returns (uint128);
+
+    function getClaimable(address token, address account) external view returns (uint128);
+
     function getRewardTokens() external view returns (address[] memory);
+
     function checkpoint(address account) external;
+
+    function lastTimeRewardApplicable(address token) external view returns (uint256);
+
+    function rewardPerToken(address token) external view returns (uint128);
+
+    function earned(address accountAddress, address token) external view returns (uint128);
+
+    function isRewardToken(address rewardToken) external view returns (bool);
 }

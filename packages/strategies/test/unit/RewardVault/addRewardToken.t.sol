@@ -81,7 +81,7 @@ contract RewardVault__addRewardToken is RewardVaultBaseTest {
         rewardVault.addRewardToken(rewardToken, makeAddr("distributor"));
 
         // we make sure the reward token is added to the list of reward tokens
-        assertEq(rewardVault.rewardTokens(0), rewardToken);
+        assertEq(rewardVault.getRewardTokens()[0], rewardToken);
     }
 
     function test_AddTheRewardTokenToTheRewardMapping(address rewardToken) external {

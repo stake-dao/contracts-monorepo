@@ -58,7 +58,8 @@ contract RewardReceiver {
                 IERC20(token).safeIncreaseAllowance(address(rewardVault()), balance);
 
                 // Deposit rewards to the vault
-                IRewardVault(rewardVault()).depositRewards(token, balance);
+                // TODO: unsafe: cast the balance to uint128 safely
+                IRewardVault(rewardVault()).depositRewards(token, uint128(balance));
             }
         }
     }
@@ -80,7 +81,8 @@ contract RewardReceiver {
             token.safeIncreaseAllowance(address(rewardVault()), amount);
 
             // Deposit rewards to the vault
-            rewardVault().depositRewards(address(token), amount);
+            // TODO: unsafe: cast the balance to uint128 safely
+            rewardVault().depositRewards(address(token), uint128(amount));
         }
     }
 }

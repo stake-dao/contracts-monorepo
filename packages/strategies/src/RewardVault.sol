@@ -12,6 +12,7 @@ import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IAllocator} from "src/interfaces/IAllocator.sol";
 import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
+import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 
 /// @title RewardVault
 /// @notice An ERC4626-compatible vault that manages deposits, withdrawals, and reward distributions.
@@ -20,7 +21,7 @@ import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 ///      2. Integration with Registry (and therefore Strategy, Allocator).
 ///      3. Delegation of accounting to the Accountant contract.
 ///      4. Reward distribution logic (claimable rewards).
-contract RewardVault is IERC4626, ERC20 {
+contract RewardVault is IRewardVault, IERC4626, ERC20 {
     using Math for uint256;
     using SafeCast for uint256;
     using SafeERC20 for IERC20;
@@ -119,7 +120,7 @@ contract RewardVault is IERC4626, ERC20 {
     ///////////////////////////////////////////////////////////////
 
     /// @notice List of active reward tokens
-    address[] public rewardTokens;
+    address[] internal rewardTokens;
 
     /// @notice Mapping of reward token to its reward data
     mapping(address rewardToken => RewardData rewardData) public rewardData;
@@ -659,6 +660,10 @@ contract RewardVault is IERC4626, ERC20 {
     /// @return _ The claimable amount for the given reward token and account.
     function getClaimable(address token, address account) external view returns (uint128) {
         return accountData[account][token].claimable;
+    }
+
+    function getRewardTokens() external view returns (address[] memory) {
+        return rewardTokens;
     }
 
     /// @notice Returns the last time reward is applicable for a given reward token.
