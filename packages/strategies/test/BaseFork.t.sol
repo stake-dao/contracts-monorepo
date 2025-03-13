@@ -12,14 +12,15 @@ import {RewardVault} from "src/RewardVault.sol";
 import {RewardReceiver} from "src/RewardReceiver.sol";
 
 /// TODO: Move to a helper package
-import {SafeLibrary} from "test/utils/SafeLibrary.sol";
+import {Safe, SafeLibrary} from "test/utils/SafeLibrary.sol";
 
 /// @title BaseTest
 /// @notice Base test contract with common utilities and setup for all tests
 abstract contract BaseTest is Test {
     using Math for uint256;
 
-    address public immutable admin = address(this);
+    address public immutable admin = makeAddr("Admin");
+    address public immutable feeReceiver = makeAddr("Fee Receiver");
 
     bytes4 internal immutable protocolId;
 
@@ -28,18 +29,18 @@ abstract contract BaseTest is Test {
 
     address public immutable locker;
 
-    address public gateway;
-    address public protocolController;
+    Safe public gateway;
+    Accountant public accountant;
+    ProtocolController public protocolController;
 
     address public allocator;
-    address public accountant;
     address public strategy;
 
-    address public rewardVault;
-    address public rewardVaultImplementation;
+    RewardVault public rewardVault;
+    RewardVault public rewardVaultImplementation;
 
-    address public rewardReceiver;
-    address public rewardReceiverImplementation;
+    RewardReceiver public rewardReceiver;
+    RewardReceiver public rewardReceiverImplementation;
 
     constructor(address _rewardToken, address _stakingToken, address _locker, bytes4 _protocolId) {
         locker = _locker;
@@ -53,31 +54,35 @@ abstract contract BaseTest is Test {
     //////////////////////////////////////////////////////////////////////////*/
     function setUp() public virtual {
         /// 1. Deploy Protocol Controller.
-        protocolController = address(new ProtocolController());
+        protocolController = new ProtocolController();
 
         /// 2. Deploy Accountant.
-        accountant = address(
-            new Accountant({
-                _owner: admin,
-                _registry: address(protocolController),
-                _rewardToken: address(rewardToken),
-                _protocolId: protocolId
-            })
-        );
+        accountant = new Accountant({
+            _owner: admin,
+            _registry: address(protocolController),
+            _rewardToken: address(rewardToken),
+            _protocolId: protocolId
+        });
 
         /// 3. Deploy Reward Vault Implementation.
-        rewardVaultImplementation = address(
-            new RewardVault({protocolId: protocolId, protocolController: protocolController, accountant: accountant})
-        );
+        rewardVaultImplementation = new RewardVault({
+            protocolId: protocolId,
+            protocolController: address(protocolController),
+            accountant: address(accountant)
+        });
 
         /// 4. Deploy Reward Receiver Implementation.
-        rewardReceiverImplementation = address(new RewardReceiver());
+        rewardReceiverImplementation = new RewardReceiver();
 
         address[] memory owners = new address[](1);
         owners[0] = admin;
 
         /// 5. Deploy Gateway
         gateway = SafeLibrary.deploySafe({_owners: owners, _threshold: 1, _saltNonce: uint256(uint32(protocolId))});
+
+        /// 6. Setup contracts in protocol controller.
+        protocolController.setFeeReceiver(protocolId, feeReceiver);
+        protocolController.setAccountant(protocolId, address(accountant));
 
         /// Label common contracts
         vm.label({account: address(locker), newLabel: "Locker"});

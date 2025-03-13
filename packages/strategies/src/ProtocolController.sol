@@ -17,7 +17,6 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     struct ProtocolComponents {
         address strategy;
         address allocator;
-        address harvester;
         address accountant;
         address feeReceiver;
         bool isShutdown;
@@ -165,15 +164,6 @@ contract ProtocolController is IProtocolController, Ownable2Step {
         emit ProtocolComponentSet(protocolId, "Allocator", _allocator);
     }
 
-    /// @notice Sets a protocol harvester
-    /// @param protocolId The protocol identifier
-    /// @param _harvester The harvester address
-    function setHarvester(bytes4 protocolId, address _harvester) external onlyOwner {
-        require(_harvester != address(0), ZeroAddress());
-        _protocolComponents[protocolId].harvester = _harvester;
-        emit ProtocolComponentSet(protocolId, "Harvester", _harvester);
-    }
-
     /// @notice Sets a protocol accountant
     /// @param protocolId The protocol identifier
     /// @param _accountant The accountant address
@@ -252,13 +242,6 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @return The allocator address
     function allocator(bytes4 protocolId) external view returns (address) {
         return _protocolComponents[protocolId].allocator;
-    }
-
-    /// @notice Returns the harvester address for a protocol
-    /// @param protocolId The protocol identifier
-    /// @return The harvester address
-    function harvester(bytes4 protocolId) external view returns (address) {
-        return _protocolComponents[protocolId].harvester;
     }
 
     /// @notice Returns the accountant address for a protocol
