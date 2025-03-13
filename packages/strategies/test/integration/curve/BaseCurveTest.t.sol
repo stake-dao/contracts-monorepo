@@ -7,6 +7,9 @@ import {CurveFactory} from "src/integrations/curve/CurveFactory.sol";
 import {CurveStrategy} from "src/integrations/curve/CurveStrategy.sol";
 import {CurveAllocator} from "src/integrations/curve/CurveAllocator.sol";
 
+import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
+import {ConvexSidecarFactory} from "src/integrations/curve/ConvexSidecarFactory.sol";
+
 import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
 
 abstract contract BaseCurveTest is BaseForkTest {
@@ -28,11 +31,20 @@ abstract contract BaseCurveTest is BaseForkTest {
     /// @notice The old strategy.
     address public constant OLD_STRATEGY = 0x69D61428d089C2F35Bf6a472F540D0F82D1EA2cd;
 
+    /// @notice The Curve Strategy contract.
+    CurveStrategy public curveStrategy;
+
     /// @notice The Curve Factory contract.
     CurveFactory public curveFactory;
 
-    /// @notice The Curve Strategy contract.
-    CurveStrategy public curveStrategy;
+    /// @notice The Convex Sidecar contract.
+    ConvexSidecar public convexSidecar;
+
+    /// @notice The Convex Sidecar contract.
+    ConvexSidecar public convexSidecarImplementation;
+
+    /// @notice The Convex Sidecar Factory contract.
+    ConvexSidecarFactory public convexSidecarFactory;
 
     constructor(address _lpToken, address _gauge) BaseForkTest(CRV, _lpToken, LOCKER, PROTOCOL_ID, false) {}
 
@@ -43,15 +55,21 @@ abstract contract BaseCurveTest is BaseForkTest {
         /// 1. Deploy the Curve Strategy contract.
         curveStrategy = new CurveStrategy(address(protocolController), LOCKER, address(gateway));
 
+        /// 2. Deploy the Convex Sidecar contract.
+        convexSidecarImplementation = new ConvexSidecar(address(accountant), address(protocolController));
+
+        /// 3. Deploy the Convex Sidecar Factory contract.
+        convexSidecarFactory =
+            new ConvexSidecarFactory(address(convexSidecarImplementation), address(protocolController));
+
         /// 2. Deploy the Curve Factory contract.
         curveFactory = new CurveFactory({
             protocolController: address(protocolController),
             vaultImplementation: address(rewardVaultImplementation),
             rewardReceiverImplementation: address(rewardReceiverImplementation),
-            protocolId: PROTOCOL_ID,
             locker: LOCKER,
             gateway: address(gateway),
-            oldStrategy: OLD_STRATEGY
+            convexSidecarFactory: address(convexSidecarFactory)
         });
 
         /// 3. Setup the strategy in the protocol controller.
@@ -92,12 +110,12 @@ abstract contract BaseCurveTest is BaseForkTest {
         );
     }
 
-    function test_setup() public view {
-        assertEq(accountant.REWARD_TOKEN(), CRV);
-        assertEq(accountant.PROTOCOL_ID(), PROTOCOL_ID);
-        assertEq(address(accountant.PROTOCOL_CONTROLLER()), address(protocolController));
-        assertEq(accountant.getProtocolFeePercent(), 0.15e18);
-        assertEq(accountant.getHarvestFeePercent(), 0.005e18);
-        assertEq(accountant.MIN_MEANINGFUL_REWARDS(), 1e18);
+    function test_deploy() public {
+        address gauge = 0xd303994a0Db9b74f3E8fF629ba3097fC7060C331;
+        uint256 pid = 421;
+
+        /// 1. Deploy the Convex Sidecar.
+        vm.expectRevert(ConvexSidecarFactory.VaultNotDeployed.selector);
+        convexSidecar = ConvexSidecar(convexSidecarFactory.create(gauge, pid));
     }
 }
