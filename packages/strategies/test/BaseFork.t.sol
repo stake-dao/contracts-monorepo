@@ -3,8 +3,9 @@ pragma solidity 0.8.28;
 
 import "forge-std/src/Test.sol";
 
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {ILocker} from "@interfaces/stake-dao/ILocker.sol";
 
+import {Allocator} from "src/Allocator.sol";
 import {Accountant} from "src/Accountant.sol";
 import {ProtocolController} from "src/ProtocolController.sol";
 
@@ -12,28 +13,26 @@ import {RewardVault} from "src/RewardVault.sol";
 import {RewardReceiver} from "src/RewardReceiver.sol";
 
 /// TODO: Move to a helper package
-import {Safe, SafeLibrary} from "test/utils/SafeLibrary.sol";
+import {Safe, Enum, SafeLibrary} from "test/utils/SafeLibrary.sol";
 
 /// @title BaseTest
 /// @notice Base test contract with common utilities and setup for all tests
-abstract contract BaseTest is Test {
-    using Math for uint256;
-
-    address public immutable admin = makeAddr("Admin");
+abstract contract BaseForkTest is Test {
+    address public immutable admin = address(this);
     address public immutable feeReceiver = makeAddr("Fee Receiver");
 
     bytes4 internal immutable protocolId;
-
+    bool internal immutable harvested;
     address public immutable rewardToken;
     address public immutable stakingToken;
 
     address public immutable locker;
 
     Safe public gateway;
+    Allocator public allocator;
     Accountant public accountant;
     ProtocolController public protocolController;
 
-    address public allocator;
     address public strategy;
 
     RewardVault public rewardVault;
@@ -42,11 +41,12 @@ abstract contract BaseTest is Test {
     RewardReceiver public rewardReceiver;
     RewardReceiver public rewardReceiverImplementation;
 
-    constructor(address _rewardToken, address _stakingToken, address _locker, bytes4 _protocolId) {
+    constructor(address _rewardToken, address _stakingToken, address _locker, bytes4 _protocolId, bool _harvested) {
         locker = _locker;
         protocolId = _protocolId;
         rewardToken = _rewardToken;
         stakingToken = _stakingToken;
+        harvested = _harvested;
     }
 
     /*//////////////////////////////////////////////////////////////////////////
@@ -77,14 +77,28 @@ abstract contract BaseTest is Test {
         address[] memory owners = new address[](1);
         owners[0] = admin;
 
-        /// 5. Deploy Gateway
+        /// 5. Deploy Gateway.
         gateway = SafeLibrary.deploySafe({_owners: owners, _threshold: 1, _saltNonce: uint256(uint32(protocolId))});
 
         /// 6. Setup contracts in protocol controller.
         protocolController.setFeeReceiver(protocolId, feeReceiver);
-        protocolController.setAccountant(protocolId, address(accountant));
 
-        /// Label common contracts
+        /// 7. If Locker != 0, Gateway should be the governance of the locker.
+        if (locker != address(0)) {
+            address governance = ILocker(locker).governance();
+
+            vm.prank(governance);
+            ILocker(locker).setGovernance(address(gateway));
+        }
+
+        /// 8. Deploy Allocator.
+        allocator = new Allocator(locker, address(gateway));
+
+        /// 7. Setup contracts in protocol controller.
+        protocolController.setAccountant(protocolId, address(accountant));
+        protocolController.setAllocator(protocolId, address(allocator));
+
+        /// 7. Label common contracts.
         vm.label({account: address(locker), newLabel: "Locker"});
         vm.label({account: address(gateway), newLabel: "Gateway"});
         vm.label({account: address(strategy), newLabel: "Strategy"});
