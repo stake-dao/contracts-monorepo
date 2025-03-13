@@ -31,7 +31,7 @@ library DAO {
 
     /// Common addresses.
     address public constant MAIN_DEPLOYER = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
-    address public constant GOVERNANCE = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
+    address public constant GOVERNANCE = 0xB0552b6860CE5C0202976Db056b5e3Cc4f9CC765;
 
     // Automation
     address public constant ALL_MIGHT = 0x0000000a3Fc396B89e4c11841B39D9dff85a5D05;
