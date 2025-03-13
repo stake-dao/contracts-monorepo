@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 import "src/Factory.sol";
 
 import {IBooster} from "@interfaces/convex/IBooster.sol";
+import {IStrategy} from "@interfaces/stake-dao/IStrategy.sol";
 import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 import {IGaugeController} from "@interfaces/curve/IGaugeController.sol";
 
@@ -11,6 +12,9 @@ import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
 
 contract CurveFactory is Factory {
+    /// @notice Address of the old strategy.
+    address public immutable OLD_STRATEGY;
+
     /// @notice Convex Booster.
     address public immutable BOOSTER;
 
@@ -29,8 +33,11 @@ contract CurveFactory is Factory {
         address rewardReceiverImplementation,
         bytes4 protocolId,
         address locker,
-        address gateway
-    ) Factory(protocolController, vaultImplementation, rewardReceiverImplementation, protocolId, locker, gateway) {}
+        address gateway,
+        address oldStrategy
+    ) Factory(protocolController, vaultImplementation, rewardReceiverImplementation, protocolId, locker, gateway) {
+        OLD_STRATEGY = oldStrategy;
+    }
 
     /// @notice Create a new vault.
     /// @param _pid Pool id.
@@ -79,6 +86,12 @@ contract CurveFactory is Factory {
 
         /// If the gauge doesn't support the is_killed function, but is unofficially killed, it can be deployed.
         return isValid;
+    }
+
+    /// @notice Check if the gauge is shutdown in the old strategy.
+    /// @dev If the gauge is shutdown, we can deploy a new strategy.
+    function _isValidDeployment(address _gauge) internal view override returns (bool) {
+        return IStrategy(OLD_STRATEGY).isShutdown(_gauge);
     }
 
     function _getAsset(address _gauge) internal view override returns (address) {
