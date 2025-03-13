@@ -12,17 +12,21 @@ import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
 
 contract CurveFactory is Factory {
+    /// @notice The bytes4 ID of the Curve protocol
+    /// @dev Used to identify the Curve protocol in the registry
+    bytes4 private constant CURVE_PROTOCOL_ID = bytes4(keccak256("CURVE"));
+
+    /// @notice Curve Gauge Controller.
+    IGaugeController public constant GAUGE_CONTROLLER = IGaugeController(0x2F50D538606Fa9EDD2B11E2446BEb18C9D5846bB);
+
     /// @notice Address of the old strategy.
-    address public immutable OLD_STRATEGY;
+    address public constant OLD_STRATEGY = 0x69D61428d089C2F35Bf6a472F540D0F82D1EA2cd;
 
     /// @notice Convex Booster.
-    address public immutable BOOSTER;
+    address public immutable BOOSTER = 0xF403C135812408BFbE8713b5A23a04b3D48AAE31;
 
     /// @notice Convex Minimal Proxy Factory for Only Boost.
     address public immutable CONVEX_SIDECAR_FACTORY;
-
-    /// @notice Curve Gauge Controller.
-    IGaugeController public immutable GAUGE_CONTROLLER;
 
     /// @notice Event emitted when a vault is deployed.
     event VaultDeployed(address gauge, address vault, address rewardReceiver, address sidecar);
@@ -31,12 +35,13 @@ contract CurveFactory is Factory {
         address protocolController,
         address vaultImplementation,
         address rewardReceiverImplementation,
-        bytes4 protocolId,
         address locker,
         address gateway,
-        address oldStrategy
-    ) Factory(protocolController, vaultImplementation, rewardReceiverImplementation, protocolId, locker, gateway) {
-        OLD_STRATEGY = oldStrategy;
+        address convexSidecarFactory
+    )
+        Factory(protocolController, vaultImplementation, rewardReceiverImplementation, CURVE_PROTOCOL_ID, locker, gateway)
+    {
+        CONVEX_SIDECAR_FACTORY = convexSidecarFactory;
     }
 
     /// @notice Create a new vault.
