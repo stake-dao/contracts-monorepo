@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.19;
+pragma solidity ^0.8.19;
 
 interface IStrategy {
     function locker() external view returns (address);
@@ -12,6 +12,7 @@ interface IStrategy {
     function harvest(address _asset, bool _distributeSDT, bool _claimExtra) external;
 
     function rewardDistributors(address _gauge) external view returns (address);
+    function isShutdown(address _gauge) external view returns (bool);
 
     /// Factory functions
     function toggleVault(address vault) external;
