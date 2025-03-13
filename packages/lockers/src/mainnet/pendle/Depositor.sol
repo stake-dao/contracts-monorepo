@@ -15,7 +15,7 @@ contract Depositor is BaseDepositor {
     address public constant VE_PENDLE = 0x4f30A9D41B80ecC5B94306AB4364951AE3170210;
 
     constructor(address _token, address _locker, address _minter, address _gauge)
-        BaseDepositor(_token, _locker, _minter, _gauge, 2 * 365 days)
+        BaseDepositor(_token, _locker, _minter, _gauge, 104 weeks)
     {}
 
     /// Override the createLock function to prevent reverting.
