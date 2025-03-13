@@ -34,7 +34,7 @@ contract CurveAllocator is Allocator {
         address _boostDelegationV3,
         address _voterProxyConvex,
         address _convexSidecarFactory
-    ) Allocator(_locker, _gateway) {
+    ) Allocator(_locker, _gateway, false) {
         CONVEX_BOOST_HOLDER = _voterProxyConvex;
         BOOST_DELEGATION_V3 = _boostDelegationV3;
         CONVEX_SIDECAR_FACTORY = ISidecarFactory(_convexSidecarFactory);

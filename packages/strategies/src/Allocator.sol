@@ -28,7 +28,7 @@ contract Allocator is IAllocator {
     /// @param _locker The address of the locker contract (can be address(0) for L2s)
     /// @param _gateway The address of the gateway contract
     /// @dev If _locker is address(0), LOCKER will be set to the same address as GATEWAY
-    constructor(address _locker, address _gateway) {
+    constructor(address _locker, address _gateway, bool _harvested) {
         GATEWAY = _gateway;
 
         /// In some cases (L2s), the locker is the same as the gateway.
@@ -37,6 +37,8 @@ contract Allocator is IAllocator {
         } else {
             LOCKER = _locker;
         }
+
+        HARVESTED = _harvested;
     }
 
     /// @notice Determines how funds should be allocated during a deposit
