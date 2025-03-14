@@ -67,7 +67,9 @@ contract ConvexSidecar is Sidecar {
     function pid() public view returns (uint256 _pid) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         assembly {
-            _pid := mload(add(args, 80))
+            // We need to add 32 bytes for the bytes array length prefix
+            // and then 60 bytes for the three addresses (20 bytes each)
+            _pid := mload(add(add(args, 32), 60))
         }
     }
 
