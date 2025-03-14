@@ -2,7 +2,6 @@
 pragma solidity 0.8.28;
 
 import {IAllocator} from "src/interfaces/IAllocator.sol";
-import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
 /// @title Allocator
 /// @author Stake DAO
@@ -24,19 +23,19 @@ contract Allocator is IAllocator {
     /// @dev If true, rewards are harvested during operations
     bool public immutable HARVESTED;
 
+    /// @notice Error thrown when the gateway is zero address
+    error GatewayZeroAddress();
+
     /// @notice Initializes the Allocator contract
     /// @param _locker The address of the locker contract (can be address(0) for L2s)
     /// @param _gateway The address of the gateway contract
     /// @dev If _locker is address(0), LOCKER will be set to the same address as GATEWAY
     constructor(address _locker, address _gateway) {
-        GATEWAY = _gateway;
+        require(_gateway != address(0), GatewayZeroAddress());
 
+        GATEWAY = _gateway;
         /// In some cases (L2s), the locker is the same as the gateway.
-        if (_locker == address(0)) {
-            LOCKER = GATEWAY;
-        } else {
-            LOCKER = _locker;
-        }
+        LOCKER = _locker == address(0) ? _gateway : _locker;
     }
 
     /// @notice Determines how funds should be allocated during a deposit
