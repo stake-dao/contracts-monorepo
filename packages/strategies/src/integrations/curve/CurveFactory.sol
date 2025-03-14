@@ -103,7 +103,7 @@ contract CurveFactory is Factory {
         return ILiquidityGauge(_gauge).lp_token();
     }
 
-    function _setupRewardTokens(address _gauge, address _vault, address _rewardReceiver) internal override {
+    function _setupRewardTokens(address _vault, address _gauge, address _rewardReceiver) internal override {
         /// Check if the gauge supports extra rewards.
         /// This function is not supported on all gauges, depending on when they were deployed.
         bytes memory data = abi.encodeWithSignature("reward_tokens(uint256)", 0);
