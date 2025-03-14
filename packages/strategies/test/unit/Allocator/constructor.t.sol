@@ -24,7 +24,7 @@ contract Allocator__constructor is BaseTest {
     function test_SetsTheLockerToTheGivenLockerIfLockerIsNotAddress0(address locker) external {
         // it sets the locker to the given locker if locker is not address 0
 
-        vm.assume(locker != address(0));
+        vm.assume(address(locker) != address(0));
 
         Allocator allocator = new Allocator(locker, makeAddr("gateway"));
         assertEq(allocator.LOCKER(), locker);
