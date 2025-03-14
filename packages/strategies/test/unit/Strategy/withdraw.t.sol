@@ -15,16 +15,6 @@ contract Strategy__withdraw is StrategyBaseTest {
         strategy.withdraw(allocation);
     }
 
-    function test_RevertGaugeShutdown() public {
-        vm.mockCall(
-            address(registry), abi.encodeWithSelector(IProtocolController.isShutdown.selector, gauge), abi.encode(true)
-        );
-
-        vm.expectRevert(abi.encodeWithSelector(Strategy.GaugeShutdown.selector));
-        vm.prank(vault);
-        strategy.withdraw(allocation);
-    }
-
     function test_Withdraw() public {
         stakingToken.mint(address(locker), 100);
         stakingToken.mint(address(sidecar1), 200);

@@ -22,6 +22,9 @@ contract Strategy__shutdown is StrategyBaseTest {
     }
 
     function test_RevertAllowedCallerNotShutdown() public {
+        /// Cheat the locker balance to avoid reverting on shutdown.
+        stakingToken.mint(address(locker), 100);
+
         address allowedCaller = makeAddr("allowedCaller");
         vm.mockCall(
             address(registry),
@@ -44,6 +47,9 @@ contract Strategy__shutdown is StrategyBaseTest {
     event Shutdown(address indexed gauge);
 
     function test_shutownWithCallerNotAllowedAndGaugeShutdown() public {
+        /// Cheat the locker balance to avoid reverting on shutdown.
+        stakingToken.mint(address(locker), 100);
+
         address notAllowedCaller = makeAddr("notAllowedCaller");
 
         /// Caller is not allowed.
@@ -65,6 +71,15 @@ contract Strategy__shutdown is StrategyBaseTest {
 
         /// So the function become permissionless.
         vm.prank(notAllowedCaller);
+        strategy.shutdown(gauge);
+    }
+
+    function test_RevertAlreadyShutdown() public {
+        vm.mockCall(
+            address(registry), abi.encodeWithSelector(IProtocolController.isShutdown.selector, gauge), abi.encode(true)
+        );
+
+        vm.expectRevert(abi.encodeWithSelector(Strategy.AlreadyShutdown.selector));
         strategy.shutdown(gauge);
     }
 
