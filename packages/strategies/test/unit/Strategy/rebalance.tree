@@ -8,7 +8,6 @@ Strategy__rebalance
 │   ├── it correctly withdraws from locker
 │   ├── it correctly withdraws from sidecars
 │   ├── it correctly deposits to new allocations
-│   └── it reverts if final balance doesn't match initial balance
 └── it correctly handles edge cases
     ├── it handles zero balances
     └── it handles maximum balances

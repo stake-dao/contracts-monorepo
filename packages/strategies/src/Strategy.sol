@@ -24,10 +24,10 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     using TransientSlot for *;
 
     /// @dev Slot for the flush amount in transient storage
-    bytes32 private constant FLUSH_AMOUNT_SLOT = keccak256("strategy.flush.amount");
+    bytes32 internal constant FLUSH_AMOUNT_SLOT = keccak256("strategy.flush.amount");
 
     //////////////////////////////////////////////////////
-    /// --- ERRORS
+    /// --- ERRORS & EVENTS
     //////////////////////////////////////////////////////
 
     /// @notice Error thrown when the caller is not the vault for the gauge
@@ -57,8 +57,14 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @notice Error thrown when rebalance is not needed
     error RebalanceNotNeeded();
 
-    /// @notice Error thrown when rebalance goes wrong or is not implemented
-    error RebalanceGoneWrongOrNotImplemented();
+    /// @notice Error thrown when the strategy is already shutdown
+    error AlreadyShutdown();
+
+    /// @notice Event emitted when the strategy is shutdown
+    event Shutdown(address indexed gauge);
+
+    /// @notice Event emitted when the strategy is rebalanced
+    event Rebalance(address indexed gauge, address[] targets, uint256[] amounts);
 
     //////////////////////////////////////////////////////
     /// --- MODIFIERS
@@ -120,7 +126,6 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         returns (PendingRewards memory pendingRewards)
     {
         /// If the pool is shutdown, prefer to call shutdown instead.
-        /// TODO: Should we call shutdown instead, directly?
         require(!PROTOCOL_CONTROLLER.isShutdown(allocation.gauge), GaugeShutdown());
 
         for (uint256 i = 0; i < allocation.targets.length; i++) {
@@ -148,8 +153,11 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         onlyVault(allocation.gauge)
         returns (PendingRewards memory pendingRewards)
     {
-        /// If the pool is shutdown, prefer to call shutdown instead.
-        require(!PROTOCOL_CONTROLLER.isShutdown(allocation.gauge), GaugeShutdown());
+        /// If the pool is shutdown, return the pending rewards.
+        /// Use the shutdown function to withdraw the funds.
+        if (PROTOCOL_CONTROLLER.isShutdown(allocation.gauge)) {
+            return _sync(allocation.gauge);
+        }
 
         for (uint256 i = 0; i < allocation.targets.length; i++) {
             if (allocation.amounts[i] > 0) {
@@ -189,8 +197,8 @@ abstract contract Strategy is IStrategy, ProtocolContext {
                 pendingRewards.feeSubjectAmount = pendingRewardsAmount.toUint128();
 
                 // Update flush amount in transient storage
-                uint256 currentFlushAmount = FLUSH_AMOUNT_SLOT.asUint256().tload();
-                FLUSH_AMOUNT_SLOT.asUint256().tstore(currentFlushAmount + pendingRewardsAmount);
+                uint256 currentFlushAmount = _getFlushAmount();
+                _setFlushAmount(currentFlushAmount + pendingRewardsAmount);
             } else {
                 pendingRewardsAmount = ISidecar(target).claim();
             }
@@ -205,20 +213,22 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @dev Only allowed to be called by the accountant during harvest operation
     function flush() public onlyAccountant {
         // Get flush amount from transient storage
-        uint256 flushAmount = FLUSH_AMOUNT_SLOT.asUint256().tload();
+        uint256 flushAmount = _getFlushAmount();
 
         bytes memory data = abi.encodeWithSelector(IERC20.transfer.selector, ACCOUNTANT, flushAmount);
         require(_executeTransaction(address(REWARD_TOKEN), data), FlushFailed());
 
         // Reset the flush amount in transient storage
-        FLUSH_AMOUNT_SLOT.asUint256().tstore(0);
+        _setFlushAmount(0);
     }
 
     /// @notice Shuts down the strategy by withdrawing all the assets and sending them to the vault
     /// @param gauge The gauge to shut down
     /// @dev Only allowed to be called by permissioned addresses, or anyone if the gauge/system is shutdown
     /// @custom:throws OnlyAllowed If the caller is not allowed and the gauge is not shutdown
-    function shutdown(address gauge) external onlyAllowed(gauge) {
+    function shutdown(address gauge) public onlyAllowed(gauge) {
+        require(balanceOf(gauge) > 0, AlreadyShutdown());
+
         /// 1. Get the vault managing the gauge.
         address vault = PROTOCOL_CONTROLLER.vaults(gauge);
 
@@ -244,6 +254,9 @@ abstract contract Strategy is IStrategy, ProtocolContext {
                 ISidecar(target).withdraw(balance, vault);
             }
         }
+
+        /// 5. Emit the shutdown event.
+        emit Shutdown(gauge);
     }
 
     /// @notice Rebalances the strategy
@@ -259,7 +272,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         uint256 currentBalance = balanceOf(gauge);
 
         /// 4. Get the allocation amounts for the gauge.
-        IAllocator.Allocation memory allocation = IAllocator(allocator).getDepositAllocation(gauge, currentBalance);
+        IAllocator.Allocation memory allocation = IAllocator(allocator).getRebalancedAllocation(gauge, currentBalance);
 
         /// 5. Ensure the allocation has more than one target.
         require(allocation.targets.length > 1, RebalanceNotNeeded());
@@ -291,27 +304,41 @@ abstract contract Strategy is IStrategy, ProtocolContext {
             }
         }
 
-        /// 8. Return true if the balance is the same as the current balance, meaning the rebalance was successful.
-        require(currentBalance == balanceOf(gauge), RebalanceGoneWrongOrNotImplemented());
+        /// 8. Emit the rebalance event.
+        emit Rebalance(gauge, allocation.targets, allocation.amounts);
     }
 
     /// @notice Returns the balance of the strategy
     /// @param gauge The gauge to get the balance of
     /// @return balance The balance of the strategy
     function balanceOf(address gauge) public view virtual returns (uint256 balance) {
-        balance = IBalanceProvider(gauge).balanceOf(LOCKER);
-
         address allocator = PROTOCOL_CONTROLLER.allocator(PROTOCOL_ID);
         address[] memory targets = IAllocator(allocator).getAllocationTargets(gauge);
 
         for (uint256 i = 0; i < targets.length; i++) {
-            balance += ISidecar(targets[i]).balanceOf();
+            if (targets[i] == LOCKER) {
+                balance += IBalanceProvider(gauge).balanceOf(targets[i]);
+            } else {
+                balance += ISidecar(targets[i]).balanceOf();
+            }
         }
     }
 
     //////////////////////////////////////////////////////
     /// --- INTERNAL VIRTUAL FUNCTIONS
     //////////////////////////////////////////////////////
+
+    /// @notice Gets the flush amount from transient storage
+    /// @return The flush amount
+    function _getFlushAmount() internal view virtual returns (uint256) {
+        return FLUSH_AMOUNT_SLOT.asUint256().tload();
+    }
+
+    /// @notice Sets the flush amount in transient storage
+    /// @param amount The amount to set
+    function _setFlushAmount(uint256 amount) internal virtual {
+        FLUSH_AMOUNT_SLOT.asUint256().tstore(amount);
+    }
 
     /// @notice Synchronizes state of pending rewards.
     /// @dev Must be implemented by derived strategies to handle protocol-specific reward collection

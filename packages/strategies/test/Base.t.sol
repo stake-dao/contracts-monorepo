@@ -6,24 +6,26 @@ import "forge-std/src/Test.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
+import {MockLocker} from "test/mocks/MockLocker.sol";
+import {MockGateway} from "test/mocks/MockGateway.sol";
 import {MockRegistry} from "test/mocks/MockRegistry.sol";
 import {MockAllocator} from "test/mocks/MockAllocator.sol";
-
 /// @title BaseTest
 /// @notice Base test contract with common utilities and setup for all tests
+
 abstract contract BaseTest is Test {
     using Math for uint256;
 
     // Common addresses used across tests
     address internal owner = address(this);
-    address internal locker = makeAddr("locker");
-    address internal gateway = makeAddr("gateway");
     address internal vault = makeAddr("vault");
     bytes4 internal protocolId = bytes4(bytes("fake_id"));
 
     // Common mock contracts
     ERC20Mock internal rewardToken;
     ERC20Mock internal stakingToken;
+    MockLocker internal locker;
+    MockGateway internal gateway;
     MockRegistry internal registry;
     MockAllocator internal allocator;
 
@@ -35,6 +37,9 @@ abstract contract BaseTest is Test {
         rewardToken = new ERC20Mock("Reward Token", "RT", 18);
         stakingToken = new ERC20Mock("Staking Token", "ST", 18);
 
+        /// Setup the gateway
+        locker = new MockLocker();
+        gateway = new MockGateway(address(locker));
         /// Setup the registry and allocator
         registry = new MockRegistry();
         allocator = new MockAllocator();
@@ -45,6 +50,8 @@ abstract contract BaseTest is Test {
         vm.mockCalls(address(registry), abi.encodeWithSelector(MockRegistry.asset.selector), mocks);
 
         /// Label common contracts
+        vm.label({account: address(locker), newLabel: "Locker"});
+        vm.label({account: address(gateway), newLabel: "Gateway"});
         vm.label({account: address(registry), newLabel: "Registry"});
         vm.label({account: address(allocator), newLabel: "Allocator"});
         vm.label({account: address(rewardToken), newLabel: "Reward Token"});
