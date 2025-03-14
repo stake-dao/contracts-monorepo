@@ -28,6 +28,9 @@ contract CurveFactory is Factory {
     /// @notice Convex Minimal Proxy Factory for Only Boost.
     address public immutable CONVEX_SIDECAR_FACTORY;
 
+    /// @notice Error thrown when the set reward receiver fails.
+    error SetRewardReceiverFailed();
+
     /// @notice Event emitted when a vault is deployed.
     event VaultDeployed(address gauge, address vault, address rewardReceiver, address sidecar);
 
@@ -62,9 +65,6 @@ contract CurveFactory is Factory {
     }
 
     function _isValidToken(address _token) internal view override returns (bool) {
-        /// We can't add the reward token as extra reward.
-        if (_token == REWARD_TOKEN) return false;
-
         /// If the token is available as an inflation receiver, it's not valid.
         try GAUGE_CONTROLLER.gauge_types(_token) {
             return false;
@@ -127,6 +127,10 @@ contract CurveFactory is Factory {
                 IRewardVault(_vault).addRewardToken(_extraRewardToken, _rewardReceiver);
             }
         }
+
+        /// Set RewardReceiver as RewardReceiver on Gauge.
+        data = abi.encodeWithSignature("set_rewards_receiver(address)", _rewardReceiver);
+        require(_executeTransaction(_gauge, data), SetRewardReceiverFailed());
     }
 
     function _initializeVault(address, address _asset, address _gauge) internal override {

@@ -30,6 +30,10 @@ contract MockRegistry is IProtocolController {
         _rewardReceiver = rewardReceiver_;
     }
 
+    function isRegistrar(address) external view returns (bool) {
+        return true;
+    }
+
     function shutdown(address) external {}
 
     function isShutdown(address) external pure returns (bool) {
