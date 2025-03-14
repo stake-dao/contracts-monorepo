@@ -66,7 +66,7 @@ contract RewardVault__updateReward is RewardVaultBaseTest {
         // move time forward to halfway through the campaign
         vm.warp(block.timestamp + CAMPAIGN_DURATION / 2);
         // update the reward for the account
-        rewardVaultHarness.updateReward(account);
+        rewardVaultHarness.checkpoint(account);
 
         // assert the reward per token stored is updated
         assertLt(beforeRewardPerTokenStored, rewardVaultHarness.getRewardPerTokenStored(token));
