@@ -19,5 +19,35 @@ contract CurveFactoryTest is BaseCurveTest {
         curveFactory.create(pid);
     }
 
-    function test_DeployVaultWithoutConvexSidecar() public {}
+    function test_RevertWhenGaugeIsInvalid() public {
+        address invalidGauge = makeAddr("Invalid Gauge");
+
+        vm.expectRevert(abi.encodeWithSelector(Factory.InvalidGauge.selector));
+        curveFactory.createVault(invalidGauge);
+    }
+
+    function test_RevertWhenGaugeIsAlreadyDeployed() public {
+        address nonNullAddress = makeAddr("Non Null Address");
+
+        vm.mockCall(
+            address(protocolController),
+            abi.encodeWithSelector(IProtocolController.vaults.selector, gauge),
+            abi.encode(nonNullAddress)
+        );
+
+        vm.expectRevert(abi.encodeWithSelector(Factory.AlreadyDeployed.selector));
+        curveFactory.createVault(address(gauge));
+    }
+
+    function test_createVault() public {
+        (address vault, address rewardReceiver) = curveFactory.createVault(address(gauge));
+
+        RewardVault vaultContract = RewardVault(vault);
+        RewardReceiver rewardReceiverContract = RewardReceiver(rewardReceiver);
+
+        assertEq(vaultContract.gauge(), address(gauge));
+        assertEq(vaultContract.asset(), address(lpToken));
+
+        assertEq(address(rewardReceiverContract.rewardVault()), vault);
+    }
 }

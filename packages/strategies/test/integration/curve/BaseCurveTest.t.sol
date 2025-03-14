@@ -5,7 +5,7 @@ import "test/BaseFork.t.sol";
 
 import {CurveStrategy} from "src/integrations/curve/CurveStrategy.sol";
 import {CurveAllocator} from "src/integrations/curve/CurveAllocator.sol";
-import {CurveFactory, Factory} from "src/integrations/curve/CurveFactory.sol";
+import {CurveFactory, Factory, IProtocolController} from "src/integrations/curve/CurveFactory.sol";
 
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
 import {ConvexSidecarFactory, IBooster} from "src/integrations/curve/ConvexSidecarFactory.sol";
@@ -95,7 +95,7 @@ abstract contract BaseCurveTest is BaseForkTest {
     }
 
     function setUp() public virtual {
-        vm.createSelectFork("mainnet");
+        vm.createSelectFork("mainnet", 22_044_945);
 
         /// Get the LP token and base reward pool from Convex
         (address _lpToken,, address _gauge,,,) = BOOSTER.poolInfo(pid);
