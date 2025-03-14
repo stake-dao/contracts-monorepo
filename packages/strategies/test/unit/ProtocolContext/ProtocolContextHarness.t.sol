@@ -8,7 +8,7 @@ contract ProtocolContextHarness is ProtocolContext {
         ProtocolContext(protocolId, protocolController, locker, gateway)
     {}
 
-    function _expose_executeTransaction(address target, bytes memory data) internal returns (bool success) {
+    function _expose_executeTransaction(address target, bytes memory data) external returns (bool success) {
         return _executeTransaction(target, data);
     }
 }

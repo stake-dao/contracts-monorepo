@@ -5,6 +5,9 @@ import "./Base.t.sol";
 
 import {ProtocolContext} from "src/ProtocolContext.sol";
 import {ProtocolContextHarness} from "test/unit/ProtocolContext/ProtocolContextHarness.t.sol";
+import {IProtocolController} from "src/interfaces/IProtocolController.sol";
+import {IAccountant} from "src/interfaces/IAccountant.sol";
+import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
 
 /// @title ProtocolContextBaseTest
 /// @notice Base test contract specifically for ProtocolContext tests
@@ -36,8 +39,32 @@ abstract contract ProtocolContextBaseTest is BaseTest {
 
         _;
     }
+
+    function deployProtocolContext() internal returns (ProtocolContext context) {
+        address accountantMocked = address(new MockAccountant());
+        address gatewayMocked = address(new MockModuleManager());
+
+        vm.mockCall(
+            protocolController,
+            abi.encodeWithSelector(IProtocolController.accountant.selector, protocolId),
+            abi.encode(accountantMocked)
+        );
+
+        vm.mockCall(
+            accountantMocked, abi.encodeWithSelector(IAccountant.REWARD_TOKEN.selector), abi.encode(makeAddr("token"))
+        );
+
+        return new ProtocolContext(protocolId, protocolController, makeAddr("locker"), gatewayMocked);
+    }
 }
 
 contract MockAccountant {
     function REWARD_TOKEN() external view returns (address) {}
+}
+
+contract MockModuleManager {
+    function execTransactionFromModule(address to, uint256 value, bytes memory data, IModuleManager.Operation operation)
+        external
+        returns (bool success)
+    {}
 }
