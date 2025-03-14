@@ -57,6 +57,9 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @notice Error thrown when rebalance is not needed
     error RebalanceNotNeeded();
 
+    /// @notice Error thrown when the strategy is already shutdown
+    error AlreadyShutdown();
+
     /// @notice Event emitted when the strategy is shutdown
     event Shutdown(address indexed gauge);
 
@@ -150,8 +153,11 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         onlyVault(allocation.gauge)
         returns (PendingRewards memory pendingRewards)
     {
-        /// If the pool is shutdown, prefer to call shutdown instead.
-        require(!PROTOCOL_CONTROLLER.isShutdown(allocation.gauge), GaugeShutdown());
+        /// If the pool is shutdown, return the pending rewards.
+        /// Use the shutdown function to withdraw the funds.
+        if (PROTOCOL_CONTROLLER.isShutdown(allocation.gauge)) {
+            return _sync(allocation.gauge);
+        }
 
         for (uint256 i = 0; i < allocation.targets.length; i++) {
             if (allocation.amounts[i] > 0) {
@@ -220,7 +226,9 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @param gauge The gauge to shut down
     /// @dev Only allowed to be called by permissioned addresses, or anyone if the gauge/system is shutdown
     /// @custom:throws OnlyAllowed If the caller is not allowed and the gauge is not shutdown
-    function shutdown(address gauge) external onlyAllowed(gauge) {
+    function shutdown(address gauge) public onlyAllowed(gauge) {
+        require(balanceOf(gauge) > 0, AlreadyShutdown());
+
         /// 1. Get the vault managing the gauge.
         address vault = PROTOCOL_CONTROLLER.vaults(gauge);
 
