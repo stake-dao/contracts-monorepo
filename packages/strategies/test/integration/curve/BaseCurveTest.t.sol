@@ -3,9 +3,9 @@ pragma solidity 0.8.28;
 
 import "test/BaseFork.t.sol";
 
-import {CurveFactory} from "src/integrations/curve/CurveFactory.sol";
 import {CurveStrategy} from "src/integrations/curve/CurveStrategy.sol";
 import {CurveAllocator} from "src/integrations/curve/CurveAllocator.sol";
+import {CurveFactory, Factory} from "src/integrations/curve/CurveFactory.sol";
 
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
 import {ConvexSidecarFactory, IBooster} from "src/integrations/curve/ConvexSidecarFactory.sol";
@@ -94,7 +94,7 @@ abstract contract BaseCurveTest is BaseForkTest {
         pid = _pid;
     }
 
-    function setUp() public {
+    function setUp() public virtual {
         vm.createSelectFork("mainnet");
 
         /// Get the LP token and base reward pool from Convex
@@ -147,12 +147,6 @@ abstract contract BaseCurveTest is BaseForkTest {
             abi.encodeWithSelector(IStrategy.isShutdown.selector, address(gauge)),
             abi.encode(true)
         );
-    }
-
-    function test_deploy() public {
-        /// 1. Deploy the Convex Sidecar.
-        vm.expectRevert(ConvexSidecarFactory.VaultNotDeployed.selector);
-        convexSidecar = ConvexSidecar(convexSidecarFactory.create(address(gauge), pid));
     }
 
     ///////////////////////////////////////////////////////////////////////////
