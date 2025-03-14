@@ -308,7 +308,7 @@ contract RewardVault is IERC4626, ERC20 {
     /// @param _distributor The address authorized to distribute rewards.
     function addRewardToken(address _rewardsToken, address _distributor) external {
         // check if the caller is allowed to add a reward token
-        require(PROTOCOL_CONTROLLER.allowed(address(this), msg.sender, msg.sig), "OnlyAllowed");
+        require(PROTOCOL_CONTROLLER.isRegistrar(msg.sender), OnlyAllowed());
 
         // check if the reward token already exists
         if (isRewardToken[_rewardsToken]) revert RewardAlreadyExists();

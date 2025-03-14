@@ -9,7 +9,7 @@ import {Allocator} from "src/Allocator.sol";
 import {Accountant} from "src/Accountant.sol";
 import {ProtocolController} from "src/ProtocolController.sol";
 
-import {RewardVault} from "src/RewardVault.sol";
+import {RewardVault, IERC20} from "src/RewardVault.sol";
 import {RewardReceiver} from "src/RewardReceiver.sol";
 
 /// TODO: Move to a helper package

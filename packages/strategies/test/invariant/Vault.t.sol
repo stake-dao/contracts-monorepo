@@ -47,7 +47,7 @@ contract VaultInvariantTest is StdInvariant, Test {
         vault = RewardVault(
             Clones.cloneDeterministicWithImmutableArgs(
                 address(vaultImplementation),
-                abi.encodePacked(address(registry), address(accountant), address(token), address(token)),
+                abi.encodePacked(address(token), address(token)),
                 ""
             )
         );
