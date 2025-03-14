@@ -45,11 +45,10 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
         strategyAsset = address(new ERC20Mock("Strategy Asset", "STRAT", 18));
         vm.label({account: strategyAsset, newLabel: "strategyAsset"});
 
-        // The asset() function reads from offset 80, so we need to ensure asset is at that position
-        // The gauge() function reads from offset 60, so we need to ensure gauge is at that position
+        // The gauge() function reads from offset 20, so we need to ensure gauge is at that position
+        // The asset() function reads from offset 40, so we need to ensure asset is at that position
         // We use abi.encodePacked to ensure proper byte alignment
-        // TODO: What's the purpose of the buffer?
-        bytes memory encodedData = abi.encodePacked(makeAddr("buffer"), makeAddr("buffer"), gauge, asset);
+        bytes memory encodedData = abi.encodePacked(gauge, asset);
 
         // clone the harnessed reward vault with the immutable variables
         cloneRewardVault = RewardVaultHarness(Clones.cloneWithImmutableArgs(address(rewardVaultHarness), encodedData));

@@ -478,7 +478,7 @@ contract RewardVault is IERC4626, ERC20 {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         address token;
         assembly {
-            token := mload(add(args, 80))
+            token := mload(add(args, 40))
         }
         return token;
     }
@@ -729,7 +729,7 @@ contract RewardVault is IERC4626, ERC20 {
     function gauge() public view returns (address _gauge) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         assembly {
-            _gauge := mload(add(args, 60))
+            _gauge := mload(add(args, 20))
         }
     }
 
