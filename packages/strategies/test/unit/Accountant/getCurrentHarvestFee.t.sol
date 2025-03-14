@@ -14,7 +14,7 @@ contract Accountant__getCurrentHarvestFee is AccountantBaseTest {
         stdstore.target(address(accountant)).sig("HARVEST_URGENCY_THRESHOLD()").checked_write(value);
     }
 
-    function test_ReturnsTheHarvestFeePercentWhenTheThresholdIs0() external {
+    function test_ReturnsTheHarvestFeePercentWhenTheThresholdIs0() external view {
         // it returns the harvest fee percent when the threshold is 0
 
         // 0 is the default value of `HARVEST_URGENCY_THRESHOLD`

@@ -61,10 +61,6 @@ contract RewardVault__earned is RewardVaultBaseTest {
             abi.encode(TOTAL_SUPPLY / 20) // 5% of the total supply
         );
 
-        // snapshot some values for future assertions
-        uint128 beforeRewardPerTokenStored = rewardVaultHarness.getRewardPerTokenStored(token);
-        uint128 beforeClaimable = rewardVaultHarness.getClaimable(token, account);
-
         // move time forward to halfway through the campaign
         vm.warp(block.timestamp + CAMPAIGN_DURATION / 2);
 
