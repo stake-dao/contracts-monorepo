@@ -1,0 +1,10 @@
+ProtocolContext__constructor
+├── it revert if protocolController is zero address
+├── it revert if gateway is zero address
+├── it sets gateway
+├── it sets protocolId
+├── it sets the accountant stored in the protocol controller
+├── it sets the rewardToken stored in the accountant
+├── it sets protocolController
+├── it sets locker to its own value given non zero locker
+└── it sets locker to gateway given zero locker
