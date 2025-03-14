@@ -200,7 +200,7 @@ contract RewardVault is IERC4626, ERC20 {
     /// @param shares The amount of shares to mint.
     function _deposit(address account, address receiver, uint256 assets, uint256 shares) internal {
         // Update the reward state for the receiver
-        _updateReward(receiver, address(0));
+        _checkpoint(receiver, address(0));
 
         // Get the address of the allocator contract from the protocol controller
         // then fetch the recommended deposit allocation from the allocator
@@ -266,7 +266,7 @@ contract RewardVault is IERC4626, ERC20 {
     /// @dev Internal function to withdraw assets from the vault.
     function _withdraw(address owner, address receiver, uint256 assets, uint256 shares) internal {
         // Update the reward state for the owner.
-        _updateReward(owner, address(0));
+        _checkpoint(owner, address(0));
 
         // Get the address of the allocator contract from the protocol controller
         // then fetch the withdrawal allocation from the allocator
@@ -326,7 +326,7 @@ contract RewardVault is IERC4626, ERC20 {
         if (receiver == address(0)) receiver = accountAddress;
 
         // Make sure reward accounting is up to date.
-        _updateReward(accountAddress, address(0));
+        _checkpoint(accountAddress, address(0));
 
         amounts = new uint256[](tokens.length);
         for (uint256 i; i < tokens.length; i++) {
@@ -381,7 +381,7 @@ contract RewardVault is IERC4626, ERC20 {
     /// @custom:reverts UnauthorizedRewardsDistributor if the caller is not the authorized distributor.
     function depositRewards(address _rewardsToken, uint128 _amount) external {
         // Update reward state for all tokens first.
-        _updateReward(address(0), address(0));
+        _checkpoint(address(0), address(0));
 
         // get the current reward data
         RewardData storage reward = rewardData[_rewardsToken];
@@ -422,7 +422,7 @@ contract RewardVault is IERC4626, ERC20 {
     /// @dev Internal function to update reward state for two accounts (optional).
     /// @param _from The account to update. (Can be address(0) if not needed)
     /// @param _to The account to update. (Can be address(0) if not needed)
-    function _updateReward(address _from, address _to) internal {
+    function _checkpoint(address _from, address _to) internal {
         uint256 len = rewardTokens.length;
         uint32 currentTime = uint32(block.timestamp);
 
@@ -430,7 +430,7 @@ contract RewardVault is IERC4626, ERC20 {
             address token = rewardTokens[i];
             uint128 newRewardPerToken = _updateRewardToken(token, currentTime);
 
-            // Update account-specific data if _from is set // ?: weird behavior?
+            // Update account-specific data if _from is set
             if (_from != address(0)) {
                 _updateAccountData(_from, token, newRewardPerToken);
             }
@@ -713,10 +713,10 @@ contract RewardVault is IERC4626, ERC20 {
         return reward.rewardRate * reward.rewardsDuration;
     }
 
-    /// @notice Updates reward state for an account
+    /// @notice Updates the reward state for an account
     /// @param account The account to update rewards for.
-    function updateReward(address account) external {
-        _updateReward(account, address(0));
+    function checkpoint(address account) external {
+        _checkpoint(account, address(0));
     }
 
     ///////////////////////////////////////////////////////////////
@@ -761,7 +761,7 @@ contract RewardVault is IERC4626, ERC20 {
         );
 
         // 2. Update Reward State.
-        _updateReward(from, to);
+        _checkpoint(from, to);
 
         // 3. Emit Transfer event.
         emit Transfer(from, to, amount);

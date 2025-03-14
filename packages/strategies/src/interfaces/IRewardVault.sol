@@ -6,4 +6,5 @@ interface IRewardVault {
     function depositRewards(address _rewardsToken, uint256 _amount) external;
     function isRewardToken(address _token) external view returns (bool);
     function getRewardTokens() external view returns (address[] memory);
+    function checkpoint(address account) external;
 }
