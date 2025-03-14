@@ -21,12 +21,12 @@ abstract contract BaseForkTest is Test {
     address public immutable admin = address(this);
     address public immutable feeReceiver = makeAddr("Fee Receiver");
 
-    bytes4 internal immutable protocolId;
-    bool internal immutable harvested;
-    address public immutable rewardToken;
-    address public immutable stakingToken;
+    bytes4 internal protocolId;
+    bool internal harvested;
+    address public rewardToken;
+    address public stakingToken;
 
-    address public immutable locker;
+    address public locker;
 
     Safe public gateway;
     Allocator public allocator;
@@ -41,18 +41,20 @@ abstract contract BaseForkTest is Test {
     RewardReceiver public rewardReceiver;
     RewardReceiver public rewardReceiverImplementation;
 
-    constructor(address _rewardToken, address _stakingToken, address _locker, bytes4 _protocolId, bool _harvested) {
+    /*//////////////////////////////////////////////////////////////////////////
+                                      HELPERS
+    //////////////////////////////////////////////////////////////////////////*/
+
+    function _setup(address _rewardToken, address _stakingToken, address _locker, bytes4 _protocolId, bool _harvested)
+        internal
+    {
+        /// 0. Initialize variables.
         locker = _locker;
         protocolId = _protocolId;
         rewardToken = _rewardToken;
         stakingToken = _stakingToken;
         harvested = _harvested;
-    }
 
-    /*//////////////////////////////////////////////////////////////////////////
-                                  SET-UP FUNCTION
-    //////////////////////////////////////////////////////////////////////////*/
-    function setUp() public virtual {
         /// 1. Deploy Protocol Controller.
         protocolController = new ProtocolController();
 
@@ -111,9 +113,6 @@ abstract contract BaseForkTest is Test {
         vm.label({account: address(protocolController), newLabel: "Protocol Controller"});
     }
 
-    /*//////////////////////////////////////////////////////////////////////////
-                                      HELPERS
-    //////////////////////////////////////////////////////////////////////////*/
     /// @notice Utility function to ensure a fuzzed address has not been previously labeled
     function _assumeUnlabeledAddress(address fuzzedAddress) internal view {
         vm.assume(bytes10(bytes(vm.getLabel(fuzzedAddress))) == bytes10(bytes("unlabeled:")));
