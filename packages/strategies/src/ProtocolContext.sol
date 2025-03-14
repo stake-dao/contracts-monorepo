@@ -5,12 +5,13 @@ import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
 
 import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
+import {IProtocolContext} from "src/interfaces/IProtocolContext.sol";
 
 /// @title ProtocolContext
 /// @author Stake DAO
 /// @notice Base contract that handles common protocol-related logic for Strategy and Harvester
 /// @dev Provides shared functionality for handling GATEWAY and LOCKER relationships
-abstract contract ProtocolContext {
+contract ProtocolContext is IProtocolContext {
     //////////////////////////////////////////////////////
     /// --- IMMUTABLES
     //////////////////////////////////////////////////////
