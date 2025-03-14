@@ -8,11 +8,18 @@ import {CurveStrategy} from "src/integrations/curve/CurveStrategy.sol";
 import {CurveAllocator} from "src/integrations/curve/CurveAllocator.sol";
 
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
-import {ConvexSidecarFactory} from "src/integrations/curve/ConvexSidecarFactory.sol";
+import {ConvexSidecarFactory, IBooster} from "src/integrations/curve/ConvexSidecarFactory.sol";
 
+import {IStrategy} from "@interfaces/stake-dao/IStrategy.sol";
 import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
+import {IBalanceProvider} from "src/interfaces/IBalanceProvider.sol";
+import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 
 abstract contract BaseCurveTest is BaseForkTest {
+    ///////////////////////////////////////////////////////////////////////////
+    //// - CONSTANTS
+    ///////////////////////////////////////////////////////////////////////////
+
     /// @notice The protocol ID.
     bytes4 constant PROTOCOL_ID = bytes4(keccak256("CURVE"));
 
@@ -28,8 +35,34 @@ abstract contract BaseCurveTest is BaseForkTest {
     /// @notice The Convex Boost Holder contract.
     address public constant CONVEX_BOOST_HOLDER = 0x989AEb4d175e16225E39E87d0D97A3360524AD80;
 
+    /// @notice The Booster contract.
+    IBooster public constant BOOSTER = IBooster(0xF403C135812408BFbE8713b5A23a04b3D48AAE31);
+
     /// @notice The old strategy.
     address public constant OLD_STRATEGY = 0x69D61428d089C2F35Bf6a472F540D0F82D1EA2cd;
+
+    ///////////////////////////////////////////////////////////////////////////
+    //// - HELPER STORAGE
+    ///////////////////////////////////////////////////////////////////////////
+
+    /// @notice The signature for the Safe transaction.
+    bytes signatures = abi.encodePacked(uint256(uint160(admin)), uint8(0), uint256(1));
+
+    ///////////////////////////////////////////////////////////////////////////
+    //// - TEST STORAGE
+    ///////////////////////////////////////////////////////////////////////////
+
+    /// @notice The PID.
+    uint256 public pid;
+
+    /// @notice  The Staking Token.
+    address public lpToken;
+
+    /// @notice The total supply of the LP token.
+    uint256 public totalSupply;
+
+    /// @notice The Liquidity Gauge contract.
+    ILiquidityGauge public gauge;
 
     /// @notice The Curve Strategy contract.
     CurveStrategy public curveStrategy;
@@ -46,11 +79,32 @@ abstract contract BaseCurveTest is BaseForkTest {
     /// @notice The Convex Sidecar Factory contract.
     ConvexSidecarFactory public convexSidecarFactory;
 
-    constructor(address _lpToken, address _gauge) BaseForkTest(CRV, _lpToken, LOCKER, PROTOCOL_ID, false) {}
+    /// @notice Modifier to mock the gauge to not be shutdown on the old strategy.
+    modifier whenGaugeIsNotShutdownOnOldStrategy() {
+        vm.mockCall(
+            address(OLD_STRATEGY),
+            abi.encodeWithSelector(IStrategy.isShutdown.selector, address(gauge)),
+            abi.encode(false)
+        );
 
-    function setUp() public override {
+        _;
+    }
+
+    constructor(uint256 _pid) {
+        pid = _pid;
+    }
+
+    function setUp() public {
         vm.createSelectFork("mainnet");
-        super.setUp();
+
+        /// Get the LP token and base reward pool from Convex
+        (address _lpToken,, address _gauge,,,) = BOOSTER.poolInfo(pid);
+
+        lpToken = _lpToken;
+        gauge = ILiquidityGauge(_gauge);
+        totalSupply = IBalanceProvider(lpToken).totalSupply();
+
+        _setup(CRV, lpToken, LOCKER, PROTOCOL_ID, false);
 
         /// 1. Deploy the Curve Strategy contract.
         curveStrategy = new CurveStrategy(address(protocolController), LOCKER, address(gateway));
@@ -78,28 +132,39 @@ abstract contract BaseCurveTest is BaseForkTest {
         /// 4. Setup the factory in the protocol controller.
         protocolController.setRegistrar(address(curveFactory), true);
 
-        /// 5. Enable Strategy and Factory as Module in Gateway.
-        bytes memory signatures = abi.encodePacked(uint256(uint160(admin)), uint8(0), uint256(1));
+        /// 5. Enable Strategy as Module in Gateway.
+        _enableModule(address(curveStrategy));
 
-        /// 6. Enable Strategy as Module in Gateway.
-        gateway.execTransaction(
-            address(gateway),
-            0,
-            abi.encodeWithSelector(IModuleManager.enableModule.selector, address(curveStrategy)),
-            Enum.Operation.Call,
-            0,
-            0,
-            0,
-            address(0),
-            payable(0),
-            signatures
+        /// 6. Enable Factory as Module in Gateway.
+        _enableModule(address(curveFactory));
+
+        /// 7. Clear the locker from any balance of the gauge and reward token.
+        _clearLocker();
+
+        /// 8. By default, all the gauges are considered shutdown on the old strategy.
+        vm.mockCall(
+            address(OLD_STRATEGY),
+            abi.encodeWithSelector(IStrategy.isShutdown.selector, address(gauge)),
+            abi.encode(true)
         );
+    }
 
-        /// 7. Enable Factory as Module in Gateway
+    function test_deploy() public {
+        /// 1. Deploy the Convex Sidecar.
+        vm.expectRevert(ConvexSidecarFactory.VaultNotDeployed.selector);
+        convexSidecar = ConvexSidecar(convexSidecarFactory.create(address(gauge), pid));
+    }
+
+    ///////////////////////////////////////////////////////////////////////////
+    //// - HELPERS
+    ///////////////////////////////////////////////////////////////////////////
+
+    /// @notice Enable a module in the Gateway.
+    function _enableModule(address _module) internal {
         gateway.execTransaction(
             address(gateway),
             0,
-            abi.encodeWithSelector(IModuleManager.enableModule.selector, address(curveFactory)),
+            abi.encodeWithSelector(IModuleManager.enableModule.selector, _module),
             Enum.Operation.Call,
             0,
             0,
@@ -110,12 +175,47 @@ abstract contract BaseCurveTest is BaseForkTest {
         );
     }
 
-    function test_deploy() public {
-        address gauge = 0xd303994a0Db9b74f3E8fF629ba3097fC7060C331;
-        uint256 pid = 421;
+    //
+    function _disableModule(address _module) internal {
+        gateway.execTransaction(
+            address(gateway),
+            0,
+            abi.encodeWithSelector(IModuleManager.disableModule.selector, _module),
+            Enum.Operation.Call,
+            0,
+            0,
+            0,
+            address(0),
+            payable(0),
+            signatures
+        );
+    }
 
-        /// 1. Deploy the Convex Sidecar.
-        vm.expectRevert(ConvexSidecarFactory.VaultNotDeployed.selector);
-        convexSidecar = ConvexSidecar(convexSidecarFactory.create(gauge, pid));
+    /// @notice Clear the locker from any balance of the gauge and reward token.
+    /// TODO: Clear extra rewards as well if needed.
+    function _clearLocker() internal {
+        // Create a burn address to send tokens to
+        address burn = makeAddr("Burn");
+
+        // Get current gauge balance in the locker
+        uint256 balance = gauge.balanceOf(LOCKER);
+
+        // 1. Withdraw LP tokens from gauge without claiming rewards
+        bytes memory withdrawData = abi.encodeWithSignature("withdraw(uint256,bool)", balance, false);
+        bytes memory withdrawExecute =
+            abi.encodeWithSignature("execute(address,uint256,bytes)", address(gauge), 0, withdrawData);
+
+        gateway.execTransaction(
+            address(locker), 0, withdrawExecute, Enum.Operation.Call, 0, 0, 0, address(0), payable(0), signatures
+        );
+
+        // 2. Transfer the LP tokens to burn address
+        bytes memory transferData = abi.encodeWithSignature("transfer(address,uint256)", burn, balance);
+        bytes memory transferExecute =
+            abi.encodeWithSignature("execute(address,uint256,bytes)", address(lpToken), 0, transferData);
+
+        gateway.execTransaction(
+            address(locker), 0, transferExecute, Enum.Operation.Call, 0, 0, 0, address(0), payable(0), signatures
+        );
     }
 }
