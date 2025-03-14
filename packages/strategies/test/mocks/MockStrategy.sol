@@ -32,10 +32,10 @@ contract MockStrategy is IStrategy {
     function harvest(address, bytes memory harvestData)
         external
         override
-        returns (PendingRewards memory pendingRewards)
+        returns (PendingRewards memory _pendingRewards)
     {
         if (harvestData.length == 0) {
-            return pendingRewards;
+            return _pendingRewards;
         }
 
         (uint256 amount, uint256 randomSplit) = abi.decode(harvestData, (uint256, uint256));
@@ -45,8 +45,8 @@ contract MockStrategy is IStrategy {
         FLUSH_AMOUNT_SLOT.asUint256().tstore(currentFlushAmount + amount);
 
         /// Calculate the fee subject amount.
-        pendingRewards.feeSubjectAmount = uint128(amount * 1e18 / randomSplit);
-        pendingRewards.totalAmount = uint128(amount);
+        _pendingRewards.feeSubjectAmount = uint128(amount * 1e18 / randomSplit);
+        _pendingRewards.totalAmount = uint128(amount);
     }
 
     function flush() external override {
