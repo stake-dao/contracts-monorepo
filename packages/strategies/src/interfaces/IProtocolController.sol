@@ -8,6 +8,7 @@ interface IProtocolController {
 
     function allowed(address, address, bytes4 selector) external view returns (bool);
     function permissionSetters(address) external view returns (bool);
+    function isRegistrar(address) external view returns (bool);
 
     function strategy(bytes4 protocolId) external view returns (address);
     function allocator(bytes4 protocolId) external view returns (address);
