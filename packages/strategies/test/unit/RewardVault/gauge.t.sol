@@ -18,10 +18,9 @@ contract RewardVault__gauge is RewardVaultBaseTest {
 
 contract CloneFactoryRewardVaultTest is BaseTest {
     function deployClone(address implementation, address gauge, address asset) external returns (address) {
-        // The asset() function reads from offset 80, so we need to ensure asset is at that position
+        // The asset() function reads from offset 40, so we need to ensure asset is at that position
         // We use abi.encodePacked to ensure proper byte alignment
-        // TODO: What's the purpose of the buffer?
-        bytes memory encodedData = abi.encodePacked(makeAddr("buffer"), makeAddr("buffer"), gauge, asset);
+        bytes memory encodedData = abi.encodePacked(gauge, asset);
 
         return Clones.cloneWithImmutableArgs(implementation, encodedData);
     }
