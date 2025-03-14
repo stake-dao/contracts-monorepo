@@ -16,7 +16,7 @@ install:
 	pnpm i
 
 test:
-	@forge test --show-progress --gas-report --match-contract _Deposit
+	@forge test --show-progress --gas-report --match-contract  CurveFactoryTest
 
 test-f-%:
 	@FOUNDRY_MATCH_TEST=$* make test
