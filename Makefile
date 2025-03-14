@@ -16,7 +16,7 @@ install:
 	pnpm i
 
 test:
-	@forge test --match-test test_createVault # --gas-report --show-progress
+	@forge test --gas-report --show-progress --match-test test_CreateSidecarFromSidecarFactory 
 
 test-f-%:
 	@FOUNDRY_MATCH_TEST=$* make test

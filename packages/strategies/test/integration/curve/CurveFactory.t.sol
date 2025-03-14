@@ -36,6 +36,11 @@ abstract contract CurveFactoryTest is BaseCurveTest {
         curveFactory.createVault(address(gauge));
     }
 
+    function test_RevertCreateSidecarWhenVaultIsNotDeployed() public {
+        vm.expectRevert(abi.encodeWithSelector(ConvexSidecarFactory.VaultNotDeployed.selector));
+        convexSidecarFactory.create(address(gauge), pid);
+    }
+
     function test_createVault() public {
         (address vault, address rewardReceiver) = curveFactory.createVault(address(gauge));
 
@@ -75,6 +80,24 @@ abstract contract CurveFactoryTest is BaseCurveTest {
 
             assertEq(gaugeRewardReceiver, rewardReceiver);
         }
+    }
+
+    function test_CreateSidecarFromSidecarFactory() public {
+        (, address rewardReceiver) = curveFactory.createVault(address(gauge));
+
+        ConvexSidecar sidecar = ConvexSidecar(address(convexSidecarFactory.create(address(gauge), pid)));
+
+        (,,, address _baseRewardPool,,) = BOOSTER.poolInfo(pid);
+
+        /// 1.  Check all the immutable clones args are correct
+        assertEq(address(sidecar.asset()), address(lpToken));
+        assertEq(sidecar.rewardReceiver(), rewardReceiver);
+        assertEq(address(sidecar.baseRewardPool()), _baseRewardPool);
+        assertEq(sidecar.pid(), pid);
+
+        /// 2. Check the sidecar is correctly initialized.
+        uint256 allowance = IERC20(address(lpToken)).allowance(address(sidecar), address(BOOSTER));
+        assertEq(allowance, type(uint256).max);
     }
 
     /// @notice Check if the gauge has extra rewards or supports extra rewards.
