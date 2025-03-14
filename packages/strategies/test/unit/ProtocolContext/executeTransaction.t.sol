@@ -115,9 +115,9 @@ contract ProtocolContext__constructor is ProtocolContextBaseTest {
         address gateway = address(new MockModuleManager());
         vm.label({account: gateway, newLabel: "Mocked Gateway"});
 
-        vm.assume(locker != address(0));
-        vm.assume(locker != gateway);
-        vm.label({account: locker, newLabel: "Locker"});
+        vm.assume(address(locker) != address(0));
+        vm.assume(address(locker) != gateway);
+        vm.label({account: address(locker), newLabel: "Locker"});
 
         vm.mockCall(
             protocolController,
@@ -130,7 +130,7 @@ contract ProtocolContext__constructor is ProtocolContextBaseTest {
         );
 
         ProtocolContextHarness protocolContextHarness =
-            new ProtocolContextHarness(protocolId, protocolController, locker, gateway);
+            new ProtocolContextHarness(protocolId, protocolController, address(locker), gateway);
 
         vm.expectCall(
             gateway,
@@ -158,9 +158,9 @@ contract ProtocolContext__constructor is ProtocolContextBaseTest {
         address gateway = address(new MockModuleManager());
         vm.label({account: gateway, newLabel: "Mocked Gateway"});
 
-        vm.assume(locker != address(0));
-        vm.assume(locker != gateway);
-        vm.label({account: locker, newLabel: "Locker"});
+        vm.assume(address(locker) != address(0));
+        vm.assume(address(locker) != gateway);
+        vm.label({account: address(locker), newLabel: "Locker"});
 
         vm.mockCall(
             protocolController,
@@ -173,7 +173,7 @@ contract ProtocolContext__constructor is ProtocolContextBaseTest {
         );
 
         ProtocolContextHarness protocolContextHarness =
-            new ProtocolContextHarness(protocolId, protocolController, locker, gateway);
+            new ProtocolContextHarness(protocolId, protocolController, address(locker), gateway);
 
         vm.mockCall(
             gateway,
@@ -198,9 +198,9 @@ contract ProtocolContext__constructor is ProtocolContextBaseTest {
         address gateway = address(new MockModuleManager());
         vm.label({account: gateway, newLabel: "Mocked Gateway"});
 
-        vm.assume(locker != address(0));
-        vm.assume(locker != gateway);
-        vm.label({account: locker, newLabel: "Locker"});
+        vm.assume(address(locker) != address(0));
+        vm.assume(address(locker) != gateway);
+        vm.label({account: address(locker), newLabel: "Locker"});
 
         vm.mockCall(
             protocolController,
@@ -213,7 +213,7 @@ contract ProtocolContext__constructor is ProtocolContextBaseTest {
         );
 
         ProtocolContextHarness protocolContextHarness =
-            new ProtocolContextHarness(protocolId, protocolController, locker, gateway);
+            new ProtocolContextHarness(protocolId, protocolController, address(locker), gateway);
 
         vm.mockCallRevert(
             gateway,
