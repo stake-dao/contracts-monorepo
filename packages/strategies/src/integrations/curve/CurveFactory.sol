@@ -49,16 +49,13 @@ contract CurveFactory is Factory {
 
     /// @notice Create a new vault.
     /// @param _pid Pool id.
-    function create(uint256 _pid)
-        external
-        returns (address gauge, address vault, address rewardReceiver, address sidecar)
-    {
-        (,, gauge,,,) = IBooster(BOOSTER).poolInfo(_pid);
+    function create(uint256 _pid) external returns (address vault, address rewardReceiver, address sidecar) {
+        (,, address gauge,,,) = IBooster(BOOSTER).poolInfo(_pid);
 
-        /// Create Stake DAO pool.
+        /// 1. Create the vault.
         (vault, rewardReceiver) = createVault(gauge);
 
-        /// No necessary to check if the gauge is valid, as it's already checked in the ConvexMinimalProxyFactory.
+        /// 2. Attach the sidecar.
         sidecar = ISidecarFactory(CONVEX_SIDECAR_FACTORY).create(gauge, abi.encode(_pid));
 
         emit VaultDeployed(gauge, vault, rewardReceiver, sidecar);

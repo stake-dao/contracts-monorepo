@@ -100,6 +100,11 @@ abstract contract CurveFactoryTest is BaseCurveTest {
         assertEq(allowance, type(uint256).max);
     }
 
+    function test_CreateVaultAndSidecar() public {
+        (,, address sidecar) = curveFactory.create(pid);
+        assertEq(convexSidecarFactory.sidecar(address(gauge)), sidecar);
+    }
+
     /// @notice Check if the gauge has extra rewards or supports extra rewards.
     function _checkExtraRewards(address gauge) internal returns (bool success) {
         bytes memory data = abi.encodeWithSignature("reward_tokens(uint256)", 0);
