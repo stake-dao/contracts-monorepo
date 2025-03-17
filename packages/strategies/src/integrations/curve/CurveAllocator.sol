@@ -14,10 +14,10 @@ contract CurveAllocator is Allocator {
     using Math for uint256;
 
     /// @notice Address of the Curve Boost Delegation V3 contract
-    address public immutable BOOST_DELEGATION_V3;
+    address public constant BOOST_DELEGATION_V3 = 0xD37A6aa3d8460Bd2b6536d608103D880695A23CD;
 
     /// @notice Address of the Convex Boost Holder contract
-    address public immutable CONVEX_BOOST_HOLDER;
+    address public constant CONVEX_BOOST_HOLDER = 0x989AEb4d175e16225E39E87d0D97A3360524AD80;
 
     /// @notice Address of the Convex Sidecar Factory contract
     ISidecarFactory public immutable CONVEX_SIDECAR_FACTORY;
@@ -25,18 +25,8 @@ contract CurveAllocator is Allocator {
     /// @notice Initializes the CurveAllocator contract
     /// @param _locker Address of the Stake DAO Liquidity Locker
     /// @param _gateway Address of the gateway contract
-    /// @param _boostDelegationV3 Address of the Curve Boost Delegation V3 contract
-    /// @param _voterProxyConvex Address of the Convex Voter Proxy contract
     /// @param _convexSidecarFactory Address of the Convex Sidecar Factory contract
-    constructor(
-        address _locker,
-        address _gateway,
-        address _boostDelegationV3,
-        address _voterProxyConvex,
-        address _convexSidecarFactory
-    ) Allocator(_locker, _gateway) {
-        CONVEX_BOOST_HOLDER = _voterProxyConvex;
-        BOOST_DELEGATION_V3 = _boostDelegationV3;
+    constructor(address _locker, address _gateway, address _convexSidecarFactory) Allocator(_locker, _gateway) {
         CONVEX_SIDECAR_FACTORY = ISidecarFactory(_convexSidecarFactory);
     }
 
@@ -126,6 +116,20 @@ contract CurveAllocator is Allocator {
 
         /// 8. Return the allocation.
         return Allocation({gauge: gauge, targets: targets, amounts: amounts});
+    }
+
+    /// @notice Returns the targets for the allocation
+    /// @dev Overrides the base Allocator's getAllocationTargets function to include sidecar logic
+    /// @param gauge Address of the Curve gauge
+    /// @return targets Array of target addresses for the allocation
+    function getAllocationTargets(address gauge) public view override returns (address[] memory) {
+        address sidecar = CONVEX_SIDECAR_FACTORY.sidecar(gauge);
+
+        address[] memory targets = new address[](2);
+        targets[0] = sidecar;
+        targets[1] = LOCKER;
+
+        return targets;
     }
 
     /// @notice Returns the optimal amount of LP token that must be held by Stake DAO Locker

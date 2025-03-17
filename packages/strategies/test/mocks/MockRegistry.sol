@@ -30,7 +30,7 @@ contract MockRegistry is IProtocolController {
         _rewardReceiver = rewardReceiver_;
     }
 
-    function isRegistrar(address) external view returns (bool) {
+    function isRegistrar(address) external pure returns (bool) {
         return true;
     }
 
