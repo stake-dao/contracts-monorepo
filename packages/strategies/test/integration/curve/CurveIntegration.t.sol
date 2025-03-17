@@ -31,8 +31,6 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
         /// 3. Set up the account.
         deal(lpToken, account, totalSupply);
 
-        /// 4. Deal some extra rewards to the reward receiver.
-        deal(CVX, address(rewardReceiver), 1_000_000e18);
 
         /// 5. Approve the reward vault.
         vm.prank(account);
@@ -40,8 +38,11 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
     }
 
     function test_deposit(uint256 amount) public {
-        vm.assume(amount > 0);
+        vm.assume(amount > 1e18);
         vm.assume(amount < totalSupply / 2);
+
+        /// 4. Deal some extra rewards to the reward receiver.
+        deal(CVX, address(rewardReceiver), amount);
 
         /// 1. Deposit the amount.
         vm.prank(account);
@@ -84,8 +85,14 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
         convexSidecar.claimExtraRewards();
 
         /// 7. Distribute the rewards.
-        if (rewardVault.getRewardTokens().length > 0) {
-            rewardReceiver.distributeRewards();
-        }
+        rewardReceiver.distributeRewards();
+
+        address[] memory rewardTokens = rewardVault.getRewardTokens();
+
+        skip(1 weeks);
+
+        vm.prank(account);
+        rewardVault.claim(rewardTokens, account);
+        assertApproxEqRel(_balanceOf(CVX, account), amount, 0.0001e18); // 0.01%
     }
 }
