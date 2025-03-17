@@ -227,11 +227,12 @@ abstract contract BaseCurveTest is BaseForkTest {
         );
     }
 
-    function _inflateRewards(address gauge) internal {
+    function _inflateRewards(address gauge) internal returns (uint256 inflation) {
+        inflation = 1_000_000e18;
         vm.mockCall(
             address(gauge),
             abi.encodeWithSelector(ILiquidityGauge.integrate_fraction.selector, address(LOCKER)),
-            abi.encode(1_000_000e18)
+            abi.encode(inflation)
         );
     }
 }
