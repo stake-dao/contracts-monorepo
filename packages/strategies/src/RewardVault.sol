@@ -54,6 +54,9 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @notice Error thrown when the caller is not allowed.
     error OnlyAllowed();
 
+    /// @notice Error thrown when the caller is not the registrar.
+    error OnlyRegistrar();
+
     /// @notice Error thrown when the reward token is not valid
     error InvalidRewardToken();
 
@@ -136,6 +139,12 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @custom:reverts OnlyAllowed if the caller is not allowed.
     modifier onlyAllowed() {
         require(PROTOCOL_CONTROLLER.allowed(address(this), msg.sender, msg.sig), OnlyAllowed());
+
+        _;
+    }
+
+    modifier onlyRegistrar() {
+        require(PROTOCOL_CONTROLLER.isRegistrar(msg.sender), OnlyRegistrar());
 
         _;
     }
@@ -354,7 +363,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @custom:reverts ZeroAddress if the distributor is the zero address.
     /// @custom:reverts RewardAlreadyExists if the reward token already exists.
     /// @custom:reverts MaxRewardTokensExceeded if the maximum number of reward tokens is exceeded.
-    function addRewardToken(address rewardsToken, address distributor) external onlyAllowed {
+    function addRewardToken(address rewardsToken, address distributor) external onlyRegistrar {
         // ensure that the distributor is not the zero address
         require(distributor != address(0), ZeroAddress());
 
