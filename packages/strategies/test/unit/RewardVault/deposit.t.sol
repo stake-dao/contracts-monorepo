@@ -121,7 +121,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         }
 
         // set the allocation and pending rewards to mock values
-        allocation = IAllocator.Allocation({gauge: gauge, harvested: true, targets: targets, amounts: amounts});
+        allocation = IAllocator.Allocation({gauge: gauge, targets: targets, amounts: amounts});
         pendingRewards = IStrategy.PendingRewards({feeSubjectAmount: 0, totalAmount: 0});
 
         // mock the allocator returned by the protocol controller
@@ -359,7 +359,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         (IAllocator.Allocation memory allocation,) = _mock_test_dependencies(OWNER_BALANCE, Allocation.MIXED);
 
         // expect the strategy to be called with the allocation
-        vm.expectCall(address(strategyAsset), abi.encodeCall(IStrategy.deposit, (allocation)), 1);
+        vm.expectCall(address(strategyAsset), abi.encodeCall(IStrategy.deposit, (allocation, false)), 1);
 
         // make the caller deposit the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
@@ -400,7 +400,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
                     caller, // this is what we are testing
                     uint128(OWNER_BALANCE),
                     pendingRewards,
-                    allocation.harvested
+                    false
                 )
             ),
             1
@@ -446,7 +446,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
                     receiver, // this is what we are testing
                     uint128(OWNER_BALANCE),
                     pendingRewards,
-                    allocation.harvested
+                    false
                 )
             ),
             1
@@ -490,7 +490,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
                 receiver,
                 uint128(OWNER_BALANCE),
                 pendingRewards,
-                allocation.harvested
+                false
             ),
             abi.encode("UNEXPECTED_ERROR")
         );
@@ -526,7 +526,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         // force the deposit to the strategyto revert
         vm.mockCallRevert(
             address(strategyAsset),
-            abi.encodeWithSelector(IStrategy.deposit.selector, allocation),
+            abi.encodeWithSelector(IStrategy.deposit.selector, allocation, false),
             abi.encode("UNEXPECTED_ERROR")
         );
         vm.expectRevert(abi.encode("UNEXPECTED_ERROR"));

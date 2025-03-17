@@ -9,10 +9,10 @@ interface IStrategy {
         uint128 totalAmount;
     }
 
-    function deposit(IAllocator.Allocation calldata allocation)
+    function deposit(IAllocator.Allocation calldata allocation, bool harvest)
         external
         returns (PendingRewards memory pendingRewards);
-    function withdraw(IAllocator.Allocation calldata allocation)
+    function withdraw(IAllocator.Allocation calldata allocation, bool harvest)
         external
         returns (PendingRewards memory pendingRewards);
 

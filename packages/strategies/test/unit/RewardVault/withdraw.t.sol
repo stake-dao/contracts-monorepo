@@ -60,12 +60,7 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
         returns (IAllocator.Allocation memory allocation, IStrategy.PendingRewards memory pendingRewards)
     {
         // set the allocation and pending rewards to mock values
-        allocation = IAllocator.Allocation({
-            gauge: gauge,
-            harvested: false,
-            targets: new address[](0),
-            amounts: new uint256[](0)
-        });
+        allocation = IAllocator.Allocation({gauge: gauge, targets: new address[](0), amounts: new uint256[](0)});
         pendingRewards = IStrategy.PendingRewards({feeSubjectAmount: 0, totalAmount: 0});
 
         // mock the allocator returned by the protocol controller
@@ -253,7 +248,7 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
         deal(address(asset), address(cloneRewardVault), OWNER_BALANCE);
 
         // vm.mockCall(accountant, abi.encodeWithSelector(IAccountant.checkpoint.selector), abi.encode(true));
-        vm.expectCall(address(strategyAsset), abi.encodeWithSelector(IStrategy.withdraw.selector, allocation), 1);
+        vm.expectCall(address(strategyAsset), abi.encodeWithSelector(IStrategy.withdraw.selector, allocation, false), 1);
 
         // make the caller withdraw the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
@@ -294,8 +289,7 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
         vm.expectCall(
             address(accountant),
             abi.encodeCall(
-                IAccountant.checkpoint,
-                (gauge, owner, address(0), uint128(OWNER_BALANCE), pendingRewards, allocation.harvested)
+                IAccountant.checkpoint, (gauge, owner, address(0), uint128(OWNER_BALANCE), pendingRewards, false)
             ),
             1
         );

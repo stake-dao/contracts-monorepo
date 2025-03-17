@@ -9,7 +9,9 @@ contract RewardVault__addRewardToken is RewardVaultBaseTest {
         // it revert if caller is not allowed
 
         vm.mockCall(
-            address(protocolController), abi.encodeWithSelector(IProtocolController.isRegistrar.selector), abi.encode(false)
+            address(protocolController),
+            abi.encodeWithSelector(IProtocolController.isRegistrar.selector),
+            abi.encode(false)
         );
 
         vm.expectRevert(RewardVault.OnlyRegistrar.selector);

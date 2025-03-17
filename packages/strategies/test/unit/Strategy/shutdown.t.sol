@@ -90,7 +90,7 @@ contract Strategy__shutdown is StrategyBaseTest {
         stakingToken.mint(address(sidecar2), 300);
 
         vm.prank(vault);
-        strategy.deposit(allocation);
+        strategy.deposit(allocation, false);
         assertEq(strategy.balanceOf(gauge), 600);
 
         address allowedCaller = makeAddr("allowedCaller");
