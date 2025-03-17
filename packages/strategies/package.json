@@ -5,7 +5,7 @@
     "@openzeppelin/contracts": "5.2.0",
     "@solady": "github:Vectorized/solady#v0.0.288",
     "@stake-dao/address-book": "workspace:*",
-    "@safe-global/safe-smart-account": "github:safe-global/safe-smart-account",
+    "@safe-global/safe-smart-account": "github:safe-global/safe-smart-account#v1.4.1-3",
     "@stake-dao/interfaces": "workspace:*",
         "forge-std": "github:foundry-rs/forge-std#v1.9.5"
   }
