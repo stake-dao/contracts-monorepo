@@ -9,7 +9,7 @@
     "@solady": "github:Vectorized/solady#v0.0.288",
     "@stake-dao/address-book": "workspace:*",
     "@stake-dao/herdaddy": "workspace:*",
-    "@safe-global/safe-smart-account": "github:safe-global/safe-smart-account",
+    "@safe-global/safe-smart-account": "github:safe-global/safe-smart-account#v1.4.1-3",
     "@stake-dao/interfaces": "workspace:*",
     "@stake-dao/vyper": "workspace:*"
   }
