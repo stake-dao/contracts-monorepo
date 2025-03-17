@@ -94,7 +94,7 @@ contract CurveStrategy is Strategy {
 
     /// @notice Harvests rewards from a Curve gauge
     /// @param gauge The address of the Curve gauge to harvest from
-    function _harvest(address gauge, bytes calldata) internal override returns (uint256 rewardAmount) {
+    function _harvestLocker(address gauge, bytes memory) internal override returns (uint256 rewardAmount) {
         /// 1. Snapshot the balance before minting.
         uint256 _before = IERC20(REWARD_TOKEN).balanceOf(address(LOCKER));
 

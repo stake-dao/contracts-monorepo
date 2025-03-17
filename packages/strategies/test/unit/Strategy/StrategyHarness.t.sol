@@ -77,7 +77,7 @@ contract StrategyHarness is Strategy, Test {
         return _mockSyncRewards;
     }
 
-    function _harvest(address, bytes calldata) internal view override returns (uint256) {
+    function _harvestLocker(address, bytes memory) internal view override returns (uint256) {
         return _mockHarvestAmount;
     }
 
