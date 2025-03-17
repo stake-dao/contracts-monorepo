@@ -63,7 +63,7 @@ jobs:
       - name: Run tests
         working-directory: packages/strategies
         # store the gas report in the root of the repository
-        run: forge test --gas-report > ../../gasreport.ansi
+        run: forge test --match-path "test/unit/**/*.t.sol" --gas-report > ../../gasreport.ansi
         env:
           # make fuzzing semi-deterministic to avoid noisy gas cost estimation
           # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
