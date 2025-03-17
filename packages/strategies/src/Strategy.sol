@@ -42,9 +42,6 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @notice Error thrown when trying to interact with a shutdown gauge
     error GaugeShutdown();
 
-    /// @notice Error thrown when the flush fails
-    error FlushFailed();
-
     /// @notice Error thrown when the deposit fails
     error DepositFailed();
 
@@ -59,6 +56,9 @@ abstract contract Strategy is IStrategy, ProtocolContext {
 
     /// @notice Error thrown when the strategy is already shutdown
     error AlreadyShutdown();
+
+    /// @notice Error thrown when the transfer to the accountant fails
+    error TransferToAccountantFailed();
 
     /// @notice Event emitted when the strategy is shutdown
     event Shutdown(address indexed gauge);
@@ -138,7 +138,13 @@ abstract contract Strategy is IStrategy, ProtocolContext {
             }
         }
 
-        pendingRewards = _sync(allocation.gauge);
+        if (harvest) {
+            pendingRewards = _harvest(allocation.gauge, "", false);
+        } else {
+            pendingRewards = _sync(allocation.gauge);
+        }
+
+        return pendingRewards;
     }
 
     /// @notice Withdraws assets according to the provided allocation
@@ -170,7 +176,13 @@ abstract contract Strategy is IStrategy, ProtocolContext {
             }
         }
 
-        pendingRewards = _sync(allocation.gauge);
+        if (harvest) {
+            pendingRewards = _harvest(allocation.gauge, "", false);
+        } else {
+            pendingRewards = _sync(allocation.gauge);
+        }
+
+        return pendingRewards;
     }
 
     /// @notice Harvests rewards from a gauge
@@ -178,48 +190,26 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @param extraData Additional data needed for harvesting (protocol-specific)
     /// @return pendingRewards The pending rewards after harvesting
     /// @dev Called using delegatecall from the Accountant contract
-    /// @dev Essentialy the same implementation as Strategy.sync() but this function claims rewards and returns them
-    function harvest(address gauge, bytes calldata extraData)
+    function harvest(address gauge, bytes memory extraData)
         external
         override
         onlyAccountant
         returns (IStrategy.PendingRewards memory pendingRewards)
     {
-        address allocator = PROTOCOL_CONTROLLER.allocator(PROTOCOL_ID);
-
-        address[] memory targets = IAllocator(allocator).getAllocationTargets(gauge);
-
-        uint256 pendingRewardsAmount;
-        for (uint256 i = 0; i < targets.length; i++) {
-            address target = targets[i];
-
-            if (target == LOCKER) {
-                pendingRewardsAmount = _harvest(gauge, extraData);
-                pendingRewards.feeSubjectAmount = pendingRewardsAmount.toUint128();
-
-                // Update flush amount in transient storage
-                uint256 currentFlushAmount = _getFlushAmount();
-                _setFlushAmount(currentFlushAmount + pendingRewardsAmount);
-            } else {
-                pendingRewardsAmount = ISidecar(target).claim();
-            }
-
-            pendingRewards.totalAmount += pendingRewardsAmount.toUint128();
-        }
-
-        return pendingRewards;
+        return _harvest(gauge, extraData, true);
     }
 
     /// @notice Flushes the reward token to the locker
     /// @dev Only allowed to be called by the accountant during harvest operation
     function flush() public onlyAccountant {
-        // Get flush amount from transient storage
+        // Get flush amount from transient storage.
         uint256 flushAmount = _getFlushAmount();
+        if (flushAmount == 0) return;
 
-        bytes memory data = abi.encodeWithSelector(IERC20.transfer.selector, ACCOUNTANT, flushAmount);
-        require(_executeTransaction(address(REWARD_TOKEN), data), FlushFailed());
+        // Transfer the flush amount to the accountant.
+        _transferToAccountant(flushAmount);
 
-        // Reset the flush amount in transient storage
+        // Reset the flush amount in transient storage.
         _setFlushAmount(0);
     }
 
@@ -233,30 +223,13 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         /// 1. Get the vault managing the gauge.
         address vault = PROTOCOL_CONTROLLER.vaults(gauge);
 
-        /// 2. Get the current active allocator for the protocol.
-        address allocator = PROTOCOL_CONTROLLER.allocator(PROTOCOL_ID);
+        /// 2. Get the allocation targets for the gauge.
+        address[] memory targets = _getAllocationTargets(gauge);
 
-        /// 3. Get the allocation data for the gauge.
-        address[] memory targets = IAllocator(allocator).getAllocationTargets(gauge);
+        /// 3. Withdraw all the assets and send them to the vault.
+        _withdrawFromAllTargets(gauge, targets, vault);
 
-        /// 4. Withdraw all the assets and send them to the vault.
-        uint256 balance;
-        address target;
-        for (uint256 i = 0; i < targets.length; i++) {
-            target = targets[i];
-
-            if (target == LOCKER) {
-                balance = IBalanceProvider(gauge).balanceOf(LOCKER);
-
-                _withdraw(gauge, balance, vault);
-            } else {
-                balance = ISidecar(target).balanceOf();
-
-                ISidecar(target).withdraw(balance, vault);
-            }
-        }
-
-        /// 5. Emit the shutdown event.
+        /// 4. Emit the shutdown event.
         emit Shutdown(gauge);
     }
 
@@ -278,30 +251,20 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         /// 5. Ensure the allocation has more than one target.
         require(allocation.targets.length > 1, RebalanceNotNeeded());
 
-        /// 6. Withdraw the amounts from the gauge.
-        address target;
-        uint256 balance;
-        for (uint256 i = 0; i < allocation.targets.length; i++) {
-            target = allocation.targets[i];
-
-            if (target == LOCKER) {
-                balance = IBalanceProvider(gauge).balanceOf(LOCKER);
-                _withdraw(gauge, balance, address(this));
-            } else {
-                balance = ISidecar(target).balanceOf();
-                ISidecar(target).withdraw(balance, address(this));
-            }
-        }
+        /// 6. Withdraw all assets from all targets to this contract
+        _withdrawFromAllTargets(gauge, allocation.targets, address(this));
 
         /// 7. Deposit the amounts into the gauge with new allocations
         for (uint256 i = 0; i < allocation.targets.length; i++) {
-            target = allocation.targets[i];
-            asset.safeTransfer(target, allocation.amounts[i]);
+            address target = allocation.targets[i];
+            uint256 amount = allocation.amounts[i];
+
+            asset.safeTransfer(target, amount);
 
             if (target == LOCKER) {
-                _deposit(gauge, allocation.amounts[i]);
+                _deposit(gauge, amount);
             } else {
-                ISidecar(target).deposit(allocation.amounts[i]);
+                ISidecar(target).deposit(amount);
             }
         }
 
@@ -313,16 +276,89 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @param gauge The gauge to get the balance of
     /// @return balance The balance of the strategy
     function balanceOf(address gauge) public view virtual returns (uint256 balance) {
-        address allocator = PROTOCOL_CONTROLLER.allocator(PROTOCOL_ID);
-        address[] memory targets = IAllocator(allocator).getAllocationTargets(gauge);
+        address[] memory targets = _getAllocationTargets(gauge);
 
         for (uint256 i = 0; i < targets.length; i++) {
-            if (targets[i] == LOCKER) {
-                balance += IBalanceProvider(gauge).balanceOf(targets[i]);
+            address target = targets[i];
+
+            if (target == LOCKER) {
+                balance += IBalanceProvider(gauge).balanceOf(target);
             } else {
-                balance += ISidecar(targets[i]).balanceOf();
+                balance += ISidecar(target).balanceOf();
             }
         }
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- INTERNAL HELPER FUNCTIONS
+    //////////////////////////////////////////////////////
+
+    /// @notice Gets allocation targets for a gauge
+    /// @param gauge The gauge to get targets for
+    /// @return targets Array of target addresses
+    function _getAllocationTargets(address gauge) internal view returns (address[] memory) {
+        address allocator = PROTOCOL_CONTROLLER.allocator(PROTOCOL_ID);
+        return IAllocator(allocator).getAllocationTargets(gauge);
+    }
+
+    /// @notice Withdraws assets from all targets
+    /// @param gauge The gauge to withdraw from
+    /// @param targets Array of target addresses
+    /// @param receiver Address to receive the withdrawn assets
+    function _withdrawFromAllTargets(address gauge, address[] memory targets, address receiver) internal {
+        for (uint256 i = 0; i < targets.length; i++) {
+            address target = targets[i];
+            uint256 balance;
+
+            if (target == LOCKER) {
+                balance = IBalanceProvider(gauge).balanceOf(LOCKER);
+                if (balance > 0) {
+                    _withdraw(gauge, balance, receiver);
+                }
+            } else {
+                balance = ISidecar(target).balanceOf();
+                if (balance > 0) {
+                    ISidecar(target).withdraw(balance, receiver);
+                }
+            }
+        }
+    }
+
+    /// @notice Handles the harvest operation
+    /// @param gauge The gauge to harvest from
+    /// @param extraData Additional data needed for harvesting
+    /// @param deferRewards Whether to store rewards for later flush (true) or transfer immediately (false)
+    /// @return pendingRewards The pending rewards after harvesting
+    function _harvest(address gauge, bytes memory extraData, bool deferRewards)
+        internal
+        returns (IStrategy.PendingRewards memory pendingRewards)
+    {
+        address[] memory targets = _getAllocationTargets(gauge);
+
+        uint256 pendingRewardsAmount;
+        for (uint256 i = 0; i < targets.length; i++) {
+            address target = targets[i];
+
+            if (target == LOCKER) {
+                pendingRewardsAmount = _harvestLocker(gauge, extraData);
+                pendingRewards.feeSubjectAmount = pendingRewardsAmount.toUint128();
+
+                if (deferRewards) {
+                    // Update flush amount in transient storage
+                    uint256 currentFlushAmount = _getFlushAmount();
+                    _setFlushAmount(currentFlushAmount + pendingRewardsAmount);
+                } else {
+                    // Transfer the pending rewards to the accountant directly
+                    _transferToAccountant(pendingRewardsAmount);
+                }
+            } else {
+                pendingRewardsAmount = ISidecar(target).claim();
+            }
+
+            pendingRewards.totalAmount += pendingRewardsAmount.toUint128();
+        }
+
+        return pendingRewards;
     }
 
     //////////////////////////////////////////////////////
@@ -341,18 +377,28 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         FLUSH_AMOUNT_SLOT.asUint256().tstore(amount);
     }
 
+    /// @notice Flushes the reward token to the accountant
+    /// @dev Transfers the specified amount of reward tokens to the accountant
+    /// @param amount The amount of reward tokens to flush
+    function _transferToAccountant(uint256 amount) internal {
+        if (amount > 0) {
+            bytes memory data = abi.encodeWithSelector(IERC20.transfer.selector, ACCOUNTANT, amount);
+            require(_executeTransaction(address(REWARD_TOKEN), data), TransferToAccountantFailed());
+        }
+    }
+
     /// @notice Synchronizes state of pending rewards.
     /// @dev Must be implemented by derived strategies to handle protocol-specific reward collection
     /// @param gauge The gauge to synchronize
     /// @return Pending rewards collected during synchronization
     function _sync(address gauge) internal virtual returns (PendingRewards memory);
 
-    /// @notice Harvests rewards from a specific target
+    /// @notice Harvests rewards from the locker
     /// @dev Must be implemented by derived strategies to handle protocol-specific reward collection
     /// @param gauge The gauge to harvest rewards from
     /// @param extraData Additional data needed for harvesting (protocol-specific)
     /// @return pendingRewards The pending rewards collected during harvesting
-    function _harvest(address gauge, bytes calldata extraData) internal virtual returns (uint256 pendingRewards);
+    function _harvestLocker(address gauge, bytes memory extraData) internal virtual returns (uint256 pendingRewards);
 
     /// @notice Deposits assets into a specific target
     /// @dev Must be implemented by derived strategies to handle protocol-specific deposits
