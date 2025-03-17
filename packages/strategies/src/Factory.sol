@@ -114,7 +114,7 @@ abstract contract Factory is ProtocolContext {
 
         /// Prepare the initialization data for the vault
         /// The vault needs: gauge and asset
-        bytes memory data = abi.encodePacked(asset, gauge);
+        bytes memory data = abi.encodePacked(gauge, asset);
 
         /// Generate a deterministic salt based on the gauge and asset
         bytes32 salt = keccak256(data);
