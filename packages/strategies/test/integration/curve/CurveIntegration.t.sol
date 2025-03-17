@@ -31,7 +31,10 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
         /// 3. Set up the account.
         deal(lpToken, account, totalSupply);
 
-        /// 4. Approve the reward vault.
+        /// 4. Deal some extra rewards to the reward receiver.
+        deal(CVX, address(rewardReceiver), 1_000_000e18);
+
+        /// 5. Approve the reward vault.
         vm.prank(account);
         IERC20(lpToken).approve(address(rewardVault), totalSupply);
     }
@@ -76,5 +79,13 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
         assertGt(balanceOfAccount, 0);
         assertGt(balanceOfAccountant, 0);
         assertEq(balanceOfAccountant + balanceOfAccount + balanceOfHarvester, expectedRewards);
+
+        /// 6. Claim the extra rewards.
+        convexSidecar.claimExtraRewards();
+
+        /// 7. Distribute the rewards.
+        if (rewardVault.getRewardTokens().length > 0) {
+            rewardReceiver.distributeRewards();
+        }
     }
 }
