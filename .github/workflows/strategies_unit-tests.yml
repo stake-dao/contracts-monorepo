@@ -58,4 +58,4 @@ jobs:
 
       - name: Run tests
         working-directory: packages/strategies
-        run: forge test
+        run: forge test --match-path "test/unit/**/*.t.sol"
