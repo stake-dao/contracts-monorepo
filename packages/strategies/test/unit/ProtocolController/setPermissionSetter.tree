@@ -1,0 +1,5 @@
+ProtocolController__setPermissionSetter
+├── it sets the permission setter for a protocol
+├── it emits a PermissionSetterSet event
+├── it reverts if the caller is not the owner
+└── it reverts if the permission setter is the zero address
