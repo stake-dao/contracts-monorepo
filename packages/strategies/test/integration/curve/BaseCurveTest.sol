@@ -26,6 +26,9 @@ abstract contract BaseCurveTest is BaseForkTest {
     /// @notice The reward token.
     address constant CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
 
+    /// @notice The CVX token.
+    address constant CVX = 0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B;
+
     /// @notice The minter contract.
     address constant MINTER = 0xd061D61a4d941c39E5453435B6345Dc261C2fcE0;
 

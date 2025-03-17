@@ -19,6 +19,9 @@ contract CurveFactory is Factory {
     /// @notice Curve Gauge Controller.
     IGaugeController public constant GAUGE_CONTROLLER = IGaugeController(0x2F50D538606Fa9EDD2B11E2446BEb18C9D5846bB);
 
+    /// @notice CVX token address.
+    address public constant CVX = 0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B;
+
     /// @notice Address of the old strategy.
     address public constant OLD_STRATEGY = 0x69D61428d089C2F35Bf6a472F540D0F82D1EA2cd;
 
@@ -62,6 +65,9 @@ contract CurveFactory is Factory {
     }
 
     function _isValidToken(address _token) internal view override returns (bool) {
+        /// We already add CVX to the vault by default.
+        if (_token == CVX) return false;
+
         /// If the token is available as an inflation receiver, it's not valid.
         try GAUGE_CONTROLLER.gauge_types(_token) {
             return false;
@@ -101,6 +107,9 @@ contract CurveFactory is Factory {
     }
 
     function _setupRewardTokens(address _vault, address _gauge, address _rewardReceiver) internal override {
+        /// Then we add the extra reward token to the reward distributor through the strategy.
+        IRewardVault(_vault).addRewardToken(CVX, _rewardReceiver);
+
         /// Check if the gauge supports extra rewards.
         /// This function is not supported on all gauges, depending on when they were deployed.
         bytes memory data = abi.encodeWithSignature("reward_tokens(uint256)", 0);
