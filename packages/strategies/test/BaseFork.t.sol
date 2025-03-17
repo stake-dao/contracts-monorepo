@@ -70,7 +70,8 @@ abstract contract BaseForkTest is Test {
         rewardVaultImplementation = new RewardVault({
             protocolId: protocolId,
             protocolController: address(protocolController),
-            accountant: address(accountant)
+            accountant: address(accountant),
+            triggerHarvest: false
         });
 
         /// 4. Deploy Reward Receiver Implementation.

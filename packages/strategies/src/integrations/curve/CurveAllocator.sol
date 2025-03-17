@@ -75,7 +75,7 @@ contract CurveAllocator is Allocator {
         amounts[0] = amount - amounts[1];
 
         /// 8. Return the allocation.
-        return Allocation({gauge: gauge, targets: targets, amounts: amounts, harvested: HARVESTED});
+        return Allocation({gauge: gauge, targets: targets, amounts: amounts});
     }
 
     /// @notice Calculates the optimal allocation for withdrawing LP tokens
@@ -125,7 +125,7 @@ contract CurveAllocator is Allocator {
         }
 
         /// 8. Return the allocation.
-        return Allocation({gauge: gauge, targets: targets, amounts: amounts, harvested: HARVESTED});
+        return Allocation({gauge: gauge, targets: targets, amounts: amounts});
     }
 
     /// @notice Returns the optimal amount of LP token that must be held by Stake DAO Locker

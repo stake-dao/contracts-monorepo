@@ -76,6 +76,9 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @notice The protocol ID.
     bytes4 public immutable PROTOCOL_ID;
 
+    /// @notice Whether to trigger a harvest on deposit and withdraw.
+    bool public immutable TRIGGER_HARVEST;
+
     /// @notice The protocol controller address.
     IAccountant public immutable ACCOUNTANT;
 
@@ -154,8 +157,9 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @param protocolId The protocol ID.
     /// @param protocolController The protocol controller address
     /// @param accountant The accountant address
+    /// @param triggerHarvest Whether to trigger a harvest on deposit and withdraw.
     /// @custom:reverts ZeroAddress if the accountant or protocol controller address is the zero address.
-    constructor(bytes4 protocolId, address protocolController, address accountant)
+    constructor(bytes4 protocolId, address protocolController, address accountant, bool triggerHarvest)
         ERC20(string.concat("StakeDAO Vault"), string.concat("sd-vault"))
     {
         require(accountant != address(0) && protocolController != address(0), ZeroAddress());
@@ -163,6 +167,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         PROTOCOL_ID = protocolId;
         ACCOUNTANT = IAccountant(accountant);
         PROTOCOL_CONTROLLER = IProtocolController(protocolController);
+        TRIGGER_HARVEST = triggerHarvest;
     }
 
     ///////////////////////////////////////////////////////////////
@@ -222,10 +227,10 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
         // Get the address of the strategy contract from the protocol controller
         // then process the deposit of the allocation
-        IStrategy.PendingRewards memory pendingRewards = strategy().deposit(allocation);
+        IStrategy.PendingRewards memory pendingRewards = strategy().deposit(allocation, TRIGGER_HARVEST);
 
         // Mint the shares to the receiver
-        _mint(receiver, shares, pendingRewards, allocation.harvested);
+        _mint(receiver, shares, pendingRewards, TRIGGER_HARVEST);
 
         emit Deposit(msg.sender, receiver, assets, shares);
     }
@@ -281,10 +286,10 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
         // Get the address of the strategy contract from the protocol controller
         // then process the withdrawal of the allocation
-        IStrategy.PendingRewards memory pendingRewards = strategy().withdraw(allocation);
+        IStrategy.PendingRewards memory pendingRewards = strategy().withdraw(allocation, TRIGGER_HARVEST);
 
         // Burn the shares by calling the endpoint function of the accountant contract
-        _burn(owner, shares, pendingRewards, allocation.harvested);
+        _burn(owner, shares, pendingRewards, TRIGGER_HARVEST);
 
         // Transfer the assets to the receiver. The 1:1 relationship between assets and shares is maintained.
         SafeERC20.safeTransfer(IERC20(asset()), receiver, shares);

@@ -119,7 +119,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @return pendingRewards Any pending rewards generated during the deposit
     /// @custom:throws OnlyVault If the caller is not the registered vault for the gauge
     /// @custom:throws GaugeShutdown If the pool is shutdown
-    function deposit(IAllocator.Allocation memory allocation)
+    function deposit(IAllocator.Allocation memory allocation, bool harvest)
         external
         override
         onlyVault(allocation.gauge)
@@ -144,10 +144,11 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @notice Withdraws assets according to the provided allocation
     /// @dev Iterates through allocation targets and withdraws from each one
     /// @param allocation The allocation data specifying where and how much to withdraw
+    /// @param harvest Whether to harvest rewards during the withdrawal
     /// @return pendingRewards Any pending rewards generated during the withdrawal
     /// @custom:throws OnlyVault If the caller is not the registered vault for the gauge
     /// @custom:throws GaugeShutdown If the pool is shutdown
-    function withdraw(IAllocator.Allocation memory allocation)
+    function withdraw(IAllocator.Allocation memory allocation, bool harvest)
         external
         override
         onlyVault(allocation.gauge)

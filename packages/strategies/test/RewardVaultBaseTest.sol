@@ -18,14 +18,14 @@ abstract contract RewardVaultBaseTest is BaseTest {
         super.setUp();
 
         // Initialize Accountant
-        rewardVault = new RewardVault(protocolId, address(registry), accountant);
+        rewardVault = new RewardVault(protocolId, address(registry), accountant, false);
         protocolController = address(registry);
     }
 
     function _replaceRewardVaultWithRewardVaultHarness(address customRewardVaultAddress) internal {
         _deployHarnessCode(
             "out/RewardVaultHarness.t.sol/RewardVaultHarness.json",
-            abi.encode(protocolId, address(registry), accountant),
+            abi.encode(protocolId, address(registry), accountant, false),
             customRewardVaultAddress
         );
         rewardVaultHarness = RewardVaultHarness(customRewardVaultAddress);

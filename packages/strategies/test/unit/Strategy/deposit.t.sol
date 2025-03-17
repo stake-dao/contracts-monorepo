@@ -10,7 +10,7 @@ contract Strategy__deposit is StrategyBaseTest {
         vm.prank(makeAddr("not_vault"));
 
         vm.expectRevert(abi.encodeWithSignature("OnlyVault()"));
-        strategy.deposit(allocation);
+        strategy.deposit(allocation, false);
     }
 
     function test_RevertsIfGaugeIsShutdown() public {
@@ -20,7 +20,7 @@ contract Strategy__deposit is StrategyBaseTest {
 
         vm.prank(vault);
         vm.expectRevert(abi.encodeWithSignature("GaugeShutdown()"));
-        strategy.deposit(allocation);
+        strategy.deposit(allocation, false);
     }
 
     function test_CorrectlyDepositsToLocker() public {
@@ -45,7 +45,7 @@ contract Strategy__deposit is StrategyBaseTest {
         stakingToken.mint(address(sidecar2), 300);
 
         vm.prank(vault);
-        Strategy.PendingRewards memory rewards = strategy.deposit(allocation);
+        Strategy.PendingRewards memory rewards = strategy.deposit(allocation, false);
 
         /// 1. It correctly deposits the specified amount.
         assertEq(stakingToken.balanceOf(address(locker)), allocation.amounts[0]);
