@@ -126,7 +126,7 @@ contract ConvexSidecar is Sidecar {
         rewardTokenAmount = REWARD_TOKEN.balanceOf(address(this));
 
         /// Send the reward token to the accountant.
-        REWARD_TOKEN.safeTransfer(msg.sender, rewardTokenAmount);
+        REWARD_TOKEN.safeTransfer(ACCOUNTANT, rewardTokenAmount);
     }
 
     /// @notice Get the balance of the LP token on Convex held by this contract.

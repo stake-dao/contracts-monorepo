@@ -214,7 +214,7 @@ def generate_solidity_file(pools, output_file=None):
     solidity_content = """// SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.28;
 
-import "test/integration/curve/CurveDeposit.t.sol";
+import "test/integration/curve/CurveIntegration.t.sol";
 import "test/integration/curve/CurveFactory.t.sol";
 
 // @notice Selected Convex pool PIDs sorted by PID (highest to lowest)
@@ -234,7 +234,7 @@ uint256 constant {constant_name} = {pid};
 
 contract _{constant_name}_Factory_Test is CurveFactoryTest({constant_name}) {{}}
 
-contract _{constant_name}_Deposit_Test is CurveDepositTest({constant_name}) {{}}
+contract _{constant_name}_Deposit_Test is CurveIntegrationTest({constant_name}) {{}}
 """
 
     # Create the directory if it doesn't exist
