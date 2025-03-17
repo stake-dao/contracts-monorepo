@@ -12,7 +12,7 @@ contract Strategy__withdraw is StrategyBaseTest {
 
         vm.prank(notAllowed);
         vm.expectRevert(abi.encodeWithSelector(Strategy.OnlyVault.selector));
-        strategy.withdraw(allocation);
+        strategy.withdraw(allocation, false);
     }
 
     function test_Withdraw() public {
@@ -21,7 +21,7 @@ contract Strategy__withdraw is StrategyBaseTest {
         stakingToken.mint(address(sidecar2), 300);
 
         vm.prank(vault);
-        strategy.deposit(allocation);
+        strategy.deposit(allocation, false);
 
         assertEq(strategy.balanceOf(gauge), 600);
         assertEq(stakingToken.balanceOf(address(locker)), 100);
@@ -31,7 +31,7 @@ contract Strategy__withdraw is StrategyBaseTest {
         strategy._cheat_setSyncRewards(100, 400);
 
         vm.prank(vault);
-        Strategy.PendingRewards memory pendingRewards = strategy.withdraw(allocation);
+        Strategy.PendingRewards memory pendingRewards = strategy.withdraw(allocation, false);
 
         assertEq(strategy.balanceOf(gauge), 0);
         assertEq(stakingToken.balanceOf(address(locker)), 0);

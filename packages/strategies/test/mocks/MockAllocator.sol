@@ -10,7 +10,7 @@ contract MockAllocator is IAllocator {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = amount;
 
-        return Allocation({gauge: address(asset), targets: targets, amounts: amounts, harvested: true});
+        return Allocation({gauge: address(asset), targets: targets, amounts: amounts});
     }
 
     function getWithdrawalAllocation(address asset, uint256 amount) external view returns (Allocation memory) {
@@ -19,7 +19,7 @@ contract MockAllocator is IAllocator {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = amount;
 
-        return Allocation({gauge: address(asset), targets: targets, amounts: amounts, harvested: false});
+        return Allocation({gauge: address(asset), targets: targets, amounts: amounts});
     }
 
     function getRebalancedAllocation(address asset, uint256 amount) external view returns (Allocation memory) {
@@ -28,7 +28,7 @@ contract MockAllocator is IAllocator {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = amount;
 
-        return Allocation({gauge: address(asset), targets: targets, amounts: amounts, harvested: false});
+        return Allocation({gauge: address(asset), targets: targets, amounts: amounts});
     }
 
     function getAllocationTargets(address) external view returns (address[] memory) {

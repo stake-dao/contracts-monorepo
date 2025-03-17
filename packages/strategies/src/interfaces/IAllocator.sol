@@ -4,7 +4,6 @@ pragma solidity 0.8.28;
 interface IAllocator {
     struct Allocation {
         address gauge;
-        bool harvested;
         address[] targets;
         uint256[] amounts;
     }

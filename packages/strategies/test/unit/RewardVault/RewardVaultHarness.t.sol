@@ -8,8 +8,8 @@ import {stdStorage, StdStorage} from "forge-std/src/Test.sol";
 contract RewardVaultHarness is RewardVault, Test {
     // using stdStorage for StdStorage;
 
-    constructor(bytes4 protocolId, address protocolController, address accountant)
-        RewardVault(protocolId, protocolController, accountant)
+    constructor(bytes4 protocolId, address protocolController, address accountant, bool triggerHarvest)
+        RewardVault(protocolId, protocolController, accountant, triggerHarvest)
     {}
 
     // Utility function for testing purposes only. This function bypasses the expected flow

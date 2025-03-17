@@ -39,7 +39,7 @@ abstract contract StrategyBaseTest is BaseTest {
         amounts[1] = 200;
         amounts[2] = 300;
 
-        allocation = IAllocator.Allocation({gauge: gauge, harvested: false, targets: targets, amounts: amounts});
+        allocation = IAllocator.Allocation({gauge: gauge, targets: targets, amounts: amounts});
 
         /// Mock the asset function of the IProtocolController interface
         vm.mockCall(

@@ -19,10 +19,6 @@ contract Allocator is IAllocator {
     /// @dev This is the contract that handles the actual deposit/withdrawal operations.
     address public immutable GATEWAY;
 
-    /// @notice Flag indicating whether the allocation is harvested
-    /// @dev If true, rewards are harvested during operations
-    bool public immutable HARVESTED;
-
     /// @notice Error thrown when the gateway is zero address
     error GatewayZeroAddress();
 
@@ -50,7 +46,7 @@ contract Allocator is IAllocator {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = amount;
 
-        return Allocation({gauge: gauge, targets: targets, amounts: amounts, harvested: HARVESTED});
+        return Allocation({gauge: gauge, targets: targets, amounts: amounts});
     }
 
     /// @notice Determines how funds should be allocated during a withdrawal
@@ -65,7 +61,7 @@ contract Allocator is IAllocator {
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = amount;
 
-        return Allocation({gauge: gauge, targets: targets, amounts: amounts, harvested: HARVESTED});
+        return Allocation({gauge: gauge, targets: targets, amounts: amounts});
     }
 
     /// @notice Determines how funds should be allocated during a rebalance
