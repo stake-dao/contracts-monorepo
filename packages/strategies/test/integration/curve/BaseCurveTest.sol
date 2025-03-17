@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import "test/BaseFork.t.sol";
+import "test/BaseFork.sol";
 
 import {CurveStrategy} from "src/integrations/curve/CurveStrategy.sol";
 import {CurveAllocator} from "src/integrations/curve/CurveAllocator.sol";
@@ -195,7 +195,7 @@ abstract contract BaseCurveTest is BaseForkTest {
         uint256 balance = gauge.balanceOf(LOCKER);
 
         // 1. Withdraw LP tokens from gauge without claiming rewards
-        bytes memory withdrawData = abi.encodeWithSignature("withdraw(uint256,bool)", balance, false);
+        bytes memory withdrawData = abi.encodeWithSignature("withdraw(uint256)", balance);
         bytes memory withdrawExecute =
             abi.encodeWithSignature("execute(address,uint256,bytes)", address(gauge), 0, withdrawData);
 
