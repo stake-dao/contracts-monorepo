@@ -85,6 +85,7 @@ abstract contract BaseForkTest is Test {
 
         /// 6. Setup contracts in protocol controller.
         protocolController.setFeeReceiver(protocolId, feeReceiver);
+        protocolController.setAccountant(protocolId, address(accountant));
 
         /// 7. If Locker != 0, Gateway should be the governance of the locker.
         if (locker != address(0)) {
@@ -122,5 +123,9 @@ abstract contract BaseForkTest is Test {
     /// @notice Helper to deploy code to a specific address (for harness contracts)
     function _deployHarnessCode(string memory artifactPath, bytes memory constructorArgs, address target) internal {
         deployCodeTo(artifactPath, constructorArgs, target);
+    }
+
+    function _balanceOf(address token, address account) internal view returns (uint256) {
+        return IERC20(token).balanceOf(account);
     }
 }
