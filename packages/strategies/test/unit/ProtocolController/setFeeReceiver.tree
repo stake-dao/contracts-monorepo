@@ -1,0 +1,5 @@
+ProtocolController__setFeeReceiver
+├── it sets the fee receiver for a protocol
+├── it emits the update event
+├── it reverts if the caller is not the owner
+└── it reverts if the fee receiver is the zero address
