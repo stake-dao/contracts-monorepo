@@ -295,6 +295,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
         // Transfer the assets to the receiver. The 1:1 relationship between assets and shares is maintained.
         SafeERC20.safeTransfer(IERC20(asset()), receiver, shares);
+
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
 
@@ -705,12 +706,12 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
         uint256 timeDelta = _lastTimeRewardApplicable(reward.periodFinish) - reward.lastUpdateTime;
         uint256 rewardRatePerToken = 0;
-        
+
         if (timeDelta > 0 && _totalSupply > 0) {
             // Calculate reward per token for the time period
             rewardRatePerToken = (timeDelta * reward.rewardRate * 1e18) / _totalSupply;
         }
-        
+
         return (reward.rewardPerTokenStored + rewardRatePerToken).toUint128();
     }
 
