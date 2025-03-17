@@ -1,0 +1,4 @@
+ProtocolController__shutdownProtocol
+├── it reverts if caller is not the owner
+├── it shuts down a protocol
+└── it emits a ProtocolShutdown event
