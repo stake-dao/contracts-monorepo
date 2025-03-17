@@ -46,6 +46,10 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
 
         uint256 expectedRewards = gauge.integrate_fraction(LOCKER) - IMinter(MINTER).minted(LOCKER, address(gauge));
 
+        if (expectedRewards == 0) {
+            expectedRewards = _inflateRewards(address(gauge));
+        }
+
         // 3. Check the overall balance of the gauge through the strategy.
         assertEq(curveStrategy.balanceOf(address(gauge)), amount);
 
