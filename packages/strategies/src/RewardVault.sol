@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
+import "forge-std/src/console.sol";
+
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -441,11 +443,10 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @param _to The account to update. (Can be address(0) if not needed)
     function _checkpoint(address _from, address _to) internal {
         uint256 len = rewardTokens.length;
-        uint32 currentTime = uint32(block.timestamp);
 
         for (uint256 i; i < len; i++) {
             address token = rewardTokens[i];
-            uint128 newRewardPerToken = _updateRewardToken(token, currentTime);
+            uint128 newRewardPerToken = _updateRewardToken(token);
 
             // Update account-specific data if _from is set
             if (_from != address(0)) {
@@ -460,16 +461,15 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
     /// @dev Updates reward token state and returns new rewardPerToken.
     /// @param token The address of the reward token to update.
-    /// @param currentTime The current block timestamp.
     /// @return newRewardPerToken The new calculated reward per token.
-    function _updateRewardToken(address token, uint32 currentTime) internal returns (uint128 newRewardPerToken) {
+    function _updateRewardToken(address token) internal returns (uint128 newRewardPerToken) {
         RewardData storage reward = rewardData[token];
 
         // get the current reward per token
         newRewardPerToken = _rewardPerToken(reward);
 
         // Update the last update time and reward per token stored
-        reward.lastUpdateTime = currentTime;
+        reward.lastUpdateTime = _lastTimeRewardApplicable(reward.periodFinish);
         reward.rewardPerTokenStored = newRewardPerToken;
     }
 
