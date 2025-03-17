@@ -63,13 +63,6 @@ abstract contract Sidecar is ISidecar {
         _;
     }
 
-    /// @notice Ensures the caller is the accountant
-    /// @custom:throws OnlyAccountant If the caller is not the accountant
-    modifier onlyAccountant() {
-        require(msg.sender == ACCOUNTANT, OnlyAccountant());
-        _;
-    }
-
     //////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
     //////////////////////////////////////////////////////
@@ -115,7 +108,7 @@ abstract contract Sidecar is ISidecar {
 
     /// @notice Claims pending rewards from the sidecar
     /// @custom:throws OnlyAccountant If the caller is not the accountant
-    function claim() external onlyAccountant returns (uint256) {
+    function claim() external onlyStrategy returns (uint256) {
         return _claim();
     }
 

@@ -61,7 +61,7 @@ contract CurveStrategy is Strategy {
             if (target == LOCKER) {
                 // Calculate pending rewards for the locker by comparing  total earned by gauge with already minted tokens
                 pendingRewardsAmount =
-                    ILiquidityGauge(gauge).integrate_fraction(LOCKER) - IMinter(MINTER).minted(gauge, LOCKER);
+                    ILiquidityGauge(gauge).integrate_fraction(LOCKER) - IMinter(MINTER).minted(LOCKER, gauge);
 
                 pendingRewards.feeSubjectAmount += pendingRewardsAmount.toUint128();
             } else {

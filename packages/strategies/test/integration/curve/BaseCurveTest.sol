@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 import "test/BaseFork.sol";
 
-import {CurveStrategy} from "src/integrations/curve/CurveStrategy.sol";
+import {CurveStrategy, IMinter} from "src/integrations/curve/CurveStrategy.sol";
 import {CurveAllocator} from "src/integrations/curve/CurveAllocator.sol";
 import {CurveFactory, Factory, IProtocolController} from "src/integrations/curve/CurveFactory.sol";
 
@@ -25,6 +25,9 @@ abstract contract BaseCurveTest is BaseForkTest {
 
     /// @notice The reward token.
     address constant CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
+
+    /// @notice The minter contract.
+    address constant MINTER = 0xd061D61a4d941c39E5453435B6345Dc261C2fcE0;
 
     /// @notice The locker.
     address constant LOCKER = 0x52f541764E6e90eeBc5c21Ff570De0e2D63766B6;
@@ -135,6 +138,9 @@ abstract contract BaseCurveTest is BaseForkTest {
         /// 5. Enable Strategy as Module in Gateway.
         _enableModule(address(curveStrategy));
 
+        /// 6. Allow minting of the reward token.
+        _allowMint(address(curveStrategy));
+
         /// 6. Enable Factory as Module in Gateway.
         _enableModule(address(curveFactory));
 
@@ -210,6 +216,22 @@ abstract contract BaseCurveTest is BaseForkTest {
 
         gateway.execTransaction(
             address(locker), 0, transferExecute, Enum.Operation.Call, 0, 0, 0, address(0), payable(0), signatures
+        );
+    }
+
+    function _allowMint(address minter) internal {
+        bytes memory data = abi.encodeWithSignature("toggle_approve_mint(address)", minter);
+        data = abi.encodeWithSignature("execute(address,uint256,bytes)", address(MINTER), 0, data);
+        gateway.execTransaction(
+            address(locker), 0, data, Enum.Operation.Call, 0, 0, 0, address(0), payable(0), signatures
+        );
+    }
+
+    function _inflateRewards(address gauge) internal {
+        vm.mockCall(
+            address(gauge),
+            abi.encodeWithSelector(ILiquidityGauge.integrate_fraction.selector, address(LOCKER)),
+            abi.encode(1_000_000e18)
         );
     }
 }

@@ -4,10 +4,12 @@ pragma solidity 0.8.28;
 import "test/integration/curve/BaseCurveTest.sol";
 import "src/integrations/curve/CurveAllocator.sol";
 
-abstract contract CurveDepositTest is BaseCurveTest {
+abstract contract CurveIntegrationTest is BaseCurveTest {
     constructor(uint256 _pid) BaseCurveTest(_pid) {}
 
-    address public account;
+    address public account = makeAddr("Account");
+    address public harvester = makeAddr("Harvester");
+
     CurveAllocator public curveAllocator;
 
     function setUp() public override {
@@ -27,7 +29,6 @@ abstract contract CurveDepositTest is BaseCurveTest {
         convexSidecar = ConvexSidecar(_sidecar);
 
         /// 3. Set up the account.
-        account = makeAddr("Account");
         deal(lpToken, account, totalSupply);
 
         /// 4. Approve the reward vault.
@@ -43,12 +44,33 @@ abstract contract CurveDepositTest is BaseCurveTest {
         vm.prank(account);
         rewardVault.deposit(amount, account);
 
-        /// 2. Check the pending rewards.
-        assertEq(accountant.getPendingRewards(account), 0);
-        assertEq(rewardVault.balanceOf(account), amount);
-        assertEq(rewardVault.totalSupply(), amount);
+        uint256 expectedRewards = gauge.integrate_fraction(LOCKER) - IMinter(MINTER).minted(LOCKER, address(gauge));
 
-        /// 3. Check the overall balance of the gauge through the strategy.
+        // 3. Check the overall balance of the gauge through the strategy.
         assertEq(curveStrategy.balanceOf(address(gauge)), amount);
+
+        /// 4. Set up the harvester.
+        address[] memory gauges = new address[](1);
+        gauges[0] = address(gauge);
+
+        /// Empty arrays as we don't need extra datas for Curve.
+        bytes[] memory harvestData = new bytes[](1);
+
+        /// 4. Harvest the rewards.
+        vm.prank(harvester);
+        accountant.harvest(gauges, harvestData);
+
+        vm.prank(account);
+        accountant.claim(gauges, harvestData);
+
+        uint256 balanceOfHarvester = _balanceOf(rewardToken, harvester);
+        uint256 balanceOfAccount = _balanceOf(rewardToken, account);
+        uint256 balanceOfAccountant = _balanceOf(rewardToken, address(accountant));
+
+        /// 5. Check the pending rewards.
+        assertGt(balanceOfHarvester, 0);
+        assertGt(balanceOfAccount, 0);
+        assertGt(balanceOfAccountant, 0);
+        assertEq(balanceOfAccountant + balanceOfAccount + balanceOfHarvester, expectedRewards);
     }
 }

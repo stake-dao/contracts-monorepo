@@ -1,5 +1,6 @@
-// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
+
+import "forge-std/src/console.sol";
 
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
@@ -363,6 +364,13 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         return vaults[vault].totalAmount;
     }
 
+    /// @notice Returns the integral for a vault.
+    /// @param vault The vault address to query.
+    /// @return The integral for the vault.
+    function getVaultIntegral(address vault) external view returns (uint256) {
+        return vaults[vault].integral;
+    }
+
     //////////////////////////////////////////////////////
     /// --- HARVEST OPERATIONS
     //////////////////////////////////////////////////////
@@ -410,12 +418,20 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
             // Track total rewards
             totalRewardsAmount += pendingRewards.totalAmount;
 
-            // We charge protocol fee on the feeable amount and update the accrued fees
-            protocolFeesAccrued += pendingRewards.feeSubjectAmount.mulDiv(feesParams.protocolFeePercent, 1e18);
+            // Calculate protocol fee on the feeable amount
+            uint256 protocolFee = 0;
+            if (pendingRewards.feeSubjectAmount > 0) {
+                protocolFee = pendingRewards.feeSubjectAmount.mulDiv(feesParams.protocolFeePercent, 1e18);
+                // Update protocol fees accrued.
+                protocolFeesAccrued += protocolFee;
+            }
 
-            // We charge harvester fee on the total amount
+            // Calculate harvester fee on the total amount
             uint256 harvesterFee = pendingRewards.totalAmount.mulDiv(currentHarvestFee, 1e18);
             totalHarvesterFee += harvesterFee;
+
+            // Subtract both fees from the pending rewards
+            uint256 rewardsAfterFees = pendingRewards.totalAmount - protocolFee - harvesterFee;
 
             VaultData storage _vault = vaults[vault];
             uint256 vaultPendingRewards = _vault.totalAmount;
@@ -423,12 +439,12 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
             // Refund the excess harvest fee taken at the checkpoint
             uint128 currentHarvestFeePercent = feesParams.harvestFeePercent;
             if (vaultPendingRewards > 0 && currentHarvestFee < currentHarvestFeePercent) {
-                pendingRewards.totalAmount +=
+                rewardsAfterFees +=
                     vaultPendingRewards.mulDiv(currentHarvestFeePercent - currentHarvestFee, 1e18).toUint128();
             }
 
-            // Update vault state
-            _updateVaultState({vault: _vault, pendingRewards: vaultPendingRewards, amount: pendingRewards.totalAmount});
+            // Update vault state with rewards after all fees
+            _updateVaultState({vault: _vault, pendingRewards: vaultPendingRewards, amount: rewardsAfterFees});
 
             // Always clear pending rewards after harvesting
             _vault.feeSubjectAmount = 0;
@@ -461,7 +477,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @param amount The total reward amount.
     function _updateVaultState(VaultData storage vault, uint256 pendingRewards, uint256 amount) private {
         // Early return if no state changes needed
-        if (pendingRewards == 0 || amount == pendingRewards) return;
+        if (amount == 0 || amount == pendingRewards) return;
 
         // netDelta is defined as newRewards + refund - totalFees.
         // Since amount = newRewards + pendingRewards + refund,
