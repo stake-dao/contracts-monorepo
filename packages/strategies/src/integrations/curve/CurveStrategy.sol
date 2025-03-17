@@ -87,9 +87,13 @@ contract CurveStrategy is Strategy {
     /// @param gauge The address of the Curve gauge to withdraw from
     /// @param amount The amount of tokens to withdraw
     /// @param receiver The address that will receive the withdrawn tokens
-    function _withdraw(address gauge, uint256 amount, address receiver) internal override {
-        bytes memory data = abi.encodeWithSignature("withdraw(uint256,address)", amount, receiver);
+    function _withdraw(address asset, address gauge, uint256 amount, address receiver) internal override {
+        bytes memory data = abi.encodeWithSignature("withdraw(uint256)", amount);
         require(_executeTransaction(gauge, data), WithdrawFailed());
+
+        // 2. Transfer the LP tokens to receiver
+        data = abi.encodeWithSignature("transfer(address,uint256)", receiver, amount);
+        require(_executeTransaction(asset, data), WithdrawFailed());
     }
 
     /// @notice Harvests rewards from a Curve gauge

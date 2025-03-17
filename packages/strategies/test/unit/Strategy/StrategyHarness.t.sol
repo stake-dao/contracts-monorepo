@@ -85,7 +85,7 @@ contract StrategyHarness is Strategy, Test {
         require(IERC20(target).balanceOf(address(LOCKER)) >= amount, DepositFailed());
     }
 
-    function _withdraw(address target, uint256 amount, address receiver) internal override {
+    function _withdraw(address asset, address target, uint256 amount, address receiver) internal override {
         bytes memory data = abi.encodeWithSignature("transfer(address,uint256)", receiver, amount);
         require(_executeTransaction(target, data), WithdrawFailed());
     }

@@ -2,8 +2,9 @@
 pragma solidity 0.8.28;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {TransientSlot} from "@openzeppelin/contracts/utils/TransientSlot.sol";
+import {IERC20, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 import {ISidecar} from "src/interfaces/ISidecar.sol";
 import {IStrategy, IAllocator} from "src/interfaces/IStrategy.sol";
@@ -167,10 +168,12 @@ abstract contract Strategy is IStrategy, ProtocolContext {
             return _sync(allocation.gauge);
         }
 
+        address asset = IERC4626(msg.sender).asset();
+
         for (uint256 i = 0; i < allocation.targets.length; i++) {
             if (allocation.amounts[i] > 0) {
                 if (allocation.targets[i] == LOCKER) {
-                    _withdraw(allocation.gauge, allocation.amounts[i], msg.sender);
+                    _withdraw(asset, allocation.gauge, allocation.amounts[i], msg.sender);
                 } else {
                     ISidecar(allocation.targets[i]).withdraw(allocation.amounts[i], msg.sender);
                 }
@@ -224,11 +227,13 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         /// 1. Get the vault managing the gauge.
         address vault = PROTOCOL_CONTROLLER.vaults(gauge);
 
+        address asset = IERC4626(vault).asset();
+
         /// 2. Get the allocation targets for the gauge.
         address[] memory targets = _getAllocationTargets(gauge);
 
         /// 3. Withdraw all the assets and send them to the vault.
-        _withdrawFromAllTargets(gauge, targets, vault);
+        _withdrawFromAllTargets(asset, gauge, targets, vault);
 
         /// 4. Emit the shutdown event.
         emit Shutdown(gauge);
@@ -253,7 +258,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         require(allocation.targets.length > 1, RebalanceNotNeeded());
 
         /// 6. Withdraw all assets from all targets to this contract
-        _withdrawFromAllTargets(gauge, allocation.targets, address(this));
+        _withdrawFromAllTargets(address(asset), gauge, allocation.targets, address(this));
 
         /// 7. Deposit the amounts into the gauge with new allocations
         for (uint256 i = 0; i < allocation.targets.length; i++) {
@@ -303,10 +308,13 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     }
 
     /// @notice Withdraws assets from all targets
+    /// @param asset The asset to withdraw
     /// @param gauge The gauge to withdraw from
     /// @param targets Array of target addresses
     /// @param receiver Address to receive the withdrawn assets
-    function _withdrawFromAllTargets(address gauge, address[] memory targets, address receiver) internal {
+    function _withdrawFromAllTargets(address asset, address gauge, address[] memory targets, address receiver)
+        internal
+    {
         for (uint256 i = 0; i < targets.length; i++) {
             address target = targets[i];
             uint256 balance;
@@ -314,7 +322,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
             if (target == LOCKER) {
                 balance = IBalanceProvider(gauge).balanceOf(LOCKER);
                 if (balance > 0) {
-                    _withdraw(gauge, balance, receiver);
+                    _withdraw(asset, gauge, balance, receiver);
                 }
             } else {
                 balance = ISidecar(target).balanceOf();
@@ -409,8 +417,9 @@ abstract contract Strategy is IStrategy, ProtocolContext {
 
     /// @notice Withdraws assets from a specific target
     /// @dev Must be implemented by derived strategies to handle protocol-specific withdrawals
+    /// @param asset The asset to withdraw
     /// @param gauge The gauge to withdraw from
     /// @param amount The amount to withdraw
     /// @param receiver The address to receive the withdrawn assets
-    function _withdraw(address gauge, uint256 amount, address receiver) internal virtual {}
+    function _withdraw(address asset, address gauge, uint256 amount, address receiver) internal virtual {}
 }
