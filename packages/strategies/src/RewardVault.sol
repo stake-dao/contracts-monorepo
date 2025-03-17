@@ -703,12 +703,15 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
         if (_totalSupply == 0) return reward.rewardPerTokenStored;
 
-        // calculate the reward per token based on the last update time, the ending period, the reward rate and the total supply
-        return reward.rewardPerTokenStored
-            + (
-                (_lastTimeRewardApplicable(reward.periodFinish) - reward.lastUpdateTime) * reward.rewardRate * 1e18
-                    / _totalSupply
-            );
+        uint256 timeDelta = _lastTimeRewardApplicable(reward.periodFinish) - reward.lastUpdateTime;
+        uint256 rewardRatePerToken = 0;
+        
+        if (timeDelta > 0 && _totalSupply > 0) {
+            // Calculate reward per token for the time period
+            rewardRatePerToken = (timeDelta * reward.rewardRate * 1e18) / _totalSupply;
+        }
+        
+        return (reward.rewardPerTokenStored + rewardRatePerToken).toUint128();
     }
 
     /// @notice Returns the reward per token for a given reward token.
