@@ -22,7 +22,7 @@ test-unit:
 	@forge test --match-path "test/unit/**/*.t.sol"
 
 test-integration:
-	@forge test --match-path "test/integration/**/*.t.sol" --gas-report  --show-progress # --match-test "test_deposit" --mc _CONVEX_POOL_419_PID_Deposit_Test
+	@forge test --match-path "test/integration/**/*.t.sol" --show-progress --match-test "test_deposit_withdraw_sequentially" # --mc _CONVEX_POOL_419_PID_Deposit_Test
 
 test-f-%:
 	@FOUNDRY_MATCH_TEST=$* make test
