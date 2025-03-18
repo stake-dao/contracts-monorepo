@@ -51,7 +51,7 @@ contract PreLaunchLocker {
     ///////////////////////////////////////////////////////////////
 
     /// @notice The delay after which the locker can be force canceled by anyone.
-    uint256 internal constant FORCE_CANCEL_DELAY = 3 * 30 days;
+    uint256 public constant FORCE_CANCEL_DELAY = 3 * 30 days;
 
     /// @notice The immutable token to lock.
     address public immutable token;
@@ -61,7 +61,7 @@ contract PreLaunchLocker {
     address public governance;
     /// @notice The timestamp of the locker creation.
     /// @custom:slot 0 (packed with `governance` <address>)
-    uint96 internal timestamp;
+    uint96 public timestamp;
     /// @notice The sdToken address. Cannot be changed once set.
     /// @custom:slot 1
     address public sdToken;
@@ -137,12 +137,12 @@ contract PreLaunchLocker {
     error INVALID_TOKEN();
     /// @notice Error thrown when there is nothing to lock. This can happen if nobody deposited tokens before the locker was locked. In that case, the locker is useless.
     error NOTHING_TO_LOCK();
-    /// @notice Error thrown when deposits are not allowed anymore. This happens once a depositor contract is set.
-    error DEPOSIT_NOT_ALLOWED_ANYMORE();
     /// @notice Error thrown when the sdToken is not minted.
     error SD_TOKEN_NOT_MINTED();
     /// @notice Error thrown when the user tries to withdraw more than the balance.
     error INSUFFICIENT_BALANCE();
+    /// @notice Error thrown when deposits are not allowed anymore. This happens once a depositor contract is set.
+    error CANNOT_DEPOSIT_ACTIVE_OR_CANCELED_LOCKER();
     /// @notice Error thrown when the locker is not in the idle state when trying to lock.
     error CANNOT_LOCK_ACTIVE_OR_CANCELED_LOCKER();
     /// @notice Error thrown when the locker is active and the governance tries to cancel it.
@@ -174,8 +174,7 @@ contract PreLaunchLocker {
         if (_token == address(0)) revert REQUIRED_PARAM();
 
         // set the state of the contract to idle and emit the state update event
-        state = STATE.IDLE;
-        emit LockerStateUpdated(STATE.IDLE);
+        _setState(STATE.IDLE);
 
         // set the token to lock, the timestamp of the locker creation and the governance address
         token = _token;
@@ -190,12 +189,12 @@ contract PreLaunchLocker {
     /// @notice Deposit tokens in this contract.
     /// @param amount Amount of tokens to deposit.
     /// @custom:reverts REQUIRED_PARAM if the given amount is zero.
-    /// @custom:reverts DEPOSIT_NOT_ALLOWED_ANYMORE if the locker is already associated with a depositor.
+    /// @custom:reverts CANNOT_DEPOSIT_ACTIVE_OR_CANCELED_LOCKER if the locker is already associated with a depositor.
     function deposit(uint256 amount) public {
         if (amount == 0) revert REQUIRED_PARAM();
 
         // deposit aren't allowed anymore if the tokens have been locked
-        if (state == STATE.ACTIVE) revert DEPOSIT_NOT_ALLOWED_ANYMORE();
+        if (state != STATE.IDLE) revert CANNOT_DEPOSIT_ACTIVE_OR_CANCELED_LOCKER();
 
         // 1. transfer the tokens from the sender to the contract. Reverts if not enough tokens are approved.
         SafeTransferLib.safeTransferFrom(token, msg.sender, address(this), amount);
@@ -329,8 +328,7 @@ contract PreLaunchLocker {
         if (IERC20(sdToken).balanceOf(address(this)) != balance) revert SD_TOKEN_NOT_MINTED();
 
         // 6. set the state of the contract to active and emit the state update event
-        state = STATE.ACTIVE;
-        emit LockerStateUpdated(STATE.ACTIVE);
+        _setState(STATE.ACTIVE);
     }
 
     ////////////////////////////////////////////////////////////////
@@ -344,8 +342,7 @@ contract PreLaunchLocker {
         if (state != STATE.IDLE) revert CANNOT_CANCEL_ACTIVE_OR_CANCELED_LOCKER();
 
         // 1. set the state of the contract to canceled and emit the state update event
-        state = STATE.CANCELED;
-        emit LockerStateUpdated(STATE.CANCELED);
+        _setState(STATE.CANCELED);
     }
 
     /// @notice Force cancel the locker. Can only be called if the locker is in the idle state and the timestamp is older than the force cancel delay.
@@ -363,8 +360,7 @@ contract PreLaunchLocker {
         }
 
         // force the state to CANCELED
-        state = STATE.CANCELED;
-        emit LockerStateUpdated(STATE.CANCELED);
+        _setState(STATE.CANCELED);
     }
 
     /// @notice Transfer the governance to a new address.
@@ -412,5 +408,12 @@ contract PreLaunchLocker {
     /// @return gauge The gauge associated with the locker. Return zero address if the locker is not active.
     function gauge() external view returns (address) {
         return state == STATE.ACTIVE ? depositor.gauge() : address(0);
+    }
+
+    /// @notice Internal function to update the state of the locker.
+    /// @param _state The new state of the locker.
+    function _setState(STATE _state) internal {
+        state = _state;
+        emit LockerStateUpdated(_state);
     }
 }
