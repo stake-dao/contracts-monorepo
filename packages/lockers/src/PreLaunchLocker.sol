@@ -416,4 +416,10 @@ contract PreLaunchLocker {
         state = _state;
         emit LockerStateUpdated(_state);
     }
+
+    /// @notice Reject any ETH sent to the contract.
+    /// @dev This is to prevent accidental ETH deposits which lead to the loss of the deposited native tokens.
+    receive() external payable {
+        revert("PreLaunchLocker: cannot receive ETH");
+    }
 }
