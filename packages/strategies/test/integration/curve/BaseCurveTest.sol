@@ -151,16 +151,58 @@ abstract contract BaseCurveTest is BaseForkTest {
         _clearLocker();
 
         /// 8. By default, all the gauges are considered shutdown on the old strategy.
-        vm.mockCall(
-            address(OLD_STRATEGY),
-            abi.encodeWithSelector(IStrategy.isShutdown.selector, address(gauge)),
-            abi.encode(true)
-        );
+        _setupGauge(address(gauge));
     }
 
     ///////////////////////////////////////////////////////////////////////////
     //// - HELPERS
     ///////////////////////////////////////////////////////////////////////////
+
+    /// @notice Set up a gauge with the needed mocks
+    /// @param _gauge The address of the gauge to set up
+    function _setupGauge(address _gauge) internal {
+        // Mark the gauge as shutdown in the old strategy
+        vm.mockCall(
+            address(OLD_STRATEGY), abi.encodeWithSelector(IStrategy.isShutdown.selector, _gauge), abi.encode(true)
+        );
+
+        // Clear any existing balance in the gauge if needed
+        if (ILiquidityGauge(_gauge).balanceOf(LOCKER) > 0) {
+            _clearGaugeBalance(_gauge);
+        }
+    }
+
+    /// @notice Clear the locker from any balance of a specific gauge
+    /// @param _gauge The address of the gauge to clear
+    function _clearGaugeBalance(address _gauge) internal {
+        // Create a burn address to send tokens to
+        address burn = makeAddr("Burn");
+
+        // Get current gauge balance in the locker
+        uint256 balance = ILiquidityGauge(_gauge).balanceOf(LOCKER);
+        if (balance == 0) return;
+
+        // Get the LP token for this gauge
+        address _lpToken = ILiquidityGauge(_gauge).lp_token();
+
+        // 1. Withdraw LP tokens from gauge without claiming rewards
+        bytes memory withdrawData = abi.encodeWithSignature("withdraw(uint256)", balance);
+        bytes memory withdrawExecute =
+            abi.encodeWithSignature("execute(address,uint256,bytes)", _gauge, 0, withdrawData);
+
+        gateway.execTransaction(
+            address(locker), 0, withdrawExecute, Enum.Operation.Call, 0, 0, 0, address(0), payable(0), signatures
+        );
+
+        // 2. Transfer the LP tokens to burn address
+        bytes memory transferData = abi.encodeWithSignature("transfer(address,uint256)", burn, balance);
+        bytes memory transferExecute =
+            abi.encodeWithSignature("execute(address,uint256,bytes)", _lpToken, 0, transferData);
+
+        gateway.execTransaction(
+            address(locker), 0, transferExecute, Enum.Operation.Call, 0, 0, 0, address(0), payable(0), signatures
+        );
+    }
 
     /// @notice Enable a module in the Gateway.
     function _enableModule(address _module) internal {
@@ -197,29 +239,8 @@ abstract contract BaseCurveTest is BaseForkTest {
     /// @notice Clear the locker from any balance of the gauge and reward token.
     /// TODO: Clear extra rewards as well if needed.
     function _clearLocker() internal {
-        // Create a burn address to send tokens to
-        address burn = makeAddr("Burn");
-
-        // Get current gauge balance in the locker
-        uint256 balance = gauge.balanceOf(LOCKER);
-
-        // 1. Withdraw LP tokens from gauge without claiming rewards
-        bytes memory withdrawData = abi.encodeWithSignature("withdraw(uint256)", balance);
-        bytes memory withdrawExecute =
-            abi.encodeWithSignature("execute(address,uint256,bytes)", address(gauge), 0, withdrawData);
-
-        gateway.execTransaction(
-            address(locker), 0, withdrawExecute, Enum.Operation.Call, 0, 0, 0, address(0), payable(0), signatures
-        );
-
-        // 2. Transfer the LP tokens to burn address
-        bytes memory transferData = abi.encodeWithSignature("transfer(address,uint256)", burn, balance);
-        bytes memory transferExecute =
-            abi.encodeWithSignature("execute(address,uint256,bytes)", address(lpToken), 0, transferData);
-
-        gateway.execTransaction(
-            address(locker), 0, transferExecute, Enum.Operation.Call, 0, 0, 0, address(0), payable(0), signatures
-        );
+        // Use the new helper function to clear the gauge balance
+        _clearGaugeBalance(address(gauge));
     }
 
     function _allowMint(address minter) internal {

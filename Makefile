@@ -1,5 +1,6 @@
 include .env
 
+
 .EXPORT_ALL_VARIABLES:
 MAKEFLAGS += --no-print-directory
 
@@ -22,7 +23,7 @@ test-unit:
 	@forge test --match-path "test/unit/**/*.t.sol"
 
 test-integration:
-	@forge test --match-path "test/integration/**/*.t.sol" --show-progress --match-test "test_deposit_withdraw_sequentially" # --mc _CONVEX_POOL_419_PID_Deposit_Test
+	@forge test --match-path "test/integration/**/*.t.sol" --show-progress --gas-report
 
 test-f-%:
 	@FOUNDRY_MATCH_TEST=$* make test
