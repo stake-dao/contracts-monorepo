@@ -34,7 +34,14 @@ contract Accountant__getPendingRewards is AccountantBaseTest {
         // We are putting the contract into a state where the vault has a non-null state
         // This function is a testing-only function that shortcut the real end-user flow
         accountantHarness._cheat_updateVaultData(
-            vault, Accountant.VaultData({integral: 0, supply: 0, feeSubjectAmount: 0, totalAmount: pendingRewards})
+            vault,
+            Accountant.VaultData({
+                integral: 0,
+                supply: 0,
+                feeSubjectAmount: 0,
+                totalAmount: pendingRewards,
+                netCredited: 0
+            })
         );
 
         assertEq(accountantHarness.getPendingRewards(vault), pendingRewards);

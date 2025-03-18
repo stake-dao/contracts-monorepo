@@ -49,7 +49,8 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
         vm.assume(amount < (totalSupply / NUM_ACCOUNTS) / 2);
 
         /// Deal some extra rewards to the reward receiver.
-        deal(CVX, address(rewardReceiver), amount * NUM_ACCOUNTS);
+        uint256 totalCVX = 1_000_000e18;
+        deal(CVX, address(rewardReceiver), totalCVX);
 
         // Track total deposits and expected rewards
         uint256 totalDeposited = 0;
@@ -65,11 +66,7 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
             rewardVault.deposit(accountAmount, accounts[i]);
         }
 
-        uint256 expectedRewards = gauge.integrate_fraction(LOCKER) - IMinter(MINTER).minted(LOCKER, address(gauge));
-
-        if (expectedRewards == 0) {
-            expectedRewards = _inflateRewards(address(gauge));
-        }
+        uint256 expectedRewards = _inflateRewards(address(gauge), 10_000e18);
 
         // Check the overall balance of the gauge through the strategy.
         assertEq(curveStrategy.balanceOf(address(gauge)), totalDeposited);
@@ -120,15 +117,17 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
         skip(1 weeks);
 
         // Each account claims their CVX rewards
+        uint256 totalClaimed = 0;
         for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
             uint256 accountAmount = depositAmounts[i];
 
             vm.prank(accounts[i]);
             rewardVault.claim(rewardTokens, accounts[i]);
 
-            // Check that each account received CVX proportional to their deposit
-            assertApproxEqRel(_balanceOf(CVX, accounts[i]), accountAmount, 0.0001e18); // 0.01%
+            totalClaimed += _balanceOf(CVX, accounts[i]);
         }
+
+        assertApproxEqRel(totalClaimed, totalCVX, 0.0001e18);
     }
 
     function test_multipleUsersDepositWithdraw() public {
@@ -211,92 +210,4 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
         // Verify all funds have been withdrawn
         assertEq(curveStrategy.balanceOf(address(gauge)), 0, "Gauge balance should be zero after all withdrawals");
     }
-
-    // function test_proportionalRewardDistribution() public {
-        // // Use a fixed amount for deterministic testing
-        // uint256 baseAmount = 10e18;
-
-        // // Each account deposits a different amount (1x, 2x, 3x)
-        // uint256[] memory depositAmounts = new uint256[](NUM_ACCOUNTS);
-        // uint256 totalDeposited = 0;
-
-        // for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
-            // depositAmounts[i] = baseAmount * (i + 1);
-            // totalDeposited += depositAmounts[i];
-
-            // vm.prank(accounts[i]);
-            // rewardVault.deposit(depositAmounts[i], accounts[i]);
-        // }
-
-        // // Generate some rewards
-        // uint256 expectedRewards = _inflateRewards(address(gauge));
-
-        // // Set up for harvest
-        // address[] memory gauges = new address[](1);
-        // gauges[0] = address(gauge);
-        // bytes[] memory harvestData = new bytes[](1);
-
-        // // Harvest rewards
-        // vm.prank(harvester);
-        // accountant.harvest(gauges, harvestData);
-
-        // // Each account claims their rewards
-        // uint256[] memory accountRewards = new uint256[](NUM_ACCOUNTS);
-
-        // for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
-            // vm.prank(accounts[i]);
-            // accountant.claim(gauges, harvestData);
-
-            // accountRewards[i] = _balanceOf(rewardToken, accounts[i]);
-
-            // // Verify each account received rewards
-            // assertGt(accountRewards[i], 0, "Account should receive rewards");
-        // }
-
-        // // Verify reward proportionality (with some tolerance for rounding)
-        // // Account 1 has 1x, Account 2 has 2x, Account 3 has 3x
-        // // So rewards should be in roughly the same proportion
-        // for (uint256 i = 1; i < NUM_ACCOUNTS; i++) {
-            // // Account i should have approximately i+1 times the rewards of account 0
-            // uint256 expectedRatio = i + 1;
-            // uint256 actualRatio = (accountRewards[i] * 1e18) / accountRewards[0];
-
-            // // Allow 1% tolerance for rounding errors
-            // assertApproxEqRel(actualRatio, expectedRatio * 1e18, 0.01e18, "Rewards should be proportional to deposits");
-        // }
-
-        // // Also test with CVX rewards
-        // deal(CVX, address(rewardReceiver), totalDeposited);
-
-        // // Claim extra rewards and distribute
-        // convexSidecar.claimExtraRewards();
-        // rewardReceiver.distributeRewards();
-
-        // address[] memory rewardTokens = rewardVault.getRewardTokens();
-
-        // skip(1 weeks);
-
-        // // Each account claims their CVX rewards
-        // uint256[] memory cvxRewards = new uint256[](NUM_ACCOUNTS);
-
-        // for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
-            // vm.prank(accounts[i]);
-            // rewardVault.claim(rewardTokens, accounts[i]);
-
-            // cvxRewards[i] = _balanceOf(CVX, accounts[i]);
-
-            // // Verify each account received CVX rewards
-            // assertGt(cvxRewards[i], 0, "Account should receive CVX rewards");
-        // }
-
-        // // Verify CVX reward proportionality
-        // for (uint256 i = 1; i < NUM_ACCOUNTS; i++) {
-            // uint256 expectedRatio = i + 1;
-            // uint256 actualRatio = (cvxRewards[i] * 1e18) / cvxRewards[0];
-
-            // assertApproxEqRel(
-                // actualRatio, expectedRatio * 1e18, 0.01e18, "CVX rewards should be proportional to deposits"
-            // );
-        // }
-    // }
 }

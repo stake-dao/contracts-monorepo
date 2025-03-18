@@ -70,7 +70,8 @@ contract Accountant__Harvest is AccountantBaseTest {
             vault, makeAddr("user"), Accountant.AccountData({balance: amount, integral: 0, pendingRewards: 0})
         );
         accountantHarness._cheat_updateVaultData(
-            vault, Accountant.VaultData({integral: 0, supply: amount, feeSubjectAmount: 0, totalAmount: 0})
+            vault,
+            Accountant.VaultData({integral: 0, supply: amount, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
         );
 
         /// Construct realistic vaults/harvest data and call the harvest function as the _harvester
@@ -109,7 +110,8 @@ contract Accountant__Harvest is AccountantBaseTest {
             vault, makeAddr("user"), Accountant.AccountData({balance: amount, integral: 0, pendingRewards: 0})
         );
         accountantHarness._cheat_updateVaultData(
-            vault, Accountant.VaultData({integral: 0, supply: amount, feeSubjectAmount: 0, totalAmount: 0})
+            vault,
+            Accountant.VaultData({integral: 0, supply: amount, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
         );
 
         /// Construct realistic vaults/harvest data and call the harvest function as the _harvester
@@ -168,7 +170,8 @@ contract Accountant__Harvest is AccountantBaseTest {
             vault, makeAddr("user"), Accountant.AccountData({balance: amount, integral: 0, pendingRewards: 0})
         );
         accountantHarness._cheat_updateVaultData(
-            vault, Accountant.VaultData({integral: 0, supply: amount, feeSubjectAmount: 0, totalAmount: 0})
+            vault,
+            Accountant.VaultData({integral: 0, supply: amount, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
         );
 
         /// Ensure that the reward token balance is 0 before the harvest operation
@@ -213,7 +216,8 @@ contract Accountant__Harvest is AccountantBaseTest {
             vault, makeAddr("user"), Accountant.AccountData({balance: amount, integral: 0, pendingRewards: 0})
         );
         accountantHarness._cheat_updateVaultData(
-            vault, Accountant.VaultData({integral: 0, supply: amount, feeSubjectAmount: 50, totalAmount: 100})
+            vault,
+            Accountant.VaultData({integral: 0, supply: amount, feeSubjectAmount: 50, totalAmount: 100, netCredited: 42})
         );
         assertEq(accountantHarness.exposed_feeSubjectAmount(vault), 50);
         assertEq(accountantHarness.getPendingRewards(vault), 100);
@@ -248,7 +252,8 @@ contract Accountant__Harvest is AccountantBaseTest {
             vault, makeAddr("user"), Accountant.AccountData({balance: amount, integral: 0, pendingRewards: 0})
         );
         accountantHarness._cheat_updateVaultData(
-            vault, Accountant.VaultData({integral: 0, supply: amount, feeSubjectAmount: 0, totalAmount: 100})
+            vault,
+            Accountant.VaultData({integral: 0, supply: amount, feeSubjectAmount: 0, totalAmount: 100, netCredited: 0})
         );
 
         assertEq(accountantHarness.exposed_integral(vault), 0);
@@ -282,7 +287,8 @@ contract Accountant__Harvest is AccountantBaseTest {
             vault, makeAddr("user"), Accountant.AccountData({balance: amount, integral: 0, pendingRewards: 0})
         );
         accountantHarness._cheat_updateVaultData(
-            vault, Accountant.VaultData({integral: 0, supply: amount, feeSubjectAmount: 0, totalAmount: 0})
+            vault,
+            Accountant.VaultData({integral: 0, supply: amount, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
         );
 
         /// Construct realistic vaults/harvest data and call the harvest function as the _harvester
@@ -317,7 +323,8 @@ contract Accountant__Harvest is AccountantBaseTest {
             vault, makeAddr("user"), Accountant.AccountData({balance: amount, integral: 0, pendingRewards: 0})
         );
         accountantHarness._cheat_updateVaultData(
-            vault, Accountant.VaultData({integral: 0, supply: amount, feeSubjectAmount: 0, totalAmount: 0})
+            vault,
+            Accountant.VaultData({integral: 0, supply: amount, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
         );
 
         /// Construct realistic vaults/harvest data with nothing to harvest
