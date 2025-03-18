@@ -218,23 +218,49 @@ import "test/integration/curve/CurveIntegration.t.sol";
 import "test/integration/curve/CurveFactory.t.sol";
 
 // @notice Selected Convex pool PIDs sorted by PID (highest to lowest)
+// @dev Each integration test requires two PIDs to test multi-gauge functionality
+// @dev Make sure both gauges are properly initialized with _setupGauge in setUp
 """
 
-    # Add each pool as a constant and test contracts
-    for i, pool in enumerate(pools):
+    # Add each pool as a constant with a comment about its gauge
+    for pool in pools:
         pid = pool["pid"]
         gauge_address = pool["gauge"]
-
-        # Create a name for the constant based on the index
         constant_name = f"CONVEX_POOL_{pid}_PID"
 
         solidity_content += f"""
 uint256 constant {constant_name} = {pid};
-/// Convex Pool PID {pid} with gauge {gauge_address}
+"""
 
-contract _{constant_name}_Factory_Test is CurveFactoryTest({constant_name}) {{}}
+    # Create test contracts by pairing pools
+    # Each integration test needs two PIDs
+    for i in range(0, len(pools) - 1, 2):
+        pid1 = pools[i]["pid"]
+        pid2 = pools[i + 1]["pid"] if i + 1 < len(pools) else pools[0]["pid"]
+        
+        constant_name1 = f"CONVEX_POOL_{pid1}_PID"
+        constant_name2 = f"CONVEX_POOL_{pid2}_PID"
+        
+        # Create factory test for pid1
+        solidity_content += f"""
+contract {constant_name1}_Factory_Test is CurveFactoryTest({constant_name1}) {{}}
 
-contract _{constant_name}_Deposit_Test is CurveIntegrationTest({constant_name}) {{}}
+// Integration test using {pid1} and {pid2}
+contract {constant_name1}_Integration_Test is CurveIntegrationTest({constant_name1}, {constant_name2}) {{}}
+"""
+
+        # Add factory test for pid2 only if not the last pool paired with the first
+        if i + 1 < len(pools):
+            solidity_content += f"""
+contract {constant_name2}_Factory_Test is CurveFactoryTest({constant_name2}) {{}}
+"""
+
+    # For odd number of pools, ensure the last one has a factory test
+    if len(pools) % 2 != 0:
+        last_pid = pools[-1]["pid"]
+        solidity_content += f"""
+// Last pool factory test
+contract CONVEX_POOL_{last_pid}_PID_Factory_Test is CurveFactoryTest(CONVEX_POOL_{last_pid}_PID) {{}}
 """
 
     # Create the directory if it doesn't exist
@@ -255,11 +281,37 @@ contract _{constant_name}_Deposit_Test is CurveIntegrationTest({constant_name}) 
 
     print(f"Generated Solidity file at {output_file}")
     print(f"Included {len(pools)} pools with PIDs: {[p['pid'] for p in pools]}")
+    
+    # Print information about pool pairings for integration tests
+    print("\nPool pairings for integration tests:")
+    for i in range(0, len(pools) - 1, 2):
+        pid1 = pools[i]["pid"]
+        pid2 = pools[i + 1]["pid"] if i + 1 < len(pools) else pools[0]["pid"]
+        print(f"  - Integration test with PIDs {pid1} and {pid2}")
+
+
+def generate_solidity_files_by_group(pools, group_size=10, output_prefix="ConvexPools"):
+    """Generate multiple Solidity files, each containing a group of pools"""
+    # Sort pools by PID in descending order
+    pools = sorted(pools, key=lambda x: x["pid"], reverse=True)
+    
+    # Split pools into groups
+    pool_groups = [pools[i:i + group_size] for i in range(0, len(pools), group_size)]
+    
+    print(f"Splitting {len(pools)} pools into {len(pool_groups)} groups of max {group_size} pools each")
+    
+    for group_index, group_pools in enumerate(pool_groups):
+        output_file = f"{output_prefix}_Group{group_index+1}.t.sol"
+        
+        # Generate Solidity file for this group
+        generate_solidity_file(group_pools, output_file)
+        
+        print(f"Generated group {group_index+1} with {len(group_pools)} pools")
 
 
 def parse_arguments():
     parser = argparse.ArgumentParser(
-        description="Generate Solidity test files for Convex pools"
+        description="Generate Solidity test files for Convex pools with dual-PID test structure"
     )
 
     # Create a mutually exclusive group for pool selection methods
@@ -279,6 +331,12 @@ def parse_arguments():
 
     parser.add_argument(
         "--output", type=str, help="Output file name (default: ConvexPools.t.sol)"
+    )
+    
+    parser.add_argument(
+        "--split-groups", 
+        type=int, 
+        help="Split pools into multiple files with specified number of pools per file"
     )
 
     return parser.parse_args()
@@ -313,8 +371,17 @@ def main():
         # Get all pools
         pools = get_all_pools()
 
-    # Generate Solidity file
-    generate_solidity_file(pools, args.output)
+    if not pools:
+        print("No valid pools found. Exiting.")
+        return
+        
+    # Check if we need to split output into multiple files
+    if args.split_groups and args.split_groups > 0:
+        generate_solidity_files_by_group(pools, args.split_groups, 
+                                        args.output or "ConvexPools")
+    else:
+        # Generate a single Solidity file
+        generate_solidity_file(pools, args.output)
 
     end_time = time.time()
     print(f"Total execution time: {end_time - start_time:.2f} seconds")

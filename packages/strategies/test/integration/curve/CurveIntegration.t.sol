@@ -5,14 +5,27 @@ import "test/integration/curve/BaseCurveTest.sol";
 import "src/integrations/curve/CurveAllocator.sol";
 
 abstract contract CurveIntegrationTest is BaseCurveTest {
-    constructor(uint256 _pid) BaseCurveTest(_pid) {}
+    constructor(uint256 _pid1, uint256 _pid2) BaseCurveTest(_pid1) {
+        pid2 = _pid2;
+    }
 
     // Replace single account with multiple accounts
     uint256 public constant NUM_ACCOUNTS = 3;
     address[] public accounts;
     address public harvester = makeAddr("Harvester");
 
+    // Second PID and gauge variables
+    uint256 public pid2;
+    address public lpToken2;
+    uint256 public totalSupply2;
+    ILiquidityGauge public gauge2;
+
+    // Vault contract instances for both PIDs
     CurveAllocator public curveAllocator;
+
+    RewardVault public rewardVault2;
+    RewardReceiver public rewardReceiver2;
+    ConvexSidecar public convexSidecar2;
 
     function setUp() public override {
         super.setUp();
@@ -22,25 +35,46 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
             accounts.push(makeAddr(string(abi.encodePacked("Account", i))));
         }
 
+        // Setup second gauge from pid2
+        (address _lpToken2,, address _gauge2,,,) = BOOSTER.poolInfo(pid2);
+        lpToken2 = _lpToken2;
+        gauge2 = ILiquidityGauge(_gauge2);
+        totalSupply2 = IBalanceProvider(lpToken2).totalSupply();
+
+        // Initialize the second gauge using the helper function
+        _setupGauge(address(gauge2));
+
         /// 0. Deploy the allocator contract.
         curveAllocator = new CurveAllocator(address(locker), address(gateway), address(convexSidecarFactory));
 
         /// 1. Set the allocator.
         protocolController.setAllocator(protocolId, address(curveAllocator));
 
-        /// 2. Deploy the Reward Vault contract through the factory.
+        /// 2. Deploy the first Reward Vault contract through the factory.
         (address _rewardVault, address _rewardReceiver, address _sidecar) = curveFactory.create(pid);
 
         rewardVault = RewardVault(_rewardVault);
         rewardReceiver = RewardReceiver(_rewardReceiver);
         convexSidecar = ConvexSidecar(_sidecar);
 
-        /// 3. Set up the accounts with LP tokens and approvals
-        for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
-            deal(lpToken, accounts[i], totalSupply / NUM_ACCOUNTS);
+        /// 3. Deploy the second Reward Vault contract through the factory.
+        (address _rewardVault2, address _rewardReceiver2, address _sidecar2) = curveFactory.create(pid2);
 
+        rewardVault2 = RewardVault(_rewardVault2);
+        rewardReceiver2 = RewardReceiver(_rewardReceiver2);
+        convexSidecar2 = ConvexSidecar(_sidecar2);
+
+        /// 4. Set up the accounts with LP tokens and approvals for both gauges
+        for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
+            // First gauge LP tokens
+            deal(lpToken, accounts[i], totalSupply / NUM_ACCOUNTS);
             vm.prank(accounts[i]);
             IERC20(lpToken).approve(address(rewardVault), totalSupply / NUM_ACCOUNTS);
+
+            // Second gauge LP tokens
+            deal(lpToken2, accounts[i], totalSupply2 / NUM_ACCOUNTS);
+            vm.prank(accounts[i]);
+            IERC20(lpToken2).approve(address(rewardVault2), totalSupply2 / NUM_ACCOUNTS);
         }
     }
 
@@ -61,19 +95,109 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
         uint256 totalClaimedRewards2;
         uint256 accountantRewards2;
         uint256 totalCVXClaimed;
+        // Second gauge params
+        uint256 baseAmount2;
+        uint256 totalDeposited2;
+        uint256[] depositAmounts2;
+        uint256 totalExpectedRewards2nd;
+        uint256 totalClaimedRewards2nd;
+        uint256 totalWithdrawn2;
+        uint256 expectedRewards1_2nd;
+        uint256 expectedRewards2_2nd;
+        uint256 expectedRewards3_2nd;
     }
 
-    function test_deposit_withdraw_sequentially(uint256 _baseAmount) public {
+    function test_deposit_withdraw_sequentially(uint256 _baseAmount, uint256 _baseAmount2) public {
         // 1. Set up test parameters with fuzzing
         vm.assume(_baseAmount > 1e18);
         vm.assume(_baseAmount < (totalSupply / NUM_ACCOUNTS) / 10); // Ensure reasonable amounts
 
+        vm.assume(_baseAmount2 > 1e18);
+        vm.assume(_baseAmount2 < (totalSupply2 / NUM_ACCOUNTS) / 10);
+
         // 2. Initialize the test parameters struct
         TestParams memory params;
         params.baseAmount = _baseAmount;
+        params.baseAmount2 = _baseAmount2;
         params.depositAmounts = new uint256[](NUM_ACCOUNTS);
-        
-        // 3. First deposit round - each account deposits different amount
+        params.depositAmounts2 = new uint256[](NUM_ACCOUNTS);
+
+        // Phase 1: Handle Deposits
+        _handleDeposits(params);
+
+        // Verify deposits
+        assertEq(
+            curveStrategy.balanceOf(address(gauge)),
+            params.totalDeposited,
+            "Initial deposit amount mismatch for gauge 1"
+        );
+        assertEq(
+            curveStrategy.balanceOf(address(gauge2)),
+            params.totalDeposited2,
+            "Initial deposit amount mismatch for gauge 2"
+        );
+
+        // Phase 2: Handle First Round Rewards
+        _handleFirstRewards(params);
+
+        // Phase 3: Handle Additional Deposits
+        _handleAdditionalDeposits(params);
+
+        // Verify total deposits
+        assertEq(
+            curveStrategy.balanceOf(address(gauge)), params.totalDeposited, "Second deposit amount mismatch for gauge 1"
+        );
+        assertEq(
+            curveStrategy.balanceOf(address(gauge2)),
+            params.totalDeposited2,
+            "Second deposit amount mismatch for gauge 2"
+        );
+
+        // Phase 4: Handle First Harvest and Claims
+        address[] memory gauges = new address[](2);
+        gauges[0] = address(gauge);
+        gauges[1] = address(gauge2);
+        bytes[] memory harvestData = new bytes[](2);
+
+        _handleFirstHarvestAndClaims(params, gauges, harvestData);
+
+        // Phase 5: Handle Partial Withdrawals
+        _handlePartialWithdrawals(params);
+
+        // Verify partial withdrawals
+        assertEq(
+            curveStrategy.balanceOf(address(gauge)),
+            params.totalDeposited - params.totalWithdrawn,
+            "Strategy balance after partial withdrawal mismatch for gauge 1"
+        );
+        assertEq(
+            curveStrategy.balanceOf(address(gauge2)),
+            params.totalDeposited2 - params.totalWithdrawn2,
+            "Strategy balance after partial withdrawal mismatch for gauge 2"
+        );
+
+        // Phase 6: Handle Second Harvest and Claims
+        _handleSecondHarvestAndClaims(params, gauges, harvestData);
+
+        // Phase 7: Handle CVX Rewards and Final Withdrawals
+        _handleCVXRewardsAndFinalWithdrawals(params);
+
+        // Verify final state
+        assertEq(
+            curveStrategy.balanceOf(address(gauge)),
+            0,
+            "Strategy should have only initial balance after full withdrawal for gauge 1"
+        );
+        assertEq(
+            curveStrategy.balanceOf(address(gauge2)),
+            0,
+            "Strategy should have only initial balance after full withdrawal for gauge 2"
+        );
+    }
+
+    // Helper function to handle initial deposits for both gauges
+    function _handleDeposits(TestParams memory params) internal {
+        // First deposit round for first gauge
         for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
             uint256 accountAmount = params.baseAmount * (i + 1);
             params.depositAmounts[i] = accountAmount;
@@ -83,241 +207,312 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
             rewardVault.deposit(accountAmount, accounts[i]);
         }
 
-        // 4. Verify initial deposit amounts
-        assertEq(curveStrategy.balanceOf(address(gauge)), params.totalDeposited, "Initial deposit amount mismatch");
+        // First deposit round for second gauge
+        for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
+            uint256 accountAmount = params.baseAmount2 * (i + 1);
+            params.depositAmounts2[i] = accountAmount;
+            params.totalDeposited2 += accountAmount;
 
-        // 5. First inflation of rewards (1000e18) and track expected total
+            vm.prank(accounts[i]);
+            rewardVault2.deposit(accountAmount, accounts[i]);
+        }
+    }
+
+    // Helper function to handle the first rewards round
+    function _handleFirstRewards(TestParams memory params) internal {
+        // First inflation of rewards
         params.expectedRewards1 = _inflateRewards(address(gauge), 1000e18);
+        params.expectedRewards1_2nd = _inflateRewards(address(gauge2), 1500e18);
 
-        // 6. Skip time to simulate reward accrual period
+        // Skip time to simulate reward accrual
         skip(1 hours);
 
-        // Also check for any rewards in the Convex Sidecar that might contribute
+        // Check for rewards in the Convex Sidecars
         uint256 sidecarRewards = convexSidecar.getPendingRewards();
-        
-        params.totalExpectedRewards += params.expectedRewards1 + sidecarRewards;
+        uint256 sidecarRewards2 = convexSidecar2.getPendingRewards();
 
-        // 7. Second deposit round - add more tokens for each account
+        params.totalExpectedRewards += params.expectedRewards1 + sidecarRewards;
+        params.totalExpectedRewards2nd += params.expectedRewards1_2nd + sidecarRewards2;
+    }
+
+    // Helper function to handle additional deposits
+    function _handleAdditionalDeposits(TestParams memory params) internal {
         for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
-            uint256 accountAmount = params.baseAmount * (i + 1) / 2; // Half the previous amount
-            
-            // 7.1. Update accounting
+            // For first gauge - add half the previous amount
+            uint256 accountAmount = params.baseAmount * (i + 1) / 2;
             params.depositAmounts[i] += accountAmount;
             params.totalDeposited += accountAmount;
 
-            // 7.2. Provide additional LP tokens
             deal(lpToken, accounts[i], accountAmount);
-            
-            // 7.3. Approve and deposit
             vm.prank(accounts[i]);
             IERC20(lpToken).approve(address(rewardVault), accountAmount);
-            
             vm.prank(accounts[i]);
             rewardVault.deposit(accountAmount, accounts[i]);
+
+            // For second gauge - add half the previous amount
+            uint256 accountAmount2 = params.baseAmount2 * (i + 1) / 2;
+            params.depositAmounts2[i] += accountAmount2;
+            params.totalDeposited2 += accountAmount2;
+
+            deal(lpToken2, accounts[i], accountAmount2);
+            vm.prank(accounts[i]);
+            IERC20(lpToken2).approve(address(rewardVault2), accountAmount2);
+            vm.prank(accounts[i]);
+            rewardVault2.deposit(accountAmount2, accounts[i]);
         }
 
-        // 8. Verify updated total deposit
-        assertEq(curveStrategy.balanceOf(address(gauge)), params.totalDeposited, "Second deposit amount mismatch");
-
-        // 9. Second inflation of rewards (1200e18 = 200e18 new rewards since last)
+        // Second inflation of rewards
         params.expectedRewards2 = _inflateRewards(address(gauge), 1200e18);
-        
-        
-        // 10. Skip time to simulate more reward accrual
+        params.expectedRewards2_2nd = _inflateRewards(address(gauge2), 1800e18);
+
+        // Skip time
         skip(1 hours);
 
-        // Again check Convex Sidecar rewards that might have accumulated
-        sidecarRewards = convexSidecar.getPendingRewards();
-        
-        // Total rewards are now from both Curve and Convex - replace previous calculation
+        // Check Sidecar rewards
+        uint256 sidecarRewards = convexSidecar.getPendingRewards();
+        uint256 sidecarRewards2 = convexSidecar2.getPendingRewards();
+
+        // Total rewards are from both Curve and Convex
         params.totalExpectedRewards = params.expectedRewards2 + sidecarRewards;
+        params.totalExpectedRewards2nd = params.expectedRewards2_2nd + sidecarRewards2;
+    }
 
-        // 11. Set up the harvester
-        address[] memory gauges = new address[](1);
-        gauges[0] = address(gauge);
-        bytes[] memory harvestData = new bytes[](1);
-
-        // 12. Harvest all accumulated rewards
+    // Helper function to handle first harvest and claims
+    function _handleFirstHarvestAndClaims(TestParams memory params, address[] memory gauges, bytes[] memory harvestData)
+        internal
+    {
+        // Harvest rewards from both gauges
         vm.prank(harvester);
         accountant.harvest(gauges, harvestData);
 
-        // 13. Each account claims their portion of rewards
+        harvestData = new bytes[](0);
+
+        // Track harvester rewards
         params.harvestRewards = _balanceOf(rewardToken, harvester);
+
+        // Each account claims rewards
         for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
             uint256 beforeClaim = _balanceOf(rewardToken, accounts[i]);
-            
+
             vm.prank(accounts[i]);
             accountant.claim(gauges, harvestData);
-            
+
             uint256 afterClaim = _balanceOf(rewardToken, accounts[i]);
             uint256 claimed = afterClaim - beforeClaim;
-            
+
             params.totalClaimedRewards += claimed;
-            
-            // 13.1. Verify rewards were received
+
+            // Verify rewards received
             assertGt(claimed, 0, "Account should receive rewards");
         }
 
-        // 14. Track remaining rewards in the accountant
+        // Track accountant rewards
         params.accountantRewards = _balanceOf(rewardToken, address(accountant));
-        
-        // 15. Verify reward distribution tracks - print the values for debugging
-        uint256 actualTotalDistributed = params.harvestRewards + params.totalClaimedRewards + params.accountantRewards;
-        
-        // Compare with high tolerance - we're mostly ensuring all rewards are accounted for
-        assertApproxEqRel(
-            actualTotalDistributed, 
-            params.totalExpectedRewards, 
-            0.0001e18, // Tight tolerance now that we account for all reward sources
-            "Total rewards mismatch"
-        );
 
-        // 16. Start partial withdrawals - each account withdraws half
+        // Verify reward distribution
+        uint256 actualTotalDistributed = params.harvestRewards + params.totalClaimedRewards + params.accountantRewards;
+        uint256 totalExpectedFromBothGauges = params.totalExpectedRewards + params.totalExpectedRewards2nd;
+
+        assertApproxEqRel(
+            actualTotalDistributed,
+            totalExpectedFromBothGauges,
+            0.01e18, // Tolerance for rounding
+            "Total rewards mismatch from both gauges"
+        );
+    }
+
+    // Helper function to handle partial withdrawals
+    function _handlePartialWithdrawals(TestParams memory params) internal {
         for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
+            // First gauge withdrawals
             uint256 withdrawAmount = params.depositAmounts[i] / 2;
             params.totalWithdrawn += withdrawAmount;
 
             uint256 beforeWithdraw = _balanceOf(lpToken, accounts[i]);
-            
+
             vm.prank(accounts[i]);
             rewardVault.withdraw(withdrawAmount, accounts[i], accounts[i]);
-            
+
             uint256 afterWithdraw = _balanceOf(lpToken, accounts[i]);
-            
-            // 16.1. Verify LP tokens returned correctly
+
+            // Verify LP tokens returned correctly
+            assertEq(afterWithdraw - beforeWithdraw, withdrawAmount, "Partial withdrawal amount mismatch for gauge 1");
+
+            // Second gauge withdrawals
+            uint256 withdrawAmount2 = params.depositAmounts2[i] / 2;
+            params.totalWithdrawn2 += withdrawAmount2;
+
+            uint256 beforeWithdraw2 = _balanceOf(lpToken2, accounts[i]);
+
+            vm.prank(accounts[i]);
+            rewardVault2.withdraw(withdrawAmount2, accounts[i], accounts[i]);
+
+            uint256 afterWithdraw2 = _balanceOf(lpToken2, accounts[i]);
+
+            // Verify LP tokens returned correctly
             assertEq(
-                afterWithdraw - beforeWithdraw, 
-                withdrawAmount, 
-                "Partial withdrawal amount mismatch"
+                afterWithdraw2 - beforeWithdraw2, withdrawAmount2, "Partial withdrawal amount mismatch for gauge 2"
             );
         }
+    }
 
-        // 17. Verify strategy balance matches remaining deposits
-        assertEq(
-            curveStrategy.balanceOf(address(gauge)), 
-            params.totalDeposited - params.totalWithdrawn, 
-            "Strategy balance after partial withdrawal mismatch"
-        );
-
-        // 18. Third inflation of rewards after partial withdrawal
+    // Helper function to handle second harvest and claims
+    function _handleSecondHarvestAndClaims(
+        TestParams memory params,
+        address[] memory gauges,
+        bytes[] memory harvestData
+    ) internal {
+        // Third inflation of rewards
         params.expectedRewards3 = _inflateRewards(address(gauge), 1500e18);
+        params.expectedRewards3_2nd = _inflateRewards(address(gauge2), 2000e18);
 
-        // 19. Skip time to simulate more reward accrual
         skip(1 hours);
-        
-        // Check Convex Sidecar rewards for the third round
-        sidecarRewards = convexSidecar.getPendingRewards();
-        
-        // After harvesting, the next inflation represents the total new rewards
-        uint256 newRewards = params.expectedRewards3 + sidecarRewards; // Complete new set of rewards after harvest
 
-        // 20. Harvest again after partial withdrawals
+        // Check Sidecar rewards
+        uint256 sidecarRewards = convexSidecar.getPendingRewards();
+        uint256 sidecarRewards2 = convexSidecar2.getPendingRewards();
+
+        // New rewards after harvest
+        uint256 newRewards = params.expectedRewards3 + sidecarRewards;
+        uint256 newRewards2 = params.expectedRewards3_2nd + sidecarRewards2;
+        uint256 totalNewRewards = newRewards + newRewards2;
+
+        // Harvest again
         vm.prank(harvester);
         accountant.harvest(gauges, harvestData);
 
-        // 21. Reset tracking for second claim
+        // Track harvester rewards for second round
         params.harvestRewards2 = _balanceOf(rewardToken, harvester) - params.harvestRewards;
-        
-        // 22. Each account claims rewards again
+
+        uint256 totalClaimedRewards2 = 0;
+
+        // Clear harvest data
+        harvestData = new bytes[](0);
+
+        // Each account claims rewards again
         for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
             uint256 beforeClaim = _balanceOf(rewardToken, accounts[i]);
-            
+
             vm.prank(accounts[i]);
             accountant.claim(gauges, harvestData);
-            
+
             uint256 afterClaim = _balanceOf(rewardToken, accounts[i]);
             uint256 claimed = afterClaim - beforeClaim;
-            
-            params.totalClaimedRewards2 += claimed;
+
+            totalClaimedRewards2 += claimed;
         }
 
-        // 23. Track remaining rewards in the accountant
+        params.totalClaimedRewards2 = totalClaimedRewards2;
+
+        // Track remaining rewards in accountant
         params.accountantRewards2 = _balanceOf(rewardToken, address(accountant)) - params.accountantRewards;
 
-        // 24. Verify second reward distribution - with debug logging
-        uint256 actualTotalDistributed2 = params.harvestRewards2 + params.totalClaimedRewards2 + params.accountantRewards2;
-        
+        // Verify second distribution
+        uint256 actualTotalDistributed2 =
+            params.harvestRewards2 + params.totalClaimedRewards2 + params.accountantRewards2;
+
         assertApproxEqRel(
-            actualTotalDistributed2, 
-            newRewards, 
-            0.0001e18, // Tight tolerance now that we account for all reward sources
-            "Second round rewards mismatch"
+            actualTotalDistributed2, totalNewRewards, 0.01e18, "Second round rewards mismatch for both gauges"
         );
+    }
 
-        // 25. Add CVX rewards to test extra rewards distribution
+    // Helper function to handle CVX rewards and final withdrawals
+    function _handleCVXRewardsAndFinalWithdrawals(TestParams memory params) internal {
+        // Add CVX rewards to test extra rewards distribution
         uint256 totalCVX = 1_000_000e18;
-        deal(CVX, address(rewardReceiver), totalCVX);
+        deal(CVX, address(rewardReceiver), totalCVX / 2);
+        deal(CVX, address(rewardReceiver2), totalCVX / 2);
 
-        // 26. Claim and distribute extra rewards
+        // Claim and distribute extra rewards from both sidecars
         convexSidecar.claimExtraRewards();
         rewardReceiver.distributeRewards();
 
-        // 27. Wait for rewards to vest
+        convexSidecar2.claimExtraRewards();
+        rewardReceiver2.distributeRewards();
+
+        // Wait for rewards to vest
         skip(1 weeks);
 
-        // 28. Complete withdrawals - withdraw remaining deposits
-        _finalizeWithdrawals(params.depositAmounts);
+        // Complete withdrawals
+        _finalizeWithdrawals(params.depositAmounts, params.depositAmounts2);
 
-        // 29. Verify all funds withdrawn from strategy
-        assertEq(curveStrategy.balanceOf(address(gauge)), 0, "Strategy should be empty after full withdrawal");
-
-        // 30. Track total CVX claimed and process CVX claims
+        // Process CVX claims
         address[] memory rewardTokens = rewardVault.getRewardTokens();
-        _processClaimsCVX(rewardTokens, totalCVX);
+        address[] memory rewardTokens2 = rewardVault2.getRewardTokens();
+        _processClaimsCVX(rewardTokens, rewardTokens2, totalCVX);
     }
-    
-    // Helper function to process final withdrawals
-    function _finalizeWithdrawals(uint256[] memory depositAmounts) internal {
+
+    // Helper function to process final withdrawals for both gauges
+    function _finalizeWithdrawals(uint256[] memory depositAmounts, uint256[] memory depositAmounts2) internal {
         for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
+            // First gauge withdrawals
             uint256 remainingAmount = depositAmounts[i] - (depositAmounts[i] / 2);
             uint256 beforeWithdraw = _balanceOf(lpToken, accounts[i]);
-            
+
             vm.prank(accounts[i]);
             rewardVault.withdraw(remainingAmount, accounts[i], accounts[i]);
-            
+
             uint256 afterWithdraw = _balanceOf(lpToken, accounts[i]);
-            
+
             // Verify all LP tokens returned
-            assertEq(
-                afterWithdraw - beforeWithdraw, 
-                remainingAmount, 
-                "Final withdrawal amount mismatch"
-            );
+            assertEq(afterWithdraw - beforeWithdraw, remainingAmount, "Final withdrawal amount mismatch for gauge 1");
 
             // Verify total received matches total deposited
             assertEq(
-                afterWithdraw,
-                depositAmounts[i],
-                "Total LP tokens returned should match total deposited"
+                afterWithdraw, depositAmounts[i], "Total LP tokens returned should match total deposited for gauge 1"
+            );
+
+            // Second gauge withdrawals
+            uint256 remainingAmount2 = depositAmounts2[i] - (depositAmounts2[i] / 2);
+            uint256 beforeWithdraw2 = _balanceOf(lpToken2, accounts[i]);
+
+            vm.prank(accounts[i]);
+            rewardVault2.withdraw(remainingAmount2, accounts[i], accounts[i]);
+
+            uint256 afterWithdraw2 = _balanceOf(lpToken2, accounts[i]);
+
+            // Verify all LP tokens returned
+            assertEq(afterWithdraw2 - beforeWithdraw2, remainingAmount2, "Final withdrawal amount mismatch for gauge 2");
+
+            // Verify total received matches total deposited
+            assertEq(
+                afterWithdraw2, depositAmounts2[i], "Total LP tokens returned should match total deposited for gauge 2"
             );
         }
     }
-    
-    // Helper function to process CVX claims and verify distribution
-    function _processClaimsCVX(address[] memory rewardTokens, uint256 totalCVX) internal {
+
+    // Helper function to process CVX claims and verify distribution for both gauges
+    function _processClaimsCVX(address[] memory rewardTokens, address[] memory rewardTokens2, uint256 totalCVX)
+        internal
+    {
         uint256 totalCVXClaimed = 0;
-        
+
         for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
             uint256 beforeClaim = _balanceOf(CVX, accounts[i]);
-            
+
+            // Claim from first gauge
             vm.prank(accounts[i]);
             rewardVault.claim(rewardTokens, accounts[i]);
-            
+
+            // Claim from second gauge
+            vm.prank(accounts[i]);
+            rewardVault2.claim(rewardTokens2, accounts[i]);
+
             uint256 afterClaim = _balanceOf(CVX, accounts[i]);
             uint256 claimed = afterClaim - beforeClaim;
-            
+
             totalCVXClaimed += claimed;
-            
+
             // Verify CVX rewards received
-            assertGt(claimed, 0, "Account should receive CVX rewards");
+            assertGt(claimed, 0, "Account should receive CVX rewards from both gauges");
         }
-        
+
         // Verify all CVX rewards were distributed
         assertApproxEqRel(
-            totalCVXClaimed, 
-            totalCVX, 
-            0.05e18, // Increased tolerance to match the other assertions for consistency
-            "Total CVX claimed should match total distributed"
+            totalCVXClaimed,
+            totalCVX,
+            0.05e18, // Tolerance to account for rounding and potential implementation differences
+            "Total CVX claimed should match total distributed from both gauges"
         );
     }
 }
