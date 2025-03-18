@@ -1,0 +1,6 @@
+PreLaunchLocker__deposit
+├── it reverts if the amount is 0
+├── it reverts if the state is not IDLE
+├── it reverts if the user has no allowance for the token
+├── it reverts if the user does not have enough balance for the token
+└── it increases the balance of the user
