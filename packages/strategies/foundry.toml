@@ -3,7 +3,7 @@ src = "src"
 out = "out"
 libs = ["node_modules"]
 solc = "0.8.28"
-verbosity = 5
+verbosity = 3
 
 [fuzz]
 runs = 50
