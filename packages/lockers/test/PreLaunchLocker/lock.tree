@@ -1,0 +1,11 @@
+PreLaunchLocker__lock
+├── it reverts if the caller is not the governance
+├── it reverts if the depositor is 0
+├── it reverts if the token associated with the depositor is not the same
+├── it reverts if the state is not IDLE
+├── it reverts if their is nothing to lock
+├── it sets the depositor to the given value
+├── it sets the sdToken to the value fetched from the depositor
+├── it lock the balance of token to the depositor and receive the equivalent amount of sdToken
+├── it reverts if the amount of sdToken is not the same as the amount of token locked
+└── it sets the state to ACTIVE
