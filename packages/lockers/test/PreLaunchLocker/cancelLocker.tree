@@ -1,0 +1,4 @@
+PreLaunchLocker__cancelLocker
+├── it reverts if the caller is not the governance
+├── it reverts if the state is not IDLE
+└── it sets the state to CANCELED
