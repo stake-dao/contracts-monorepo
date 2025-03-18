@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 
 import {Allocator} from "src/Allocator.sol";
+import {ISidecar} from "src/interfaces/ISidecar.sol";
 import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
 import {IBalanceProvider} from "src/interfaces/IBalanceProvider.sol";
 
@@ -90,7 +91,7 @@ contract CurveAllocator is Allocator {
         uint256[] memory amounts = new uint256[](2);
 
         /// 4. Get the balance of the sidecar and the locker on the liquidity gauge.
-        uint256 balanceOfSidecar = IBalanceProvider(gauge).balanceOf(sidecar);
+        uint256 balanceOfSidecar = ISidecar(sidecar).balanceOf();
         uint256 balanceOfLocker = IBalanceProvider(gauge).balanceOf(LOCKER);
 
         /// 5. Calculate the optimal amount of lps that must be held by the locker.
