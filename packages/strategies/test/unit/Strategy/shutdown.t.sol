@@ -34,6 +34,12 @@ contract Strategy__shutdown is StrategyBaseTest {
             abi.encode(true)
         );
 
+        vm.mockCall(
+            address(vault),
+            abi.encodeWithSelector(IERC4626.asset.selector),
+            abi.encode(address(stakingToken))
+        );
+
         /// Caller is allowed.
         assertTrue(registry.allowed(address(strategy), allowedCaller, Strategy.shutdown.selector));
 
@@ -59,6 +65,12 @@ contract Strategy__shutdown is StrategyBaseTest {
                 IProtocolController.allowed.selector, address(strategy), notAllowedCaller, Strategy.shutdown.selector
             ),
             abi.encode(false)
+        );
+
+        vm.mockCall(
+            address(vault),
+            abi.encodeWithSelector(IERC4626.asset.selector),
+            abi.encode(address(stakingToken))
         );
 
         /// But gauge is shutdown.
@@ -102,6 +114,12 @@ contract Strategy__shutdown is StrategyBaseTest {
                 IProtocolController.allowed.selector, address(strategy), allowedCaller, Strategy.shutdown.selector
             ),
             abi.encode(true)
+        );
+
+        vm.mockCall(
+            address(vault),
+            abi.encodeWithSelector(IERC4626.asset.selector),
+            abi.encode(address(stakingToken))
         );
 
         assertTrue(registry.allowed(address(strategy), allowedCaller, Strategy.shutdown.selector));
