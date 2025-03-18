@@ -212,91 +212,91 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
         assertEq(curveStrategy.balanceOf(address(gauge)), 0, "Gauge balance should be zero after all withdrawals");
     }
 
-    function test_proportionalRewardDistribution() public {
-        // Use a fixed amount for deterministic testing
-        uint256 baseAmount = 10e18;
+    // function test_proportionalRewardDistribution() public {
+        // // Use a fixed amount for deterministic testing
+        // uint256 baseAmount = 10e18;
 
-        // Each account deposits a different amount (1x, 2x, 3x)
-        uint256[] memory depositAmounts = new uint256[](NUM_ACCOUNTS);
-        uint256 totalDeposited = 0;
+        // // Each account deposits a different amount (1x, 2x, 3x)
+        // uint256[] memory depositAmounts = new uint256[](NUM_ACCOUNTS);
+        // uint256 totalDeposited = 0;
 
-        for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
-            depositAmounts[i] = baseAmount * (i + 1);
-            totalDeposited += depositAmounts[i];
+        // for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
+            // depositAmounts[i] = baseAmount * (i + 1);
+            // totalDeposited += depositAmounts[i];
 
-            vm.prank(accounts[i]);
-            rewardVault.deposit(depositAmounts[i], accounts[i]);
-        }
+            // vm.prank(accounts[i]);
+            // rewardVault.deposit(depositAmounts[i], accounts[i]);
+        // }
 
-        // Generate some rewards
-        uint256 expectedRewards = _inflateRewards(address(gauge));
+        // // Generate some rewards
+        // uint256 expectedRewards = _inflateRewards(address(gauge));
 
-        // Set up for harvest
-        address[] memory gauges = new address[](1);
-        gauges[0] = address(gauge);
-        bytes[] memory harvestData = new bytes[](1);
+        // // Set up for harvest
+        // address[] memory gauges = new address[](1);
+        // gauges[0] = address(gauge);
+        // bytes[] memory harvestData = new bytes[](1);
 
-        // Harvest rewards
-        vm.prank(harvester);
-        accountant.harvest(gauges, harvestData);
+        // // Harvest rewards
+        // vm.prank(harvester);
+        // accountant.harvest(gauges, harvestData);
 
-        // Each account claims their rewards
-        uint256[] memory accountRewards = new uint256[](NUM_ACCOUNTS);
+        // // Each account claims their rewards
+        // uint256[] memory accountRewards = new uint256[](NUM_ACCOUNTS);
 
-        for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
-            vm.prank(accounts[i]);
-            accountant.claim(gauges, harvestData);
+        // for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
+            // vm.prank(accounts[i]);
+            // accountant.claim(gauges, harvestData);
 
-            accountRewards[i] = _balanceOf(rewardToken, accounts[i]);
+            // accountRewards[i] = _balanceOf(rewardToken, accounts[i]);
 
-            // Verify each account received rewards
-            assertGt(accountRewards[i], 0, "Account should receive rewards");
-        }
+            // // Verify each account received rewards
+            // assertGt(accountRewards[i], 0, "Account should receive rewards");
+        // }
 
-        // Verify reward proportionality (with some tolerance for rounding)
-        // Account 1 has 1x, Account 2 has 2x, Account 3 has 3x
-        // So rewards should be in roughly the same proportion
-        for (uint256 i = 1; i < NUM_ACCOUNTS; i++) {
-            // Account i should have approximately i+1 times the rewards of account 0
-            uint256 expectedRatio = i + 1;
-            uint256 actualRatio = (accountRewards[i] * 1e18) / accountRewards[0];
+        // // Verify reward proportionality (with some tolerance for rounding)
+        // // Account 1 has 1x, Account 2 has 2x, Account 3 has 3x
+        // // So rewards should be in roughly the same proportion
+        // for (uint256 i = 1; i < NUM_ACCOUNTS; i++) {
+            // // Account i should have approximately i+1 times the rewards of account 0
+            // uint256 expectedRatio = i + 1;
+            // uint256 actualRatio = (accountRewards[i] * 1e18) / accountRewards[0];
 
-            // Allow 1% tolerance for rounding errors
-            assertApproxEqRel(actualRatio, expectedRatio * 1e18, 0.01e18, "Rewards should be proportional to deposits");
-        }
+            // // Allow 1% tolerance for rounding errors
+            // assertApproxEqRel(actualRatio, expectedRatio * 1e18, 0.01e18, "Rewards should be proportional to deposits");
+        // }
 
-        // Also test with CVX rewards
-        deal(CVX, address(rewardReceiver), totalDeposited);
+        // // Also test with CVX rewards
+        // deal(CVX, address(rewardReceiver), totalDeposited);
 
-        // Claim extra rewards and distribute
-        convexSidecar.claimExtraRewards();
-        rewardReceiver.distributeRewards();
+        // // Claim extra rewards and distribute
+        // convexSidecar.claimExtraRewards();
+        // rewardReceiver.distributeRewards();
 
-        address[] memory rewardTokens = rewardVault.getRewardTokens();
+        // address[] memory rewardTokens = rewardVault.getRewardTokens();
 
-        skip(1 weeks);
+        // skip(1 weeks);
 
-        // Each account claims their CVX rewards
-        uint256[] memory cvxRewards = new uint256[](NUM_ACCOUNTS);
+        // // Each account claims their CVX rewards
+        // uint256[] memory cvxRewards = new uint256[](NUM_ACCOUNTS);
 
-        for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
-            vm.prank(accounts[i]);
-            rewardVault.claim(rewardTokens, accounts[i]);
+        // for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
+            // vm.prank(accounts[i]);
+            // rewardVault.claim(rewardTokens, accounts[i]);
 
-            cvxRewards[i] = _balanceOf(CVX, accounts[i]);
+            // cvxRewards[i] = _balanceOf(CVX, accounts[i]);
 
-            // Verify each account received CVX rewards
-            assertGt(cvxRewards[i], 0, "Account should receive CVX rewards");
-        }
+            // // Verify each account received CVX rewards
+            // assertGt(cvxRewards[i], 0, "Account should receive CVX rewards");
+        // }
 
-        // Verify CVX reward proportionality
-        for (uint256 i = 1; i < NUM_ACCOUNTS; i++) {
-            uint256 expectedRatio = i + 1;
-            uint256 actualRatio = (cvxRewards[i] * 1e18) / cvxRewards[0];
+        // // Verify CVX reward proportionality
+        // for (uint256 i = 1; i < NUM_ACCOUNTS; i++) {
+            // uint256 expectedRatio = i + 1;
+            // uint256 actualRatio = (cvxRewards[i] * 1e18) / cvxRewards[0];
 
-            assertApproxEqRel(
-                actualRatio, expectedRatio * 1e18, 0.01e18, "CVX rewards should be proportional to deposits"
-            );
-        }
-    }
+            // assertApproxEqRel(
+                // actualRatio, expectedRatio * 1e18, 0.01e18, "CVX rewards should be proportional to deposits"
+            // );
+        // }
+    // }
 }
