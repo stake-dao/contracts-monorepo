@@ -4,6 +4,7 @@ pragma solidity ^0.8.19;
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {BaseDepositor} from "src/common/depositor/BaseDepositor.sol";
 import {IERC20} from "src/common/interfaces/IERC20.sol";
+import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 
 /// @title PreLaunchLocker
 /// @dev This contract implements a state machine with three states: DEFAULT, ACTIVE, and CANCELED
@@ -105,6 +106,12 @@ contract PreLaunchLocker {
     /// @param newState The new state of the locker.
     event LockerStateUpdated(STATE newState);
 
+    /// @notice Event emitted each time a user stakes their sdTokens.
+    /// @param account The account that staked the sdTokens.
+    /// @param gauge The gauge that the sdTokens were staked to.
+    /// @param amount The amount of sdTokens staked.
+    event TokensStaked(address indexed account, address gauge, uint256 amount);
+
     /// @notice Error thrown when a required parameter is set to the zero address.
     error REQUIRED_PARAM();
     /// @notice Error thrown when the caller is not the governance address.
@@ -125,6 +132,8 @@ contract PreLaunchLocker {
     error CANNOT_CANCEL_ACTIVE_OR_CANCELED_LOCKER();
     /// @notice Error thrown when the locker is not CANCELED and the user tries to withdraw the initial token.
     error CANNOT_WITHDRAW_DEFAULT_LOCKER();
+    /// @notice Error thrown when the locker is not active and the user tries to stake.
+    error CANNOT_STAKE_DEFAULT_OR_CANCELED_LOCKER();
 
     ////////////////////////////////////////////////////////////////
     /// --- MODIFIERS
@@ -212,6 +221,43 @@ contract PreLaunchLocker {
     /// @custom:reverts CANNOT_WITHDRAW_DEFAULT_LOCKER if the locker is not CANCELED and the user tries to withdraw the initial token.
     function withdraw() external {
         withdraw(balances[msg.sender]);
+    }
+
+    /// @notice Stake the given amount of sdTokens into the gauge associated with the locker.
+    /// @param amount Amount of sdTokens to stake.
+    /// @custom:reverts REQUIRED_PARAM if the given amount is zero.
+    /// @custom:reverts CANNOT_STAKE_DEFAULT_OR_CANCELED_LOCKER if the locker is not active.
+    /// @custom:reverts INSUFFICIENT_BALANCE if the user has insufficient balance.
+    function stake(uint256 amount) public {
+        // check the amount is not zero
+        if (amount == 0) revert REQUIRED_PARAM();
+
+        // check we're in the active state
+        if (state != STATE.ACTIVE) revert CANNOT_STAKE_DEFAULT_OR_CANCELED_LOCKER();
+
+        // check if the user has enough balance
+        if (balances[msg.sender] < amount) revert INSUFFICIENT_BALANCE();
+
+        // 1. decrease the balance of the sender by the amount staked
+        balances[msg.sender] -= amount;
+
+        // 2. get the gauge contract associated with the depositor
+        ILiquidityGauge gauge = ILiquidityGauge(depositor.gauge());
+
+        // 3. give the permission to the gauge to transfer the tokens and stake them
+        SafeTransferLib.safeApprove(sdToken, address(gauge), amount);
+        gauge.deposit(amount, msg.sender);
+
+        // 4. emit the event with the staking details
+        emit TokensStaked(msg.sender, address(gauge), amount);
+    }
+
+    /// @notice Stake all the sdTokens held by the caller.
+    /// @custom:reverts REQUIRED_PARAM if the given amount is zero.
+    /// @custom:reverts CANNOT_STAKE_DEFAULT_OR_CANCELED_LOCKER if the locker is not active.
+    /// @custom:reverts INSUFFICIENT_BALANCE if the user has insufficient balance.
+    function stake() external {
+        stake(balances[msg.sender]);
     }
 
     ////////////////////////////////////////////////////////////////
