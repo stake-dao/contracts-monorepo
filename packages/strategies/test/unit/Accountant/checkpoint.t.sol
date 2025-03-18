@@ -78,7 +78,13 @@ contract Accountant__checkpoint is AccountantBaseTest {
         AccountantHarness accountantHarness = AccountantHarness(address(accountant));
         accountantHarness._cheat_updateVaultData(
             vault,
-            Accountant.VaultData({integral: vaultIntegral, supply: initialSupply, feeSubjectAmount: 0, totalAmount: 0})
+            Accountant.VaultData({
+                integral: vaultIntegral,
+                supply: initialSupply,
+                feeSubjectAmount: 0,
+                totalAmount: 0,
+                netCredited: 0
+            })
         );
 
         uint256 beforeProtocolFeesAccrued = accountant.protocolFeesAccrued();
@@ -119,7 +125,13 @@ contract Accountant__checkpoint is AccountantBaseTest {
         AccountantHarness accountantHarness = AccountantHarness(address(accountant));
         accountantHarness._cheat_updateVaultData(
             vault,
-            Accountant.VaultData({integral: vaultIntegral, supply: initialSupply, feeSubjectAmount: 0, totalAmount: 0})
+            Accountant.VaultData({
+                integral: vaultIntegral,
+                supply: initialSupply,
+                feeSubjectAmount: 0,
+                totalAmount: 0,
+                netCredited: 0
+            })
         );
 
         uint256 beforePendingRewards = accountant.getPendingRewards(vault);
@@ -173,7 +185,13 @@ contract Accountant__checkpoint is AccountantBaseTest {
         );
         accountantHarness._cheat_updateVaultData(
             vault,
-            Accountant.VaultData({integral: vaultIntegral, supply: initialSupply, feeSubjectAmount: 0, totalAmount: 0})
+            Accountant.VaultData({
+                integral: vaultIntegral,
+                supply: initialSupply,
+                feeSubjectAmount: 0,
+                totalAmount: 0,
+                netCredited: 0
+            })
         );
 
         // we call the checkpoint function to mint new tokens
@@ -227,7 +245,8 @@ contract Accountant__checkpoint is AccountantBaseTest {
                 integral: vaultIntegral,
                 supply: initialSupply + amount,
                 feeSubjectAmount: 0,
-                totalAmount: 0
+                totalAmount: 0,
+                netCredited: 0
             })
         );
 
@@ -271,7 +290,13 @@ contract Accountant__checkpoint is AccountantBaseTest {
         );
         accountantHarness._cheat_updateVaultData(
             vault,
-            Accountant.VaultData({integral: vaultIntegral, supply: initialSupply, feeSubjectAmount: 0, totalAmount: 0})
+            Accountant.VaultData({
+                integral: vaultIntegral,
+                supply: initialSupply,
+                feeSubjectAmount: 0,
+                totalAmount: 0,
+                netCredited: 0
+            })
         );
 
         // we call the checkpoint function to mint new tokens

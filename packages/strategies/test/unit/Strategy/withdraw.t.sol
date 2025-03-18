@@ -30,11 +30,7 @@ contract Strategy__withdraw is StrategyBaseTest {
 
         strategy._cheat_setSyncRewards(100, 400);
 
-        vm.mockCall(
-            address(vault),
-            abi.encodeWithSelector(IERC4626.asset.selector),
-            abi.encode(address(stakingToken))
-        );
+        vm.mockCall(address(vault), abi.encodeWithSelector(IERC4626.asset.selector), abi.encode(address(stakingToken)));
 
         vm.prank(vault);
         Strategy.PendingRewards memory pendingRewards = strategy.withdraw(allocation, false);

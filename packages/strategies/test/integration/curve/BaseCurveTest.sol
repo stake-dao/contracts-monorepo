@@ -230,12 +230,21 @@ abstract contract BaseCurveTest is BaseForkTest {
         );
     }
 
-    function _inflateRewards(address gauge) internal returns (uint256 inflation) {
-        inflation = 1_000_000e18;
+    function _inflateRewards(address gauge, uint256 inflation) internal returns (uint256) {
+        // Get the current minted amount for LOCKER from the gauge
+        uint256 minted = IMinter(MINTER).minted(LOCKER, gauge);
+
+        // Calculate what integrate_fraction should be to get exactly the inflation amount
+        uint256 targetIntegrateFraction = minted + inflation;
+
+        // Mock the integrate_fraction call to return our target value
         vm.mockCall(
             address(gauge),
             abi.encodeWithSelector(ILiquidityGauge.integrate_fraction.selector, address(LOCKER)),
-            abi.encode(inflation)
+            abi.encode(targetIntegrateFraction)
         );
+
+        // Return the expected rewards amount
+        return inflation;
     }
 }
