@@ -164,7 +164,7 @@ contract PreLaunchLocker {
     }
 
     ////////////////////////////////////////////////////////////////
-    /// --- DEPOSIT & WITHDRAW
+    /// --- DEPOSIT
     ///////////////////////////////////////////////////////////////
 
     /// @notice Deposit tokens in this contract.
@@ -183,6 +183,10 @@ contract PreLaunchLocker {
         // 2. increase the balance of the sender by the amount deposited
         balances[msg.sender] += amount;
     }
+
+    ////////////////////////////////////////////////////////////////
+    /// --- WITHDRAW
+    ///////////////////////////////////////////////////////////////
 
     /// @notice Withdraw the given amount of tokens. The relation between the token and the sdToken is 1:1.
     /// @dev If the locker is active, withdraw the sdTokens held by the caller.
@@ -223,6 +227,10 @@ contract PreLaunchLocker {
         withdraw(balances[msg.sender]);
     }
 
+    ////////////////////////////////////////////////////////////////
+    /// --- STAKE
+    ///////////////////////////////////////////////////////////////
+
     /// @notice Stake the given amount of sdTokens into the gauge associated with the locker.
     /// @param amount Amount of sdTokens to stake.
     /// @custom:reverts REQUIRED_PARAM if the given amount is zero.
@@ -242,14 +250,14 @@ contract PreLaunchLocker {
         balances[msg.sender] -= amount;
 
         // 2. get the gauge contract associated with the depositor
-        ILiquidityGauge gauge = ILiquidityGauge(depositor.gauge());
+        ILiquidityGauge liquidityGauge = ILiquidityGauge(depositor.gauge());
 
         // 3. give the permission to the gauge to transfer the tokens and stake them
-        SafeTransferLib.safeApprove(sdToken, address(gauge), amount);
-        gauge.deposit(amount, msg.sender);
+        SafeTransferLib.safeApprove(sdToken, address(liquidityGauge), amount);
+        liquidityGauge.deposit(amount, msg.sender);
 
         // 4. emit the event with the staking details
-        emit TokensStaked(msg.sender, address(gauge), amount);
+        emit TokensStaked(msg.sender, address(liquidityGauge), amount);
     }
 
     /// @notice Stake all the sdTokens held by the caller.
@@ -333,6 +341,10 @@ contract PreLaunchLocker {
         _setGovernance(_governance);
     }
 
+    ////////////////////////////////////////////////////////////////
+    /// --- HELPERS METHODS
+    ///////////////////////////////////////////////////////////////
+
     /// @notice Given the value of the state, return an user friendly label.
     /// @dev This function is a helper for frontend engineers or indexers to display the state of the locker in a user friendly way.
     /// @param _state The state of the locker as returned by the `state` variable or emitted in an event.
@@ -341,5 +353,21 @@ contract PreLaunchLocker {
         if (_state == STATE.DEFAULT) label = "DEFAULT";
         else if (_state == STATE.ACTIVE) label = "ACTIVE";
         else if (_state == STATE.CANCELED) label = "CANCELED";
+    }
+
+    /// @notice Return the token currently held by the locker based on its state.
+    ///         The locker holds different tokens during its lifecycle:
+    ///         - In `DEFAULT` or `CANCELED` state, the contract holds the initial token.
+    ///         - In `ACTIVE` state, the contract holds the sdToken (wrapped version) since the
+    ///           original tokens have been wrapped into sdTokens through the depositor contract
+    /// @return token The token held by the locker.
+    function activeToken() external view returns (address) {
+        return state == STATE.ACTIVE ? sdToken : token;
+    }
+
+    /// @notice Return the gauge associated with the locker.
+    /// @return gauge The gauge associated with the locker. Return zero address if the locker is not active.
+    function gauge() external view returns (address) {
+        return state == STATE.ACTIVE ? depositor.gauge() : address(0);
     }
 }
