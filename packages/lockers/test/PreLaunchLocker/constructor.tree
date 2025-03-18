@@ -1,0 +1,8 @@
+PreLaunchLocker__constructor
+├── it reverts if the given token is 0
+├── it sets the state to IDLE
+├── it sets the token to the given address
+├── it sets the governance to the sender
+├── it sets the timestamp to the current timestamp
+├── it emits the StateUpdate event
+└── it emits the GovernanceUpdated event
