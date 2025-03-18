@@ -118,7 +118,8 @@ contract Accountant__claim is AccountantBaseTest {
         bytes[] memory harvestData2 = new bytes[](0);
         AccountantHarness accountantHarness = AccountantHarness(address(accountant));
         accountantHarness._cheat_updateVaultData(
-            vault, Accountant.VaultData({integral: 1e20, supply: 0, feeSubjectAmount: 0, totalAmount: 0})
+            vault,
+            Accountant.VaultData({integral: 1e20, supply: 0, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
         );
         accountantHarness._cheat_updateUserData(
             vault, makeAddr("account"), Accountant.AccountData({balance: 0, integral: 1e19, pendingRewards: 1e18})
@@ -150,7 +151,8 @@ contract Accountant__claim is AccountantBaseTest {
         // put the contract in the state it should be before calling claim for this test
         AccountantHarness accountantHarness = AccountantHarness(address(accountant));
         accountantHarness._cheat_updateVaultData(
-            vault, Accountant.VaultData({integral: integral, supply: 0, feeSubjectAmount: 0, totalAmount: 0})
+            vault,
+            Accountant.VaultData({integral: integral, supply: 0, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
         );
         accountantHarness._cheat_updateUserData(
             vault,
@@ -187,7 +189,8 @@ contract Accountant__claim is AccountantBaseTest {
         vaults[0] = vault;
 
         AccountantHarness(address(accountant))._cheat_updateVaultData(
-            vault, Accountant.VaultData({integral: integral, supply: 0, feeSubjectAmount: 0, totalAmount: 0})
+            vault,
+            Accountant.VaultData({integral: integral, supply: 0, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
         );
         AccountantHarness(address(accountant))._cheat_updateUserData(
             vault, address(this), Accountant.AccountData({balance: 0, integral: integral, pendingRewards: 0})
@@ -221,7 +224,8 @@ contract Accountant__claim is AccountantBaseTest {
         // put the contract in the state it should be before calling claim for this test
         AccountantHarness accountantHarness = AccountantHarness(address(accountant));
         accountantHarness._cheat_updateVaultData(
-            vault, Accountant.VaultData({integral: integral, supply: 0, feeSubjectAmount: 0, totalAmount: 0})
+            vault,
+            Accountant.VaultData({integral: integral, supply: 0, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
         );
         accountantHarness._cheat_updateUserData(
             vault, address(this), Accountant.AccountData({balance: accountBalance, integral: 0, pendingRewards: 0})
@@ -266,7 +270,8 @@ contract Accountant__claim is AccountantBaseTest {
         // put the contract in the state it should be before calling claim for this test
         AccountantHarness accountantHarness = AccountantHarness(address(accountant));
         accountantHarness._cheat_updateVaultData(
-            vault, Accountant.VaultData({integral: integral, supply: 0, feeSubjectAmount: 0, totalAmount: 0})
+            vault,
+            Accountant.VaultData({integral: integral, supply: 0, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
         );
         accountantHarness._cheat_updateUserData(
             vault,
@@ -327,7 +332,14 @@ contract Accountant__claim is AccountantBaseTest {
         // SETUP VAULT 1 -- vault.integral == account.integral, account.pendingRewards > 0
         ///////////////////////
         accountantHarness._cheat_updateVaultData(
-            vaults[0], Accountant.VaultData({integral: uint256(1e18), supply: 0, feeSubjectAmount: 0, totalAmount: 0})
+            vaults[0],
+            Accountant.VaultData({
+                integral: uint256(1e18),
+                supply: 0,
+                feeSubjectAmount: 0,
+                totalAmount: 0,
+                netCredited: 0
+            })
         );
         accountantHarness._cheat_updateUserData(
             vaults[0], address(this), Accountant.AccountData({balance: 0, integral: 1e18, pendingRewards: 1e12})
@@ -337,7 +349,8 @@ contract Accountant__claim is AccountantBaseTest {
         // SETUP VAULT 2 -- vault.integral > account.integral, account.pendingRewards ==0, account.balance > 0
         ///////////////////////
         accountantHarness._cheat_updateVaultData(
-            vaults[1], Accountant.VaultData({integral: 1e21, supply: 0, feeSubjectAmount: 0, totalAmount: 0})
+            vaults[1],
+            Accountant.VaultData({integral: 1e21, supply: 0, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
         );
         accountantHarness._cheat_updateUserData(
             vaults[1], address(this), Accountant.AccountData({balance: 1e16, integral: 1e18, pendingRewards: 0})
@@ -347,7 +360,8 @@ contract Accountant__claim is AccountantBaseTest {
         // SETUP VAULT 3 -- vault.integral > account.integral, account.pendingRewards > 0, account.balance > 0
         ///////////////////////
         accountantHarness._cheat_updateVaultData(
-            vaults[2], Accountant.VaultData({integral: 1e21, supply: 0, feeSubjectAmount: 0, totalAmount: 0})
+            vaults[2],
+            Accountant.VaultData({integral: 1e21, supply: 0, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
         );
         accountantHarness._cheat_updateUserData(
             vaults[2], address(this), Accountant.AccountData({balance: 1e17, integral: 1e18, pendingRewards: 1e18})
@@ -357,7 +371,8 @@ contract Accountant__claim is AccountantBaseTest {
         // SETUP VAULT 4 -- vault.integral == account.integral, account.pendingRewards == 0, account.balance == 0
         ///////////////////////
         accountantHarness._cheat_updateVaultData(
-            vaults[3], Accountant.VaultData({integral: 1e21, supply: 0, feeSubjectAmount: 0, totalAmount: 0})
+            vaults[3],
+            Accountant.VaultData({integral: 1e21, supply: 0, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
         );
         accountantHarness._cheat_updateUserData(
             vaults[3], address(this), Accountant.AccountData({balance: 0, integral: 1e21, pendingRewards: 0})

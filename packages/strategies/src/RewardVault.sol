@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
+import "forge-std/src/console.sol";
+
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
@@ -54,6 +56,9 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @notice Error thrown when the caller is not allowed.
     error OnlyAllowed();
 
+    /// @notice Error thrown when the caller is not the registrar.
+    error OnlyRegistrar();
+
     /// @notice Error thrown when the reward token is not valid
     error InvalidRewardToken();
 
@@ -72,6 +77,9 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
     /// @notice The protocol ID.
     bytes4 public immutable PROTOCOL_ID;
+
+    /// @notice Whether to trigger a harvest on deposit and withdraw.
+    bool public immutable TRIGGER_HARVEST;
 
     /// @notice The protocol controller address.
     IAccountant public immutable ACCOUNTANT;
@@ -140,13 +148,20 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         _;
     }
 
+    modifier onlyRegistrar() {
+        require(PROTOCOL_CONTROLLER.isRegistrar(msg.sender), OnlyRegistrar());
+
+        _;
+    }
+
     /// @notice Initializes the vault with basic ERC20 metadata
     /// @dev Sets up the vault with a standard name and symbol prefix
     /// @param protocolId The protocol ID.
     /// @param protocolController The protocol controller address
     /// @param accountant The accountant address
+    /// @param triggerHarvest Whether to trigger a harvest on deposit and withdraw.
     /// @custom:reverts ZeroAddress if the accountant or protocol controller address is the zero address.
-    constructor(bytes4 protocolId, address protocolController, address accountant)
+    constructor(bytes4 protocolId, address protocolController, address accountant, bool triggerHarvest)
         ERC20(string.concat("StakeDAO Vault"), string.concat("sd-vault"))
     {
         require(accountant != address(0) && protocolController != address(0), ZeroAddress());
@@ -154,6 +169,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         PROTOCOL_ID = protocolId;
         ACCOUNTANT = IAccountant(accountant);
         PROTOCOL_CONTROLLER = IProtocolController(protocolController);
+        TRIGGER_HARVEST = triggerHarvest;
     }
 
     ///////////////////////////////////////////////////////////////
@@ -213,10 +229,10 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
         // Get the address of the strategy contract from the protocol controller
         // then process the deposit of the allocation
-        IStrategy.PendingRewards memory pendingRewards = strategy().deposit(allocation);
+        IStrategy.PendingRewards memory pendingRewards = strategy().deposit(allocation, TRIGGER_HARVEST);
 
         // Mint the shares to the receiver
-        _mint(receiver, shares, pendingRewards, allocation.harvested);
+        _mint(receiver, shares, pendingRewards, TRIGGER_HARVEST);
 
         emit Deposit(msg.sender, receiver, assets, shares);
     }
@@ -272,13 +288,14 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
         // Get the address of the strategy contract from the protocol controller
         // then process the withdrawal of the allocation
-        IStrategy.PendingRewards memory pendingRewards = strategy().withdraw(allocation);
+        IStrategy.PendingRewards memory pendingRewards = strategy().withdraw(allocation, TRIGGER_HARVEST);
 
         // Burn the shares by calling the endpoint function of the accountant contract
-        _burn(owner, shares, pendingRewards, allocation.harvested);
+        _burn(owner, shares, pendingRewards, TRIGGER_HARVEST);
 
         // Transfer the assets to the receiver. The 1:1 relationship between assets and shares is maintained.
         SafeERC20.safeTransfer(IERC20(asset()), receiver, shares);
+
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
 
@@ -354,7 +371,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @custom:reverts ZeroAddress if the distributor is the zero address.
     /// @custom:reverts RewardAlreadyExists if the reward token already exists.
     /// @custom:reverts MaxRewardTokensExceeded if the maximum number of reward tokens is exceeded.
-    function addRewardToken(address rewardsToken, address distributor) external onlyAllowed {
+    function addRewardToken(address rewardsToken, address distributor) external onlyRegistrar {
         // ensure that the distributor is not the zero address
         require(distributor != address(0), ZeroAddress());
 
@@ -427,11 +444,10 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @param _to The account to update. (Can be address(0) if not needed)
     function _checkpoint(address _from, address _to) internal {
         uint256 len = rewardTokens.length;
-        uint32 currentTime = uint32(block.timestamp);
 
         for (uint256 i; i < len; i++) {
             address token = rewardTokens[i];
-            uint128 newRewardPerToken = _updateRewardToken(token, currentTime);
+            uint128 newRewardPerToken = _updateRewardToken(token);
 
             // Update account-specific data if _from is set
             if (_from != address(0)) {
@@ -446,16 +462,15 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
     /// @dev Updates reward token state and returns new rewardPerToken.
     /// @param token The address of the reward token to update.
-    /// @param currentTime The current block timestamp.
     /// @return newRewardPerToken The new calculated reward per token.
-    function _updateRewardToken(address token, uint32 currentTime) internal returns (uint128 newRewardPerToken) {
+    function _updateRewardToken(address token) internal returns (uint128 newRewardPerToken) {
         RewardData storage reward = rewardData[token];
 
         // get the current reward per token
         newRewardPerToken = _rewardPerToken(reward);
 
         // Update the last update time and reward per token stored
-        reward.lastUpdateTime = currentTime;
+        reward.lastUpdateTime = _lastTimeRewardApplicable(reward.periodFinish);
         reward.rewardPerTokenStored = newRewardPerToken;
     }
 
@@ -689,12 +704,15 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
         if (_totalSupply == 0) return reward.rewardPerTokenStored;
 
-        // calculate the reward per token based on the last update time, the ending period, the reward rate and the total supply
-        return reward.rewardPerTokenStored
-            + (
-                (_lastTimeRewardApplicable(reward.periodFinish) - reward.lastUpdateTime) * reward.rewardRate * 1e18
-                    / _totalSupply
-            );
+        uint256 timeDelta = _lastTimeRewardApplicable(reward.periodFinish) - reward.lastUpdateTime;
+        uint256 rewardRatePerToken = 0;
+
+        if (timeDelta > 0 && _totalSupply > 0) {
+            // Calculate reward per token for the time period
+            rewardRatePerToken = (timeDelta * reward.rewardRate * 1e18) / _totalSupply;
+        }
+
+        return (reward.rewardPerTokenStored + rewardRatePerToken).toUint128();
     }
 
     /// @notice Returns the reward per token for a given reward token.

@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 import "src/Factory.sol";
 
 import {IBooster} from "@interfaces/convex/IBooster.sol";
+import {IStrategy} from "@interfaces/stake-dao/IStrategy.sol";
 import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 import {IGaugeController} from "@interfaces/curve/IGaugeController.sol";
 
@@ -11,14 +12,27 @@ import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
 
 contract CurveFactory is Factory {
+    /// @notice The bytes4 ID of the Curve protocol
+    /// @dev Used to identify the Curve protocol in the registry
+    bytes4 private constant CURVE_PROTOCOL_ID = bytes4(keccak256("CURVE"));
+
+    /// @notice Curve Gauge Controller.
+    IGaugeController public constant GAUGE_CONTROLLER = IGaugeController(0x2F50D538606Fa9EDD2B11E2446BEb18C9D5846bB);
+
+    /// @notice CVX token address.
+    address public constant CVX = 0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B;
+
+    /// @notice Address of the old strategy.
+    address public constant OLD_STRATEGY = 0x69D61428d089C2F35Bf6a472F540D0F82D1EA2cd;
+
     /// @notice Convex Booster.
-    address public immutable BOOSTER;
+    address public immutable BOOSTER = 0xF403C135812408BFbE8713b5A23a04b3D48AAE31;
 
     /// @notice Convex Minimal Proxy Factory for Only Boost.
     address public immutable CONVEX_SIDECAR_FACTORY;
 
-    /// @notice Curve Gauge Controller.
-    IGaugeController public immutable GAUGE_CONTROLLER;
+    /// @notice Error thrown when the set reward receiver fails.
+    error SetRewardReceiverFailed();
 
     /// @notice Event emitted when a vault is deployed.
     event VaultDeployed(address gauge, address vault, address rewardReceiver, address sidecar);
@@ -27,31 +41,32 @@ contract CurveFactory is Factory {
         address protocolController,
         address vaultImplementation,
         address rewardReceiverImplementation,
-        bytes4 protocolId,
         address locker,
-        address gateway
-    ) Factory(protocolController, vaultImplementation, rewardReceiverImplementation, protocolId, locker, gateway) {}
+        address gateway,
+        address convexSidecarFactory
+    )
+        Factory(protocolController, vaultImplementation, rewardReceiverImplementation, CURVE_PROTOCOL_ID, locker, gateway)
+    {
+        CONVEX_SIDECAR_FACTORY = convexSidecarFactory;
+    }
 
     /// @notice Create a new vault.
     /// @param _pid Pool id.
-    function create(uint256 _pid)
-        external
-        returns (address gauge, address vault, address rewardReceiver, address sidecar)
-    {
-        (,, gauge,,,) = IBooster(BOOSTER).poolInfo(_pid);
+    function create(uint256 _pid) external returns (address vault, address rewardReceiver, address sidecar) {
+        (,, address gauge,,,) = IBooster(BOOSTER).poolInfo(_pid);
 
-        /// Create Stake DAO pool.
+        /// 1. Create the vault.
         (vault, rewardReceiver) = createVault(gauge);
 
-        /// No necessary to check if the gauge is valid, as it's already checked in the ConvexMinimalProxyFactory.
+        /// 2. Attach the sidecar.
         sidecar = ISidecarFactory(CONVEX_SIDECAR_FACTORY).create(gauge, abi.encode(_pid));
 
         emit VaultDeployed(gauge, vault, rewardReceiver, sidecar);
     }
 
     function _isValidToken(address _token) internal view override returns (bool) {
-        /// We can't add the reward token as extra reward.
-        if (_token == REWARD_TOKEN) return false;
+        /// We already add CVX to the vault by default.
+        if (_token == CVX) return false;
 
         /// If the token is available as an inflation receiver, it's not valid.
         try GAUGE_CONTROLLER.gauge_types(_token) {
@@ -81,11 +96,20 @@ contract CurveFactory is Factory {
         return isValid;
     }
 
+    /// @notice Check if the gauge is shutdown in the old strategy.
+    /// @dev If the gauge is shutdown, we can deploy a new strategy.
+    function _isValidDeployment(address _gauge) internal view override returns (bool) {
+        return IStrategy(OLD_STRATEGY).isShutdown(_gauge);
+    }
+
     function _getAsset(address _gauge) internal view override returns (address) {
         return ILiquidityGauge(_gauge).lp_token();
     }
 
-    function _setupRewardTokens(address _gauge, address _vault, address _rewardReceiver) internal override {
+    function _setupRewardTokens(address _vault, address _gauge, address _rewardReceiver) internal override {
+        /// Then we add the extra reward token to the reward distributor through the strategy.
+        IRewardVault(_vault).addRewardToken(CVX, _rewardReceiver);
+
         /// Check if the gauge supports extra rewards.
         /// This function is not supported on all gauges, depending on when they were deployed.
         bytes memory data = abi.encodeWithSignature("reward_tokens(uint256)", 0);
@@ -109,6 +133,10 @@ contract CurveFactory is Factory {
                 IRewardVault(_vault).addRewardToken(_extraRewardToken, _rewardReceiver);
             }
         }
+
+        /// Set RewardReceiver as RewardReceiver on Gauge.
+        data = abi.encodeWithSignature("set_rewards_receiver(address)", _rewardReceiver);
+        require(_executeTransaction(_gauge, data), SetRewardReceiverFailed());
     }
 
     function _initializeVault(address, address _asset, address _gauge) internal override {

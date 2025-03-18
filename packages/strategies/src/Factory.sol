@@ -113,11 +113,11 @@ abstract contract Factory is ProtocolContext {
         address asset = _getAsset(gauge);
 
         /// Prepare the initialization data for the vault
-        /// The vault needs: registry, accountant, gauge, and asset
-        bytes memory data = abi.encodePacked(address(PROTOCOL_CONTROLLER), ACCOUNTANT, gauge, asset);
+        /// The vault needs: gauge and asset
+        bytes memory data = abi.encodePacked(gauge, asset);
 
         /// Generate a deterministic salt based on the gauge and asset
-        bytes32 salt = keccak256(abi.encodePacked(asset, gauge));
+        bytes32 salt = keccak256(data);
 
         /// Clone the vault implementation with the initialization data
         vault = Clones.cloneDeterministicWithImmutableArgs(REWARD_VAULT_IMPLEMENTATION, data, salt);

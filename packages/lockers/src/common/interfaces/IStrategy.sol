@@ -35,4 +35,6 @@ interface IStrategy {
     function setRewardReceiver(address _gauge, address _rewardReceiver) external;
 
     function claimProtocolFees() external;
+
+    function isShutdown(address _gauge) external view returns (bool);
 }

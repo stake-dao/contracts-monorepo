@@ -30,6 +30,10 @@ contract MockRegistry is IProtocolController {
         _rewardReceiver = rewardReceiver_;
     }
 
+    function isRegistrar(address) external pure returns (bool) {
+        return true;
+    }
+
     function shutdown(address) external {}
 
     function isShutdown(address) external pure returns (bool) {
@@ -46,10 +50,6 @@ contract MockRegistry is IProtocolController {
 
     function allocator(bytes4) external view override returns (address) {
         return _allocator;
-    }
-
-    function harvester(bytes4) external view override returns (address) {
-        return _harvester;
     }
 
     function accountant(bytes4) external view override returns (address) {

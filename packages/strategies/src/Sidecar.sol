@@ -29,9 +29,6 @@ abstract contract Sidecar is ISidecar {
     /// @notice The protocol controller contract
     IProtocolController public immutable PROTOCOL_CONTROLLER;
 
-    /// @notice The strategy contract address
-    address public immutable STRATEGY;
-
     //////////////////////////////////////////////////////
     /// --- STORAGE
     //////////////////////////////////////////////////////
@@ -62,14 +59,7 @@ abstract contract Sidecar is ISidecar {
     /// @notice Ensures the caller is the strategy
     /// @custom:throws OnlyStrategy If the caller is not the strategy
     modifier onlyStrategy() {
-        if (msg.sender != STRATEGY) revert OnlyStrategy();
-        _;
-    }
-
-    /// @notice Ensures the caller is the accountant
-    /// @custom:throws OnlyAccountant If the caller is not the accountant
-    modifier onlyAccountant() {
-        if (msg.sender != ACCOUNTANT) revert OnlyAccountant();
+        require(PROTOCOL_CONTROLLER.strategy(PROTOCOL_ID) == msg.sender, OnlyStrategy());
         _;
     }
 
@@ -86,7 +76,6 @@ abstract contract Sidecar is ISidecar {
         ACCOUNTANT = _accountant;
         PROTOCOL_CONTROLLER = IProtocolController(_protocolController);
         REWARD_TOKEN = IERC20(IAccountant(_accountant).REWARD_TOKEN());
-        STRATEGY = PROTOCOL_CONTROLLER.strategy(PROTOCOL_ID);
     }
 
     //////////////////////////////////////////////////////
@@ -119,7 +108,7 @@ abstract contract Sidecar is ISidecar {
 
     /// @notice Claims pending rewards from the sidecar
     /// @custom:throws OnlyAccountant If the caller is not the accountant
-    function claim() external onlyAccountant returns (uint256) {
+    function claim() external onlyStrategy returns (uint256) {
         return _claim();
     }
 

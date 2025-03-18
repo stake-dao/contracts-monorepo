@@ -77,7 +77,7 @@ contract StrategyHarness is Strategy, Test {
         return _mockSyncRewards;
     }
 
-    function _harvest(address, bytes calldata) internal view override returns (uint256) {
+    function _harvestLocker(address, bytes memory) internal view override returns (uint256) {
         return _mockHarvestAmount;
     }
 
@@ -85,7 +85,7 @@ contract StrategyHarness is Strategy, Test {
         require(IERC20(target).balanceOf(address(LOCKER)) >= amount, DepositFailed());
     }
 
-    function _withdraw(address target, uint256 amount, address receiver) internal override {
+    function _withdraw(address asset, address target, uint256 amount, address receiver) internal override {
         bytes memory data = abi.encodeWithSignature("transfer(address,uint256)", receiver, amount);
         require(_executeTransaction(target, data), WithdrawFailed());
     }

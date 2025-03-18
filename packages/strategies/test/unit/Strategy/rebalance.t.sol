@@ -20,7 +20,7 @@ contract Strategy__rebalance is StrategyBaseTest {
         stakingToken.mint(address(sidecar2), 300);
 
         vm.prank(vault);
-        strategy.deposit(allocation);
+        strategy.deposit(allocation, false);
 
         /// Assert the total balance is 600
         assertEq(strategy.balanceOf(gauge), 600);

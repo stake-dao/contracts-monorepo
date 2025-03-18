@@ -15,15 +15,19 @@ import {Sidecar} from "src/Sidecar.sol";
 contract ConvexSidecar is Sidecar {
     using SafeERC20 for IERC20;
 
+    /// @notice The bytes4 ID of the Convex protocol
+    /// @dev Used to identify the Convex protocol in the registry
+    bytes4 private constant CURVE_PROTOCOL_ID = bytes4(keccak256("CURVE"));
+
     //////////////////////////////////////////////////////
-    /// ---  IMPLEMENTATION IMMUTABLES
+    /// ---  IMPLEMENTATION CONSTANTS
     //////////////////////////////////////////////////////
 
     /// @notice Convex Reward Token address.
-    IERC20 public immutable CVX;
+    IERC20 public constant CVX = IERC20(0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B);
 
     /// @notice Convex Booster address.
-    IBooster public immutable BOOSTER;
+    IBooster public constant BOOSTER = IBooster(0xF403C135812408BFbE8713b5A23a04b3D48AAE31);
 
     /// @notice Error emitted when a zero address is provided
     error ZeroAddress();
@@ -36,14 +40,14 @@ contract ConvexSidecar is Sidecar {
     function asset() public view override returns (IERC20 _asset) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         assembly {
-            _asset := mload(add(args, 40))
+            _asset := mload(add(args, 20))
         }
     }
 
     function rewardReceiver() public view override returns (address _rewardReceiver) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         assembly {
-            _rewardReceiver := mload(add(args, 80))
+            _rewardReceiver := mload(add(args, 40))
         }
     }
 
@@ -55,7 +59,7 @@ contract ConvexSidecar is Sidecar {
     function baseRewardPool() public view returns (IBaseRewardPool _baseRewardPool) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         assembly {
-            _baseRewardPool := mload(add(args, 140))
+            _baseRewardPool := mload(add(args, 60))
         }
     }
 
@@ -63,7 +67,9 @@ contract ConvexSidecar is Sidecar {
     function pid() public view returns (uint256 _pid) {
         bytes memory args = Clones.fetchCloneArgs(address(this));
         assembly {
-            _pid := mload(add(args, 160))
+            // We need to add 32 bytes for the bytes array length prefix
+            // and then 60 bytes for the three addresses (20 bytes each)
+            _pid := mload(add(add(args, 32), 60))
         }
     }
 
@@ -71,14 +77,9 @@ contract ConvexSidecar is Sidecar {
     /// --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
-    constructor(bytes4 _protocolId, address _accountant, address _protocolController, address _cvx, address _booster)
-        Sidecar(_protocolId, _accountant, _protocolController)
-    {
-        require(_cvx != address(0) && _booster != address(0), ZeroAddress());
-
-        CVX = IERC20(_cvx);
-        BOOSTER = IBooster(_booster);
-    }
+    constructor(address _accountant, address _protocolController)
+        Sidecar(CURVE_PROTOCOL_ID, _accountant, _protocolController)
+    {}
 
     //////////////////////////////////////////////////////
     /// --- INITIALIZATION
@@ -125,7 +126,7 @@ contract ConvexSidecar is Sidecar {
         rewardTokenAmount = REWARD_TOKEN.balanceOf(address(this));
 
         /// Send the reward token to the accountant.
-        REWARD_TOKEN.safeTransfer(msg.sender, rewardTokenAmount);
+        REWARD_TOKEN.safeTransfer(ACCOUNTANT, rewardTokenAmount);
     }
 
     /// @notice Get the balance of the LP token on Convex held by this contract.

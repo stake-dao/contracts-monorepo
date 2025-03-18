@@ -61,7 +61,7 @@ contract CurveStrategy is Strategy {
             if (target == LOCKER) {
                 // Calculate pending rewards for the locker by comparing  total earned by gauge with already minted tokens
                 pendingRewardsAmount =
-                    ILiquidityGauge(gauge).integrate_fraction(LOCKER) - IMinter(MINTER).minted(gauge, LOCKER);
+                    ILiquidityGauge(gauge).integrate_fraction(LOCKER) - IMinter(MINTER).minted(LOCKER, gauge);
 
                 pendingRewards.feeSubjectAmount += pendingRewardsAmount.toUint128();
             } else {
@@ -87,14 +87,18 @@ contract CurveStrategy is Strategy {
     /// @param gauge The address of the Curve gauge to withdraw from
     /// @param amount The amount of tokens to withdraw
     /// @param receiver The address that will receive the withdrawn tokens
-    function _withdraw(address gauge, uint256 amount, address receiver) internal override {
-        bytes memory data = abi.encodeWithSignature("withdraw(uint256,address)", amount, receiver);
+    function _withdraw(address asset, address gauge, uint256 amount, address receiver) internal override {
+        bytes memory data = abi.encodeWithSignature("withdraw(uint256)", amount);
         require(_executeTransaction(gauge, data), WithdrawFailed());
+
+        // 2. Transfer the LP tokens to receiver
+        data = abi.encodeWithSignature("transfer(address,uint256)", receiver, amount);
+        require(_executeTransaction(asset, data), WithdrawFailed());
     }
 
     /// @notice Harvests rewards from a Curve gauge
     /// @param gauge The address of the Curve gauge to harvest from
-    function _harvest(address gauge, bytes calldata) internal override returns (uint256 rewardAmount) {
+    function _harvestLocker(address gauge, bytes memory) internal override returns (uint256 rewardAmount) {
         /// 1. Snapshot the balance before minting.
         uint256 _before = IERC20(REWARD_TOKEN).balanceOf(address(LOCKER));
 
