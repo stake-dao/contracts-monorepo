@@ -7,7 +7,7 @@ import {IERC20} from "src/common/interfaces/IERC20.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 
 /// @title PreLaunchLocker
-/// @dev This contract implements a state machine with three states: DEFAULT, ACTIVE, and CANCELED
+/// @dev This contract implements a state machine with three states: IDLE, ACTIVE, and CANCELED
 /**
  * @notice A contract that enables secure token locking before full protocol deployment. The PreLaunchLocker
  * serves as a solution for token locking during a protocol's pre-launch phase.
@@ -22,15 +22,26 @@ import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
  * - Safety Net: Includes a refund mechanism if the project launch is canceled
  *
  * State Machine:
- * - DEFAULT: Initial state, accepts deposits
- * - ACTIVE: Activated after successful protocol deployment, converts tokens to sdTokens
- * - CANCELED: Enables refunds of tokens to all depositors if the project is canceled before being active
+ * - IDLE: Initial state where:
+ *   • Users can deposit tokens via deposit()
+ *   • Governance can activate locker via lock(), converting the tokens to sdTokens and modifying the state to ACTIVE
+ *   • Governance can cancel locker via cancelLocker() and modify the state to CANCELED
+ *   • Anyone can force cancel after delay via forceCancelLocker() and modify the state to CANCELED
+ *
+ * - ACTIVE: Activated state where:
+ *   • Users can stake sdTokens in gauge via stake()
+ *   • Users can withdraw sdTokens via withdraw()
+ *   • No more deposits or cancellations possible
+ *
+ * - CANCELED: Terminal state where:
+ *   • Users can withdraw their original tokens via withdraw()
+ *   • No deposits, stakes or state changes possible
  *
  * @dev The contract uses a state machine pattern to manage the lifecycle of locked tokens:
- * 1. Users deposit tokens in DEFAULT state
+ * 1. Users deposit tokens in IDLE state
  * 2. Governance can either:
- *    a) Activate the locker (DEFAULT -> ACTIVE) connecting it to the protocol
- *    b) Cancel the launch (DEFAULT -> CANCELED) enabling refunds
+ *    a) Activate the locker (IDLE -> ACTIVE) connecting it to the protocol
+ *    b) Cancel the launch (IDLE -> CANCELED) enabling refunds
  * 3. Both ACTIVE and CANCELED are terminal states
  */
 /// @custom:contact contact@stakedao.org
@@ -49,7 +60,7 @@ contract PreLaunchLocker {
     /// @custom:slot 0
     address public governance;
     /// @notice The timestamp of the locker creation.
-    /// @custom:slot 0 (packed with `governance`)
+    /// @custom:slot 0 (packed with `governance` <address>)
     uint96 internal timestamp;
     /// @notice The sdToken address. Cannot be changed once set.
     /// @custom:slot 1
@@ -59,7 +70,7 @@ contract PreLaunchLocker {
     BaseDepositor public depositor;
 
     enum STATE {
-        DEFAULT,
+        IDLE,
         ACTIVE,
         CANCELED
     }
@@ -67,16 +78,16 @@ contract PreLaunchLocker {
     /// @notice The state of the locker.
     /**
      * @dev The contract uses a state machine pattern to manage the lifecycle of locked tokens:
-     * 1. Users deposit tokens in DEFAULT state
+     * 1. Users deposit tokens in IDLE state
      * 2. Governance can either:
-     *    a) Activate the locker (DEFAULT -> ACTIVE) connecting it to the protocol
-     *    b) Cancel the launch (DEFAULT -> CANCELED) enabling refunds
+     *    a) Activate the locker (IDLE -> ACTIVE) connecting it to the protocol
+     *    b) Cancel the launch (IDLE -> CANCELED) enabling refunds
      * 3. Both ACTIVE and CANCELED are terminal states
      *
      * Here's the State Machine Diagram:
      *
      *  +-------------------+
-     *  |      DEFAULT      |
+     *  |        IDLE       |
      *  +-------------------+
      *       |           |
      *  lock |           | cancelLocker
@@ -87,8 +98,8 @@ contract PreLaunchLocker {
      *  +---------+    +-----------+
      *
      * Transitions:
-     * - DEFAULT -> ACTIVE: via `lock()`
-     * - DEFAULT -> CANCELED: via `cancelLocker()`
+     * - IDLE -> ACTIVE: via `lock()`
+     * - IDLE -> CANCELED: via `cancelLocker()`
      * - ACTIVE: terminal state
      * - CANCELED: terminal state
      */
@@ -132,15 +143,15 @@ contract PreLaunchLocker {
     error SD_TOKEN_NOT_MINTED();
     /// @notice Error thrown when the user tries to withdraw more than the balance.
     error INSUFFICIENT_BALANCE();
-    /// @notice Error thrown when the locker is not in the default state when trying to lock.
+    /// @notice Error thrown when the locker is not in the idle state when trying to lock.
     error CANNOT_LOCK_ACTIVE_OR_CANCELED_LOCKER();
     /// @notice Error thrown when the locker is active and the governance tries to cancel it.
     error CANNOT_CANCEL_ACTIVE_OR_CANCELED_LOCKER();
     /// @notice Error thrown when the locker is not CANCELED and the user tries to withdraw the initial token.
-    error CANNOT_WITHDRAW_DEFAULT_LOCKER();
+    error CANNOT_WITHDRAW_IDLE_LOCKER();
     /// @notice Error thrown when the locker is not active and the user tries to stake.
-    error CANNOT_STAKE_DEFAULT_OR_CANCELED_LOCKER();
-    /// @notice Error thrown when the locker is not in the default state when trying to force cancel.
+    error CANNOT_STAKE_IDLE_OR_CANCELED_LOCKER();
+    /// @notice Error thrown when the locker is not in the idle state when trying to force cancel.
     error CANNOT_FORCE_CANCEL_ACTIVE_OR_CANCELED_LOCKER();
     /// @notice Error thrown when the locker is not enough old to be force canceled.
     error CANNOT_FORCE_CANCEL_RECENTLY_CREATED_LOCKER();
@@ -162,9 +173,9 @@ contract PreLaunchLocker {
     constructor(address _token) {
         if (_token == address(0)) revert REQUIRED_PARAM();
 
-        // set the state of the contract to default and emit the state update event
-        state = STATE.DEFAULT;
-        emit LockerStateUpdated(STATE.DEFAULT);
+        // set the state of the contract to idle and emit the state update event
+        state = STATE.IDLE;
+        emit LockerStateUpdated(STATE.IDLE);
 
         // set the token to lock, the timestamp of the locker creation and the governance address
         token = _token;
@@ -203,7 +214,7 @@ contract PreLaunchLocker {
     /// @param amount Amount of tokens to withdraw.
     /// @custom:reverts REQUIRED_PARAM if the given amount is zero.
     /// @custom:reverts INSUFFICIENT_BALANCE if the user has insufficient balance.
-    /// @custom:reverts CANNOT_WITHDRAW_DEFAULT_LOCKER if the locker is not CANCELED and the user tries to withdraw the initial token.
+    /// @custom:reverts CANNOT_WITHDRAW_IDLE_LOCKER if the locker is not CANCELED and the user tries to withdraw the initial token.
     function withdraw(uint256 amount) public {
         // ensure the amount is not zero
         if (amount == 0) revert REQUIRED_PARAM();
@@ -221,8 +232,8 @@ contract PreLaunchLocker {
             // 2.b withdraw the initial token only if the locker is CANCELED
             SafeTransferLib.safeTransfer(token, msg.sender, amount);
         } else {
-            // (i.e. state == STATE.DEFAULT)
-            revert CANNOT_WITHDRAW_DEFAULT_LOCKER();
+            // (i.e. state == STATE.IDLE)
+            revert CANNOT_WITHDRAW_IDLE_LOCKER();
         }
     }
 
@@ -231,7 +242,7 @@ contract PreLaunchLocker {
     ///      If the locker is not active, withdraw all the initial tokens only if the locker is CANCELED.
     /// @custom:reverts REQUIRED_PARAM if the given amount is zero.
     /// @custom:reverts INSUFFICIENT_BALANCE if the user has insufficient balance.
-    /// @custom:reverts CANNOT_WITHDRAW_DEFAULT_LOCKER if the locker is not CANCELED and the user tries to withdraw the initial token.
+    /// @custom:reverts CANNOT_WITHDRAW_IDLE_LOCKER if the locker is not CANCELED and the user tries to withdraw the initial token.
     function withdraw() external {
         withdraw(balances[msg.sender]);
     }
@@ -243,14 +254,14 @@ contract PreLaunchLocker {
     /// @notice Stake the given amount of sdTokens into the gauge associated with the locker.
     /// @param amount Amount of sdTokens to stake.
     /// @custom:reverts REQUIRED_PARAM if the given amount is zero.
-    /// @custom:reverts CANNOT_STAKE_DEFAULT_OR_CANCELED_LOCKER if the locker is not active.
+    /// @custom:reverts CANNOT_STAKE_IDLE_OR_CANCELED_LOCKER if the locker is not active.
     /// @custom:reverts INSUFFICIENT_BALANCE if the user has insufficient balance.
     function stake(uint256 amount) public {
         // check the amount is not zero
         if (amount == 0) revert REQUIRED_PARAM();
 
         // check we're in the active state
-        if (state != STATE.ACTIVE) revert CANNOT_STAKE_DEFAULT_OR_CANCELED_LOCKER();
+        if (state != STATE.ACTIVE) revert CANNOT_STAKE_IDLE_OR_CANCELED_LOCKER();
 
         // check if the user has enough balance
         if (balances[msg.sender] < amount) revert INSUFFICIENT_BALANCE();
@@ -271,7 +282,7 @@ contract PreLaunchLocker {
 
     /// @notice Stake all the sdTokens held by the caller.
     /// @custom:reverts REQUIRED_PARAM if the given amount is zero.
-    /// @custom:reverts CANNOT_STAKE_DEFAULT_OR_CANCELED_LOCKER if the locker is not active.
+    /// @custom:reverts CANNOT_STAKE_IDLE_OR_CANCELED_LOCKER if the locker is not active.
     /// @custom:reverts INSUFFICIENT_BALANCE if the user has insufficient balance.
     function stake() external {
         stake(balances[msg.sender]);
@@ -284,7 +295,7 @@ contract PreLaunchLocker {
     /// @notice Lock the tokens in the given depositor contract.
     /// @param _depositor The address of the depositor.
     /// @dev Can only be called once (!)
-    /// @custom:reverts CANNOT_LOCK_ACTIVE_OR_CANCELED_LOCKER if the contract is not in the default state when trying to lock.
+    /// @custom:reverts CANNOT_LOCK_ACTIVE_OR_CANCELED_LOCKER if the contract is not in the idle state when trying to lock.
     /// @custom:reverts REQUIRED_PARAM if the given address is zero.
     /// @custom:reverts INVALID_TOKEN if the given address is not a valid depositor.
     /// @custom:reverts NOTHING_TO_LOCK if there is nothing to lock.
@@ -295,8 +306,8 @@ contract PreLaunchLocker {
         // ensure the given depositor has the same token as the locker
         if (BaseDepositor(_depositor).token() != token) revert INVALID_TOKEN();
 
-        // ensure the locker is in the default state
-        if (state != STATE.DEFAULT) revert CANNOT_LOCK_ACTIVE_OR_CANCELED_LOCKER();
+        // ensure the locker is in the idle state
+        if (state != STATE.IDLE) revert CANNOT_LOCK_ACTIVE_OR_CANCELED_LOCKER();
 
         // 1. set the depositor and the address of the associated sdToken
         depositor = BaseDepositor(_depositor);
@@ -330,21 +341,21 @@ contract PreLaunchLocker {
     /// @custom:reverts ONLY_GOVERNANCE if the caller is not the stored governance address.
     /// @custom:reverts CANNOT_CANCEL_ACTIVE_OR_CANCELED_LOCKER if the locker is active.
     function cancelLocker() external onlyGovernance {
-        if (state != STATE.DEFAULT) revert CANNOT_CANCEL_ACTIVE_OR_CANCELED_LOCKER();
+        if (state != STATE.IDLE) revert CANNOT_CANCEL_ACTIVE_OR_CANCELED_LOCKER();
 
         // 1. set the state of the contract to canceled and emit the state update event
         state = STATE.CANCELED;
         emit LockerStateUpdated(STATE.CANCELED);
     }
 
-    /// @notice Force cancel the locker. Can only be called if the locker is in the default state and the timestamp is older than the force cancel delay.
+    /// @notice Force cancel the locker. Can only be called if the locker is in the idle state and the timestamp is older than the force cancel delay.
     ///         This function is an escape hatch allowing anyone to force cancel the locker if the governance is not responsive.
     ///         When the locker is in the canceled state, the users can withdraw their previously deposited tokens.
-    /// @custom:reverts CANNOT_FORCE_CANCEL_ACTIVE_OR_CANCELED_LOCKER if the locker is not in the default state.
+    /// @custom:reverts CANNOT_FORCE_CANCEL_ACTIVE_OR_CANCELED_LOCKER if the locker is not in the idle state.
     /// @custom:reverts CANNOT_FORCE_CANCEL_RECENTLY_CREATED_LOCKER if the locker is not old enough to be force canceled.
     function forceCancelLocker() external {
-        // check if the locker is in the default state
-        if (state != STATE.DEFAULT) revert CANNOT_FORCE_CANCEL_ACTIVE_OR_CANCELED_LOCKER();
+        // check if the locker is in the idle state
+        if (state != STATE.IDLE) revert CANNOT_FORCE_CANCEL_ACTIVE_OR_CANCELED_LOCKER();
 
         // check if the timestamp is older than the force cancel delay
         if ((block.timestamp - timestamp) < FORCE_CANCEL_DELAY) {
@@ -382,14 +393,14 @@ contract PreLaunchLocker {
     /// @param _state The state of the locker as returned by the `state` variable or emitted in an event.
     /// @return label The user friendly label of the state. Return an empty string if the state is not recognized. Returned values are capitalized.
     function getUserFriendlyStateLabel(STATE _state) external pure returns (string memory label) {
-        if (_state == STATE.DEFAULT) label = "DEFAULT";
+        if (_state == STATE.IDLE) label = "IDLE";
         else if (_state == STATE.ACTIVE) label = "ACTIVE";
         else if (_state == STATE.CANCELED) label = "CANCELED";
     }
 
     /// @notice Return the token currently held by the locker based on its state.
     ///         The locker holds different tokens during its lifecycle:
-    ///         - In `DEFAULT` or `CANCELED` state, the contract holds the initial token.
+    ///         - In `IDLE` or `CANCELED` state, the contract holds the initial token.
     ///         - In `ACTIVE` state, the contract holds the sdToken (wrapped version) since the
     ///           original tokens have been wrapped into sdTokens through the depositor contract
     /// @return token The token held by the locker.
