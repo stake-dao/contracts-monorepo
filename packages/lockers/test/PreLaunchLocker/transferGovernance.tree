@@ -1,0 +1,4 @@
+PreLaunchLocker__transferGovernance
+├── it reverts if the caller is not the governance
+├── it sets the new governance
+└── it emit the updated event
