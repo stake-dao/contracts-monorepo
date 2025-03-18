@@ -39,12 +39,18 @@ contract PreLaunchLocker {
     /// --- STATE VARIABLES & CONSTANTS
     ///////////////////////////////////////////////////////////////
 
+    /// @notice The delay after which the locker can be force canceled by anyone.
+    uint256 internal constant FORCE_CANCEL_DELAY = 3 * 30 days;
+
     /// @notice The immutable token to lock.
     address public immutable token;
 
     /// @notice The current governance address.
     /// @custom:slot 0
     address public governance;
+    /// @notice The timestamp of the locker creation.
+    /// @custom:slot 0 (packed with `governance`)
+    uint96 internal timestamp;
     /// @notice The sdToken address. Cannot be changed once set.
     /// @custom:slot 1
     address public sdToken;
@@ -134,6 +140,10 @@ contract PreLaunchLocker {
     error CANNOT_WITHDRAW_DEFAULT_LOCKER();
     /// @notice Error thrown when the locker is not active and the user tries to stake.
     error CANNOT_STAKE_DEFAULT_OR_CANCELED_LOCKER();
+    /// @notice Error thrown when the locker is not in the default state when trying to force cancel.
+    error CANNOT_FORCE_CANCEL_ACTIVE_OR_CANCELED_LOCKER();
+    /// @notice Error thrown when the locker is not enough old to be force canceled.
+    error CANNOT_FORCE_CANCEL_RECENTLY_CREATED_LOCKER();
 
     ////////////////////////////////////////////////////////////////
     /// --- MODIFIERS
@@ -156,11 +166,10 @@ contract PreLaunchLocker {
         state = STATE.DEFAULT;
         emit LockerStateUpdated(STATE.DEFAULT);
 
-        // set the token to lock
+        // set the token to lock, the timestamp of the locker creation and the governance address
         token = _token;
-
-        // set the governance to the caller
         _setGovernance(msg.sender);
+        timestamp = uint96(block.timestamp);
     }
 
     ////////////////////////////////////////////////////////////////
@@ -369,5 +378,24 @@ contract PreLaunchLocker {
     /// @return gauge The gauge associated with the locker. Return zero address if the locker is not active.
     function gauge() external view returns (address) {
         return state == STATE.ACTIVE ? depositor.gauge() : address(0);
+    }
+
+    /// @notice Force cancel the locker. Can only be called if the locker is in the default state and the timestamp is older than the force cancel delay.
+    ///         This function is an escape hatch allowing anyone to force cancel the locker if the governance is not responsive.
+    ///         When the locker is in the canceled state, the users can withdraw their previously deposited tokens.
+    /// @custom:reverts CANNOT_FORCE_CANCEL_ACTIVE_OR_CANCELED_LOCKER if the locker is not in the default state.
+    /// @custom:reverts CANNOT_FORCE_CANCEL_RECENTLY_CREATED_LOCKER if the locker is not old enough to be force canceled.
+    function forceCancelLocker() external {
+        // check if the locker is in the default state
+        if (state != STATE.DEFAULT) revert CANNOT_FORCE_CANCEL_ACTIVE_OR_CANCELED_LOCKER();
+
+        // check if the timestamp is older than the force cancel delay
+        if ((block.timestamp - timestamp) < FORCE_CANCEL_DELAY) {
+            revert CANNOT_FORCE_CANCEL_RECENTLY_CREATED_LOCKER();
+        }
+
+        // force the state to CANCELED
+        state = STATE.CANCELED;
+        emit LockerStateUpdated(STATE.CANCELED);
     }
 }
