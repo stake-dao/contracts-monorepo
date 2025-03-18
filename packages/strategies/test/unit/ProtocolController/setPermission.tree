@@ -1,0 +1,6 @@
+ProtocolController__setPermission
+├── it sets the permission for a contract, caller, and function selector
+├── it emits a PermissionSet event
+├── it reverts if the sender is not authorized
+├── it reverts if the contract is the zero address
+└── it reverts if the caller is the zero address

@@ -10,11 +10,13 @@ import {MockLocker} from "test/mocks/MockLocker.sol";
 import {MockGateway} from "test/mocks/MockGateway.sol";
 import {MockRegistry} from "test/mocks/MockRegistry.sol";
 import {MockAllocator} from "test/mocks/MockAllocator.sol";
+import {stdStorage, StdStorage} from "forge-std/src/Test.sol";
+
 /// @title BaseTest
 /// @notice Base test contract with common utilities and setup for all tests
-
 abstract contract BaseTest is Test {
     using Math for uint256;
+    using stdStorage for StdStorage;
 
     // Common addresses used across tests
     address internal owner = address(this);
@@ -69,5 +71,27 @@ abstract contract BaseTest is Test {
     /// @notice Helper to deploy code to a specific address (for harness contracts)
     function _deployHarnessCode(string memory artifactPath, bytes memory constructorArgs, address target) internal {
         deployCodeTo(artifactPath, constructorArgs, target);
+    }
+
+    /// @notice Helper to deploy code to a specific address (for harness contracts)
+    function _deployHarnessCode(string memory artifactPath, address target) internal {
+        deployCodeTo(artifactPath, target);
+    }
+
+    /// @notice Helper to override a storage slot by hand. Useful for overriding mappings
+    /// @param target The target contract address
+    /// @param signature The signature of the function to override
+    /// @param value The value to set the storage slot to
+    /// @param key The key of the storage slot to override
+    function _cheat_override_storage(address target, string memory signature, bytes32 value, bytes32 key) internal {
+        stdstore.target(target).sig(signature).with_key(key).checked_write(value);
+    }
+
+    /// @notice Helper to override a storage slot by hand. Useful for overriding non-mapping storage slots
+    /// @param target The target contract address
+    /// @param signature The signature of the function to override
+    /// @param value The value to set the storage slot to
+    function _cheat_override_storage(address target, string memory signature, bytes32 value) internal {
+        stdstore.target(target).sig(signature).checked_write(value);
     }
 }
