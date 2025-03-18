@@ -1,0 +1,10 @@
+PreLaunchLocker__withdraw
+├── it reverts if the amount is 0
+├── it reverts if amount is greater than the balance of the user
+├── it reverts if the state is IDLE
+├── it decreases the balance of the user
+├── when the state is ACTIVE
+│   └── it transfer the sdToken to the user
+├── when the state is CANCELED
+│   └── it transfer the token to the user
+└── it withdraws the maximum amount given no amount
