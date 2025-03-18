@@ -25,7 +25,6 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
             ProtocolController.ProtocolComponents({
                 strategy: strategy,
                 allocator: address(0),
-                harvester: address(0),
                 accountant: address(0),
                 feeReceiver: address(0),
                 isShutdown: false
@@ -45,7 +44,6 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
             ProtocolController.ProtocolComponents({
                 strategy: address(0),
                 allocator: allocator,
-                harvester: address(0),
                 accountant: address(0),
                 feeReceiver: address(0),
                 isShutdown: false
@@ -53,26 +51,6 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
         );
 
         assertEq(protocolController.allocator(PROTOCOL_ID), allocator);
-    }
-
-    function test_ReturnsTheHarvesterAddressForAProtocol(address harvester) external {
-        // it returns the harvester address for a protocol
-
-        vm.assume(harvester != address(0));
-
-        protocolControllerHarness._cheat_override_protocol_components(
-            PROTOCOL_ID,
-            ProtocolController.ProtocolComponents({
-                strategy: address(0),
-                allocator: address(0),
-                harvester: harvester,
-                accountant: address(0),
-                feeReceiver: address(0),
-                isShutdown: false
-            })
-        );
-
-        assertEq(protocolController.harvester(PROTOCOL_ID), harvester);
     }
 
     function test_ReturnsTheAccountantAddressForAProtocol(address accountant) external {
@@ -85,7 +63,6 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
             ProtocolController.ProtocolComponents({
                 strategy: address(0),
                 allocator: address(0),
-                harvester: address(0),
                 accountant: accountant,
                 feeReceiver: address(0),
                 isShutdown: false
@@ -105,7 +82,6 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
             ProtocolController.ProtocolComponents({
                 strategy: address(0),
                 allocator: address(0),
-                harvester: address(0),
                 accountant: address(0),
                 feeReceiver: feeReceiver,
                 isShutdown: false
@@ -137,7 +113,6 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
             ProtocolController.ProtocolComponents({
                 strategy: address(0),
                 allocator: address(0),
-                harvester: address(0),
                 accountant: address(0),
                 feeReceiver: address(0),
                 isShutdown: isShutdown
@@ -236,7 +211,6 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
             ProtocolController.ProtocolComponents({
                 strategy: address(0),
                 allocator: address(0),
-                harvester: address(0),
                 accountant: address(0),
                 feeReceiver: address(0),
                 isShutdown: isShutdown
@@ -257,7 +231,6 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
             ProtocolController.ProtocolComponents({
                 strategy: address(0),
                 allocator: address(0),
-                harvester: address(0),
                 accountant: address(0),
                 feeReceiver: address(0),
                 isShutdown: true
@@ -294,7 +267,6 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
             ProtocolController.ProtocolComponents({
                 strategy: address(0),
                 allocator: address(0),
-                harvester: address(0),
                 accountant: address(0),
                 feeReceiver: address(0),
                 isShutdown: false

@@ -1,5 +1,0 @@
-ProtocolController__setHarvester
-├── it sets the harvester for a protocol
-├── it emits the update event
-├── it reverts if the caller is not the owner
-└── it reverts if the harvester is the zero address
