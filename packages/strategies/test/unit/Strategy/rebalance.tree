@@ -1,0 +1,13 @@
+Strategy__rebalance
+├── it correctly retrieves the allocator
+├── it correctly retrieves the asset
+├── it correctly gets the current balance
+├── it correctly retrieves allocation data
+├── it reverts if allocation has only one target
+├── when rebalancing with multiple targets
+│   ├── it correctly withdraws from locker
+│   ├── it correctly withdraws from sidecars
+│   ├── it correctly deposits to new allocations
+└── it correctly handles edge cases
+    ├── it handles zero balances
+    └── it handles maximum balances

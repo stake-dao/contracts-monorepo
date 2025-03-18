@@ -1,5 +1,6 @@
 include .env
 
+
 .EXPORT_ALL_VARIABLES:
 MAKEFLAGS += --no-print-directory
 
@@ -17,6 +18,12 @@ install:
 
 test:
 	@forge test
+
+test-unit:
+	@forge test --match-path "test/unit/**/*.t.sol"
+
+test-integration:
+	@forge test --match-path "test/integration/**/*.t.sol" --show-progress --gas-report
 
 test-f-%:
 	@FOUNDRY_MATCH_TEST=$* make test
@@ -70,4 +77,4 @@ deploy-%:
 		exit 1; \
 	fi
 
-.PHONY: test
+.PHONY: test test-unit test-integration

@@ -1,11 +1,11 @@
 {
-  "name": "@stake-dao/herdaddy",
-  "version": "1.0.0",
-  "dependencies": {
-    "forge-std": "github:foundry-rs/forge-std",
-    "murky.git": "github:dmfxyz/murky",
-    "@openzeppelin/contracts": "4.9.0",
-    "@stake-dao/address-book": "workspace:*",
-    "solady": "github:vectorized/solady"
+    "name": "@stake-dao/herdaddy",
+    "version": "1.0.0",
+    "dependencies": {
+      "forge-std": "github:foundry-rs/forge-std",
+      "murky.git": "github:dmfxyz/murky",
+      "@openzeppelin/contracts": "4.9.0",
+      "@stake-dao/address-book": "workspace:*",
+      "solady": "github:vectorized/solady"
+    }
   }
-}

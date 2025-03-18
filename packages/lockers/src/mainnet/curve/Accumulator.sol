@@ -5,7 +5,7 @@ import "src/common/interfaces/IVeBoost.sol";
 import "src/common/interfaces/IVeBoostDelegation.sol";
 
 import "src/common/accumulator/BaseAccumulator.sol";
-import {IStrategy} from "herdaddy/interfaces/stake-dao/IStrategy.sol";
+import {IStrategy} from "common/interfaces/stake-dao/IStrategy.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 
 /// @title A contract that accumulates crvUsd rewards and notifies them to the LGV4

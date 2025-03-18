@@ -1,7 +1,7 @@
 solady=node_modules/@solady/
 @safe=node_modules/@safe-global/safe-smart-account
 forge-std=node_modules/forge-std/
-herdaddy=node_modules/@stake-dao/herdaddy/src/
+common=node_modules/@stake-dao/interfaces/src/
 address-book=node_modules/@stake-dao/address-book/
 openzeppelin-contracts=node_modules/@openzeppelin/contracts
 @openzeppelin/contracts=node_modules/@openzeppelin/contracts

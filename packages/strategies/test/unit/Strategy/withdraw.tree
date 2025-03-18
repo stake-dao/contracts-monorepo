@@ -1,0 +1,12 @@
+Strategy__withdraw
+├── it reverts if not called by the vault
+├── when withdrawing from locker
+│   ├── it correctly withdraws the specified amount
+│   ├── it sends tokens to the correct recipient
+│   ├── it updates balances correctly
+│   └── it returns correct pending rewards
+├── when withdrawing from sidecars
+│   ├── it correctly calls the sidecar withdraw function
+│   ├── it passes the correct amount and recipient to the sidecar
+│   └── it returns correct pending rewards
+└── it correctly handles zero amount withdrawals

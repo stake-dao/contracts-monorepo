@@ -1,0 +1,5 @@
+RewardVault__lastTimeRewardApplicable
+├── when block timestamp is lower than reward periodFinish
+│   └── it returns block timestamp
+└── when reward periodFinish is lower than block timestamp
+    └── it returns reward periodFinish

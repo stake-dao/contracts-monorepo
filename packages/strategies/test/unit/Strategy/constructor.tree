@@ -1,0 +1,6 @@
+Strategy__constructor
+├── it correctly sets the PROTOCOL_CONTROLLER
+├── it correctly sets the ACCOUNTANT
+├── it correctly sets the LOCKER
+├── it correctly sets the GATEWAY
+└── it correctly sets the PROTOCOL_ID

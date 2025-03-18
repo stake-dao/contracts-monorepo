@@ -1,0 +1,6 @@
+RewardVault__constructor
+├── it revert if accountant is zero address
+├── it revert if protocolController is zero address
+├── it set protocolId
+├── it set accountant
+└── it set protocolController

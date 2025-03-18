@@ -1,0 +1,5 @@
+forge-std=node_modules/forge-std/
+@safe=node_modules/@safe-global/safe-smart-account
+address-book=node_modules/@stake-dao/address-book/
+@openzeppelin/contracts=node_modules/@openzeppelin/contracts
+@interfaces=node_modules/@stake-dao/interfaces/src/interfaces

@@ -7,6 +7,6 @@
     "forge-std": "github:foundry-rs/forge-std",
     "solady": "github:vectorized/solady",
     "@stake-dao/address-book": "workspace:*",
-    "@stake-dao/herdaddy": "workspace:*"
+    "@stake-dao/interfaces": "workspace:*"
   }
 }

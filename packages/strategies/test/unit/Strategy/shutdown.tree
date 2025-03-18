@@ -1,0 +1,17 @@
+Strategy__shutdown
+├── it reverts if caller is not allowed and gauge is not shutdown
+├── when caller is allowed
+│   ├── it correctly retrieves the vault address
+│   ├── it correctly retrieves the allocator address
+│   ├── it correctly retrieves allocation targets
+│   ├── when withdrawing from locker
+│   │   ├── it correctly gets the balance from the gauge
+│   │   ├── it withdraws the full balance
+│   │   └── it sends tokens to the vault
+│   └── when withdrawing from sidecars
+│       ├── it correctly gets the balance from the sidecar
+│       ├── it withdraws the full balance
+│       └── it sends tokens to the vault
+└── when gauge is shutdown
+    ├── it allows any caller to execute shutdown
+    └── it successfully withdraws all assets
