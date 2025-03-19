@@ -12,4 +12,6 @@ interface IDepositor {
     function setSdTokenOperator(address newOperator) external;
 
     function transferGovernance(address _governance) external;
+
+    function createLock(uint256 _amount) external;
 }

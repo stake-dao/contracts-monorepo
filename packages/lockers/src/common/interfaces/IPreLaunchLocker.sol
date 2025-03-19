@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import { PreLaunchBaseDepositor } from "src/common/depositor/PreLaunchBaseDepositor.sol";
-import { ILiquidityGaugeV4 } from "src/common/interfaces/ILiquidityGaugeV4.sol";
-import { ISdToken } from "src/common/interfaces/ISdToken.sol";
+import {PreLaunchBaseDepositor} from "src/common/depositor/PreLaunchBaseDepositor.sol";
+import {ILiquidityGaugeV4} from "src/common/interfaces/ILiquidityGaugeV4.sol";
+import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 
 /// @title IPreLaunchLocker
 /// @notice Interface for the PreLaunchLocker contract
