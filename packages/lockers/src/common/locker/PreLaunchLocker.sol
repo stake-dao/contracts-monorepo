@@ -2,7 +2,8 @@
 pragma solidity ^0.8.19;
 
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
-import {BaseDepositor} from "src/common/depositor/BaseDepositor.sol";
+import {PreLaunchBaseDepositor} from "src/common/depositor/PreLaunchBaseDepositor.sol";
+import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {IERC20} from "src/common/interfaces/IERC20.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 
@@ -17,31 +18,30 @@ import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
  * Key Features:
  * - Token Deposit: Users can deposit tokens which are securely held in the contract
  * - Pre-Launch Locking: Enables token locking mechanism before the full protocol deployment
- * - Token Wrapping: Upon protocol deployment, converts locked tokens to wrapped tokens (sdTokens)
- * - Flexible Redemption: Users can redeem sdTokens for staking or withdrawal
+ * - Immediate sdToken Minting: Mints sdTokens to users immediately upon deposit with 1:1 ratio
+ * - Direct Gauge Integration: Optional direct staking of sdTokens into gauge upon deposit
  * - Safety Net: Includes a refund mechanism if the project launch is canceled
  *
  * State Machine:
  * - IDLE: Initial state where:
- *   • Users can deposit tokens via deposit()
- *   • Governance can activate locker via lock(), converting the tokens to sdTokens and modifying the state to ACTIVE
+ *   • Users can deposit tokens via deposit() with optional immediate gauge staking
+ *   • Governance can activate locker via lock(), transferring the initial tokens to depositor and moving state to ACTIVE
  *   • Governance can cancel locker via cancelLocker() and modify the state to CANCELED
  *   • Anyone can force cancel after delay via forceCancelLocker() and modify the state to CANCELED
  *
  * - ACTIVE: Activated state where:
- *   • Users can stake sdTokens in gauge via stake()
- *   • Users can withdraw sdTokens via withdraw()
- *   • No more deposits or cancellations possible
+ *   • No more deposits, withdrawals or cancellations possible
+ *   • The user is now connected to the protocol via the depositor contract and the associated locker/gauge contracts
  *
  * - CANCELED: Terminal state where:
- *   • Users can withdraw their original tokens via withdraw()
- *   • No deposits, stakes or state changes possible
+ *   • Supports withdrawal of both staked and unstaked sdTokens
+ *   • No deposits or state changes possible
  *
  * @dev The contract uses a state machine pattern to manage the lifecycle of locked tokens:
- * 1. Users deposit tokens in IDLE state
+ * 1. Users deposit tokens in IDLE state, receiving sdTokens immediately
  * 2. Governance can either:
- *    a) Activate the locker (IDLE -> ACTIVE) connecting it to the protocol
- *    b) Cancel the launch (IDLE -> CANCELED) enabling refunds
+ *    a) Activate the locker (IDLE -> ACTIVE) connecting it to the protocol via depositor
+ *    b) Cancel the launch (IDLE -> CANCELED) enabling refunds of the initial tokens
  * 3. Both ACTIVE and CANCELED are terminal states
  */
 /// @custom:contact contact@stakedao.org
@@ -52,9 +52,12 @@ contract PreLaunchLocker {
 
     /// @notice The delay after which the locker can be force canceled by anyone.
     uint256 public constant FORCE_CANCEL_DELAY = 3 * 30 days;
-
     /// @notice The immutable token to lock.
     address public immutable token;
+    /// @notice The sdToken address.
+    ISdToken public immutable sdToken;
+    /// @notice The gauge address.
+    ILiquidityGauge public immutable gauge;
 
     /// @notice The current governance address.
     /// @custom:slot 0
@@ -62,12 +65,9 @@ contract PreLaunchLocker {
     /// @notice The timestamp of the locker creation.
     /// @custom:slot 0 (packed with `governance` <address>)
     uint96 public timestamp;
-    /// @notice The sdToken address. Cannot be changed once set.
-    /// @custom:slot 1
-    address public sdToken;
     /// @notice The depositor contract. Cannot be changed once set.
-    /// @custom:slot 2
-    BaseDepositor public depositor;
+    /// @custom:slot 1
+    PreLaunchBaseDepositor public depositor;
 
     enum STATE {
         IDLE,
@@ -103,12 +103,8 @@ contract PreLaunchLocker {
      * - ACTIVE: terminal state
      * - CANCELED: terminal state
      */
-    /// @custom:slot 2 (packed with `depositor`)
+    /// @custom:slot 1 (packed with `depositor`)
     STATE public state;
-
-    /// @notice The deposits of the users. Track the number of tokens deposited by each user before the locker is associated with a depositor.
-    /// @custom:slot 3 + n
-    mapping(address account => uint256 amount) public balances;
 
     ////////////////////////////////////////////////////////////////
     /// --- EVENTS & ERRORS
@@ -133,25 +129,26 @@ contract PreLaunchLocker {
     error REQUIRED_PARAM();
     /// @notice Error thrown when the caller is not the governance address.
     error ONLY_GOVERNANCE();
-    /// @notice Error thrown when the token stored in the given depositor doesn't match the locker's token.
+    /// @notice Error thrown when the token is not the expected one.
     error INVALID_TOKEN();
-    /// @notice Error thrown when there is nothing to lock. This can happen if nobody deposited tokens before the locker was locked. In that case, the locker is useless.
+    /// @notice Error thrown when the gauge is not the expected one.
+    error INVALID_GAUGE();
+    /// @notice Error thrown when the sdToken is not the expected one.
+    error INVALID_SD_TOKEN();
+    /// @notice Error thrown when there is nothing to lock. This can happen if nobody deposited tokens before the locker was locked.
+    ///         In that case, the locker is useless.
     error NOTHING_TO_LOCK();
-    /// @notice Error thrown when the sdToken is not minted.
-    error SD_TOKEN_NOT_MINTED();
-    /// @notice Error thrown when the user tries to withdraw more than the balance.
-    error INSUFFICIENT_BALANCE();
-    /// @notice Error thrown when deposits are not allowed anymore. This happens once a depositor contract is set.
+    /// @notice Error thrown when the token is not transferred to the locker.
+    error TOKEN_NOT_TRANSFERRED_TO_LOCKER();
+    /// @notice Error thrown when the locker is not in the IDLE state when trying to deposit.
     error CANNOT_DEPOSIT_ACTIVE_OR_CANCELED_LOCKER();
-    /// @notice Error thrown when the locker is not in the idle state when trying to lock.
+    /// @notice Error thrown when the locker is not in the IDLE state when trying to lock.
     error CANNOT_LOCK_ACTIVE_OR_CANCELED_LOCKER();
-    /// @notice Error thrown when the locker is active and the governance tries to cancel it.
+    /// @notice Error thrown when the locker is not in the IDLE state when trying to cancel the launch.
     error CANNOT_CANCEL_ACTIVE_OR_CANCELED_LOCKER();
     /// @notice Error thrown when the locker is not CANCELED and the user tries to withdraw the initial token.
-    error CANNOT_WITHDRAW_IDLE_LOCKER();
-    /// @notice Error thrown when the locker is not active and the user tries to stake.
-    error CANNOT_STAKE_IDLE_OR_CANCELED_LOCKER();
-    /// @notice Error thrown when the locker is not in the idle state when trying to force cancel.
+    error CANNOT_WITHDRAW_IDLE_OR_ACTIVE_LOCKER();
+    /// @notice Error thrown when the locker is not in the IDLE state when trying to force cancel.
     error CANNOT_FORCE_CANCEL_ACTIVE_OR_CANCELED_LOCKER();
     /// @notice Error thrown when the locker is not enough old to be force canceled.
     error CANNOT_FORCE_CANCEL_RECENTLY_CREATED_LOCKER();
@@ -169,17 +166,33 @@ contract PreLaunchLocker {
 
     /// @notice Sets the token to lock and the governance address.
     /// @param _token Address of the token to lock.
-    /// @custom:reverts REQUIRED_PARAM if the given address is zero.
-    constructor(address _token) {
-        if (_token == address(0)) revert REQUIRED_PARAM();
+    /// @param _sdToken Address of the sdToken to mint.
+    /// @param _gauge Address of the gauge to stake the sdTokens to.
+    /// @custom:reverts REQUIRED_PARAM if one of the given params is zero.
+    /// @custom:reverts INVALID_SD_TOKEN if the given sdToken is not operated by this contract.
+    /// @custom:reverts INVALID_GAUGE if the given gauge is not associated with the given sdToken.
+    constructor(address _token, address _sdToken, address _gauge) {
+        if (_token == address(0) || _sdToken == address(0) || _gauge == address(0)) revert REQUIRED_PARAM();
+
+        // ensure the sdToken is operated by this contract
+        if (ISdToken(_sdToken).operator() != address(this)) revert INVALID_SD_TOKEN();
+
+        // ensure the given gauge contract is associated with the given sdToken
+        if (ILiquidityGauge(_gauge).token() != _sdToken) revert INVALID_GAUGE();
+
+        // set the immutable addresses
+        token = _token;
+        sdToken = ISdToken(_sdToken);
+        gauge = ILiquidityGauge(_gauge);
+
+        // start the timer before the locker can be force canceled
+        timestamp = uint96(block.timestamp);
 
         // set the state of the contract to idle and emit the state update event
         _setState(STATE.IDLE);
 
-        // set the token to lock, the timestamp of the locker creation and the governance address
-        token = _token;
+        // set the governance address and emit the event
         _setGovernance(msg.sender);
-        timestamp = uint96(block.timestamp);
     }
 
     ////////////////////////////////////////////////////////////////
@@ -188,152 +201,130 @@ contract PreLaunchLocker {
 
     /// @notice Deposit tokens in this contract.
     /// @param amount Amount of tokens to deposit.
+    /// @param stake Whether to stake the tokens in the gauge.
     /// @custom:reverts REQUIRED_PARAM if the given amount is zero.
     /// @custom:reverts CANNOT_DEPOSIT_ACTIVE_OR_CANCELED_LOCKER if the locker is already associated with a depositor.
-    function deposit(uint256 amount) public {
+    function deposit(uint256 amount, bool stake) public {
         if (amount == 0) revert REQUIRED_PARAM();
 
-        // deposit aren't allowed anymore if the tokens have been locked
+        // deposit aren't allowed once the locker leaves the idle state
         if (state != STATE.IDLE) revert CANNOT_DEPOSIT_ACTIVE_OR_CANCELED_LOCKER();
 
         // 1. transfer the tokens from the sender to the contract. Reverts if not enough tokens are approved.
         SafeTransferLib.safeTransferFrom(token, msg.sender, address(this), amount);
 
-        // 2. increase the balance of the sender by the amount deposited
-        balances[msg.sender] += amount;
-    }
+        if (stake == true) {
+            //  2.a. Either mint the sdTokens to this contract and stake them in the gauge for the caller
+            sdToken.mint(address(this), amount);
 
-    ////////////////////////////////////////////////////////////////
-    /// --- WITHDRAW
-    ///////////////////////////////////////////////////////////////
+            gauge.deposit(amount, msg.sender);
 
-    /// @notice Withdraw the given amount of tokens. The relation between the token and the sdToken is 1:1.
-    /// @dev If the locker is active, withdraw the sdTokens held by the caller.
-    ///      If the locker is not active, withdraw the initial token only if the locker is CANCELED.
-    /// @param amount Amount of tokens to withdraw.
-    /// @custom:reverts REQUIRED_PARAM if the given amount is zero.
-    /// @custom:reverts INSUFFICIENT_BALANCE if the user has insufficient balance.
-    /// @custom:reverts CANNOT_WITHDRAW_IDLE_LOCKER if the locker is not CANCELED and the user tries to withdraw the initial token.
-    function withdraw(uint256 amount) public {
-        // ensure the amount is not zero
-        if (amount == 0) revert REQUIRED_PARAM();
-
-        // check if the user has enough balance
-        if (balances[msg.sender] < amount) revert INSUFFICIENT_BALANCE();
-
-        // 1. decrease the balance of the sender by the amount withdrawn
-        balances[msg.sender] -= amount;
-
-        if (state == STATE.ACTIVE) {
-            // 2.a withdraw the sdTokens held by the caller
-            SafeTransferLib.safeTransfer(sdToken, msg.sender, amount);
-        } else if (state == STATE.CANCELED) {
-            // 2.b withdraw the initial token only if the locker is CANCELED
-            SafeTransferLib.safeTransfer(token, msg.sender, amount);
+            emit TokensStaked(msg.sender, address(gauge), amount);
         } else {
-            // (i.e. state == STATE.IDLE)
-            revert CANNOT_WITHDRAW_IDLE_LOCKER();
+            // 2.b. or mint the sdTokens directly to the caller (ratio 1:1 between token<>sdToken)
+            sdToken.mint(msg.sender, amount);
         }
-    }
-
-    /// @notice Withdraw all the tokens held by the caller.
-    /// @dev If the locker is active, withdraw all the sdTokens held by the caller.
-    ///      If the locker is not active, withdraw all the initial tokens only if the locker is CANCELED.
-    /// @custom:reverts REQUIRED_PARAM if the given amount is zero.
-    /// @custom:reverts INSUFFICIENT_BALANCE if the user has insufficient balance.
-    /// @custom:reverts CANNOT_WITHDRAW_IDLE_LOCKER if the locker is not CANCELED and the user tries to withdraw the initial token.
-    function withdraw() external {
-        withdraw(balances[msg.sender]);
-    }
-
-    ////////////////////////////////////////////////////////////////
-    /// --- STAKE
-    ///////////////////////////////////////////////////////////////
-
-    /// @notice Stake the given amount of sdTokens into the gauge associated with the locker.
-    /// @param amount Amount of sdTokens to stake.
-    /// @custom:reverts REQUIRED_PARAM if the given amount is zero.
-    /// @custom:reverts CANNOT_STAKE_IDLE_OR_CANCELED_LOCKER if the locker is not active.
-    /// @custom:reverts INSUFFICIENT_BALANCE if the user has insufficient balance.
-    function stake(uint256 amount) public {
-        // check the amount is not zero
-        if (amount == 0) revert REQUIRED_PARAM();
-
-        // check we're in the active state
-        if (state != STATE.ACTIVE) revert CANNOT_STAKE_IDLE_OR_CANCELED_LOCKER();
-
-        // check if the user has enough balance
-        if (balances[msg.sender] < amount) revert INSUFFICIENT_BALANCE();
-
-        // 1. decrease the balance of the sender by the amount staked
-        balances[msg.sender] -= amount;
-
-        // 2. get the gauge contract associated with the depositor
-        ILiquidityGauge liquidityGauge = ILiquidityGauge(depositor.gauge());
-
-        // 3. give the permission to the gauge to transfer the tokens and stake them
-        SafeTransferLib.safeApprove(sdToken, address(liquidityGauge), amount);
-        liquidityGauge.deposit(amount, msg.sender);
-
-        // 4. emit the event with the staking details
-        emit TokensStaked(msg.sender, address(liquidityGauge), amount);
-    }
-
-    /// @notice Stake all the sdTokens held by the caller.
-    /// @custom:reverts REQUIRED_PARAM if the given amount is zero.
-    /// @custom:reverts CANNOT_STAKE_IDLE_OR_CANCELED_LOCKER if the locker is not active.
-    /// @custom:reverts INSUFFICIENT_BALANCE if the user has insufficient balance.
-    function stake() external {
-        stake(balances[msg.sender]);
     }
 
     ////////////////////////////////////////////////////////////////
     /// --- LOCK
     ///////////////////////////////////////////////////////////////
 
-    /// @notice Lock the tokens in the given depositor contract.
+    /// @notice Set the depositor and lock the tokens in the given depositor contract.
+    /// @dev Can only be called once! This function sets the contract as active for ever.
     /// @param _depositor The address of the depositor.
-    /// @dev Can only be called once (!)
-    /// @custom:reverts CANNOT_LOCK_ACTIVE_OR_CANCELED_LOCKER if the contract is not in the idle state when trying to lock.
+    /// @custom:reverts ONLY_GOVERNANCE if the caller is not the governance address.
     /// @custom:reverts REQUIRED_PARAM if the given address is zero.
+    /// @custom:reverts CANNOT_LOCK_ACTIVE_OR_CANCELED_LOCKER if the contract is not in the idle state when trying to lock.
     /// @custom:reverts INVALID_TOKEN if the given address is not a valid depositor.
+    /// @custom:reverts INVALID_GAUGE if the given address is not a valid gauge.
+    /// @custom:reverts INVALID_SD_TOKEN if the given address is not a valid sdToken.
     /// @custom:reverts NOTHING_TO_LOCK if there is nothing to lock.
+    /// @custom:reverts TOKEN_NOT_TRANSFERRED_TO_LOCKER if the locker contract doesn't hold the initial tokens.
     function lock(address _depositor) external onlyGovernance {
         // ensure the given address is not zero
         if (_depositor == address(0)) revert REQUIRED_PARAM();
 
-        // ensure the given depositor has the same token as the locker
-        if (BaseDepositor(_depositor).token() != token) revert INVALID_TOKEN();
-
         // ensure the locker is in the idle state
         if (state != STATE.IDLE) revert CANNOT_LOCK_ACTIVE_OR_CANCELED_LOCKER();
 
-        // 1. set the depositor and the address of the associated sdToken
-        depositor = BaseDepositor(_depositor);
-        sdToken = depositor.minter();
+        address storedToken = token;
+        ISdToken storedSdToken = sdToken;
 
-        // 2. fetch the current balance of the contract to ensure there is anything to lock
-        uint256 balance = IERC20(token).balanceOf(address(this));
+        // ensure the given depositor has the same token as the one stored in this contract
+        if (PreLaunchBaseDepositor(_depositor).token() != storedToken) revert INVALID_TOKEN();
+
+        // ensure the given depositor has the same gauge as the one stored in this contract
+        if (PreLaunchBaseDepositor(_depositor).gauge() != address(gauge)) revert INVALID_GAUGE();
+
+        // ensure the given depositor has the same sdToken as the one stored in this contract
+        if (PreLaunchBaseDepositor(_depositor).minter() != address(storedSdToken)) revert INVALID_SD_TOKEN();
+
+        // 1. set the given depositor
+        depositor = PreLaunchBaseDepositor(_depositor);
+
+        // 2. fetch the current balance of the contract to ensure there is something to lock
+        uint256 balance = IERC20(storedToken).balanceOf(address(this));
         if (balance == 0) revert NOTHING_TO_LOCK();
 
         // 3. give the permission to the depositor to transfer the tokens held by this contract
-        SafeTransferLib.safeApprove(token, address(depositor), balance);
+        SafeTransferLib.safeApprove(storedToken, address(depositor), balance);
 
         // 4. Initiate a lock in the depositor contract with the balance of the contract
-        //    This will lock the assets currently hold by this contract in the depositor contract
-        //    AND mint the associated sdToken in favor of this contract
+        //    This will lock the assets currently hold by this contract in the locker contract via the depositor
+        //    The operation do not mint the sdTokens, as the sdToken have been minted over time to the account who deposited the tokens
         depositor.createLock(balance);
 
-        // 5. ensure we received the minted sdToken. There is a 1:1 relationship between the amount of tokens locked and the amount of sdTokens minted.
-        if (IERC20(sdToken).balanceOf(address(this)) != balance) revert SD_TOKEN_NOT_MINTED();
+        // 5. ensure there is nothing left in the contract
+        if (IERC20(token).balanceOf(address(this)) == 0) revert TOKEN_NOT_TRANSFERRED_TO_LOCKER();
 
-        // 6. set the state of the contract to active and emit the state update event
+        // 6. transfer the operator permission of the sdToken to the depositor contract
+        sdToken.setOperator(address(depositor));
+
+        // 7. set the state of the contract to active and emit the state update event
         _setState(STATE.ACTIVE);
     }
 
     ////////////////////////////////////////////////////////////////
     /// --- EMERGENCY METHODS
     ///////////////////////////////////////////////////////////////
+
+    /// @notice Withdraw the previously deposited tokens if the launch has been canceled. This is an escape hatch for users.
+    /// @dev This function can only be called if the locker is in the canceled state.
+    /// @param amount Amount of tokens to withdraw.
+    /**
+     * @param staked Indicates if the sdTokens were staked in the gauge or not.
+     *  • If true, the function will handle the withdrawal of sdTokens staked in the gauge
+     *    before burning them. The caller must have approved this contract to transfer the gauge token.
+     *  • If false, the function will simply burn the sdToken held by the caller.
+     */
+    /// @custom:reverts REQUIRED_PARAM if the given amount is zero.
+    /// @custom:reverts CANNOT_WITHDRAW_IDLE_OR_ACTIVE_LOCKER if the locker is not in the canceled state.
+    function withdraw(uint256 amount, bool staked) external {
+        // ensure the amount is not zero
+        if (amount == 0) revert REQUIRED_PARAM();
+
+        // ensure the locker is in the canceled state
+        if (state != STATE.CANCELED) revert CANNOT_WITHDRAW_IDLE_OR_ACTIVE_LOCKER();
+
+        if (staked == true) {
+            // transfer the gauge token held by the caller to this contract
+            // will fail if the caller doesn't have enough balance in the gauge or forgot the approval
+            gauge.transferFrom(msg.sender, address(this), amount);
+
+            // use the gauge token transferred from the caller to this contract to withdraw the sdToken deposited in the gauge
+            gauge.withdraw(amount, false);
+
+            // burn the exact amount of sdToken previously held by the caller
+            sdToken.burn(address(this), amount);
+        } else {
+            // burn the sdToken held by the caller. This will fail if caller's sdToken balance is insufficient
+            sdToken.burn(msg.sender, amount);
+        }
+
+        // transfer back the default token to the caller
+        SafeTransferLib.safeTransfer(token, msg.sender, amount);
+    }
 
     /// @notice Set the state of the locker as CANCELED. It only happens if the launch of the campaign has been canceled.
     /// @custom:reverts ONLY_GOVERNANCE if the caller is not the stored governance address.
@@ -392,22 +383,6 @@ contract PreLaunchLocker {
         if (_state == STATE.IDLE) label = "IDLE";
         else if (_state == STATE.ACTIVE) label = "ACTIVE";
         else if (_state == STATE.CANCELED) label = "CANCELED";
-    }
-
-    /// @notice Return the token currently held by the locker based on its state.
-    ///         The locker holds different tokens during its lifecycle:
-    ///         - In `IDLE` or `CANCELED` state, the contract holds the initial token.
-    ///         - In `ACTIVE` state, the contract holds the sdToken (wrapped version) since the
-    ///           original tokens have been wrapped into sdTokens through the depositor contract
-    /// @return token The token held by the locker.
-    function activeToken() external view returns (address) {
-        return state == STATE.ACTIVE ? sdToken : token;
-    }
-
-    /// @notice Return the gauge associated with the locker.
-    /// @return gauge The gauge associated with the locker. Return zero address if the locker is not active.
-    function gauge() external view returns (address) {
-        return state == STATE.ACTIVE ? depositor.gauge() : address(0);
     }
 
     /// @notice Internal function to update the state of the locker.
