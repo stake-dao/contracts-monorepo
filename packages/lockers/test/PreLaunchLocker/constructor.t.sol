@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {PreLaunchLocker} from "src/PreLaunchLocker.sol";
+import {PreLaunchLocker} from "src/common/locker/PreLaunchLocker.sol";
 import {Test} from "forge-std/src/Test.sol";
 
 contract PreLaunchLocker__constructor is Test {

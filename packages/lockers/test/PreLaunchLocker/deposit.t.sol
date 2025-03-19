@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import {Test} from "forge-std/src/Test.sol";
 import {MockERC20} from "forge-std/src/mocks/MockERC20.sol";
-import {PreLaunchLocker} from "src/PreLaunchLocker.sol";
+import {PreLaunchLocker} from "src/common/locker/PreLaunchLocker.sol";
 import {PreLaunchLockerHarness} from "./PreLaunchLockerHarness.t.sol";
 
 contract PreLaunchLocker__deposit is Test {

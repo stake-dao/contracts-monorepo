@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.19;
 
-import {PreLaunchLocker} from "src/PreLaunchLocker.sol";
+import {PreLaunchLocker} from "src/common/locker/PreLaunchLocker.sol";
 import {MockERC20} from "forge-std/src/mocks/MockERC20.sol";
 
 contract PreLaunchLockerHarness is PreLaunchLocker {

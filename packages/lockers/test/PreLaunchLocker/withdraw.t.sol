@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import {Test} from "forge-std/src/Test.sol";
-import {PreLaunchLocker} from "src/PreLaunchLocker.sol";
+import {PreLaunchLocker} from "src/common/locker/PreLaunchLocker.sol";
 import {PreLaunchLockerHarness, ExtendedMockERC20} from "./PreLaunchLockerHarness.t.sol";
 import {stdStorage, StdStorage} from "forge-std/src/Test.sol";
 

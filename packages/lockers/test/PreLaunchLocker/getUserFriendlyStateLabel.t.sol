@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import {Test} from "forge-std/src/Test.sol";
-import {PreLaunchLocker} from "src/PreLaunchLocker.sol";
+import {PreLaunchLocker} from "src/common/locker/PreLaunchLocker.sol";
 
 contract PreLaunchLocker__getUserFriendlyStateLabel is Test {
     function test_ReturnsDifferentValuesBasedOnTheState() external {
