@@ -106,14 +106,19 @@ abstract contract BaseDepositor {
     /// --- DEPOSIT & LOCK
     ///////////////////////////////////////////////////////////////
 
-    /// @notice Initiate a lock in the Locker contract.
+    function _createLockFrom(address _from, uint256 _amount) internal virtual {
+        // Transfer tokens to this contract
+        SafeTransferLib.safeTransferFrom(token, _from, address(locker), _amount);
+
+        // Can be called only once.
+        ILocker(locker).createLock(_amount, block.timestamp + MAX_LOCK_DURATION);
+    }
+
+    /// @notice Initiate a lock in the Locker contract and mint the sdTokens to the caller.
     /// @param _amount Amount of tokens to lock.
     function createLock(uint256 _amount) external virtual {
-        /// Transfer tokens to this contract
-        SafeTransferLib.safeTransferFrom(token, msg.sender, address(locker), _amount);
-
-        /// Can be called only once.
-        ILocker(locker).createLock(_amount, block.timestamp + MAX_LOCK_DURATION);
+        // Transfer caller's tokens to the locker and lock them
+        _createLockFrom(msg.sender, _amount);
 
         /// Mint sdToken to msg.sender.
         ITokenMinter(minter).mint(msg.sender, _amount);
