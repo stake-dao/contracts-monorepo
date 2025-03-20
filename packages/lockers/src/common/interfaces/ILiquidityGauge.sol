@@ -83,7 +83,7 @@ interface ILiquidityGauge {
 
     function withdraw(uint256 _value, bool _claimReward) external;
 
-    function withdraw(uint256 _valut, address _user, bool _claimReward) external;
+    function withdraw(uint256 _value, address _user, bool _claimReward) external;
 
     // solhint-disable-next-line
     function accept_transfer_ownership() external;

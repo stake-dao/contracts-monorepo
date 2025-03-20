@@ -5,7 +5,7 @@ import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {PreLaunchBaseDepositor} from "src/common/depositor/PreLaunchBaseDepositor.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {IERC20} from "src/common/interfaces/IERC20.sol";
-import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
+import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 
 /// @title PreLaunchLocker
 /// @dev This contract implements a state machine with three states: IDLE, ACTIVE, and CANCELED
@@ -174,11 +174,8 @@ contract PreLaunchLocker {
     constructor(address _token, address _sdToken, address _gauge) {
         if (_token == address(0) || _sdToken == address(0) || _gauge == address(0)) revert REQUIRED_PARAM();
 
-        // ensure the sdToken is operated by this contract
-        if (ISdToken(_sdToken).operator() != address(this)) revert INVALID_SD_TOKEN();
-
         // ensure the given gauge contract is associated with the given sdToken
-        if (ILiquidityGauge(_gauge).token() != _sdToken) revert INVALID_GAUGE();
+        if (ILiquidityGauge(_gauge).lp_token() != _sdToken) revert INVALID_GAUGE();
 
         // set the immutable addresses
         token = _token;

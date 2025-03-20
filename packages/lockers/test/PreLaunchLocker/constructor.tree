@@ -1,8 +1,13 @@
 PreLaunchLocker__constructor
-├── it reverts if the given token is 0
-├── it sets the state to IDLE
+├── it revert if the given token is 0
+├── it revert if the given sdToken is 0
+├── it revert if the given gauge is 0
+├── it revert if the gauge is not associated with the given sdToken
 ├── it sets the token to the given address
-├── it sets the governance to the sender
+├── it sets the sdToken to the given address
+├── it sets the gauge to the given address
 ├── it sets the timestamp to the current timestamp
+├── it sets the state to IDLE
+├── it sets the governance to the caller
 ├── it emits the StateUpdate event
 └── it emits the GovernanceUpdated event
