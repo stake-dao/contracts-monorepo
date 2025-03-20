@@ -96,8 +96,9 @@ contract Depositor is BaseDepositor {
 
         _createLock(_amount);
 
-        /// Mint sdToken to msg.sender.
-        ITokenMinter(minter).mint(msg.sender, _amount);
+        // Mint sdToken to this contract and stake in gauge
+        ITokenMinter(minter).mint(address(this), _amount);
+        ILiquidityGauge(gauge).deposit(_amount, msg.sender);
     }
 
     ////////////////////////////////////////////////////////////////
