@@ -1,29 +1,22 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.19;
 
-import {Test} from "forge-std/src/Test.sol";
 import {PreLaunchLocker} from "src/common/locker/PreLaunchLocker.sol";
-import {PreLaunchLockerHarness} from "./PreLaunchLockerHarness.t.sol";
+import {PreLaunchLockerTest} from "test/PreLaunchLocker/utils/PreLaunchLockerTest.t.sol";
 
-contract PreLaunchLocker__forceCancelLocker is Test {
-    PreLaunchLockerHarness private locker;
-
-    function setUp() public {
-        locker = new PreLaunchLockerHarness(makeAddr("token"));
-    }
-
-    function test_RevertsIfTheStateIsNotIDLE() external {
+contract PreLaunchLocker__forceCancelLocker is PreLaunchLockerTest {
+    function test_RevertsIfTheStateIsNotIDLE() external _cheat_replacePreLaunchLockerWithPreLaunchLockerHarness {
         // it reverts if the state is not IDLE
 
         // manually force the state to ACTIVE and expect a revert
-        locker._cheat_setState(PreLaunchLocker.STATE.ACTIVE);
+        lockerHarness._cheat_state(PreLaunchLocker.STATE.ACTIVE);
         vm.expectRevert(PreLaunchLocker.CANNOT_FORCE_CANCEL_ACTIVE_OR_CANCELED_LOCKER.selector);
-        locker.forceCancelLocker();
+        lockerHarness.forceCancelLocker();
 
         // manually force the state to CANCELED and expect a revert
-        locker._cheat_setState(PreLaunchLocker.STATE.CANCELED);
+        lockerHarness._cheat_state(PreLaunchLocker.STATE.CANCELED);
         vm.expectRevert(PreLaunchLocker.CANNOT_FORCE_CANCEL_ACTIVE_OR_CANCELED_LOCKER.selector);
-        locker.forceCancelLocker();
+        lockerHarness.forceCancelLocker();
     }
 
     function test_RevertsIfTheDelayIsNotPassed() external {
