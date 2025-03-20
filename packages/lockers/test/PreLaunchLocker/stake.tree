@@ -1,8 +1,0 @@
-PreLaunchLocker__stake
-├── it reverts if the amount is 0
-├── it reverts if the state is not ACTIVE
-├── it reverts if amount is greater than the balance of the user
-├── it decreases the balance of the user
-├── it deposits the amount in the gauge
-├── it emits the Staked event
-└── it stakes the maximum amount given no amount
