@@ -1,20 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.19;
 
-import {Test} from "forge-std/src/Test.sol";
 import {PreLaunchLocker} from "src/common/locker/PreLaunchLocker.sol";
+import {PreLaunchLockerTest} from "test/PreLaunchLocker/utils/PreLaunchLockerTest.t.sol";
 
-contract PreLaunchLocker__transferGovernance is Test {
-    PreLaunchLocker private locker;
-    address private governance;
-
-    function setUp() public {
-        governance = makeAddr("governance");
-
-        vm.prank(governance);
-        locker = new PreLaunchLocker(makeAddr("token"));
-    }
-
+contract PreLaunchLocker__transferGovernance is PreLaunchLockerTest {
     function test_RevertsIfTheCallerIsNotTheGovernance(address caller) external {
         // it reverts if the caller is not the governance
 
