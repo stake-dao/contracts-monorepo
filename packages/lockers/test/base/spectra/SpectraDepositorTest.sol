@@ -71,8 +71,11 @@ contract SpectraTest is BaseSpectraTokenTest {
 
         spectraDepositor.createLock(_amount);
 
-        // Check that sdSPECTRA is minted
-        assertEq(ISdToken(sdToken).balanceOf(address(this)), _amount);
+        // Check that sdSPECTRA-gauge is minted
+        assertEq(ISdToken(sdToken).balanceOf(address(this)), 0);
+        assertEq(liquidityGauge.balanceOf(address(this)), _amount);        
+        
+        // Check that locker owns 1 NFT
         assertEq(veSpectra.balanceOf(locker), 1);
 
         // Check locker state
