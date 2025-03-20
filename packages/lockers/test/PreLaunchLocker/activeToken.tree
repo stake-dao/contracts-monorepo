@@ -1,4 +1,0 @@
-PreLaunchLocker__activeToken
-├── it returns the token when the state is IDLE
-├── it returns the token when the state is CANCELED
-└── it returns the sdToken when the state is ACTIVE
