@@ -17,4 +17,6 @@ interface ISdToken {
     function setOperator(address _operator) external;
 
     function setBurnerOperator(address _burner) external;
+
+    function approve(address _spender, uint256 _amount) external;
 }

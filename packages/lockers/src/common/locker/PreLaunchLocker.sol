@@ -210,13 +210,18 @@ contract PreLaunchLocker {
         // 1. transfer the tokens from the sender to the contract. Reverts if not enough tokens are approved.
         SafeTransferLib.safeTransferFrom(token, msg.sender, address(this), amount);
 
+        ISdToken storedSdToken = sdToken;
+
         if (stake == true) {
             //  2.a. Either mint the sdTokens to this contract and stake them in the gauge for the caller
-            sdToken.mint(address(this), amount);
+            ILiquidityGauge storedGauge = gauge;
 
-            gauge.deposit(amount, msg.sender);
+            storedSdToken.mint(address(this), amount);
+            storedSdToken.approve(address(storedGauge), amount);
 
-            emit TokensStaked(msg.sender, address(gauge), amount);
+            storedGauge.deposit(amount, msg.sender);
+
+            emit TokensStaked(msg.sender, address(storedGauge), amount);
         } else {
             // 2.b. or mint the sdTokens directly to the caller (ratio 1:1 between token<>sdToken)
             sdToken.mint(msg.sender, amount);

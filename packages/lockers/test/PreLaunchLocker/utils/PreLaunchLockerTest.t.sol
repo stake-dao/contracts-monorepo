@@ -9,7 +9,7 @@ import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 import {MockERC20} from "forge-std/src/mocks/MockERC20.sol";
 
 abstract contract PreLaunchLockerTest is BaseTest {
-    address internal token;
+    MockERC20 internal token;
     SdToken internal sdToken;
     ILiquidityGauge internal gauge;
     address internal governance;
@@ -17,15 +17,28 @@ abstract contract PreLaunchLockerTest is BaseTest {
     PreLaunchLockerHarness internal lockerHarness;
 
     function setUp() public virtual {
-        token = makeAddr("token");
-        sdToken = new SdToken("sdToken", "sdTOKEN");
-        governance = makeAddr("governance");
+        // deploy the initial token
+        token = new MockERC20();
+        token.initialize("Token", "TKN", 18);
+
+        // deploy the sdToken
+        sdToken = new SdToken("sdToken", "sdTKN");
+
+        // deploy the gauge
         gauge = ILiquidityGauge(address(new GaugeMock(address(sdToken))));
 
+        // fast forward the time to avoid the block.timestamp to be 0
         skip(3600);
-        vm.prank(governance);
-        locker = new PreLaunchLocker(token, address(sdToken), address(gauge));
 
+        // deploy the locker
+        governance = makeAddr("governance");
+        vm.prank(governance);
+        locker = new PreLaunchLocker(address(token), address(sdToken), address(gauge));
+
+        // set the operator of the sdToken to the locker
+        sdToken.setOperator(address(locker));
+
+        // label the important addresses
         vm.label({account: address(locker), newLabel: "Locker"});
         vm.label({account: address(governance), newLabel: "Governance"});
         vm.label({account: address(token), newLabel: "Token"});
@@ -53,16 +66,20 @@ abstract contract PreLaunchLockerTest is BaseTest {
 }
 
 contract GaugeMock {
-    // mapping(address => uint256) public balances;
+    mapping(address => uint256) public balances;
     address private sdToken;
 
     constructor(address token) {
         sdToken = token;
     }
 
-    function deposit(uint256 amount, address) external {
+    function deposit(uint256 amount, address receiver) external {
         SdToken(sdToken).transferFrom(msg.sender, address(this), amount);
-        // balances[receiver] += amount;
+        balances[receiver] += amount;
+    }
+
+    function balanceOf(address account) external view returns (uint256) {
+        return balances[account];
     }
 
     function lp_token() external view returns (address) {
