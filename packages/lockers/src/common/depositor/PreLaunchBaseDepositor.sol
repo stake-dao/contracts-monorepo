@@ -9,7 +9,7 @@ import {BaseDepositor} from "./BaseDepositor.sol";
 /// @custom:contact contact@stakedao.org
 /// @dev This contract is used to lock tokens in the Locker contract without minting the sdTokens.
 ///      The pre-launch locker is responsible for minting the sdTokens during the pre-launch period.
-abstract contract PreLaunchBaseDepositor is BaseDepositor {
+contract PreLaunchBaseDepositor is BaseDepositor {
     /// @notice The address of the pre launch locker.
     address public immutable preLaunchLocker;
 

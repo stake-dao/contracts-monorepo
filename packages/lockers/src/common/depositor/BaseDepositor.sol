@@ -107,7 +107,7 @@ abstract contract BaseDepositor {
     ///////////////////////////////////////////////////////////////
 
     function _createLockFrom(address _from, uint256 _amount) internal virtual {
-        // Transfer tokens to this contract
+        // Transfer tokens to the locker contract
         SafeTransferLib.safeTransferFrom(token, _from, address(locker), _amount);
 
         // Can be called only once.
