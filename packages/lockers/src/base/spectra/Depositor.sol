@@ -2,18 +2,18 @@
 pragma solidity 0.8.19;
 
 import "solady/src/utils/SafeTransferLib.sol";
-import {Enum} from "@safe/contracts/Safe.sol";
 
 import {ILocker} from "src/common/interfaces/spectra/stakedao/ILocker.sol";
+import {SafeModuleDepositor} from "src/base/spectra/SafeModuleDepositor.sol";
+import {ITokenMinter, ILiquidityGauge} from "src/common/depositor/BaseDepositor.sol";
 import {ISpectraLocker} from "src/common/interfaces/spectra/spectra/ISpectraLocker.sol";
-import {BaseDepositor, ITokenMinter, ILiquidityGauge} from "src/common/depositor/BaseDepositor.sol";
 
 /// @title Stake DAO Spectra Depositor
 /// @notice Contract responsible for managing SPECTRA token deposits, locking them in the Locker,
 ///         and minting sdSPECTRA tokens in return.
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-contract Depositor is BaseDepositor {
+contract Depositor is SafeModuleDepositor {
     ///////////////////////////////////////////////////////////////
     /// --- STATE VARIABLES & CONSTANTS
     ///////////////////////////////////////////////////////////////
@@ -33,7 +33,6 @@ contract Depositor is BaseDepositor {
     error EmptyTokenIdList();
     error LockAlreadyExists();
     error NotOwnerOfToken(uint256 tokenId);
-    error ExecFromSafeModuleFailed();
 
     ////////////////////////////////////////////////////////////////
     /// --- EVENTS
@@ -60,7 +59,7 @@ contract Depositor is BaseDepositor {
     /// @param _gauge Address of the sdSPECTRA-gauge contract
     /// @param _spectraLocker Address of the Spectra locker NFT contract
     constructor(address _token, address _locker, address _minter, address _gauge, address _spectraLocker)
-        BaseDepositor(_token, _locker, _minter, _gauge, 4 * 365 days)
+        SafeModuleDepositor(_token, _locker, _minter, _gauge, 4 * 365 days)
     {
         if (_spectraLocker == address(0)) {
             revert ZeroAddress();
@@ -159,50 +158,34 @@ contract Depositor is BaseDepositor {
     /// @param _tokenId ID of the veNFT to add tokens to
     /// @param _amount Amount of tokens to lock
     function _addTokensToNft(uint256 _tokenId, uint256 _amount) internal {
-        (bool _success,) = ILocker(locker).execTransactionFromModuleReturnData(
-            address(spectraLocker),
-            0,
-            abi.encodeWithSelector(ISpectraLocker.depositFor.selector, _tokenId, _amount),
-            Enum.Operation.Call
+        _executeTransaction(
+            address(spectraLocker), abi.encodeWithSelector(ISpectraLocker.depositFor.selector, _tokenId, _amount)
         );
-        if (!_success) revert ExecFromSafeModuleFailed();
     }
 
     /// @notice Merges two lock positions
     /// @param _tokenIdFrom Source token ID to merge from
     /// @param _tokenIdTo Destination token ID to merge into
     function _merge(uint256 _tokenIdFrom, uint256 _tokenIdTo) internal {
-        (bool _success,) = ILocker(locker).execTransactionFromModuleReturnData(
-            address(spectraLocker),
-            0,
-            abi.encodeWithSelector(ISpectraLocker.merge.selector, _tokenIdFrom, _tokenIdTo),
-            Enum.Operation.Call
+        _executeTransaction(
+            address(spectraLocker), abi.encodeWithSelector(ISpectraLocker.merge.selector, _tokenIdFrom, _tokenIdTo)
         );
-        if (!_success) revert ExecFromSafeModuleFailed();
     }
 
     /// @notice unlocks the permanent status of a veNFT
     /// @param _tokenId token ID to unlock
     function _unlockPermanent(uint256 _tokenId) internal {
-        (bool _success,) = ILocker(locker).execTransactionFromModuleReturnData(
-            address(spectraLocker),
-            0,
-            abi.encodeWithSelector(ISpectraLocker.unlockPermanent.selector, _tokenId),
-            Enum.Operation.Call
+        _executeTransaction(
+            address(spectraLocker), abi.encodeWithSelector(ISpectraLocker.unlockPermanent.selector, _tokenId)
         );
-        if (!_success) revert ExecFromSafeModuleFailed();
     }
 
     /// @notice locks the permanent status of a veNFT
     /// @param _tokenId token ID to unlock
     function _lockPermanent(uint256 _tokenId) internal {
-        (bool _success,) = ILocker(locker).execTransactionFromModuleReturnData(
-            address(spectraLocker),
-            0,
-            abi.encodeWithSelector(ISpectraLocker.lockPermanent.selector, _tokenId),
-            Enum.Operation.Call
+        _executeTransaction(
+            address(spectraLocker), abi.encodeWithSelector(ISpectraLocker.lockPermanent.selector, _tokenId)
         );
-        if (!_success) revert ExecFromSafeModuleFailed();
     }
 
     /// @notice Creates initial lock for the locker
@@ -210,13 +193,10 @@ contract Depositor is BaseDepositor {
     function _createLock(uint256 _amount) internal {
         if (spectraLockedTokenId != 0) revert LockAlreadyExists();
 
-        (bool _success, bytes memory newTokenId) = ILocker(locker).execTransactionFromModuleReturnData(
+        bytes memory newTokenId = _executeTransaction(
             address(spectraLocker),
-            0,
-            abi.encodeWithSelector(ISpectraLocker.createLock.selector, _amount, MAX_LOCK_DURATION),
-            Enum.Operation.Call
+            abi.encodeWithSelector(ISpectraLocker.createLock.selector, _amount, MAX_LOCK_DURATION)
         );
-        if (!_success) revert ExecFromSafeModuleFailed();
 
         spectraLockedTokenId = abi.decode(newTokenId, (uint256));
         _lockPermanent(spectraLockedTokenId);
