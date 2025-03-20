@@ -1,0 +1,9 @@
+PreLaunchLocker__getters
+├── it exposes the force cancel delay
+├── it exposes the token
+├── it exposes the sdToken
+├── it exposes the gauge
+├── it exposes the governance
+├── it exposes the timestamp
+├── it exposes the depositor
+└── it exposes the state

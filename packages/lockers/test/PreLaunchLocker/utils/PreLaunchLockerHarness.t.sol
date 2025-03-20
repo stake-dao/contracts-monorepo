@@ -1,12 +1,17 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.19;
 
+import {PreLaunchBaseDepositor} from "src/common/depositor/PreLaunchBaseDepositor.sol";
 import {PreLaunchLocker} from "src/common/locker/PreLaunchLocker.sol";
 
 contract PreLaunchLockerHarness is PreLaunchLocker {
     constructor(address _token, address _sdToken, address _gauge) PreLaunchLocker(_token, _sdToken, _gauge) {}
 
-    function _cheat_setState(STATE _state) external {
+    function _cheat_state(STATE _state) external {
         _setState(_state);
+    }
+
+    function _cheat_depositor(address _depositor) external {
+        depositor = PreLaunchBaseDepositor(_depositor);
     }
 }

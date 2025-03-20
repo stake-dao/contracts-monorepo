@@ -1,4 +1,0 @@
-PreLaunchLocker__gauge
-├── it returns the address 0 when the state is IDLE
-├── it returns the address 0 when the state is CANCELED
-└── it returns the address of the gauge when the state is ACTIVE

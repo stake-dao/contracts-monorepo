@@ -22,6 +22,7 @@ abstract contract PreLaunchLockerTest is BaseTest {
         governance = makeAddr("governance");
         gauge = ILiquidityGauge(address(new GaugeMock(address(sdToken))));
 
+        skip(3600);
         vm.prank(governance);
         locker = new PreLaunchLocker(token, address(sdToken), address(gauge));
 
@@ -59,7 +60,7 @@ contract GaugeMock {
         sdToken = token;
     }
 
-    function deposit(uint256 amount, address receiver) external {
+    function deposit(uint256 amount, address) external {
         SdToken(sdToken).transferFrom(msg.sender, address(this), amount);
         // balances[receiver] += amount;
     }
