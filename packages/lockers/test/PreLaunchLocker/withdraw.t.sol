@@ -1,124 +1,152 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.19;
 
-import {Test} from "forge-std/src/Test.sol";
 import {PreLaunchLocker} from "src/common/locker/PreLaunchLocker.sol";
-import {PreLaunchLockerHarness, ExtendedMockERC20} from "./PreLaunchLockerHarness.t.sol";
-import {stdStorage, StdStorage} from "forge-std/src/Test.sol";
+import {PreLaunchLockerTest} from "test/PreLaunchLocker/utils/PreLaunchLockerTest.t.sol";
 
-contract PreLaunchLocker__withdraw is Test {
-    using stdStorage for StdStorage;
-
-    ExtendedMockERC20 private token;
-    PreLaunchLockerHarness private locker;
-
-    function setUp() public {
-        token = new ExtendedMockERC20();
-
-        locker = new PreLaunchLockerHarness(address(token));
-    }
-
-    function _cheat_balances(address caller, uint256 balance) internal {
-        // manually set the balance of the user
-        locker._cheat_balances(caller, balance);
-        // mint the corresponding sdToken to the locker
-        token._cheat_mint(address(locker), balance);
-    }
-
-    function _cheat_balances(uint256 balance) internal {
-        _cheat_balances(address(this), balance);
-    }
-
-    function test_RevertsIfTheAmountIs0() external {
+contract PreLaunchLocker__withdraw is PreLaunchLockerTest {
+    function test_RevertsIfTheAmountIs0(bool staked) external {
         // it reverts if the amount is 0
 
         vm.expectRevert(PreLaunchLocker.REQUIRED_PARAM.selector);
-        locker.withdraw(0);
+        locker.withdraw(0, staked);
     }
 
-    function test_RevertsIfAmountIsGreaterThanTheBalanceOfTheUser(uint256 balance) external {
-        // it reverts if amount is greater than the balance of the user
+    function test_RevertIfTheStateIsNotCANCELED(bool staked)
+        external
+        _cheat_replacePreLaunchLockerWithPreLaunchLockerHarness
+    {
+        // it revert if the state is not CANCELED
 
-        balance = bound(balance, 2, type(uint256).max - 1);
-        _cheat_balances(balance - 1);
+        PreLaunchLocker.STATE[2] memory states = [PreLaunchLocker.STATE.ACTIVE, PreLaunchLocker.STATE.IDLE];
 
-        vm.expectRevert(PreLaunchLocker.INSUFFICIENT_BALANCE.selector);
-        locker.withdraw(balance);
+        for (uint256 i; i < states.length; i++) {
+            // manually set the state to the given state
+            lockerHarness._cheat_state(states[i]);
+
+            // expect the revert
+            vm.expectRevert(PreLaunchLocker.CANNOT_WITHDRAW_IDLE_OR_ACTIVE_LOCKER.selector);
+
+            // call the function
+            lockerHarness.withdraw(1, staked);
+        }
     }
 
-    function test_RevertsIfTheStateIsIDLE(uint256 balance) external {
-        // it reverts if the state is IDLE
+    function test_RevertIfTheCallerDidntApproveTheGaugeTokenWhenTheStakeIsTrue(
+        address caller,
+        uint256 balance,
+        uint256 amount
+    ) external _cheat_replacePreLaunchLockerWithPreLaunchLockerHarness {
+        // it revert if the caller didn't approve the gauge token when the stake is true
 
-        vm.assume(balance > 0);
-        _cheat_balances(balance);
+        vm.assume(caller != address(0));
+        _assumeUnlabeledAddress(caller);
 
-        vm.expectRevert(PreLaunchLocker.CANNOT_WITHDRAW_IDLE_LOCKER.selector);
-        locker.withdraw(balance);
-    }
-
-    function test_DecreasesTheBalanceOfTheUser(uint256 balance, uint256 amount) external {
-        // it decreases the balance of the user
-
-        balance = bound(balance, 2, type(uint256).max - 1);
+        balance = bound(balance, 2, type(uint256).max);
         amount = bound(amount, 1, balance - 1);
 
-        _cheat_balances(balance);
+        // mint the total balance to the locker
+        deal(address(token), address(locker), balance);
 
-        locker._cheat_setState(PreLaunchLocker.STATE.CANCELED);
-        locker.withdraw(amount);
-        assertEq(locker.balances(address(this)), balance - amount);
+        // mint the amount the caller is expected to have
+        deal(address(sdToken), caller, amount);
+
+        // approve less than the amount the caller is going to withdraw
+        vm.prank(caller);
+        sdToken.approve(address(locker), amount - 1);
+
+        // manually set the state to CANCELED
+        lockerHarness._cheat_state(PreLaunchLocker.STATE.CANCELED);
+
+        vm.expectRevert();
+        vm.prank(caller);
+        lockerHarness.withdraw(amount, true);
     }
 
-    function test_WhenTheStateIsACTIVE(uint256 balance, uint256 amount) external {
-        // it transfer the sdToken to the user
+    function test_GivenTheStakeIsTrue(address caller, uint256 balance, uint256 amount)
+        external
+        _cheat_replacePreLaunchLockerWithPreLaunchLockerHarness
+    {
+        // it transfers caller gauge token and burn the associated sdToken
+        // it transfers back the default token to the caller
 
-        balance = bound(balance, 2, type(uint256).max - 1);
+        vm.assume(caller != address(0));
+        _assumeUnlabeledAddress(caller);
+
+        balance = bound(balance, 2, type(uint256).max);
         amount = bound(amount, 1, balance - 1);
 
-        // deploy the sdToken and store the address of the sdToken in the locker
-        ExtendedMockERC20 sdToken = new ExtendedMockERC20();
-        stdstore.target(address(locker)).sig("sdToken()").checked_write(address(sdToken));
+        // manually set the state to CANCELED
+        lockerHarness._cheat_state(PreLaunchLocker.STATE.CANCELED);
 
-        // manually set the balance of the user and mint the corresponding sdToken to the locker
-        _cheat_balances(balance);
-        sdToken._cheat_mint(address(locker), balance);
+        // set the expected amount of gauge tokens the caller is expected to have
+        deal(address(sdToken), address(caller), amount);
+        vm.prank(caller);
+        sdToken.approve(address(gauge), amount);
+        vm.prank(caller);
+        gauge.deposit(amount, caller);
 
-        // manually set the state to ACTIVE
-        locker._cheat_setState(PreLaunchLocker.STATE.ACTIVE);
+        // set the total balance to the locker
+        deal(address(token), address(locker), balance);
 
-        locker.withdraw(amount);
-        assertEq(sdToken.balanceOf(address(locker)), balance - amount);
-        assertEq(sdToken.balanceOf(address(this)), amount);
-    }
+        // approve the locker to spend the gauge tokens
+        vm.prank(caller);
+        gauge.approve(address(locker), amount);
 
-    function test_WhenTheStateIsCANCELED(uint256 balance, uint256 amount) external {
-        // it transfer the token to the user
+        // withdraw the amount
+        vm.prank(caller);
+        lockerHarness.withdraw(amount, true);
 
-        balance = bound(balance, 2, type(uint256).max - 1);
-        amount = bound(amount, 1, balance - 1);
+        // verify the balances are correct after the withdrawal
+        assertEq(sdToken.balanceOf(caller), 0);
+        assertEq(sdToken.balanceOf(address(locker)), 0);
 
-        _cheat_balances(balance);
-        locker._cheat_setState(PreLaunchLocker.STATE.CANCELED);
-
-        assertEq(token.balanceOf(address(this)), 0);
-
-        locker.withdraw(amount);
-
+        assertEq(token.balanceOf(caller), amount);
         assertEq(token.balanceOf(address(locker)), balance - amount);
-        assertEq(token.balanceOf(address(this)), amount);
+
+        assertEq(gauge.balanceOf(caller), 0);
+        assertEq(gauge.balanceOf(address(locker)), 0);
     }
 
-    function test_WithdrawsTheMaximumAmountGivenNoAmount(uint256 balance) external {
-        // it withdraws the maximum amount given no amount
+    function test_GivenTheStakeIsFalse(address caller, uint256 balance, uint256 amount)
+        external
+        _cheat_replacePreLaunchLockerWithPreLaunchLockerHarness
+    {
+        // it burn the sdToken held by the caller
+        // it transfers back the default token to the caller
 
-        balance = bound(balance, 2, type(uint256).max - 1);
+        vm.assume(caller != address(0));
+        _assumeUnlabeledAddress(caller);
 
-        _cheat_balances(balance);
-        locker._cheat_setState(PreLaunchLocker.STATE.CANCELED);
+        balance = bound(balance, 2, type(uint256).max);
+        amount = bound(amount, 1, balance - 1);
 
-        locker.withdraw(); // no amount is given
+        // mint the total balance to the locker
+        deal(address(token), address(locker), balance);
 
-        // assert the balance of the user is 0 because everything has been withdrawn
-        assertEq(locker.balances(address(this)), 0);
+        // mint the amount the caller is expected to have
+        deal(address(sdToken), caller, amount);
+
+        // approve the locker to spend the sdToken held by the caller
+        vm.prank(caller);
+        sdToken.approve(address(locker), amount);
+
+        // verify the initial balances are correct
+        assertEq(sdToken.balanceOf(caller), amount);
+        assertEq(token.balanceOf(caller), 0);
+        assertEq(token.balanceOf(address(locker)), balance);
+
+        // manually set the state to CANCELED
+        lockerHarness._cheat_state(PreLaunchLocker.STATE.CANCELED);
+
+        // withdraw the amount
+        vm.prank(caller);
+        lockerHarness.withdraw(amount, false);
+
+        // verify the balances are correct after the withdrawal
+        assertEq(sdToken.balanceOf(caller), 0);
+        assertEq(token.balanceOf(caller), amount);
+        assertEq(token.balanceOf(address(locker)), balance - amount);
+        assertEq(sdToken.balanceOf(address(locker)), 0);
     }
 }

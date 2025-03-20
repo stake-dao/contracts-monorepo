@@ -65,30 +65,27 @@ abstract contract PreLaunchLockerTest is BaseTest {
     }
 }
 
-contract GaugeMock {
-    mapping(address => uint256) public balances;
+contract GaugeMock is MockERC20 {
     address private sdToken;
 
     constructor(address token) {
         sdToken = token;
+
+        initialize("Gauge Token", "gTKN", 18);
     }
 
     function deposit(uint256 amount, address receiver) external {
         SdToken(sdToken).transferFrom(msg.sender, address(this), amount);
-        balances[receiver] += amount;
-    }
-
-    function balanceOf(address account) external view returns (uint256) {
-        return balances[account];
+        _mint(receiver, amount);
     }
 
     function lp_token() external view returns (address) {
         return sdToken;
     }
-}
 
-contract ExtendedMockERC20 is MockERC20 {
-    function _cheat_mint(address to, uint256 amount) external {
-        _mint(to, amount);
+    function withdraw(uint256 amount, bool) external {
+        _burn(msg.sender, amount);
+
+        SdToken(sdToken).transfer(msg.sender, amount);
     }
 }
