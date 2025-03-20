@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {Enum} from "@safe/contracts/libraries/Enum.sol";
+import {Enum} from "@safe/contracts/common/Enum.sol";
 
 import {ILocker} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
 import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";

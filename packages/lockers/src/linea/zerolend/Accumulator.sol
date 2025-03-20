@@ -6,7 +6,7 @@ import {ILocker} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
 import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Enum} from "@safe/contracts/libraries/Enum.sol";
+import {Enum} from "@safe/contracts/common/Enum.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 
 /// @title StakeDAO ZERO Accumulator
