@@ -278,7 +278,7 @@ contract PreLaunchLocker {
         depositor.createLock(balance);
 
         // 5. ensure there is nothing left in the contract
-        if (IERC20(token).balanceOf(address(this)) == 0) revert TOKEN_NOT_TRANSFERRED_TO_LOCKER();
+        if (IERC20(token).balanceOf(address(this)) != 0) revert TOKEN_NOT_TRANSFERRED_TO_LOCKER();
 
         // 6. transfer the operator permission of the sdToken to the depositor contract
         sdToken.setOperator(address(depositor));
