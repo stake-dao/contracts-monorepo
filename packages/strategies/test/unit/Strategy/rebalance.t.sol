@@ -1,10 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import "test/StrategyBaseTest.t.sol";
-
 import {Strategy} from "src/Strategy.sol";
-import {StrategyHarness} from "test/unit/Strategy/StrategyHarness.t.sol";
+import {StrategyBaseTest} from "test/StrategyBaseTest.t.sol";
 
 contract Strategy__rebalance is StrategyBaseTest {
     function test_Rebalance() public {

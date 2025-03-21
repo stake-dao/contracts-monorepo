@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import "./Base.t.sol";
 import "src/RewardVault.sol";
 import "test/unit/RewardVault/RewardVaultHarness.t.sol";
+import "./Base.t.sol";
 
 /// @title RewardVaultTest
 /// @notice Base test contract specifically for RewardVault tests

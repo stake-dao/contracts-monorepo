@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import {Strategy} from "src/Strategy.sol";
 import {StrategyBaseTest} from "test/StrategyBaseTest.t.sol";
-import {StrategyHarness} from "test/unit/Strategy/StrategyHarness.t.sol";
-import {IAccountant} from "src/interfaces/IAccountant.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 contract Strategy__flush is StrategyBaseTest {
     uint256 internal flushAmount = 1000 ether;

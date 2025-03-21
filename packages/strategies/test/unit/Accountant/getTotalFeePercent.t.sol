@@ -4,7 +4,7 @@ import {AccountantBaseTest} from "test/AccountantBaseTest.t.sol";
 import {AccountantHarness} from "test/unit/Accountant/AccountantHarness.t.sol";
 
 contract Accountant__getTotalFeePercent is AccountantBaseTest {
-    AccountantHarness accountantHarness;
+    AccountantHarness internal accountantHarness;
 
     function setUp() public override {
         super.setUp();

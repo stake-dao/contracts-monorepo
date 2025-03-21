@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import "test/mocks/ITokenMinter.sol";
 import "src/interfaces/ISidecar.sol";
+import "test/mocks/ITokenMinter.sol";
 
 contract MockSidecar is ISidecar {
     IERC20 public asset;

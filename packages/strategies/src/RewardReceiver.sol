@@ -4,8 +4,8 @@ pragma solidity 0.8.28;
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {IRewardReceiver} from "src/interfaces/IRewardReceiver.sol";
+import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 
 /// @title RewardReceiver - Reward Distribution Intermediary
 /// @notice A contract that receives rewards from gauges and forwards them to a reward vault.

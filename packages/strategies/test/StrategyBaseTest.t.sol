@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import "./Base.t.sol";
-import "test/unit/Strategy/StrategyHarness.t.sol";
-
-import "src/interfaces/ISidecar.sol";
-import "src/interfaces/IAccountant.sol";
-
+import {IAccountant} from "src/interfaces/IAccountant.sol";
+import {IAllocator} from "src/interfaces/IAllocator.sol";
+import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {MockSidecar} from "test/mocks/MockSidecar.sol";
+import {StrategyHarness} from "test/unit/Strategy/StrategyHarness.t.sol";
+import {BaseTest} from "./Base.t.sol";
 
 /// @title StrategyBaseTest
 /// @notice Base test contract specifically for Strategy tests

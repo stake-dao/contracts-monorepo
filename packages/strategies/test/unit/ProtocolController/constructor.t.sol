@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import {BaseTest} from "test/Base.t.sol";
 import {ProtocolController} from "src/ProtocolController.sol";
+import {BaseTest} from "test/Base.t.sol";
 
 contract ProtocolController__constructor is BaseTest {
     function test_InitializesTheOwner(address caller) external {

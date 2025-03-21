@@ -2,8 +2,8 @@
 pragma solidity 0.8.28;
 
 import {Test} from "forge-std/src/Test.sol";
-import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 import {RewardVault} from "src/RewardVault.sol";
+import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 
 contract VaultHandler is Test {
     ERC20Mock public token;

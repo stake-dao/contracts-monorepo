@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import "./Base.t.sol";
-
+import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
+import {IAccountant} from "src/interfaces/IAccountant.sol";
+import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {ProtocolContext} from "src/ProtocolContext.sol";
 import {ProtocolContextHarness} from "test/unit/ProtocolContext/ProtocolContextHarness.t.sol";
-import {IProtocolController} from "src/interfaces/IProtocolController.sol";
-import {IAccountant} from "src/interfaces/IAccountant.sol";
-import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
+import "./Base.t.sol";
 
 /// @title ProtocolContextBaseTest
 /// @notice Base test contract specifically for ProtocolContext tests

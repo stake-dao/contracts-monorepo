@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-
-import "src/Strategy.sol";
-import {IMinter} from "@interfaces/curve/IMinter.sol";
 import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
+import {IMinter} from "@interfaces/curve/IMinter.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import "src/Strategy.sol";
 
 /// @title CurveStrategy - Curve Protocol Integration Strategy
 /// @notice A strategy implementation for interacting with Curve protocol gauges

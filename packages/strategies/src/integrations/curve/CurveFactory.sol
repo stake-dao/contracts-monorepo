@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.28;
 
-import "src/Factory.sol";
-
 import {IBooster} from "@interfaces/convex/IBooster.sol";
-import {IStrategy} from "@interfaces/stake-dao/IStrategy.sol";
-import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 import {IGaugeController} from "@interfaces/curve/IGaugeController.sol";
-
+import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
+import {IStrategy} from "@interfaces/stake-dao/IStrategy.sol";
+import {Factory} from "src/Factory.sol";
 import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
 

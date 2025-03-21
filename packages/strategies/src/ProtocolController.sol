@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
 /// @title ProtocolController
 /// @author Stake DAO

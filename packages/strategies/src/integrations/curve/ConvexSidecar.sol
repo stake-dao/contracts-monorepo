@@ -1,13 +1,11 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.28;
 
-import {IBooster} from "@interfaces/convex/IBooster.sol";
 import {IBaseRewardPool} from "@interfaces/convex/IBaseRewardPool.sol";
+import {IBooster} from "@interfaces/convex/IBooster.sol";
 import {IStashTokenWrapper} from "@interfaces/convex/IStashTokenWrapper.sol";
-
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
 import {Sidecar} from "src/Sidecar.sol";
 
 /// @notice Sidecar for Convex.

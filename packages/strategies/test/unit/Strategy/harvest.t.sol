@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import "test/StrategyBaseTest.t.sol";
-
+import {ISidecar} from "src/interfaces/ISidecar.sol";
 import {Strategy} from "src/Strategy.sol";
-import {StrategyHarness} from "test/unit/Strategy/StrategyHarness.t.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {StrategyBaseTest} from "test/StrategyBaseTest.t.sol";
 
 contract Strategy__harvest is StrategyBaseTest {
     function test_RevertsIfNotCalledByAccountant() public {

@@ -1,19 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {Test} from "forge-std/src/Test.sol";
-import {StdInvariant} from "forge-std/src/StdInvariant.sol";
-
 import "@openzeppelin/contracts/proxy/Clones.sol";
-
-import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
-import {MockStrategy} from "test/mocks/MockStrategy.sol";
-import {MockRegistry} from "test/mocks/MockRegistry.sol";
-import {MockAllocator} from "test/mocks/MockAllocator.sol";
+import {StdInvariant} from "forge-std/src/StdInvariant.sol";
+import {Test} from "forge-std/src/Test.sol";
 import {Accountant} from "src/Accountant.sol";
-
 import {RewardVault} from "src/RewardVault.sol";
 import {AccountantHandler} from "test/invariant/handlers/AccountantHandler.sol";
+import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
+import {MockAllocator} from "test/mocks/MockAllocator.sol";
+import {MockRegistry} from "test/mocks/MockRegistry.sol";
+import {MockStrategy} from "test/mocks/MockStrategy.sol";
 
 contract AccountantInvariantTest is StdInvariant, Test {
     ERC20Mock public token;

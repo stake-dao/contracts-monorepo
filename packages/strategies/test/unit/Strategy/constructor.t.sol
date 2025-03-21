@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import {StrategyHarness} from "test/unit/Strategy/StrategyHarness.t.sol";
 import {StrategyBaseTest} from "test/StrategyBaseTest.t.sol";
+import {StrategyHarness} from "test/unit/Strategy/StrategyHarness.t.sol";
 
 contract Strategy__constructor is StrategyBaseTest {
     function test_CorrectlySetsProtocolController() public {

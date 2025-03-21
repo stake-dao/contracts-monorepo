@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import {Strategy} from "src/Strategy.sol";
+import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {MockSidecar} from "test/mocks/MockSidecar.sol";
 import {StrategyBaseTest} from "test/StrategyBaseTest.t.sol";
-import {StrategyHarness} from "test/unit/Strategy/StrategyHarness.t.sol";
-import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
 contract Strategy__balanceOf is StrategyBaseTest {
     function setUp() public override {

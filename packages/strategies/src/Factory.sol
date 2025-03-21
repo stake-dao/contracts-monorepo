@@ -2,11 +2,9 @@
 pragma solidity 0.8.28;
 
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-
-import {RewardVault} from "src/RewardVault.sol";
-import {ProtocolContext} from "src/ProtocolContext.sol";
 import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
+import {ProtocolContext} from "src/ProtocolContext.sol";
 
 /// @title Factory - Abstract Base Factory Contract
 /// @notice A base contract for implementing protocol-specific vault factories

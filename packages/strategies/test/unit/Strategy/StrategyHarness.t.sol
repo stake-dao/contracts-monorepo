@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import "test/mocks/ITokenMinter.sol";
 import {Test} from "forge-std/src/Test.sol";
-
 import "src/Strategy.sol";
+import "test/mocks/ITokenMinter.sol";
 
 // Exposes the useful internal functions of the Strategy contract for testing purposes
 contract StrategyHarness is Strategy, Test {
@@ -85,7 +84,7 @@ contract StrategyHarness is Strategy, Test {
         require(IERC20(target).balanceOf(address(LOCKER)) >= amount, DepositFailed());
     }
 
-    function _withdraw(address asset, address target, uint256 amount, address receiver) internal override {
+    function _withdraw(address, address target, uint256 amount, address receiver) internal override {
         bytes memory data = abi.encodeWithSignature("transfer(address,uint256)", receiver, amount);
         require(_executeTransaction(target, data), WithdrawFailed());
     }

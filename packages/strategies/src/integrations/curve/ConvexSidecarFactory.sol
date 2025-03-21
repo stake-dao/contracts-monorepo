@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.28;
 
-import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 import {IBooster} from "@interfaces/convex/IBooster.sol";
-
-import {SidecarFactory} from "src/SidecarFactory.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
+import {SidecarFactory} from "src/SidecarFactory.sol";
 
 /// @title ConvexSidecarFactory
 /// @notice Factory contract for deploying ConvexSidecar instances

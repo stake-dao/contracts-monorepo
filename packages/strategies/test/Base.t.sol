@@ -1,16 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import "forge-std/src/Test.sol";
-
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-
-import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
-import {MockLocker} from "test/mocks/MockLocker.sol";
-import {MockGateway} from "test/mocks/MockGateway.sol";
-import {MockRegistry} from "test/mocks/MockRegistry.sol";
-import {MockAllocator} from "test/mocks/MockAllocator.sol";
+import "forge-std/src/Test.sol";
 import {stdStorage, StdStorage} from "forge-std/src/Test.sol";
+import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
+import {MockAllocator} from "test/mocks/MockAllocator.sol";
+import {MockGateway} from "test/mocks/MockGateway.sol";
+import {MockLocker} from "test/mocks/MockLocker.sol";
+import {MockRegistry} from "test/mocks/MockRegistry.sol";
 
 /// @title BaseTest
 /// @notice Base test contract with common utilities and setup for all tests

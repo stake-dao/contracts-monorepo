@@ -1,8 +1,8 @@
 pragma solidity 0.8.28;
 
-import {RewardVaultBaseTest, RewardVaultHarness} from "test/RewardVaultBaseTest.sol";
-import {RewardVault} from "src/RewardVault.sol";
 import {Accountant} from "src/Accountant.sol";
+import {RewardVault} from "src/RewardVault.sol";
+import {RewardVaultBaseTest, RewardVaultHarness} from "test/RewardVaultBaseTest.sol";
 
 contract RewardVault__updateReward is RewardVaultBaseTest {
     function test_UpdatesTheRewardForAGivenAccount(address account, address token)

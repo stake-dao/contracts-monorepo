@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import {ProtocolControllerBaseTest} from "test/ProtocolControllerBaseTest.t.sol";
 import {ProtocolController} from "src/ProtocolController.sol";
+import {ProtocolControllerBaseTest} from "test/ProtocolControllerBaseTest.t.sol";
 import {ProtocolControllerHarness} from "test/unit/ProtocolController/ProtocolControllerHarness.t.sol";
 
 contract ProtocolController__getters is ProtocolControllerBaseTest {

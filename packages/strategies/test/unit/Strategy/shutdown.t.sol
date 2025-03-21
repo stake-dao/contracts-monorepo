@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import "test/StrategyBaseTest.t.sol";
-
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {Strategy} from "src/Strategy.sol";
-import {StrategyHarness} from "test/unit/Strategy/StrategyHarness.t.sol";
+import {StrategyBaseTest} from "test/StrategyBaseTest.t.sol";
 
 contract Strategy__shutdown is StrategyBaseTest {
     function test_RevertCallerNotAllowed() public {

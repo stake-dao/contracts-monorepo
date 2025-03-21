@@ -1,10 +1,10 @@
 pragma solidity 0.8.28;
 
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
-import {AccountantBaseTest, MockRegistry} from "test/AccountantBaseTest.t.sol";
-import {AccountantHarness} from "test/unit/Accountant/AccountantHarness.t.sol";
 import {Accountant} from "src/Accountant.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {AccountantBaseTest, MockRegistry} from "test/AccountantBaseTest.t.sol";
+import {AccountantHarness} from "test/unit/Accountant/AccountantHarness.t.sol";
 
 contract Accountant__checkpoint is AccountantBaseTest {
     function test_RevertIfNotCalledByTheVault(address caller) external {

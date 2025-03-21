@@ -1,8 +1,8 @@
 pragma solidity 0.8.28;
 
-import {RewardVaultBaseTest, BaseTest} from "test/RewardVaultBaseTest.sol";
-import {RewardVault} from "src/RewardVault.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import {RewardVault} from "src/RewardVault.sol";
+import {RewardVaultBaseTest, BaseTest} from "test/RewardVaultBaseTest.sol";
 
 contract RewardVault__asset is RewardVaultBaseTest {
     function test_ReturnsTheImmutableAssetPassedToTheClone(address asset) external {

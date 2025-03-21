@@ -2,12 +2,9 @@ pragma solidity 0.8.28;
 
 import {Test} from "forge-std/src/Test.sol";
 import {RewardVault} from "src/RewardVault.sol";
-import {stdStorage, StdStorage} from "forge-std/src/Test.sol";
 
 // Exposes the useful internal functions of the RewardVault contract for testing purposes
 contract RewardVaultHarness is RewardVault, Test {
-    // using stdStorage for StdStorage;
-
     constructor(bytes4 protocolId, address protocolController, address accountant, bool triggerHarvest)
         RewardVault(protocolId, protocolController, accountant, triggerHarvest)
     {}

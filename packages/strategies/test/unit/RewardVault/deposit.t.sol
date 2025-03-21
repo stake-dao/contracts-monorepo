@@ -1,16 +1,16 @@
 pragma solidity 0.8.28;
 
-import {RewardVaultBaseTest, RewardVaultHarness} from "test/RewardVaultBaseTest.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-import {RewardVault} from "src/RewardVault.sol";
-import {Accountant} from "src/Accountant.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
-import {IProtocolController} from "src/interfaces/IProtocolController.sol";
-import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {Accountant} from "src/Accountant.sol";
 import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {IAllocator} from "src/interfaces/IAllocator.sol";
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {IProtocolController} from "src/interfaces/IProtocolController.sol";
+import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {RewardVault} from "src/RewardVault.sol";
+import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
+import {RewardVaultBaseTest, RewardVaultHarness} from "test/RewardVaultBaseTest.sol";
 
 contract RewardVault__deposit is RewardVaultBaseTest {
     address internal gauge = makeAddr("gauge");
@@ -386,8 +386,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         IERC20(asset).approve(address(cloneRewardVault), OWNER_BALANCE);
 
         // mock the dependencies of the deposit function
-        (IAllocator.Allocation memory allocation, IStrategy.PendingRewards memory pendingRewards) =
-            _mock_test_dependencies(OWNER_BALANCE, Allocation.MIXED);
+        (, IStrategy.PendingRewards memory pendingRewards) = _mock_test_dependencies(OWNER_BALANCE, Allocation.MIXED);
 
         // expect the checkpoint to be called with the receiver as the recipient
         vm.expectCall(
@@ -432,8 +431,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         // uint256 beforeReceiverBalance = IERC20(asset).balanceOf(receiver);
 
         // mock the dependencies of the withdraw function
-        (IAllocator.Allocation memory allocation, IStrategy.PendingRewards memory pendingRewards) =
-            _mock_test_dependencies(OWNER_BALANCE, Allocation.MIXED);
+        (, IStrategy.PendingRewards memory pendingRewards) = _mock_test_dependencies(OWNER_BALANCE, Allocation.MIXED);
 
         // expect the checkpoint to be called with the receiver as the recipient
         vm.expectCall(
@@ -477,8 +475,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         IERC20(asset).approve(address(cloneRewardVault), OWNER_BALANCE);
 
         // mock the dependencies of the withdraw function
-        (IAllocator.Allocation memory allocation, IStrategy.PendingRewards memory pendingRewards) =
-            _mock_test_dependencies(OWNER_BALANCE, Allocation.MIXED);
+        (, IStrategy.PendingRewards memory pendingRewards) = _mock_test_dependencies(OWNER_BALANCE, Allocation.MIXED);
 
         // force the deposit to the strategyto revert
         vm.mockCallRevert(

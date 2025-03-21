@@ -1,12 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 import {IAccountant} from "src/interfaces/IAccountant.sol";
-import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
+import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
 
 /// @title SidecarFactory
 /// @notice Base factory contract for deploying protocol-specific sidecar instances

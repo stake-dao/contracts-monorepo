@@ -1,12 +1,11 @@
 pragma solidity 0.8.28;
 
-import {RewardReceiver} from "src/RewardReceiver.sol";
-import {BaseTest} from "test/Base.t.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {RewardVault} from "src/RewardVault.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-
+import {RewardReceiver} from "src/RewardReceiver.sol";
+import {RewardVault} from "src/RewardVault.sol";
+import {BaseTest} from "test/Base.t.sol";
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 
 contract RewardReceiver__distributeRewards is BaseTest {

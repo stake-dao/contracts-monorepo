@@ -1,7 +1,7 @@
 pragma solidity 0.8.28;
 
-import {RewardVaultBaseTest} from "test/RewardVaultBaseTest.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
+import {RewardVaultBaseTest} from "test/RewardVaultBaseTest.sol";
 
 contract RewardVault__strategy is RewardVaultBaseTest {
     function test_ReturnsTheStrategyAssociatedWithTheVault(address strategy) external {

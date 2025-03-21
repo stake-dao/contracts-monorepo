@@ -1,7 +1,7 @@
 pragma solidity 0.8.28;
 
-import {RewardVaultBaseTest, RewardVaultHarness} from "test/RewardVaultBaseTest.sol";
 import {RewardVault} from "src/RewardVault.sol";
+import {RewardVaultBaseTest, RewardVaultHarness} from "test/RewardVaultBaseTest.sol";
 
 contract RewardVault__getLastUpdateTime is RewardVaultBaseTest {
     function test_ReturnsTheLastUpdateTimeForAGivenRewardToken(address token, uint32 lastUpdateTime)

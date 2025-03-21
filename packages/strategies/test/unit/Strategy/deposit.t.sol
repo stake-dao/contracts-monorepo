@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
+import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {Strategy} from "src/Strategy.sol";
 import {StrategyBaseTest} from "test/StrategyBaseTest.t.sol";
-import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
 contract Strategy__deposit is StrategyBaseTest {
     function test_RevertsIfNotCalledByVault() public {

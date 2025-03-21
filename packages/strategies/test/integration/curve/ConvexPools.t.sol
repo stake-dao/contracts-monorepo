@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.28;
 
-import "test/integration/curve/CurveIntegration.t.sol";
 import "test/integration/curve/CurveFactory.t.sol";
+import "test/integration/curve/CurveIntegration.t.sol";
 
 // @notice Selected Convex pool PIDs sorted by PID (highest to lowest)
 // @dev Each integration test requires two PIDs to test multi-gauge functionality

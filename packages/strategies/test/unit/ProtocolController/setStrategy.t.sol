@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import {ProtocolControllerBaseTest} from "test/ProtocolControllerBaseTest.t.sol";
-import {ProtocolController} from "src/ProtocolController.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {ProtocolController} from "src/ProtocolController.sol";
+import {ProtocolControllerBaseTest} from "test/ProtocolControllerBaseTest.t.sol";
 
 contract ProtocolController__setStrategy is ProtocolControllerBaseTest {
     function test_SetsTheStrategyForAProtocol(bytes4 protocolId, address strategy) external {

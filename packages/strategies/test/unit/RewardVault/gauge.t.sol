@@ -1,9 +1,9 @@
 pragma solidity 0.8.28;
 
-import {RewardVaultBaseTest} from "test/RewardVaultBaseTest.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {RewardVault} from "src/RewardVault.sol";
 import {BaseTest} from "test/Base.t.sol";
-import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import {RewardVaultBaseTest} from "test/RewardVaultBaseTest.sol";
 
 contract RewardVault__gauge is RewardVaultBaseTest {
     function test_ReturnsTheImmutableGaugeAddressPassedToTheClone(address gauge) external {

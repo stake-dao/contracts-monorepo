@@ -1,7 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import "test/integration/curve/BaseCurveTest.sol";
+import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
+import {ConvexSidecarFactory} from "src/integrations/curve/ConvexSidecarFactory.sol";
+import {Factory} from "src/integrations/curve/CurveFactory.sol";
+import {IProtocolController} from "src/interfaces/IProtocolController.sol";
+import {RewardReceiver} from "src/RewardReceiver.sol";
+import {RewardVault} from "src/RewardVault.sol";
+import {BaseCurveTest} from "test/integration/curve/BaseCurveTest.sol";
 
 abstract contract CurveFactoryTest is BaseCurveTest {
     constructor(uint256 _pid) BaseCurveTest(_pid) {}

@@ -1,13 +1,11 @@
 pragma solidity 0.8.28;
 
-import {console} from "forge-std/src/console.sol";
-
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
-import {AccountantBaseTest} from "test/AccountantBaseTest.t.sol";
-import {AccountantHarness} from "test/unit/Accountant/AccountantHarness.t.sol";
-import {Accountant} from "src/Accountant.sol";
-import {MockRegistry} from "test/mocks/MockRegistry.sol";
 import {IERC20} from "forge-std/src/interfaces/IERC20.sol";
+import {Accountant} from "src/Accountant.sol";
+import {AccountantBaseTest} from "test/AccountantBaseTest.t.sol";
+import {MockRegistry} from "test/mocks/MockRegistry.sol";
+import {AccountantHarness} from "test/unit/Accountant/AccountantHarness.t.sol";
 
 contract Accountant__claim is AccountantBaseTest {
     function test_GivenVaultsAndHarvestBis(uint256 pendingRewards, uint256 accountantBalance)

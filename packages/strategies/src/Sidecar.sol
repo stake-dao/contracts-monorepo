@@ -2,10 +2,9 @@
 pragma solidity 0.8.28;
 
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
-import {ISidecar} from "src/interfaces/ISidecar.sol";
 import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
+import {ISidecar} from "src/interfaces/ISidecar.sol";
 
 /// @title Sidecar - Abstract Base Sidecar Contract
 /// @notice A base contract for implementing protocol-specific sidecars

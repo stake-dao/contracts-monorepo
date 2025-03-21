@@ -1,19 +1,16 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import "test/BaseFork.sol";
-
-import {CurveStrategy, IMinter} from "src/integrations/curve/CurveStrategy.sol";
-import {CurveAllocator} from "src/integrations/curve/CurveAllocator.sol";
-import {CurveFactory, Factory, IProtocolController} from "src/integrations/curve/CurveFactory.sol";
-
+import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
+import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
+import {IStrategy} from "@interfaces/stake-dao/IStrategy.sol";
+import {Enum} from "@safe/contracts/common/Enum.sol";
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
 import {ConvexSidecarFactory, IBooster} from "src/integrations/curve/ConvexSidecarFactory.sol";
-
-import {IStrategy} from "@interfaces/stake-dao/IStrategy.sol";
-import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
+import {CurveFactory} from "src/integrations/curve/CurveFactory.sol";
+import {CurveStrategy, IMinter} from "src/integrations/curve/CurveStrategy.sol";
 import {IBalanceProvider} from "src/interfaces/IBalanceProvider.sol";
-import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
+import {BaseForkTest} from "test/BaseFork.sol";
 
 abstract contract BaseCurveTest is BaseForkTest {
     ///////////////////////////////////////////////////////////////////////////
@@ -21,19 +18,19 @@ abstract contract BaseCurveTest is BaseForkTest {
     ///////////////////////////////////////////////////////////////////////////
 
     /// @notice The protocol ID.
-    bytes4 constant PROTOCOL_ID = bytes4(keccak256("CURVE"));
+    bytes4 internal constant PROTOCOL_ID = bytes4(keccak256("CURVE"));
 
     /// @notice The reward token.
-    address constant CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
+    address internal constant CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
 
     /// @notice The CVX token.
-    address constant CVX = 0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B;
+    address internal constant CVX = 0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B;
 
     /// @notice The minter contract.
-    address constant MINTER = 0xd061D61a4d941c39E5453435B6345Dc261C2fcE0;
+    address internal constant MINTER = 0xd061D61a4d941c39E5453435B6345Dc261C2fcE0;
 
     /// @notice The locker.
-    address constant LOCKER = 0x52f541764E6e90eeBc5c21Ff570De0e2D63766B6;
+    address internal constant LOCKER = 0x52f541764E6e90eeBc5c21Ff570De0e2D63766B6;
 
     /// @notice The Boost Delegation V3 contract.
     address public constant BOOST_DELEGATION_V3 = 0xD37A6aa3d8460Bd2b6536d608103D880695A23CD;
@@ -52,7 +49,7 @@ abstract contract BaseCurveTest is BaseForkTest {
     ///////////////////////////////////////////////////////////////////////////
 
     /// @notice The signature for the Safe transaction.
-    bytes signatures = abi.encodePacked(uint256(uint160(admin)), uint8(0), uint256(1));
+    bytes internal signatures = abi.encodePacked(uint256(uint160(admin)), uint8(0), uint256(1));
 
     ///////////////////////////////////////////////////////////////////////////
     //// - TEST STORAGE
@@ -251,16 +248,16 @@ abstract contract BaseCurveTest is BaseForkTest {
         );
     }
 
-    function _inflateRewards(address gauge, uint256 inflation) internal returns (uint256) {
+    function _inflateRewards(address _gauge, uint256 inflation) internal returns (uint256) {
         // Get the current minted amount for LOCKER from the gauge
-        uint256 minted = IMinter(MINTER).minted(LOCKER, gauge);
+        uint256 minted = IMinter(MINTER).minted(LOCKER, _gauge);
 
         // Calculate what integrate_fraction should be to get exactly the inflation amount
         uint256 targetIntegrateFraction = minted + inflation;
 
         // Mock the integrate_fraction call to return our target value
         vm.mockCall(
-            address(gauge),
+            address(_gauge),
             abi.encodeWithSelector(ILiquidityGauge.integrate_fraction.selector, address(LOCKER)),
             abi.encode(targetIntegrateFraction)
         );

@@ -1,8 +1,8 @@
 pragma solidity 0.8.28;
 
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {RewardReceiver} from "src/RewardReceiver.sol";
 import {BaseTest} from "test/Base.t.sol";
-import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 
 contract RewardReceiver__rewardVault is BaseTest {
     RewardReceiver private clonedRewardReceiver;

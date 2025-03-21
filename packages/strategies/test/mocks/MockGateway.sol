@@ -2,7 +2,6 @@
 pragma solidity 0.8.28;
 
 import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
-import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 interface SimpleModuleManager {
     function execTransactionFromModule(

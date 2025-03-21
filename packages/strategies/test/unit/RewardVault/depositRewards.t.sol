@@ -1,9 +1,9 @@
 pragma solidity 0.8.28;
 
-import {RewardVaultBaseTest, RewardVaultHarness} from "test/RewardVaultBaseTest.sol";
-import {RewardVault} from "src/RewardVault.sol";
-import {Accountant} from "src/Accountant.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {Accountant} from "src/Accountant.sol";
+import {RewardVault} from "src/RewardVault.sol";
+import {RewardVaultBaseTest} from "test/RewardVaultBaseTest.sol";
 
 contract RewardVault__depositRewards is RewardVaultBaseTest {
     function test_RevertIfCallerIsNotAuthorizedDistributor(address token, address expectedDistributor, address caller)

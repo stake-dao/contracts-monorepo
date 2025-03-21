@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
-import {IStrategy, IAllocator} from "src/interfaces/IStrategy.sol";
 import {TransientSlot} from "@openzeppelin/contracts/utils/TransientSlot.sol";
+import {IStrategy, IAllocator} from "src/interfaces/IStrategy.sol";
+import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 
 contract MockStrategy is IStrategy {
     using TransientSlot for *;

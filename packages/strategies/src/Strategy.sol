@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {TransientSlot} from "@openzeppelin/contracts/utils/TransientSlot.sol";
 import {IERC20, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {TransientSlot} from "@openzeppelin/contracts/utils/TransientSlot.sol";
+import {IBalanceProvider} from "src/interfaces/IBalanceProvider.sol";
 import {ISidecar} from "src/interfaces/ISidecar.sol";
 import {IStrategy, IAllocator} from "src/interfaces/IStrategy.sol";
-import {IBalanceProvider} from "src/interfaces/IBalanceProvider.sol";
-import {IProtocolController, ProtocolContext} from "src/ProtocolContext.sol";
+import {ProtocolContext} from "src/ProtocolContext.sol";
 
 /// @title Strategy - Abstract Base Strategy Contract
 /// @notice A base contract for implementing protocol-specific strategies

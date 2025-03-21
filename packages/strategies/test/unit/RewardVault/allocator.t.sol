@@ -1,10 +1,7 @@
 pragma solidity 0.8.28;
 
-import {RewardVaultBaseTest} from "test/RewardVaultBaseTest.sol";
-
-import {RewardVaultBaseTest} from "test/RewardVaultBaseTest.sol";
-import {RewardVault} from "src/RewardVault.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
+import {RewardVaultBaseTest} from "test/RewardVaultBaseTest.sol";
 
 contract RewardVault__allocator is RewardVaultBaseTest {
     function test_ReturnsTheAllocatorAssociatedWithTheVault(address allocator) external {

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import {ProtocolControllerBaseTest} from "test/ProtocolControllerBaseTest.t.sol";
-import {ProtocolController} from "src/ProtocolController.sol";
 import {stdStorage, StdStorage} from "forge-std/src/Test.sol";
+import {ProtocolController} from "src/ProtocolController.sol";
+import {ProtocolControllerBaseTest} from "test/ProtocolControllerBaseTest.t.sol";
 
 contract ProtocolController__registerVault is ProtocolControllerBaseTest {
     using stdStorage for StdStorage;

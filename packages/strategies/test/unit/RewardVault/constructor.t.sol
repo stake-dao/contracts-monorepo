@@ -1,7 +1,7 @@
 pragma solidity 0.8.28;
 
-import {RewardVaultBaseTest} from "test/RewardVaultBaseTest.sol";
 import {RewardVault} from "src/RewardVault.sol";
+import {RewardVaultBaseTest} from "test/RewardVaultBaseTest.sol";
 
 contract RewardVault__constructor is RewardVaultBaseTest {
     function test_RevertIfAccountantIsZeroAddress() external {

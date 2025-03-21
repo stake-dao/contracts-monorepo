@@ -3,9 +3,6 @@ pragma solidity 0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
-import {IProtocolController} from "src/interfaces/IProtocolController.sol";
-
 interface ISidecar {
     function balanceOf() external view returns (uint256);
     function deposit(uint256 amount) external;
