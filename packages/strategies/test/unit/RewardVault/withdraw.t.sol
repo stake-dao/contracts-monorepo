@@ -249,7 +249,7 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
         deal(address(asset), address(cloneRewardVault), OWNER_BALANCE);
 
         // vm.mockCall(accountant, abi.encodeWithSelector(IAccountant.checkpoint.selector), abi.encode(true));
-        vm.expectCall(address(strategyAsset), abi.encodeWithSelector(IStrategy.withdraw.selector, allocation, false), 1);
+        vm.expectCall(address(strategyAsset), abi.encodeWithSelector(IStrategy.withdraw.selector, allocation, false, address(receiver)), 1);
 
         // make the caller withdraw the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
@@ -325,18 +325,22 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
         cloneRewardVault.approve(caller, OWNER_BALANCE);
 
         // mock the dependencies of the withdraw function
-        _mock_test_dependencies();
+        (IAllocator.Allocation memory allocation, IStrategy.PendingRewards memory pendingRewards) =
+            _mock_test_dependencies();
 
         // we airdrop enought assets to the reward vault to cover the withdrawal
         deal(address(asset), address(cloneRewardVault), OWNER_BALANCE);
+
+        // If the vault is not shutdown, the assets are transferred to the receiver from the strategy.
+        vm.expectCall(address(strategyAsset), abi.encodeWithSelector(IStrategy.withdraw.selector, allocation, false, address(receiver)), 1);
 
         // make the caller withdraw the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
         withdraw_redeem_wrapper(OWNER_BALANCE, receiver, owner);
 
-        // assert that the receiver received the assets from the reward vault
-        assertEq(IERC20(asset).balanceOf(address(cloneRewardVault)), 0);
-        assertEq(IERC20(asset).balanceOf(receiver), OWNER_BALANCE);
+        // Only if the vault is shutdown that the assets on the vault are transferred to the receiver.
+        // Else, they're directly transferred to the receiver from the strategy.
+        assertEq(IERC20(asset).balanceOf(address(cloneRewardVault)), OWNER_BALANCE);
     }
 
     function test_EmitsTheEvent(address owner, address caller, address receiver)

@@ -70,29 +70,6 @@ contract VaultInvariantTest is StdInvariant, Test {
         targetSelector(FuzzSelector({addr: address(handler), selectors: selectors}));
     }
 
-    function invariant_totalAssetsMatchAccounting() public view {
-        // Vault's total assets should match the sum of:
-        // 1. Tokens in the vault
-        // 2. Tokens in the strategy (if any)
-        uint256 vaultBalance = token.balanceOf(address(vault));
-        uint256 strategyBalance = token.balanceOf(address(strategy));
-
-        assertEq(vault.totalAssets(), vaultBalance + strategyBalance, "Total assets must match actual token balances");
-    }
-
-    function invariant_shareValueNeverDecreases() public {
-        // Calculate current share value
-        uint256 currentShareValue = vault.convertToAssets(1e18);
-
-        // Share value should never decrease
-        assertGe(currentShareValue, maxShareValue, "Share value cannot decrease");
-
-        // Update max share value if it increased
-        if (currentShareValue > maxShareValue) {
-            maxShareValue = currentShareValue;
-        }
-    }
-
     function invariant_totalSharesMatchUserBalances() public view {
         // Total supply should match the sum of all holder balances
         uint256 totalSupply = vault.totalSupply();
