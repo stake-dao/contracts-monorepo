@@ -26,7 +26,7 @@ contract ConverterTest is Test {
         sdToken = ERC20(SPECTRA.SDTOKEN);
         sdTokenGauge = ERC20(SPECTRA.GAUGE);
 
-        converter = new Converter(SPECTRA.SDTOKEN, SPECTRA.GAUGE, address(this), 8453, 0, 0); // Mainnet, conversion rate is not necessary
+        converter = new Converter(SPECTRA.SDTOKEN, SPECTRA.GAUGE, address(this), 8453, 0); // Mainnet, conversion rate is not necessary
 
         vm.prank(ISdToken(SPECTRA.SDTOKEN).operator());
         ISdToken(SPECTRA.SDTOKEN).setOperator(address(converter));

@@ -20,11 +20,10 @@ contract SpectraTest is BaseSpectraTokenTest {
     address bob = makeAddr("bob");
     address initializer = makeAddr("initializer");
 
-    uint256 totalSdSpectraToDistribute;
-
     uint256 sdAPWineSupply = 1459843245173853310837177;
+    uint256 totalSdSpectraToDistribute = sdAPWineSupply * 20;
 
-    uint256 expectedRatio;
+    uint256 ratio = 20 ether;
 
     function setUp() public {
         vm.createSelectFork(vm.rpcUrl("base"));
@@ -49,14 +48,10 @@ contract SpectraTest is BaseSpectraTokenTest {
         ISdSpectraDepositor(address(depositor)).deposit(tokenIds, false, GOVERNANCE);
         vm.stopPrank();
 
-        // Check amount to distribute and compute conversion ratio
-        totalSdSpectraToDistribute = IERC20(sdToken).balanceOf(GOVERNANCE);
-        expectedRatio = totalSdSpectraToDistribute * 10**18 / sdAPWineSupply;
-
         // Base, destination chain id is not necessary. 
         // sdAPWine supply : 1459843245173853310837177
         // We use the balance of the governance after a deposit to have the amount of sdSEPCTRA to distribute
-        converter = new Converter(sdToken, address(liquidityGauge), address(this), 8453, sdAPWineSupply, totalSdSpectraToDistribute); 
+        converter = new Converter(sdToken, address(liquidityGauge), address(this), 8453, 20 ether); 
 
         vm.prank(GOVERNANCE);
         IERC20(sdToken).transfer(address(converter), totalSdSpectraToDistribute);
@@ -79,10 +74,8 @@ contract SpectraTest is BaseSpectraTokenTest {
     ////////////////////////
 
     function test_initialState() public view {
-        console.log(converter.conversionRatio());
-        console.log(converter.conversionRatio()/10**18);
         assertEq(IERC20(sdToken).balanceOf(address(converter)), totalSdSpectraToDistribute);
-        assertEq(converter.conversionRatio(), expectedRatio);
+        assertEq(converter.conversionRatio(), ratio);
     }
 
     function test_resolveConvert() public {
@@ -94,7 +87,7 @@ contract SpectraTest is BaseSpectraTokenTest {
 
         // receiver is bob, bob should have 11 * convertion ratio sdSPECTRA gauge
         assertEq(IERC20(sdToken).balanceOf(bob), 0);
-        assertEq(liquidityGauge.balanceOf(bob), 11 ether * expectedRatio /10**18);
+        assertEq(liquidityGauge.balanceOf(bob), 11 ether * ratio /10**18);
     }
 
     function test_resolveConvertAllSupply() public {
@@ -106,7 +99,7 @@ contract SpectraTest is BaseSpectraTokenTest {
 
         // receiver is alice, bob should have all the tokens to redeem
         assertEq(IERC20(sdToken).balanceOf(alice), 0);
-        assertApproxEqRel(liquidityGauge.balanceOf(alice), totalSdSpectraToDistribute, 10**8);
+        assertEq(liquidityGauge.balanceOf(alice), totalSdSpectraToDistribute);
     }
 
     function test_cantResolveConvertIfWrongOrigin() public {

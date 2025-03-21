@@ -71,25 +71,22 @@ contract Converter {
     /// @notice Initializes the Convertor contract with required dependencies
     /// @param _sdToken sdToken address, should be old sdToken on departure chain, and new sdToken on destination chain
     /// @param _sdTokenGauge gauge address, should be old gauge on departure chain, and new gauge on destination chain
-    /// @param laPoste Address of La Poste messaging system
+    /// @param _laPoste Address of La Poste messaging system
     /// @param _destinationChainId Destination chain id to send message to, only used on departure chain
-    /// @param oldSdTokenSupply Old sdToken supply, only used for conversion ratio on destination chain
-    /// @param newSdTokenSupply New sdToken supply, only used for conversion ratio on destination chain
+    /// @param _conversionRatio Conversion ratio between old sdToken and new sdToken, with 18 decimals
 
     constructor(
         address _sdToken,
         address _sdTokenGauge,
         address _laPoste,
         uint256 _destinationChainId,
-        uint256 oldSdTokenSupply,
-        uint256 newSdTokenSupply
+        uint256 _conversionRatio
     ) {
         sdToken = _sdToken;
         sdTokenGauge = _sdTokenGauge;
         laPoste = _laPoste;
         destinationChainId = _destinationChainId;
-
-        conversionRatio = oldSdTokenSupply == 0 ? 0 : newSdTokenSupply * 10 ** 18 / oldSdTokenSupply;
+        conversionRatio = _conversionRatio;
 
         if (block.chainid != 1) {
             IERC20(sdToken).approve(sdTokenGauge, type(uint256).max);
@@ -165,7 +162,7 @@ contract Converter {
     }
 
     /// @notice Resolution of the conversion, should only be called by La Poste on destination chain
-    /// @param uint256 (unused) Departure chain of the message
+    /// @param (unused) Departure chain of the message
     /// @param sender Address sending the message from the departure chain, should be the same as address(this)
     /// @param payload bytes of data for parameters, should fit the Payload structure when decoded
     function receiveMessage(uint256, address sender, bytes calldata payload) external onlyLaPoste {
