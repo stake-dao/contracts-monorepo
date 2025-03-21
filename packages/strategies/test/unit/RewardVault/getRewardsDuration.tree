@@ -1,2 +1,2 @@
 RewardVault__getRewardsDuration
-└── it returns the duration of the rewards distribution for a given reward token
+└── it returns the constant rewards duration

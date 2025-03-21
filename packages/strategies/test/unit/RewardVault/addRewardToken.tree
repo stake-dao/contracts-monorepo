@@ -6,5 +6,5 @@ RewardVault__addRewardToken
 ├── it revert if max reward token count is exceeded
 ├── it adds the reward token to the list of reward tokens
 ├── it add the reward token to the reward mapping
-├── it initialize the reward data with the given distibutor and default duration
+├── it initialize the reward data with the given distibutor
 └── it emits the reward token added event

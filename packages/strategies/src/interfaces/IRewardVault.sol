@@ -16,7 +16,7 @@ interface IRewardVault {
 
     function getRewardsDistributor(address token) external view returns (address);
 
-    function getRewardsDuration(address token) external view returns (uint32);
+    function getRewardsDuration() external view returns (uint32);
 
     function getLastUpdateTime(address token) external view returns (uint32);
 

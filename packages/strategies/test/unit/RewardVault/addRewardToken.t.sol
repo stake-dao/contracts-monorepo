@@ -96,11 +96,8 @@ contract RewardVault__addRewardToken is RewardVaultBaseTest {
         assertEq(rewardVault.isRewardToken(rewardToken), true);
     }
 
-    function test_InitializeTheRewardDataWithTheGivenDistibutorAndDefaultDuration(
-        address rewardToken,
-        address distributor
-    ) external {
-        // it initialize the reward data with the given distibutor and default duration
+    function test_InitializeTheRewardDataWithTheGivenDistibutor(address rewardToken, address distributor) external {
+        // it initialize the reward data with the given distibutor
 
         vm.assume(rewardToken != address(0));
         vm.assume(distributor != address(0));
@@ -109,9 +106,8 @@ contract RewardVault__addRewardToken is RewardVaultBaseTest {
         rewardVault.addRewardToken(rewardToken, distributor);
 
         // we make sure the reward data is initialized with the given distributor and default duration
-        (address rewardsDistributor, uint32 rewardsDuration,,,,) = rewardVault.rewardData(rewardToken);
+        (address rewardsDistributor,,,,) = rewardVault.rewardData(rewardToken);
         assertEq(rewardsDistributor, distributor);
-        assertEq(rewardsDuration, rewardVault.DEFAULT_REWARDS_DURATION());
     }
 
     function test_EmitsTheRewardTokenAddedEvent(address rewardToken, address distributor) external {

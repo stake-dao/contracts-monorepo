@@ -178,7 +178,6 @@ contract RewardVault__deposit is RewardVaultBaseTest {
 
         RewardVault.RewardData memory rewardData = RewardVault.RewardData({
             rewardsDistributor: makeAddr("distributor"),
-            rewardsDuration: 10 days,
             lastUpdateTime: uint32(block.timestamp), // current timestamp before wrapping
             periodFinish: uint32(block.timestamp + 10 days),
             // number of rewards distributed per second

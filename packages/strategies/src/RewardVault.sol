@@ -97,17 +97,15 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @notice Reward data structure
     /// @dev This struct fits in 2 storage slots.
     struct RewardData {
-        // address of the authorized rewards distributor
+        // address of the authorized rewards distributor (1st slot)
         address rewardsDistributor;
-        // duration of the rewards distribution
-        uint32 rewardsDuration;
-        // timestamp at which the rewards was last updated
+        // timestamp at which the rewards was last updated (1st slot)
         uint32 lastUpdateTime;
-        // timestamp at which the rewards period will finish
+        // timestamp at which the rewards period will finish (1st slot)
         uint32 periodFinish;
-        // number of rewards distributed per second
+        // number of rewards distributed per second (2nd slot)
         uint128 rewardRate;
-        // total rewards accumulated per token since the last update, used as a baseline for calculating new rewards
+        // total rewards accumulated per token since the last update, used as a baseline for calculating new rewards (2nd slot)
         uint128 rewardPerTokenStored;
     }
 
@@ -386,7 +384,6 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
         // Set the reward distributor and duration.
         reward.rewardsDistributor = distributor;
-        reward.rewardsDuration = DEFAULT_REWARDS_DURATION;
 
         emit RewardTokenAdded(rewardsToken, distributor);
     }
@@ -409,21 +406,20 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         // calculate temporal variables
         uint32 currentTime = uint32(block.timestamp);
         uint32 periodFinish = reward.periodFinish;
-        uint32 rewardsDuration = reward.rewardsDuration;
         uint128 newRewardRate;
 
         // calculate the new reward rate based on the current time and the period finish
         if (currentTime >= periodFinish) {
-            newRewardRate = _amount / rewardsDuration;
+            newRewardRate = _amount / DEFAULT_REWARDS_DURATION;
         } else {
             uint32 remainingTime = periodFinish - currentTime;
             uint128 remainingRewards = remainingTime * reward.rewardRate;
-            newRewardRate = (_amount + remainingRewards) / rewardsDuration;
+            newRewardRate = (_amount + remainingRewards) / DEFAULT_REWARDS_DURATION;
         }
 
         // Update the reward data
         reward.lastUpdateTime = currentTime;
-        reward.periodFinish = currentTime + rewardsDuration;
+        reward.periodFinish = currentTime + DEFAULT_REWARDS_DURATION;
         reward.rewardRate = newRewardRate;
 
         // transfer the rewards to the vault
@@ -623,11 +619,10 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         return rewardData[token].rewardsDistributor;
     }
 
-    /// @notice Returns the duration of the rewards distribution for a given reward token.
-    /// @param token The address of the reward token to calculate the rewards duration for.
-    /// @return _ The rewards duration for the given reward token.
-    function getRewardsDuration(address token) external view returns (uint32) {
-        return rewardData[token].rewardsDuration;
+    /// @notice Returns the universal and constant rewards duration.
+    /// @return _ The rewards duration.
+    function getRewardsDuration() external pure returns (uint32) {
+        return DEFAULT_REWARDS_DURATION;
     }
 
     /// @notice Returns the last update time for a given reward token.
@@ -752,7 +747,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     function getRewardForDuration(address token) external view returns (uint256) {
         RewardData storage reward = rewardData[token];
 
-        return reward.rewardRate * reward.rewardsDuration;
+        return reward.rewardRate * DEFAULT_REWARDS_DURATION;
     }
 
     /// @notice Updates the reward state for an account

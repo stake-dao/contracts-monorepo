@@ -27,7 +27,6 @@ contract RewardVault__earned is RewardVaultBaseTest {
 
         RewardVault.RewardData memory rewardData = RewardVault.RewardData({
             rewardsDistributor: makeAddr("distributor"),
-            rewardsDuration: CAMPAIGN_DURATION,
             lastUpdateTime: uint32(block.timestamp), // current timestamp before wrapping
             periodFinish: uint32(block.timestamp + CAMPAIGN_DURATION),
             // number of rewards distributed per second
@@ -110,7 +109,6 @@ contract RewardVault__earned is RewardVaultBaseTest {
 
         RewardVault.RewardData memory rewardData = RewardVault.RewardData({
             rewardsDistributor: makeAddr("distributor"),
-            rewardsDuration: CAMPAIGN_DURATION,
             lastUpdateTime: uint32(block.timestamp), // current timestamp before wrapping
             periodFinish: uint32(block.timestamp + CAMPAIGN_DURATION),
             // number of rewards distributed per second
@@ -157,7 +155,6 @@ contract RewardVault__earned is RewardVaultBaseTest {
 
         RewardVault.RewardData memory rewardData = RewardVault.RewardData({
             rewardsDistributor: makeAddr("distributor"),
-            rewardsDuration: CAMPAIGN_DURATION,
             lastUpdateTime: uint32(block.timestamp), // current timestamp before wrapping
             periodFinish: uint32(block.timestamp + CAMPAIGN_DURATION),
             // number of rewards distributed per second
@@ -217,7 +214,6 @@ contract RewardVault__earned is RewardVaultBaseTest {
 
         RewardVault.RewardData memory rewardData = RewardVault.RewardData({
             rewardsDistributor: makeAddr("distributor"),
-            rewardsDuration: CAMPAIGN_DURATION,
             lastUpdateTime: uint32(block.timestamp), // current timestamp before wrapping
             periodFinish: uint32(block.timestamp + CAMPAIGN_DURATION),
             // number of rewards distributed per second
