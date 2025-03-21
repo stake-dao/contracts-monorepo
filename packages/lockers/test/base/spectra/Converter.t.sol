@@ -12,7 +12,6 @@ import {ISpectraLocker} from "src/common/interfaces/spectra/spectra/ISpectraLock
 import {ISdSpectraDepositor} from "src/common/interfaces/spectra/stakedao/ISdSpectraDepositor.sol";
 
 contract SpectraTest is BaseSpectraTokenTest {
-    
     Converter public converter;
     ISdSpectraDepositor spectraDepositor;
 
@@ -30,7 +29,7 @@ contract SpectraTest is BaseSpectraTokenTest {
         _deploySpectraIntegration();
 
         spectraDepositor = ISdSpectraDepositor(address(depositor));
-        
+
         deal(address(spectraToken), address(initializer), 1 ether);
 
         _initializeLocker();
@@ -42,16 +41,16 @@ contract SpectraTest is BaseSpectraTokenTest {
         uint256[] memory tokenIds = new uint256[](1);
         tokenIds[0] = 592;
 
-        // Deposit existing NFT 
+        // Deposit existing NFT
         vm.startPrank(GOVERNANCE);
         veSpectra.setApprovalForAll(locker, true);
         ISdSpectraDepositor(address(depositor)).deposit(tokenIds, false, GOVERNANCE);
         vm.stopPrank();
 
-        // Base, destination chain id is not necessary. 
+        // Base, destination chain id is not necessary.
         // sdAPWine supply : 1459843245173853310837177
         // We use the balance of the governance after a deposit to have the amount of sdSEPCTRA to distribute
-        converter = new Converter(sdToken, address(liquidityGauge), address(this), 8453, 20 ether); 
+        converter = new Converter(sdToken, address(liquidityGauge), address(this), 8453, 20 ether);
 
         vm.prank(GOVERNANCE);
         IERC20(sdToken).transfer(address(converter), totalSdSpectraToDistribute);
@@ -60,7 +59,6 @@ contract SpectraTest is BaseSpectraTokenTest {
     /////////////////////////
     //  UTILITY FUNCTIONS
     ////////////////////////
-
 
     function _initializeLocker() public {
         vm.startPrank(initializer);
@@ -80,19 +78,19 @@ contract SpectraTest is BaseSpectraTokenTest {
 
     function test_resolveConvert() public {
         // Simulate data set by La poste to call convert contract
-        bytes memory payload = abi.encode(Converter.Payload({amount : 11 ether, receiver : bob}));
+        bytes memory payload = abi.encode(Converter.Payload({amount: 11 ether, receiver: bob}));
 
         // 1 for chain Id, sender should be converter address in mainnet
         converter.receiveMessage(1, address(converter), payload);
 
         // receiver is bob, bob should have 11 * convertion ratio sdSPECTRA gauge
         assertEq(IERC20(sdToken).balanceOf(bob), 0);
-        assertEq(liquidityGauge.balanceOf(bob), 11 ether * ratio /10**18);
+        assertEq(liquidityGauge.balanceOf(bob), 11 ether * ratio / 10 ** 18);
     }
 
     function test_resolveConvertAllSupply() public {
         // Simulate data set by La poste to call convert contract
-        bytes memory payload = abi.encode(Converter.Payload({amount : sdAPWineSupply, receiver : alice}));
+        bytes memory payload = abi.encode(Converter.Payload({amount: sdAPWineSupply, receiver: alice}));
 
         // 1 for chain Id, sender should be converter address in mainnet
         converter.receiveMessage(1, address(converter), payload);
@@ -104,7 +102,7 @@ contract SpectraTest is BaseSpectraTokenTest {
 
     function test_cantResolveConvertIfWrongOrigin() public {
         // Simulate data set by La poste to call convert contract
-        bytes memory payload = abi.encode(Converter.Payload({amount : sdAPWineSupply, receiver : alice}));
+        bytes memory payload = abi.encode(Converter.Payload({amount: sdAPWineSupply, receiver: alice}));
 
         // sender should revert if not the converter address in mainnet
         vm.expectRevert(Converter.InvalidSender.selector);

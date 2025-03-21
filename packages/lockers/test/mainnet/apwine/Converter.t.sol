@@ -10,9 +10,7 @@ import {Converter} from "src/mainnet/apwine/Converter.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {ILaPoste} from "src/common/interfaces/ILaPoste.sol";
 
-
 contract ConverterTest is Test {
-
     ERC20 public sdToken;
     ERC20 public sdTokenGauge;
     Converter public converter;
@@ -32,15 +30,18 @@ contract ConverterTest is Test {
         ISdToken(SPECTRA.SDTOKEN).setOperator(address(converter));
     }
 
-    function sendMessage(ILaPoste.MessageParams memory messageParams, uint256 additionalGasLimit, address _receiver) public payable {
+    function sendMessage(ILaPoste.MessageParams memory messageParams, uint256 additionalGasLimit, address _receiver)
+        public
+        payable
+    {
         // check parameters
         assertEq(additionalGasLimit, 200 gwei);
-        assertEq(msg.value, 10**16);
+        assertEq(msg.value, 10 ** 16);
         assertEq(_receiver, bob);
         assertEq(messageParams.tokens.length, 0);
         assertEq(messageParams.to, address(converter));
         assertEq(messageParams.destinationChainId, 8453);
-        assertEq(messageParams.payload, abi.encode(Converter.Payload({amount : 11 ether, receiver : bob})));
+        assertEq(messageParams.payload, abi.encode(Converter.Payload({amount: 11 ether, receiver: bob})));
     }
 
     function test_initConversion() public {
@@ -55,7 +56,7 @@ contract ConverterTest is Test {
         vm.startPrank(alice);
         sdToken.approve(address(converter), type(uint256).max);
         sdTokenGauge.approve(address(converter), type(uint256).max);
-        converter.initConvert{value: 10**16}(bob, 200 gwei);
+        converter.initConvert{value: 10 ** 16}(bob, 200 gwei);
         vm.stopPrank();
 
         // Check that tokens are burnt from alice
@@ -77,7 +78,7 @@ contract ConverterTest is Test {
         sdTokenGauge.approve(address(converter), type(uint256).max);
 
         vm.expectRevert(Converter.ZeroAddress.selector);
-        converter.initConvert{value: 10**16}(address(0), 200 gwei);
+        converter.initConvert{value: 10 ** 16}(address(0), 200 gwei);
         vm.stopPrank();
     }
 
@@ -93,7 +94,7 @@ contract ConverterTest is Test {
         sdTokenGauge.approve(address(converter), type(uint256).max);
 
         vm.expectRevert(Converter.NothingToRedeem.selector);
-        converter.initConvert{value: 10**16}(alice, 200 gwei);
+        converter.initConvert{value: 10 ** 16}(alice, 200 gwei);
         vm.stopPrank();
     }
 
@@ -113,7 +114,7 @@ contract ConverterTest is Test {
         sdTokenGauge.approve(address(converter), type(uint256).max);
 
         vm.expectRevert(Converter.WrongChain.selector);
-        converter.initConvert{value: 10**16}(bob, 200 gwei);
+        converter.initConvert{value: 10 ** 16}(bob, 200 gwei);
         vm.stopPrank();
     }
 }
