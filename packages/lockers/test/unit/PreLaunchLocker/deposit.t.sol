@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {PreLaunchLocker} from "src/common/locker/PreLaunchLocker.sol";
-import {PreLaunchLockerTest} from "test/PreLaunchLocker/utils/PreLaunchLockerTest.t.sol";
+import {PreLaunchLockerTest} from "test/unit/PreLaunchLocker/utils/PreLaunchLockerTest.t.sol";
 
 contract PreLaunchLocker__deposit is PreLaunchLockerTest {
     function test_RevertsIfTheAmountIs0(bool stake) external {

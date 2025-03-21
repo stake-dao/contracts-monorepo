@@ -3,7 +3,7 @@ pragma solidity 0.8.19;
 
 import {PreLaunchBaseDepositor} from "src/common/depositor/PreLaunchBaseDepositor.sol";
 import {PreLaunchLocker} from "src/common/locker/PreLaunchLocker.sol";
-import {PreLaunchLockerTest} from "test/PreLaunchLocker/utils/PreLaunchLockerTest.t.sol";
+import {PreLaunchLockerTest} from "test/unit/PreLaunchLocker/utils/PreLaunchLockerTest.t.sol";
 
 contract PreLaunchLocker__lock is PreLaunchLockerTest {
     address internal depositor;

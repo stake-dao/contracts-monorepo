@@ -4,7 +4,7 @@ pragma solidity 0.8.19;
 import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 import {PreLaunchLocker} from "src/common/locker/PreLaunchLocker.sol";
 import {sdToken as SdToken} from "src/common/token/sdToken.sol";
-import {PreLaunchLockerTest, GaugeMock} from "test/PreLaunchLocker/utils/PreLaunchLockerTest.t.sol";
+import {PreLaunchLockerTest, GaugeMock} from "test/unit/PreLaunchLocker/utils/PreLaunchLockerTest.t.sol";
 
 contract PreLaunchLocker__constructor is PreLaunchLockerTest {
     function test_RevertsIfTheGivenTokenIs0() external {
