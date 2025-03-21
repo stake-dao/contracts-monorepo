@@ -64,13 +64,15 @@ contract RedeemTest is Test {
     }
 
     function test_redeem() public {
-        uint256 initialTokenBalance = token.balanceOf(DAO.GOVERNANCE);
-        uint256 sdTokenBalance = sdToken.balanceOf(DAO.GOVERNANCE);
-        uint256 sdTokenGaugeBalance = sdTokenGauge.balanceOf(DAO.GOVERNANCE);
+        // TODO: legacy governance address -- This test must be rewritten ASAP
+        address governance = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
+        uint256 initialTokenBalance = token.balanceOf(governance);
+        uint256 sdTokenBalance = sdToken.balanceOf(governance);
+        uint256 sdTokenGaugeBalance = sdTokenGauge.balanceOf(governance);
         uint256 initialTokenSupply = sdToken.totalSupply();
-        uint256 claimableFromGauge = gauge.claimable_reward(DAO.GOVERNANCE, FPIS.TOKEN);
+        uint256 claimableFromGauge = gauge.claimable_reward(governance, FPIS.TOKEN);
 
-        vm.startPrank(DAO.GOVERNANCE);
+        vm.startPrank(governance);
         sdToken.approve(address(redeem), sdTokenBalance);
         sdTokenGauge.approve(address(redeem), sdTokenGaugeBalance);
         redeem.redeem();
@@ -80,11 +82,11 @@ contract RedeemTest is Test {
             ? sdTokenBalance + sdTokenGaugeBalance + claimableFromGauge + initialTokenBalance
             : sdTokenBalance + initialTokenBalance;
 
-        assertEq(token.balanceOf(DAO.GOVERNANCE), expectedBalance);
+        assertEq(token.balanceOf(governance), expectedBalance);
         assertEq(initialTokenSupply - (sdTokenBalance + sdTokenGaugeBalance), sdToken.totalSupply());
         assertEq(token.balanceOf(address(redeem)), sdToken.totalSupply());
-        assertEq(sdToken.balanceOf(DAO.GOVERNANCE), 0);
-        assertEq(sdTokenGauge.balanceOf(DAO.GOVERNANCE), 0);
+        assertEq(sdToken.balanceOf(governance), 0);
+        assertEq(sdTokenGauge.balanceOf(governance), 0);
     }
 
     function test_redeemAll() public {

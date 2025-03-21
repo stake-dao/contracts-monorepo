@@ -20,14 +20,17 @@ contract AccumulatorTest is BaseAccumulatorTest {
     function _deployAccumulator() internal override returns (address payable accumulator) {
         accumulator = payable(new Accumulator(address(liquidityGauge), locker, address(this)));
 
+        // TODO: legacy governance address -- This test must be rewritten ASAP
+        address governance = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
+
         /// Setup new Fee Distributor.
-        vm.prank(DAO.GOVERNANCE);
+        vm.prank(governance);
         IStrategy(CRV.STRATEGY).setAccumulator(address(accumulator));
 
-        vm.prank(DAO.GOVERNANCE);
+        vm.prank(governance);
         IStrategy(CRV.STRATEGY).setFeeDistributor(address(Curve.FEE_DISTRIBUTOR));
 
-        vm.prank(DAO.GOVERNANCE);
+        vm.prank(governance);
         IStrategy(CRV.STRATEGY).setFeeRewardToken(address(CRV_USD));
 
         /// For the purpose of parent tests, we reset veBoost and veBoostDelegation to the test contract.

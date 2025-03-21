@@ -50,7 +50,9 @@ contract DepositorTest is Test {
         vm.prank(locker.governance());
         locker.setPendleDepositor(address(depositor));
 
-        vm.prank(DAO.GOVERNANCE);
+        // TODO: legacy governance address -- This test must be rewritten ASAP
+        address governance = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
+        vm.prank(governance);
         IDepositor(OLD_DEPOSITOR).setSdTokenOperator(address(depositor));
 
         deal(address(token), address(this), amount);
