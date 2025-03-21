@@ -2,6 +2,12 @@ name: Strategies - Gas Comparison
 
 env:
   FOUNDRY_PROFILE: "ci"
+  ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+  MNEMONIC: ${{ secrets.MNEMONIC }}
+
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
 
 # This CI workflow is responsible of running the gas comparison for the strategies package.
 # It is triggered
@@ -14,21 +20,19 @@ on:
   pull_request:
     paths:
       - "packages/strategies/**"
-      - "packages/address-book/**" # dependency
       - ".github/workflows/strategies_gas-diff.yml" # this file
+      - "packages/address-book/**" # dependency
+      - "packages/interfaces/**" # dependency
     branches:
       - main
-      # temporary until the merge of onlyboost-v2
-      - feat/onlyboost-v2
   push:
     paths:
       - "packages/strategies/**"
-      - "packages/address-book/**" # dependency
       - ".github/workflows/strategies_gas-diff.yml" # this file
+      - "packages/address-book/**" # dependency
+      - "packages/interfaces/**" # dependency
     branches:
       - main
-      # temporary until the merge of onlyboost-v2
-      - feat/onlyboost-v2
 
 jobs:
   compare_gas:
@@ -60,14 +64,17 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Run tests
+        # the seed changes weekly to avoid burning through RPC allowance
+      - name: Generate the weekly fuzz seed
+        run: >
+          echo "FOUNDRY_FUZZ_SEED=$(
+            echo $(($EPOCHSECONDS - $EPOCHSECONDS % 604800))
+          )" >> $GITHUB_ENV
+
+      - name: Run snapshot on unit tests
         working-directory: packages/strategies
         # store the gas report in the root of the repository
         run: forge test --match-path "test/unit/**/*.t.sol" --gas-report > ../../gasreport.ansi
-        env:
-          # make fuzzing semi-deterministic to avoid noisy gas cost estimation
-          # due to non-deterministic fuzzing (but still use pseudo-random fuzzing seeds)
-          FOUNDRY_FUZZ_SEED: 0x${{ github.event.pull_request.base.sha || github.sha }}
 
       - name: Compare gas reports
         uses: Rubilmax/foundry-gas-diff@v3
@@ -82,6 +89,7 @@ jobs:
         if: github.event_name == 'pull_request' || github.event_name == 'pull_request_target'
         uses: marocchino/sticky-pull-request-comment@v2
         with:
+          header: strategies
           # delete the comment in case changes no longer impact gas costs
           delete: ${{ !steps.gas_diff.outputs.markdown }}
           message: ${{ steps.gas_diff.outputs.markdown }}

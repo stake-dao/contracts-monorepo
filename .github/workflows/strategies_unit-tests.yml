@@ -2,6 +2,12 @@ name: Strategies - Unit Tests
 
 env:
   FOUNDRY_PROFILE: "ci"
+  ALCHEMY_KEY: ${{ secrets.ALCHEMY_KEY }}
+  MNEMONIC: ${{ secrets.MNEMONIC }}
+
+concurrency:
+  cancel-in-progress: true
+  group: ${{ github.workflow }}-${{ github.ref }}
 
 # This CI workflow is responsible of running the tests for the strategies package.
 # It is triggered
@@ -14,19 +20,19 @@ on:
   pull_request:
     paths:
       - "packages/strategies/**"
+      - ".github/workflows/strategies_unit-tests.yml" # this file
       - "packages/address-book/**" # dependency
+      - "packages/interfaces/**" # dependency
     branches:
       - main
-      # temporary until the merge of onlyboost-v2
-      - feat/onlyboost-v2
   push:
     paths:
       - "packages/strategies/**"
+      - ".github/workflows/strategies_gas-diff.yml" # this file
       - "packages/address-book/**" # dependency
+      - "packages/interfaces/**" # dependency
     branches:
       - main
-      # temporary until the merge of onlyboost-v2
-      - feat/onlyboost-v2
 
 jobs:
   test:
@@ -52,10 +58,13 @@ jobs:
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
 
-      - name: Show the Foundry config
-        working-directory: packages/strategies
-        run: forge config
+      # the seed changes weekly to avoid burning through RPC allowance
+      - name: Generate the weekly fuzz seed
+        run: >
+          echo "FOUNDRY_FUZZ_SEED=$(
+            echo $(($EPOCHSECONDS - $EPOCHSECONDS % 604800))
+          )" >> $GITHUB_ENV
 
       - name: Run tests
         working-directory: packages/strategies
-        run: forge test --match-path "test/unit/**/*.t.sol"
+        run: forge test
