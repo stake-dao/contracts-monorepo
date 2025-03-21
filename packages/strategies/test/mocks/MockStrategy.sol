@@ -21,7 +21,7 @@ contract MockStrategy is IStrategy {
         return PendingRewards({feeSubjectAmount: 0, totalAmount: 0});
     }
 
-    function withdraw(IAllocator.Allocation memory, bool) external pure returns (PendingRewards memory) {
+    function withdraw(IAllocator.Allocation memory, bool, address) external pure returns (PendingRewards memory) {
         return PendingRewards({feeSubjectAmount: 0, totalAmount: 0});
     }
 

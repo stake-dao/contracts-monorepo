@@ -158,7 +158,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @return pendingRewards Any pending rewards generated during the withdrawal
     /// @custom:throws OnlyVault If the caller is not the registered vault for the gauge
     /// @custom:throws GaugeShutdown If the pool is shutdown
-    function withdraw(IAllocator.Allocation memory allocation, bool doHarvest)
+    function withdraw(IAllocator.Allocation memory allocation, bool doHarvest, address receiver)
         external
         override
         onlyVault(allocation.gauge)
@@ -173,9 +173,9 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         for (uint256 i = 0; i < allocation.targets.length; i++) {
             if (allocation.amounts[i] > 0) {
                 if (allocation.targets[i] == LOCKER) {
-                    _withdraw(allocation.asset, allocation.gauge, allocation.amounts[i], msg.sender);
+                    _withdraw(allocation.asset, allocation.gauge, allocation.amounts[i], receiver);
                 } else {
-                    ISidecar(allocation.targets[i]).withdraw(allocation.amounts[i], msg.sender);
+                    ISidecar(allocation.targets[i]).withdraw(allocation.amounts[i], receiver);
                 }
             }
         }

@@ -285,13 +285,15 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
         // Get the address of the strategy contract from the protocol controller
         // then process the withdrawal of the allocation
-        IStrategy.PendingRewards memory pendingRewards = strategy().withdraw(allocation, TRIGGER_HARVEST);
+        IStrategy.PendingRewards memory pendingRewards = strategy().withdraw(allocation, TRIGGER_HARVEST, receiver);
 
         // Burn the shares by calling the endpoint function of the accountant contract
         _burn(owner, shares, pendingRewards, TRIGGER_HARVEST);
 
-        // Transfer the assets to the receiver. The 1:1 relationship between assets and shares is maintained.
-        SafeERC20.safeTransfer(IERC20(asset()), receiver, shares);
+        if (PROTOCOL_CONTROLLER.isShutdown(gauge())) {
+            // Transfer the assets to the receiver. The 1:1 relationship between assets and shares is maintained.
+            SafeERC20.safeTransfer(IERC20(asset()), receiver, shares);
+        }
 
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
     }
