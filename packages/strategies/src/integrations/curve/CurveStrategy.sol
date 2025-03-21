@@ -76,7 +76,7 @@ contract CurveStrategy is Strategy {
     /// @dev Executes a deposit transaction through the gateway/module manager
     /// @param gauge The address of the Curve gauge to deposit into
     /// @param amount The amount of tokens to deposit
-    function _deposit(address gauge, uint256 amount) internal override {
+    function _deposit(address, address gauge, uint256 amount) internal override {
         bytes memory data = abi.encodeWithSignature("deposit(uint256)", amount);
         require(_executeTransaction(gauge, data), DepositFailed());
     }
@@ -92,7 +92,7 @@ contract CurveStrategy is Strategy {
 
         // 2. Transfer the LP tokens to receiver
         data = abi.encodeWithSignature("transfer(address,uint256)", receiver, amount);
-        require(_executeTransaction(asset, data), WithdrawFailed());
+        require(_executeTransaction(asset, data), TransferFailed());
     }
 
     /// @notice Harvests rewards from a Curve gauge

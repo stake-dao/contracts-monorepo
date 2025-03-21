@@ -48,6 +48,9 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @notice Error thrown when the withdraw fails
     error WithdrawFailed();
 
+    /// @notice Error thrown when the transfer fails
+    error TransferFailed();
+
     /// @notice Error thrown when the approve fails
     error ApproveFailed();
 
@@ -132,7 +135,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         for (uint256 i = 0; i < allocation.targets.length; i++) {
             if (allocation.amounts[i] > 0) {
                 if (allocation.targets[i] == LOCKER) {
-                    _deposit(allocation.gauge, allocation.amounts[i]);
+                    _deposit(allocation.asset, allocation.gauge, allocation.amounts[i]);
                 } else {
                     ISidecar(allocation.targets[i]).deposit(allocation.amounts[i]);
                 }
@@ -167,12 +170,10 @@ abstract contract Strategy is IStrategy, ProtocolContext {
             return _sync(allocation.gauge);
         }
 
-        address asset = IERC4626(msg.sender).asset();
-
         for (uint256 i = 0; i < allocation.targets.length; i++) {
             if (allocation.amounts[i] > 0) {
                 if (allocation.targets[i] == LOCKER) {
-                    _withdraw(asset, allocation.gauge, allocation.amounts[i], msg.sender);
+                    _withdraw(allocation.asset, allocation.gauge, allocation.amounts[i], msg.sender);
                 } else {
                     ISidecar(allocation.targets[i]).withdraw(allocation.amounts[i], msg.sender);
                 }
@@ -251,7 +252,8 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         uint256 currentBalance = balanceOf(gauge);
 
         /// 4. Get the allocation amounts for the gauge.
-        IAllocator.Allocation memory allocation = IAllocator(allocator).getRebalancedAllocation(gauge, currentBalance);
+        IAllocator.Allocation memory allocation =
+            IAllocator(allocator).getRebalancedAllocation(address(asset), gauge, currentBalance);
 
         /// 5. Ensure the allocation has more than one target.
         require(allocation.targets.length > 1, RebalanceNotNeeded());
@@ -267,7 +269,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
             asset.safeTransfer(target, amount);
 
             if (target == LOCKER) {
-                _deposit(gauge, amount);
+                _deposit(address(asset), gauge, amount);
             } else {
                 ISidecar(target).deposit(amount);
             }
@@ -410,9 +412,10 @@ abstract contract Strategy is IStrategy, ProtocolContext {
 
     /// @notice Deposits assets into a specific target
     /// @dev Must be implemented by derived strategies to handle protocol-specific deposits
+    /// @param asset The asset to deposit
     /// @param gauge The gauge to deposit into
     /// @param amount The amount to deposit
-    function _deposit(address gauge, uint256 amount) internal virtual;
+    function _deposit(address asset, address gauge, uint256 amount) internal virtual;
 
     /// @notice Withdraws assets from a specific target
     /// @dev Must be implemented by derived strategies to handle protocol-specific withdrawals

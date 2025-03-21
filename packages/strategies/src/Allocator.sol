@@ -35,18 +35,24 @@ contract Allocator is IAllocator {
     }
 
     /// @notice Determines how funds should be allocated during a deposit
+    /// @param asset The address of the asset contract
     /// @param gauge The address of the gauge contract
     /// @param amount The amount of tokens to deposit
     /// @return Allocation struct containing the allocation details
     /// @dev In this base implementation, all funds are directed to the LOCKER
-    function getDepositAllocation(address gauge, uint256 amount) public view virtual returns (Allocation memory) {
+    function getDepositAllocation(address asset, address gauge, uint256 amount)
+        public
+        view
+        virtual
+        returns (Allocation memory)
+    {
         address[] memory targets = new address[](1);
         targets[0] = LOCKER;
 
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = amount;
 
-        return Allocation({gauge: gauge, targets: targets, amounts: amounts});
+        return Allocation({asset: asset, gauge: gauge, targets: targets, amounts: amounts});
     }
 
     /// @notice Determines how funds should be allocated during a withdrawal
@@ -54,14 +60,19 @@ contract Allocator is IAllocator {
     /// @param amount The amount of tokens to withdraw
     /// @return Allocation struct containing the allocation details
     /// @dev In this base implementation, all funds are withdrawn from the LOCKER
-    function getWithdrawalAllocation(address gauge, uint256 amount) public view virtual returns (Allocation memory) {
+    function getWithdrawalAllocation(address asset, address gauge, uint256 amount)
+        public
+        view
+        virtual
+        returns (Allocation memory)
+    {
         address[] memory targets = new address[](1);
         targets[0] = LOCKER;
 
         uint256[] memory amounts = new uint256[](1);
         amounts[0] = amount;
 
-        return Allocation({gauge: gauge, targets: targets, amounts: amounts});
+        return Allocation({asset: asset, gauge: gauge, targets: targets, amounts: amounts});
     }
 
     /// @notice Determines how funds should be allocated during a rebalance
@@ -69,8 +80,13 @@ contract Allocator is IAllocator {
     /// @param amount The amount of tokens to rebalance
     /// @return Allocation struct containing the allocation details
     /// @dev In this base implementation, rebalancing uses the same allocation as deposits
-    function getRebalancedAllocation(address gauge, uint256 amount) public view virtual returns (Allocation memory) {
-        return getDepositAllocation(gauge, amount);
+    function getRebalancedAllocation(address asset, address gauge, uint256 amount)
+        public
+        view
+        virtual
+        returns (Allocation memory)
+    {
+        return getDepositAllocation(asset, gauge, amount);
     }
 
     /// @notice Returns the list of target addresses for a specific gauge

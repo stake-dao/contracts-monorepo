@@ -121,7 +121,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         }
 
         // set the allocation and pending rewards to mock values
-        allocation = IAllocator.Allocation({gauge: gauge, targets: targets, amounts: amounts});
+        allocation = IAllocator.Allocation({asset: asset, gauge: gauge, targets: targets, amounts: amounts});
         pendingRewards = IStrategy.PendingRewards({feeSubjectAmount: 0, totalAmount: 0});
 
         // mock the allocator returned by the protocol controller

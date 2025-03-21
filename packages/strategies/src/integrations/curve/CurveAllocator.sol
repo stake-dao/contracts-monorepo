@@ -32,16 +32,22 @@ contract CurveAllocator is Allocator {
 
     /// @notice Calculates the optimal allocation for depositing LP tokens
     /// @dev Overrides the base Allocator's getDepositAllocation function to include sidecar logic
+    /// @param asset Address of the asset contract
     /// @param gauge Address of the Curve gauge
     /// @param amount Amount of LP tokens to deposit
     /// @return Allocation struct containing targets and amounts for the deposit
-    function getDepositAllocation(address gauge, uint256 amount) public view override returns (Allocation memory) {
+    function getDepositAllocation(address asset, address gauge, uint256 amount)
+        public
+        view
+        override
+        returns (Allocation memory)
+    {
         /// 1. Get the sidecar for the gauge.
         address sidecar = CONVEX_SIDECAR_FACTORY.sidecar(gauge);
 
         /// 2. If the sidecar is not set, use the default allocation.
         if (sidecar == address(0)) {
-            return super.getDepositAllocation(gauge, amount);
+            return super.getDepositAllocation(asset, gauge, amount);
         }
 
         /// 3. Get the targets and amounts for the allocation.
@@ -65,21 +71,27 @@ contract CurveAllocator is Allocator {
         amounts[0] = amount - amounts[1];
 
         /// 8. Return the allocation.
-        return Allocation({gauge: gauge, targets: targets, amounts: amounts});
+        return Allocation({asset: asset, gauge: gauge, targets: targets, amounts: amounts});
     }
 
     /// @notice Calculates the optimal allocation for withdrawing LP tokens
     /// @dev Overrides the base Allocator's getWithdrawalAllocation function to include sidecar logic
+    /// @param asset Address of the asset contract
     /// @param gauge Address of the Curve gauge
     /// @param amount Amount of LP tokens to withdraw
     /// @return Allocation struct containing targets and amounts for the withdrawal
-    function getWithdrawalAllocation(address gauge, uint256 amount) public view override returns (Allocation memory) {
+    function getWithdrawalAllocation(address asset, address gauge, uint256 amount)
+        public
+        view
+        override
+        returns (Allocation memory)
+    {
         /// 1. Get the sidecar for the gauge.
         address sidecar = CONVEX_SIDECAR_FACTORY.sidecar(gauge);
 
         /// 2. If the sidecar is not set, use the default allocation.
         if (sidecar == address(0)) {
-            return super.getWithdrawalAllocation(gauge, amount);
+            return super.getWithdrawalAllocation(asset, gauge, amount);
         }
 
         /// 3. Get the targets and amounts for the allocation.
@@ -115,7 +127,7 @@ contract CurveAllocator is Allocator {
         }
 
         /// 8. Return the allocation.
-        return Allocation({gauge: gauge, targets: targets, amounts: amounts});
+        return Allocation({asset: asset, gauge: gauge, targets: targets, amounts: amounts});
     }
 
     /// @notice Returns the targets for the allocation

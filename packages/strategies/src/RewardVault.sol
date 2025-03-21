@@ -215,7 +215,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
         // Get the address of the allocator contract from the protocol controller
         // then fetch the recommended deposit allocation from the allocator
-        IAllocator.Allocation memory allocation = allocator().getDepositAllocation(gauge(), assets);
+        IAllocator.Allocation memory allocation = allocator().getDepositAllocation(asset(), gauge(), assets);
 
         // Get the address of the asset from the clone's immutable args then for each target recommended by
         // the allocator, transfer the amount from the account to the target
@@ -281,7 +281,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
         // Get the address of the allocator contract from the protocol controller
         // then fetch the withdrawal allocation from the allocator
-        IAllocator.Allocation memory allocation = allocator().getWithdrawalAllocation(gauge(), assets);
+        IAllocator.Allocation memory allocation = allocator().getWithdrawalAllocation(asset(), gauge(), assets);
 
         // Get the address of the strategy contract from the protocol controller
         // then process the withdrawal of the allocation

@@ -60,7 +60,8 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
         returns (IAllocator.Allocation memory allocation, IStrategy.PendingRewards memory pendingRewards)
     {
         // set the allocation and pending rewards to mock values
-        allocation = IAllocator.Allocation({gauge: gauge, targets: new address[](0), amounts: new uint256[](0)});
+        allocation =
+            IAllocator.Allocation({asset: asset, gauge: gauge, targets: new address[](0), amounts: new uint256[](0)});
         pendingRewards = IStrategy.PendingRewards({feeSubjectAmount: 0, totalAmount: 0});
 
         // mock the allocator returned by the protocol controller
