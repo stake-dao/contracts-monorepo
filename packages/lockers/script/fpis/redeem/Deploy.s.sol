@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "forge-std/src/Script.sol";
 import "address-book/src/dao/1.sol";
 import "address-book/src/lockers/1.sol";
-
+import "forge-std/src/Script.sol";
 import "src/mainnet/fpis/Redeem.sol";
 
 contract Deploy is Script {

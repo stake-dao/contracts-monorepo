@@ -1,13 +1,10 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import "forge-std/src/Vm.sol";
-import "forge-std/src/Test.sol";
-import "forge-std/src/console.sol";
-
 import "address-book/src/dao/42161.sol";
 import "address-book/src/lockers/42161.sol";
-
+import "forge-std/src/Test.sol";
+import "forge-std/src/Vm.sol";
 import "src/arbitrum/cake/IFO.sol";
 import "src/arbitrum/cake/IFOHelper.sol";
 
@@ -15,7 +12,7 @@ contract IFOHelperTest is Test {
     IFO public ifo = IFO(0x34d774B06d45bd3db9D51724Fc98Dc097A58eF27);
     IFOHelper public ifoHelper;
 
-    address ifoAdmin = 0x444D73Ea7bC7C72Ea11638203846dAD632677180;
+    address internal ifoAdmin = 0x444D73Ea7bC7C72Ea11638203846dAD632677180;
 
     uint256 public constant BLOCK_NUMBER = 257216016;
     address public constant LOCKER = 0x1E6F87A9ddF744aF31157d8DaA1e3025648d042d;

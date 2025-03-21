@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "src/fraxtal/FXTLDelegation.sol";
 import "src/common/interfaces/IOptimismMintableERC20.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
+import "src/fraxtal/FXTLDelegation.sol";
 
 /// @title sdTokenOperator
 /// @author StakeDAO

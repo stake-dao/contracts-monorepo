@@ -1,11 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "forge-std/src/Script.sol";
 import "address-book/src/dao/42161.sol";
 import "address-book/src/lockers/42161.sol";
-
-import "src/arbitrum/cake/IFOFactory.sol";
+import "forge-std/src/Script.sol";
 import "src/arbitrum/cake/IFOHelper.sol";
 
 contract Deploy is Script {
@@ -15,7 +13,7 @@ contract Deploy is Script {
     function run() public {
         vm.createSelectFork("arbitrum");
         vm.startBroadcast(DAO.MAIN_DEPLOYER);
-        IFOHelper ifoHelper = new IFOHelper(SD_IFO, CAKE.EXECUTOR);
+        new IFOHelper(SD_IFO, CAKE.EXECUTOR);
         vm.stopBroadcast();
     }
 }

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "src/fraxtal/FXTLDelegation.sol";
 import "src/common/accumulator/BaseAccumulator.sol";
 import {ILocker} from "src/common/interfaces/ILocker.sol";
 import {IYieldDistributor} from "src/common/interfaces/IYieldDistributor.sol";
+import "src/fraxtal/FXTLDelegation.sol";
 
 /// @title A contract that accumulates FXS rewards and notifies them to the LGV4
 /// @author StakeDAO

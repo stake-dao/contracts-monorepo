@@ -2,11 +2,10 @@
 pragma solidity 0.8.19;
 
 import {Enum} from "@safe/contracts/common/Enum.sol";
-
-import {ILocker} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
-import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
-import {ILockerToken} from "src/common/interfaces/zerolend/zerolend/ILockerToken.sol";
 import {BaseDepositor, ITokenMinter, ILiquidityGauge} from "src/common/depositor/BaseDepositor.sol";
+import {ILocker} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
+import {ILockerToken} from "src/common/interfaces/zerolend/zerolend/ILockerToken.sol";
+import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
 
 /// @title Stake DAO ZERO Depositor
 /// @notice Contract responsible for managing ZERO token deposits, locking them in the Locker,

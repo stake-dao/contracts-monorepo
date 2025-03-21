@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "src/common/interfaces/IExecutor.sol";
 import "src/common/extension/CurveExchangeDepositor.sol";
+import "src/common/interfaces/IExecutor.sol";
 import {IVeToken} from "src/common/interfaces/IVeToken.sol";
 
 /// @title BaseDepositor

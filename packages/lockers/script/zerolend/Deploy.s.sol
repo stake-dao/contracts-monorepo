@@ -1,36 +1,32 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeProxyFactory} from "@safe/contracts/proxies/SafeProxyFactory.sol";
+import {Safe, Enum} from "@safe/contracts/Safe.sol";
+import {DAO} from "address-book/src/dao/59144.sol";
 import "forge-std/src/Script.sol";
 import "script/common/DeployAccumulator.sol";
-
+import {IDepositor} from "src/common/interfaces/IDepositor.sol";
+import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
+import {ISdToken} from "src/common/interfaces/ISdToken.sol";
+import {ILocker, ISafe} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
 import {sdToken as SdToken} from "src/common/token/sdToken.sol";
 import {Accumulator} from "src/linea/zerolend/Accumulator.sol";
 import {Depositor} from "src/linea/zerolend/Depositor.sol";
-import {ISdToken} from "src/common/interfaces/ISdToken.sol";
-import {IDepositor} from "src/common/interfaces/IDepositor.sol";
-import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
-import {ILocker, ISafe} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-// TODO complete
-import {DAO} from "address-book/src/dao/59144.sol";
-
-import {SafeProxyFactory} from "@safe/contracts/proxies/SafeProxyFactory.sol";
-import {Safe, Enum} from "@safe/contracts/Safe.sol";
-import {SafeProxy} from "@safe/contracts/proxies/SafeProxy.sol";
 
 contract Deploy is DeployAccumulator {
-    address sdZero;
-    address liquidityGauge;
-    address locker;
-    address depositor;
+    address internal sdZero;
+    address internal liquidityGauge;
+    address internal locker;
+    address internal depositor;
 
-    address zeroLockerToken = 0x08D5FEA625B1dBf9Bae0b97437303a0374ee02F8; // NFT token contract.
-    address zeroToken = 0x78354f8DcCB269a615A7e0a24f9B0718FDC3C7A7;
-    address veZero = 0xf374229a18ff691406f99CCBD93e8a3f16B68888;
+    address internal zeroLockerToken = 0x08D5FEA625B1dBf9Bae0b97437303a0374ee02F8; // NFT token contract.
+    address internal zeroToken = 0x78354f8DcCB269a615A7e0a24f9B0718FDC3C7A7;
+    address internal veZero = 0xf374229a18ff691406f99CCBD93e8a3f16B68888;
 
-    SafeProxyFactory safeProxyFactory = SafeProxyFactory(0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67);
-    address safeSingleton = 0x41675C099F32341bf84BFc5382aF534df5C7461a;
+    SafeProxyFactory internal safeProxyFactory = SafeProxyFactory(0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67);
+    address internal safeSingleton = 0x41675C099F32341bf84BFc5382aF534df5C7461a;
 
     function run() public {
         vm.createSelectFork("linea");

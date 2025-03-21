@@ -3,7 +3,6 @@
 pragma solidity ^0.8.0;
 
 import {IERC721Enumerable} from "@openzeppelin/contracts/interfaces/IERC721Enumerable.sol";
-import {IERC721Receiver} from "@openzeppelin/contracts/interfaces/IERC721Receiver.sol";
 
 interface IZeroLocker is IERC721Enumerable {
     function balanceOfNFT(uint256) external view returns (uint256);

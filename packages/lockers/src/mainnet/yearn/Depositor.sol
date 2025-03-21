@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "src/common/interfaces/IVeYFI.sol";
 import "src/common/extension/CurveExchangeDepositor.sol";
+import "src/common/interfaces/IVeYFI.sol";
 
 /// @title Depositor
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return

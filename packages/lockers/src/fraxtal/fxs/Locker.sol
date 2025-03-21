@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "src/fraxtal/FXTLDelegation.sol";
-import "src/common/locker/VeCRVLocker.sol";
 import {IVestedFXS} from "src/common/interfaces/IVestedFXS.sol";
 import {IYieldDistributor} from "src/common/interfaces/IYieldDistributor.sol";
+import "src/common/locker/VeCRVLocker.sol";
+import "src/fraxtal/FXTLDelegation.sol";
 
 /// @title Locker
 /// @notice Locks the FXS tokens to veFXS contract

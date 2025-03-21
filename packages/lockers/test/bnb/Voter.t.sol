@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "forge-std/src/Test.sol";
-
-import "src/bnb/cake/Voter.sol";
+import {DAO} from "address-book/src/dao/56.sol";
 import "address-book/src/lockers/56.sol";
 import "address-book/src/protocols/56.sol";
-import {DAO} from "address-book/src/dao/56.sol";
 import {IGaugeVoting} from "common/interfaces/pancake/IGaugeVoting.sol";
+import "forge-std/src/Test.sol";
+import "src/bnb/cake/Voter.sol";
 
 contract PancakeVoterTest is Test {
     CakeVoter internal voter;

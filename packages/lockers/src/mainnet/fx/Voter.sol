@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {ILocker} from "src/common/interfaces/ILocker.sol";
 import {IExecutor} from "src/common/interfaces/IExecutor.sol";
+import {ILocker} from "src/common/interfaces/ILocker.sol";
 
 contract Voter {
     /// @notice Address of the cake locker

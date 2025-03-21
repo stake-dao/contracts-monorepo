@@ -2,8 +2,8 @@
 pragma solidity ^0.8.19;
 
 import {IFO} from "src/arbitrum/cake/IFO.sol";
-import {IExecutor} from "src/common/interfaces/IExecutor.sol";
 import {ICakeIFOV8} from "src/common/interfaces/ICakeIFOV8.sol";
+import {IExecutor} from "src/common/interfaces/IExecutor.sol";
 
 /// @notice IFO Factory for the Cake IFO on Arbitrum
 /// CHANGELOG:

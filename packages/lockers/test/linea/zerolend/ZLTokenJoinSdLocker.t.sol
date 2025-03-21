@@ -1,22 +1,21 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import "forge-std/src/Vm.sol";
-import "forge-std/src/Test.sol";
-import "forge-std/src/console.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {BaseZeroLendTokenTest} from "test/linea/zerolend/common/BaseZeroLendTokenTest.sol";
+import "forge-std/src/Test.sol";
+import "forge-std/src/Vm.sol";
 import {IDepositor} from "src/common/interfaces/IDepositor.sol";
-import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
 import {ISdZeroDepositor} from "src/common/interfaces/zerolend/stakedao/ISdZeroDepositor.sol";
 import {IZeroLocker} from "src/common/interfaces/zerolend/zerolend/IZeroLocker.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
+import {BaseZeroLendTokenTest} from "test/linea/zerolend/common/BaseZeroLendTokenTest.sol";
 
 // end to end tests for the ZeroLend integration
 contract ZeroLendTest is BaseZeroLendTokenTest {
     constructor() {}
 
-    address userWithStakedNft = 0xB50C52FA0f34587063563321dc1c28Bc98bd8237;
+    address internal userWithStakedNft = 0xB50C52FA0f34587063563321dc1c28Bc98bd8237;
 
     function setUp() public {
         uint256 forkId = vm.createFork(vm.rpcUrl("linea"), 14_369_758);

@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "forge-std/src/Script.sol";
 import "address-book/src/dao/1.sol";
 import "address-book/src/lockers/1.sol";
-
-import "src/mainnet/apwine/Accumulator.sol";
+import "forge-std/src/Script.sol";
 import "script/common/DeployAccumulator.sol";
+import "src/mainnet/apwine/Accumulator.sol";
 
 contract Deploy is DeployAccumulator {
     function run() public {

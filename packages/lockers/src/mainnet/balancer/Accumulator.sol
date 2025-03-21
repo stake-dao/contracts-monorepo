@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "src/common/interfaces/IVeBoost.sol";
-import "src/common/interfaces/IVeBoostDelegation.sol";
-
 import "src/common/accumulator/BaseAccumulator.sol";
 import {ILocker} from "src/common/interfaces/ILocker.sol";
+import "src/common/interfaces/IVeBoost.sol";
+import "src/common/interfaces/IVeBoostDelegation.sol";
 
 /// @notice BAL BaseAccumulator
 /// @author StakeDAO

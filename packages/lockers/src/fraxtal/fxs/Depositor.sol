@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import "src/fraxtal/FXTLDelegation.sol";
 import "src/common/depositor/BaseDepositor.sol";
 import {ISdTokenOperator} from "src/common/interfaces/ISdTokenOperator.sol";
+import "src/fraxtal/FXTLDelegation.sol";
 
 /// @title BaseDepositor
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return

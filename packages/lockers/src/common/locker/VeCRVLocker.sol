@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {IVeToken} from "src/common/interfaces/IVeToken.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import {IFeeDistributor} from "src/common/interfaces/IFeeDistributor.sol";
 import {SafeERC20} from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
+import {IFeeDistributor} from "src/common/interfaces/IFeeDistributor.sol";
+import {IVeToken} from "src/common/interfaces/IVeToken.sol";
 
 /// @title  VeCRVLocker
 /// @notice Locker contract for locking tokens for a period of time compatible with the Voting Escrow contract from Curve

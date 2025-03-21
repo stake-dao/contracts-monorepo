@@ -2,7 +2,6 @@
 pragma solidity 0.8.19;
 
 import "src/common/accumulator/BaseAccumulator.sol";
-import {ILocker} from "src/common/interfaces/ILocker.sol";
 import {IYearnStrategy} from "src/common/interfaces/IYearnStrategy.sol";
 
 /// @title YFI BaseAccumulator

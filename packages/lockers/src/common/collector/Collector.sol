@@ -2,9 +2,9 @@
 pragma solidity 0.8.19;
 
 import {ERC20} from "solady/src/tokens/ERC20.sol";
-import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {IDepositor} from "src/common/interfaces/IDepositor.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
+import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 
 /// @title A contract that collect Token from users and mints sdToken at 1:1 rate, later on, when the depositor will be deployed
 /// @dev To be used only on the Fraxtal chain (ad-hoc contructor to delegate the Fraxtal network's rewards).

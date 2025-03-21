@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
+import "solady/src/utils/SafeTransferLib.sol";
 import "src/common/interfaces/IERC20.sol";
+import "src/common/interfaces/ILiquidityGauge.sol";
 import "src/common/interfaces/ILocker.sol";
 import "src/common/interfaces/ISdToken.sol";
 import "src/common/interfaces/ITokenMinter.sol";
-import "src/common/interfaces/ILiquidityGauge.sol";
-
-import "solady/src/utils/SafeTransferLib.sol";
 
 /// @title BaseDepositor
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return

@@ -2,11 +2,10 @@
 pragma solidity ^0.8.4;
 
 import "address-book/src/dao/1.sol";
-
 import {ERC20} from "solady/src/tokens/ERC20.sol";
-import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {IDepositor} from "src/common/interfaces/IDepositor.sol";
+import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 
 abstract contract CommonBase {
     address public locker;

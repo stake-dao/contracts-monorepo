@@ -1,27 +1,24 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import "forge-std/src/Test.sol";
-
 import "address-book/src/dao/1.sol";
 import "address-book/src/lockers/1.sol";
 import "address-book/src/protocols/1.sol";
-
+import "forge-std/src/Test.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
-
-import {Redeem} from "src/mainnet/fpis/Redeem.sol";
-import {IVeFPIS} from "src/common/interfaces/IVeFPIS.sol";
-import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
+import {ISdToken} from "src/common/interfaces/ISdToken.sol";
+import {IVeFPIS} from "src/common/interfaces/IVeFPIS.sol";
+import {Redeem} from "src/mainnet/fpis/Redeem.sol";
 
 contract RedeemTest is Test {
     ERC20 public token;
     ERC20 public sdToken;
     ERC20 public sdTokenGauge;
     ILiquidityGauge public gauge;
-    Redeem redeem;
+    Redeem internal redeem;
 
-    address[] holders = [
+    address[] internal holders = [
         0xb0e83C2D71A991017e0116d58c5765Abc57384af,
         0x656e1A01055566ad6A06830Add7a0F5EF7dd2512,
         0x55A183e160F8903766E2Dd53F3580C7049b1b2Dc,

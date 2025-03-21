@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "forge-std/src/Script.sol";
-
 import "address-book/src/dao/1.sol";
 import "address-book/src/lockers/1.sol";
 import "address-book/src/protocols/1.sol";
-
-import "src/mainnet/pendle/Depositor.sol";
+import "forge-std/src/Script.sol";
 import "script/common/DeployDepositor.sol";
+import "src/mainnet/pendle/Depositor.sol";
 
 contract Deploy is DeployDepositor {
     function run() public {

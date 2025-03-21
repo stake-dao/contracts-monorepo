@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
-import {ILocker} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
-import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
-
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Enum} from "@safe/contracts/common/Enum.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
+import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
+import {ILocker} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
+import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
 
 /// @title StakeDAO ZERO Accumulator
 /// @notice A contract that accumulates ZERO rewards and notifies them to the sdZERO gauge

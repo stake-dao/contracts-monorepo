@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import "test/common/BaseAccumulatorTest.sol";
-
-import "src/mainnet/fxs/Accumulator.sol";
 import "common/interfaces/frax/IFraxShares.sol";
+import "src/mainnet/fxs/Accumulator.sol";
+import "test/common/BaseAccumulatorTest.sol";
 
 contract AccumulatorTest is BaseAccumulatorTest {
     constructor()

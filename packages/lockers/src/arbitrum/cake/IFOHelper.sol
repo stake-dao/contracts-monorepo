@@ -2,12 +2,11 @@
 pragma solidity ^0.8.19;
 
 import {ERC20} from "solady/src/tokens/ERC20.sol";
-import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {FixedPointMathLib} from "solady/src/utils/FixedPointMathLib.sol";
-
+import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {IFO} from "src/arbitrum/cake/IFO.sol";
-import {IExecutor} from "src/common/interfaces/IExecutor.sol";
 import {ICakeIFOV8} from "src/common/interfaces/ICakeIFOV8.sol";
+import {IExecutor} from "src/common/interfaces/IExecutor.sol";
 
 /// @notice Small Helper to claim rewards from the IFO.
 contract IFOHelper {

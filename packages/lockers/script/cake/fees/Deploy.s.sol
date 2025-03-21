@@ -1,16 +1,14 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "forge-std/src/Script.sol";
 import "address-book/src/dao/56.sol";
 import "address-book/src/lockers/56.sol";
 import "address-book/src/strategies/56.sol";
-
+import "forge-std/src/Script.sol";
 import "src/bnb/cake/FeeReceiver.sol";
-
-import "src/common/fee/VeSDTRecipient.sol";
-import "src/common/fee/TreasuryRecipient.sol";
 import "src/common/fee/LiquidityFeeRecipient.sol";
+import "src/common/fee/TreasuryRecipient.sol";
+import "src/common/fee/VeSDTRecipient.sol";
 
 contract Deploy is Script {
     CakeFeeReceiver public feeReceiver;

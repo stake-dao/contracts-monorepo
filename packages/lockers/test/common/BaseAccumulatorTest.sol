@@ -1,22 +1,18 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import "forge-std/src/Vm.sol";
-import "forge-std/src/Test.sol";
-import "forge-std/src/console.sol";
-
 import "address-book/src/dao/1.sol";
 import "address-book/src/lockers/1.sol";
 import "address-book/src/protocols/1.sol";
-
+import "forge-std/src/Test.sol";
+import "forge-std/src/Vm.sol";
 import "src/common/accumulator/BaseAccumulator.sol";
-
-import {CommonBase} from "test/common/CommonBase.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
+import {CommonBase} from "test/common/CommonBase.sol";
 
 abstract contract BaseAccumulatorTest is CommonBase, Test {
-    uint256 blockNumber;
-    string chain;
+    uint256 internal blockNumber;
+    string internal chain;
 
     constructor(
         uint256 _blockNumber,

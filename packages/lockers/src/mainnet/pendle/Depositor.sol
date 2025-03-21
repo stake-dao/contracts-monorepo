@@ -2,9 +2,8 @@
 pragma solidity 0.8.19;
 
 import "src/common/depositor/BaseDepositor.sol";
-import {IVePendle} from "src/common/interfaces/IVePendle.sol";
-import {IExecutor} from "src/common/interfaces/IExecutor.sol";
 import {IPendleLocker} from "src/common/interfaces/IPendleLocker.sol";
+import {IVePendle} from "src/common/interfaces/IVePendle.sol";
 
 /// @title BaseDepositor
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return

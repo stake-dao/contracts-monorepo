@@ -1,39 +1,34 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import "forge-std/src/console.sol";
-
-import {BaseZeroLendTest} from "test/linea/zerolend/common/BaseZeroLendTest.sol";
-
-import "src/linea/zerolend/Accumulator.sol";
-import {sdToken as SdToken} from "src/common/token/sdToken.sol";
-import {Depositor} from "src/linea/zerolend/Depositor.sol";
-
-import {ISdToken} from "src/common/interfaces/ISdToken.sol";
-import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
-import {ILocker, ISafe} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
-import {IDepositor} from "src/common/interfaces/IDepositor.sol";
-import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeProxyFactory} from "@safe/contracts/proxies/SafeProxyFactory.sol";
 import {Safe, Enum} from "@safe/contracts/Safe.sol";
-import {SafeProxy} from "@safe/contracts/proxies/SafeProxy.sol";
+import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
+import {IDepositor} from "src/common/interfaces/IDepositor.sol";
+import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
+import {ISdToken} from "src/common/interfaces/ISdToken.sol";
+import {ILocker, ISafe} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
+import {sdToken as SdToken} from "src/common/token/sdToken.sol";
+import "src/linea/zerolend/Accumulator.sol";
+import {Depositor} from "src/linea/zerolend/Depositor.sol";
+import {BaseZeroLendTest} from "test/linea/zerolend/common/BaseZeroLendTest.sol";
 
 // end to end tests for the ZeroLend integration
 abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
-    address GOVERNANCE = address(1234);
+    address internal GOVERNANCE = address(1234);
 
-    address zeroLockerToken = 0x08D5FEA625B1dBf9Bae0b97437303a0374ee02F8;
-    IERC20 zeroToken = IERC20(0x78354f8DcCB269a615A7e0a24f9B0718FDC3C7A7);
-    IERC20 veZero = IERC20(0xf374229a18ff691406f99CCBD93e8a3f16B68888);
+    address internal zeroLockerToken = 0x08D5FEA625B1dBf9Bae0b97437303a0374ee02F8;
+    IERC20 internal zeroToken = IERC20(0x78354f8DcCB269a615A7e0a24f9B0718FDC3C7A7);
+    IERC20 internal veZero = IERC20(0xf374229a18ff691406f99CCBD93e8a3f16B68888);
 
-    SafeProxyFactory safeProxyFactory = SafeProxyFactory(0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67);
-    address safeSingleton = 0x41675C099F32341bf84BFc5382aF534df5C7461a;
+    SafeProxyFactory internal safeProxyFactory = SafeProxyFactory(0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67);
+    address internal safeSingleton = 0x41675C099F32341bf84BFc5382aF534df5C7461a;
 
-    address zeroTokenHolder = 0xA05D8213472620292D4D96DCDA2Dd5dB4B65df2f;
+    address internal zeroTokenHolder = 0xA05D8213472620292D4D96DCDA2Dd5dB4B65df2f;
 
-    address[] feeSplitReceivers = new address[](2);
-    uint256[] feeSplitFees = new uint256[](2);
+    address[] internal feeSplitReceivers = new address[](2);
+    uint256[] internal feeSplitFees = new uint256[](2);
 
     constructor() {}
 

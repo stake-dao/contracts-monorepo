@@ -1,21 +1,16 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import "forge-std/src/Vm.sol";
-import "forge-std/src/Test.sol";
-import "forge-std/src/console.sol";
-
 import "address-book/src/dao/1.sol";
 import "address-book/src/lockers/1.sol";
 import "address-book/src/protocols/1.sol";
-
+import "forge-std/src/Test.sol";
+import "forge-std/src/Vm.sol";
 import "src/common/accumulator/BaseAccumulator.sol";
-
-import {ILocker} from "src/common/interfaces/ILocker.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 
 contract Accumulator is Test {
-    uint256 blockNumber;
+    uint256 internal blockNumber;
 
     address public locker;
     address public sdToken;

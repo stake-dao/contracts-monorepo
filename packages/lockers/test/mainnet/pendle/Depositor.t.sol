@@ -1,19 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "forge-std/src/Vm.sol";
-import "forge-std/src/Test.sol";
-import "forge-std/src/console.sol";
-
 import "address-book/src/dao/1.sol";
 import "address-book/src/lockers/1.sol";
 import "address-book/src/protocols/1.sol";
-
-import "src/common/interfaces/ILocker.sol";
+import "forge-std/src/console.sol";
+import "forge-std/src/Test.sol";
+import "forge-std/src/Vm.sol";
 import "src/common/interfaces/IDepositor.sol";
 import "src/common/interfaces/ILiquidityGauge.sol";
+import "src/common/interfaces/ILocker.sol";
 import "src/common/interfaces/ISdToken.sol";
-
 import "src/mainnet/pendle/Depositor.sol";
 
 contract DepositorTest is Test {
@@ -33,7 +30,7 @@ contract DepositorTest is Test {
 
     uint256 private constant amount = 100e18;
 
-    uint256 snapshotBalance;
+    uint256 internal snapshotBalance;
 
     function setUp() public virtual {
         uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"), 21_415_198);
