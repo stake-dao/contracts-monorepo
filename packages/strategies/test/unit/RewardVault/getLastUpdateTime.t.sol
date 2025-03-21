@@ -15,7 +15,6 @@ contract RewardVault__getLastUpdateTime is RewardVaultBaseTest {
 
         RewardVault.RewardData memory rewardData = RewardVault.RewardData({
             rewardsDistributor: makeAddr("distributor"),
-            rewardsDuration: 0,
             lastUpdateTime: lastUpdateTime,
             periodFinish: 0,
             rewardRate: 0,

@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
@@ -169,9 +170,8 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
 
         RewardVault.RewardData memory rewardData = RewardVault.RewardData({
             rewardsDistributor: makeAddr("distributor"),
-            rewardsDuration: 10 days,
             lastUpdateTime: uint32(block.timestamp), // current timestamp before wrapping
-            periodFinish: uint32(block.timestamp + 10 days),
+            periodFinish: uint32(block.timestamp + 7 days),
             // number of rewards distributed per second
             rewardRate: 1e10,
             // total rewards accumulated per token since the last update, used as a baseline for calculating new rewards.
@@ -329,8 +329,7 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
         cloneRewardVault.approve(caller, OWNER_BALANCE);
 
         // mock the dependencies of the withdraw function
-        (IAllocator.Allocation memory allocation, IStrategy.PendingRewards memory pendingRewards) =
-            _mock_test_dependencies();
+        (IAllocator.Allocation memory allocation,) = _mock_test_dependencies();
 
         // we airdrop enought assets to the reward vault to cover the withdrawal
         deal(address(asset), address(cloneRewardVault), OWNER_BALANCE);

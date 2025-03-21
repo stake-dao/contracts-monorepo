@@ -20,7 +20,6 @@ contract RewardVault__rewardPerToken is RewardVaultBaseTest {
 
         RewardVault.RewardData memory rewardData = RewardVault.RewardData({
             rewardsDistributor: address(0),
-            rewardsDuration: 0,
             lastUpdateTime: 0,
             periodFinish: 0,
             rewardRate: 0,
@@ -42,7 +41,7 @@ contract RewardVault__rewardPerToken is RewardVaultBaseTest {
 
         // assume the account is not the zero address, and set some constants for the test
         uint256 TOTAL_SUPPLY = 1e18;
-        uint32 CAMPAIGN_DURATION = 10 days;
+        uint32 CAMPAIGN_DURATION = 7 days;
 
         RewardVaultHarness rewardVaultHarness = RewardVaultHarness(address(rewardVault));
 
@@ -53,7 +52,6 @@ contract RewardVault__rewardPerToken is RewardVaultBaseTest {
 
         RewardVault.RewardData memory rewardData = RewardVault.RewardData({
             rewardsDistributor: makeAddr("distributor"),
-            rewardsDuration: CAMPAIGN_DURATION,
             lastUpdateTime: uint32(block.timestamp), // current timestamp before wrapping
             periodFinish: uint32(block.timestamp + CAMPAIGN_DURATION),
             // number of rewards distributed per second

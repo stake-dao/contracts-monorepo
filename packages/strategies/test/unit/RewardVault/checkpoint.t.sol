@@ -14,7 +14,7 @@ contract RewardVault__updateReward is RewardVaultBaseTest {
         // assume the account is not the zero address, and set some constants for the test
         vm.assume(account != address(0));
         uint256 TOTAL_SUPPLY = 1e18;
-        uint32 CAMPAIGN_DURATION = 10 days;
+        uint32 CAMPAIGN_DURATION = 7 days;
 
         RewardVaultHarness rewardVaultHarness = RewardVaultHarness(address(rewardVault));
 
@@ -25,7 +25,6 @@ contract RewardVault__updateReward is RewardVaultBaseTest {
 
         RewardVault.RewardData memory rewardData = RewardVault.RewardData({
             rewardsDistributor: makeAddr("distributor"),
-            rewardsDuration: CAMPAIGN_DURATION,
             lastUpdateTime: uint32(block.timestamp), // current timestamp before wrapping
             periodFinish: uint32(block.timestamp + CAMPAIGN_DURATION),
             // number of rewards distributed per second

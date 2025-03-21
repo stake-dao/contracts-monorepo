@@ -15,7 +15,6 @@ contract RewardVault__getPeriodFinish is RewardVaultBaseTest {
 
         RewardVault.RewardData memory rewardData = RewardVault.RewardData({
             rewardsDistributor: makeAddr("distributor"),
-            rewardsDuration: 0,
             lastUpdateTime: 0,
             periodFinish: periodFinish,
             rewardRate: 0,

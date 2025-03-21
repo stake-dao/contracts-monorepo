@@ -33,7 +33,7 @@ contract MockRegistry is IProtocolController {
 
     function removeValidAllocationTarget(address, address) external {}
 
-    function isValidAllocationTarget(address, address) external view returns (bool) {
+    function isValidAllocationTarget(address, address) external pure returns (bool) {
         return true;
     }
 
