@@ -38,7 +38,7 @@ contract Depositor is SafeModuleDepositor {
     /// --- EVENTS
     ////////////////////////////////////////////////////////////////
 
-    /// @notice Emitted when a new lock is creadted
+    /// @notice Emitted when a new lock is created
     /// @param value Additional amount of tokens locked
     /// @param duration New duration of the lock in seconds
     event LockCreated(uint256 value, uint256 duration);

@@ -11,8 +11,6 @@ import {ISpectraLocker} from "src/common/interfaces/spectra/spectra/ISpectraLock
 import {ISdSpectraDepositor} from "src/common/interfaces/spectra/stakedao/ISdSpectraDepositor.sol";
 
 contract SpectraTest is BaseSpectraTokenTest {
-    constructor() {}
-
     address alice = address(0x1);
     address initializer = address(0x2);
 
@@ -22,8 +20,7 @@ contract SpectraTest is BaseSpectraTokenTest {
     ISdSpectraDepositor spectraDepositor;
 
     function setUp() public {
-        uint256 forkId = vm.createFork(vm.rpcUrl("base"));
-        vm.selectFork(forkId);
+        vm.createSelectFork(vm.rpcUrl("base"));
         _deploySpectraIntegration();
 
         spectraDepositor = ISdSpectraDepositor(address(depositor));
