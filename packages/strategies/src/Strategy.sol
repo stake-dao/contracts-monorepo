@@ -24,7 +24,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     using TransientSlot for *;
 
     /// @dev Slot for the flush amount in transient storage
-    bytes32 internal constant FLUSH_AMOUNT_SLOT = keccak256("strategy.flush.amount");
+    bytes32 internal constant FLUSH_AMOUNT_SLOT = keccak256("strategy.flushAmount");
 
     //////////////////////////////////////////////////////
     /// --- ERRORS & EVENTS

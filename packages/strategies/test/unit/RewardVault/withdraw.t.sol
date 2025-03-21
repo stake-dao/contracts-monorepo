@@ -249,7 +249,11 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
         deal(address(asset), address(cloneRewardVault), OWNER_BALANCE);
 
         // vm.mockCall(accountant, abi.encodeWithSelector(IAccountant.checkpoint.selector), abi.encode(true));
-        vm.expectCall(address(strategyAsset), abi.encodeWithSelector(IStrategy.withdraw.selector, allocation, false, address(receiver)), 1);
+        vm.expectCall(
+            address(strategyAsset),
+            abi.encodeWithSelector(IStrategy.withdraw.selector, allocation, false, address(receiver)),
+            1
+        );
 
         // make the caller withdraw the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
@@ -332,7 +336,11 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
         deal(address(asset), address(cloneRewardVault), OWNER_BALANCE);
 
         // If the vault is not shutdown, the assets are transferred to the receiver from the strategy.
-        vm.expectCall(address(strategyAsset), abi.encodeWithSelector(IStrategy.withdraw.selector, allocation, false, address(receiver)), 1);
+        vm.expectCall(
+            address(strategyAsset),
+            abi.encodeWithSelector(IStrategy.withdraw.selector, allocation, false, address(receiver)),
+            1
+        );
 
         // make the caller withdraw the rewards. It should succeed because the allowance is enough
         vm.prank(caller);

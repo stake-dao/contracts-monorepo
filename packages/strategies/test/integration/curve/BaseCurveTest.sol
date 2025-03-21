@@ -134,6 +134,7 @@ abstract contract BaseCurveTest is BaseForkTest {
 
         /// 4. Setup the factory in the protocol controller.
         protocolController.setRegistrar(address(curveFactory), true);
+        protocolController.setRegistrar(address(convexSidecarFactory), true);
 
         /// 5. Enable Strategy as Module in Gateway.
         _enableModule(address(curveStrategy));

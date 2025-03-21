@@ -79,6 +79,9 @@ contract ConvexSidecarFactory is SidecarFactory {
         // Initialize the sidecar
         ConvexSidecar(sidecarAddress).initialize();
 
+        // Set the valid allocation target
+        PROTOCOL_CONTROLLER.setValidAllocationTarget(gauge, sidecarAddress);
+
         return sidecarAddress;
     }
 }
