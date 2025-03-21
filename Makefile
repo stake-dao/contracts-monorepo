@@ -50,6 +50,12 @@ test-%:
 		exit 1; \
 	fi
 
+lint:
+	@forge fmt --check && npx solhint "{script,src,test}/**/*.sol"
+
+lint-fix:
+	@forge fmt && npx solhint --fix "{script,src,test}/**/*.sol" --fix --noPrompt --disc
+
 simulate-%:
 	make default
 	@echo "Target: $@"
@@ -77,4 +83,4 @@ deploy-%:
 		exit 1; \
 	fi
 
-.PHONY: test test-unit test-integration
+.PHONY: test test-unit test-integration lint lint-fix
