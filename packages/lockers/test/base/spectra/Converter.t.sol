@@ -7,6 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {Converter} from "src/mainnet/apwine/Converter.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
+import {ISpectraVoter} from "src/common/interfaces/spectra/spectra/ISpectraVoter.sol";
 import {BaseSpectraTokenTest} from "test/base/spectra/common/BaseSpectraTokenTest.sol";
 import {ISpectraLocker} from "src/common/interfaces/spectra/spectra/ISpectraLocker.sol";
 import {ISdSpectraDepositor} from "src/common/interfaces/spectra/stakedao/ISdSpectraDepositor.sol";
@@ -34,15 +35,13 @@ contract SpectraTest is BaseSpectraTokenTest {
 
         _initializeLocker();
 
-        // Force locked tokenid to not be in "voted" state
-        vm.prank(ISpectraLocker(address(veSpectra)).voter());
-        ISpectraLocker(address(veSpectra)).voting(592, false);
-
         uint256[] memory tokenIds = new uint256[](1);
         tokenIds[0] = 592;
 
         // Deposit existing NFT
         vm.startPrank(GOVERNANCE);
+        // Reset votes from tokenid to not be in "voted" state
+        ISpectraVoter(ISpectraLocker(address(veSpectra)).voter()).reset(address(veSpectra), 592);
         veSpectra.setApprovalForAll(locker, true);
         ISdSpectraDepositor(address(depositor)).deposit(tokenIds, false, GOVERNANCE);
         vm.stopPrank();

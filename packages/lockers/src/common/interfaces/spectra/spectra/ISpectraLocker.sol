@@ -25,6 +25,4 @@ interface ISpectraLocker is IERC721Enumerable {
     function createLock(uint256 _value, uint256 _lockDuration) external returns (uint256);
 
     function voter() external view returns (address);
-
-    function voting(uint256 _tokenId, bool _voted) external;
 }
