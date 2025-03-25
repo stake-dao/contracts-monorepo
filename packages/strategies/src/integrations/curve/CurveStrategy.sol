@@ -22,11 +22,14 @@ contract CurveStrategy is Strategy {
 
     /// @notice The address of the Curve Minter contract
     /// @dev Used to account for CRV tokens from gauge rewards
-    address public constant MINTER = 0xd061D61a4d941c39E5453435B6345Dc261C2fcE0;
+    address public immutable MINTER;
 
     /// @notice The bytes4 ID of the Curve protocol
     /// @dev Used to identify the Curve protocol in the registry
     bytes4 private constant CURVE_PROTOCOL_ID = bytes4(keccak256("CURVE"));
+
+    /// @notice Error thrown when the mint fails.
+    error MintFailed();
 
     //////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
@@ -36,9 +39,11 @@ contract CurveStrategy is Strategy {
     /// @param _registry The address of the protocol controller registry
     /// @param _locker The address of the locker contract
     /// @param _gateway The address of the gateway contract
-    constructor(address _registry, address _locker, address _gateway)
+    constructor(address _registry, address _locker, address _gateway, address _minter)
         Strategy(_registry, CURVE_PROTOCOL_ID, _locker, _gateway)
-    {}
+    {
+        MINTER = _minter;
+    }
 
     //////////////////////////////////////////////////////
     /// --- INTERNAL FUNCTIONS
@@ -101,8 +106,17 @@ contract CurveStrategy is Strategy {
         /// 1. Snapshot the balance before minting.
         uint256 _before = IERC20(REWARD_TOKEN).balanceOf(address(LOCKER));
 
-        /// 2. Mint the rewards of the gauge to the locker.
-        IMinter(MINTER).mint_for(gauge, address(LOCKER));
+        /// @dev Locker is deployed on mainnet.
+        /// @dev If the locker is the gateway, we need to mint the rewards via the gateway
+        /// as it means the strategy is deployed on sidechain.
+        if (LOCKER != GATEWAY) {
+            /// 2. Mint the rewards of the gauge to the locker.
+            IMinter(MINTER).mint_for(gauge, address(LOCKER));
+        } else {
+            /// 2. Mint the rewards of the gauge to the locker via the gateway.
+            bytes memory data = abi.encodeWithSignature("mint(address)", gauge);
+            require(_executeTransaction(MINTER, data), MintFailed());
+        }
 
         /// 3. Calculate the reward amount.
         rewardAmount = IERC20(REWARD_TOKEN).balanceOf(address(LOCKER)) - _before;

@@ -83,7 +83,7 @@ contract Deploy is Base {
         _run(DEPLOYER, CRV, LOCKER, PROTOCOL_ID, HARVESTED);
 
         /// 1. Deploy the Curve Strategy contract.
-        curveStrategy = new CurveStrategy(address(protocolController), locker, address(gateway));
+        curveStrategy = new CurveStrategy(address(protocolController), locker, address(gateway), MINTER);
 
         /// 2. Deploy the Convex Sidecar contract.
         convexSidecarImplementation = new ConvexSidecar(address(accountant), address(protocolController));
