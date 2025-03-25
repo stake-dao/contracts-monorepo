@@ -84,7 +84,7 @@ contract PreLaunchLocker__withdraw is PreLaunchLockerTest {
         vm.prank(caller);
         sdToken.approve(address(gauge), amount);
         vm.prank(caller);
-        gauge.deposit(amount, caller);
+        gauge.deposit(amount, caller, false);
 
         // set the total balance to the locker
         deal(address(token), address(locker), balance);

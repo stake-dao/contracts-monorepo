@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 import {MockERC20} from "forge-std/src/mocks/MockERC20.sol";
-import {PreLaunchLocker} from "src/common/locker/PreLaunchLocker.sol";
+import {PreLaunchLocker, ILiquidityGaugeV4} from "src/common/locker/PreLaunchLocker.sol";
 import {sdToken as SdToken} from "src/common/token/sdToken.sol";
 import {BaseTest} from "test/BaseTest.t.sol";
 import {PreLaunchLockerHarness} from "./PreLaunchLockerHarness.t.sol";
@@ -11,7 +10,7 @@ import {PreLaunchLockerHarness} from "./PreLaunchLockerHarness.t.sol";
 abstract contract PreLaunchLockerTest is BaseTest {
     MockERC20 internal token;
     SdToken internal sdToken;
-    ILiquidityGauge internal gauge;
+    ILiquidityGaugeV4 internal gauge;
     address internal governance;
     PreLaunchLocker internal locker;
     PreLaunchLockerHarness internal lockerHarness;
@@ -25,7 +24,7 @@ abstract contract PreLaunchLockerTest is BaseTest {
         sdToken = new SdToken("sdToken", "sdTKN");
 
         // deploy the gauge
-        gauge = ILiquidityGauge(address(new GaugeMock(address(sdToken))));
+        gauge = ILiquidityGaugeV4(address(new GaugeMock(address(sdToken))));
 
         // fast forward the time to avoid the block.timestamp to be 0
         skip(3600);
@@ -74,12 +73,12 @@ contract GaugeMock is MockERC20 {
         initialize("Gauge Token", "gTKN", 18);
     }
 
-    function deposit(uint256 amount, address receiver) external {
+    function deposit(uint256 amount, address receiver, bool) external {
         SdToken(sdToken).transferFrom(msg.sender, address(this), amount);
         _mint(receiver, amount);
     }
 
-    function lp_token() external view returns (address) {
+    function staking_token() external view returns (address) {
         return sdToken;
     }
 

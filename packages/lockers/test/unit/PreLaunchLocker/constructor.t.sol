@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
-import {PreLaunchLocker} from "src/common/locker/PreLaunchLocker.sol";
+import {PreLaunchLocker, ILiquidityGaugeV4} from "src/common/locker/PreLaunchLocker.sol";
 import {sdToken as SdToken} from "src/common/token/sdToken.sol";
 import {PreLaunchLockerTest, GaugeMock} from "test/unit/PreLaunchLocker/utils/PreLaunchLockerTest.t.sol";
 
@@ -35,7 +34,9 @@ contract PreLaunchLocker__constructor is PreLaunchLockerTest {
         vm.assume(incorrectLpToken != address(sdToken));
 
         vm.mockCall(
-            address(gauge), abi.encodeWithSelector(ILiquidityGauge.lp_token.selector), abi.encode(incorrectLpToken)
+            address(gauge),
+            abi.encodeWithSelector(ILiquidityGaugeV4.staking_token.selector),
+            abi.encode(incorrectLpToken)
         );
 
         vm.expectRevert(PreLaunchLocker.INVALID_GAUGE.selector);

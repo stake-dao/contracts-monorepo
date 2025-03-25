@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.19;
 
-import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
-import {PreLaunchLocker} from "src/common/locker/PreLaunchLocker.sol";
+import {PreLaunchLocker, ILiquidityGaugeV4} from "src/common/locker/PreLaunchLocker.sol";
 import {PreLaunchLockerTest} from "test/unit/PreLaunchLocker/utils/PreLaunchLockerTest.t.sol";
 
 contract PreLaunchLocker__deposit is PreLaunchLockerTest {
@@ -97,7 +96,9 @@ contract PreLaunchLocker__deposit is PreLaunchLockerTest {
         // expect the internal calls to be made
         vm.expectCall(address(sdToken), abi.encodeWithSelector(ISdToken.mint.selector, address(locker), amount), 1);
         vm.expectCall(address(sdToken), abi.encodeWithSelector(ISdToken.approve.selector, address(gauge), amount), 1);
-        vm.expectCall(address(gauge), abi.encodeWithSelector(ILiquidityGauge.deposit.selector, amount, caller), 1);
+        vm.expectCall(
+            address(gauge), abi.encodeWithSelector(ILiquidityGaugeV4.deposit.selector, amount, caller, false), 1
+        );
 
         // deposit the tokens
         vm.prank(caller);
