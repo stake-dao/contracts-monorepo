@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
-import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
-import {PreLaunchBaseDepositor} from "src/common/depositor/PreLaunchBaseDepositor.sol";
-import {IERC20} from "src/common/interfaces/IERC20.sol";
-import {ISdToken} from "src/common/interfaces/ISdToken.sol";
+import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
+import { PreLaunchBaseDepositor } from "src/common/depositor/PreLaunchBaseDepositor.sol";
+import { IERC20 } from "src/common/interfaces/IERC20.sol";
+import { ILiquidityGaugeV4 } from "src/common/interfaces/ILiquidityGaugeV4.sol";
+import { ISdToken } from "src/common/interfaces/ISdToken.sol";
 
 /// @title PreLaunchLocker
 /// @dev This contract implements a state machine with three states: IDLE, ACTIVE, and CANCELED
@@ -57,7 +57,7 @@ contract PreLaunchLocker {
     /// @notice The sdToken address.
     ISdToken public immutable sdToken;
     /// @notice The gauge address.
-    ILiquidityGauge public immutable gauge;
+    ILiquidityGaugeV4 public immutable gauge;
 
     /// @notice The current governance address.
     /// @custom:slot 0
@@ -175,12 +175,12 @@ contract PreLaunchLocker {
         if (_token == address(0) || _sdToken == address(0) || _gauge == address(0)) revert REQUIRED_PARAM();
 
         // ensure the given gauge contract is associated with the given sdToken
-        if (ILiquidityGauge(_gauge).lp_token() != _sdToken) revert INVALID_GAUGE();
+        if (ILiquidityGaugeV4(_gauge).staking_token() != _sdToken) revert INVALID_GAUGE();
 
         // set the immutable addresses
         token = _token;
         sdToken = ISdToken(_sdToken);
-        gauge = ILiquidityGauge(_gauge);
+        gauge = ILiquidityGaugeV4(_gauge);
 
         // start the timer before the locker can be force canceled
         timestamp = uint96(block.timestamp);
@@ -214,12 +214,12 @@ contract PreLaunchLocker {
 
         if (stake == true) {
             //  2.a. Either mint the sdTokens to this contract and stake them in the gauge for the caller
-            ILiquidityGauge storedGauge = gauge;
+            ILiquidityGaugeV4 storedGauge = gauge;
 
             storedSdToken.mint(address(this), amount);
             storedSdToken.approve(address(storedGauge), amount);
 
-            storedGauge.deposit(amount, msg.sender);
+            storedGauge.deposit(amount, msg.sender, false);
 
             emit TokensStaked(msg.sender, address(storedGauge), amount);
         } else {
