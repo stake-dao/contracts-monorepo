@@ -390,8 +390,6 @@ contract SpectraTest is BaseSpectraTokenTest {
         assertGt(claimable, 0);
 
         vm.startPrank(GOVERNANCE);
-        // Reset votes of governance nft that has voted and deposit
-        ISpectraVoter(ISpectraLocker(address(veSpectra)).voter()).reset(address(veSpectra), 592);
         veSpectra.setApprovalForAll(locker, true);
         spectraDepositor.deposit(tokenIds, false, GOVERNANCE);
         vm.stopPrank();

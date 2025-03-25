@@ -7,6 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ILocker} from "src/common/interfaces/spectra/stakedao/ILocker.sol";
 import {SafeModuleDepositor} from "src/base/spectra/SafeModuleDepositor.sol";
 import {ITokenMinter, ILiquidityGauge} from "src/common/depositor/BaseDepositor.sol";
+import {ISpectraVoter} from "src/common/interfaces/spectra/spectra/ISpectraVoter.sol";
 import {ISpectraLocker} from "src/common/interfaces/spectra/spectra/ISpectraLocker.sol";
 import {ISpectraRewardsDistributor} from "src/common/interfaces/spectra/spectra/ISpectraRewardsDistributor.sol";
 
@@ -21,10 +22,10 @@ contract Depositor is SafeModuleDepositor {
     ///////////////////////////////////////////////////////////////
 
     /// @notice Spectra locker NFT contract interface
-    ISpectraLocker public immutable spectraLocker;
+    ISpectraLocker public constant spectraLocker = ISpectraLocker(0x6a89228055C7C28430692E342F149f37462B478B);
 
     /// @notice Spectra rewards distributor
-    ISpectraRewardsDistributor public immutable spectraRewardDistributor;
+    ISpectraRewardsDistributor public constant spectraRewardDistributor = ISpectraRewardsDistributor(0xBE6271FA207D2cD29C7F9efa90FC725C18560bff);
 
     /// @notice Token ID representing the locked SPECTRA tokens in the locker ERC721
     uint256 public spectraLockedTokenId;
@@ -66,22 +67,12 @@ contract Depositor is SafeModuleDepositor {
     /// @param _locker Address of the SD locker contract
     /// @param _minter Address of the sdSPECTRA minter contract
     /// @param _gauge Address of the sdSPECTRA-gauge contract
-    /// @param _spectraLocker Address of the Spectra locker NFT contract
     constructor(
         address _token,
         address _locker,
         address _minter,
-        address _gauge,
-        address _spectraLocker,
-        address _spectraRewardsDistributor
-    ) SafeModuleDepositor(_token, _locker, _minter, _gauge, 4 * 365 days) {
-        if (_spectraLocker == address(0)) {
-            revert ZeroAddress();
-        }
-
-        spectraLocker = ISpectraLocker(_spectraLocker);
-        spectraRewardDistributor = ISpectraRewardsDistributor(_spectraRewardsDistributor);
-    }
+        address _gauge
+    ) SafeModuleDepositor(_token, _locker, _minter, _gauge, 4 * 365 days) { }
 
     ////////////////////////////////////////////////////////////////
     /// --- BASE CONTRACT OVERRIDE
@@ -147,7 +138,12 @@ contract Depositor is SafeModuleDepositor {
         for (uint256 index = 0; index < _tokenIds.length;) {
             if (spectraLocker.ownerOf(_tokenIds[index]) != msg.sender) revert NotOwnerOfToken(_tokenIds[index]);
 
-            // Trigger rebase of the veNFT with
+            // Reset votes of the veNFT
+            if (spectraLocker.voted(_tokenIds[index])){
+                _resetVotes(_tokenIds[index]);
+            }
+
+            // Trigger rebase of the veNFT
             if (spectraRewardDistributor.claimable(_tokenIds[index]) > 0) {
                 spectraRewardDistributor.claim(_tokenIds[index]);
             }
@@ -240,6 +236,14 @@ contract Depositor is SafeModuleDepositor {
 
         spectraLockedTokenId = abi.decode(newTokenId, (uint256));
         _lockPermanent(spectraLockedTokenId);
+    }
+
+    /// @notice Resets votes of a veNFT
+    /// @param _tokenId token ID to reset
+    function _resetVotes(uint256 _tokenId) internal {
+        _executeTransaction(
+            address(spectraLocker.voter()), abi.encodeWithSelector(ISpectraVoter.reset.selector, address(spectraLocker), _tokenId)
+        );
     }
 
     ////////////////////////////////////////////////////////////////
