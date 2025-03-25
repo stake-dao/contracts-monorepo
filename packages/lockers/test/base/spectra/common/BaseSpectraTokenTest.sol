@@ -94,9 +94,7 @@ abstract contract BaseSpectraTokenTest is BaseSpectraTest {
                 address(spectraToken),
                 locker,
                 sdToken,
-                address(liquidityGauge),
-                address(veSpectra),
-                address(spectraRewardsDistributor)
+                address(liquidityGauge)
             )
         );
 
