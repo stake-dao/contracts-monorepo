@@ -142,7 +142,6 @@ def initialize(_staking_token: address, _admin: address, _SDT: address, _voting_
     assert _SDT != empty(address)
     assert _voting_escrow != empty(address)
     assert _veBoost_proxy != empty(address)
-    assert _distributor != empty(address)
 
     self.admin = _admin
     self.staking_token = _staking_token
@@ -159,7 +158,7 @@ def initialize(_staking_token: address, _admin: address, _SDT: address, _voting_
     self.reward_data[_SDT].distributor = _distributor
     self.reward_tokens[0] = _SDT
     self.reward_count = 1
-    
+
 
 @view
 @external
@@ -206,7 +205,7 @@ def _checkpoint_reward(_user: address, token: address, _total_supply: uint256, _
     """
     total_supply: uint256 = _total_supply
     user_balance: uint256 = _user_balance
-    if token == self.SDT : 
+    if token == self.SDT :
         total_supply = self.working_supply
         user_balance = self.working_balances[_user]
 
@@ -246,10 +245,10 @@ def _checkpoint_reward(_user: address, token: address, _total_supply: uint256, _
                 self.claim_data[_user][token] = total_claimed + total_claimable
             elif new_claimable > 0:
                 self.claim_data[_user][token] = total_claimed + (total_claimable << 128)
-    
-    if token == self.SDT : 
+
+    if token == self.SDT :
         self.integrate_checkpoint_of[_user] = block.timestamp
-                
+
 @internal
 def _checkpoint_rewards(_user: address, _total_supply: uint256, _claim: bool, _receiver: address, _only_checkpoint:bool = False):
     """
@@ -314,10 +313,10 @@ def claimable_reward(_user: address, _reward_token: address) -> uint256:
     integral: uint256 = self.reward_data[_reward_token].integral
     total_supply: uint256 = self.totalSupply
     user_balance: uint256 = self.balanceOf[_user]
-    if _reward_token == self.SDT: 
+    if _reward_token == self.SDT:
         total_supply = self.working_supply
         user_balance = self.working_balances[_user]
-        
+
     if total_supply != 0:
         last_update: uint256 = min(block.timestamp, self.reward_data[_reward_token].period_finish)
         duration: uint256 = last_update - self.reward_data[_reward_token].last_update
@@ -363,7 +362,7 @@ def claim_rewards_for(_addr: address, _receiver: address):
                      empty(address), uses the default reward receiver
                      for the caller
     """
-    assert self.claimer == msg.sender  # dev: only the claim contract can claim for other 
+    assert self.claimer == msg.sender  # dev: only the claim contract can claim for other
     if _receiver != _addr:
         assert _receiver == self.claimer # dev: if the receiver is not the user it needs to be the claimer
     self._checkpoint_rewards(_addr, self.totalSupply, True, _receiver)
