@@ -6,6 +6,7 @@ import "forge-std/src/console.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
+import {ISpectraVoter} from "src/common/interfaces/spectra/spectra/ISpectraVoter.sol";
 import {BaseSpectraTokenTest} from "test/base/spectra/common/BaseSpectraTokenTest.sol";
 import {ISpectraLocker} from "src/common/interfaces/spectra/spectra/ISpectraLocker.sol";
 import {ISdSpectraDepositor} from "src/common/interfaces/spectra/stakedao/ISdSpectraDepositor.sol";
@@ -20,7 +21,7 @@ contract SpectraTest is BaseSpectraTokenTest {
     ISdSpectraDepositor spectraDepositor;
 
     function setUp() public {
-        vm.createSelectFork(vm.rpcUrl("base"));
+        vm.createSelectFork(vm.rpcUrl("base"), 28026639);
         _deploySpectraIntegration();
 
         spectraDepositor = ISdSpectraDepositor(address(depositor));
@@ -370,5 +371,37 @@ contract SpectraTest is BaseSpectraTokenTest {
         // Check that sdSPECTRA-gauge is minted
         assertEq(ISdToken(sdToken).balanceOf(alice), 0);
         assertEq(liquidityGauge.balanceOf(alice), _amount);
+    }
+
+    function test_canDepositWithClaimableAmount() public {
+        _initializeLocker();
+
+        uint256 amountLockedBeforeDeposit =
+            ISpectraLocker(address(veSpectra)).locked(spectraDepositor.spectraLockedTokenId()).amount;
+
+        uint256[] memory tokenIds = new uint256[](1);
+        tokenIds[0] = 592;
+
+        uint256 amountDepositNft = ISpectraLocker(address(veSpectra)).locked(592).amount;
+        uint256 claimable = spectraRewardsDistributor.claimable(592);
+
+        // Check that the the nft to deposit has locked amount and claimable amount
+        assertGt(amountDepositNft, 0);
+        assertGt(claimable, 0);
+
+        vm.startPrank(GOVERNANCE);
+        // Reset votes of governance nft that has voted and deposit
+        ISpectraVoter(ISpectraLocker(address(veSpectra)).voter()).reset(address(veSpectra), 592);
+        veSpectra.setApprovalForAll(locker, true);
+        spectraDepositor.deposit(tokenIds, false, GOVERNANCE);
+        vm.stopPrank();
+
+        uint256 amountLockedAfterDeposit =
+            ISpectraLocker(address(veSpectra)).locked(spectraDepositor.spectraLockedTokenId()).amount;
+
+        uint256 expectDepositAmount = amountDepositNft + claimable;
+
+        assertEq(amountLockedAfterDeposit - amountLockedBeforeDeposit, expectDepositAmount);
+        assertEq(ISdToken(sdToken).balanceOf(GOVERNANCE), expectDepositAmount);
     }
 }

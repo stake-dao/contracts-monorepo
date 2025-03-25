@@ -26,7 +26,7 @@ contract SpectraTest is BaseSpectraTokenTest {
     uint256 ratio = 20 ether;
 
     function setUp() public {
-        vm.createSelectFork(vm.rpcUrl("base"));
+        vm.createSelectFork(vm.rpcUrl("base"), 28026639);
         _deploySpectraIntegration();
 
         spectraDepositor = ISdSpectraDepositor(address(depositor));

@@ -9,11 +9,14 @@ import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {SafeLibrary} from "test/utils/SafeLibrary.sol";
 import {Depositor} from "src/base/spectra/Depositor.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
+import {Accumulator} from "src/base/spectra/Accumulator.sol";
 import {sdToken as SdToken} from "src/common/token/sdToken.sol";
 import {IDepositor} from "src/common/interfaces/IDepositor.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
+import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {BaseSpectraTest} from "test/base/spectra/common/BaseSpectraTest.sol";
 import {ILocker, ISafe} from "src/common/interfaces/spectra/stakedao/ILocker.sol";
+import {ISpectraRewardsDistributor} from "src/common/interfaces/spectra/spectra/ISpectraRewardsDistributor.sol";
 
 // Base Spectra Test including deployments and setup
 abstract contract BaseSpectraTokenTest is BaseSpectraTest {
@@ -21,6 +24,8 @@ abstract contract BaseSpectraTokenTest is BaseSpectraTest {
 
     IERC20 spectraToken = IERC20(0x64FCC3A02eeEba05Ef701b7eed066c6ebD5d4E51);
     IERC721 veSpectra = IERC721(0x6a89228055C7C28430692E342F149f37462B478B);
+    ISpectraRewardsDistributor spectraRewardsDistributor =
+        ISpectraRewardsDistributor(0xBE6271FA207D2cD29C7F9efa90FC725C18560bff);
 
     constructor() {}
 
@@ -36,6 +41,7 @@ abstract contract BaseSpectraTokenTest is BaseSpectraTest {
         liquidityGauge = ILiquidityGauge(_deployLiquidityGauge(sdToken));
         locker = _deploySafeLocker();
         depositor = IDepositor(_deployDepositor());
+        accumulator = BaseAccumulator(_deployAccumulator());
 
         _setupContractGovernance();
     }
@@ -83,16 +89,32 @@ abstract contract BaseSpectraTokenTest is BaseSpectraTest {
     }
 
     function _deployDepositor() internal returns (address _depositor) {
-        _depositor =
-            address(new Depositor(address(spectraToken), locker, sdToken, address(liquidityGauge), address(veSpectra)));
+        _depositor = address(
+            new Depositor(
+                address(spectraToken),
+                locker,
+                sdToken,
+                address(liquidityGauge),
+                address(veSpectra),
+                address(spectraRewardsDistributor)
+            )
+        );
 
         // Add depositor as a module on the Safe locker.
         _enableModule(_depositor);
     }
 
+    function _deployAccumulator() internal virtual returns (address payable _accumulator) {
+        _accumulator =
+            payable(address(new Accumulator(address(liquidityGauge), sdToken, locker, GOVERNANCE, address(depositor))));
+    }
+
     function _setupContractGovernance() internal {
         ISdToken(sdToken).setOperator(address(depositor));
 
-        liquidityGauge.add_reward(address(spectraToken), address(accumulator));
+        liquidityGauge.add_reward(sdToken, address(accumulator));
+
+        vm.prank(GOVERNANCE);
+        accumulator.setClaimerFee(0);
     }
 }
