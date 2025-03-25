@@ -2,11 +2,13 @@
 pragma solidity 0.8.19;
 
 import "solady/src/utils/SafeTransferLib.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {ILocker} from "src/common/interfaces/spectra/stakedao/ILocker.sol";
 import {SafeModuleDepositor} from "src/base/spectra/SafeModuleDepositor.sol";
 import {ITokenMinter, ILiquidityGauge} from "src/common/depositor/BaseDepositor.sol";
 import {ISpectraLocker} from "src/common/interfaces/spectra/spectra/ISpectraLocker.sol";
+import {ISpectraRewardsDistributor} from "src/common/interfaces/spectra/spectra/ISpectraRewardsDistributor.sol";
 
 /// @title Stake DAO Spectra Depositor
 /// @notice Contract responsible for managing SPECTRA token deposits, locking them in the Locker,
@@ -21,8 +23,14 @@ contract Depositor is SafeModuleDepositor {
     /// @notice Spectra locker NFT contract interface
     ISpectraLocker public immutable spectraLocker;
 
+    /// @notice Spectra rewards distributor
+    ISpectraRewardsDistributor public immutable spectraRewardDistributor;
+
     /// @notice Token ID representing the locked SPECTRA tokens in the locker ERC721
     uint256 public spectraLockedTokenId;
+
+    /// @notice Accumulator used to distribute rewards
+    address public accumulator;
 
     ///////////////////////////////////////////////////////////////
     /// --- ERRORS
@@ -32,6 +40,7 @@ contract Depositor is SafeModuleDepositor {
     error ZeroAddress();
     error EmptyTokenIdList();
     error LockAlreadyExists();
+    error AccumulatorNotSet();
     error NotOwnerOfToken(uint256 tokenId);
 
     ////////////////////////////////////////////////////////////////
@@ -58,14 +67,20 @@ contract Depositor is SafeModuleDepositor {
     /// @param _minter Address of the sdSPECTRA minter contract
     /// @param _gauge Address of the sdSPECTRA-gauge contract
     /// @param _spectraLocker Address of the Spectra locker NFT contract
-    constructor(address _token, address _locker, address _minter, address _gauge, address _spectraLocker)
-        SafeModuleDepositor(_token, _locker, _minter, _gauge, 4 * 365 days)
-    {
+    constructor(
+        address _token,
+        address _locker,
+        address _minter,
+        address _gauge,
+        address _spectraLocker,
+        address _spectraRewardsDistributor
+    ) SafeModuleDepositor(_token, _locker, _minter, _gauge, 4 * 365 days) {
         if (_spectraLocker == address(0)) {
             revert ZeroAddress();
         }
 
         spectraLocker = ISpectraLocker(_spectraLocker);
+        spectraRewardDistributor = ISpectraRewardsDistributor(_spectraRewardsDistributor);
     }
 
     ////////////////////////////////////////////////////////////////
@@ -132,6 +147,11 @@ contract Depositor is SafeModuleDepositor {
         for (uint256 index = 0; index < _tokenIds.length;) {
             if (spectraLocker.ownerOf(_tokenIds[index]) != msg.sender) revert NotOwnerOfToken(_tokenIds[index]);
 
+            // Trigger rebase of the veNFT with
+            if (spectraRewardDistributor.claimable(_tokenIds[index]) > 0) {
+                spectraRewardDistributor.claim(_tokenIds[index]);
+            }
+
             ISpectraLocker.LockedBalance memory lockedBalance = spectraLocker.locked(_tokenIds[index]);
             if (lockedBalance.isPermanent) {
                 // The Locked permanently tokens can't be merged
@@ -148,6 +168,26 @@ contract Depositor is SafeModuleDepositor {
 
         uint256 _lockEnd = block.timestamp + MAX_LOCK_DURATION;
         emit LockIncreased(_amount, _lockEnd);
+    }
+
+    ////////////////////////////////////////////////////////////////
+    /// --- REWARD FUNCTION
+    ///////////////////////////////////////////////////////////////
+
+    /// @notice mints rewards from rebasing and transfer them to the accumulator
+    function mintRewards() public {
+        if (accumulator == address(0)) revert AccumulatorNotSet();
+
+        // Check the difference between sdToken supply and tokens locked
+        uint256 sdTokenSupply = IERC20(minter).totalSupply();
+        uint256 locked = spectraLocker.locked(spectraLockedTokenId).amount;
+
+        uint256 rewardAmount = locked - sdTokenSupply;
+
+        if (rewardAmount != 0) {
+            // Mint difference from rebasing to the accumulator
+            ITokenMinter(minter).mint(accumulator, rewardAmount);
+        }
     }
 
     ////////////////////////////////////////////////////////////////
@@ -200,5 +240,15 @@ contract Depositor is SafeModuleDepositor {
 
         spectraLockedTokenId = abi.decode(newTokenId, (uint256));
         _lockPermanent(spectraLockedTokenId);
+    }
+
+    ////////////////////////////////////////////////////////////////
+    /// --- SETTERS
+    ///////////////////////////////////////////////////////////////
+
+    /// @notice Sets accumulator address
+    /// @param _accumulator address of the new accumulator
+    function setAccumulator(address _accumulator) external onlyGovernance {
+        accumulator = _accumulator;
     }
 }
