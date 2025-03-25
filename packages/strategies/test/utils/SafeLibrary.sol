@@ -14,7 +14,7 @@ library SafeLibrary {
     /// @notice Fallback handler address. Same address on all chains.
     address public constant FALLBACK_HANDLER = 0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99;
 
-    function deploySafe(address[] memory _owners, uint256 _threshold, uint256 _saltNonce) public returns (Safe) {
+    function deploySafe(address[] memory _owners, uint256 _threshold, uint256 _saltNonce) internal returns (Safe) {
         bytes memory initializer = abi.encodeWithSelector(
             Safe.setup.selector,
             _owners, // Owners.

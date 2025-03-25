@@ -66,7 +66,7 @@ contract CurveFactory is Factory {
         emit VaultDeployed(gauge, vault, rewardReceiver, sidecar);
     }
 
-    function _isValidToken(address _token) internal view override returns (bool) {
+    function _isValidToken(address _token) internal view virtual override returns (bool) {
         /// We already add CVX to the vault by default.
         if (_token == CVX) return false;
 
@@ -78,7 +78,7 @@ contract CurveFactory is Factory {
         }
     }
 
-    function _isValidGauge(address _gauge) internal view override returns (bool) {
+    function _isValidGauge(address _gauge) internal view virtual override returns (bool) {
         bool isValid;
         /// Check if the gauge is a valid candidate and available as an inflation receiver.
         /// This call always reverts if the gauge is not valid.
@@ -100,15 +100,15 @@ contract CurveFactory is Factory {
 
     /// @notice Check if the gauge is shutdown in the old strategy.
     /// @dev If the gauge is shutdown, we can deploy a new strategy.
-    function _isValidDeployment(address _gauge) internal view override returns (bool) {
+    function _isValidDeployment(address _gauge) internal view virtual override returns (bool) {
         return IStrategy(OLD_STRATEGY).isShutdown(_gauge);
     }
 
-    function _getAsset(address _gauge) internal view override returns (address) {
+    function _getAsset(address _gauge) internal view virtual override returns (address) {
         return ILiquidityGauge(_gauge).lp_token();
     }
 
-    function _setupRewardTokens(address _vault, address _gauge, address _rewardReceiver) internal override {
+    function _setupRewardTokens(address _vault, address _gauge, address _rewardReceiver) internal virtual override {
         /// Then we add the extra reward token to the reward distributor through the strategy.
         IRewardVault(_vault).addRewardToken(CVX, _rewardReceiver);
 
