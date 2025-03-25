@@ -4,14 +4,6 @@ This document contains the deployment information for the Curve Strategy contrac
 
 ## Core Contracts
 
-| Contract | Address | Source Code |
-|----------|---------|-------------|
-| CurveStrategy | [`0x204CB16D50Ca7997C684d14BA97109941Bf26c6f`](https://etherscan.io/address/0x204CB16D50Ca7997C684d14BA97109941Bf26c6f) | [CurveStrategy.sol](./src/integrations/curve/CurveStrategy.sol) |
-| CurveFactoryHarness | [`0xc6c9719d0E6a9A5Aa21B6909211F112f60893112`](https://etherscan.io/address/0xc6c9719d0E6a9A5Aa21B6909211F112f60893112) | [Deploy.s.sol](./script/curve/mainnet/Deploy.s.sol) |
-| ConvexSidecar | [`0x3F90BB1CB9D5b48856EaC9c56Ed70ed7A4D07A03`](https://etherscan.io/address/0x3F90BB1CB9D5b48856EaC9c56Ed70ed7A4D07A03) | [ConvexSidecar.sol](./src/integrations/curve/ConvexSidecar.sol) |
-
-## Dependencies & Related Contracts
-
 | Contract | Address | Source Code | Description |
 |----------|---------|-------------|-------------|
 | Protocol Controller | [`0xb3723688250cAa0413e9C2c47123aA24Dd0265d0`](https://etherscan.io/address/0xb3723688250cAa0413e9C2c47123aA24Dd0265d0) | [ProtocolController.sol](./src/core/ProtocolController.sol) | Main controller for the protocol |
@@ -19,7 +11,15 @@ This document contains the deployment information for the Curve Strategy contrac
 | Gateway | [`0xbe65a5DE37Bb6C3f58b793f8D976Bc54523733E3`](https://etherscan.io/address/0xbe65a5DE37Bb6C3f58b793f8D976Bc54523733E3) | [Gateway.sol](./src/core/Gateway.sol) | Gateway contract |
 | Reward Vault | [`0xFd05F919e139544312A69b7DfB445E775824a31C`](https://etherscan.io/address/0xFd05F919e139544312A69b7DfB445E775824a31C) | [RewardVault.sol](./src/vaults/RewardVault.sol) | Implementation for reward vaults |
 | Reward Receiver | [`0xd0e17DF211bEBbD57738F21737D9Dd30C7e77353`](https://etherscan.io/address/0xd0e17DF211bEBbD57738F21737D9Dd30C7e77353) | [RewardReceiver.sol](./src/vaults/RewardReceiver.sol) | Implementation for reward receivers |
+| CurveStrategy | [`0x204CB16D50Ca7997C684d14BA97109941Bf26c6f`](https://etherscan.io/address/0x204CB16D50Ca7997C684d14BA97109941Bf26c6f) | [CurveStrategy.sol](./src/integrations/curve/CurveStrategy.sol) | Main Curve strategy implementation |
+| CurveFactoryHarness | [`0xc6c9719d0E6a9A5Aa21B6909211F112f60893112`](https://etherscan.io/address/0xc6c9719d0E6a9A5Aa21B6909211F112f60893112) | [Deploy.s.sol](./script/curve/mainnet/Deploy.s.sol) | Test version of CurveFactory |
+| ConvexSidecar | [`0x3F90BB1CB9D5b48856EaC9c56Ed70ed7A4D07A03`](https://etherscan.io/address/0x3F90BB1CB9D5b48856EaC9c56Ed70ed7A4D07A03) | [ConvexSidecar.sol](./src/integrations/curve/ConvexSidecar.sol) | Convex integration contract |
 | Convex Sidecar Factory | [`0xa8EbaCd98CB7022961a544BCcDeeF2364d065f51`](https://etherscan.io/address/0xa8EbaCd98CB7022961a544BCcDeeF2364d065f51) | [ConvexSidecarFactory.sol](./src/integrations/curve/ConvexSidecarFactory.sol) | Factory for Convex sidecars |
+
+## External Contracts
+
+| Contract | Address | Source Code | Description |
+|----------|---------|-------------|-------------|
 | CRV Token | [`0xD533a949740bb3306d119CC777fa900bA034cd52`](https://etherscan.io/address/0xD533a949740bb3306d119CC777fa900bA034cd52) | [CRV.sol](https://etherscan.io/token/0xD533a949740bb3306d119CC777fa900bA034cd52#code) | Curve DAO Token |
 | Minter Contract | [`0xd061D61a4d941c39E5453435B6345Dc261C2fcE0`](https://etherscan.io/address/0xd061D61a4d941c39E5453435B6345Dc261C2fcE0) | [Minter.vy](https://etherscan.io/address/0xd061D61a4d941c39E5453435B6345Dc261C2fcE0#code) | Curve Token Minter |
 
