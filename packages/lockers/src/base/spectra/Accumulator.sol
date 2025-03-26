@@ -18,14 +18,14 @@ contract Accumulator is BaseAccumulator {
     //////////////////////////////////////////////////////
 
     /// @notice SPECTRA Rewards distributor address.
-    address public constant rewardsDistributor = 0xBE6271FA207D2cD29C7F9efa90FC725C18560bff;
+    ISpectraRewardsDistributor public constant rewardsDistributor = ISpectraRewardsDistributor(0xBE6271FA207D2cD29C7F9efa90FC725C18560bff);
 
     //////////////////////////////////////////////////////
     /// --- VARIABLES
     //////////////////////////////////////////////////////
 
     /// @notice sdSPECTRA depositor address.
-    address public depositor;
+    address public immutable depositor;
 
     /// @notice sdSPECTRA address.
     address public immutable sdSPECTRA;
@@ -57,11 +57,11 @@ contract Accumulator is BaseAccumulator {
     function claimAndNotifyAll(bool, bool) external override {
         // If SPECTRA are available for rebasing, trigger rebase
         if (
-            ISpectraRewardsDistributor(rewardsDistributor).claimable(
+            rewardsDistributor.claimable(
                 ISdSpectraDepositor(depositor).spectraLockedTokenId()
             ) > 0
         ) {
-            ISpectraRewardsDistributor(rewardsDistributor).claim(ISdSpectraDepositor(depositor).spectraLockedTokenId());
+            rewardsDistributor.claim(ISdSpectraDepositor(depositor).spectraLockedTokenId());
         }
         // Call depositor to mint rewards
         ISdSpectraDepositor(depositor).mintRewards();
