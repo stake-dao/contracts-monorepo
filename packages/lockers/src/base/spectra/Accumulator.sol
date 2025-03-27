@@ -18,7 +18,8 @@ contract Accumulator is BaseAccumulator {
     //////////////////////////////////////////////////////
 
     /// @notice SPECTRA Rewards distributor address.
-    ISpectraRewardsDistributor public constant rewardsDistributor = ISpectraRewardsDistributor(0xBE6271FA207D2cD29C7F9efa90FC725C18560bff);
+    ISpectraRewardsDistributor public constant rewardsDistributor =
+        ISpectraRewardsDistributor(0xBE6271FA207D2cD29C7F9efa90FC725C18560bff);
 
     //////////////////////////////////////////////////////
     /// --- VARIABLES
@@ -56,11 +57,7 @@ contract Accumulator is BaseAccumulator {
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4.
     function claimAndNotifyAll(bool, bool) external override {
         // If SPECTRA are available for rebasing, trigger rebase
-        if (
-            rewardsDistributor.claimable(
-                ISdSpectraDepositor(depositor).spectraLockedTokenId()
-            ) > 0
-        ) {
+        if (rewardsDistributor.claimable(ISdSpectraDepositor(depositor).spectraLockedTokenId()) > 0) {
             rewardsDistributor.claim(ISdSpectraDepositor(depositor).spectraLockedTokenId());
         }
         // Call depositor to mint rewards

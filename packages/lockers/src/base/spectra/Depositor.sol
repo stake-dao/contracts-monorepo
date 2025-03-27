@@ -25,7 +25,8 @@ contract Depositor is SafeModuleDepositor {
     ISpectraLocker public constant spectraLocker = ISpectraLocker(0x6a89228055C7C28430692E342F149f37462B478B);
 
     /// @notice Spectra rewards distributor
-    ISpectraRewardsDistributor public constant spectraRewardDistributor = ISpectraRewardsDistributor(0xBE6271FA207D2cD29C7F9efa90FC725C18560bff);
+    ISpectraRewardsDistributor public constant spectraRewardDistributor =
+        ISpectraRewardsDistributor(0xBE6271FA207D2cD29C7F9efa90FC725C18560bff);
 
     /// @notice Token ID representing the locked SPECTRA tokens in the locker ERC721
     uint256 public spectraLockedTokenId;
@@ -67,12 +68,9 @@ contract Depositor is SafeModuleDepositor {
     /// @param _locker Address of the SD locker contract
     /// @param _minter Address of the sdSPECTRA minter contract
     /// @param _gauge Address of the sdSPECTRA-gauge contract
-    constructor(
-        address _token,
-        address _locker,
-        address _minter,
-        address _gauge
-    ) SafeModuleDepositor(_token, _locker, _minter, _gauge, 4 * 365 days) { }
+    constructor(address _token, address _locker, address _minter, address _gauge)
+        SafeModuleDepositor(_token, _locker, _minter, _gauge, 4 * 365 days)
+    {}
 
     ////////////////////////////////////////////////////////////////
     /// --- BASE CONTRACT OVERRIDE
@@ -139,7 +137,7 @@ contract Depositor is SafeModuleDepositor {
             if (spectraLocker.ownerOf(_tokenIds[index]) != msg.sender) revert NotOwnerOfToken(_tokenIds[index]);
 
             // Reset votes of the veNFT
-            if (spectraLocker.voted(_tokenIds[index])){
+            if (spectraLocker.voted(_tokenIds[index])) {
                 _resetVotes(_tokenIds[index]);
             }
 
@@ -242,7 +240,8 @@ contract Depositor is SafeModuleDepositor {
     /// @param _tokenId token ID to reset
     function _resetVotes(uint256 _tokenId) internal {
         _executeTransaction(
-            address(spectraLocker.voter()), abi.encodeWithSelector(ISpectraVoter.reset.selector, address(spectraLocker), _tokenId)
+            address(spectraLocker.voter()),
+            abi.encodeWithSelector(ISpectraVoter.reset.selector, address(spectraLocker), _tokenId)
         );
     }
 

@@ -5,6 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeProxyFactory} from "@safe/contracts/proxies/SafeProxyFactory.sol";
 import {Safe, Enum} from "@safe/contracts/Safe.sol";
 import {DAO} from "address-book/src/dao/59144.sol";
+
 import "forge-std/src/Script.sol";
 import "script/common/DeployAccumulator.sol";
 import {IDepositor} from "src/common/interfaces/IDepositor.sol";
@@ -144,7 +145,11 @@ contract Deploy is DeployAccumulator {
         sdZero = address((new SdToken("Stake DAO ZeroLend", "sdZERO")));
 
         // Deploy gauge.
-        liquidityGauge = deployCode("vyper/LiquidityGaugeV4XChain.vy", abi.encode(sdZero, DAO.MAIN_DEPLOYER));
+        /// For some reason, the deployCode function is not working.
+        /// liquidityGauge = deployCode("vyper/LiquidityGaugeV4XChain.vy", abi.encode(sdZero, DAO.MAIN_DEPLOYER));
+        bytes memory liquidityGaugeBytecode = vm.getCode("vyper/LiquidityGaugeV4XChain.vy");
+
+        liquidityGauge = address(deployBytecode(liquidityGaugeBytecode, abi.encode(sdZero, DAO.MAIN_DEPLOYER)));
 
         // Deploy depositor.
         depositor =
@@ -182,5 +187,16 @@ contract Deploy is DeployAccumulator {
         IDepositor(depositor).transferGovernance(DAO.GOVERNANCE);
 
         _safeTransferSafeOwnershipToGovernance();
+    }
+
+    function deployBytecode(bytes memory _bytecode, bytes memory _constructorData)
+        internal
+        returns (address _deployed)
+    {
+        bytes memory bytecode = abi.encodePacked(_bytecode, _constructorData);
+        assembly {
+            _deployed := create(0, add(bytecode, 0x20), mload(bytecode))
+        }
+        require(_deployed != address(0), "Failed to deploy contract");
     }
 }
