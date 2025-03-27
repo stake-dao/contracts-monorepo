@@ -135,7 +135,7 @@ contract Depositor is SafeModuleDepositor {
     function _mergeLocks(uint256[] calldata _tokenIds) internal returns (uint256 _amount) {
         if (_tokenIds.length == 0) revert EmptyTokenIdList();
 
-        for (uint256 index = 0; index < _tokenIds.length;) {
+        for (uint256 index; index < _tokenIds.length;) {
             if (spectraLocker.ownerOf(_tokenIds[index]) != msg.sender) revert NotOwnerOfToken(_tokenIds[index]);
 
             // Reset votes of the veNFT
