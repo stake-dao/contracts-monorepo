@@ -9,6 +9,10 @@ import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
 /// @notice Base factory contract for deploying protocol-specific sidecar instances
 /// @dev Creates deterministic minimal proxies for sidecar implementations
 abstract contract SidecarFactory is ISidecarFactory {
+    //////////////////////////////////////////////////////
+    // --- CONSTANTS & IMMUTABLES
+    //////////////////////////////////////////////////////
+
     /// @notice The protocol ID
     bytes4 public immutable PROTOCOL_ID;
 
@@ -27,8 +31,16 @@ abstract contract SidecarFactory is ISidecarFactory {
     /// @notice The implementation address
     address public immutable IMPLEMENTATION;
 
+    //////////////////////////////////////////////////////
+    // --- STATE VARIABLES
+    //////////////////////////////////////////////////////
+
     /// @notice Mapping of gauges to sidecars
     mapping(address => address) public sidecar;
+
+    //////////////////////////////////////////////////////
+    // --- ERRORS & EVENTS
+    //////////////////////////////////////////////////////
 
     /// @notice Error emitted when the gauge is invalid
     error InvalidGauge();
@@ -45,10 +57,16 @@ abstract contract SidecarFactory is ISidecarFactory {
     /// @param args Additional arguments used for creation
     event SidecarCreated(address indexed gauge, address indexed sidecar, bytes args);
 
-    /// @notice Constructor
+    //////////////////////////////////////////////////////
+    // --- CONSTRUCTOR
+    //////////////////////////////////////////////////////
+
+    /// @notice Constructor for the sidecar factory
+    /// @dev Retrieves and store the accountant, reward token, and strategy given the arguments
     /// @param _implementation Address of the sidecar implementation
     /// @param _protocolController Address of the protocol controller
     /// @param _protocolId Protocol ID
+    /// @custom:throws ZeroAddress if the implementation or protocol controller is zero address
     constructor(bytes4 _protocolId, address _implementation, address _protocolController) {
         if (_implementation == address(0) || _protocolController == address(0)) {
             revert ZeroAddress();

@@ -43,7 +43,7 @@ contract CakeFeeReceiver {
     mapping(address => address) public isAccumulator;
 
     ////////////////////////////////////////////////////////////
-    /// --- EVENTS & ERRORS ---
+    // --- EVENTS & ERRORS ---
     ////////////////////////////////////////////////////////////
 
     /// @notice Event emitted when the reward token is splitted between the different parties
@@ -79,7 +79,7 @@ contract CakeFeeReceiver {
     error INVALID_REPARTITION();
 
     //////////////////////////////////////////////////////
-    /// --- MODIFIERS
+    // --- MODIFIERS
     //////////////////////////////////////////////////////
 
     /// @notice Modifier to check if the caller is the governance
@@ -106,7 +106,7 @@ contract CakeFeeReceiver {
     }
 
     ////////////////////////////////////////////////////////////
-    /// --- VIEW FUNCTIONS ---
+    // --- VIEW FUNCTIONS ---
     ////////////////////////////////////////////////////////////
 
     function getRepartition(address rewardToken)
@@ -155,7 +155,7 @@ contract CakeFeeReceiver {
     }
 
     //////////////////////////////////////////////////////
-    /// --- GOVERNANCE FUNCTIONS
+    // --- GOVERNANCE FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Set the accumulator for a reward token

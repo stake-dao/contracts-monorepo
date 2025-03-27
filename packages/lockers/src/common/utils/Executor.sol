@@ -17,7 +17,7 @@ contract Executor {
     mapping(address => bool) public allowed; // contract -> allowed or not
 
     ////////////////////////////////////////////////////////////////
-    /// --- EVENTS & ERRORS
+    // --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Error emitted when input address is null

@@ -17,7 +17,7 @@ contract Accumulator is BaseAccumulator {
     address public constant FEE_DISTRIBUTOR = 0xd116513EEa4Efe3908212AfBAeFC76cb29245681;
 
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
     /// @notice Constructor
@@ -32,7 +32,7 @@ contract Accumulator is BaseAccumulator {
     }
 
     //////////////////////////////////////////////////////
-    /// --- OVERRIDDEN FUNCTIONS
+    // --- OVERRIDDEN FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4

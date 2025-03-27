@@ -2,15 +2,12 @@
 pragma solidity 0.8.28;
 
 import "forge-std/src/Script.sol";
-
 import "script/Base.sol";
-
-import {CurveFactory} from "src/integrations/curve/CurveFactory.sol";
-import {CurveStrategy} from "src/integrations/curve/CurveStrategy.sol";
-import {CurveAllocator} from "src/integrations/curve/CurveAllocator.sol";
-
-import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
-import {ConvexSidecarFactory} from "src/integrations/curve/ConvexSidecarFactory.sol";
+import { ConvexSidecar } from "src/integrations/curve/ConvexSidecar.sol";
+import { ConvexSidecarFactory } from "src/integrations/curve/ConvexSidecarFactory.sol";
+import { CurveAllocator } from "src/integrations/curve/CurveAllocator.sol";
+import { CurveFactory } from "src/integrations/curve/CurveFactory.sol";
+import { CurveStrategy } from "src/integrations/curve/CurveStrategy.sol";
 
 /// @notice A harness contract for the CurveFactory.
 /// @dev TODO: Remove this for the real deployment.

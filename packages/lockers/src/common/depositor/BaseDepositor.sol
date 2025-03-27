@@ -45,7 +45,7 @@ abstract contract BaseDepositor {
     address public futureGovernance;
 
     ////////////////////////////////////////////////////////////////
-    /// --- EVENTS & ERRORS
+    // --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Throws if caller is not the governance.
@@ -73,7 +73,7 @@ abstract contract BaseDepositor {
     event GovernanceUpdateAccepted(address newGovernance);
 
     ////////////////////////////////////////////////////////////////
-    /// --- MODIFIERS
+    // --- MODIFIERS
     ///////////////////////////////////////////////////////////////
 
     modifier onlyGovernance() {
@@ -102,7 +102,7 @@ abstract contract BaseDepositor {
     }
 
     ////////////////////////////////////////////////////////////////
-    /// --- DEPOSIT & LOCK
+    // --- DEPOSIT & LOCK
     ///////////////////////////////////////////////////////////////
 
     function _createLockFrom(address _from, uint256 _amount) internal virtual {
@@ -218,7 +218,7 @@ abstract contract BaseDepositor {
     }
 
     ////////////////////////////////////////////////////////////////
-    /// --- GOVERNANCE PARAMETERS
+    // --- GOVERNANCE PARAMETERS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Transfer the governance to a new address.

@@ -15,7 +15,7 @@ contract Accumulator is BaseAccumulator {
     address public constant MASTERCHEF_STRATEGY = 0x632418eC44Bf27478a3dfC3591f4c30fD8D012ab;
 
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
     /// @notice Constructor
@@ -29,7 +29,7 @@ contract Accumulator is BaseAccumulator {
     }
 
     //////////////////////////////////////////////////////
-    /// --- MUTATIVE FUNCTIONS
+    // --- MUTATIVE FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Claim CAKE rewards for the locker and notify all to the LGV4

@@ -29,7 +29,7 @@ abstract contract VeMAVLocker {
     address public immutable veToken;
 
     ////////////////////////////////////////////////////////////////
-    /// --- EVENTS & ERRORS
+    // --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Event emitted when tokens are released from the locker.
@@ -67,7 +67,7 @@ abstract contract VeMAVLocker {
     error LOCK_ALREADY_EXISTS();
 
     ////////////////////////////////////////////////////////////////
-    /// --- MODIFIERS
+    // --- MODIFIERS
     ///////////////////////////////////////////////////////////////
 
     modifier onlyGovernance() {
@@ -92,7 +92,7 @@ abstract contract VeMAVLocker {
     }
 
     ////////////////////////////////////////////////////////////////
-    /// --- LOCKER MANAGEMENT
+    // --- LOCKER MANAGEMENT
     ///////////////////////////////////////////////////////////////
 
     /// @notice Create a lock for the contract on the Voting Escrow contract.
@@ -129,7 +129,7 @@ abstract contract VeMAVLocker {
     }
 
     ////////////////////////////////////////////////////////////////
-    /// --- GOVERNANCE PARAMETERS
+    // --- GOVERNANCE PARAMETERS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Transfer the governance to a new address.

@@ -13,7 +13,7 @@ abstract contract Sidecar is ISidecar {
     using SafeERC20 for IERC20;
 
     //////////////////////////////////////////////////////
-    /// --- IMMUTABLES
+    // --- IMMUTABLES
     //////////////////////////////////////////////////////
 
     /// @notice The protocol identifier
@@ -29,14 +29,14 @@ abstract contract Sidecar is ISidecar {
     IProtocolController public immutable PROTOCOL_CONTROLLER;
 
     //////////////////////////////////////////////////////
-    /// --- STORAGE
+    // --- STORAGE
     //////////////////////////////////////////////////////
 
     /// @notice Whether the sidecar has been initialized
     bool private _initialized;
 
     //////////////////////////////////////////////////////
-    /// --- ERRORS
+    // --- ERRORS
     //////////////////////////////////////////////////////
 
     /// @notice Error thrown when the caller is not the strategy
@@ -52,7 +52,7 @@ abstract contract Sidecar is ISidecar {
     error NotInitialized();
 
     //////////////////////////////////////////////////////
-    /// --- MODIFIERS
+    // --- MODIFIERS
     //////////////////////////////////////////////////////
 
     /// @notice Ensures the caller is the strategy
@@ -63,7 +63,7 @@ abstract contract Sidecar is ISidecar {
     }
 
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
     /// @notice Initializes the sidecar with protocol ID, accountant, and protocol controller
@@ -78,7 +78,7 @@ abstract contract Sidecar is ISidecar {
     }
 
     //////////////////////////////////////////////////////
-    /// --- EXTERNAL FUNCTIONS
+    // --- EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Initializes the sidecar
@@ -106,25 +106,25 @@ abstract contract Sidecar is ISidecar {
     }
 
     /// @notice Claims pending rewards from the sidecar
-    /// @custom:throws OnlyAccountant If the caller is not the accountant
+    /// @custom:throws OnlyStrategy If the caller is not the strategy
     function claim() external onlyStrategy returns (uint256) {
         return _claim();
     }
 
     //////////////////////////////////////////////////////
-    /// --- IMMUTABLES
+    // --- IMMUTABLES
     //////////////////////////////////////////////////////
 
     /// @notice Returns the asset of the sidecar
-    /// @return The asset of the sidecar
+    /// @return _ The asset of the sidecar
     function asset() public view virtual returns (IERC20);
 
     /// @notice Returns the reward receiver of the sidecar
-    /// @return The reward receiver of the sidecar
+    /// @return _ The reward receiver of the sidecar
     function rewardReceiver() public view virtual returns (address);
 
     //////////////////////////////////////////////////////
-    /// --- INTERNAL VIRTUAL FUNCTIONS
+    // --- INTERNAL VIRTUAL FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Initializes the sidecar
@@ -148,11 +148,11 @@ abstract contract Sidecar is ISidecar {
 
     /// @notice Returns the balance of the sidecar
     /// @dev Must be implemented by derived sidecars to handle protocol-specific balance calculation
-    /// @return The balance of the sidecar
+    /// @return _ The balance of the sidecar
     function balanceOf() public view virtual returns (uint256);
 
     /// @notice Returns the pending rewards of the sidecar
     /// @dev Must be implemented by derived sidecars to handle protocol-specific reward calculation
-    /// @return The pending rewards of the sidecar
+    /// @return _ The pending rewards of the sidecar
     function getPendingRewards() public view virtual returns (uint256);
 }

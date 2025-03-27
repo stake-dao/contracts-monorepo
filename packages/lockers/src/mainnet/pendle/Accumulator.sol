@@ -36,7 +36,7 @@ contract Accumulator is BaseAccumulator {
     mapping(uint256 => uint256) public rewards; // period -> reward amount
 
     ////////////////////////////////////////////////////////////////
-    /// --- EVENTS & ERRORS
+    // --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Error emitted when a token not supported is used.
@@ -55,7 +55,7 @@ contract Accumulator is BaseAccumulator {
     error ONGOING_REWARD();
 
     ////////////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     ////////////////////////////////////////////////////////////
 
     constructor(address _gauge, address _locker, address _governance)

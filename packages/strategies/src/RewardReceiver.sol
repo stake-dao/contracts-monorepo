@@ -19,7 +19,7 @@ contract RewardReceiver is IRewardReceiver {
     using SafeERC20 for IERC20;
 
     //////////////////////////////////////////////////////
-    /// --- ERRORS
+    // --- ERRORS
     //////////////////////////////////////////////////////
 
     /// @notice Throws if the reward token is not valid.
@@ -29,7 +29,7 @@ contract RewardReceiver is IRewardReceiver {
     error NoRewards();
 
     //////////////////////////////////////////////////////
-    /// --- IMMUTABLES
+    // --- IMMUTABLES
     //////////////////////////////////////////////////////
 
     /// @notice Address of the reward vault contract.
@@ -42,13 +42,14 @@ contract RewardReceiver is IRewardReceiver {
     }
 
     //////////////////////////////////////////////////////
-    /// --- EXTERNAL FUNCTIONS
+    // --- EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Distributes all rewards to the reward vault.
     /// @dev Iterates through all reward tokens registered in the vault,
     ///      checks balances, and forwards any available rewards.
     ///      This function is typically called after a gauge has sent rewards to this contract.
+    /// @custom:throws NoRewards If there are no rewards to distribute.
     function distributeRewards() external {
         // Get the list of reward tokens from the reward vault
         address[] memory tokens = rewardVault().getRewardTokens();
@@ -65,10 +66,11 @@ contract RewardReceiver is IRewardReceiver {
     }
 
     /// @notice Distributes a specific reward token to the reward vault.
-    /// @param token The reward token to distribute.
+    /// @param token The ERC20 reward token to distribute.
     /// @dev Validates that the token is accepted by the vault before attempting distribution.
     ///      This function is useful when only a specific reward token needs to be distributed.
     /// @custom:throws InvalidToken If the token is not registered as a valid reward token in the vault.
+    /// @custom:throws NoRewards If there are no reward tokens to distribute.
     function distributeRewardToken(IERC20 token) external {
         // Check if the token is a valid reward token in the vault
         if (!rewardVault().isRewardToken(address(token))) revert InvalidToken();
@@ -84,7 +86,7 @@ contract RewardReceiver is IRewardReceiver {
     }
 
     //////////////////////////////////////////////////////
-    /// --- INTERNAL FUNCTIONS
+    // --- INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Deposit rewards to the reward vault.

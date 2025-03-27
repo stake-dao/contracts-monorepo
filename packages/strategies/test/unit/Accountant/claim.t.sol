@@ -435,7 +435,7 @@ contract Accountant__claim is AccountantBaseTest {
     }
 
     //////////////////////////////////////////////////////
-    /// --- UTILITARY FUNCTIONS
+    // --- UTILITARY FUNCTIONS
     //////////////////////////////////////////////////////
 
     function _cheat_allowSender() internal {

@@ -27,7 +27,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     bytes32 internal constant FLUSH_AMOUNT_SLOT = keccak256("strategy.flushAmount");
 
     //////////////////////////////////////////////////////
-    /// --- ERRORS & EVENTS
+    // --- ERRORS & EVENTS
     //////////////////////////////////////////////////////
 
     /// @notice Error thrown when the caller is not the vault for the gauge
@@ -70,7 +70,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     event Rebalance(address indexed gauge, address[] targets, uint256[] amounts);
 
     //////////////////////////////////////////////////////
-    /// --- MODIFIERS
+    // --- MODIFIERS
     //////////////////////////////////////////////////////
 
     /// @notice Ensures the caller is the vault registered for the gauge
@@ -100,7 +100,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     }
 
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
     /// @notice Initializes the strategy with registry, protocol ID, and locker and gateway
@@ -113,7 +113,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     {}
 
     //////////////////////////////////////////////////////
-    /// --- EXTERNAL FUNCTIONS
+    // --- EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Deposits assets according to the provided allocation
@@ -194,6 +194,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @param extraData Additional data needed for harvesting (protocol-specific)
     /// @return pendingRewards The pending rewards after harvesting
     /// @dev Called using delegatecall from the Accountant contract
+    /// @custom:throws OnlyAccountant If the caller is not the accountant
     function harvest(address gauge, bytes memory extraData)
         external
         override
@@ -205,6 +206,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
 
     /// @notice Flushes the reward token to the locker
     /// @dev Only allowed to be called by the accountant during harvest operation
+    /// @custom:throws OnlyAccountant If the caller is not the accountant
     function flush() public onlyAccountant {
         // Get flush amount from transient storage.
         uint256 flushAmount = _getFlushAmount();
@@ -221,6 +223,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @param gauge The gauge to shut down
     /// @dev Only allowed to be called by permissioned addresses, or anyone if the gauge/system is shutdown
     /// @custom:throws OnlyAllowed If the caller is not allowed and the gauge is not shutdown
+    /// @custom:throws AlreadyShutdown If the balance of the gauge is zero
     function shutdown(address gauge) public onlyAllowed(gauge) {
         require(balanceOf(gauge) > 0, AlreadyShutdown());
 
@@ -241,6 +244,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
 
     /// @notice Rebalances the strategy
     /// @param gauge The gauge to rebalance
+    /// @custom:throws RebalanceNotNeeded If the allocation has only one target
     function rebalance(address gauge) external {
         /// 1. Get the allocator.
         address allocator = PROTOCOL_CONTROLLER.allocator(PROTOCOL_ID);
@@ -297,7 +301,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     }
 
     //////////////////////////////////////////////////////
-    /// --- INTERNAL HELPER FUNCTIONS
+    // --- INTERNAL HELPER FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Gets allocation targets for a gauge
@@ -316,7 +320,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     function _withdrawFromAllTargets(address asset, address gauge, address[] memory targets, address receiver)
         internal
     {
-        for (uint256 i = 0; i < targets.length; i++) {
+        for (uint256 i; i < targets.length; i++) {
             address target = targets[i];
             uint256 balance;
 
@@ -372,11 +376,11 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     }
 
     //////////////////////////////////////////////////////
-    /// --- INTERNAL VIRTUAL FUNCTIONS
+    // --- INTERNAL VIRTUAL FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Gets the flush amount from transient storage
-    /// @return The flush amount
+    /// @return _ The flush amount
     function _getFlushAmount() internal view virtual returns (uint256) {
         return FLUSH_AMOUNT_SLOT.asUint256().tload();
     }
@@ -400,7 +404,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @notice Synchronizes state of pending rewards.
     /// @dev Must be implemented by derived strategies to handle protocol-specific reward collection
     /// @param gauge The gauge to synchronize
-    /// @return Pending rewards collected during synchronization
+    /// @return _ Pending rewards collected during synchronization
     function _sync(address gauge) internal virtual returns (PendingRewards memory);
 
     /// @notice Harvests rewards from the locker

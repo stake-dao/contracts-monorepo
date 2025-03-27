@@ -13,7 +13,7 @@ contract Accumulator is BaseAccumulator {
     address public constant DYFI = 0x41252E8691e964f7DE35156B68493bAb6797a275;
 
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
     /// @notice Constructor
@@ -29,7 +29,7 @@ contract Accumulator is BaseAccumulator {
     }
 
     //////////////////////////////////////////////////////
-    /// --- OVERRIDDEN FUNCTIONS
+    // --- OVERRIDDEN FUNCTIONS
     //////////////////////////////////////////////////////
 
     function claimAndNotifyAll(bool notifySDT, bool claimFeeStrategy) external override {

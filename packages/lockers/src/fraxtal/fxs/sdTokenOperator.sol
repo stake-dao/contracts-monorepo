@@ -28,7 +28,7 @@ contract sdTokenOperator is IOptimismMintableERC20, FXTLDelegation {
     mapping(address => bool) public operators;
 
     ////////////////////////////////////////////////////////////////
-    /// --- EVENTS & ERRORS
+    // --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Throwed when an operator has already allowed
@@ -65,7 +65,7 @@ contract sdTokenOperator is IOptimismMintableERC20, FXTLDelegation {
     }
 
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
     /// @notice Constructor

@@ -10,10 +10,16 @@ import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 /// @dev Manages protocol components, permissions, and shutdown functionality
 contract ProtocolController is IProtocolController, Ownable2Step {
     //////////////////////////////////////////////////////
-    /// --- STORAGE STRUCTURES
+    // --- STORAGE STRUCTURES
     //////////////////////////////////////////////////////
 
     /// @notice Struct to store protocol components in a single storage slot
+    ///         - `strategy` is the address of the strategy contract
+    ///         - `allocator` is the address of the allocator contract
+    ///         - `accountant` is the address of the accountant contract
+    ///         - `feeReceiver` is the address of the fee receiver contract
+    ///         - `isShutdown` is a boolean flag to indicate if the protocol is shutdown
+    /// @custom:storage Uses 4 storage slots
     struct ProtocolComponents {
         address strategy;
         address allocator;
@@ -23,6 +29,12 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     }
 
     /// @notice Struct to store gauge-related information
+    ///         - `vault` is the address of the vault contract
+    ///         - `asset` is the address of the asset contract
+    ///         - `rewardReceiver` is the address of the reward receiver contract
+    ///         - `protocolId` is the protocol identifier used to retrieve the protocol components
+    ///         - `isShutdown` is a boolean flag to indicate if the gauge is shutdown
+    /// @custom:storage Uses 3 storage slots
     struct Gauge {
         address vault;
         address asset;
@@ -32,28 +44,39 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     }
 
     //////////////////////////////////////////////////////
-    /// --- STATE VARIABLES
+    // --- CONSTANTS & IMMUTABLES
+    //////////////////////////////////////////////////////
+
+    string internal constant COMPONENT_ID_ACCOUNTANT = "Accountant";
+    string internal constant COMPONENT_ID_FEE_RECEIVER = "FeeReceiver";
+    string internal constant COMPONENT_ID_HARVESTER = "Harvester";
+    string internal constant COMPONENT_ID_ALLOCATOR = "Allocator";
+    string internal constant COMPONENT_ID_STRATEGY = "Strategy";
+
+    //////////////////////////////////////////////////////
+    // --- STATE VARIABLES
     //////////////////////////////////////////////////////
     /// @notice Mapping of gauge address to Gauge struct
-    mapping(address => Gauge) public gauge;
+    mapping(address gauge => Gauge gaugeData) public gauge;
 
     /// @notice Mapping of registrar addresses to their permission status (1 = allowed, 0 = not allowed)
-    mapping(address => bool) public registrar;
+    mapping(address registrar => bool isAllowed) public registrar;
 
     /// @notice Mapping of addresses that can set permissions
-    mapping(address => bool) public permissionSetters;
+    mapping(address setter => bool isAllowed) public permissionSetters;
 
     /// @notice Mapping of protocol ID to its components
-    mapping(bytes4 => ProtocolComponents) internal _protocolComponents;
+    mapping(bytes4 protocolId => ProtocolComponents components) internal _protocolComponents;
 
     /// @notice Mapping of gauge address to its valid allocation targets
-    mapping(address => mapping(address => bool)) internal _isValidAllocationTargets;
+    mapping(address gauge => mapping(address target => bool isValid)) internal _isValidAllocationTargets;
 
     /// @notice Mapping of contract to caller to function selector to permission
-    mapping(address => mapping(address => mapping(bytes4 => bool))) internal _permissions;
+    mapping(address contractAddress => mapping(address caller => mapping(bytes4 selector => bool isAllowed))) internal
+        _permissions;
 
     //////////////////////////////////////////////////////
-    /// --- ERRORS & EVENTS
+    // --- ERRORS & EVENTS
     //////////////////////////////////////////////////////
 
     /// @notice Event emitted when a protocol component is set
@@ -61,12 +84,6 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @param COMPONENT_ID The component identifier ("Strategy", "Allocator", "Harvester", "Accountant", "FeeReceiver")
     /// @param component The component address
     event ProtocolComponentSet(bytes4 indexed protocolId, string indexed COMPONENT_ID, address indexed component);
-
-    string internal constant COMPONENT_ID_ACCOUNTANT = "Accountant";
-    string internal constant COMPONENT_ID_FEE_RECEIVER = "FeeReceiver";
-    string internal constant COMPONENT_ID_HARVESTER = "Harvester";
-    string internal constant COMPONENT_ID_ALLOCATOR = "Allocator";
-    string internal constant COMPONENT_ID_STRATEGY = "Strategy";
 
     /// @notice Event emitted when a vault is registered
     /// @param gauge The gauge address
@@ -113,25 +130,25 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     error NotPermissionSetter();
 
     //////////////////////////////////////////////////////
-    /// --- MODIFIERS
+    // --- MODIFIERS
     //////////////////////////////////////////////////////
 
     /// @notice Modifier to restrict function access to registrars or owner
-    /// @custom:reverts OnlyRegistrar if the caller is not a registrar
+    /// @custom:throws OnlyRegistrar if the caller is not a registrar
     modifier onlyRegistrar() {
         require(registrar[msg.sender], OnlyRegistrar());
         _;
     }
 
     /// @notice Modifier to restrict function access to permission setters or owner
-    /// @custom:reverts NotPermissionSetter if the caller is not a permission setter
+    /// @custom:throws NotPermissionSetter if the caller is not a permission setter
     modifier onlyPermissionSetter() {
         require(permissionSetters[msg.sender] || msg.sender == owner(), NotPermissionSetter());
         _;
     }
 
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
     /// @notice Constructor for the ProtocolController
@@ -140,13 +157,13 @@ contract ProtocolController is IProtocolController, Ownable2Step {
 
     //////////////////////////////////////////////////////
     //////////////////////////////////////////////////////
-    /// --- PERMISSION MANAGEMENT
+    // --- PERMISSION MANAGEMENT
     //////////////////////////////////////////////////////
 
     /// @notice Sets or revokes registrar permission for an address
     /// @param _registrar The registrar address
     /// @param _allowed Whether the registrar is allowed to register vaults
-    /// @custom:reverts ZeroAddress if the registrar address is zero
+    /// @custom:throws ZeroAddress if the registrar address is zero
     function setRegistrar(address _registrar, bool _allowed) external onlyOwner {
         require(_registrar != address(0), ZeroAddress());
         registrar[_registrar] = _allowed;
@@ -156,7 +173,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @notice Sets or revokes permission setter status for an address
     /// @param _setter The permission setter address
     /// @param _allowed Whether the address is allowed to set permissions
-    /// @custom:reverts ZeroAddress Throws an error if the permission setter address is zero
+    /// @custom:throws ZeroAddress Throws an error if the permission setter address is zero
     function setPermissionSetter(address _setter, bool _allowed) external onlyOwner {
         require(_setter != address(0), ZeroAddress());
         permissionSetters[_setter] = _allowed;
@@ -164,11 +181,13 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     }
 
     /// @notice Sets a permission for a contract, caller, and function selector
+    /// @dev Can only be called by the correct permission setter
     /// @param _contract The contract address
     /// @param _caller The caller address
     /// @param _selector The function selector
     /// @param _allowed Whether the caller is allowed to call the function
-    /// @custom:reverts ZeroAddress if the contract or caller address is zero
+    /// @custom:throws ZeroAddress if the contract or caller address is zero
+    /// @custom:throws NotPermissionSetter if the caller is not a permission setter
     function setPermission(address _contract, address _caller, bytes4 _selector, bool _allowed)
         external
         onlyPermissionSetter
@@ -179,13 +198,15 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     }
 
     //////////////////////////////////////////////////////
-    /// --- PROTOCOL COMPONENT MANAGEMENT
+    // --- PROTOCOL COMPONENT MANAGEMENT
     //////////////////////////////////////////////////////
 
     /// @notice Sets a protocol strategy
+    /// @dev Can only be called by the owner
     /// @param protocolId The protocol identifier
     /// @param _strategy The strategy address
-    /// @custom:reverts ZeroAddress if the strategy address is zero
+    /// @custom:throws ZeroAddress if the strategy address is zero
+    /// @custom:throws OnlyOwner if the caller is not the owner
     function setStrategy(bytes4 protocolId, address _strategy) external onlyOwner {
         require(_strategy != address(0), ZeroAddress());
         _protocolComponents[protocolId].strategy = _strategy;
@@ -193,9 +214,11 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     }
 
     /// @notice Sets a protocol allocator
+    /// @dev Can only be called by the owner
     /// @param protocolId The protocol identifier
     /// @param _allocator The allocator address
-    /// @custom:reverts ZeroAddress if the allocator address is zero
+    /// @custom:throws ZeroAddress if the allocator address is zero
+    /// @custom:throws OnlyOwner if the caller is not the owner
     function setAllocator(bytes4 protocolId, address _allocator) external onlyOwner {
         require(_allocator != address(0), ZeroAddress());
         _protocolComponents[protocolId].allocator = _allocator;
@@ -203,9 +226,11 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     }
 
     /// @notice Sets a protocol accountant
+    /// @dev Can only be called by the owner
     /// @param protocolId The protocol identifier
     /// @param _accountant The accountant address
-    /// @custom:reverts ZeroAddress if the accountant address is zero
+    /// @custom:throws ZeroAddress if the accountant address is zero
+    /// @custom:throws OnlyOwner if the caller is not the owner
     function setAccountant(bytes4 protocolId, address _accountant) external onlyOwner {
         require(_accountant != address(0), ZeroAddress());
         _protocolComponents[protocolId].accountant = _accountant;
@@ -213,9 +238,11 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     }
 
     /// @notice Sets a protocol fee receiver
+    /// @dev Can only be called by the owner
     /// @param protocolId The protocol identifier
     /// @param _feeReceiver The fee receiver address
-    /// @custom:reverts ZeroAddress if the fee receiver address is zero
+    /// @custom:throws ZeroAddress if the fee receiver address is zero
+    /// @custom:throws OnlyOwner if the caller is not the owner
     function setFeeReceiver(bytes4 protocolId, address _feeReceiver) external onlyOwner {
         require(_feeReceiver != address(0), ZeroAddress());
         _protocolComponents[protocolId].feeReceiver = _feeReceiver;
@@ -223,7 +250,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     }
 
     //////////////////////////////////////////////////////
-    /// --- VAULT REGISTRATION & SHUTDOWN
+    // --- VAULT REGISTRATION & SHUTDOWN
     //////////////////////////////////////////////////////
 
     /// @notice Registers a vault for a gauge
@@ -233,7 +260,8 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @param _asset The asset address
     /// @param _rewardReceiver The reward receiver address
     /// @param _protocolId The protocol identifier for the gauge
-    /// @custom:reverts ZeroAddress if the gauge, vault, asset, or reward receiver address is zero
+    /// @custom:throws ZeroAddress if the gauge, vault, asset, or reward receiver address is zero
+    /// @custom:throws OnlyRegistrar if the caller is not a registrar
     function registerVault(address _gauge, address _vault, address _asset, address _rewardReceiver, bytes4 _protocolId)
         external
         onlyRegistrar
@@ -256,7 +284,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @notice Sets a valid allocation target for a gauge
     /// @param _gauge The gauge address
     /// @param _target The target address
-    /// @custom:reverts OnlyRegistrar if the caller is not a registrar
+    /// @custom:throws OnlyRegistrar if the caller is not a registrar
     function setValidAllocationTarget(address _gauge, address _target) external onlyRegistrar {
         _isValidAllocationTargets[_gauge][_target] = true;
     }
@@ -264,14 +292,14 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @notice Removes a valid allocation target for a gauge
     /// @param _gauge The gauge address
     /// @param _target The target address
-    /// @custom:reverts OnlyRegistrar if the caller is not a registrar
+    /// @custom:throws OnlyRegistrar if the caller is not a registrar
     function removeValidAllocationTarget(address _gauge, address _target) external onlyRegistrar {
         _isValidAllocationTargets[_gauge][_target] = false;
     }
 
     /// @notice Shuts down a gauge
     /// @param _gauge The gauge address to shut down
-    /// @custom:reverts OnlyOwner if the caller is not the owner
+    /// @custom:throws OnlyOwner if the caller is not the owner
     function shutdown(address _gauge) external onlyOwner {
         gauge[_gauge].isShutdown = true;
         emit GaugeShutdown(_gauge);
@@ -279,14 +307,14 @@ contract ProtocolController is IProtocolController, Ownable2Step {
 
     /// @notice Shuts down a protocol
     /// @param protocolId The protocol identifier
-    /// @custom:reverts OnlyOwner if the caller is not the owner
+    /// @custom:throws OnlyOwner if the caller is not the owner
     function shutdownProtocol(bytes4 protocolId) external onlyOwner {
         _protocolComponents[protocolId].isShutdown = true;
         emit ProtocolShutdown(protocolId);
     }
 
     //////////////////////////////////////////////////////
-    /// --- VIEW FUNCTIONS
+    // --- VIEW FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Returns the strategy address for a protocol

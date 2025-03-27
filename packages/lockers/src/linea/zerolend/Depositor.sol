@@ -14,7 +14,7 @@ import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
 /// @custom:contact contact@stakedao.org
 contract Depositor is BaseDepositor {
     ///////////////////////////////////////////////////////////////
-    /// --- STATE VARIABLES & CONSTANTS
+    // --- STATE VARIABLES & CONSTANTS
     ///////////////////////////////////////////////////////////////
 
     /// @notice ZeroLend locker NFT contract interface
@@ -27,7 +27,7 @@ contract Depositor is BaseDepositor {
     uint256 public zeroLockedTokenId;
 
     ///////////////////////////////////////////////////////////////
-    /// --- ERRORS
+    // --- ERRORS
     ///////////////////////////////////////////////////////////////
 
     error ZeroValue();
@@ -37,7 +37,7 @@ contract Depositor is BaseDepositor {
     error ExecFromSafeModuleFailed();
 
     ////////////////////////////////////////////////////////////////
-    /// --- EVENTS
+    // --- EVENTS
     ////////////////////////////////////////////////////////////////
 
     /// @notice Emitted when an existing lock is increased
@@ -46,7 +46,7 @@ contract Depositor is BaseDepositor {
     event LockIncreased(uint256 value, uint256 duration);
 
     ////////////////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     ///////////////////////////////////////////////////////////////
 
     /// @notice Initializes the Depositor contract with required dependencies
@@ -68,7 +68,7 @@ contract Depositor is BaseDepositor {
     }
 
     ////////////////////////////////////////////////////////////////
-    /// --- BASE CONTRACT OVERRIDE
+    // --- BASE CONTRACT OVERRIDE
     ///////////////////////////////////////////////////////////////
 
     /// @notice Locks tokens held by the contract
@@ -143,7 +143,7 @@ contract Depositor is BaseDepositor {
     }
 
     ////////////////////////////////////////////////////////////////
-    /// --- NFT DEPOSIT FUNCTIONS
+    // --- NFT DEPOSIT FUNCTIONS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Deposits ZeroLend locker NFTs and mints sdZero or sdZeroGauge tokens

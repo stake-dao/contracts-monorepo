@@ -3,6 +3,7 @@ pragma solidity 0.8.28;
 
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {IAccountant} from "src/interfaces/IAccountant.sol";
+import {IFactory} from "src/interfaces/IFactory.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {ProtocolContext} from "src/ProtocolContext.sol";
 
@@ -14,9 +15,9 @@ import {ProtocolContext} from "src/ProtocolContext.sol";
 ///      - Validates gauges and tokens
 ///      - Registers vaults with the protocol controller
 ///      - Sets up reward tokens for vaults
-abstract contract Factory is ProtocolContext {
+abstract contract Factory is ProtocolContext, IFactory {
     //////////////////////////////////////////////////////
-    /// --- IMMUTABLES
+    // --- IMMUTABLES
     //////////////////////////////////////////////////////
 
     /// @notice Reward vault implementation address
@@ -28,7 +29,7 @@ abstract contract Factory is ProtocolContext {
     address public immutable REWARD_RECEIVER_IMPLEMENTATION;
 
     //////////////////////////////////////////////////////
-    /// --- ERRORS
+    // --- ERRORS
     //////////////////////////////////////////////////////
 
     /// @notice Error thrown when the gauge is not a valid candidate
@@ -47,7 +48,7 @@ abstract contract Factory is ProtocolContext {
     error AlreadyDeployed();
 
     //////////////////////////////////////////////////////
-    /// --- EVENTS
+    // --- EVENTS
     //////////////////////////////////////////////////////
 
     /// @notice Emitted when a new vault is deployed
@@ -57,7 +58,7 @@ abstract contract Factory is ProtocolContext {
     event VaultDeployed(address vault, address asset, address gauge);
 
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
     /// @notice Initializes the factory with protocol controller, reward token, and vault implementation
@@ -67,6 +68,7 @@ abstract contract Factory is ProtocolContext {
     /// @param _protocolId Protocol identifier
     /// @param _locker Address of the locker
     /// @param _gateway Address of the gateway
+    /// @custom:throws ZeroAddress If any of the addresses are zero address
     constructor(
         address _protocolController,
         address _vaultImplementation,
@@ -90,7 +92,7 @@ abstract contract Factory is ProtocolContext {
     }
 
     //////////////////////////////////////////////////////
-    /// --- EXTERNAL FUNCTIONS
+    // --- EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Create a new vault for a given gauge
@@ -155,7 +157,7 @@ abstract contract Factory is ProtocolContext {
     }
 
     //////////////////////////////////////////////////////
-    /// --- INTERNAL VIRTUAL FUNCTIONS
+    // --- INTERNAL VIRTUAL FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Get the asset address from a gauge

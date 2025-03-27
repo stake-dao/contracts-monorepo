@@ -9,7 +9,7 @@ abstract contract AllowanceManager is Governance {
     mapping(address => bool) public allowed;
 
     ////////////////////////////////////////////////////////////////
-    /// --- EVENTS & ERRORS
+    // --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Event emitted when an address is allowed.
@@ -26,7 +26,7 @@ abstract contract AllowanceManager is Governance {
     constructor(address _governance) Governance(_governance) {}
 
     ////////////////////////////////////////////////////////////////
-    /// --- MODIFIERS
+    // --- MODIFIERS
     ///////////////////////////////////////////////////////////////
 
     modifier onlyGovernanceOrAllowed() {
@@ -35,7 +35,7 @@ abstract contract AllowanceManager is Governance {
     }
 
     ////////////////////////////////////////////////////////////
-    /// --- FUNCTIONS
+    // --- FUNCTIONS
     ////////////////////////////////////////////////////////////
 
     function allowAddress(address _address) external onlyGovernance {

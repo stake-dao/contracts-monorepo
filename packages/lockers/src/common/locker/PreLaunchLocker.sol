@@ -47,7 +47,7 @@ import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 /// @custom:contact contact@stakedao.org
 contract PreLaunchLocker {
     ///////////////////////////////////////////////////////////////
-    /// --- STATE VARIABLES & CONSTANTS
+    // --- STATE VARIABLES & CONSTANTS
     ///////////////////////////////////////////////////////////////
 
     /// @notice The delay after which the locker can be force canceled by anyone.
@@ -107,7 +107,7 @@ contract PreLaunchLocker {
     STATE public state;
 
     ////////////////////////////////////////////////////////////////
-    /// --- EVENTS & ERRORS
+    // --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Event emitted each time the governance address is updated.
@@ -154,7 +154,7 @@ contract PreLaunchLocker {
     error CANNOT_FORCE_CANCEL_RECENTLY_CREATED_LOCKER();
 
     ////////////////////////////////////////////////////////////////
-    /// --- MODIFIERS & CONSTRUCTOR
+    // --- MODIFIERS & CONSTRUCTOR
     ///////////////////////////////////////////////////////////////
 
     /// @notice Modifier to ensure the caller is the governance address.
@@ -193,7 +193,7 @@ contract PreLaunchLocker {
     }
 
     ////////////////////////////////////////////////////////////////
-    /// --- DEPOSIT
+    // --- DEPOSIT
     ///////////////////////////////////////////////////////////////
 
     /// @notice Deposit tokens in this contract.
@@ -229,7 +229,7 @@ contract PreLaunchLocker {
     }
 
     ////////////////////////////////////////////////////////////////
-    /// --- LOCK
+    // --- LOCK
     ///////////////////////////////////////////////////////////////
 
     /// @notice Set the depositor and lock the tokens in the given depositor contract.
@@ -288,7 +288,7 @@ contract PreLaunchLocker {
     }
 
     ////////////////////////////////////////////////////////////////
-    /// --- EMERGENCY METHODS
+    // --- EMERGENCY METHODS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Withdraw the previously deposited tokens if the launch has been canceled. This is an escape hatch for users.
@@ -374,7 +374,7 @@ contract PreLaunchLocker {
     }
 
     ////////////////////////////////////////////////////////////////
-    /// --- HELPERS METHODS
+    // --- HELPERS METHODS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Given the value of the state, return an user friendly label.

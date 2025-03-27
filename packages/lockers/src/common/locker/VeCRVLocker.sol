@@ -32,7 +32,7 @@ abstract contract VeCRVLocker {
     address public immutable veToken;
 
     ////////////////////////////////////////////////////////////////
-    /// --- EVENTS & ERRORS
+    // --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Event emitted when tokens are released from the locker.
@@ -74,7 +74,7 @@ abstract contract VeCRVLocker {
     error GOVERNANCE_OR_ACCUMULATOR();
 
     ////////////////////////////////////////////////////////////////
-    /// --- MODIFIERS
+    // --- MODIFIERS
     ///////////////////////////////////////////////////////////////
 
     modifier onlyGovernance() {
@@ -104,7 +104,7 @@ abstract contract VeCRVLocker {
     }
 
     ////////////////////////////////////////////////////////////////
-    /// --- LOCKER MANAGEMENT
+    // --- LOCKER MANAGEMENT
     ///////////////////////////////////////////////////////////////
 
     /// @notice Create a lock for the contract on the Voting Escrow contract.
@@ -164,7 +164,7 @@ abstract contract VeCRVLocker {
     }
 
     ////////////////////////////////////////////////////////////////
-    /// --- GOVERNANCE PARAMETERS
+    // --- GOVERNANCE PARAMETERS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Transfer the governance to a new address.

@@ -34,7 +34,7 @@ contract IFOFactory {
     mapping(address => address) public ifos; // sd ifo -> cake ifo
 
     ////////////////////////////////////////////////////////////////
-    /// --- EVENTS & ERRORS
+    // --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Throwed if an address is already allowed

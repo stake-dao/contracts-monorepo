@@ -1,17 +1,16 @@
 /// SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.28;
 
-import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {IAccountant} from "src/interfaces/IAccountant.sol";
-import {IProtocolController} from "src/interfaces/IProtocolController.sol";
-
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
-import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
+import { Ownable2Step, Ownable } from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import { IERC20 } from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import { SafeERC20 } from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import { Address } from "@openzeppelin/contracts/utils/Address.sol";
+import { Math } from "@openzeppelin/contracts/utils/math/Math.sol";
+import { SafeCast } from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import { ReentrancyGuardTransient } from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
+import { IAccountant } from "src/interfaces/IAccountant.sol";
+import { IProtocolController } from "src/interfaces/IProtocolController.sol";
+import { IStrategy } from "src/interfaces/IStrategy.sol";
 
 /// @title Accountant - Reward Distribution and Accounting System
 /// @notice A comprehensive system for managing reward distribution and accounting across vaults and users.
@@ -29,10 +28,16 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     using SafeERC20 for IERC20;
 
     //////////////////////////////////////////////////////
-    /// --- STORAGE STRUCTURES
+    // --- STORAGE STRUCTURES
     //////////////////////////////////////////////////////
 
     /// @notice Vault data structure.
+    ///         - `integral` is the current integral of the vault.
+    ///         - `supply` is the current supply of the vault.
+    ///         - `feeSubjectAmount` is the amount of rewards that are subject to protocol fees.
+    ///         - `totalAmount` is the total amount of rewards in the vault.
+    ///         - `netCredited` is the total amount of net rewards credited to the vault.
+    /// @custom:storage Uses 3 storage slots
     struct VaultData {
         uint256 integral;
         uint128 supply;
@@ -42,6 +47,10 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     }
 
     /// @notice Account data structure for a specific Vault
+    ///         - `balance` is the current balance of the account in the vault.
+    ///         - `integral` is the current integral of the account in the vault.
+    ///         - `pendingRewards` is the pending rewards of the account in the vault.
+    /// @custom:storage Uses 3 storage slots
     struct AccountData {
         uint128 balance;
         uint256 integral;
@@ -49,13 +58,16 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     }
 
     /// @notice Struct that defines the fees parameters.
+    ///         - `protocolFeePercent` is initialized to `DEFAULT_PROTOCOL_FEE` in the constructor and can be updated by the owner.
+    ///         - `harvestFeePercent` is initialized to `DEFAULT_HARVEST_FEE` in the constructor and can be updated by the owner.
+    /// @custom:storage Uses 1 storage slot
     struct FeesParams {
         uint128 protocolFeePercent;
         uint128 harvestFeePercent;
     }
 
     //////////////////////////////////////////////////////
-    /// --- CONSTANTS & IMMUTABLES
+    // --- CONSTANTS & IMMUTABLES
     //////////////////////////////////////////////////////
 
     /// @notice RAY scaling factor used for fixed-point arithmetic precision.
@@ -76,16 +88,16 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @notice The protocol ID.
     bytes4 public immutable PROTOCOL_ID;
 
-    /// @notice The default protocol fee.
+    /// @notice The default protocol fee (15%). This value is set in the constructor.
     /// @dev The validity of this value is not checked. It must always be valid
     uint128 internal constant DEFAULT_PROTOCOL_FEE = 0.15e18;
 
-    /// @notice The default harvest fee.
+    /// @notice The default harvest fee (0.5%). This value is set in the constructor.
     /// @dev The validity of this value is not checked. It must always be valid
     uint128 internal constant DEFAULT_HARVEST_FEE = 0.005e18;
 
     //////////////////////////////////////////////////////
-    /// --- STATE VARIABLES
+    // --- STATE VARIABLES
     //////////////////////////////////////////////////////
 
     /// @notice The feesParams struct.
@@ -107,7 +119,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     mapping(address vault => mapping(address account => AccountData accountData)) internal accounts;
 
     //////////////////////////////////////////////////////
-    /// --- ERRORS
+    // --- ERRORS
     //////////////////////////////////////////////////////
 
     /// @notice Error thrown when the caller is not a vault.
@@ -147,7 +159,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     error HarvestTokenNotReceived();
 
     //////////////////////////////////////////////////////
-    /// --- EVENTS
+    // --- EVENTS
     //////////////////////////////////////////////////////
 
     /// @notice Emitted when protocol fees are claimed.
@@ -169,7 +181,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     event HarvestFeePercentSet(uint128 oldHarvestFeePercent, uint128 newHarvestFeePercent);
 
     //////////////////////////////////////////////////////
-    /// --- MODIFIERS
+    // --- MODIFIERS
     //////////////////////////////////////////////////////
 
     modifier onlyAllowed() {
@@ -178,7 +190,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     }
 
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
     /// @notice Initializes the Accountant contract with owner, registry, and reward token.
@@ -206,7 +218,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     }
 
     //////////////////////////////////////////////////////
-    /// --- CHECKPOINT OPERATIONS
+    // --- CHECKPOINT OPERATIONS
     //////////////////////////////////////////////////////
 
     /// @notice Checkpoints the state of the vault on every account action.
@@ -381,7 +393,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     }
 
     //////////////////////////////////////////////////////
-    /// --- HARVEST OPERATIONS
+    // --- HARVEST OPERATIONS
     //////////////////////////////////////////////////////
 
     /// @notice Harvests rewards from multiple gauges.
@@ -525,7 +537,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     }
 
     //////////////////////////////////////////////////////
-    /// --- CLAIM OPERATIONS
+    // --- CLAIM OPERATIONS
     //////////////////////////////////////////////////////
 
     /// @notice Claims multiple vault rewards for yourself.
@@ -634,7 +646,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     }
 
     //////////////////////////////////////////////////////
-    /// --- FEE MANAGEMENT
+    // --- FEE MANAGEMENT
     //////////////////////////////////////////////////////
 
     /// @notice Returns the current protocol fee percentage.

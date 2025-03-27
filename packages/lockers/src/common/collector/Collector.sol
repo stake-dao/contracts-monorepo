@@ -42,7 +42,7 @@ abstract contract Collector is ERC20 {
     address public futureGovernance;
 
     ////////////////////////////////////////////////////////////////
-    /// --- EVENTS & ERRORS
+    // --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Throws on auth issue

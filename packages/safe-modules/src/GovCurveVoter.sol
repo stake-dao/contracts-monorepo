@@ -9,18 +9,26 @@ import {FixedPointMathLib} from "solady/src/utils/FixedPointMathLib.sol";
 import "./interfaces/ISafe.sol";
 import "./interfaces/ISafeOperation.sol";
 
-enum VoterState { Absent, Yea, Nay, Even }
+enum VoterState {
+    Absent,
+    Yea,
+    Nay,
+    Even
+}
 
 interface ICurveVoter {
-    function PCT_BASE() external view returns(uint64);
+    function PCT_BASE() external view returns (uint64);
     function getVoterState(uint256 _voteId, address _voter) external view returns (VoterState);
 }
 
-enum VoteType {Ownership, Parameter}
+enum VoteType {
+    Ownership,
+    Parameter
+}
 
 struct Vote {
-    uint256 _voteId; 
-    uint256 _yeaPct; 
+    uint256 _voteId;
+    uint256 _yeaPct;
     uint256 _nayPct;
     VoteType _voteType;
 }
@@ -40,20 +48,18 @@ contract GovCurveVoter is AllowanceManager {
     /// @notice Stake DAO governance owner
     address public immutable SD_SAFE = address(0xB0552b6860CE5C0202976Db056b5e3Cc4f9CC765);
 
-    constructor() AllowanceManager(msg.sender) {
-
-    }
+    constructor() AllowanceManager(msg.sender) {}
 
     /// @notice Bundle ownershipt and/or parameter votes
     /// @dev Can be called only by someone allowed
     /// @dev VoteType 0 = Ownership / 1 = Parameter
     function votes(Vote[] calldata _votes) external onlyGovernanceOrAllowed {
         uint256 length = _votes.length;
-        for(uint256 i = 0; i < length; i++) {
+        for (uint256 i = 0; i < length; i++) {
             Vote memory vote = _votes[i];
-            if(vote._voteType == VoteType.Ownership) {
+            if (vote._voteType == VoteType.Ownership) {
                 voteOwnership(vote._voteId, vote._yeaPct, vote._nayPct);
-            } else if(vote._voteType == VoteType.Parameter) {
+            } else if (vote._voteType == VoteType.Parameter) {
                 voteParameter(vote._voteId, vote._yeaPct, vote._nayPct);
             } else {
                 revert WRONG_VOTE_TYPE();
@@ -75,14 +81,17 @@ contract GovCurveVoter is AllowanceManager {
 
     function _vote(uint256 _voteId, uint256 _yeaPct, uint256 _nayPct, address _voter) internal {
         uint64 pctBase = ICurveVoter(_voter).PCT_BASE();
-        if(pctBase != (_yeaPct+_nayPct)) revert WRONG_PCT();
+        if (pctBase != (_yeaPct + _nayPct)) revert WRONG_PCT();
 
-        bytes memory data = abi.encodeWithSignature("votePct(uint256,uint256,uint256,address)", _voteId, _yeaPct, _nayPct, _voter);
-        require(ISafe(SD_SAFE).execTransactionFromModule(SD_VOTER, 0, data, ISafeOperation.Call), "Could not execute vote");
+        bytes memory data =
+            abi.encodeWithSignature("votePct(uint256,uint256,uint256,address)", _voteId, _yeaPct, _nayPct, _voter);
+        require(
+            ISafe(SD_SAFE).execTransactionFromModule(SD_VOTER, 0, data, ISafeOperation.Call), "Could not execute vote"
+        );
     }
 
     ////////////////////////////////////////////////////////////////
-    /// --- EVENTS & ERRORS
+    // --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Error emitted when pct is different than voter pct

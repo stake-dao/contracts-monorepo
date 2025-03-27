@@ -56,7 +56,7 @@ abstract contract BaseAccumulator {
     address public feeReceiver;
 
     ////////////////////////////////////////////////////////////////
-    /// --- EVENTS & ERRORS
+    // --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Error emitted when an onlyGovernance function has called by a different address
@@ -99,7 +99,7 @@ abstract contract BaseAccumulator {
     event GovernanceUpdateAccepted(address newGovernance);
 
     //////////////////////////////////////////////////////
-    /// --- MODIFIERS
+    // --- MODIFIERS
     //////////////////////////////////////////////////////
 
     /// @notice Modifier to check if the caller is the governance
@@ -115,7 +115,7 @@ abstract contract BaseAccumulator {
     }
 
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
     /// @notice Constructor
@@ -137,7 +137,7 @@ abstract contract BaseAccumulator {
     }
 
     //////////////////////////////////////////////////////
-    /// --- MUTATIVE FUNCTIONS
+    // --- MUTATIVE FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4
@@ -159,7 +159,7 @@ abstract contract BaseAccumulator {
     }
 
     //////////////////////////////////////////////////////
-    /// --- INTERNAL FUNCTIONS
+    // --- INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Notify the new reward to the LGV4
@@ -218,7 +218,7 @@ abstract contract BaseAccumulator {
     }
 
     //////////////////////////////////////////////////////
-    /// --- GOVERNANCE FUNCTIONS
+    // --- GOVERNANCE FUNCTIONS
     //////////////////////////////////////////////////////
 
     function getFeeSplit() public view returns (Split[] memory) {

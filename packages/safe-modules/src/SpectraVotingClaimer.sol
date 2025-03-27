@@ -14,14 +14,14 @@ enum Operation {
 }
 
 interface ISpectraVotingReward {
-    function earned(address ve, address token, uint256 tokenId) external view returns(uint256);
-    function rewardsListLength() external view returns(uint256);
-    function rewards(uint256 i) external view returns(address);
+    function earned(address ve, address token, uint256 tokenId) external view returns (uint256);
+    function rewardsListLength() external view returns (uint256);
+    function rewards(uint256 i) external view returns (address);
     function getReward(address ve, uint256 tokenId, address[] memory tokens) external;
 }
 
 interface ISpectraGovernance {
-    function poolsData(uint160 poolId) external view returns(address,uint256,bool);
+    function poolsData(uint160 poolId) external view returns (address, uint256, bool);
 }
 
 interface ISafe {
@@ -30,7 +30,9 @@ interface ISafe {
     /// @param value Ether value of module transaction.
     /// @param data Data payload of module transaction.
     /// @param operation Operation type of module transaction.
-    function execTransactionFromModule(address to, uint256 value, bytes calldata data, Operation operation) external returns (bool success);
+    function execTransactionFromModule(address to, uint256 value, bytes calldata data, Operation operation)
+        external
+        returns (bool success);
 }
 
 contract SpectraVotingClaimer is AllowanceManager {
@@ -63,8 +65,16 @@ contract SpectraVotingClaimer is AllowanceManager {
     /// @param poolId Pool id that we claimed to.
     /// @param chainId The pool chain id.
     /// @param amount Amount claimed.
-    /// @param timestamp The claim timestamp 
-    event Claimed(address tokenAddress, address poolAddress, uint160 poolId, uint256 chainId, uint256 amount, uint256 fees, uint256 timestamp);
+    /// @param timestamp The claim timestamp
+    event Claimed(
+        address tokenAddress,
+        address poolAddress,
+        uint160 poolId,
+        uint256 chainId,
+        uint256 amount,
+        uint256 fees,
+        uint256 timestamp
+    );
 
     constructor(address _recipient) AllowanceManager(msg.sender) {
         recipient = _recipient;
@@ -73,21 +83,22 @@ contract SpectraVotingClaimer is AllowanceManager {
     /// @notice Claim pending Spectra voting rewards
     /// @dev Can be called only by the current owner and recipient address mut not be ZERO
     function claim() external onlyGovernanceOrAllowed {
-        // We must have a recipient otherwise tokens will be stuck in the Safe 
-        if(recipient == address(0)) revert ZERO_ADDRESS();
+        // We must have a recipient otherwise tokens will be stuck in the Safe
+        if (recipient == address(0)) revert ZERO_ADDRESS();
 
         ISpectraVoter voter = ISpectraVoter(SPECTRA_VOTER);
         uint256 poolLength = voter.length();
 
-        for(uint256 i = 0; i < poolLength; i++) {
+        for (uint256 i = 0; i < poolLength; i++) {
             uint160 poolId = voter.poolIds(i);
             address votingRewardAddress = voter.poolToBribe(poolId);
             address[] memory rewardTokens = _getTokenRewards(votingRewardAddress);
 
-            for(uint256 a = 0; a < rewardTokens.length; a++) {
+            for (uint256 a = 0; a < rewardTokens.length; a++) {
                 // Check if we have something to claim
-                uint256 earned = ISpectraVotingReward(votingRewardAddress).earned(SPECTRA_VE_NFT, rewardTokens[a], SD_SPECTRA_NFT_ID);
-                if(earned == 0) {
+                uint256 earned =
+                    ISpectraVotingReward(votingRewardAddress).earned(SPECTRA_VE_NFT, rewardTokens[a], SD_SPECTRA_NFT_ID);
+                if (earned == 0) {
                     continue;
                 }
 
@@ -96,7 +107,9 @@ contract SpectraVotingClaimer is AllowanceManager {
         }
     }
 
-    function _claimAndDistribute(uint256 earned, address rewardToken, uint160 poolId, address votingRewardAddress) internal {
+    function _claimAndDistribute(uint256 earned, address rewardToken, uint160 poolId, address votingRewardAddress)
+        internal
+    {
         // Calculate Stake DAO Treasury fees
         uint256 fees = earned.mulDiv(FEE, DENOMINATOR);
 
@@ -118,19 +131,20 @@ contract SpectraVotingClaimer is AllowanceManager {
     }
 
     /// @notice Check if there is something to claim
-    function canClaim() external view returns(bool) {
+    function canClaim() external view returns (bool) {
         ISpectraVoter voter = ISpectraVoter(SPECTRA_VOTER);
         uint256 poolLength = voter.length();
 
-        for(uint256 i = 0; i < poolLength; i++) {
+        for (uint256 i = 0; i < poolLength; i++) {
             uint160 poolId = voter.poolIds(i);
             address votingRewardAddress = voter.poolToBribe(poolId);
             address[] memory rewardTokens = _getTokenRewards(votingRewardAddress);
 
-            for(uint256 a = 0; a < rewardTokens.length; a++) {
+            for (uint256 a = 0; a < rewardTokens.length; a++) {
                 // Check if we have something to claim
-                uint256 earned = ISpectraVotingReward(votingRewardAddress).earned(SPECTRA_VE_NFT, rewardTokens[a], SD_SPECTRA_NFT_ID);
-                if(earned > 0) {
+                uint256 earned =
+                    ISpectraVotingReward(votingRewardAddress).earned(SPECTRA_VE_NFT, rewardTokens[a], SD_SPECTRA_NFT_ID);
+                if (earned > 0) {
                     return true;
                 }
             }
@@ -141,12 +155,12 @@ contract SpectraVotingClaimer is AllowanceManager {
 
     /// @notice Get all token rewards associated to a voting reward contract
     /// @param votingRewardAddress Address to the voting reward
-    function _getTokenRewards(address votingRewardAddress) internal view returns(address[] memory) {
+    function _getTokenRewards(address votingRewardAddress) internal view returns (address[] memory) {
         ISpectraVotingReward votingReward = ISpectraVotingReward(votingRewardAddress);
         uint256 rewardTokensLength = votingReward.rewardsListLength();
-        
+
         address[] memory rewardTokens = new address[](rewardTokensLength);
-        for(uint256 i = 0; i < rewardTokensLength; i++) {
+        for (uint256 i = 0; i < rewardTokensLength; i++) {
             rewardTokens[i] = votingReward.rewards(i);
         }
 
@@ -161,8 +175,12 @@ contract SpectraVotingClaimer is AllowanceManager {
         address[] memory tokens = new address[](1);
         tokens[0] = reward;
 
-        bytes memory data = abi.encodeWithSignature("getReward(address,uint256,address[])", SPECTRA_VE_NFT, SD_SPECTRA_NFT_ID, tokens);
-        require(ISafe(SD_SAFE).execTransactionFromModule(votingRewardAddress, 0, data, Operation.Call), "Could not execute claim");
+        bytes memory data =
+            abi.encodeWithSignature("getReward(address,uint256,address[])", SPECTRA_VE_NFT, SD_SPECTRA_NFT_ID, tokens);
+        require(
+            ISafe(SD_SAFE).execTransactionFromModule(votingRewardAddress, 0, data, Operation.Call),
+            "Could not execute claim"
+        );
     }
 
     /// @notice Send some tokens to the recipient
@@ -171,7 +189,9 @@ contract SpectraVotingClaimer is AllowanceManager {
     /// @param amount Amount to transfer
     function _transferToRecipient(address token, uint256 amount) internal {
         bytes memory data = abi.encodeWithSignature("transfer(address,uint256)", payable(recipient), amount);
-        require(ISafe(SD_SAFE).execTransactionFromModule(token, 0, data, Operation.Call), "Could not execute token transfer");
+        require(
+            ISafe(SD_SAFE).execTransactionFromModule(token, 0, data, Operation.Call), "Could not execute token transfer"
+        );
     }
 
     /// @notice Send some tokens to the Stake DAO Treasury
@@ -180,11 +200,13 @@ contract SpectraVotingClaimer is AllowanceManager {
     /// @param amount Amount to transfer
     function _transferToTreasury(address token, uint256 amount) internal {
         bytes memory data = abi.encodeWithSignature("transfer(address,uint256)", payable(SD_TREASURY), amount);
-        require(ISafe(SD_SAFE).execTransactionFromModule(token, 0, data, Operation.Call), "Could not execute token transfer");
+        require(
+            ISafe(SD_SAFE).execTransactionFromModule(token, 0, data, Operation.Call), "Could not execute token transfer"
+        );
     }
 
     ////////////////////////////////////////////////////////////////
-    /// --- EVENTS & ERRORS
+    // --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Error emitted when a zero address is pass

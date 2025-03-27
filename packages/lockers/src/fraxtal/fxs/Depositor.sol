@@ -11,7 +11,7 @@ import "src/fraxtal/FXTLDelegation.sol";
 /// @custom:contact contact@stakedao.org
 contract Depositor is BaseDepositor, FXTLDelegation {
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
     /// @notice Constructor

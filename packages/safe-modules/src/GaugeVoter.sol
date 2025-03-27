@@ -7,10 +7,9 @@ import "./interfaces/ISafe.sol";
 import "./interfaces/ISafeOperation.sol";
 
 contract GaugeVoter is AllowanceManager {
-
     /// @notice Stake DAO governance owner
     address public immutable SD_SAFE = address(0xB0552b6860CE5C0202976Db056b5e3Cc4f9CC765);
-    
+
     // Pendle data
     address public immutable PENDLE_LOCKER = address(0xD8fa8dC5aDeC503AcC5e026a98F32Ca5C1Fa289A);
     address public immutable PENDLE_VOTER = address(0x44087E105137a5095c008AaB6a6530182821F2F0);
@@ -19,39 +18,46 @@ contract GaugeVoter is AllowanceManager {
     /// @notice Voter contracts allowed
     mapping(address => bool) public VOTERS_ALLOWED;
 
-    constructor() AllowanceManager(msg.sender) {
-
-    }
+    constructor() AllowanceManager(msg.sender) {}
 
     /// @notice Bundle gauge votes, _gauges and _weights must have the same length
     /// @param _voter A voter address allowed with toggle_voter(_voter, true)
     /// @param _gauges Array of gauge addresses
     /// @param _weights Array of weights
-    function vote_with_voter(address _voter, address[] calldata _gauges, uint256[] calldata _weights) external onlyGovernanceOrAllowed {
-        if(!VOTERS_ALLOWED[_voter]) {
+    function vote_with_voter(address _voter, address[] calldata _gauges, uint256[] calldata _weights)
+        external
+        onlyGovernanceOrAllowed
+    {
+        if (!VOTERS_ALLOWED[_voter]) {
             revert VOTER_NOT_ALLOW();
         }
 
-        if(_gauges.length != _weights.length) {
+        if (_gauges.length != _weights.length) {
             revert WRONG_DATA();
         }
 
         bytes memory data = abi.encodeWithSignature("voteGauges(address[],uint256[])", _gauges, _weights);
-        require(ISafe(SD_SAFE).execTransactionFromModule(_voter, 0, data, ISafeOperation.Call), "Could not execute vote");
+        require(
+            ISafe(SD_SAFE).execTransactionFromModule(_voter, 0, data, ISafeOperation.Call), "Could not execute vote"
+        );
     }
 
     /// @notice Bundle gauge votes with our strategy contract, _gauges and _weights must have the same length
     /// @param _gauges Array of gauge addresses
     /// @param _weights Array of weights
     function vote_pendle(address[] calldata _gauges, uint64[] calldata _weights) external onlyGovernanceOrAllowed {
-        if(_gauges.length != _weights.length) {
+        if (_gauges.length != _weights.length) {
             revert WRONG_DATA();
         }
 
         bytes memory votes_data = abi.encodeWithSignature("vote(address[],uint64[])", _gauges, _weights);
         bytes memory voter_data = abi.encodeWithSignature("execute(address,uint256,bytes)", PENDLE_VOTER, 0, votes_data);
-        bytes memory locker_data = abi.encodeWithSignature("execute(address,uint256,bytes)", PENDLE_LOCKER, 0, voter_data);
-        require(ISafe(SD_SAFE).execTransactionFromModule(PENDLE_STRATEGY, 0, locker_data, ISafeOperation.Call), "Could not execute vote");
+        bytes memory locker_data =
+            abi.encodeWithSignature("execute(address,uint256,bytes)", PENDLE_LOCKER, 0, voter_data);
+        require(
+            ISafe(SD_SAFE).execTransactionFromModule(PENDLE_STRATEGY, 0, locker_data, ISafeOperation.Call),
+            "Could not execute vote"
+        );
     }
 
     /// @notice Allow or disallow a voter
@@ -62,7 +68,7 @@ contract GaugeVoter is AllowanceManager {
     }
 
     ////////////////////////////////////////////////////////////////
-    /// --- EVENTS & ERRORS
+    // --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Error emitted when we try to vote with a voter which is not allowed

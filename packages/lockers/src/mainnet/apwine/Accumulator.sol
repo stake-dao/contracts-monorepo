@@ -11,7 +11,7 @@ contract Accumulator is BaseAccumulator {
     address public constant APW = 0x4104b135DBC9609Fc1A9490E61369036497660c8;
 
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
     /// @notice Constructor
@@ -25,7 +25,7 @@ contract Accumulator is BaseAccumulator {
     }
 
     //////////////////////////////////////////////////////
-    /// --- OVERRIDDEN FUNCTIONS
+    // --- OVERRIDDEN FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4

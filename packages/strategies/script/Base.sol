@@ -1,17 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
+import { IModuleManager } from "@interfaces/safe/IModuleManager.sol";
+import { Enum } from "@safe/contracts/common/Enum.sol";
 import "forge-std/src/Script.sol";
-
-import {Enum} from "@safe/contracts/common/Enum.sol";
-import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
-
-import {Allocator} from "src/Allocator.sol";
-import {Accountant} from "src/Accountant.sol";
-import {RewardVault} from "src/RewardVault.sol";
-import {RewardReceiver} from "src/RewardReceiver.sol";
-import {ProtocolController} from "src/ProtocolController.sol";
-import {Safe, SafeLibrary} from "test/utils/SafeLibrary.sol";
+import { Accountant } from "src/Accountant.sol";
+import { Allocator } from "src/Allocator.sol";
+import { ProtocolController } from "src/ProtocolController.sol";
+import { RewardReceiver } from "src/RewardReceiver.sol";
+import { RewardVault } from "src/RewardVault.sol";
+import { Safe, SafeLibrary } from "test/utils/SafeLibrary.sol";
 
 abstract contract Base is Script {
     address public deployer;
@@ -78,7 +76,7 @@ abstract contract Base is Script {
     }
 
     //////////////////////////////////////////////////////
-    /// --- HELPER FUNCTIONS
+    // --- HELPER FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Enable a module on the gateway

@@ -62,7 +62,7 @@ contract IFO {
     mapping(address => uint256) public userTotalPublicDeposits;
 
     ////////////////////////////////////////////////////////////////
-    /// --- EVENTS & ERRORS
+    // --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Throwed when a low level call failed

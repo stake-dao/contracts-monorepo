@@ -17,7 +17,7 @@ contract Locker is VeCRVLocker, FXTLDelegation {
     error LockAlreadyCreated();
 
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
     /// @notice Constructor

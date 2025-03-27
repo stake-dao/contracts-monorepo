@@ -11,7 +11,7 @@ contract Accumulator is BaseAccumulator {
     address public constant FPIS = 0xc2544A32872A91F4A553b404C6950e89De901fdb;
 
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
     /// @notice Constructor
@@ -25,7 +25,7 @@ contract Accumulator is BaseAccumulator {
     }
 
     //////////////////////////////////////////////////////
-    /// --- OVERRIDDEN FUNCTIONS
+    // --- OVERRIDDEN FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4

@@ -14,7 +14,7 @@ import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
 /// @custom:contact contact@stakedao.org
 contract Accumulator is BaseAccumulator {
     //////////////////////////////////////////////////////
-    /// --- CONSTANTS
+    // --- CONSTANTS
     //////////////////////////////////////////////////////
 
     /// @notice ZERO token address.
@@ -27,13 +27,13 @@ contract Accumulator is BaseAccumulator {
     address public constant ZERO_VP = 0xf374229a18ff691406f99CCBD93e8a3f16B68888;
 
     //////////////////////////////////////////////////////
-    /// --- ERRORS
+    // --- ERRORS
     //////////////////////////////////////////////////////
 
     error ExecFromSafeModuleFailed();
 
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
     /// @notice Constructor
@@ -49,7 +49,7 @@ contract Accumulator is BaseAccumulator {
     }
 
     //////////////////////////////////////////////////////
-    /// --- OVERRIDDEN FUNCTIONS
+    // --- OVERRIDDEN FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4.

@@ -28,14 +28,14 @@ contract Accumulator is BaseAccumulator {
     uint256 public multiplier;
 
     ////////////////////////////////////////////////////////////////
-    /// --- EVENTS & ERRORS
+    // --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Error emitted when a token not supported is used
     error WRONG_TOKEN();
 
     ////////////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     ////////////////////////////////////////////////////////////
 
     constructor(address _gauge, address _locker, address _governance)
@@ -47,7 +47,7 @@ contract Accumulator is BaseAccumulator {
     }
 
     ////////////////////////////////////////////////////////////
-    /// --- MUTATIVE FUNCTIONS
+    // --- MUTATIVE FUNCTIONS
     ////////////////////////////////////////////////////////////
 
     function claimAndNotifyAll(bool notifySDT, bool claimFeeStrategy) external override {

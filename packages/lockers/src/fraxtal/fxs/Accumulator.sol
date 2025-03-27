@@ -22,7 +22,7 @@ contract Accumulator is BaseAccumulator, FXTLDelegation {
     error CallFailed();
 
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
     /// @notice Constructor
@@ -42,7 +42,7 @@ contract Accumulator is BaseAccumulator, FXTLDelegation {
     }
 
     //////////////////////////////////////////////////////
-    /// --- MUTATIVE FUNCTIONS
+    // --- MUTATIVE FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Claim FXS rewards for the locker and notify all to the LGV4
