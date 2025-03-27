@@ -89,14 +89,7 @@ abstract contract BaseSpectraTokenTest is BaseSpectraTest {
     }
 
     function _deployDepositor() internal returns (address _depositor) {
-        _depositor = address(
-            new Depositor(
-                address(spectraToken),
-                locker,
-                sdToken,
-                address(liquidityGauge)
-            )
-        );
+        _depositor = address(new Depositor(address(spectraToken), locker, sdToken, address(liquidityGauge)));
 
         // Add depositor as a module on the Safe locker.
         _enableModule(_depositor);

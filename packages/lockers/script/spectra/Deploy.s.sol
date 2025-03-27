@@ -15,7 +15,6 @@ import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {ILocker, ISafe} from "src/common/interfaces/spectra/stakedao/ILocker.sol";
 
 contract Deploy is DeployAccumulator {
-
     address sdSpectra;
     address liquidityGauge;
     address locker;
@@ -124,8 +123,7 @@ contract Deploy is DeployAccumulator {
         liquidityGauge = deployCode("vyper/LiquidityGaugeV4XChain.vy", abi.encode(sdSpectra, DAO.MAIN_DEPLOYER));
 
         // Deploy depositor.
-        depositor =
-            address(new Depositor(Spectra.SPECTRA, locker, sdSpectra, liquidityGauge));
+        depositor = address(new Depositor(Spectra.SPECTRA, locker, sdSpectra, liquidityGauge));
     }
 
     function _deployAccumulator() internal override returns (address payable) {
