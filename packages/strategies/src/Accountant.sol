@@ -157,7 +157,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     event Harvest(address indexed vault, uint256 amount);
 
     /// @notice Emitted when a checkpoint is made.
-    event Checkpoint(address indexed vault, uint256 integral, uint256 supply);
+    event Checkpoint(address indexed vault, address indexed from, address indexed to, uint128 amount, uint256 integral, uint256 supply, bool harvested);
 
     /// @notice Emitted when the protocol fee percent is updated.
     event ProtocolFeePercentSet(uint128 oldProtocolFeePercent, uint128 newProtocolFeePercent);
@@ -316,7 +316,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         _vault.integral = integral;
         _vault.supply = supply;
 
-        emit Checkpoint(msg.sender, integral, supply);
+        emit Checkpoint(msg.sender, from, to, amount, integral, supply, harvested);
     }
 
     /// @dev Updates account state during operations.
