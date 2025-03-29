@@ -610,9 +610,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
                 uint256 vaultIntegral = vaults[vault].integral;
 
                 // If vault's integral is higher than account's integral, calculate the rewards and update the total.
-                // TODO: muldiv
                 if (vaultIntegral > accountIntegral) {
-                    totalAmount += (vaultIntegral - accountIntegral) * balance / SCALING_FACTOR;
+                    totalAmount += (vaultIntegral - accountIntegral).mulDiv(balance, SCALING_FACTOR);
                 }
 
                 // In any case, add the pending rewards to the total amount
