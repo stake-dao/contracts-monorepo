@@ -29,6 +29,14 @@ contract MockRegistry is IProtocolController {
         _rewardReceiver = rewardReceiver_;
     }
 
+    function setValidAllocationTarget(address, address) external {}
+
+    function removeValidAllocationTarget(address, address) external {}
+
+    function isValidAllocationTarget(address, address) external pure returns (bool) {
+        return true;
+    }
+
     function isRegistrar(address) external pure returns (bool) {
         return true;
     }

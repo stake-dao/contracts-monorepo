@@ -12,7 +12,7 @@ interface IStrategy {
     function deposit(IAllocator.Allocation calldata allocation, bool harvest)
         external
         returns (PendingRewards memory pendingRewards);
-    function withdraw(IAllocator.Allocation calldata allocation, bool harvest)
+    function withdraw(IAllocator.Allocation calldata allocation, bool harvest, address receiver)
         external
         returns (PendingRewards memory pendingRewards);
 

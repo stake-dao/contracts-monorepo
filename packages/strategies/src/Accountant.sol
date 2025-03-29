@@ -1,16 +1,17 @@
 /// SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.28;
 
-import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
+import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
-import {IStrategy} from "src/interfaces/IStrategy.sol";
+
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 
 /// @title Accountant - Reward Distribution and Accounting System
 /// @notice A comprehensive system for managing reward distribution and accounting across vaults and users.
@@ -154,6 +155,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
 
     /// @notice Emitted when a vault harvests rewards.
     event Harvest(address indexed vault, uint256 amount);
+
+    /// @notice Emitted when a checkpoint is made.
+    event Checkpoint(address indexed vault, address indexed from, address indexed to, uint128 amount, uint256 integral, uint256 supply, bool harvested);
 
     /// @notice Emitted when the protocol fee percent is updated.
     event ProtocolFeePercentSet(uint128 oldProtocolFeePercent, uint128 newProtocolFeePercent);
@@ -311,6 +315,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         // Update vault data with new supply and integral
         _vault.integral = integral;
         _vault.supply = supply;
+
+        emit Checkpoint(msg.sender, from, to, amount, integral, supply, harvested);
     }
 
     /// @dev Updates account state during operations.

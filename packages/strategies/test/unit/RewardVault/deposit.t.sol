@@ -121,7 +121,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         }
 
         // set the allocation and pending rewards to mock values
-        allocation = IAllocator.Allocation({gauge: gauge, targets: targets, amounts: amounts});
+        allocation = IAllocator.Allocation({asset: asset, gauge: gauge, targets: targets, amounts: amounts});
         pendingRewards = IStrategy.PendingRewards({feeSubjectAmount: 0, totalAmount: 0});
 
         // mock the allocator returned by the protocol controller
@@ -178,9 +178,8 @@ contract RewardVault__deposit is RewardVaultBaseTest {
 
         RewardVault.RewardData memory rewardData = RewardVault.RewardData({
             rewardsDistributor: makeAddr("distributor"),
-            rewardsDuration: 10 days,
             lastUpdateTime: uint32(block.timestamp), // current timestamp before wrapping
-            periodFinish: uint32(block.timestamp + 10 days),
+            periodFinish: uint32(block.timestamp + 7 days),
             // number of rewards distributed per second
             rewardRate: 1e10,
             // total rewards accumulated per token since the last update, used as a baseline for calculating new rewards.

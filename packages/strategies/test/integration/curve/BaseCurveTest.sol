@@ -110,7 +110,7 @@ abstract contract BaseCurveTest is BaseForkTest {
         _setup(CRV, lpToken, LOCKER, PROTOCOL_ID, false);
 
         /// 1. Deploy the Curve Strategy contract.
-        curveStrategy = new CurveStrategy(address(protocolController), LOCKER, address(gateway));
+        curveStrategy = new CurveStrategy(address(protocolController), LOCKER, address(gateway), MINTER);
 
         /// 2. Deploy the Convex Sidecar contract.
         convexSidecarImplementation = new ConvexSidecar(address(accountant), address(protocolController));
@@ -134,6 +134,7 @@ abstract contract BaseCurveTest is BaseForkTest {
 
         /// 4. Setup the factory in the protocol controller.
         protocolController.setRegistrar(address(curveFactory), true);
+        protocolController.setRegistrar(address(convexSidecarFactory), true);
 
         /// 5. Enable Strategy as Module in Gateway.
         _enableModule(address(curveStrategy));

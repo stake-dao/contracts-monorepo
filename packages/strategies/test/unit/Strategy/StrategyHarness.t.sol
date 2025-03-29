@@ -56,6 +56,7 @@ contract StrategyHarness is Strategy, Test {
     }
 
     function _cheat_getRebalancedAllocation(
+        address asset,
         address gauge,
         address allocator,
         uint256 amount,
@@ -63,7 +64,7 @@ contract StrategyHarness is Strategy, Test {
     ) external {
         vm.mockCall(
             address(allocator),
-            abi.encodeWithSelector(IAllocator.getRebalancedAllocation.selector, gauge, amount),
+            abi.encodeWithSelector(IAllocator.getRebalancedAllocation.selector, asset, gauge, amount),
             abi.encode(allocation)
         );
     }
@@ -80,7 +81,7 @@ contract StrategyHarness is Strategy, Test {
         return _mockHarvestAmount;
     }
 
-    function _deposit(address target, uint256 amount) internal view override {
+    function _deposit(address, address target, uint256 amount) internal view override {
         require(IERC20(target).balanceOf(address(LOCKER)) >= amount, DepositFailed());
     }
 

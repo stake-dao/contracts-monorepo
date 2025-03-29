@@ -1,3 +1,4 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
@@ -60,7 +61,8 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
         returns (IAllocator.Allocation memory allocation, IStrategy.PendingRewards memory pendingRewards)
     {
         // set the allocation and pending rewards to mock values
-        allocation = IAllocator.Allocation({gauge: gauge, targets: new address[](0), amounts: new uint256[](0)});
+        allocation =
+            IAllocator.Allocation({asset: asset, gauge: gauge, targets: new address[](0), amounts: new uint256[](0)});
         pendingRewards = IStrategy.PendingRewards({feeSubjectAmount: 0, totalAmount: 0});
 
         // mock the allocator returned by the protocol controller
@@ -168,9 +170,8 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
 
         RewardVault.RewardData memory rewardData = RewardVault.RewardData({
             rewardsDistributor: makeAddr("distributor"),
-            rewardsDuration: 10 days,
             lastUpdateTime: uint32(block.timestamp), // current timestamp before wrapping
-            periodFinish: uint32(block.timestamp + 10 days),
+            periodFinish: uint32(block.timestamp + 7 days),
             // number of rewards distributed per second
             rewardRate: 1e10,
             // total rewards accumulated per token since the last update, used as a baseline for calculating new rewards.
@@ -248,7 +249,11 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
         deal(address(asset), address(cloneRewardVault), OWNER_BALANCE);
 
         // vm.mockCall(accountant, abi.encodeWithSelector(IAccountant.checkpoint.selector), abi.encode(true));
-        vm.expectCall(address(strategyAsset), abi.encodeWithSelector(IStrategy.withdraw.selector, allocation, false), 1);
+        vm.expectCall(
+            address(strategyAsset),
+            abi.encodeWithSelector(IStrategy.withdraw.selector, allocation, false, address(receiver)),
+            1
+        );
 
         // make the caller withdraw the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
@@ -324,18 +329,25 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
         cloneRewardVault.approve(caller, OWNER_BALANCE);
 
         // mock the dependencies of the withdraw function
-        _mock_test_dependencies();
+        (IAllocator.Allocation memory allocation,) = _mock_test_dependencies();
 
         // we airdrop enought assets to the reward vault to cover the withdrawal
         deal(address(asset), address(cloneRewardVault), OWNER_BALANCE);
+
+        // If the vault is not shutdown, the assets are transferred to the receiver from the strategy.
+        vm.expectCall(
+            address(strategyAsset),
+            abi.encodeWithSelector(IStrategy.withdraw.selector, allocation, false, address(receiver)),
+            1
+        );
 
         // make the caller withdraw the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
         withdraw_redeem_wrapper(OWNER_BALANCE, receiver, owner);
 
-        // assert that the receiver received the assets from the reward vault
-        assertEq(IERC20(asset).balanceOf(address(cloneRewardVault)), 0);
-        assertEq(IERC20(asset).balanceOf(receiver), OWNER_BALANCE);
+        // Only if the vault is shutdown that the assets on the vault are transferred to the receiver.
+        // Else, they're directly transferred to the receiver from the strategy.
+        assertEq(IERC20(asset).balanceOf(address(cloneRewardVault)), OWNER_BALANCE);
     }
 
     function test_EmitsTheEvent(address owner, address caller, address receiver)

@@ -40,7 +40,7 @@ contract Strategy__rebalance is StrategyBaseTest {
         allocation.amounts = rebalanceAmounts;
 
         /// Set the rebalanced allocation.
-        strategy._cheat_getRebalancedAllocation(gauge, address(allocator), 600, allocation);
+        strategy._cheat_getRebalancedAllocation(gauge, gauge, address(allocator), 600, allocation);
 
         vm.prank(vault);
         strategy.rebalance(gauge);

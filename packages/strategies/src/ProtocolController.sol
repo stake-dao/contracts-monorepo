@@ -46,6 +46,9 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @notice Mapping of protocol ID to its components
     mapping(bytes4 => ProtocolComponents) internal _protocolComponents;
 
+    /// @notice Mapping of gauge address to its valid allocation targets
+    mapping(address => mapping(address => bool)) internal _isValidAllocationTargets;
+
     /// @notice Mapping of contract to caller to function selector to permission
     mapping(address => mapping(address => mapping(bytes4 => bool))) internal _permissions;
 
@@ -250,6 +253,22 @@ contract ProtocolController is IProtocolController, Ownable2Step {
         emit VaultRegistered(_gauge, _vault, _asset, _rewardReceiver, _protocolId);
     }
 
+    /// @notice Sets a valid allocation target for a gauge
+    /// @param _gauge The gauge address
+    /// @param _target The target address
+    /// @custom:reverts OnlyRegistrar if the caller is not a registrar
+    function setValidAllocationTarget(address _gauge, address _target) external onlyRegistrar {
+        _isValidAllocationTargets[_gauge][_target] = true;
+    }
+
+    /// @notice Removes a valid allocation target for a gauge
+    /// @param _gauge The gauge address
+    /// @param _target The target address
+    /// @custom:reverts OnlyRegistrar if the caller is not a registrar
+    function removeValidAllocationTarget(address _gauge, address _target) external onlyRegistrar {
+        _isValidAllocationTargets[_gauge][_target] = false;
+    }
+
     /// @notice Shuts down a gauge
     /// @param _gauge The gauge address to shut down
     /// @custom:reverts OnlyOwner if the caller is not the owner
@@ -349,5 +368,13 @@ contract ProtocolController is IProtocolController, Ownable2Step {
         Gauge storage $gauge = gauge[_gauge];
 
         return $gauge.isShutdown || _protocolComponents[$gauge.protocolId].isShutdown;
+    }
+
+    /// @notice Checks if a target is a valid allocation target for a gauge
+    /// @param _gauge The gauge address
+    /// @param _target The target address
+    /// @return _ Whether the target is a valid allocation target
+    function isValidAllocationTarget(address _gauge, address _target) external view returns (bool) {
+        return _isValidAllocationTargets[_gauge][_target];
     }
 }

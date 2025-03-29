@@ -191,6 +191,7 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
 
         vm.assume(caller != address(0));
         vm.assume(contractAddress != address(0));
+        vm.assume(selector != bytes4(0));
 
         // unregistered caller is not allowed to call any function on any contract
         assertEq(protocolController.allowed(contractAddress, caller, selector), false);

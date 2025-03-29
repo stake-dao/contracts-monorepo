@@ -17,7 +17,6 @@ contract RewardVault__lastTimeRewardApplicable is RewardVaultBaseTest {
         RewardVault.RewardData memory rewardData = RewardVault.RewardData({
             rewardsDistributor: makeAddr("distributor"),
             periodFinish: periodFinish,
-            rewardsDuration: 0,
             lastUpdateTime: 0,
             rewardRate: 0,
             rewardPerTokenStored: 0
@@ -44,7 +43,6 @@ contract RewardVault__lastTimeRewardApplicable is RewardVaultBaseTest {
         RewardVault.RewardData memory rewardData = RewardVault.RewardData({
             rewardsDistributor: makeAddr("distributor"),
             periodFinish: periodFinish,
-            rewardsDuration: 0,
             lastUpdateTime: 0,
             rewardRate: 0,
             rewardPerTokenStored: 0

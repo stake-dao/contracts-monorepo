@@ -15,7 +15,6 @@ contract RewardVault__getRewardsDistributor is RewardVaultBaseTest {
 
         RewardVault.RewardData memory rewardData = RewardVault.RewardData({
             rewardsDistributor: distributor,
-            rewardsDuration: 0,
             lastUpdateTime: 0,
             periodFinish: 0,
             rewardRate: 0,

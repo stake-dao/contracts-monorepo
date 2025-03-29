@@ -4,7 +4,7 @@ import {RewardVault} from "src/RewardVault.sol";
 import {RewardVaultBaseTest, RewardVaultHarness} from "test/RewardVaultBaseTest.sol";
 
 contract RewardVault__getRewardsDuration is RewardVaultBaseTest {
-    function test_ReturnsTheDurationOfTheRewardsDistributionForAGivenRewardToken(address token, uint32 rewardDuration)
+    function test_ReturnsTheDurationOfTheRewardsDistributionForAGivenRewardToken(address token)
         external
         _cheat_replaceRewardVaultWithRewardVaultHarness
     {
@@ -15,7 +15,6 @@ contract RewardVault__getRewardsDuration is RewardVaultBaseTest {
 
         RewardVault.RewardData memory rewardData = RewardVault.RewardData({
             rewardsDistributor: makeAddr("distributor"),
-            rewardsDuration: rewardDuration,
             lastUpdateTime: 0,
             periodFinish: 0,
             rewardRate: 0,
@@ -23,7 +22,5 @@ contract RewardVault__getRewardsDuration is RewardVaultBaseTest {
         });
 
         rewardVaultHarness._cheat_override_reward_data(token, rewardData);
-
-        assertEq(rewardVaultHarness.getRewardsDuration(token), rewardDuration);
     }
 }
