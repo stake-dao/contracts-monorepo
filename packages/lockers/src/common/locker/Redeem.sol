@@ -2,11 +2,14 @@
 pragma solidity ^0.8.19;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
+import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 
 contract Redeem {
+    using Math for uint256;
     using SafeERC20 for IERC20;
 
     /// @notice The token to receive.
@@ -18,14 +21,18 @@ contract Redeem {
     /// @notice The sdToken staking contract.
     address public immutable sdTokenGauge;
 
+    /// @notice The conversion contract.
+    uint256 public immutable conversionRate;
+
     error NothingToRedeem();
 
     event RedeemedAmount(address indexed user, uint256 amount);
 
-    constructor(address _token, address _sdToken, address _sdTokenGauge) {
+    constructor(address _token, address _sdToken, address _sdTokenGauge, uint256 _conversionRate) {
         token = _token;
         sdToken = _sdToken;
         sdTokenGauge = _sdTokenGauge;
+        conversionRate = _conversionRate;
     }
 
     /// @notice Redeems all sdTokens and gauge shares from msg.sender.
@@ -41,6 +48,7 @@ contract Redeem {
 
         // 2. Unstake from gauge: claim rewards + withdraw
         uint256 sdTokenGaugeBalance = ILiquidityGauge(sdTokenGauge).balanceOf(msg.sender);
+
         if (sdTokenGaugeBalance > 0) {
             // Claim rewards to msg.sender
             ILiquidityGauge(sdTokenGauge).claim_rewards(msg.sender);
@@ -58,10 +66,13 @@ contract Redeem {
         // 3. Check if there is anything to redeem
         if (redeemAmount == 0) revert NothingToRedeem();
 
-        // 4. Burn sdTokens
+        // 4. Convert the redeem amount to the underlying token
+        redeemAmount = redeemAmount.mulDiv(conversionRate, 1e18);
+
+        // 5. Burn sdTokens
         ISdToken(sdToken).burn(address(this), redeemAmount);
 
-        // 5. Transfer underlying to user
+        // 6. Transfer underlying to user
         IERC20(token).safeTransfer(msg.sender, redeemAmount);
 
         emit RedeemedAmount(msg.sender, redeemAmount);

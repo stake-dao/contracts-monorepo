@@ -4,14 +4,14 @@ pragma solidity 0.8.19;
 import "address-book/src/dao/1.sol";
 import "address-book/src/lockers/1.sol";
 import "forge-std/src/Script.sol";
-import "src/mainnet/fpis/Redeem.sol";
+import "src/common/locker/Redeem.sol";
 
 contract Deploy is Script {
     function run() public {
         vm.createSelectFork("mainnet");
         vm.startBroadcast(DAO.MAIN_DEPLOYER);
 
-        new Redeem(address(FPIS.TOKEN), address(FPIS.SDTOKEN), address(FPIS.GAUGE));
+        new Redeem(address(FPIS.TOKEN), address(FPIS.SDTOKEN), address(FPIS.GAUGE), 1e18);
 
         vm.stopBroadcast();
     }

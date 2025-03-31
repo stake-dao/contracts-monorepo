@@ -9,7 +9,7 @@ import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {IVeFPIS} from "src/common/interfaces/IVeFPIS.sol";
-import {Redeem} from "src/mainnet/fpis/Redeem.sol";
+import {Redeem} from "src/common/locker/Redeem.sol";
 
 contract RedeemTest is Test {
     ERC20 public token;
@@ -46,7 +46,7 @@ contract RedeemTest is Test {
         vm.prank(FPIS.LOCKER);
         IVeFPIS(Frax.VEFPIS).withdraw();
 
-        redeem = new Redeem(FPIS.TOKEN, FPIS.SDTOKEN, FPIS.GAUGE);
+        redeem = new Redeem(FPIS.TOKEN, FPIS.SDTOKEN, FPIS.GAUGE, 1e18);
 
         vm.startPrank(FPIS.LOCKER);
         token.transfer(address(redeem), token.balanceOf(FPIS.LOCKER));
