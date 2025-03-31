@@ -162,7 +162,7 @@ abstract contract BaseDepositor {
 
     /// @notice Initiate a lock in the Locker contract and mint the sdTokens to the caller.
     /// @param _amount Amount of tokens to lock.
-    function createLock(uint256 _amount) external virtual {
+    function createLock(uint256 _amount) external virtual onlyActive {
         // Transfer caller's tokens to the locker and lock them
         _createLockFrom(msg.sender, _amount);
 
@@ -236,7 +236,7 @@ abstract contract BaseDepositor {
 
     /// @notice Lock tokens held by the contract
     /// @dev The contract must have Token to lock
-    function lockToken() external {
+    function lockToken() external onlyActive {
         uint256 tokenBalance = IERC20(token).balanceOf(address(this));
 
         if (tokenBalance != 0) {
