@@ -1,0 +1,3 @@
+BaseDepositor__shutdown
+├── it sets the state to CANCELED
+└── it emits the StateUpdated event
