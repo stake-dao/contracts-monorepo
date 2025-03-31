@@ -36,6 +36,9 @@ library SPECTRA {
     address public constant DEPOSITOR = 0xFe928ca6a9C0cdf658a26A374b7373B9D6CefBCf;
     address public constant GAUGE = 0x9c9d06C7378909C6d0A2A0017Bb409F7fb8004E0;
     address public constant ACCUMULATOR = 0xB1d7787B8dB300b2d664DA3897116a0135E588A6;
+
+    /// CONVERSION CONTRACT
+    address public constant CONVERTER = 0x90dD9A085f126C79992bb07da65b5abBE85c81c2;
 }
 
 library BAL {
