@@ -18,4 +18,6 @@ interface IVeANGLE {
     function locked(address) external returns (LockedBalance memory);
 
     function balanceOf(address) external returns (uint256);
+
+    function withdraw_fast() external;
 }

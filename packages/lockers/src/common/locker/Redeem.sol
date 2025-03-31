@@ -26,7 +26,7 @@ contract Redeem {
 
     error NothingToRedeem();
 
-    event RedeemedAmount(address indexed user, uint256 amount);
+    event RedeemedAmount(address indexed user, uint256 amount, uint256 redeemAmount);
 
     constructor(address _token, address _sdToken, address _sdTokenGauge, uint256 _conversionRate) {
         token = _token;
@@ -66,15 +66,15 @@ contract Redeem {
         // 3. Check if there is anything to redeem
         if (redeemAmount == 0) revert NothingToRedeem();
 
-        // 4. Convert the redeem amount to the underlying token
-        redeemAmount = redeemAmount.mulDiv(conversionRate, 1e18);
-
-        // 5. Burn sdTokens
+        // 4. Burn sdTokens
         ISdToken(sdToken).burn(address(this), redeemAmount);
 
-        // 6. Transfer underlying to user
-        IERC20(token).safeTransfer(msg.sender, redeemAmount);
+        // 5. Convert the redeem amount to the underlying token
+        uint256 adjustedRedeemAmount = redeemAmount.mulDiv(conversionRate, 1e18);
 
-        emit RedeemedAmount(msg.sender, redeemAmount);
+        // 6. Transfer underlying to user
+        IERC20(token).safeTransfer(msg.sender, adjustedRedeemAmount);
+
+        emit RedeemedAmount(msg.sender, redeemAmount, adjustedRedeemAmount);
     }
 }
