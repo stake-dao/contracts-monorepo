@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {MockERC20} from "forge-std/src/mocks/MockERC20.sol";
 import {BaseDepositor as BaseDepositorContract} from "src/common/depositor/BaseDepositor.sol";
 import {BaseTest} from "test/BaseTest.t.sol";
 
 abstract contract BaseDepositorTest is BaseTest {
-    MockERC20 internal token;
+    IERC20 internal token;
     address internal locker;
-    MockERC20 internal minter;
+    IERC20 internal minter;
     address internal gauge;
     uint256 internal maxLockDuration;
     address internal governance;
@@ -16,15 +17,17 @@ abstract contract BaseDepositorTest is BaseTest {
 
     function setUp() public virtual {
         // deploy the initial token
-        token = new MockERC20();
-        token.initialize("Token", "TKN", 18);
+        MockERC20 mockToken = new MockERC20();
+        mockToken.initialize("Token", "TKN", 18);
+        token = IERC20(address(mockToken));
 
         // deploy the locker
         locker = makeAddr("locker");
 
         // deploy the minter
-        minter = new MockERC20();
-        minter.initialize("Minter", "MNTR", 18);
+        MockERC20 mockMinter = new MockERC20();
+        mockMinter.initialize("Minter", "MNTR", 18);
+        minter = IERC20(address(mockMinter));
 
         // deploy the gauge
         gauge = makeAddr("gauge");

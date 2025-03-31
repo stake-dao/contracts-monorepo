@@ -286,11 +286,22 @@ abstract contract BaseDepositor {
         futureGovernance = address(0);
     }
 
-    /// @notice Shutdown the contract.
-    /// @dev This will prevent any further deposits.
+    /// @notice Shutdown the contract and transfer the balance of the contract to the given receiver.
+    /// @param receiver Address who will receive the balance of this contract.
+    /// @dev This will put the contract in the CANCELED state, preventing any further deposits, or locking of tokens.
+    //       Use `shutdown()` to transfer the remaining balance to the governance address.
+    /// @custom:reverts ONLY_GOVERNANCE if the caller is not the governance.
+    function shutdown(address receiver) public onlyGovernance {
+        _setState(STATE.CANCELED);
+
+        // Transfer the remaining balance to the receiver.
+        SafeTransferLib.safeTransfer(token, receiver, IERC20(token).balanceOf(address(this)));
+    }
+
+    /// @notice Shutdown the contract and transfer the balance of the contract to the governance.
     /// @custom:reverts ONLY_GOVERNANCE if the caller is not the governance.
     function shutdown() external onlyGovernance {
-        _setState(STATE.CANCELED);
+        shutdown(governance);
     }
 
     /// @notice Set the new operator for minting sdToken
