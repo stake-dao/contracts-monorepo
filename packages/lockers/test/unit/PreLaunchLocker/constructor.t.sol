@@ -10,21 +10,21 @@ contract PreLaunchLocker__constructor is PreLaunchLockerTest {
         // it reverts if the given token is 0
 
         vm.expectRevert(PreLaunchLocker.REQUIRED_PARAM.selector);
-        new PreLaunchLocker(address(0), makeAddr("sdToken"), makeAddr("gauge"));
+        new PreLaunchLocker(address(0), makeAddr("sdToken"), makeAddr("gauge"), 0);
     }
 
     function test_RevertIfTheGivenSdTokenIs0() external {
         // it revert if the given sdToken is 0
 
         vm.expectRevert(PreLaunchLocker.REQUIRED_PARAM.selector);
-        new PreLaunchLocker(makeAddr("token"), address(0), makeAddr("gauge"));
+        new PreLaunchLocker(makeAddr("token"), address(0), makeAddr("gauge"), 0);
     }
 
     function test_RevertIfTheGivenGaugeIs0() external {
         // it revert if the given gauge is 0
 
         vm.expectRevert(PreLaunchLocker.REQUIRED_PARAM.selector);
-        new PreLaunchLocker(makeAddr("token"), makeAddr("sdToken"), address(0));
+        new PreLaunchLocker(makeAddr("token"), makeAddr("sdToken"), address(0), 0);
     }
 
     function test_RevertIfTheGaugeIsNotAssociatedWithTheGivenSdToken(address incorrectLpToken) external {
@@ -40,7 +40,7 @@ contract PreLaunchLocker__constructor is PreLaunchLockerTest {
         );
 
         vm.expectRevert(PreLaunchLocker.INVALID_GAUGE.selector);
-        new PreLaunchLocker(makeAddr("token"), address(sdToken), address(gauge));
+        new PreLaunchLocker(makeAddr("token"), address(sdToken), address(gauge), 0);
     }
 
     function test_SetsTheTokenToTheGivenAddress(address token) external {
@@ -48,7 +48,7 @@ contract PreLaunchLocker__constructor is PreLaunchLockerTest {
 
         vm.assume(token != address(0));
 
-        PreLaunchLocker locker = new PreLaunchLocker(token, address(sdToken), address(gauge));
+        PreLaunchLocker locker = new PreLaunchLocker(token, address(sdToken), address(gauge), 0);
         assertEq(locker.token(), token);
     }
 
@@ -58,7 +58,7 @@ contract PreLaunchLocker__constructor is PreLaunchLockerTest {
         address _sdToken = address(new SdToken{salt: salt}("sdToken", "sdTOKEN"));
         address _gauge = address(new GaugeMock(_sdToken));
 
-        PreLaunchLocker locker = new PreLaunchLocker(makeAddr("token"), _sdToken, _gauge);
+        PreLaunchLocker locker = new PreLaunchLocker(makeAddr("token"), _sdToken, _gauge, 0);
         assertEq(address(locker.sdToken()), _sdToken);
     }
 
@@ -68,7 +68,7 @@ contract PreLaunchLocker__constructor is PreLaunchLockerTest {
         address _sdToken = address(new SdToken{salt: salt}("sdToken", "sdTOKEN"));
         address _gauge = address(new GaugeMock(_sdToken));
 
-        PreLaunchLocker locker = new PreLaunchLocker(makeAddr("token"), _sdToken, _gauge);
+        PreLaunchLocker locker = new PreLaunchLocker(makeAddr("token"), _sdToken, _gauge, 0);
         assertEq(address(locker.gauge()), _gauge);
     }
 
@@ -77,14 +77,14 @@ contract PreLaunchLocker__constructor is PreLaunchLockerTest {
 
         vm.warp(timestamp);
 
-        PreLaunchLocker locker = new PreLaunchLocker(makeAddr("token"), address(sdToken), address(gauge));
+        PreLaunchLocker locker = new PreLaunchLocker(makeAddr("token"), address(sdToken), address(gauge), 0);
         assertEq(locker.timestamp(), timestamp);
     }
 
     function test_SetsTheStateToIDLE() external {
         // it sets the state to IDLE
 
-        PreLaunchLocker locker = new PreLaunchLocker(makeAddr("token"), address(sdToken), address(gauge));
+        PreLaunchLocker locker = new PreLaunchLocker(makeAddr("token"), address(sdToken), address(gauge), 0);
         assertEq(uint256(locker.state()), uint256(PreLaunchLocker.STATE.IDLE));
     }
 
@@ -94,9 +94,26 @@ contract PreLaunchLocker__constructor is PreLaunchLockerTest {
         vm.assume(caller != address(0));
 
         vm.prank(caller);
-        PreLaunchLocker locker = new PreLaunchLocker(makeAddr("token"), address(sdToken), address(gauge));
+        PreLaunchLocker locker = new PreLaunchLocker(makeAddr("token"), address(sdToken), address(gauge), 0);
 
         assertEq(locker.governance(), caller);
+    }
+
+    function test_SetsTheDefaultValueGivenNoCustomForceCancelDelay() external {
+        // it sets the default value given no custom force cancel delay
+
+        PreLaunchLocker locker = new PreLaunchLocker(makeAddr("token"), address(sdToken), address(gauge), 0);
+        assertEq(locker.FORCE_CANCEL_DELAY(), 3 * 30 days);
+    }
+
+    function test_SetsTheCustomForceCancelDelayIfProvided(uint256 customForceCancelDelay) external {
+        // it sets the custom force cancel delay if provided
+
+        vm.assume(customForceCancelDelay != 0);
+
+        PreLaunchLocker locker =
+            new PreLaunchLocker(makeAddr("token"), address(sdToken), address(gauge), customForceCancelDelay);
+        assertEq(locker.FORCE_CANCEL_DELAY(), customForceCancelDelay);
     }
 
     function test_EmitsTheStateUpdateEvent() external {
@@ -104,7 +121,7 @@ contract PreLaunchLocker__constructor is PreLaunchLockerTest {
 
         vm.expectEmit(true, true, true, true);
         emit LockerStateUpdated(PreLaunchLocker.STATE.IDLE);
-        new PreLaunchLocker(makeAddr("token"), address(sdToken), address(gauge));
+        new PreLaunchLocker(makeAddr("token"), address(sdToken), address(gauge), 0);
     }
 
     function test_EmitsTheGovernanceUpdatedEvent(address caller) external {
@@ -116,7 +133,7 @@ contract PreLaunchLocker__constructor is PreLaunchLockerTest {
         emit GovernanceUpdated(address(0), caller);
 
         vm.prank(caller);
-        new PreLaunchLocker(makeAddr("token"), address(sdToken), address(gauge));
+        new PreLaunchLocker(makeAddr("token"), address(sdToken), address(gauge), 0);
     }
 
     // FIXME: idk why I cannot import the events directly from the PreLaunchLocker contract
