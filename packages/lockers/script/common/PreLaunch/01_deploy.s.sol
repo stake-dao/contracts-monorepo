@@ -26,7 +26,7 @@ contract PreLaunchDeploy is Script {
     string internal constant DEFAULT_SD_TOKEN_PREFIX_NAME = "Stake DAO ";
     string internal constant DEFAULT_SD_TOKEN_PREFIX_SYMBOL = "sd";
 
-    function _run(address token, string memory name, string memory symbol)
+    function _run(address token, string memory name, string memory symbol, uint256 customForceCancelDelay)
         internal
         returns (address sdToken, address gauge, address preLaunchLocker, address locker)
     {
@@ -60,7 +60,7 @@ contract PreLaunchDeploy is Script {
         gauge = address(new TransparentUpgradeableProxy(gaugeImplementation, DAO.PROXY_ADMIN, data));
 
         // 5. deploy the PreLaunchLocker and transfer the governance to the DAO
-        preLaunchLocker = address(new PreLaunchLocker(token, sdToken, gauge));
+        preLaunchLocker = address(new PreLaunchLocker(token, sdToken, gauge, customForceCancelDelay));
         PreLaunchLocker(preLaunchLocker).transferGovernance(DAO.GOVERNANCE);
 
         // 6. set PreLaunchLocker as the sdToken operator
@@ -81,6 +81,10 @@ contract PreLaunchDeploy is Script {
         string memory symbol =
             vm.envOr("TOKEN_SYMBOL", string.concat(DEFAULT_SD_TOKEN_PREFIX_SYMBOL, IERC20Metadata(token).symbol()));
 
-        (sdToken, gauge, preLaunchLocker, locker) = _run(token, name, symbol);
+        // @dev: Optional env variable used to override the force cancel delay.
+        //       If not provided, the default value will be used.
+        uint256 customForceCancelDelay = vm.envOr("FORCE_CANCEL_DELAY", uint256(0));
+
+        (sdToken, gauge, preLaunchLocker, locker) = _run(token, name, symbol, customForceCancelDelay);
     }
 }
