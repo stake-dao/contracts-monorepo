@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import { TransparentUpgradeableProxy } from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
-import { IERC20Metadata } from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import { DAO } from "address-book/src/dao/1.sol";
-import { Script } from "forge-std/src/Script.sol";
-import { SafeProxyFactoryLibrary } from "src/common/factory/SafeProxyFactoryLibrary.sol";
-import { PreLaunchLocker } from "src/common/locker/PreLaunchLocker.sol";
-import { sdToken as SdToken } from "src/common/token/sdToken.sol";
+import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {DAO} from "address-book/src/dao/1.sol";
+import {Script} from "forge-std/src/Script.sol";
+import {SafeProxyFactoryLibrary} from "src/common/factory/SafeProxyFactoryLibrary.sol";
+import {PreLaunchLocker} from "src/common/locker/PreLaunchLocker.sol";
+import {sdToken as SdToken} from "src/common/token/sdToken.sol";
 
 /// @title PreLaunchDeploy
 /// @notice This script is used to deploy the whole pre-launch protocol including:

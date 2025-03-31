@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import { Enum } from "@safe/contracts/common/Enum.sol";
-import { SafeProxyFactory } from "@safe/contracts/proxies/SafeProxyFactory.sol";
-import { Safe } from "@safe/contracts/Safe.sol";
-import { DAO } from "address-book/src/dao/59144.sol";
-import { ILocker, ISafe } from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
+import {Enum} from "@safe/contracts/common/Enum.sol";
+import {SafeProxyFactory} from "@safe/contracts/proxies/SafeProxyFactory.sol";
+import {Safe} from "@safe/contracts/Safe.sol";
+import {ILocker, ISafe} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
 
 /// @title SafeProxyFactoryLibrary
 /// @notice This library is used to deploy a Safe proxy contract.
