@@ -51,7 +51,8 @@ contract PreLaunchLocker {
     ///////////////////////////////////////////////////////////////
 
     /// @notice The delay after which the locker can be force canceled by anyone.
-    uint256 public constant FORCE_CANCEL_DELAY = 3 * 30 days;
+    uint256 public immutable FORCE_CANCEL_DELAY;
+    uint256 internal constant DEFAULT_FORCE_CANCEL_DELAY = 3 * 30 days;
     /// @notice The immutable token to lock.
     address public immutable token;
     /// @notice The sdToken address.
@@ -168,10 +169,11 @@ contract PreLaunchLocker {
     /// @param _token Address of the token to lock.
     /// @param _sdToken Address of the sdToken to mint.
     /// @param _gauge Address of the gauge to stake the sdTokens to.
+    /// @param _customForceCancelDelay The optional custom force cancel delay. If set to 0, the default value will be used (3 months).
     /// @custom:reverts REQUIRED_PARAM if one of the given params is zero.
     /// @custom:reverts INVALID_SD_TOKEN if the given sdToken is not operated by this contract.
     /// @custom:reverts INVALID_GAUGE if the given gauge is not associated with the given sdToken.
-    constructor(address _token, address _sdToken, address _gauge) {
+    constructor(address _token, address _sdToken, address _gauge, uint256 _customForceCancelDelay) {
         if (_token == address(0) || _sdToken == address(0) || _gauge == address(0)) revert REQUIRED_PARAM();
 
         // ensure the given gauge contract is associated with the given sdToken
@@ -184,6 +186,9 @@ contract PreLaunchLocker {
 
         // start the timer before the locker can be force canceled
         timestamp = uint96(block.timestamp);
+
+        // set the custom force cancel delay if provided
+        FORCE_CANCEL_DELAY = _customForceCancelDelay != 0 ? _customForceCancelDelay : DEFAULT_FORCE_CANCEL_DELAY;
 
         // set the state of the contract to idle and emit the state update event
         _setState(STATE.IDLE);
