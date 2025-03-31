@@ -75,6 +75,13 @@ contract PreLaunchLocker__deposit is PreLaunchLockerTest {
         locker.deposit(amount + 1, stake);
     }
 
+    function test_RevertsIfTheReceiverIs0() external {
+        // it reverts if the receiver is 0
+
+        vm.expectRevert(PreLaunchLocker.REQUIRED_PARAM.selector);
+        locker.deposit(1, true, address(0));
+    }
+
     function test_GivenTheStakeIsTrue(address caller, uint256 amount) external {
         // 1. it mints sdTokens to the locker
         // 2. it stakes the sdTokens in the gauge for the caller
@@ -91,7 +98,7 @@ contract PreLaunchLocker__deposit is PreLaunchLockerTest {
 
         // 3. expect the event to be emitted
         vm.expectEmit();
-        emit TokensStaked(caller, address(gauge), amount);
+        emit TokensStaked(caller, caller, address(gauge), amount);
 
         // expect the internal calls to be made
         vm.expectCall(address(sdToken), abi.encodeWithSelector(ISdToken.mint.selector, address(locker), amount), 1);
@@ -151,9 +158,93 @@ contract PreLaunchLocker__deposit is PreLaunchLockerTest {
         assertEq(gauge.balanceOf(address(locker)), 0);
     }
 
+    function test_GivenAReceiverWhenTheStakeIsTrue(address caller, uint256 amount, address receiver) external {
+        // 1. it stakes the sdTokens in the gauge for the receiver
+        // 2. it emits the TokensStaked event
+
+        vm.assume(caller != address(0));
+        vm.assume(receiver != address(0));
+        vm.assume(caller != receiver);
+        _assumeUnlabeledAddress(caller);
+        _assumeUnlabeledAddress(receiver);
+        amount = bound(amount, 1, type(uint256).max);
+
+        // mint the token to the caller and approve the locker to spend the token
+        deal(address(token), caller, amount);
+        vm.prank(caller);
+        token.approve(address(locker), amount);
+
+        // 3. expect the event to be emitted
+        vm.expectEmit();
+        emit TokensStaked(caller, receiver, address(gauge), amount);
+
+        // expect the internal calls to be made
+        vm.expectCall(address(sdToken), abi.encodeWithSelector(ISdToken.mint.selector, address(locker), amount), 1);
+        vm.expectCall(address(sdToken), abi.encodeWithSelector(ISdToken.approve.selector, address(gauge), amount), 1);
+        vm.expectCall(
+            address(gauge), abi.encodeWithSelector(ILiquidityGaugeV4.deposit.selector, amount, receiver, false), 1
+        );
+
+        // deposit the tokens
+        vm.prank(caller);
+        locker.deposit(amount, true, receiver);
+
+        // assert the tokens have been transferred to the locker
+        assertEq(token.balanceOf(address(caller)), 0);
+        assertEq(token.balanceOf(address(locker)), amount);
+
+        // 1. assert the sdTokens have been minted and transferred to the gauge
+        assertEq(sdToken.balanceOf(address(caller)), 0);
+        assertEq(sdToken.balanceOf(address(locker)), 0);
+        assertEq(sdToken.balanceOf(address(gauge)), amount);
+
+        // assert the gauge tracks the receiver's balance
+        assertEq(gauge.balanceOf(address(receiver)), amount);
+        assertEq(gauge.balanceOf(address(caller)), 0);
+        assertEq(gauge.balanceOf(address(locker)), 0);
+    }
+
+    function test_GivenAReceiverWhenTheStakeIsFalse(address caller, uint256 amount, address receiver) external {
+        // it mints sdTokens to the receiver
+
+        vm.assume(caller != address(0));
+        vm.assume(receiver != address(0));
+        vm.assume(caller != receiver);
+        _assumeUnlabeledAddress(caller);
+        _assumeUnlabeledAddress(receiver);
+        amount = bound(amount, 1, type(uint256).max);
+
+        // mint the token to the caller and approve the locker to spend the token
+        deal(address(token), caller, amount);
+        vm.prank(caller);
+        token.approve(address(locker), amount);
+
+        // 3. expect the internal calls to be made
+        vm.expectCall(address(sdToken), abi.encodeWithSelector(ISdToken.mint.selector, address(receiver), amount), 1);
+
+        // deposit the tokens
+        vm.prank(caller);
+        locker.deposit(amount, false, receiver);
+
+        // assert the tokens have been transferred to the locker
+        assertEq(token.balanceOf(address(caller)), 0);
+        assertEq(token.balanceOf(address(locker)), amount);
+
+        // 1. assert the sdTokens have been minted to the receiver
+        assertEq(sdToken.balanceOf(address(caller)), 0);
+        assertEq(sdToken.balanceOf(address(locker)), 0);
+        assertEq(sdToken.balanceOf(address(receiver)), amount);
+
+        // assert the gauge balances have not changed
+        assertEq(gauge.balanceOf(address(caller)), 0);
+        assertEq(gauge.balanceOf(address(locker)), 0);
+        assertEq(gauge.balanceOf(address(receiver)), 0);
+    }
+
     /// @notice Event emitted each time a user stakes their sdTokens.
-    /// @param account The account that staked the sdTokens.
+    /// @param caller The address who called the function.
+    /// @param receiver The address who received the gauge token.
     /// @param gauge The gauge that the sdTokens were staked to.
     /// @param amount The amount of sdTokens staked.
-    event TokensStaked(address indexed account, address gauge, uint256 amount);
+    event TokensStaked(address indexed caller, address indexed receiver, address indexed gauge, uint256 amount);
 }
