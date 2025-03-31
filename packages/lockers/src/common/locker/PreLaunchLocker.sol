@@ -121,10 +121,11 @@ contract PreLaunchLocker {
     event LockerStateUpdated(STATE newState);
 
     /// @notice Event emitted each time a user stakes their sdTokens.
-    /// @param account The account that staked the sdTokens.
+    /// @param caller The address who called the function.
+    /// @param receiver The address who received the gauge token.
     /// @param gauge The gauge that the sdTokens were staked to.
     /// @param amount The amount of sdTokens staked.
-    event TokensStaked(address indexed account, address gauge, uint256 amount);
+    event TokensStaked(address indexed caller, address indexed receiver, address indexed gauge, uint256 amount);
 
     /// @notice Error thrown when a required parameter is set to the zero address.
     error REQUIRED_PARAM();
@@ -201,13 +202,14 @@ contract PreLaunchLocker {
     /// --- DEPOSIT
     ///////////////////////////////////////////////////////////////
 
-    /// @notice Deposit tokens in this contract.
+    /// @notice Deposit tokens for a given receiver.
     /// @param amount Amount of tokens to deposit.
     /// @param stake Whether to stake the tokens in the gauge.
+    /// @param receiver The address to receive the sdToken or the gauge token.
     /// @custom:reverts REQUIRED_PARAM if the given amount is zero.
     /// @custom:reverts CANNOT_DEPOSIT_ACTIVE_OR_CANCELED_LOCKER if the locker is already associated with a depositor.
-    function deposit(uint256 amount, bool stake) public {
-        if (amount == 0) revert REQUIRED_PARAM();
+    function deposit(uint256 amount, bool stake, address receiver) public {
+        if (amount == 0 || receiver == address(0)) revert REQUIRED_PARAM();
 
         // deposit aren't allowed once the locker leaves the idle state
         if (state != STATE.IDLE) revert CANNOT_DEPOSIT_ACTIVE_OR_CANCELED_LOCKER();
@@ -224,13 +226,21 @@ contract PreLaunchLocker {
             storedSdToken.mint(address(this), amount);
             storedSdToken.approve(address(storedGauge), amount);
 
-            storedGauge.deposit(amount, msg.sender, false);
+            storedGauge.deposit(amount, receiver, false);
 
-            emit TokensStaked(msg.sender, address(storedGauge), amount);
+            emit TokensStaked(msg.sender, receiver, address(storedGauge), amount);
         } else {
             // 2.b. or mint the sdTokens directly to the caller (ratio 1:1 between token<>sdToken)
-            sdToken.mint(msg.sender, amount);
+            sdToken.mint(receiver, amount);
         }
+    }
+
+    /// @notice Deposit tokens in this contract for the caller.
+    /// @param amount Amount of tokens to deposit.
+    /// @param stake Whether to stake the tokens in the gauge.
+    /// @custom:reverts REQUIRED_PARAM if the given amount is zero.
+    function deposit(uint256 amount, bool stake) external {
+        deposit(amount, stake, msg.sender);
     }
 
     ////////////////////////////////////////////////////////////////
