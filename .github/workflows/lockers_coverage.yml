@@ -26,6 +26,7 @@ on:
       - "packages/interfaces/**" # dependency
     branches:
       - main
+      - develop
 
 jobs:
   coverage:
