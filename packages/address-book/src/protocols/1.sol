@@ -73,8 +73,15 @@ library Fx {
     address public constant SMART_WALLET_CHECKER = 0xD71B8B76015F296E53D41e8288a8a13eAfFff2ea;
 }
 
-
 library Spectra {
     address public constant APW = 0x4104b135DBC9609Fc1A9490E61369036497660c8;
     address public constant VEAPW = 0xC5ca1EBF6e912E49A6a70Bb0385Ea065061a4F09;
+}
+
+library YieldNest {
+    address public constant YND = 0x7159cc276D7d17Ab4b3bEb19959E1F39368a45Ba;
+    address public constant SDYND = 0x0a885027D84155387B9Bd47485B0fdec10C6B4EC;
+    address public constant PRELAUNCH_LOCKER = 0xE0ffc03bb4086051090646a05ae4aF43843a5b51;
+    address public constant LOCKER = 0x8396A782cc966661cd818a4DaC19C3E0aA893012;
+    address public constant GAUGE = 0x26aB50DC99F14405155013ea580Ea2b3dB1801c7;
 }
