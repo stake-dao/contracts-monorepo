@@ -25,6 +25,7 @@ on:
       - "packages/interfaces/**" # dependency
     branches:
       - main
+      - develop
   push:
     paths:
       - "packages/strategies/**"
