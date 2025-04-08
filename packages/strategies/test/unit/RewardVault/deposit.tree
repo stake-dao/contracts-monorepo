@@ -11,6 +11,10 @@ RewardVault__deposit
 │   └── it mints the shares to the sender
 ├── given an address receiver
 │   └── it mints the shares to the receiver
+├── given an address account
+│   ├── it reverts if the address is the zero address
+│   ├── it reverts if the caller is not allowed
+│   └── it mints the shares to the account
 ├── it reverts if calling accountant checkpoint reverts
 ├── it reverts if the deposit to the strategy reverts
 ├── it reverts if one of the ERC20 transfer reverts

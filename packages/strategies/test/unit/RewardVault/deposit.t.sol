@@ -36,6 +36,13 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         return cloneRewardVault.deposit(assets, receiver);
     }
 
+    // Due to the 1:1 relationship of the assets and the shares, the deposit and the  functions
+    // do the same thing. This function is a wrapper that calls the appropriate function based on the context
+    // of the test. This is a virtual allowing the mint test to override it to call `mint` instead of `deposit`.
+    function deposit_mint_permissioned_wrapper(address account, uint256 assets) internal virtual returns (uint256) {
+        return cloneRewardVault.deposit(account, assets);
+    }
+
     function setUp() public virtual override {
         // we're deploying and setting up the reward vault as it would be in a real deployment
         super.setUp();
@@ -452,6 +459,75 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         // make the caller deposit the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
         deposit_mint_wrapper(OWNER_BALANCE, receiver);
+    }
+
+    function test_GivenAnAddressAccount(address caller, address account)
+        external
+        _cheat_replaceRewardVaultWithRewardVaultHarness
+    {
+        // 1. it reverts if the caller is not allowed
+        // 2. it reverts if the address is the zero address
+        // 3. it mints the shares to the account
+
+        _assumeUnlabeledAddress(account);
+        vm.assume(account != address(0));
+        vm.assume(caller != address(0));
+        vm.label({account: account, newLabel: "account"});
+        vm.label({account: caller, newLabel: "caller"});
+
+        // set the owner balance and approve half the balance
+        uint256 OWNER_BALANCE = 1e18;
+        deal(asset, account, OWNER_BALANCE);
+        vm.prank(account);
+        IERC20(asset).approve(address(cloneRewardVault), OWNER_BALANCE);
+
+        // mock the dependencies of the withdraw function
+        (, IStrategy.PendingRewards memory pendingRewards) = _mock_test_dependencies(OWNER_BALANCE, Allocation.MIXED);
+
+        // 1. it reverts if the caller is not allowed
+        vm.prank(caller);
+        vm.expectRevert(RewardVault.OnlyAllowed.selector);
+        deposit_mint_permissioned_wrapper(account, OWNER_BALANCE);
+
+        //  2. it reverts if the address is the zero address
+        vm.mockCall(
+            address(cloneRewardVault.PROTOCOL_CONTROLLER()),
+            abi.encodeWithSelector(IProtocolController.allowed.selector),
+            abi.encode(true)
+        );
+
+        vm.prank(caller);
+        vm.expectRevert(RewardVault.ZeroAddress.selector);
+        deposit_mint_permissioned_wrapper(address(0), OWNER_BALANCE);
+
+        // 3. it mints the shares to the account
+        vm.mockCall(
+            address(cloneRewardVault.PROTOCOL_CONTROLLER()),
+            abi.encodeWithSelector(IProtocolController.allowed.selector),
+            abi.encode(true)
+        );
+
+        // expect the checkpoint to be called with the account as the recipient
+        vm.expectCall(
+            address(accountant),
+            abi.encodeCall(
+                IAccountant.checkpoint,
+                (
+                    gauge,
+                    address(0),
+                    account, // this is what we are testing
+                    uint128(OWNER_BALANCE),
+                    pendingRewards,
+                    false
+                )
+            ),
+            1
+        );
+
+        vm.prank(caller);
+        vm.expectEmit(true, true, true, true);
+        emit IERC4626.Deposit(caller, account, OWNER_BALANCE, OWNER_BALANCE);
+        deposit_mint_permissioned_wrapper(account, OWNER_BALANCE);
     }
 
     function test_RevertsIfCallingAccountantCheckpointReverts(address caller, address receiver)
