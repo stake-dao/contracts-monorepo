@@ -207,6 +207,21 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         return assets;
     }
 
+    /// @notice Deposits `assets` from `account` into the vault and mints shares to `account`.
+    /// @dev Only callable by allowed addresses. `account` should have approved this contract to transfer `assets`.
+    /// @param account The address to deposit assets from and mint shares to.
+    /// @param assets The amount of assets to deposit.
+    /// @return _ The amount of assets deposited.
+    function deposit(address account, uint256 assets) public onlyAllowed returns (uint256) {
+        if (account == address(0)) revert ZeroAddress();
+
+        _deposit(account, account, assets, assets);
+
+        // return the amount of assets deposited. Thanks to the 1:1 relationship between assets and shares
+        // the amount of assets deposited is the same as the amount of shares minted
+        return assets;
+    }
+
     /// @notice Mints exact `shares` to `receiver` by depositing assets.
     /// @dev Due to the 1:1 relationship between the assets and the shares,
     ///      the mint function is a wrapper of the deposit function.
@@ -215,6 +230,15 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @return _ The amount of shares minted.
     function mint(uint256 shares, address receiver) public returns (uint256) {
         return deposit(shares, receiver);
+    }
+
+    /// @notice Mints exact `shares` to `account` by depositing `account`'s assets.
+    /// @dev Only callable by allowed addresses.
+    /// @param account The address to deposit assets from and mint shares to.
+    /// @param shares The amount of shares to mint.
+    /// @return _ The amount of shares minted.
+    function mint(address account, uint256 shares) public onlyAllowed returns (uint256) {
+        return deposit(account, shares);
     }
 
     /// @dev Internal function to deposit assets into the vault.

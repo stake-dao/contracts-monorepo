@@ -10,6 +10,10 @@ contract RewardVault__mint is RewardVault__deposit {
         return cloneRewardVault.mint(shares, receiver);
     }
 
+    function deposit_mint_permissioned_wrapper(address account, uint256 shares) internal override returns (uint256) {
+        return cloneRewardVault.mint(account, shares);
+    }
+
     function test_ActsLikeDeposit() external {
         // don't need to test anything, we're using the same logic as the deposit test
         // keep this function for clarity and check using bulloak
