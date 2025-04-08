@@ -15,6 +15,10 @@ RewardVault__deposit
 │   ├── it reverts if the address is the zero address
 │   ├── it reverts if the caller is not allowed
 │   └── it mints the shares to the account
+├── when the referrer is set in the public function
+│   └── it emits the referrer deposit event
+├── when the referrer is set in the permissioned function
+│   └── it emits the referrer deposit event
 ├── it reverts if calling accountant checkpoint reverts
 ├── it reverts if the deposit to the strategy reverts
 ├── it reverts if one of the ERC20 transfer reverts
