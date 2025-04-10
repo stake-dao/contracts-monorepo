@@ -1,0 +1,3 @@
+Router__safeSetModule
+├── it acts as setModule
+└── it reverts if the module is already set
