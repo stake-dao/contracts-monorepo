@@ -1,0 +1,4 @@
+Router__enumerateModules
+├── it returns the full contiguous sequence of modules
+├── it returns an empty array if the first slot is not set
+└── it returns an subset of the modules if there is a gap in the sequence
