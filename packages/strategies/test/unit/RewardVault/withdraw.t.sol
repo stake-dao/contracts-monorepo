@@ -93,33 +93,33 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
         vm.mockCall(accountant, abi.encodeWithSelector(IAccountant.checkpoint.selector), abi.encode(true));
     }
 
-    function test_GivenSenderIsNotOwner(address owner, address caller)
+    function test_GivenSenderIsNotOwner(address _owner, address caller)
         external
         _cheat_replaceRewardVaultWithRewardVaultHarness
     {
         // it reverts if the allowance is not enough
         // it update the allowance when it is finite
 
-        _assumeUnlabeledAddress(owner);
+        _assumeUnlabeledAddress(_owner);
         _assumeUnlabeledAddress(caller);
-        vm.assume(owner != address(0));
+        vm.assume(_owner != address(0));
         vm.assume(caller != address(0));
-        vm.assume(caller != owner);
+        vm.assume(caller != _owner);
         vm.label({account: caller, newLabel: "caller"});
-        vm.label({account: owner, newLabel: "owner"});
+        vm.label({account: _owner, newLabel: "owner"});
 
         uint256 OWNER_BALANCE = 1e18;
         uint256 OWNER_ALLOWED_BALANCE = OWNER_BALANCE / 2;
 
         // set the owner balance and approve half the balance
-        deal(asset, owner, OWNER_BALANCE);
-        vm.prank(owner);
+        deal(asset, _owner, OWNER_BALANCE);
+        vm.prank(_owner);
         cloneRewardVault.approve(caller, OWNER_ALLOWED_BALANCE);
 
         // attempt to withdraw the rewards with an allowance that is not enough
         vm.expectRevert(RewardVault.NotApproved.selector);
         vm.prank(caller);
-        withdraw_redeem_wrapper(OWNER_BALANCE, address(0), owner);
+        withdraw_redeem_wrapper(OWNER_BALANCE, address(0), _owner);
 
         // mock the dependencies of the withdraw function
         _mock_test_dependencies();
@@ -129,12 +129,12 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
 
         // make the caller withdraw the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
-        withdraw_redeem_wrapper(OWNER_ALLOWED_BALANCE - 1, address(0), owner);
+        withdraw_redeem_wrapper(OWNER_ALLOWED_BALANCE - 1, address(0), _owner);
 
         // allowance must be 1, because
         // - the owner allowed the called to spend 1 + OWNER_BALANCE / 2
         // - the caller withdrew OWNER_BALANCE / 2
-        assertEq(cloneRewardVault.allowance(owner, caller), 1);
+        assertEq(cloneRewardVault.allowance(_owner, caller), 1);
     }
 
     function test_UpdatesTheRewardForTheOwner(address owner, address caller, address receiver)
