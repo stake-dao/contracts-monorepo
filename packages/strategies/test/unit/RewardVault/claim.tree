@@ -1,0 +1,7 @@
+RewardVault__claim
+├── it reverts if caller is not authorized given account
+├── it reverts if given tokens is not supported
+├── it updates account data
+├── it updates reward token state
+├── it claims account reward to receiver
+└── it claims caller reward to receiver
