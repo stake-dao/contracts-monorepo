@@ -131,7 +131,9 @@ contract CurveFactory is Factory {
         for (uint8 i = 0; i < 8; i++) {
             /// Get the extra reward token address.
             address _extraRewardToken = ILiquidityGauge(_gauge).reward_tokens(i);
-
+            (,, uint256 periodFinish,,,) = ILiquidityGauge(_gauge).reward_data(_extraRewardToken);
+            /// If the reward data is not active, skip.
+            if (periodFinish < block.timestamp) continue;
             /// If the address is 0, it means there are no more extra reward tokens.
             if (_extraRewardToken == address(0)) break;
             /// If the extra reward token is already in the vault, skip.
