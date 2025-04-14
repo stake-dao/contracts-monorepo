@@ -683,7 +683,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         protocolFeesAccrued = 0;
 
         // transfer the accrued protocol fees to the fee receiver and emit the claim event
-        IERC20(REWARD_TOKEN).transfer(feeReceiver, currentAccruedProtocolFees);
+        IERC20(REWARD_TOKEN).safeTransfer(feeReceiver, currentAccruedProtocolFees);
         emit ProtocolFeesClaimed(currentAccruedProtocolFees);
     }
 
