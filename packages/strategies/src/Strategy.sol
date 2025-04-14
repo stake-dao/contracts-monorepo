@@ -244,6 +244,9 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @notice Rebalances the strategy
     /// @param gauge The gauge to rebalance
     function rebalance(address gauge) external {
+        /// If the gauge is shutdown, return.
+        require(!PROTOCOL_CONTROLLER.isShutdown(gauge), GaugeShutdown());
+
         /// 1. Get the allocator.
         address allocator = PROTOCOL_CONTROLLER.allocator(PROTOCOL_ID);
 
