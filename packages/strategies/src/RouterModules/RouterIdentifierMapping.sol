@@ -6,4 +6,5 @@ library RouterIdentifierMapping {
     uint8 internal constant WITHDRAW = 0x01;
     uint8 internal constant CLAIM = 0x02;
     uint8 internal constant MIGRATION_STAKE_DAO_V1 = 0x03;
+    uint8 internal constant MIGRATION_CURVE_V1 = 0x04;
 }
