@@ -48,6 +48,11 @@ contract RewardReceiver__distributeRewardToken is BaseTest {
         // mock the reward token to have no balance
         vm.mockCall(address(rewardToken), abi.encodeWithSelector(IERC20.balanceOf.selector), abi.encode(0));
 
+        // mock the vault to have the reward receiver as the rewards distributor
+        vm.mockCall(
+            address(rewardVault), abi.encodeWithSelector(FakeRewardVault.getRewardsDistributor.selector), abi.encode(address(rewardReceiver))
+        );
+
         // expect the reward receiver contract to revert because there are no rewards to distribute
         vm.expectRevert(RewardReceiver.NoRewards.selector);
         rewardReceiver.distributeRewardToken(IERC20(address(rewardToken)));
@@ -65,6 +70,11 @@ contract RewardReceiver__distributeRewardToken is BaseTest {
 
         // mock the reward token to have the amount of rewards to distribute
         vm.mockCall(address(rewardToken), abi.encodeWithSelector(IERC20.balanceOf.selector), abi.encode(amount));
+
+        // mock the vault to have the reward receiver as the rewards distributor
+        vm.mockCall(
+            address(rewardVault), abi.encodeWithSelector(FakeRewardVault.getRewardsDistributor.selector), abi.encode(address(rewardReceiver))
+        );
 
         // expect the reward receiver contract to revert because the balance is higher than uint128 max
         vm.expectRevert(abi.encodeWithSelector(SafeCast.SafeCastOverflowedUintDowncast.selector, 128, amount));
@@ -84,6 +94,11 @@ contract RewardReceiver__distributeRewardToken is BaseTest {
         // mock the reward token to have the amount of rewards to distribute
         vm.mockCall(address(rewardToken), abi.encodeWithSelector(IERC20.balanceOf.selector), abi.encode(amount));
 
+        // mock the vault to have the reward receiver as the rewards distributor
+        vm.mockCall(
+            address(rewardVault), abi.encodeWithSelector(FakeRewardVault.getRewardsDistributor.selector), abi.encode(address(rewardReceiver))
+        );
+
         // expect the reward receiver contract to ask the vault to deposit the rewards
         vm.expectCall(
             address(rewardVault), abi.encodeCall(RewardVault.depositRewards, (address(rewardToken), amount)), 1
@@ -96,4 +111,5 @@ contract RewardReceiver__distributeRewardToken is BaseTest {
 contract FakeRewardVault {
     function isRewardToken(address) external returns (bool) {}
     function depositRewards(address, uint128) external {}
+    function getRewardsDistributor(address) external returns (address) {}
 }

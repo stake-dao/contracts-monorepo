@@ -71,7 +71,7 @@ contract RewardReceiver is IRewardReceiver {
     /// @custom:throws InvalidToken If the token is not registered as a valid reward token in the vault.
     function distributeRewardToken(IERC20 token) external {
         // Check if the token is a valid reward token in the vault
-        if (!rewardVault().isRewardToken(address(token))) revert InvalidToken();
+        require(rewardVault().isRewardToken(address(token)), InvalidToken());
 
         // Get the balance of the reward token
         uint128 amount = token.balanceOf(address(this)).toUint128();
@@ -91,6 +91,9 @@ contract RewardReceiver is IRewardReceiver {
     /// @param token The reward token to deposit.
     /// @param amount The amount of rewards to deposit.
     function _depositRewards(IERC20 token, uint128 amount) internal {
+        /// Check if the reward receiver is a valid rewards distributor for the reward token.
+        if (rewardVault().getRewardsDistributor(address(token)) != address(this)) return;
+
         /// Approve the reward vault to spend the reward token.
         token.safeIncreaseAllowance(address(rewardVault()), amount);
 
