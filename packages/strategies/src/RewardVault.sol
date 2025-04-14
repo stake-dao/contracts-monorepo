@@ -262,7 +262,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @return _ The amount of assets withdrawn.
     /// @custom:reverts NotApproved if the caller is not allowed to withdraw at least the amount of assets given.
     function withdraw(uint256 assets, address receiver, address owner) public returns (uint256) {
-        if (receiver == address(0)) receiver = owner;
+        if (receiver == address(0)) receiver = msg.sender;
 
         // if the caller isn't the owner, check if the caller is allowed to withdraw the amount of assets
         if (msg.sender != owner) {
