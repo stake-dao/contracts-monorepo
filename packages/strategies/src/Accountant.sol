@@ -458,11 +458,11 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
             }
 
             // Update the net credited so far
-            _vault.netCredited = newNet.toUint128();
+            _vault.netCredited = newNet >= oldNet ? 0 : (oldNet - newNet).toUint128();
 
             // Always clear pending rewards after harvesting
-            _vault.feeSubjectAmount = 0;
             _vault.totalAmount = 0;
+            _vault.feeSubjectAmount = 0;
 
             emit Harvest(vault, pendingRewards.totalAmount);
         }
