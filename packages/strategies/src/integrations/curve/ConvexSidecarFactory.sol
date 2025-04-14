@@ -23,6 +23,7 @@ contract ConvexSidecarFactory is SidecarFactory {
     /// @notice Error emitted when the reward receiver is not set
     error VaultNotDeployed();
 
+
     /// @notice Constructor
     /// @param _implementation Address of the sidecar implementation
     /// @param _protocolController Address of the protocol controller

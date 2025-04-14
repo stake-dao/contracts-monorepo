@@ -39,6 +39,9 @@ abstract contract SidecarFactory is ISidecarFactory {
     /// @notice Error emitted when a zero address is provided
     error ZeroAddress();
 
+    /// @notice Error emitted when the sidecar is already deployed
+    error SidecarAlreadyDeployed();
+
     /// @notice Event emitted when a new sidecar is created
     /// @param gauge Address of the gauge
     /// @param sidecar Address of the created sidecar
@@ -68,6 +71,8 @@ abstract contract SidecarFactory is ISidecarFactory {
     /// @param args Encoded arguments for sidecar creation
     /// @return sidecarAddress Address of the created sidecar
     function create(address gauge, bytes memory args) public virtual override returns (address sidecarAddress) {
+        require(sidecar[gauge] == address(0), SidecarAlreadyDeployed());
+
         // Validate the gauge and args
         _isValidGauge(gauge, args);
 
