@@ -30,7 +30,7 @@ contract Accountant__Harvest is AccountantBaseTest {
         }
 
         vm.expectRevert(Accountant.InvalidHarvestDataLength.selector);
-        accountant.harvest(vaults, harvestData);
+        accountant.harvest(vaults, harvestData, address(this));
     }
 
     function test_RevertIfHarvesterIncorrect() external {
@@ -48,7 +48,7 @@ contract Accountant__Harvest is AccountantBaseTest {
         );
         vm.expectRevert(Accountant.NoStrategy.selector);
 
-        accountant.harvest(vaults, harvestData);
+        accountant.harvest(vaults, harvestData, address(this));
     }
 
     function test_RevertIfRewardTokenMintReverts(uint256 rewards, uint128 amount, address _harvester)
@@ -88,7 +88,7 @@ contract Accountant__Harvest is AccountantBaseTest {
 
         vm.prank(_harvester);
         vm.expectRevert("UNEXPECTED_ERROR_IN_ERC20");
-        accountantHarness.harvest(vaults, harvestData);
+        accountantHarness.harvest(vaults, harvestData, _harvester);
     }
 
     function test_RevertIfRewardTokenNotReceived(uint256 rewards, uint128 amount, address _harvester)
@@ -132,7 +132,7 @@ contract Accountant__Harvest is AccountantBaseTest {
 
         vm.prank(_harvester);
         vm.expectRevert(abi.encodeWithSelector(Accountant.HarvestTokenNotReceived.selector));
-        accountantHarness.harvest(vaults, harvestData);
+        accountantHarness.harvest(vaults, harvestData, _harvester);
     }
 
     function test_DoesNothingIfVaultAndHarvestDataAreEmpty() external {
@@ -144,7 +144,7 @@ contract Accountant__Harvest is AccountantBaseTest {
 
         // start recording storage read/write before calling the function
         vm.record();
-        accountant.harvest(vaults, harvestData);
+        accountant.harvest(vaults, harvestData, address(this));
 
         // as we expect the function to do nothing, ensure there is no storage write made
         (, bytes32[] memory writes) = vm.accesses(address(accountant));
@@ -191,7 +191,7 @@ contract Accountant__Harvest is AccountantBaseTest {
         harvestData[0] = abi.encode(rewards, 1e18);
 
         vm.prank(_harvester);
-        accountantHarness.harvest(vaults, harvestData);
+        accountantHarness.harvest(vaults, harvestData, _harvester);
 
         /// Check that the reward token has been correctly dispatched
         assertEq(rewardToken.balanceOf(address(accountantHarness)), rewards - harvestFee);
@@ -227,7 +227,7 @@ contract Accountant__Harvest is AccountantBaseTest {
         vaults[0] = vault;
         bytes[] memory harvestData = new bytes[](1);
         harvestData[0] = abi.encode(rewards, 1e18);
-        accountantHarness.harvest(vaults, harvestData);
+        accountantHarness.harvest(vaults, harvestData, address(this));
 
         // ensure vault data has been reset
         assertEq(accountantHarness.exposed_feeSubjectAmount(vault), 0);
@@ -263,7 +263,7 @@ contract Accountant__Harvest is AccountantBaseTest {
         vaults[0] = vault;
         bytes[] memory harvestData = new bytes[](1);
         harvestData[0] = abi.encode(rewards, 1e18);
-        accountantHarness.harvest(vaults, harvestData);
+        accountantHarness.harvest(vaults, harvestData, address(this));
 
         // ensur vault's integral has been increased
         assertGt(accountantHarness.exposed_integral(vault), 0);
@@ -302,7 +302,7 @@ contract Accountant__Harvest is AccountantBaseTest {
         vm.expectEmit(true, true, true, true, address(accountantHarness));
         emit Accountant.Harvest(vault, rewards);
 
-        accountantHarness.harvest(vaults, harvestData);
+        accountantHarness.harvest(vaults, harvestData, address(this));
     }
 
     function test_DoesNothingIfThereIsNothingToHarvest(uint256 rewards, uint128 amount)
@@ -333,7 +333,7 @@ contract Accountant__Harvest is AccountantBaseTest {
         bytes[] memory harvestData = new bytes[](1);
         harvestData[0] = abi.encode(0, 1e18);
 
-        accountantHarness.harvest(vaults, harvestData);
+        accountantHarness.harvest(vaults, harvestData, address(this));
     }
 }
 

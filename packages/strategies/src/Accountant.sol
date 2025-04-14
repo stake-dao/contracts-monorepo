@@ -394,10 +394,11 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @notice Harvests rewards from multiple gauges.
     /// @param _gauges Array of gauges to harvest from.
     /// @param _harvestData Array of harvest data for each gauge.
+    /// @param _receiver Address that will receive the harvester fee.
     /// @custom:throws NoStrategy If the harvester is not set.
-    function harvest(address[] calldata _gauges, bytes[] calldata _harvestData) external {
+    function harvest(address[] calldata _gauges, bytes[] calldata _harvestData, address _receiver) external {
         require(_gauges.length == _harvestData.length, InvalidHarvestDataLength());
-        _harvest(_gauges, _harvestData, msg.sender);
+        _harvest(_gauges, _harvestData, _receiver);
     }
 
     /// @dev Internal implementation of batch harvesting.
@@ -442,6 +443,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
                 protocolFeesAccrued += protocolFee;
             }
 
+
             // Calculate harvester fee on the total amount
             uint256 harvesterFee = pendingRewards.totalAmount.mulDiv(currentHarvestFee, 1e18);
             totalHarvesterFee += harvesterFee;
@@ -451,13 +453,14 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
             uint256 newNet = pendingRewards.totalAmount - protocolFee - harvesterFee;
             uint256 oldNet = _vault.netCredited;
 
+
             if (newNet > oldNet) {
                 uint256 netDelta = newNet - oldNet;
                 // Add only that delta to the integral
                 _vault.integral += netDelta.mulDiv(SCALING_FACTOR, _vault.supply);
             }
 
-            // Update the net credited so far
+            // Update the net credited so far.
             _vault.netCredited = newNet >= oldNet ? 0 : (oldNet - newNet).toUint128();
 
             // Always clear pending rewards after harvesting

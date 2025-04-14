@@ -33,7 +33,7 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
     RewardReceiver public rewardReceiver2;
     ConvexSidecar public convexSidecar2;
 
-    function setUp() public override {
+    function setUp() public virtual override {
         super.setUp();
 
         // Initialize multiple accounts
@@ -201,6 +201,78 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
         );
     }
 
+    /// Issue: https://github.com/stake-dao/contracts-monorepo/issues/111
+    function test_netCredited_DecreasingRewards(uint256 _baseAmount, uint256 _baseAmount2) public {
+        // 1. Set up test parameters with fuzzing
+        vm.assume(_baseAmount > 1e18);
+        vm.assume(_baseAmount < (totalSupply / NUM_ACCOUNTS) / 10); // Ensure reasonable amounts
+
+        vm.assume(_baseAmount2 > 1e18);
+        vm.assume(_baseAmount2 < (totalSupply2 / NUM_ACCOUNTS) / 10);
+
+        // 2. Initialize the test parameters struct
+        TestParams memory params;
+        params.baseAmount = _baseAmount;
+        params.baseAmount2 = _baseAmount2;
+        params.depositAmounts = new uint256[](NUM_ACCOUNTS);
+        params.depositAmounts2 = new uint256[](NUM_ACCOUNTS);
+
+        // Phase 1: Handle Deposits
+        _handleDeposits(params);
+        // 1. First large rewards
+        address vault = protocolController.vaults(address(gauge));
+        
+        // Get initial integral value
+        uint256 integralBefore = accountant.getVaultIntegral(vault);
+        
+        // Generate large rewards (1000 CRV)
+        uint256 largeReward = 1000e18;
+        _inflateRewards(address(gauge), largeReward);
+        
+        // Skip time to simulate reward accrual
+        skip(1 hours);
+        
+        // Setup harvest
+        address[] memory gauges = new address[](1);
+        gauges[0] = address(gauge);
+        bytes[] memory harvestData = new bytes[](1);
+        
+        // Harvest the large rewards
+        vm.prank(harvester);
+        accountant.harvest(gauges, harvestData, harvester);
+        
+        // Get integral after first harvest
+        uint256 integralAfterFirst = accountant.getVaultIntegral(vault);
+        
+        // Verify integral increased
+        assertGt(integralAfterFirst, integralBefore, "Integral should increase after first harvest");
+        
+        // 2. Now generate smaller rewards (30 CRV)
+        uint256 smallReward = 30e18;
+        _inflateRewards(address(gauge), smallReward);
+        
+        // Skip time to simulate reward accrual
+        skip(1 hours);
+        
+        // Get integral before second harvest
+        uint256 integralBeforeSecond = accountant.getVaultIntegral(vault);
+        
+        // Harvest the smaller rewards
+        vm.prank(harvester);
+        accountant.harvest(gauges, harvestData, harvester);
+        
+        // Get integral after second harvest
+        uint256 integralAfterSecond = accountant.getVaultIntegral(vault);
+        
+        // Key check: verify integral still increases even with smaller rewards
+        // With the bug, the integral would not increase for smaller rewards after a larger reward
+        assertGt(
+            integralAfterSecond, 
+            integralBeforeSecond, 
+            "Integral should still increase after harvesting smaller rewards"
+        );
+    }
+
     // Helper function to handle initial deposits for both gauges
     function _handleDeposits(TestParams memory params) internal {
         // First deposit round for first gauge
@@ -289,7 +361,7 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
     {
         // Harvest rewards from both gauges
         vm.prank(harvester);
-        accountant.harvest(gauges, harvestData);
+        accountant.harvest(gauges, harvestData, harvester);
 
         harvestData = new bytes[](0);
 
@@ -385,7 +457,7 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
 
         // Harvest again
         vm.prank(harvester);
-        accountant.harvest(gauges, harvestData);
+        accountant.harvest(gauges, harvestData, harvester);
 
         // Track harvester rewards for second round
         params.harvestRewards2 = _balanceOf(rewardToken, harvester) - params.harvestRewards;
