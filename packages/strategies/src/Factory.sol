@@ -143,6 +143,9 @@ abstract contract Factory is ProtocolContext {
         /// Set the reward receiver for the gauge
         _setRewardReceiver(gauge, rewardReceiver);
 
+        /// Set the valid allocation target.
+        PROTOCOL_CONTROLLER.setValidAllocationTarget(gauge, LOCKER);
+
         emit VaultDeployed(vault, asset, gauge);
     }
 

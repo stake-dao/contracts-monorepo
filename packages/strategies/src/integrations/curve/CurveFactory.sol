@@ -60,7 +60,6 @@ contract CurveFactory is Factory {
         sidecar = ISidecarFactory(CONVEX_SIDECAR_FACTORY).create(gauge, abi.encode(_pid));
 
         /// 3. Set the valid allocation target.
-        PROTOCOL_CONTROLLER.setValidAllocationTarget(gauge, LOCKER);
         PROTOCOL_CONTROLLER.setValidAllocationTarget(gauge, sidecar);
 
         emit VaultDeployed(gauge, vault, rewardReceiver, sidecar);
