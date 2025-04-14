@@ -67,6 +67,9 @@ contract CurveFactory is Factory {
     }
 
     function _isValidToken(address _token) internal view virtual override returns (bool) {
+        /// If the token is not valid, return false.
+        if (!super._isValidToken(_token)) return false;
+
         /// We already add CVX to the vault by default.
         if (_token == CVX) return false;
 
