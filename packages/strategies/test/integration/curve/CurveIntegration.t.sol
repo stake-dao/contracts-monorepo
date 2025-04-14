@@ -92,7 +92,6 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
             IERC20(lpToken2).approve(address(rewardVault2), totalSupply2 / NUM_ACCOUNTS);
         }
 
-
         /// Add WBTC as Extra Rewards on Gauge
         vm.prank(CURVE_ADMIN);
         gauge.add_reward(WBTC, address(this));
@@ -471,8 +470,6 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
         address[] memory gauges,
         bytes[] memory harvestData
     ) internal {
-
-
         // Third inflation of rewards
         params.expectedRewards3 = _inflateRewards(address(gauge), 1500e18);
         params.expectedRewards3_2nd = _inflateRewards(address(gauge2), 2000e18);
@@ -565,7 +562,9 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
         skip(1 weeks);
 
         // Complete withdrawals
-        _finalizeWithdrawals(params.remainingShares, params.remainingShares2, params.depositAmounts, params.depositAmounts2);
+        _finalizeWithdrawals(
+            params.remainingShares, params.remainingShares2, params.depositAmounts, params.depositAmounts2
+        );
 
         // Process CVX claims
         address[] memory rewardTokens = rewardVault.getRewardTokens();
@@ -574,7 +573,12 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
     }
 
     // Helper function to process final withdrawals for both gauges
-    function _finalizeWithdrawals(uint256[] memory remainingShares, uint256[] memory remainingShares2, uint256[] memory depositAmounts, uint256[] memory depositAmounts2) internal {
+    function _finalizeWithdrawals(
+        uint256[] memory remainingShares,
+        uint256[] memory remainingShares2,
+        uint256[] memory depositAmounts,
+        uint256[] memory depositAmounts2
+    ) internal {
         for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
             // First gauge withdrawals
             uint256 remainingAmount = remainingShares[i];

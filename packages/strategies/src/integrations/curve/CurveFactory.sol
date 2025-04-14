@@ -113,7 +113,7 @@ contract CurveFactory is Factory {
 
     function _setupRewardTokens(address _vault, address _gauge, address _rewardReceiver) internal virtual override {
         /// Add CVX to the vault if it's not already there.
-        if(!IRewardVault(_vault).isRewardToken(CVX)) {
+        if (!IRewardVault(_vault).isRewardToken(CVX)) {
             IRewardVault(_vault).addRewardToken(CVX, _rewardReceiver);
         }
 
