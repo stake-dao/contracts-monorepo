@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
+import "forge-std/src/console.sol";
+
 import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
@@ -100,6 +102,7 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
         uint256 baseAmount;
         uint256 totalDeposited;
         uint256[] depositAmounts;
+        uint256[] remainingShares;
         uint256 totalExpectedRewards;
         uint256 totalClaimedRewards;
         uint256 totalWithdrawn;
@@ -116,12 +119,14 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
         uint256 baseAmount2;
         uint256 totalDeposited2;
         uint256[] depositAmounts2;
+        uint256[] remainingShares2;
         uint256 totalExpectedRewards2nd;
         uint256 totalClaimedRewards2nd;
         uint256 totalWithdrawn2;
         uint256 expectedRewards1_2nd;
         uint256 expectedRewards2_2nd;
         uint256 expectedRewards3_2nd;
+        address transferReceiver;
     }
 
     function test_deposit_withdraw_sequentially(uint256 _baseAmount, uint256 _baseAmount2) public {
@@ -134,10 +139,13 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
 
         // 2. Initialize the test parameters struct
         TestParams memory params;
+        params.transferReceiver = makeAddr("Transfer Receiver");
         params.baseAmount = _baseAmount;
         params.baseAmount2 = _baseAmount2;
         params.depositAmounts = new uint256[](NUM_ACCOUNTS);
         params.depositAmounts2 = new uint256[](NUM_ACCOUNTS);
+        params.remainingShares = new uint256[](NUM_ACCOUNTS);
+        params.remainingShares2 = new uint256[](NUM_ACCOUNTS);
 
         // Phase 1: Handle Deposits
         _handleDeposits(params);
@@ -223,10 +231,13 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
 
         // 2. Initialize the test parameters struct
         TestParams memory params;
+        params.transferReceiver = makeAddr("Transfer Receiver");
         params.baseAmount = _baseAmount;
         params.baseAmount2 = _baseAmount2;
         params.depositAmounts = new uint256[](NUM_ACCOUNTS);
         params.depositAmounts2 = new uint256[](NUM_ACCOUNTS);
+        params.remainingShares = new uint256[](NUM_ACCOUNTS);
+        params.remainingShares2 = new uint256[](NUM_ACCOUNTS);
 
         // Phase 1: Handle Deposits
         _handleDeposits(params);
@@ -421,6 +432,7 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
             rewardVault.withdraw(withdrawAmount, accounts[i], accounts[i]);
 
             uint256 afterWithdraw = _balanceOf(lpToken, accounts[i]);
+            params.remainingShares[i] = rewardVault.balanceOf(accounts[i]);
 
             // Verify LP tokens returned correctly
             assertEq(afterWithdraw - beforeWithdraw, withdrawAmount, "Partial withdrawal amount mismatch for gauge 1");
@@ -435,6 +447,7 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
             rewardVault2.withdraw(withdrawAmount2, accounts[i], accounts[i]);
 
             uint256 afterWithdraw2 = _balanceOf(lpToken2, accounts[i]);
+            params.remainingShares2[i] = rewardVault2.balanceOf(accounts[i]);
 
             // Verify LP tokens returned correctly
             assertEq(
@@ -449,6 +462,8 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
         address[] memory gauges,
         bytes[] memory harvestData
     ) internal {
+
+
         // Third inflation of rewards
         params.expectedRewards3 = _inflateRewards(address(gauge), 1500e18);
         params.expectedRewards3_2nd = _inflateRewards(address(gauge2), 2000e18);
@@ -463,6 +478,15 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
         uint256 newRewards = params.expectedRewards3 + sidecarRewards;
         uint256 newRewards2 = params.expectedRewards3_2nd + sidecarRewards2;
         uint256 totalNewRewards = newRewards + newRewards2;
+
+        /// Before Harvesting, transfer shares to make sure we didn't miss any rewards
+        for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
+            vm.prank(accounts[i]);
+            rewardVault.transfer(params.transferReceiver, params.remainingShares[i]);
+
+            vm.prank(accounts[i]);
+            rewardVault2.transfer(params.transferReceiver, params.remainingShares2[i]);
+        }
 
         // Harvest again
         vm.prank(harvester);
@@ -487,6 +511,13 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
             uint256 claimed = afterClaim - beforeClaim;
 
             totalClaimedRewards2 += claimed;
+
+            /// Transfer the shares back to the account
+            vm.prank(params.transferReceiver);
+            rewardVault.transfer(accounts[i], params.remainingShares[i]);
+
+            vm.prank(params.transferReceiver);
+            rewardVault2.transfer(accounts[i], params.remainingShares2[i]);
         }
 
         params.totalClaimedRewards2 = totalClaimedRewards2;
@@ -525,7 +556,7 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
         skip(1 weeks);
 
         // Complete withdrawals
-        _finalizeWithdrawals(params.depositAmounts, params.depositAmounts2);
+        _finalizeWithdrawals(params.remainingShares, params.remainingShares2, params.depositAmounts, params.depositAmounts2);
 
         // Process CVX claims
         address[] memory rewardTokens = rewardVault.getRewardTokens();
@@ -534,10 +565,10 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
     }
 
     // Helper function to process final withdrawals for both gauges
-    function _finalizeWithdrawals(uint256[] memory depositAmounts, uint256[] memory depositAmounts2) internal {
+    function _finalizeWithdrawals(uint256[] memory remainingShares, uint256[] memory remainingShares2, uint256[] memory depositAmounts, uint256[] memory depositAmounts2) internal {
         for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
             // First gauge withdrawals
-            uint256 remainingAmount = depositAmounts[i] - (depositAmounts[i] / 2);
+            uint256 remainingAmount = remainingShares[i];
             uint256 beforeWithdraw = _balanceOf(lpToken, accounts[i]);
 
             vm.prank(accounts[i]);
@@ -554,7 +585,7 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
             );
 
             // Second gauge withdrawals
-            uint256 remainingAmount2 = depositAmounts2[i] - (depositAmounts2[i] / 2);
+            uint256 remainingAmount2 = remainingShares2[i];
             uint256 beforeWithdraw2 = _balanceOf(lpToken2, accounts[i]);
 
             vm.prank(accounts[i]);
@@ -573,9 +604,12 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
     }
 
     // Helper function to process CVX claims and verify distribution for both gauges
-    function _processExtraRewards(address[] memory rewardTokens, address[] memory rewardTokens2, uint256 totalCVX, uint256 totalWBTC)
-        internal
-    {
+    function _processExtraRewards(
+        address[] memory rewardTokens,
+        address[] memory rewardTokens2,
+        uint256 totalCVX,
+        uint256 totalWBTC
+    ) internal {
         uint256 totalCVXClaimed = 0;
         uint256 totalWBTCClaimed = 0;
 

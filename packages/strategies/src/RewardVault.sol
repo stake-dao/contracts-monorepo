@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {IERC20, IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {IAccountant} from "src/interfaces/IAccountant.sol";
-import {IAllocator} from "src/interfaces/IAllocator.sol";
-import {IProtocolController} from "src/interfaces/IProtocolController.sol";
-import {IRewardVault} from "src/interfaces/IRewardVault.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20, IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+
 import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {IAllocator} from "src/interfaces/IAllocator.sol";
+import {IAccountant} from "src/interfaces/IAccountant.sol";
+import {IRewardVault} from "src/interfaces/IRewardVault.sol";
+import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
 /// @title RewardVault - A Stake DAO vault for managing deposits and rewards
 /// @notice An ERC4626-compatible vault that handles:
@@ -823,10 +824,23 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @param to Address receiving tokens
     /// @param amount Number of tokens being transferred
     function _update(address from, address to, uint256 amount) internal override {
+        /// Get addresses where funds are allocated to.
+        address[] memory targets = allocator().getAllocationTargets(gauge());
+
+        /// Create an allocation struct to pass to the strategy.
+        /// We want to withdraw 0, just to get the pending rewards.
+        IAllocator.Allocation memory allocation = IAllocator.Allocation({
+            asset: asset(),
+            gauge: gauge(),
+            targets: targets,
+            amounts: new uint256[](targets.length)
+        });
+
+        /// Withdraw 0, just to get the pending rewards.
+        IStrategy.PendingRewards memory pendingRewards = strategy().withdraw(allocation, TRIGGER_HARVEST, to);
+
         // 1. Update Balances via Accountant
-        ACCOUNTANT.checkpoint(
-            gauge(), from, to, uint128(amount), IStrategy.PendingRewards({feeSubjectAmount: 0, totalAmount: 0}), false
-        );
+        ACCOUNTANT.checkpoint(gauge(), from, to, uint128(amount), pendingRewards, TRIGGER_HARVEST);
 
         // 2. Update Reward State
         _checkpoint(from, to);

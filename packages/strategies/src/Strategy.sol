@@ -171,13 +171,11 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         }
 
         for (uint256 i = 0; i < allocation.targets.length; i++) {
-            if (allocation.amounts[i] > 0) {
                 if (allocation.targets[i] == LOCKER) {
                     _withdraw(allocation.asset, allocation.gauge, allocation.amounts[i], receiver);
                 } else {
                     ISidecar(allocation.targets[i]).withdraw(allocation.amounts[i], receiver);
                 }
-            }
         }
 
         if (doHarvest) {
