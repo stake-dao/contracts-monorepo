@@ -21,6 +21,9 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
     /// @dev Used to test small decimal rewards
     address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
 
+    /// @notice The Curve Admin address
+    address public constant CURVE_ADMIN = 0x40907540d8a6C65c637785e8f8B742ae6b0b9968;
+
     // Replace single account with multiple accounts
     uint256 public constant NUM_ACCOUNTS = 3;
     address[] public accounts;
@@ -89,12 +92,18 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
             IERC20(lpToken2).approve(address(rewardVault2), totalSupply2 / NUM_ACCOUNTS);
         }
 
-        /// Add WBTC as Extra Rewards
-        vm.prank(address(curveFactory));
-        rewardVault.addRewardToken(WBTC, address(rewardReceiver));
 
-        vm.prank(address(curveFactory));
-        rewardVault2.addRewardToken(WBTC, address(rewardReceiver2));
+        /// Add WBTC as Extra Rewards on Gauge
+        vm.prank(CURVE_ADMIN);
+        gauge.add_reward(WBTC, address(this));
+
+        /// Add WBTC as Extra Rewards on Gauge 2
+        vm.prank(CURVE_ADMIN);
+        gauge2.add_reward(WBTC, address(this));
+
+        /// Sync the reward tokens on the gauges
+        curveFactory.syncRewardTokens(address(gauge));
+        curveFactory.syncRewardTokens(address(gauge2));
     }
 
     // Define a struct to store test parameters to avoid stack too deep errors

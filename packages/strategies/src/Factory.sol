@@ -140,6 +140,9 @@ abstract contract Factory is ProtocolContext {
         /// Add extra reward tokens to the vault
         _setupRewardTokens(vault, gauge, rewardReceiver);
 
+        /// Set the reward receiver for the gauge
+        _setRewardReceiver(gauge, rewardReceiver);
+
         emit VaultDeployed(vault, asset, gauge);
     }
 
@@ -192,6 +195,12 @@ abstract contract Factory is ProtocolContext {
     /// @param gauge Address of the gauge
     /// @param rewardReceiver Address of the reward receiver
     function _setupRewardTokens(address vault, address gauge, address rewardReceiver) internal virtual;
+
+    /// @notice Set the reward receiver for a gauge
+    /// @dev Must be implemented by derived factories to handle protocol-specific reward receiver setup
+    /// @param gauge Address of the gauge
+    /// @param rewardReceiver Address of the reward receiver
+    function _setRewardReceiver(address gauge, address rewardReceiver) internal virtual;
 
     /// @notice Check if a gauge is valid
     /// @dev Must be implemented by derived factories to handle protocol-specific gauge validation

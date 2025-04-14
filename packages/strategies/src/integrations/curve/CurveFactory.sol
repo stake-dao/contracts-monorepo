@@ -109,8 +109,10 @@ contract CurveFactory is Factory {
     }
 
     function _setupRewardTokens(address _vault, address _gauge, address _rewardReceiver) internal virtual override {
-        /// Then we add the extra reward token to the reward distributor through the strategy.
-        IRewardVault(_vault).addRewardToken(CVX, _rewardReceiver);
+        /// Add CVX to the vault if it's not already there.
+        if(!IRewardVault(_vault).isRewardToken(CVX)) {
+            IRewardVault(_vault).addRewardToken(CVX, _rewardReceiver);
+        }
 
         /// Check if the gauge supports extra rewards.
         /// This function is not supported on all gauges, depending on when they were deployed.
@@ -127,7 +129,8 @@ contract CurveFactory is Factory {
 
             /// If the address is 0, it means there are no more extra reward tokens.
             if (_extraRewardToken == address(0)) break;
-
+            /// If the extra reward token is already in the vault, skip.
+            if (IRewardVault(_vault).isRewardToken(_extraRewardToken)) continue;
             /// Performs checks on the extra reward token.
             /// Checks like if the token is also an lp token that can be staked in the locker, these tokens are not supported.
             if (_isValidToken(_extraRewardToken)) {
@@ -135,9 +138,11 @@ contract CurveFactory is Factory {
                 IRewardVault(_vault).addRewardToken(_extraRewardToken, _rewardReceiver);
             }
         }
+    }
 
+    function _setRewardReceiver(address _gauge, address _rewardReceiver) internal override {
         /// Set RewardReceiver as RewardReceiver on Gauge.
-        data = abi.encodeWithSignature("set_rewards_receiver(address)", _rewardReceiver);
+        bytes memory data = abi.encodeWithSignature("set_rewards_receiver(address)", _rewardReceiver);
         require(_executeTransaction(_gauge, data), SetRewardReceiverFailed());
     }
 
