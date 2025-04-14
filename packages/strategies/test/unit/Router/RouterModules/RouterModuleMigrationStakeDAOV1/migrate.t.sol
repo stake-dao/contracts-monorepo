@@ -199,8 +199,6 @@ contract MockVault {
         gauge.mintShares(msg.sender, asset);
     }
 
-    event Log(string, address asset, address receiver, uint256 shares);
-
     function withdraw(uint256 shares) external {
         gauge.burnShares(msg.sender, shares);
         IERC4626($asset).transfer(msg.sender, shares);

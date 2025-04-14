@@ -1,4 +1,4 @@
-RouterModuleDeposit__getters
+RouterModuleMigrationStakeDAOV1__getters
 ├── it returns the name
 └── it returns the version
 
