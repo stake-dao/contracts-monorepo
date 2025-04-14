@@ -137,6 +137,12 @@ contract CurveAllocator is Allocator {
     function getAllocationTargets(address gauge) public view override returns (address[] memory) {
         address sidecar = CONVEX_SIDECAR_FACTORY.sidecar(gauge);
 
+        /// 2. If the sidecar is not set, return the default targets.
+        if (sidecar == address(0)) {
+            return super.getAllocationTargets(gauge);
+        }
+
+        /// 3. Return the targets.
         address[] memory targets = new address[](2);
         targets[0] = sidecar;
         targets[1] = LOCKER;
