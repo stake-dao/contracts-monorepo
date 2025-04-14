@@ -824,6 +824,9 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @param to Address receiving tokens
     /// @param amount Number of tokens being transferred
     function _update(address from, address to, uint256 amount) internal override {
+        // 1. Update Reward State
+        _checkpoint(from, to);
+
         /// Get addresses where funds are allocated to.
         address[] memory targets = allocator().getAllocationTargets(gauge());
 
@@ -839,11 +842,8 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         /// Withdraw 0, just to get the pending rewards.
         IStrategy.PendingRewards memory pendingRewards = strategy().withdraw(allocation, TRIGGER_HARVEST, to);
 
-        // 1. Update Balances via Accountant
+        // 2. Update Balances via Accountant
         ACCOUNTANT.checkpoint(gauge(), from, to, uint128(amount), pendingRewards, TRIGGER_HARVEST);
-
-        // 2. Update Reward State
-        _checkpoint(from, to);
 
         // 3. Emit Transfer event
         emit Transfer(from, to, amount);
