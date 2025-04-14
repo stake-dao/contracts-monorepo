@@ -639,17 +639,17 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @notice Returns the maximum amount of assets that can be deposited.
     /// @dev The parameter is not used and is included to satisfy the interface. Pass whatever you want to.
     /// @return _ The maximum amount of assets that can be deposited.
-    function maxDeposit(address) public pure returns (uint256) {
-        return type(uint256).max;
+    function maxDeposit(address _account) public view returns (uint256) {
+        return IERC20(asset()).balanceOf(_account);
     }
 
     /// @notice Returns the maximum amount of shares that can be minted.
     /// @dev Due to the 1:1 relationship between assets and shares, the max mint
     ///      is the same as the max deposit.
-    /// @param __ This parameter is not used and is included to satisfy the interface. Pass whatever you want to.
+    /// @param _account The address of the account to calculate the max mint for.
     /// @return _ The maximum amount of shares that can be minted.
-    function maxMint(address __) external pure returns (uint256) {
-        return maxDeposit(__);
+    function maxMint(address _account) external view returns (uint256) {
+        return maxDeposit(_account);
     }
 
     /// @notice Returns the maximum amount of assets that can be withdrawn.
