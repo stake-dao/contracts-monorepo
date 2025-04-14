@@ -119,7 +119,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @notice Modifier to restrict function access to registrars or owner
     /// @custom:reverts OnlyRegistrar if the caller is not a registrar
     modifier onlyRegistrar() {
-        require(registrar[msg.sender], OnlyRegistrar());
+        require(registrar[msg.sender] || msg.sender == owner(), OnlyRegistrar());
         _;
     }
 
