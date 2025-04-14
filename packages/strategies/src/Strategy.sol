@@ -167,7 +167,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         /// If the pool is shutdown, return the pending rewards.
         /// Use the shutdown function to withdraw the funds.
         if (PROTOCOL_CONTROLLER.isShutdown(allocation.gauge)) {
-            return _sync(allocation.gauge);
+            return doHarvest ? _harvest(allocation.gauge, "", false) : _sync(allocation.gauge);
         }
 
         for (uint256 i = 0; i < allocation.targets.length; i++) {
