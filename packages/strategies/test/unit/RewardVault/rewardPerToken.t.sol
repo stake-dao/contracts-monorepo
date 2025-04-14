@@ -71,6 +71,6 @@ contract RewardVault__rewardPerToken is RewardVaultBaseTest {
         uint128 calculatedRewardPerToken = rewardVaultHarness.rewardPerToken(token);
 
         // assert the reward per token stored is updated
-        assertLt(uint128(TOTAL_SUPPLY / 5), calculatedRewardPerToken);
+        assertEq(calculatedRewardPerToken, uint128(TOTAL_SUPPLY / 5));
     }
 }

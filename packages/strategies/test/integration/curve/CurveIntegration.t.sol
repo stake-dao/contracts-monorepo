@@ -15,6 +15,10 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
         pid2 = _pid2;
     }
 
+    /// @notice The WBTC address
+    /// @dev Used to test small decimal rewards
+    address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
+
     // Replace single account with multiple accounts
     uint256 public constant NUM_ACCOUNTS = 3;
     address[] public accounts;
@@ -82,6 +86,13 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
             vm.prank(accounts[i]);
             IERC20(lpToken2).approve(address(rewardVault2), totalSupply2 / NUM_ACCOUNTS);
         }
+
+        /// Add WBTC as Extra Rewards
+        vm.prank(address(curveFactory));
+        rewardVault.addRewardToken(WBTC, address(rewardReceiver));
+
+        vm.prank(address(curveFactory));
+        rewardVault2.addRewardToken(WBTC, address(rewardReceiver2));
     }
 
     // Define a struct to store test parameters to avoid stack too deep errors
@@ -221,55 +232,53 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
         _handleDeposits(params);
         // 1. First large rewards
         address vault = protocolController.vaults(address(gauge));
-        
+
         // Get initial integral value
         uint256 integralBefore = accountant.getVaultIntegral(vault);
-        
+
         // Generate large rewards (1000 CRV)
         uint256 largeReward = 1000e18;
         _inflateRewards(address(gauge), largeReward);
-        
+
         // Skip time to simulate reward accrual
         skip(1 hours);
-        
+
         // Setup harvest
         address[] memory gauges = new address[](1);
         gauges[0] = address(gauge);
         bytes[] memory harvestData = new bytes[](1);
-        
+
         // Harvest the large rewards
         vm.prank(harvester);
         accountant.harvest(gauges, harvestData, harvester);
-        
+
         // Get integral after first harvest
         uint256 integralAfterFirst = accountant.getVaultIntegral(vault);
-        
+
         // Verify integral increased
         assertGt(integralAfterFirst, integralBefore, "Integral should increase after first harvest");
-        
+
         // 2. Now generate smaller rewards (30 CRV)
         uint256 smallReward = 30e18;
         _inflateRewards(address(gauge), smallReward);
-        
+
         // Skip time to simulate reward accrual
         skip(1 hours);
-        
+
         // Get integral before second harvest
         uint256 integralBeforeSecond = accountant.getVaultIntegral(vault);
-        
+
         // Harvest the smaller rewards
         vm.prank(harvester);
         accountant.harvest(gauges, harvestData, harvester);
-        
+
         // Get integral after second harvest
         uint256 integralAfterSecond = accountant.getVaultIntegral(vault);
-        
+
         // Key check: verify integral still increases even with smaller rewards
         // With the bug, the integral would not increase for smaller rewards after a larger reward
         assertGt(
-            integralAfterSecond, 
-            integralBeforeSecond, 
-            "Integral should still increase after harvesting smaller rewards"
+            integralAfterSecond, integralBeforeSecond, "Integral should still increase after harvesting smaller rewards"
         );
     }
 
@@ -497,9 +506,13 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
     // Helper function to handle CVX rewards and final withdrawals
     function _handleCVXRewardsAndFinalWithdrawals(TestParams memory params) internal {
         // Add CVX rewards to test extra rewards distribution
+        uint256 totalWBTC = 1e18;
         uint256 totalCVX = 1_000_000e18;
         deal(CVX, address(rewardReceiver), totalCVX / 2);
         deal(CVX, address(rewardReceiver2), totalCVX / 2);
+
+        deal(WBTC, address(rewardReceiver), totalWBTC / 2);
+        deal(WBTC, address(rewardReceiver2), totalWBTC / 2);
 
         // Claim and distribute extra rewards from both sidecars
         convexSidecar.claimExtraRewards();
@@ -517,7 +530,7 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
         // Process CVX claims
         address[] memory rewardTokens = rewardVault.getRewardTokens();
         address[] memory rewardTokens2 = rewardVault2.getRewardTokens();
-        _processClaimsCVX(rewardTokens, rewardTokens2, totalCVX);
+        _processExtraRewards(rewardTokens, rewardTokens2, totalCVX, totalWBTC);
     }
 
     // Helper function to process final withdrawals for both gauges
@@ -560,13 +573,15 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
     }
 
     // Helper function to process CVX claims and verify distribution for both gauges
-    function _processClaimsCVX(address[] memory rewardTokens, address[] memory rewardTokens2, uint256 totalCVX)
+    function _processExtraRewards(address[] memory rewardTokens, address[] memory rewardTokens2, uint256 totalCVX, uint256 totalWBTC)
         internal
     {
         uint256 totalCVXClaimed = 0;
+        uint256 totalWBTCClaimed = 0;
 
         for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
             uint256 beforeClaim = _balanceOf(CVX, accounts[i]);
+            uint256 beforeClaimWBTC = _balanceOf(WBTC, accounts[i]);
 
             // Claim from first gauge
             vm.prank(accounts[i]);
@@ -579,10 +594,23 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
             uint256 afterClaim = _balanceOf(CVX, accounts[i]);
             uint256 claimed = afterClaim - beforeClaim;
 
+            uint256 afterClaimWBTC = _balanceOf(WBTC, accounts[i]);
+            uint256 claimedWBTC = afterClaimWBTC - beforeClaimWBTC;
+
             totalCVXClaimed += claimed;
+            totalWBTCClaimed += claimedWBTC;
 
             // Verify CVX rewards received
             assertGt(claimed, 0, "Account should receive CVX rewards from both gauges");
+            assertGt(claimedWBTC, 0, "Account should receive WBTC rewards from both gauges");
+
+            // Verify the claimable amount is updated for CVX
+            assertEq(rewardVault.getClaimable(rewardTokens[0], accounts[i]), 0);
+            assertEq(rewardVault2.getClaimable(rewardTokens2[0], accounts[i]), 0);
+
+            // Verify the claimable amount is updated for WBTC
+            assertEq(rewardVault.getClaimable(rewardTokens[1], accounts[i]), 0);
+            assertEq(rewardVault2.getClaimable(rewardTokens2[1], accounts[i]), 0);
         }
 
         // Verify all CVX rewards were distributed
@@ -591,6 +619,14 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
             totalCVX,
             0.05e18, // Tolerance to account for rounding and potential implementation differences
             "Total CVX claimed should match total distributed from both gauges"
+        );
+
+        // Verify all WBTC rewards were distributed
+        assertApproxEqRel(
+            totalWBTCClaimed,
+            totalWBTC,
+            0.05e18, // Tolerance to account for rounding and potential implementation differences
+            "Total WBTC claimed should match total distributed from both gauges"
         );
     }
 }

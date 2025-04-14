@@ -443,7 +443,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
                 protocolFeesAccrued += protocolFee;
             }
 
-
             // Calculate harvester fee on the total amount
             uint256 harvesterFee = pendingRewards.totalAmount.mulDiv(currentHarvestFee, 1e18);
             totalHarvesterFee += harvesterFee;
@@ -452,7 +451,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
 
             uint256 newNet = pendingRewards.totalAmount - protocolFee - harvesterFee;
             uint256 oldNet = _vault.netCredited;
-
 
             if (newNet > oldNet) {
                 uint256 netDelta = newNet - oldNet;

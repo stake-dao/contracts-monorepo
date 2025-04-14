@@ -424,11 +424,11 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
         // Calculate new reward rate, accounting for any remaining rewards
         if (currentTime >= periodFinish) {
-            newRewardRate = _amount / DEFAULT_REWARDS_DURATION;
+            newRewardRate = Math.mulDiv(_amount, 1e18, DEFAULT_REWARDS_DURATION).toUint128();
         } else {
             uint32 remainingTime = periodFinish - currentTime;
-            uint128 remainingRewards = remainingTime * reward.rewardRate;
-            newRewardRate = (_amount + remainingRewards) / DEFAULT_REWARDS_DURATION;
+            uint256 remainingRewardsUnscaled = Math.mulDiv(reward.rewardRate, remainingTime, 1e18);
+            newRewardRate = Math.mulDiv(_amount + remainingRewardsUnscaled, 1e18, DEFAULT_REWARDS_DURATION).toUint128();
         }
 
         // Update reward distribution state
@@ -518,7 +518,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
         if (timeDelta > 0 && _totalSupply > 0) {
             // Calculate additional rewards per token since last update
-            rewardRatePerToken = (timeDelta * reward.rewardRate * 1e18) / _totalSupply;
+            rewardRatePerToken = Math.mulDiv(timeDelta * reward.rewardRate, 1, _totalSupply);
         }
 
         return (reward.rewardPerTokenStored + rewardRatePerToken).toUint128();

@@ -68,7 +68,7 @@ contract RewardVault__updateReward is RewardVaultBaseTest {
         rewardVaultHarness.checkpoint(account);
 
         // assert the reward per token stored is updated
-        assertLt(beforeRewardPerTokenStored, rewardVaultHarness.getRewardPerTokenStored(token));
+        assertEq(beforeRewardPerTokenStored, rewardVaultHarness.getRewardPerTokenStored(token));
         // assert the timestamp of the vault is updated to the current block timestamp
         assertEq(rewardVaultHarness.getLastUpdateTime(token), block.timestamp);
         // assert the reward per token variable in the account is updated with the value of the vault
@@ -76,6 +76,6 @@ contract RewardVault__updateReward is RewardVaultBaseTest {
             rewardVaultHarness.getRewardPerTokenStored(token), rewardVaultHarness.getRewardPerTokenPaid(token, account)
         );
         // assert there are new rewards to claim for the account
-        assertNotEq(beforeClaimable, rewardVaultHarness.getClaimable(token, account));
+        assertGt(rewardVaultHarness.getClaimable(token, account), beforeClaimable);
     }
 }

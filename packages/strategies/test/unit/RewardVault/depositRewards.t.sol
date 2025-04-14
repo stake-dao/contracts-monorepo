@@ -156,7 +156,7 @@ contract RewardVault__depositRewards is RewardVaultBaseTest {
         for (uint256 i; i < tokens.length; i++) {
             address _token = tokens[i];
             assertEq(rewardVaultHarness.getLastUpdateTime(_token), block.timestamp);
-            assertGt(rewardVaultHarness.getRewardPerTokenStored(_token), beforeRewardPerTokenStored);
+            assertEq(rewardVaultHarness.getRewardPerTokenStored(_token), beforeRewardPerTokenStored);
         }
     }
 
@@ -278,7 +278,7 @@ contract RewardVault__depositRewards is RewardVaultBaseTest {
         assertEq(rewardVaultHarness.getLastUpdateTime(token), block.timestamp);
         assertEq(rewardVaultHarness.getPeriodFinish(token), block.timestamp + CAMPAIGN_DURATION);
         assertGt(rewardVaultHarness.getRewardRate(token), beforeRewardRate);
-        assertGt(rewardVaultHarness.getRewardPerTokenStored(token), beforeRewardPerTokenStored);
+        assertEq(rewardVaultHarness.getRewardPerTokenStored(token), beforeRewardPerTokenStored);
     }
 
     function test_EmitTheRewardDepositedEvent(address distributor)
