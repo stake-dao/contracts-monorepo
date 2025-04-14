@@ -19,6 +19,7 @@ abstract contract RewardVaultBaseTest is BaseTest {
 
         // Initialize Accountant
         rewardVault = new RewardVault(protocolId, address(registry), accountant, false);
+
         protocolController = address(registry);
     }
 

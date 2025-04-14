@@ -57,25 +57,6 @@ contract RewardVault__addRewardToken is RewardVaultBaseTest {
         rewardVault.addRewardToken(rewardToken, makeAddr("distributor"));
     }
 
-    function test_RevertIfMaxRewardTokenCountIsExceeded() external _cheat_replaceRewardVaultWithRewardVaultHarness {
-        // it revert if max reward token count is exceeded
-
-        RewardVaultHarness rewardVaultHarness = RewardVaultHarness(address(rewardVault));
-
-        // we need to put the contract in the state where the max reward token count is exceeded
-        uint256 maxRewardTokenCount = rewardVaultHarness._expose_MAX_REWARD_TOKEN_COUNT();
-        address[] memory addressTokens = new address[](maxRewardTokenCount);
-        for (uint256 i; i < maxRewardTokenCount; i++) {
-            addressTokens[0] = address(address(bytes20(keccak256(abi.encode(i)))));
-        }
-        rewardVaultHarness._cheat_override_reward_tokens(addressTokens);
-
-        // it must reverts as the max reward token count is exceeded
-        vm.expectRevert(RewardVault.MaxRewardTokensExceeded.selector);
-        _mock_allowed_authorize_caller();
-        rewardVault.addRewardToken(makeAddr("rewardToken"), makeAddr("distributor"));
-    }
-
     function test_AddsTheRewardTokenToTheListOfRewardTokens(address rewardToken) external {
         // it adds the reward token to the list of reward tokens
 

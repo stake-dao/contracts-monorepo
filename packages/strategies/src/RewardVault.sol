@@ -70,9 +70,6 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @notice Thrown when attempting to add a reward token that's already registered
     error RewardAlreadyExists();
 
-    /// @notice Thrown when attempting to exceed the maximum allowed reward tokens
-    error MaxRewardTokensExceeded();
-
     /// @notice Thrown when an unauthorized address attempts to distribute rewards
     error UnauthorizedRewardsDistributor();
 
@@ -95,10 +92,6 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @notice Reference to the ProtocolController for protocol-wide coordination
     /// @dev Controls strategy routing, permissions, and protocol-wide settings
     IProtocolController public immutable PROTOCOL_CONTROLLER;
-
-    /// @notice Maximum number of different reward tokens this vault can handle
-    /// @dev Prevents gas cost scaling issues with too many reward tokens
-    uint256 public constant MAX_REWARD_TOKEN_COUNT = 10;
 
     /// @notice Default duration for reward distribution periods
     /// @dev One week in seconds, can be modified per reward token
@@ -396,7 +389,6 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @custom:reverts RewardAlreadyExists if token is already registered
     function addRewardToken(address rewardsToken, address distributor) external onlyRegistrar {
         require(distributor != address(0), ZeroAddress());
-        require(rewardTokens.length < MAX_REWARD_TOKEN_COUNT, MaxRewardTokensExceeded());
 
         RewardData storage reward = rewardData[rewardsToken];
         require(_isRewardToken(reward) == false, RewardAlreadyExists());
