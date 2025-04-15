@@ -8,6 +8,7 @@ import {RouterModuleClaim} from "src/RouterModules/RouterModuleClaim.sol";
 import {RouterModuleDeposit} from "src/RouterModules/RouterModuleDeposit.sol";
 import {RouterModuleMigrationCurve} from "src/RouterModules/RouterModuleMigrationCurve.sol";
 import {RouterModuleMigrationStakeDAOV1} from "src/RouterModules/RouterModuleMigrationStakeDAOV1.sol";
+import {RouterModuleMigrationYearn} from "src/RouterModules/RouterModuleMigrationYearn.sol";
 import {RouterModuleWithdraw} from "src/RouterModules/RouterModuleWithdraw.sol";
 
 contract SetRouterModules is Script {
@@ -18,7 +19,8 @@ contract SetRouterModules is Script {
         Router(router).setModule(
             RouterIdentifierMapping.MIGRATION_STAKE_DAO_V1, address(new RouterModuleMigrationStakeDAOV1())
         );
-        Router(router).setModule(RouterIdentifierMapping.MIGRATION_CURVE_V1, address(new RouterModuleMigrationCurve()));
+        Router(router).setModule(RouterIdentifierMapping.MIGRATION_CURVE, address(new RouterModuleMigrationCurve()));
+        Router(router).setModule(RouterIdentifierMapping.MIGRATION_YEARN, address(new RouterModuleMigrationYearn()));
     }
 
     function run() external {

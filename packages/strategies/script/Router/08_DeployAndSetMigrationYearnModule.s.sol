@@ -4,14 +4,14 @@ pragma solidity 0.8.28;
 import {Script} from "forge-std/src/Script.sol";
 import {Router} from "src/Router.sol";
 import {RouterIdentifierMapping} from "src/RouterModules/RouterIdentifierMapping.sol";
-import {RouterModuleMigrationCurve} from "src/RouterModules/RouterModuleMigrationCurve.sol";
+import {RouterModuleMigrationYearn} from "src/RouterModules/RouterModuleMigrationYearn.sol";
 
-contract DeployAndSetMigrationCurveModule is Script {
+contract DeployAndSetMigrationYearnModule is Script {
     function _run(address router) internal {
-        Router(router).setModule(RouterIdentifierMapping.MIGRATION_CURVE, address(new RouterModuleMigrationCurve()));
+        Router(router).setModule(RouterIdentifierMapping.MIGRATION_YEARN, address(new RouterModuleMigrationYearn()));
     }
 
-    /// @notice Deploy the RouterModuleMigrationCurve contract and set it in the Router
+    /// @notice Deploy the RouterModuleMigrationYearn contract and set it in the Router
     /// @dev The `ROUTER` (address) environment variable must be set
     function run() external {
         vm.startBroadcast();
