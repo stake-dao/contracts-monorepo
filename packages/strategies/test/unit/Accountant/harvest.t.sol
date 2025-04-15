@@ -206,17 +206,11 @@ contract Accountant__Harvest is AccountantBaseTest {
         assertEq(rewardToken.balanceOf(_harvester), 0);
         assertEq(rewardToken.balanceOf(address(accountantHarness)), 0);
 
-        /// Since the balance is 0, the harvest fee should be to maximum.
-        assertEq(accountantHarness.getCurrentHarvestFee(), accountantHarness.getHarvestFeePercent());
-
         /// Construct realistic vaults/harvest data and call the harvest function as the _harvester
         address[] memory vaults = new address[](1);
         vaults[0] = vault;
         bytes[] memory harvestData = new bytes[](1);
         harvestData[0] = abi.encode(rewards, 1e18);
-
-        console.log("rewards", rewards);
-        console.log("harvestFee", harvestFee);
 
         vm.prank(_harvester);
         accountantHarness.harvest(vaults, harvestData, _harvester);

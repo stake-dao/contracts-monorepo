@@ -15,9 +15,6 @@ contract Accountant__getHarvestFeePercent is AccountantBaseTest {
 
         AccountantHarness accountantHarness = AccountantHarness(address(accountant));
 
-        // test the function returns the default value in the contract
-        assertEq(accountantHarness.getHarvestFeePercent(), accountantHarness.getCurrentHarvestFee());
-
         // illegally modify the value stored in the contract then test the getter returns it
         accountantHarness._cheat_updateFeesParamsHarvestFeePercent(newHarvestFeePercent);
         assertEq(accountantHarness.getHarvestFeePercent(), newHarvestFeePercent);

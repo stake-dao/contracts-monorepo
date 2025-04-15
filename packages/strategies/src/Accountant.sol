@@ -92,10 +92,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @notice The feesParams struct.
     FeesParams public feesParams;
 
-    /// @notice The balance threshold for harvest fee calculation.
-    /// @dev If set to 0, maximum harvest fee always applies.
-    uint256 public HARVEST_URGENCY_THRESHOLD;
-
     /// @notice The total protocol fees collected but not yet claimed.
     uint256 public protocolFeesAccrued;
 
@@ -468,7 +464,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
                     newRewards -= newProtocolFee;
                 }
 
-
                 // Add only that delta to the integral
                 _vault.integral += (newRewards - newHarvesterFee).mulDiv(SCALING_FACTOR, _vault.supply);
             }
@@ -507,21 +502,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         }
     }
 
-    /// @notice Returns the current harvest fee based on contract balance
-    /// @return _ The current harvest fee percentage
-    function getCurrentHarvestFee() public view returns (uint256) {
-        uint256 harvestThreshold = HARVEST_URGENCY_THRESHOLD;
-        uint128 currentHarvestFeePercent = feesParams.harvestFeePercent;
-
-        // If threshold is 0, always return max harvest fee
-        if (harvestThreshold == 0) return currentHarvestFeePercent;
-
-        // If threshold is not set, return the current harvest fee based on balance
-        uint256 balance = IERC20(REWARD_TOKEN).balanceOf(address(this));
-        return
-            balance >= harvestThreshold ? 0 : currentHarvestFeePercent * (harvestThreshold - balance) / harvestThreshold;
-    }
-
     /// @notice Returns the current harvest fee percentage.
     /// @return _ The harvest fee percentage.
     function getHarvestFeePercent() public view returns (uint128) {
@@ -543,15 +523,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
 
         // set the new protocol fee percent
         feesParams.harvestFeePercent = newHarvestFeePercent;
-    }
-
-    /// @notice Updates the balance threshold for harvest fee calculation
-    /// @param _threshold New balance threshold. Set to 0 to always apply maximum harvest fee.
-    function setHarvestUrgencyThreshold(uint256 _threshold) external onlyOwner {
-        // emit the update event before updating the stored value
-        emit HarvestUrgencyThresholdSet(HARVEST_URGENCY_THRESHOLD, _threshold);
-
-        HARVEST_URGENCY_THRESHOLD = _threshold;
     }
 
     //////////////////////////////////////////////////////
