@@ -5,4 +5,5 @@ interface ISpectraVoter {
     function length() external view returns(uint256);
     function poolIds(uint256 poolId) external view returns(uint160);
     function poolToBribe(uint160 poolId) external view returns(address);
+    function poolToFees(uint160 poolId) external view returns(address);
 }
