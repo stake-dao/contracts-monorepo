@@ -75,6 +75,8 @@ abstract contract Sidecar is ISidecar {
         ACCOUNTANT = _accountant;
         PROTOCOL_CONTROLLER = IProtocolController(_protocolController);
         REWARD_TOKEN = IERC20(IAccountant(_accountant).REWARD_TOKEN());
+
+        _initialized = true;
     }
 
     //////////////////////////////////////////////////////
