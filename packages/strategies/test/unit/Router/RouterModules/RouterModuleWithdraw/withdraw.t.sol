@@ -15,11 +15,6 @@ import {RouterModulesTest} from "test/unit/Router/RouterModules/RouterModulesTes
 
 contract RouterModuleWithdraw__withdraw is RouterModulesTest {
     RouterModuleWithdraw internal module;
-    address internal gauge = makeAddr("gauge");
-    address internal asset;
-    address internal strategyAsset;
-    // This implementation is the harnessed version of the reward vault cloned with the variables above
-    RewardVaultHarness internal cloneRewardVault;
 
     function setUp() public override {
         super.setUp();
@@ -75,7 +70,7 @@ contract RouterModuleWithdraw__withdraw is RouterModulesTest {
         cloneRewardVault.approve(address(router), OWNER_ALLOWED_BALANCE);
 
         // mock the dependencies of the withdraw function
-        _mock_test_dependencies();
+        __mock_test_dependencies();
 
         // we airdrop enough assets to the reward vault to cover the withdrawal
         deal(address(asset), address(cloneRewardVault), OWNER_BALANCE);
@@ -112,7 +107,7 @@ contract RouterModuleWithdraw__withdraw is RouterModulesTest {
         assertEq(cloneRewardVault.allowance(account, address(router)), 1);
     }
 
-    function _mock_test_dependencies()
+    function __mock_test_dependencies()
         internal
         returns (IAllocator.Allocation memory allocation, IStrategy.PendingRewards memory pendingRewards)
     {
