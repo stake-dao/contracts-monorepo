@@ -365,11 +365,10 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
             // Calculate earned rewards since last claim
             AccountData storage account = accountData[accountAddress][rewardToken];
-            uint256 accountEarned = _earned(accountAddress, rewardToken, account.claimable, account.rewardPerTokenPaid);
+            uint256 accountEarned = account.claimable;
             if (accountEarned == 0) continue;
 
-            // Reset claimable amount and update reward checkpoint
-            account.rewardPerTokenPaid = rewardPerToken(rewardToken);
+            // Reset claimable amount
             account.claimable = 0;
 
             // Transfer earned rewards to receiver
