@@ -117,7 +117,15 @@ contract Accountant__claim is AccountantBaseTest {
         AccountantHarness accountantHarness = AccountantHarness(address(accountant));
         accountantHarness._cheat_updateVaultData(
             vault,
-            Accountant.VaultData({integral: 1e20, supply: 0, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
+            Accountant.VaultData({
+                integral: 1e20,
+                supply: 0,
+                feeSubjectAmount: 0,
+                totalAmount: 0,
+                netCredited: 0,
+                reservedHarvestFee: 0,
+                reservedProtocolFee: 0
+            })
         );
         accountantHarness._cheat_updateUserData(
             vault, makeAddr("account"), Accountant.AccountData({balance: 0, integral: 1e19, pendingRewards: 1e18})
@@ -150,7 +158,15 @@ contract Accountant__claim is AccountantBaseTest {
         AccountantHarness accountantHarness = AccountantHarness(address(accountant));
         accountantHarness._cheat_updateVaultData(
             vault,
-            Accountant.VaultData({integral: integral, supply: 0, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
+            Accountant.VaultData({
+                integral: integral,
+                supply: 0,
+                feeSubjectAmount: 0,
+                totalAmount: 0,
+                netCredited: 0,
+                reservedHarvestFee: 0,
+                reservedProtocolFee: 0
+            })
         );
         accountantHarness._cheat_updateUserData(
             vault,
@@ -188,7 +204,15 @@ contract Accountant__claim is AccountantBaseTest {
 
         AccountantHarness(address(accountant))._cheat_updateVaultData(
             vault,
-            Accountant.VaultData({integral: integral, supply: 0, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
+            Accountant.VaultData({
+                integral: integral,
+                supply: 0,
+                feeSubjectAmount: 0,
+                totalAmount: 0,
+                netCredited: 0,
+                reservedHarvestFee: 0,
+                reservedProtocolFee: 0
+            })
         );
         AccountantHarness(address(accountant))._cheat_updateUserData(
             vault, address(this), Accountant.AccountData({balance: 0, integral: integral, pendingRewards: 0})
@@ -223,7 +247,15 @@ contract Accountant__claim is AccountantBaseTest {
         AccountantHarness accountantHarness = AccountantHarness(address(accountant));
         accountantHarness._cheat_updateVaultData(
             vault,
-            Accountant.VaultData({integral: integral, supply: 0, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
+            Accountant.VaultData({
+                integral: integral,
+                supply: 0,
+                feeSubjectAmount: 0,
+                totalAmount: 0,
+                netCredited: 0,
+                reservedHarvestFee: 0,
+                reservedProtocolFee: 0
+            })
         );
         accountantHarness._cheat_updateUserData(
             vault, address(this), Accountant.AccountData({balance: accountBalance, integral: 0, pendingRewards: 0})
@@ -269,7 +301,15 @@ contract Accountant__claim is AccountantBaseTest {
         AccountantHarness accountantHarness = AccountantHarness(address(accountant));
         accountantHarness._cheat_updateVaultData(
             vault,
-            Accountant.VaultData({integral: integral, supply: 0, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
+            Accountant.VaultData({
+                integral: integral,
+                supply: 0,
+                feeSubjectAmount: 0,
+                totalAmount: 0,
+                netCredited: 0,
+                reservedHarvestFee: 0,
+                reservedProtocolFee: 0
+            })
         );
         accountantHarness._cheat_updateUserData(
             vault,
@@ -336,7 +376,9 @@ contract Accountant__claim is AccountantBaseTest {
                 supply: 0,
                 feeSubjectAmount: 0,
                 totalAmount: 0,
-                netCredited: 0
+                netCredited: 0,
+                reservedHarvestFee: 0,
+                reservedProtocolFee: 0
             })
         );
         accountantHarness._cheat_updateUserData(
@@ -348,7 +390,15 @@ contract Accountant__claim is AccountantBaseTest {
         ///////////////////////
         accountantHarness._cheat_updateVaultData(
             vaults[1],
-            Accountant.VaultData({integral: 1e21, supply: 0, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
+            Accountant.VaultData({
+                integral: 1e21,
+                supply: 0,
+                feeSubjectAmount: 0,
+                totalAmount: 0,
+                netCredited: 0,
+                reservedHarvestFee: 0,
+                reservedProtocolFee: 0
+            })
         );
         accountantHarness._cheat_updateUserData(
             vaults[1], address(this), Accountant.AccountData({balance: 1e16, integral: 1e18, pendingRewards: 0})
@@ -359,7 +409,15 @@ contract Accountant__claim is AccountantBaseTest {
         ///////////////////////
         accountantHarness._cheat_updateVaultData(
             vaults[2],
-            Accountant.VaultData({integral: 1e21, supply: 0, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
+            Accountant.VaultData({
+                integral: 1e21,
+                supply: 0,
+                feeSubjectAmount: 0,
+                totalAmount: 0,
+                netCredited: 0,
+                reservedHarvestFee: 0,
+                reservedProtocolFee: 0
+            })
         );
         accountantHarness._cheat_updateUserData(
             vaults[2], address(this), Accountant.AccountData({balance: 1e17, integral: 1e18, pendingRewards: 1e18})
@@ -370,7 +428,15 @@ contract Accountant__claim is AccountantBaseTest {
         ///////////////////////
         accountantHarness._cheat_updateVaultData(
             vaults[3],
-            Accountant.VaultData({integral: 1e21, supply: 0, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
+            Accountant.VaultData({
+                integral: 1e21,
+                supply: 0,
+                feeSubjectAmount: 0,
+                totalAmount: 0,
+                netCredited: 0,
+                reservedHarvestFee: 0,
+                reservedProtocolFee: 0
+            })
         );
         accountantHarness._cheat_updateUserData(
             vaults[3], address(this), Accountant.AccountData({balance: 0, integral: 1e21, pendingRewards: 0})

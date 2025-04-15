@@ -83,7 +83,9 @@ contract Accountant__checkpoint is AccountantBaseTest {
                 supply: initialSupply,
                 feeSubjectAmount: 0,
                 totalAmount: 0,
-                netCredited: 0
+                netCredited: 0,
+                reservedHarvestFee: 0,
+                reservedProtocolFee: 0
             })
         );
 
@@ -130,7 +132,9 @@ contract Accountant__checkpoint is AccountantBaseTest {
                 supply: initialSupply,
                 feeSubjectAmount: 0,
                 totalAmount: 0,
-                netCredited: 0
+                netCredited: 0,
+                reservedHarvestFee: 0,
+                reservedProtocolFee: 0
             })
         );
 
@@ -190,7 +194,9 @@ contract Accountant__checkpoint is AccountantBaseTest {
                 supply: initialSupply,
                 feeSubjectAmount: 0,
                 totalAmount: 0,
-                netCredited: 0
+                netCredited: 0,
+                reservedHarvestFee: 0,
+                reservedProtocolFee: 0
             })
         );
 
@@ -246,7 +252,9 @@ contract Accountant__checkpoint is AccountantBaseTest {
                 supply: initialSupply + amount,
                 feeSubjectAmount: 0,
                 totalAmount: 0,
-                netCredited: 0
+                netCredited: 0,
+                reservedHarvestFee: 0,
+                reservedProtocolFee: 0
             })
         );
 
@@ -295,7 +303,9 @@ contract Accountant__checkpoint is AccountantBaseTest {
                 supply: initialSupply,
                 feeSubjectAmount: 0,
                 totalAmount: 0,
-                netCredited: 0
+                netCredited: 0,
+                reservedHarvestFee: 0,
+                reservedProtocolFee: 0
             })
         );
 

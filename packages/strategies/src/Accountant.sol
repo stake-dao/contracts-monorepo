@@ -1,16 +1,16 @@
-/// SPDX-License-Identifier: GPL-3.0
+// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {Address} from "@openzeppelin/contracts/utils/Address.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
+
+import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
-import {IStrategy} from "src/interfaces/IStrategy.sol";
 
 /// @title Accountant - Reward Distribution and Accounting System
 /// @notice A comprehensive system for managing reward distribution and accounting across vaults and users.
@@ -38,6 +38,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         uint128 feeSubjectAmount;
         uint128 totalAmount;
         uint128 netCredited;
+        uint128 reservedHarvestFee;
+        uint128 reservedProtocolFee;
     }
 
     /// @notice Account data structure for a specific Vault
@@ -270,13 +272,15 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
                 // We charge protocol and harvest fees on the unclaimed rewards.
                 if (newFeeSubjectAmount > 0) {
                     totalFees = newFeeSubjectAmount.mulDiv(getProtocolFeePercent(), 1e18).toUint128();
+
+                    _vault.reservedProtocolFee += totalFees;
                 }
 
                 // Get harvest fee for the unclaimed rewards.
-                totalFees += newRewards.mulDiv(getHarvestFeePercent(), 1e18).toUint128();
+                uint128 harvestFee = newRewards.mulDiv(getHarvestFeePercent(), 1e18).toUint128();
 
                 // The net rewards we are *actually crediting* now
-                uint128 netIncrement = newRewards - totalFees;
+                uint128 netIncrement = newRewards - totalFees - harvestFee;
 
                 // Update integral with new rewards per token
                 integral += netIncrement.mulDiv(SCALING_FACTOR, supply);
@@ -284,8 +288,13 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
                 // Record how many total net rewards we've credited so far
                 _vault.netCredited += netIncrement;
 
+                // Record the harvest fee for the unclaimed rewards
+                _vault.reservedHarvestFee += harvestFee;
+
                 // Update the total amount and the fee subject amount of the Vault
                 _vault.totalAmount = pendingRewards.totalAmount;
+
+                // Update the fee subject amount of the Vault
                 _vault.feeSubjectAmount = pendingRewards.feeSubjectAmount;
             }
         }
@@ -419,9 +428,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         // Fetch the balance of the Accountant contract before harvesting.
         uint256 balanceBefore = IERC20(REWARD_TOKEN).balanceOf(address(this));
 
-        // Fees should be calculated before the harvest
-        uint256 currentHarvestFee = getCurrentHarvestFee();
-
         // First pass: harvest all gauges and update vault states
         for (uint256 i; i < _gauges.length; i++) {
             address gauge = _gauges[i];
@@ -435,35 +441,50 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
             // Track total rewards
             totalRewardsAmount += pendingRewards.totalAmount;
 
-            // Calculate protocol fee on the feeable amount
-            uint256 protocolFee = 0;
-            if (pendingRewards.feeSubjectAmount > 0) {
-                protocolFee = pendingRewards.feeSubjectAmount.mulDiv(feesParams.protocolFeePercent, 1e18);
-                // Update protocol fees accrued.
-                protocolFeesAccrued += protocolFee;
-            }
-
-            // Calculate harvester fee on the total amount
-            uint256 harvesterFee = pendingRewards.totalAmount.mulDiv(currentHarvestFee, 1e18);
-            totalHarvesterFee += harvesterFee;
-
             VaultData storage _vault = vaults[vault];
 
-            uint256 newNet = pendingRewards.totalAmount - protocolFee - harvesterFee;
-            uint256 oldNet = _vault.netCredited;
+            // Calculate protocol fee on the feeable amount
+            uint256 protocolFee = _vault.reservedProtocolFee;
+            uint256 harvesterFee = _vault.reservedHarvestFee;
 
-            if (newNet > oldNet) {
-                uint256 netDelta = newNet - oldNet;
+            uint256 netAfterReservedFees = pendingRewards.totalAmount - protocolFee - harvesterFee;
+            uint256 netCredited = _vault.netCredited;
+
+            if (netAfterReservedFees > netCredited) {
+                uint256 newRewards = netAfterReservedFees - netCredited;
+
+                /// Take the fee from the net delta
+                uint256 newHarvesterFee = newRewards.mulDiv(getHarvestFeePercent(), 1e18);
+                /// Update the harvester fee
+                harvesterFee += newHarvesterFee;
+
+                if (pendingRewards.feeSubjectAmount > _vault.feeSubjectAmount) {
+                    uint256 newFeeSubjectAmount = pendingRewards.feeSubjectAmount - _vault.feeSubjectAmount;
+                    uint256 newProtocolFee = newFeeSubjectAmount.mulDiv(getProtocolFeePercent(), 1e18);
+
+                    protocolFeesAccrued += newProtocolFee;
+
+                    // Adjust newRewards to account for protocol fee
+                    newRewards -= newProtocolFee;
+                }
+
+
                 // Add only that delta to the integral
-                _vault.integral += netDelta.mulDiv(SCALING_FACTOR, _vault.supply);
+                _vault.integral += (newRewards - newHarvesterFee).mulDiv(SCALING_FACTOR, _vault.supply);
             }
 
+            totalHarvesterFee += harvesterFee;
+
             // Update the net credited so far.
-            _vault.netCredited = newNet >= oldNet ? 0 : (oldNet - newNet).toUint128();
+            // If for some reason, it's a partial harvest, we don't want to reset the netCredited to 0.
+            _vault.netCredited =
+                netAfterReservedFees >= netCredited ? 0 : (netCredited - netAfterReservedFees).toUint128();
 
             // Always clear pending rewards after harvesting
             _vault.totalAmount = 0;
             _vault.feeSubjectAmount = 0;
+            _vault.reservedHarvestFee = 0;
+            _vault.reservedProtocolFee = 0;
 
             emit Harvest(vault, pendingRewards.totalAmount);
         }

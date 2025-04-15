@@ -16,7 +16,15 @@ contract Accountant__totalSupply is AccountantBaseTest {
         // This function is a testing-only function that shortcut the real end-user flow
         accountantHarness._cheat_updateVaultData(
             vault,
-            Accountant.VaultData({integral: 0, supply: supply, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
+            Accountant.VaultData({
+                integral: 0,
+                supply: supply,
+                feeSubjectAmount: 0,
+                totalAmount: 0,
+                netCredited: 0,
+                reservedHarvestFee: 0,
+                reservedProtocolFee: 0
+            })
         );
 
         assertEq(accountantHarness.totalSupply(vault), supply);
