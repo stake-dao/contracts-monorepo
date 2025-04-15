@@ -28,9 +28,6 @@ contract ConvexSidecar is Sidecar {
     /// @notice Convex Booster address.
     IBooster public constant BOOSTER = IBooster(0xF403C135812408BFbE8713b5A23a04b3D48AAE31);
 
-    /// @notice Error emitted when a zero address is provided
-    error ZeroAddress();
-
     //////////////////////////////////////////////////////
     /// --- ISIDECAR CLONE IMMUTABLES
     //////////////////////////////////////////////////////
@@ -162,11 +159,6 @@ contract ConvexSidecar is Sidecar {
 
     function claimExtraRewards() external {
         address[] memory extraRewardTokens = getRewardTokens();
-
-        /// We can save gas by not claiming extra rewards if we don't need them, there's no extra rewards, or not enough rewards worth to claim.
-        if (extraRewardTokens.length > 0) {
-            baseRewardPool().getReward(address(this), true);
-        }
 
         /// It'll claim rewardToken but we'll leave it here for clarity until the claim() function is called by the strategy.
         baseRewardPool().getReward(address(this), true);

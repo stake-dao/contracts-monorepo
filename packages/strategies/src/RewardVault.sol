@@ -61,6 +61,9 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @notice Thrown when a function is called by an address that isn't a registrar
     error OnlyRegistrar();
 
+    /// @notice Thrown when a protocol ID is zero
+    error InvalidProtocolId();
+
     /// @notice Thrown when attempting to allocate assets to an unapproved target
     error TargetNotApproved();
 
@@ -177,6 +180,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         ERC20(string.concat("StakeDAO Vault"), string.concat("sd-vault"))
     {
         require(accountant != address(0) && protocolController != address(0), ZeroAddress());
+        require(protocolId != bytes4(0), InvalidProtocolId());
 
         PROTOCOL_ID = protocolId;
         ACCOUNTANT = IAccountant(accountant);
@@ -435,6 +439,13 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         emit RewardsDeposited(_rewardsToken, _amount, newRewardRate);
     }
 
+    /// @notice Updates reward state for a single account
+    /// @dev Wrapper around _checkpoint for single account updates
+    /// @param account Account to update rewards for
+    function checkpoint(address account) external {
+        _checkpoint(account, address(0));
+    }
+
     ///////////////////////////////////////////////////////////////
     /// ~ INTERNAL REWARD UPDATES & HELPERS ~
     ///////////////////////////////////////////////////////////////
@@ -509,7 +520,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         uint256 timeDelta = _lastTimeRewardApplicable(reward.periodFinish) - reward.lastUpdateTime;
         uint256 rewardRatePerToken = 0;
 
-        if (timeDelta > 0 && _totalSupply > 0) {
+        if (timeDelta > 0) {
             // Calculate additional rewards per token since last update
             rewardRatePerToken = Math.mulDiv(timeDelta * reward.rewardRate, 1, _totalSupply);
         }
@@ -754,22 +765,6 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     function earned(address accountAddress, address token) external view returns (uint128) {
         AccountData storage account = accountData[accountAddress][token];
         return _earned(accountAddress, token, account.claimable, account.rewardPerTokenPaid);
-    }
-
-    /// @notice Calculates total rewards for the current distribution period
-    /// @dev Multiplies reward rate by duration
-    /// @param token Reward token to calculate for
-    /// @return Total rewards for the period
-    function getRewardForDuration(address token) external view returns (uint256) {
-        RewardData storage reward = rewardData[token];
-        return reward.rewardRate * DEFAULT_REWARDS_DURATION;
-    }
-
-    /// @notice Updates reward state for a single account
-    /// @dev Wrapper around _checkpoint for single account updates
-    /// @param account Account to update rewards for
-    function checkpoint(address account) external {
-        _checkpoint(account, address(0));
     }
 
     ///////////////////////////////////////////////////////////////

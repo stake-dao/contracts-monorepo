@@ -39,6 +39,9 @@ abstract contract Sidecar is ISidecar {
     /// --- ERRORS
     //////////////////////////////////////////////////////
 
+    /// @notice Error thrown when an address is zero
+    error ZeroAddress();
+
     /// @notice Error thrown when the caller is not the strategy
     error OnlyStrategy();
 
@@ -50,6 +53,10 @@ abstract contract Sidecar is ISidecar {
 
     /// @notice Error thrown when the sidecar is not initialized
     error NotInitialized();
+
+    /// @notice Error thrown when a protocol ID is zero
+    error InvalidProtocolId();
+
 
     //////////////////////////////////////////////////////
     /// --- MODIFIERS
@@ -71,6 +78,9 @@ abstract contract Sidecar is ISidecar {
     /// @param _accountant The address of the accountant contract
     /// @param _protocolController The address of the protocol controller
     constructor(bytes4 _protocolId, address _accountant, address _protocolController) {
+        require(_protocolId != bytes4(0), InvalidProtocolId());
+        require(_accountant != address(0) && _protocolController != address(0), ZeroAddress());
+
         PROTOCOL_ID = _protocolId;
         ACCOUNTANT = _accountant;
         PROTOCOL_CONTROLLER = IProtocolController(_protocolController);

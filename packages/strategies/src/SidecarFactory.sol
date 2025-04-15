@@ -39,6 +39,9 @@ abstract contract SidecarFactory is ISidecarFactory {
     /// @notice Error emitted when a zero address is provided
     error ZeroAddress();
 
+    /// @notice Error emitted when a protocol ID is zero
+    error InvalidProtocolId();
+
     /// @notice Error emitted when the sidecar is already deployed
     error SidecarAlreadyDeployed();
 
@@ -53,9 +56,8 @@ abstract contract SidecarFactory is ISidecarFactory {
     /// @param _protocolController Address of the protocol controller
     /// @param _protocolId Protocol ID
     constructor(bytes4 _protocolId, address _implementation, address _protocolController) {
-        if (_implementation == address(0) || _protocolController == address(0)) {
-            revert ZeroAddress();
-        }
+        require(_implementation != address(0) && _protocolController != address(0), ZeroAddress());
+        require(_protocolId != bytes4(0), InvalidProtocolId());
 
         IMPLEMENTATION = _implementation;
         PROTOCOL_ID = _protocolId;

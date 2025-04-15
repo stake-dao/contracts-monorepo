@@ -94,7 +94,6 @@ abstract contract BaseForkTest is Test {
         allocator = new Allocator(locker, address(gateway));
 
         /// 7. Setup contracts in protocol controller.
-        protocolController.setAccountant(protocolId, address(accountant));
         protocolController.setAllocator(protocolId, address(allocator));
 
         /// 7. Label common contracts.

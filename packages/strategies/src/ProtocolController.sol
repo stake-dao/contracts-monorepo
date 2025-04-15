@@ -13,7 +13,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// --- STORAGE STRUCTURES
     //////////////////////////////////////////////////////
 
-    /// @notice Struct to store protocol components in a single storage slot
+    /// @notice Struct to store protocol components
     struct ProtocolComponents {
         address strategy;
         address allocator;
