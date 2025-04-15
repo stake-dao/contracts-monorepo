@@ -15,13 +15,7 @@ import {RouterModulesTest} from "test/unit/Router/RouterModules/RouterModulesTes
 
 contract RouterModuleClaim__claim is RouterModulesTest {
     RouterModuleClaim internal module;
-    address internal gauge = makeAddr("gauge");
-    address internal asset;
-    address internal strategyAsset;
     address[] internal tokens;
-
-    // This implementation is the harnessed version of the reward vault cloned with the variables above
-    RewardVaultHarness internal cloneRewardVault;
 
     function setUp() public virtual override {
         // we're deploying and setting up the reward vault as it would be in a real deployment
