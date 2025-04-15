@@ -57,7 +57,6 @@ abstract contract Sidecar is ISidecar {
     /// @notice Error thrown when a protocol ID is zero
     error InvalidProtocolId();
 
-
     //////////////////////////////////////////////////////
     /// --- MODIFIERS
     //////////////////////////////////////////////////////

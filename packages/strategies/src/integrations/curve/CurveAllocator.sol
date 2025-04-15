@@ -121,9 +121,15 @@ contract CurveAllocator is Allocator {
             amounts[0] = Math.min(amount, balanceOfSidecar);
             amounts[1] = amount > amounts[0] ? amount - amounts[0] : 0;
         } else {
-            /// 7c. If Stake DAO balance is above optimal, prioritize withdrawing from Stake DAO
-            amounts[1] = Math.min(amount, balanceOfLocker);
-            amounts[0] = amount > amounts[1] ? amount - amounts[1] : 0;
+            /// 7c. If Stake DAO is above optimal, prioritize withdrawing from Stake DAO,
+            ///     but only withdraw as much as needed to bring the balance down to the optimal amount.
+            amounts[1] = Math.min(amount, balanceOfLocker - optimalBalanceOfLocker);
+            amounts[0] = amount > amounts[1] ? Math.min(amount - amounts[1], balanceOfSidecar) : 0;
+
+            /// 7d. If there is still more to withdraw, withdraw the rest from Convex.
+            if (amount > amounts[0] + amounts[1]) {
+                amounts[1] += amount - amounts[0] - amounts[1];
+            }
         }
 
         /// 8. Return the allocation.
