@@ -98,6 +98,13 @@ contract RewardReceiver__distributeRewards is BaseTest {
                 abi.encode(address(rewardReceiver))
             );
 
+            // mock the vault to have a distribution period in progress
+            vm.mockCall(
+                address(rewardVault),
+                abi.encodeWithSelector(RewardVault.getPeriodFinish.selector, token),
+                abi.encode(0)
+            );
+
             // mock the vault to deposit the rewards
             vm.mockCall(
                 address(rewardVault),
@@ -149,6 +156,13 @@ contract RewardReceiver__distributeRewards is BaseTest {
                 address(rewardVault),
                 abi.encodeWithSelector(RewardVault.getRewardsDistributor.selector, rewardsTokenList[i]),
                 abi.encode(address(rewardReceiver))
+            );
+
+            // mock the vault to have a distribution period in progress
+            vm.mockCall(
+                address(rewardVault),
+                abi.encodeWithSelector(RewardVault.getPeriodFinish.selector, rewardsTokenList[i]),
+                abi.encode(0)
             );
         }
 

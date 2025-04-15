@@ -89,6 +89,8 @@ contract RewardReceiver is IRewardReceiver {
     /// @param token The reward token to deposit.
     /// @param amount The amount of rewards to deposit.
     function _depositRewards(IERC20 token, uint128 amount) internal {
+        /// Check if there's a distribution period in progress.
+        if (rewardVault().getPeriodFinish(address(token)) > block.timestamp) return;
         /// Check if the reward receiver is a valid rewards distributor for the reward token.
         if (rewardVault().getRewardsDistributor(address(token)) != address(this)) return;
 

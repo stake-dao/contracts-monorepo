@@ -105,6 +105,13 @@ contract RewardReceiver__distributeRewardToken is BaseTest {
             abi.encode(address(rewardReceiver))
         );
 
+        // mock the vault to have a distribution period in progress
+        vm.mockCall(
+            address(rewardVault),
+            abi.encodeWithSelector(FakeRewardVault.getPeriodFinish.selector, address(rewardToken)),
+            abi.encode(0)
+        );
+
         // expect the reward receiver contract to ask the vault to deposit the rewards
         vm.expectCall(
             address(rewardVault), abi.encodeCall(RewardVault.depositRewards, (address(rewardToken), amount)), 1
@@ -118,4 +125,5 @@ contract FakeRewardVault {
     function isRewardToken(address) external returns (bool) {}
     function depositRewards(address, uint128) external {}
     function getRewardsDistributor(address) external returns (address) {}
+    function getPeriodFinish(address) external returns (uint256) {}
 }
