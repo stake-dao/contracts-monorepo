@@ -236,6 +236,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         // the allocator, transfer the amount from the account to the target
         IERC20 _asset = IERC20(asset());
         for (uint256 i; i < allocation.targets.length; i++) {
+            if(allocation.amounts[i] == 0) continue;
             require(PROTOCOL_CONTROLLER.isValidAllocationTarget(gauge(), allocation.targets[i]), TargetNotApproved());
             SafeERC20.safeTransferFrom(_asset, account, allocation.targets[i], allocation.amounts[i]);
         }
