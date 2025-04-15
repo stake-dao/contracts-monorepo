@@ -15,6 +15,7 @@ interface IProtocolController {
     function accountant(bytes4 protocolId) external view returns (address);
     function feeReceiver(bytes4 protocolId) external view returns (address);
     function isShutdown(address) external view returns (bool);
+    function isFullyWithdrawn(address) external view returns (bool);
 
     function registerVault(address _gauge, address _vault, address _asset, address _rewardReceiver, bytes4 _protocolId)
         external;
@@ -22,6 +23,9 @@ interface IProtocolController {
     function setValidAllocationTarget(address _gauge, address _target) external;
     function removeValidAllocationTarget(address _gauge, address _target) external;
     function isValidAllocationTarget(address _gauge, address _target) external view returns (bool);
+
+    function shutdown(address _gauge) external;
+    function markGaugeAsFullyWithdrawn(address _gauge) external;
 
     function setPermissionSetter(address _setter, bool _allowed) external;
     function setPermission(address _contract, address _caller, bytes4 _selector, bool _allowed) external;

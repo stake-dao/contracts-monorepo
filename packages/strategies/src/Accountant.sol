@@ -497,7 +497,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
 
         // If threshold is not set, return the current harvest fee based on balance
         uint256 balance = IERC20(REWARD_TOKEN).balanceOf(address(this));
-        return balance >= harvestThreshold ? 0 : currentHarvestFeePercent * (harvestThreshold - balance) / harvestThreshold;
+        return
+            balance >= harvestThreshold ? 0 : currentHarvestFeePercent * (harvestThreshold - balance) / harvestThreshold;
     }
 
     /// @notice Returns the current harvest fee percentage.

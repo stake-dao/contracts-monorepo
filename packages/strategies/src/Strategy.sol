@@ -224,20 +224,24 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @dev Only allowed to be called by permissioned addresses, or anyone if the gauge/system is shutdown
     /// @custom:throws OnlyAllowed If the caller is not allowed and the gauge is not shutdown
     function shutdown(address gauge) public onlyAllowed(gauge) {
-        require(balanceOf(gauge) > 0, AlreadyShutdown());
+        require(!PROTOCOL_CONTROLLER.isFullyWithdrawn(gauge), AlreadyShutdown());
 
         /// 1. Get the vault managing the gauge.
         address vault = PROTOCOL_CONTROLLER.vaults(gauge);
 
+        /// 2. Get the asset.
         address asset = IERC4626(vault).asset();
 
-        /// 2. Get the allocation targets for the gauge.
+        /// 3. Get the allocation targets for the gauge.
         address[] memory targets = _getAllocationTargets(gauge);
 
-        /// 3. Withdraw all the assets and send them to the vault.
+        /// 4. Withdraw all the assets and send them to the vault.
         _withdrawFromAllTargets(asset, gauge, targets, vault);
 
-        /// 4. Emit the shutdown event.
+        /// 5. Mark the gauge as fully withdrawn.
+        PROTOCOL_CONTROLLER.markGaugeAsFullyWithdrawn(gauge);
+
+        /// 6. Emit the shutdown event.
         emit Shutdown(gauge);
     }
 

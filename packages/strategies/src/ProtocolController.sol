@@ -29,6 +29,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
         address rewardReceiver;
         bytes4 protocolId;
         bool isShutdown;
+        bool isFullyWithdrawn;
     }
 
     //////////////////////////////////////////////////////
@@ -103,6 +104,9 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @param allowed Whether the permission setter is allowed to set permissions
     event PermissionSetterSet(address indexed setter, bool allowed);
 
+    /// @notice Thrown when a non-strategy calls a strategy-only function
+    error OnlyStrategy();
+
     /// @notice Thrown when a non-registrar calls a registrar-only function
     error OnlyRegistrar();
 
@@ -120,6 +124,12 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @custom:reverts OnlyRegistrar if the caller is not a registrar
     modifier onlyRegistrar() {
         require(registrar[msg.sender] || msg.sender == owner(), OnlyRegistrar());
+        _;
+    }
+
+    modifier onlyStrategy(address _gauge) {
+        address _strategy = _protocolComponents[gauge[_gauge].protocolId].strategy;
+        require(msg.sender == _strategy, OnlyStrategy());
         _;
     }
 
@@ -277,6 +287,13 @@ contract ProtocolController is IProtocolController, Ownable2Step {
         emit GaugeShutdown(_gauge);
     }
 
+    /// @notice Marks a gauge as fully withdrawn
+    /// @param _gauge The gauge address
+    /// @custom:reverts OnlyStrategy if the caller is not the strategy
+    function markGaugeAsFullyWithdrawn(address _gauge) external onlyStrategy(_gauge) {
+        gauge[_gauge].isFullyWithdrawn = true;
+    }
+
     /// @notice Shuts down a protocol
     /// @param protocolId The protocol identifier
     /// @custom:reverts OnlyOwner if the caller is not the owner
@@ -368,6 +385,13 @@ contract ProtocolController is IProtocolController, Ownable2Step {
         Gauge storage $gauge = gauge[_gauge];
 
         return $gauge.isShutdown || _protocolComponents[$gauge.protocolId].isShutdown;
+    }
+
+    /// @notice Checks if a gauge is fully withdrawn
+    /// @param _gauge The gauge address
+    /// @return _ Whether the gauge is fully withdrawn
+    function isFullyWithdrawn(address _gauge) external view returns (bool) {
+        return gauge[_gauge].isFullyWithdrawn;
     }
 
     /// @notice Checks if a target is a valid allocation target for a gauge
