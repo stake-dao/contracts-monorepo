@@ -50,7 +50,9 @@ contract RewardReceiver__distributeRewardToken is BaseTest {
 
         // mock the vault to have the reward receiver as the rewards distributor
         vm.mockCall(
-            address(rewardVault), abi.encodeWithSelector(FakeRewardVault.getRewardsDistributor.selector), abi.encode(address(rewardReceiver))
+            address(rewardVault),
+            abi.encodeWithSelector(FakeRewardVault.getRewardsDistributor.selector),
+            abi.encode(address(rewardReceiver))
         );
 
         // expect the reward receiver contract to revert because there are no rewards to distribute
@@ -73,7 +75,9 @@ contract RewardReceiver__distributeRewardToken is BaseTest {
 
         // mock the vault to have the reward receiver as the rewards distributor
         vm.mockCall(
-            address(rewardVault), abi.encodeWithSelector(FakeRewardVault.getRewardsDistributor.selector), abi.encode(address(rewardReceiver))
+            address(rewardVault),
+            abi.encodeWithSelector(FakeRewardVault.getRewardsDistributor.selector),
+            abi.encode(address(rewardReceiver))
         );
 
         // expect the reward receiver contract to revert because the balance is higher than uint128 max
@@ -96,7 +100,9 @@ contract RewardReceiver__distributeRewardToken is BaseTest {
 
         // mock the vault to have the reward receiver as the rewards distributor
         vm.mockCall(
-            address(rewardVault), abi.encodeWithSelector(FakeRewardVault.getRewardsDistributor.selector), abi.encode(address(rewardReceiver))
+            address(rewardVault),
+            abi.encodeWithSelector(FakeRewardVault.getRewardsDistributor.selector),
+            abi.encode(address(rewardReceiver))
         );
 
         // expect the reward receiver contract to ask the vault to deposit the rewards

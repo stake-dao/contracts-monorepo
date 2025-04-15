@@ -101,8 +101,16 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
         gauge2.add_reward(WBTC, address(this));
 
         /// Mock the reward data to be active in order for syncRewardTokens to work.
-        vm.mockCall(address(gauge), abi.encodeWithSelector(gauge.reward_data.selector), abi.encode(WBTC, address(this), block.timestamp + 1 days, 0, block.timestamp, 0));
-        vm.mockCall(address(gauge2), abi.encodeWithSelector(gauge2.reward_data.selector), abi.encode(WBTC, address(this), block.timestamp + 1 days, 0, block.timestamp, 0));
+        vm.mockCall(
+            address(gauge),
+            abi.encodeWithSelector(gauge.reward_data.selector),
+            abi.encode(WBTC, address(this), block.timestamp + 1 days, 0, block.timestamp, 0)
+        );
+        vm.mockCall(
+            address(gauge2),
+            abi.encodeWithSelector(gauge2.reward_data.selector),
+            abi.encode(WBTC, address(this), block.timestamp + 1 days, 0, block.timestamp, 0)
+        );
 
         /// Sync the reward tokens on the gauges
         curveFactory.syncRewardTokens(address(gauge));

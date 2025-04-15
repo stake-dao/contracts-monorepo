@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import {ImmutableArgsParser} from "src/libraries/ImmutableArgsParser.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -29,7 +29,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     using Math for uint256;
     using SafeCast for uint256;
     using SafeERC20 for IERC20;
-
+    using ImmutableArgsParser for address;
     ///////////////////////////////////////////////////////////////
     /// ~ EVENTS
     ///////////////////////////////////////////////////////////////
@@ -554,12 +554,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @dev Retrieves the token address from the clone's immutable args.
     /// @return _ The address of the underlying token used by the vault.
     function asset() public view returns (address) {
-        bytes memory args = Clones.fetchCloneArgs(address(this));
-        address token;
-        assembly {
-            token := mload(add(args, 40))
-        }
-        return token;
+        return address(this).readAddress(20);
     }
 
     /// @notice Returns the total amount of underlying assets (1:1 with total shares).
@@ -786,10 +781,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @return _gauge The gauge contract address
     /// @custom:reverts CloneArgsNotFound if clone is incorrectly initialized
     function gauge() public view returns (address _gauge) {
-        bytes memory args = Clones.fetchCloneArgs(address(this));
-        assembly {
-            _gauge := mload(add(args, 20))
-        }
+        return address(this).readAddress(0);
     }
 
     /// @notice Gets the allocator contract for this protocol type

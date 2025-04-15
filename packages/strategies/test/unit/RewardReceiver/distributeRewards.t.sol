@@ -93,7 +93,9 @@ contract RewardReceiver__distributeRewards is BaseTest {
 
             // mock the vault to have the reward receiver as the rewards distributor for the reward token
             vm.mockCall(
-                address(rewardVault), abi.encodeWithSelector(RewardVault.getRewardsDistributor.selector, token), abi.encode(address(rewardReceiver))
+                address(rewardVault),
+                abi.encodeWithSelector(RewardVault.getRewardsDistributor.selector, token),
+                abi.encode(address(rewardReceiver))
             );
 
             // mock the vault to deposit the rewards
@@ -144,7 +146,9 @@ contract RewardReceiver__distributeRewards is BaseTest {
         // mock the vault to have the reward receiver as the rewards distributor for each reward token
         for (uint256 i; i < rewardsTokenList.length; i++) {
             vm.mockCall(
-                address(rewardVault), abi.encodeWithSelector(RewardVault.getRewardsDistributor.selector, rewardsTokenList[i]), abi.encode(address(rewardReceiver))
+                address(rewardVault),
+                abi.encodeWithSelector(RewardVault.getRewardsDistributor.selector, rewardsTokenList[i]),
+                abi.encode(address(rewardReceiver))
             );
         }
 

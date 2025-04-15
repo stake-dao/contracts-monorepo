@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {IRewardReceiver} from "src/interfaces/IRewardReceiver.sol";
 import {IRewardVault} from "src/interfaces/IRewardVault.sol";
+import {IRewardReceiver} from "src/interfaces/IRewardReceiver.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {ImmutableArgsParser} from "src/libraries/ImmutableArgsParser.sol";
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title RewardReceiver - Reward Distribution Intermediary
 /// @notice A contract that receives rewards from gauges and forwards them to a reward vault.
@@ -15,6 +15,7 @@ import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 ///      - Forwards rewards to reward vault.
 ///      - Validates reward tokens against the vault's accepted tokens.
 contract RewardReceiver is IRewardReceiver {
+    using ImmutableArgsParser for address;
     using SafeCast for uint256;
     using SafeERC20 for IERC20;
 
@@ -35,10 +36,7 @@ contract RewardReceiver is IRewardReceiver {
     /// @notice Address of the reward vault contract.
     /// @return _rewardVault The address of the reward vault contract.
     function rewardVault() public view returns (IRewardVault _rewardVault) {
-        bytes memory args = Clones.fetchCloneArgs(address(this));
-        assembly {
-            _rewardVault := mload(add(args, 20))
-        }
+        return IRewardVault(address(this).readAddress(0));
     }
 
     //////////////////////////////////////////////////////
