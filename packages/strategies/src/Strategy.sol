@@ -260,17 +260,20 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         /// 3. Snapshot the current balance.
         uint256 currentBalance = balanceOf(gauge);
 
-        /// 4. Get the allocation amounts for the gauge.
+        /// 4. Get the allocation targets for the gauge.
+        address[] memory targets = _getAllocationTargets(gauge);
+
+        /// 5. Withdraw all assets from all targets to this contract
+        _withdrawFromAllTargets(address(asset), gauge, targets, address(this));
+
+        /// 6. Get the allocation amounts for the gauge.
         IAllocator.Allocation memory allocation =
             IAllocator(allocator).getRebalancedAllocation(address(asset), gauge, currentBalance);
 
-        /// 5. Ensure the allocation has more than one target.
+        /// 7. Ensure the allocation has more than one target.
         require(allocation.targets.length > 1, RebalanceNotNeeded());
 
-        /// 6. Withdraw all assets from all targets to this contract
-        _withdrawFromAllTargets(address(asset), gauge, allocation.targets, address(this));
-
-        /// 7. Deposit the amounts into the gauge with new allocations
+        /// 8. Deposit the amounts into the gauge with new allocations
         for (uint256 i = 0; i < allocation.targets.length; i++) {
             address target = allocation.targets[i];
             uint256 amount = allocation.amounts[i];
