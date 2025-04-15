@@ -113,6 +113,9 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @notice Thrown when a zero address is used
     error ZeroAddress();
 
+    /// @notice Thrown when an accountant is already set
+    error AccountantAlreadySet();
+
     /// @notice Thrown when an unauthorized address tries to set permissions
     error NotPermissionSetter();
 
@@ -230,6 +233,8 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @custom:reverts ZeroAddress if the accountant address is zero
     function setAccountant(bytes4 protocolId, address _accountant) external onlyOwner {
         require(_accountant != address(0), ZeroAddress());
+        require(_protocolComponents[protocolId].accountant == address(0), AccountantAlreadySet());
+
         _protocolComponents[protocolId].accountant = _accountant;
         emit ProtocolComponentSet(protocolId, COMPONENT_ID_ACCOUNTANT, _accountant);
     }
