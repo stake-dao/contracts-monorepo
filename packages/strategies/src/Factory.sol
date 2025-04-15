@@ -83,10 +83,6 @@ abstract contract Factory is ProtocolContext {
 
         REWARD_VAULT_IMPLEMENTATION = _vaultImplementation;
         REWARD_RECEIVER_IMPLEMENTATION = _rewardReceiverImplementation;
-        PROTOCOL_CONTROLLER = IProtocolController(_protocolController);
-
-        ACCOUNTANT = PROTOCOL_CONTROLLER.accountant(PROTOCOL_ID);
-        REWARD_TOKEN = IAccountant(ACCOUNTANT).REWARD_TOKEN();
     }
 
     //////////////////////////////////////////////////////
