@@ -116,6 +116,18 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @notice Thrown when an unauthorized address tries to set permissions
     error NotPermissionSetter();
 
+    /// @notice Thrown when a gauge is already shutdown
+    error GaugeAlreadyShutdown();
+
+    /// @notice Thrown when an invalid allocation target is set
+    error InvalidAllocationTarget();
+
+    /// @notice Thrown when a protocol is already shutdown
+    error ProtocolAlreadyShutdown();
+
+    /// @notice Thrown when a gauge is already fully withdrawn
+    error GaugeAlreadyFullyWithdrawn();
+
     //////////////////////////////////////////////////////
     /// --- MODIFIERS
     //////////////////////////////////////////////////////
@@ -268,6 +280,8 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @param _target The target address
     /// @custom:reverts OnlyRegistrar if the caller is not a registrar
     function setValidAllocationTarget(address _gauge, address _target) external onlyRegistrar {
+        require(!_isValidAllocationTargets[_gauge][_target], InvalidAllocationTarget());
+
         _isValidAllocationTargets[_gauge][_target] = true;
     }
 
@@ -276,6 +290,8 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @param _target The target address
     /// @custom:reverts OnlyRegistrar if the caller is not a registrar
     function removeValidAllocationTarget(address _gauge, address _target) external onlyRegistrar {
+        require(_isValidAllocationTargets[_gauge][_target], InvalidAllocationTarget());
+
         _isValidAllocationTargets[_gauge][_target] = false;
     }
 
@@ -283,6 +299,9 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @param _gauge The gauge address to shut down
     /// @custom:reverts OnlyOwner if the caller is not the owner
     function shutdown(address _gauge) external onlyOwner {
+        Gauge storage g = gauge[_gauge];
+        require(!g.isShutdown, GaugeAlreadyShutdown());
+
         gauge[_gauge].isShutdown = true;
         emit GaugeShutdown(_gauge);
     }
@@ -291,6 +310,8 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @param _gauge The gauge address
     /// @custom:reverts OnlyStrategy if the caller is not the strategy
     function markGaugeAsFullyWithdrawn(address _gauge) external onlyStrategy(_gauge) {
+        require(!gauge[_gauge].isFullyWithdrawn, GaugeAlreadyFullyWithdrawn());
+
         gauge[_gauge].isFullyWithdrawn = true;
     }
 
@@ -298,6 +319,8 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @param protocolId The protocol identifier
     /// @custom:reverts OnlyOwner if the caller is not the owner
     function shutdownProtocol(bytes4 protocolId) external onlyOwner {
+        require(!_protocolComponents[protocolId].isShutdown, ProtocolAlreadyShutdown());
+
         _protocolComponents[protocolId].isShutdown = true;
         emit ProtocolShutdown(protocolId);
     }
