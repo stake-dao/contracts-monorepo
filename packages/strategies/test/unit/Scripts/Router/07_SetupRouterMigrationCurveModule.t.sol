@@ -13,8 +13,6 @@ contract Router__SetupRouterMigrationCurveModuleScript is Test, DeployAndSetMigr
 
         _run(address(router));
 
-        assertEq(
-            router.getModuleName(RouterIdentifierMapping.MIGRATION_CURVE_V1), type(RouterModuleMigrationCurve).name
-        );
+        assertEq(router.getModuleName(RouterIdentifierMapping.MIGRATION_CURVE), type(RouterModuleMigrationCurve).name);
     }
 }
