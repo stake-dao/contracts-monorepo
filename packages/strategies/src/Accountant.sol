@@ -489,15 +489,15 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @notice Returns the current harvest fee based on contract balance
     /// @return _ The current harvest fee percentage
     function getCurrentHarvestFee() public view returns (uint256) {
-        uint256 harvestTreshold = HARVEST_URGENCY_THRESHOLD;
+        uint256 harvestThreshold = HARVEST_URGENCY_THRESHOLD;
         uint128 currentHarvestFeePercent = feesParams.harvestFeePercent;
 
         // If threshold is 0, always return max harvest fee
-        if (harvestTreshold == 0) return currentHarvestFeePercent;
+        if (harvestThreshold == 0) return currentHarvestFeePercent;
 
         // If threshold is not set, return the current harvest fee based on balance
         uint256 balance = IERC20(REWARD_TOKEN).balanceOf(address(this));
-        return balance >= harvestTreshold ? 0 : currentHarvestFeePercent * (harvestTreshold - balance) / harvestTreshold;
+        return balance >= harvestThreshold ? 0 : currentHarvestFeePercent * (harvestThreshold - balance) / harvestThreshold;
     }
 
     /// @notice Returns the current harvest fee percentage.
