@@ -142,13 +142,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
             }
         }
 
-        if (doHarvest) {
-            pendingRewards = _harvest(allocation.gauge, "", false);
-        } else {
-            pendingRewards = _sync(allocation.gauge);
-        }
-
-        return pendingRewards;
+        pendingRewards = _harvestOrSync(allocation.gauge, doHarvest);
     }
 
     /// @notice Withdraws assets according to the provided allocation
@@ -164,31 +158,25 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         onlyVault(allocation.gauge)
         returns (PendingRewards memory pendingRewards)
     {
+        address gauge = allocation.gauge;
+
         /// If the pool is shutdown, return the pending rewards.
         /// Use the shutdown function to withdraw the funds.
-        if (PROTOCOL_CONTROLLER.isShutdown(allocation.gauge)) {
-            return doHarvest ? _harvest(allocation.gauge, "", false) : _sync(allocation.gauge);
-        }
+        if (PROTOCOL_CONTROLLER.isShutdown(gauge)) return _harvestOrSync(gauge, doHarvest);
 
         for (uint256 i = 0; i < allocation.targets.length; i++) {
             /// When the receiver is not set, it means it's a transfer of the vault shares and we need to checkpoint by
             /// withdrawing 0.
             if (allocation.amounts[i] > 0 || receiver == address(0)) {
                 if (allocation.targets[i] == LOCKER) {
-                    _withdraw(allocation.asset, allocation.gauge, allocation.amounts[i], receiver);
+                    _withdraw(allocation.asset, gauge, allocation.amounts[i], receiver);
                 } else {
                     ISidecar(allocation.targets[i]).withdraw(allocation.amounts[i], receiver);
                 }
             }
         }
 
-        if (doHarvest) {
-            pendingRewards = _harvest(allocation.gauge, "", false);
-        } else {
-            pendingRewards = _sync(allocation.gauge);
-        }
-
-        return pendingRewards;
+        return _harvestOrSync(gauge, doHarvest);
     }
 
     /// @notice Harvests rewards from a gauge
@@ -383,6 +371,14 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         }
 
         return pendingRewards;
+    }
+
+    /// @notice Harvests or synchronizes rewards
+    /// @param gauge The gauge to harvest or synchronize from
+    /// @param doHarvest Whether to perform a harvest operation
+    /// @return pendingRewards The pending rewards after harvesting or synchronization
+    function _harvestOrSync(address gauge, bool doHarvest) internal returns (PendingRewards memory pendingRewards) {
+        pendingRewards = doHarvest ? _harvest(gauge, "", false) : _sync(gauge);
     }
 
     //////////////////////////////////////////////////////
