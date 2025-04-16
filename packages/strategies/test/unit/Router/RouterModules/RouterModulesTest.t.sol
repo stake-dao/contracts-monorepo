@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {IAllocator} from "src/interfaces/IAllocator.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
@@ -79,6 +78,12 @@ contract RouterModulesTest is RewardVaultBaseTest {
         );
 
         // mock the checkpoint function of the accountant
-        vm.mockCall(accountant, abi.encodeWithSelector(IAccountant.checkpoint.selector), abi.encode(true));
+        vm.mockCall(
+            accountant,
+            abi.encodeWithSelector(
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)"))
+            ),
+            abi.encode(true)
+        );
     }
 }

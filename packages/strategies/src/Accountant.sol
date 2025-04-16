@@ -186,6 +186,12 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @notice Emitted when the harvest fee percent is updated.
     event HarvestFeePercentSet(uint128 oldHarvestFeePercent, uint128 newHarvestFeePercent);
 
+    /// @notice Emitted when a deposit is made via a referrer
+    /// @param referrer The address of the referrer
+    /// @param referree The address of the referree (the address that receives the shares)
+    /// @param assets The amount of assets deposited (1:1 with shares)
+    event Referrer(address indexed referrer, address referree, uint128 assets);
+
     //////////////////////////////////////////////////////
     /// --- MODIFIERS
     //////////////////////////////////////////////////////
@@ -247,7 +253,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         uint128 amount,
         IStrategy.PendingRewards calldata pendingRewards,
         bool harvested
-    ) external nonReentrant {
+    ) public nonReentrant {
         require(PROTOCOL_CONTROLLER.vaults(gauge) == msg.sender, OnlyVault());
 
         VaultData storage _vault = vaults[msg.sender];
@@ -345,6 +351,32 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         _vault.supply = supply;
 
         emit Checkpoint(msg.sender, from, to, amount, integral, supply, harvested);
+    }
+
+    /// @notice Checkpoints the state of the vault on every account action.
+    /// @dev This function is a wrapper of `checkpoint` that emits the `Referrer` event.
+    /// @param gauge The underlying gauge address of the vault.
+    /// @param from The source address (address(0) for minting).
+    /// @param to The destination address (address(0) for burning).
+    /// @param amount The amount of tokens being transferred/minted/burned.
+    /// @param pendingRewards New rewards to be distributed to the vault.
+    /// @param harvested Whether these rewards were already harvested by the vault and sent to the contract.
+    /// @param referrer The address of the referrer.
+    /// @custom:throws OnlyVault If caller is not the registered vault for the gauge.
+    function checkpoint(
+        address gauge,
+        address from,
+        address to,
+        uint128 amount,
+        IStrategy.PendingRewards calldata pendingRewards,
+        bool harvested,
+        address referrer
+    ) external {
+        // call the checkpoint function as normal (the function check if the caller is the authorized vault)
+        checkpoint(gauge, from, to, amount, pendingRewards, harvested);
+
+        // emit the referrer deposit event if the referrer is set
+        if (referrer != address(0)) emit Referrer(referrer, to, amount);
     }
 
     /// @dev Updates account state during operations.

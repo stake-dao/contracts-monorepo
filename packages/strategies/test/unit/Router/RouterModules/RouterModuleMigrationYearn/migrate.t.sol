@@ -6,7 +6,6 @@ import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Address, Errors} from "@openzeppelin/contracts/utils/Address.sol";
 import {Address, Errors} from "@openzeppelin/contracts/utils/Address.sol";
-import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {RouterModuleMigrationYearn} from "src/RouterModules/RouterModuleMigrationYearn.sol";
@@ -74,7 +73,16 @@ contract RouterModuleMigrationYearn__migrate is RouterModulesTest {
         // expect the checkpoint to be called with the account as the recipient
         vm.expectCall(
             address(accountant),
-            abi.encodeCall(IAccountant.checkpoint, (gauge, address(0), account, uint128(amount), pendingRewards, false)),
+            abi.encodeWithSelector(
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)")),
+                gauge,
+                address(0),
+                account,
+                uint128(amount),
+                pendingRewards,
+                false,
+                address(0)
+            ),
             1
         );
 

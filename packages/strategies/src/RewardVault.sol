@@ -45,12 +45,6 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @param rewardRate The calculated rate at which rewards will be distributed (tokens/second)
     event RewardsDeposited(address indexed rewardsToken, uint256 amount, uint128 rewardRate);
 
-    /// @notice Emitted when a deposit is made via a referrer
-    /// @param referrer The address of the referrer
-    /// @param referree The address of the referree (the address that receives the shares)
-    /// @param assets The amount of assets deposited (1:1 with shares)
-    event ReferrerDeposit(address indexed referrer, address referree, uint256 assets);
-
     ///////////////////////////////////////////////////////////////
     /// ~ ERRORS
     ///////////////////////////////////////////////////////////////
@@ -211,11 +205,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     function deposit(uint256 assets, address receiver, address referrer) public returns (uint256) {
         if (receiver == address(0)) receiver = msg.sender;
 
-        _deposit(msg.sender, receiver, assets, assets);
-
-        if (referrer != address(0)) {
-            emit ReferrerDeposit(referrer, receiver, assets);
-        }
+        _deposit(msg.sender, receiver, assets, assets, referrer);
 
         // return the amount of assets deposited. Thanks to the 1:1 relationship between assets and shares
         // the amount of assets deposited is the same as the amount of shares minted
@@ -266,11 +256,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     function deposit(address account, uint256 assets, address referrer) public onlyAllowed returns (uint256) {
         if (account == address(0)) revert ZeroAddress();
 
-        _deposit(account, account, assets, assets);
-
-        if (referrer != address(0)) {
-            emit ReferrerDeposit(referrer, account, assets);
-        }
+        _deposit(account, account, assets, assets, referrer);
 
         // return the amount of assets deposited. Thanks to the 1:1 relationship between assets and shares
         // the amount of assets deposited is the same as the amount of shares minted
@@ -308,7 +294,8 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @param receiver The address to receive the minted shares.
     /// @param assets The amount of assets to deposit.
     /// @param shares The amount of shares to mint.
-    function _deposit(address account, address receiver, uint256 assets, uint256 shares) internal {
+    /// @param referrer The address of the referrer. Can be the zero address.
+    function _deposit(address account, address receiver, uint256 assets, uint256 shares, address referrer) internal {
         // Update the reward state for the receiver
         _checkpoint(receiver, address(0));
 
@@ -330,7 +317,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         IStrategy.PendingRewards memory pendingRewards = strategy().deposit(allocation, TRIGGER_HARVEST);
 
         // Mint the shares to the receiver
-        _mint(receiver, shares, pendingRewards, TRIGGER_HARVEST);
+        _mint(receiver, shares, pendingRewards, TRIGGER_HARVEST, referrer);
 
         emit Deposit(msg.sender, receiver, assets, shares);
     }
@@ -914,10 +901,15 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @param amount Amount of shares to mint
     /// @param pendingRewards Rewards to process during mint
     /// @param harvested Whether to trigger reward harvesting
-    function _mint(address to, uint256 amount, IStrategy.PendingRewards memory pendingRewards, bool harvested)
-        internal
-    {
-        ACCOUNTANT.checkpoint(gauge(), address(0), to, uint128(amount), pendingRewards, harvested);
+    /// @param referrer The address of the referrer. Can be the zero address.
+    function _mint(
+        address to,
+        uint256 amount,
+        IStrategy.PendingRewards memory pendingRewards,
+        bool harvested,
+        address referrer
+    ) internal {
+        ACCOUNTANT.checkpoint(gauge(), address(0), to, uint128(amount), pendingRewards, harvested, referrer);
     }
 
     /// @notice Burns vault shares

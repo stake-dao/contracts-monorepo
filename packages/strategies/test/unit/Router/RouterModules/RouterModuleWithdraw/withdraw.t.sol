@@ -4,7 +4,6 @@ pragma solidity 0.8.28;
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {Address, Errors} from "@openzeppelin/contracts/utils/Address.sol";
-import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {IAllocator} from "src/interfaces/IAllocator.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
@@ -141,7 +140,13 @@ contract RouterModuleWithdraw__withdraw is RouterModulesTest {
         );
 
         // mock the checkpoint function of the accountant
-        vm.mockCall(accountant, abi.encodeWithSelector(IAccountant.checkpoint.selector), abi.encode(true));
+        vm.mockCall(
+            accountant,
+            abi.encodeWithSelector(
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool)"))
+            ),
+            abi.encode(true)
+        );
     }
 }
 

@@ -4,7 +4,6 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Accountant} from "src/Accountant.sol";
-import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {IAllocator} from "src/interfaces/IAllocator.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
@@ -162,7 +161,13 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         );
 
         // mock the checkpoint function of the accountant
-        vm.mockCall(accountant, abi.encodeWithSelector(IAccountant.checkpoint.selector), abi.encode(true));
+        vm.mockCall(
+            accountant,
+            abi.encodeWithSelector(
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)"))
+            ),
+            abi.encode(true)
+        );
     }
 
     function test_UpdatesTheRewardForTheReceiver(address caller, address receiver)
@@ -405,16 +410,15 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         // expect the checkpoint to be called with the receiver as the recipient
         vm.expectCall(
             address(accountant),
-            abi.encodeCall(
-                IAccountant.checkpoint,
-                (
-                    gauge,
-                    address(0),
-                    caller, // this is what we are testing
-                    uint128(OWNER_BALANCE),
-                    pendingRewards,
-                    false
-                )
+            abi.encodeWithSelector(
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)")),
+                gauge,
+                address(0),
+                caller, // this is what we are testing
+                uint128(OWNER_BALANCE),
+                pendingRewards,
+                false,
+                address(0)
             ),
             1
         );
@@ -450,16 +454,15 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         // expect the checkpoint to be called with the receiver as the recipient
         vm.expectCall(
             address(accountant),
-            abi.encodeCall(
-                IAccountant.checkpoint,
-                (
-                    gauge,
-                    address(0),
-                    receiver, // this is what we are testing
-                    uint128(OWNER_BALANCE),
-                    pendingRewards,
-                    false
-                )
+            abi.encodeWithSelector(
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)")),
+                gauge,
+                address(0),
+                receiver, // this is what we are testing
+                uint128(OWNER_BALANCE),
+                pendingRewards,
+                false,
+                address(0)
             ),
             1
         );
@@ -515,19 +518,17 @@ contract RewardVault__deposit is RewardVaultBaseTest {
             abi.encode(true)
         );
 
-        // expect the checkpoint to be called with the account as the recipient
         vm.expectCall(
             address(accountant),
-            abi.encodeCall(
-                IAccountant.checkpoint,
-                (
-                    gauge,
-                    address(0),
-                    account, // this is what we are testing
-                    uint128(OWNER_BALANCE),
-                    pendingRewards,
-                    false
-                )
+            abi.encodeWithSelector(
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)")),
+                gauge,
+                address(0),
+                account, // this is what we are testing
+                uint128(OWNER_BALANCE),
+                pendingRewards,
+                false,
+                address(0)
             ),
             1
         );
@@ -562,10 +563,16 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         // mock the dependencies of the withdraw function
         _mock_test_dependencies(OWNER_BALANCE, Allocation.MIXED);
 
-        // make the caller deposit the rewards. It should succeed because the allowance is enough
+        // expect the version of the checkpoint function with the referrer to be called
+        vm.expectCall(
+            address(accountant),
+            abi.encodeWithSelector(
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)"))
+            ),
+            1
+        );
+
         vm.prank(caller);
-        vm.expectEmit(true, true, true, true);
-        emit RewardVault.ReferrerDeposit(referrer, receiver, OWNER_BALANCE);
         deposit_mint_wrapper(OWNER_BALANCE, receiver, referrer);
     }
 
@@ -599,9 +606,16 @@ contract RewardVault__deposit is RewardVaultBaseTest {
             abi.encode(true)
         );
 
+        // expect the version of the checkpoint function with the referrer to be called
+        vm.expectCall(
+            address(accountant),
+            abi.encodeWithSelector(
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)"))
+            ),
+            1
+        );
+
         vm.prank(caller);
-        vm.expectEmit(true, true, true, true);
-        emit RewardVault.ReferrerDeposit(referrer, account, OWNER_BALANCE);
         deposit_mint_permissioned_wrapper(account, OWNER_BALANCE, referrer);
     }
 
@@ -631,13 +645,14 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         vm.mockCallRevert(
             address(accountant),
             abi.encodeWithSelector(
-                IAccountant.checkpoint.selector,
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)")),
                 gauge,
                 address(0),
                 receiver,
                 uint128(OWNER_BALANCE),
                 pendingRewards,
-                false
+                false,
+                address(0)
             ),
             abi.encode("UNEXPECTED_ERROR")
         );
