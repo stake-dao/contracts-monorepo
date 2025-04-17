@@ -683,12 +683,13 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
                 uint256 vaultIntegral = vaults[vault].integral;
 
                 // If vault's integral is higher than account's integral, calculate the rewards and update the total.
+                uint256 claimableAmount = account.pendingRewards;
                 if (vaultIntegral > accountIntegral) {
-                    totalAmount += (vaultIntegral - accountIntegral).mulDiv(balance, SCALING_FACTOR);
+                    claimableAmount += (vaultIntegral - accountIntegral).mulDiv(balance, SCALING_FACTOR);
                 }
 
                 // In any case, add the pending rewards to the total amount
-                totalAmount += account.pendingRewards;
+                totalAmount += claimableAmount;
 
                 // Update account's integral with the current value of Vault's integral
                 account.integral = vaultIntegral;
@@ -700,7 +701,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
                 emit AccountCheckpoint(vault, accountAddress, balance, vaultIntegral, 0);
 
                 // Emit the claim event
-                emit RewardsClaimed(vault, accountAddress, receiver, totalAmount);
+                emit RewardsClaimed(vault, accountAddress, receiver, claimableAmount);
             }
         }
 
