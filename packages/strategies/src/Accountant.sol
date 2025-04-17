@@ -698,6 +698,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
 
                 // Emit the account checkpoint event
                 emit AccountCheckpoint(vault, accountAddress, balance, vaultIntegral, 0);
+
+                // Emit the claim event
+                emit RewardsClaimed(vault, accountAddress, receiver, totalAmount);
             }
         }
 
