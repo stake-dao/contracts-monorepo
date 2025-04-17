@@ -81,7 +81,7 @@ contract RouterModuleWithdraw__withdraw is RouterModulesTest {
                 bytes4(keccak256("withdraw(address,uint256,address,address)")),
                 address(cloneRewardVault),
                 OWNER_ALLOWED_BALANCE - 1,
-                address(0),
+                account,
                 account
             )
         );

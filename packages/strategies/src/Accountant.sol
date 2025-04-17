@@ -180,6 +180,14 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         bool harvested
     );
 
+    /// @notice Emitted when an account checkpoint is made.
+    event AccountCheckpoint(
+        address indexed vault, address indexed account, uint128 balance, uint256 integral, uint256 pendingRewards
+    );
+
+    /// @notice Emitted when a user claims rewards.
+    event RewardsClaimed(address indexed vault, address indexed account, address receiver, uint256 amount);
+
     /// @notice Emitted when the protocol fee percent is updated.
     event ProtocolFeePercentSet(uint128 oldProtocolFeePercent, uint128 newProtocolFeePercent);
 
@@ -401,6 +409,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
             (currentIntegral - accountData.integral).mulDiv(uint256(accountBalance), SCALING_FACTOR);
         accountData.balance = isDecrease ? accountBalance - amount : accountBalance + amount;
         accountData.integral = currentIntegral;
+
+        // Emit the account checkpoint event
+        emit AccountCheckpoint(vault, account, accountData.balance, currentIntegral, accountData.pendingRewards);
     }
 
     /// @notice Returns the total supply of tokens in a vault.
@@ -684,6 +695,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
 
                 // reset the stored pending rewards for this vault
                 account.pendingRewards = 0;
+
+                // Emit the account checkpoint event
+                emit AccountCheckpoint(vault, accountAddress, balance, vaultIntegral, 0);
             }
         }
 
