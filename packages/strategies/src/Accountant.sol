@@ -83,7 +83,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
 
     /// @notice The default harvest fee.
     /// @dev The validity of this value is not checked. It must always be valid
-    uint128 internal constant DEFAULT_HARVEST_FEE = 0.005e18;
+    uint128 internal constant DEFAULT_HARVEST_FEE = 0.001e18;
 
     //////////////////////////////////////////////////////
     /// --- STATE VARIABLES
@@ -151,7 +151,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     event ProtocolFeesClaimed(uint256 amount);
 
     /// @notice Emitted when a vault harvests rewards.
-    event Harvest(address indexed vault, uint256 amount);
+    event Harvest(address indexed vault, uint256 integral, uint256 supply, uint256 amount, uint256 protocolFee, uint256 harvesterFee);
 
     /// @notice Emitted when a checkpoint is made.
     event Checkpoint(
@@ -166,9 +166,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
 
     /// @notice Emitted when the protocol fee percent is updated.
     event ProtocolFeePercentSet(uint128 oldProtocolFeePercent, uint128 newProtocolFeePercent);
-
-    /// @notice Emitted when the balance threshold is updated.
-    event HarvestUrgencyThresholdSet(uint256 oldThreshold, uint256 newThreshold);
 
     /// @notice Emitted when the harvest fee percent is updated.
     event HarvestFeePercentSet(uint128 oldHarvestFeePercent, uint128 newHarvestFeePercent);
@@ -458,7 +455,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
                     uint256 newFeeSubjectAmount = pendingRewards.feeSubjectAmount - _vault.feeSubjectAmount;
                     uint256 newProtocolFee = newFeeSubjectAmount.mulDiv(getProtocolFeePercent(), 1e18);
 
-                    protocolFeesAccrued += newProtocolFee;
+                    protocolFee += newProtocolFee;
 
                     // Adjust newRewards to account for protocol fee
                     newRewards -= newProtocolFee;
@@ -468,7 +465,11 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
                 _vault.integral += (newRewards - newHarvesterFee).mulDiv(SCALING_FACTOR, _vault.supply);
             }
 
+            /// Update the total harvester fee
             totalHarvesterFee += harvesterFee;
+
+            /// Update the total protocol fee
+            protocolFeesAccrued += protocolFee;
 
             // Update the net credited so far.
             // If for some reason, it's a partial harvest, we don't want to reset the netCredited to 0.
@@ -481,7 +482,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
             _vault.reservedHarvestFee = 0;
             _vault.reservedProtocolFee = 0;
 
-            emit Harvest(vault, pendingRewards.totalAmount);
+            emit Harvest(vault, _vault.integral, _vault.supply, pendingRewards.totalAmount, protocolFee, harvesterFee);
         }
 
         // If no valid harvests, return early
