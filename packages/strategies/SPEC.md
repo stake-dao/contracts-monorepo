@@ -92,7 +92,6 @@ The Accountant is the central reward management system, handling reward distribu
 
 - Tracks user balances and rewards across all vaults using integral-based accounting
 - Manages two reward streams: checkpoint rewards and harvested rewards
-- Implements dynamic harvest fee based on reward balance
 - Handles protocol fee collection and distribution
 
 **Technical Implementation:**
@@ -214,34 +213,22 @@ Harvested rewards are batch-processed when gas-efficient, according to governanc
 **Process Flow:**
 
 1. Pending rewards accumulate in the Accountant
-2. When rewards reach the threshold (or fees are acceptable), a harvest operation is triggered
+2. A harvest operation is triggered
 3. Strategy claims rewards from external protocols
 4. Accountant distributes rewards to users based on their share of the vault
 
 **Technical Details:**
 
-- Implements dynamic harvest fee based on reward balance
 - Uses PendingRewards structure to track reward amounts
 - Separates fee-subject amounts from total reward amounts
 
 ### 3.2 Fee Structure
 
-The protocol implements a flexible fee structure with dynamic and fixed components.
+The protocol implements a flexible fee structure.
 
-#### 3.2.1 Harvest Fee (0-0.5%)
+#### 3.2.1 Harvest Fee (0.5%)
 
-The harvest fee varies dynamically based on the current rewards balance:
-
-**Calculation:**
-
-- If rewards are below the HARVEST_URGENCY_THRESHOLD, fee scales linearly from 0.5% to 0%
-- If rewards exceed the threshold, fee remains at 0%
-- If threshold is set to 0, maximum fee (0.5%) always applies
-
-**Purpose:**
-
-- Incentivizes timely harvesting when rewards accumulate
-- Reduces fees when harvesting is less urgent
+Fixed fee to all rewards to cover gas cost of the caller.
 
 #### 3.2.2 Protocol Fee (15%)
 
@@ -498,7 +485,6 @@ flowchart TD
 **Process Flow:**
 
 1. Harvester reviews pending rewards in the Accountant
-2. Based on reward balance, harvest fee is calculated
 3. Strategy harvests rewards from external protocols
 4. Accountant processes rewards, deducting fees
 5. Users can claim their share of rewards
