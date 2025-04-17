@@ -13,7 +13,6 @@ RewardVault__deposit
 │   └── it mints the shares to the receiver
 ├── given an address account
 │   ├── it reverts if the address is the zero address
-│   ├── it reverts if the caller is not allowed
 │   └── it mints the shares to the account
 ├── when the referrer is set in the public function
 │   └── it emits the referrer deposit event

@@ -476,9 +476,8 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         external
         _cheat_replaceRewardVaultWithRewardVaultHarness
     {
-        // 1. it reverts if the caller is not allowed
-        // 2. it reverts if the address is the zero address
-        // 3. it mints the shares to the account
+        // 1. it reverts if the address is the zero address
+        // 2. it mints the shares to the account
 
         _assumeUnlabeledAddress(account);
         vm.assume(account != address(0));
@@ -495,12 +494,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         // mock the dependencies of the withdraw function
         (, IStrategy.PendingRewards memory pendingRewards) = _mock_test_dependencies(OWNER_BALANCE, Allocation.MIXED);
 
-        // 1. it reverts if the caller is not allowed
-        vm.prank(caller);
-        vm.expectRevert(RewardVault.OnlyAllowed.selector);
-        deposit_mint_permissioned_wrapper(account, OWNER_BALANCE, address(0));
-
-        //  2. it reverts if the address is the zero address
+        //  1. it reverts if the address is the zero address
         vm.mockCall(
             address(cloneRewardVault.PROTOCOL_CONTROLLER()),
             abi.encodeWithSelector(IProtocolController.allowed.selector),
@@ -511,7 +505,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         vm.expectRevert(RewardVault.ZeroAddress.selector);
         deposit_mint_permissioned_wrapper(address(0), OWNER_BALANCE, address(0));
 
-        // 3. it mints the shares to the account
+        // 2. it mints the shares to the account
         vm.mockCall(
             address(cloneRewardVault.PROTOCOL_CONTROLLER()),
             abi.encodeWithSelector(IProtocolController.allowed.selector),

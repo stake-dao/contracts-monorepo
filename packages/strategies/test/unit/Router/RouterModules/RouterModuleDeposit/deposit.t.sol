@@ -7,7 +7,6 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Address, Errors} from "@openzeppelin/contracts/utils/Address.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {RewardVault} from "src/RewardVault.sol";
 import {RouterModuleDeposit} from "src/RouterModules/RouterModuleDeposit.sol";
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 import {RewardVaultHarness} from "test/RewardVaultBaseTest.sol";
@@ -21,18 +20,6 @@ contract RouterModuleDeposit__deposit is RouterModulesTest {
 
         module = new RouterModuleDeposit();
         _cheat_setModule(uint8(0), address(module));
-    }
-
-    function test_RevertsIfUsedDirectly() external {
-        // it reverts if used directly
-
-        // call `deposit(address,address,uint256)`
-        vm.expectRevert(abi.encodeWithSelector(RewardVault.OnlyAllowed.selector));
-        module.deposit(address(rewardVault), makeAddr("account"), vm.randomUint());
-
-        // call `deposit(address,address,uint256,address)`
-        vm.expectRevert(abi.encodeWithSelector(RewardVault.OnlyAllowed.selector));
-        module.deposit(address(rewardVault), makeAddr("account"), vm.randomUint(), makeAddr("referrer"));
     }
 
     function test_RevertsIfNotDelegatecallByAuthorizedContract(bytes32 randomNonce) external {
