@@ -343,10 +343,15 @@ contract Accountant__Harvest is AccountantBaseTest {
         bytes[] memory harvestData = new bytes[](1);
         harvestData[0] = abi.encode(rewards, 1e18);
 
+        uint256 harvestFee = rewards.mulDiv(accountantHarness.getHarvestFeePercent(), 1e18);
+        uint256 protocolFee = rewards.mulDiv(accountantHarness.getProtocolFeePercent(), 1e18);
+
+        uint256 expectedIntegral = (rewards - protocolFee - harvestFee).mulDiv(1e27, amount);
+
         // Tell the VM we expect an event to be emitted
         // The harvested amount is equal to rewards because pendingRewards equal 0 in this scenario
         vm.expectEmit(true, true, true, true, address(accountantHarness));
-        emit Accountant.Harvest(vault, rewards);
+        emit Accountant.Harvest(vault, expectedIntegral, amount, rewards, protocolFee, harvestFee);
 
         accountantHarness.harvest(vaults, harvestData, address(this));
     }
