@@ -103,8 +103,8 @@ contract CurveFactory is Factory {
     function _isValidDeployment(address _gauge) internal view virtual override returns (bool) {
         /// We check if the gauge is deployed in the old strategy by checking if the reward distributor is not 0.
         /// We also check if the gauge is shutdown.
-        return IStrategy(OLD_STRATEGY).rewardDistributors(_gauge) != address(0)
-            && IStrategy(OLD_STRATEGY).isShutdown(_gauge);
+        return IStrategy(OLD_STRATEGY).rewardDistributors(_gauge) == address(0)
+            || IStrategy(OLD_STRATEGY).isShutdown(_gauge);
     }
 
     function _getAsset(address _gauge) internal view virtual override returns (address) {
