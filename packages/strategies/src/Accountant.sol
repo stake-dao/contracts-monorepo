@@ -122,6 +122,15 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @notice Error thrown when there are no pending rewards.
     error NoPendingRewards();
 
+    /// @notice Error thrown when the pending rewards are not enough.
+    error InsufficientPendingRewards();
+
+    /// @notice Error thrown when the net credits are not enough.
+    error NetCreditsNotEnough();
+
+    /// @notice Error thrown when the fees exceed the rewards.
+    error FeesExceedRewards();
+
     /// @notice Error thrown when a fee exceeds the maximum allowed
     error FeeExceedsMaximum();
 
@@ -151,7 +160,14 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     event ProtocolFeesClaimed(uint256 amount);
 
     /// @notice Emitted when a vault harvests rewards.
-    event Harvest(address indexed vault, uint256 integral, uint256 supply, uint256 amount, uint256 protocolFee, uint256 harvesterFee);
+    event Harvest(
+        address indexed vault,
+        uint256 integral,
+        uint256 supply,
+        uint256 amount,
+        uint256 protocolFee,
+        uint256 harvesterFee
+    );
 
     /// @notice Emitted when a checkpoint is made.
     event Checkpoint(
@@ -243,6 +259,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
             // Calculate the new rewards to be added to the vault.
             uint128 newRewards = pendingRewards.totalAmount - _vault.totalAmount;
             uint128 newFeeSubjectAmount = pendingRewards.feeSubjectAmount - _vault.feeSubjectAmount;
+
+            /// @dev Guard against fees exceeding the rewards.
+            require(pendingRewards.feeSubjectAmount <= pendingRewards.totalAmount, FeesExceedRewards());
 
             uint128 totalFees;
             if (harvested && newRewards > 0) {
@@ -427,23 +446,37 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
             address vault = PROTOCOL_CONTROLLER.vaults(gauge);
             require(vault != address(0), InvalidVault());
 
-            // Harvest the asset (this accumulates rewards in the strategy contract)
-            IStrategy.PendingRewards memory pendingRewards = IStrategy(strategy).harvest(gauge, harvestData[i]);
-            if (pendingRewards.totalAmount == 0) continue;
-
-            // Track total rewards
-            totalRewardsAmount += pendingRewards.totalAmount;
-
             VaultData storage _vault = vaults[vault];
 
-            // Calculate protocol fee on the feeable amount
+            // 1. Pull rewards from the strategy
+            IStrategy.PendingRewards memory pendingRewards = IStrategy(strategy).harvest(gauge, harvestData[i]);
+
+            // 2. Under‑delivery guard (totals must cover soft credits)
+            require(
+                pendingRewards.totalAmount >= _vault.totalAmount
+                    && pendingRewards.feeSubjectAmount >= _vault.feeSubjectAmount,
+                InsufficientPendingRewards()
+            );
+
+            /// @dev Guard against fees exceeding the rewards.
+            require(pendingRewards.feeSubjectAmount <= pendingRewards.totalAmount, FeesExceedRewards());
+
+            // Skip if strategy reports zero
+            if (pendingRewards.totalAmount == 0) continue;
+            // 3. Aggregate global rewards
+            totalRewardsAmount += pendingRewards.totalAmount;
+
+            // 4. Start accounting
             uint256 protocolFee = _vault.reservedProtocolFee;
             uint256 harvesterFee = _vault.reservedHarvestFee;
 
             uint256 netAfterReservedFees = pendingRewards.totalAmount - protocolFee - harvesterFee;
             uint256 netCredited = _vault.netCredited;
 
-            if (netAfterReservedFees > netCredited) {
+            // Strategy must at least make LPs whole
+            require(netAfterReservedFees >= netCredited, NetCreditsNotEnough());
+
+            if (netAfterReservedFees > netCredited && _vault.supply > 0) {
                 uint256 newRewards = netAfterReservedFees - netCredited;
 
                 /// Take the fee from the net delta
@@ -471,12 +504,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
             /// Update the total protocol fee
             protocolFeesAccrued += protocolFee;
 
-            // Update the net credited so far.
-            // If for some reason, it's a partial harvest, we don't want to reset the netCredited to 0.
-            _vault.netCredited =
-                netAfterReservedFees >= netCredited ? 0 : (netCredited - netAfterReservedFees).toUint128();
-
-            // Always clear pending rewards after harvesting
+            _vault.netCredited = 0; // fully settled thanks to the guard
             _vault.totalAmount = 0;
             _vault.feeSubjectAmount = 0;
             _vault.reservedHarvestFee = 0;
@@ -491,7 +519,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         // Flush all accumulated rewards at once
         IStrategy(strategy).flush();
 
-        // Check that the harvester has transferred the correct amount of reward tokens to this contract
+        // Check that the strategy has transferred the correct amount of reward tokens to this contract
         require(
             IERC20(REWARD_TOKEN).balanceOf(address(this)) >= balanceBefore + totalRewardsAmount,
             HarvestTokenNotReceived()
