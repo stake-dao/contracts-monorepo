@@ -151,7 +151,14 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     event ProtocolFeesClaimed(uint256 amount);
 
     /// @notice Emitted when a vault harvests rewards.
-    event Harvest(address indexed vault, uint256 integral, uint256 supply, uint256 amount, uint256 protocolFee, uint256 harvesterFee);
+    event Harvest(
+        address indexed vault,
+        uint256 integral,
+        uint256 supply,
+        uint256 amount,
+        uint256 protocolFee,
+        uint256 harvesterFee
+    );
 
     /// @notice Emitted when a checkpoint is made.
     event Checkpoint(

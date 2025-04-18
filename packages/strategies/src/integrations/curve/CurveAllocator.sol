@@ -2,16 +2,19 @@
 pragma solidity 0.8.28;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+
 import {Allocator} from "src/Allocator.sol";
-import {IBalanceProvider} from "src/interfaces/IBalanceProvider.sol";
 import {ISidecar} from "src/interfaces/ISidecar.sol";
 import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
+import {IBalanceProvider} from "src/interfaces/IBalanceProvider.sol";
 
 /// @title CurveAllocator
-/// @notice Contract that calculates optimal LP token allocation for Stake DAO Locker and Convex
-/// @dev Extends the base Allocator contract to provide Curve-specific allocation logic
+/// @notice Contract that calculates the optimal LP token allocation for Stake DAO Locker and Convex
 contract CurveAllocator is Allocator {
     using Math for uint256;
+
+    /// @notice Address of the Convex Sidecar Factory contract
+    ISidecarFactory public immutable CONVEX_SIDECAR_FACTORY;
 
     /// @notice Address of the Curve Boost Delegation V3 contract
     address public constant BOOST_DELEGATION_V3 = 0xD37A6aa3d8460Bd2b6536d608103D880695A23CD;
@@ -19,162 +22,203 @@ contract CurveAllocator is Allocator {
     /// @notice Address of the Convex Boost Holder contract
     address public constant CONVEX_BOOST_HOLDER = 0x989AEb4d175e16225E39E87d0D97A3360524AD80;
 
-    /// @notice Address of the Convex Sidecar Factory contract
-    ISidecarFactory public immutable CONVEX_SIDECAR_FACTORY;
+    /// @dev drift is expressed in 1 e18 = 100 %
+    event RebalanceNeeded(address indexed gauge, uint256 drift);
+
+    /// @dev 1 e16 = 0.01  = 1 %
+    uint256 internal constant DRIFT_THRESHOLD = 1e16;
 
     /// @notice Initializes the CurveAllocator contract
-    /// @param _locker Address of the Stake DAO Liquidity Locker
+    /// @param _locker Address of the Stake DAO Liquidity Locker
     /// @param _gateway Address of the gateway contract
     /// @param _convexSidecarFactory Address of the Convex Sidecar Factory contract
     constructor(address _locker, address _gateway, address _convexSidecarFactory) Allocator(_locker, _gateway) {
         CONVEX_SIDECAR_FACTORY = ISidecarFactory(_convexSidecarFactory);
     }
 
-    /// @notice Calculates the optimal allocation for depositing LP tokens
-    /// @dev Overrides the base Allocator's getDepositAllocation function to include sidecar logic
-    /// @param asset Address of the asset contract
-    /// @param gauge Address of the Curve gauge
-    /// @param amount Amount of LP tokens to deposit
-    /// @return Allocation struct containing targets and amounts for the deposit
+    //////////////////////////////////////////////////////
+    /// --- DEPOSIT ALLOCATION
+    //////////////////////////////////////////////////////
+
+    /// @inheritdoc Allocator
     function getDepositAllocation(address asset, address gauge, uint256 amount)
         public
         view
         override
-        returns (Allocation memory)
+        returns (Allocation memory alloc)
     {
-        /// 1. Get the sidecar for the gauge.
+        // 1. Resolve the sidecar for the gauge.
         address sidecar = CONVEX_SIDECAR_FACTORY.sidecar(gauge);
 
-        /// 2. If the sidecar is not set, use the default allocation.
+        // 2. If no sidecar exists, delegate to the base allocator.
         if (sidecar == address(0)) {
             return super.getDepositAllocation(asset, gauge, amount);
         }
 
-        /// 3. Get the targets and amounts for the allocation.
-        address[] memory targets = new address[](2);
-        targets[0] = sidecar;
-        targets[1] = LOCKER;
+        // 3. Prepare targets and amounts containers.
+        alloc.asset = asset;
+        alloc.gauge = gauge;
+        alloc.targets = _targets(sidecar);
+        alloc.amounts = _pair(0, 0);
 
-        uint256[] memory amounts = new uint256[](2);
-
-        /// 4. Get the balance of the locker on the liquidity gauge.
+        // 4. Fetch current balances.
         uint256 balanceOfLocker = IBalanceProvider(gauge).balanceOf(LOCKER);
+        uint256 balanceOfSidecar = ISidecar(sidecar).balanceOf();
+        uint256 total = balanceOfLocker + balanceOfSidecar + amount;
 
-        /// 5. Get the optimal amount of lps that must be held by the locker.
-        uint256 optimalBalanceOfLocker = getOptimalLockerBalance(gauge);
+        // 5. Compute the optimal Locker balance after the deposit.
+        (uint256 veLocker, uint256 veTotal) = _getVeBoosts();
+        uint256 optimalLocker = total.mulDiv(veLocker, veTotal);
 
-        /// 6. Calculate the amount of lps to deposit into the locker.
-        amounts[1] =
-            optimalBalanceOfLocker > balanceOfLocker ? Math.min(optimalBalanceOfLocker - balanceOfLocker, amount) : 0;
+        // 6. Determine how much to send to the Locker.
+        uint256 toLocker = optimalLocker > balanceOfLocker ? optimalLocker - balanceOfLocker : 0;
+        if (toLocker > amount) toLocker = amount; // Cap to available amount
 
-        /// 7. Calculate the amount of lps to deposit into the sidecar.
-        amounts[0] = amount - amounts[1];
-
-        /// 8. Return the allocation.
-        return Allocation({asset: asset, gauge: gauge, targets: targets, amounts: amounts});
+        // 7. Assign amounts.
+        alloc.amounts[1] = toLocker; // to Locker
+        alloc.amounts[0] = amount - toLocker; // remainder to Sidecar
     }
 
-    /// @notice Calculates the optimal allocation for withdrawing LP tokens
-    /// @dev Overrides the base Allocator's getWithdrawalAllocation function to include sidecar logic
-    /// @param asset Address of the asset contract
-    /// @param gauge Address of the Curve gauge
-    /// @param amount Amount of LP tokens to withdraw
-    /// @return Allocation struct containing targets and amounts for the withdrawal
+    //////////////////////////////////////////////////////
+    /// --- WITHDRAWAL ALLOCATION
+    //////////////////////////////////////////////////////
+
+    /// @inheritdoc Allocator
     function getWithdrawalAllocation(address asset, address gauge, uint256 amount)
         public
         view
         override
-        returns (Allocation memory)
+        returns (Allocation memory alloc)
     {
-        /// 1. Get the sidecar for the gauge.
+        // 1. Resolve the sidecar.
         address sidecar = CONVEX_SIDECAR_FACTORY.sidecar(gauge);
 
-        /// 2. If the sidecar is not set, use the default allocation.
+        // 2. Fallback to base allocator if none.
         if (sidecar == address(0)) {
             return super.getWithdrawalAllocation(asset, gauge, amount);
         }
 
-        /// 3. Get the targets and amounts for the allocation.
-        address[] memory targets = new address[](2);
-        targets[0] = sidecar;
-        targets[1] = LOCKER;
+        // 3. Prepare return struct.
+        alloc.asset = asset;
+        alloc.gauge = gauge;
+        alloc.targets = _targets(sidecar);
+        alloc.amounts = _pair(0, 0);
 
-        uint256[] memory amounts = new uint256[](2);
-
-        /// 4. Get the balance of the sidecar and the locker on the liquidity gauge.
-        uint256 balanceOfSidecar = ISidecar(sidecar).balanceOf();
+        // 4. Current balances.
         uint256 balanceOfLocker = IBalanceProvider(gauge).balanceOf(LOCKER);
+        uint256 balanceOfSidecar = ISidecar(sidecar).balanceOf();
+        uint256 totalBalance = balanceOfLocker + balanceOfSidecar;
 
-        /// 5. Calculate the optimal amount of lps that must be held by the locker.
-        uint256 optimalBalanceOfLocker = getOptimalLockerBalance(gauge);
-
-        /// 6. Calculate the total balance of the sidecar and the locker.
-        uint256 totalBalance = balanceOfSidecar + balanceOfLocker;
-
-        /// 7. Adjust the withdrawal based on the optimal amount for Stake DAO
-        if (totalBalance <= amount) {
-            /// 7a. If the total balance is less than or equal to the withdrawal amount, withdraw everything
-            amounts[0] = balanceOfSidecar;
-            amounts[1] = balanceOfLocker;
-        } else if (optimalBalanceOfLocker >= balanceOfLocker) {
-            /// 7b. If Stake DAO balance is below optimal, prioritize withdrawing from Convex
-            amounts[0] = Math.min(amount, balanceOfSidecar);
-            amounts[1] = amount > amounts[0] ? amount - amounts[0] : 0;
-        } else {
-            /// 7c. If Stake DAO is above optimal, prioritize withdrawing from Stake DAO,
-            ///     but only withdraw as much as needed to bring the balance down to the optimal amount.
-            amounts[1] = Math.min(amount, balanceOfLocker - optimalBalanceOfLocker);
-            amounts[0] = amount > amounts[1] ? Math.min(amount - amounts[1], balanceOfSidecar) : 0;
-
-            /// 7d. If there is still more to withdraw, withdraw the rest from Convex.
-            if (amount > amounts[0] + amounts[1]) {
-                amounts[1] += amount - amounts[0] - amounts[1];
-            }
+        // 5. If requesting the whole balance, withdraw everything.
+        if (amount >= totalBalance) {
+            alloc.amounts[0] = balanceOfSidecar;
+            alloc.amounts[1] = balanceOfLocker;
+            return alloc;
         }
 
-        /// 8. Return the allocation.
-        return Allocation({asset: asset, gauge: gauge, targets: targets, amounts: amounts});
+        // 6. Compute optimal post‑withdraw Locker target.
+        uint256 total = totalBalance - amount;
+
+        (uint256 veLocker, uint256 veTotal) = _getVeBoosts();
+        uint256 lockerTarget = total.mulDiv(veLocker, veTotal);
+
+        // 7. Withdraw up to the Locker’s excess first.
+        uint256 excessLocker = balanceOfLocker > lockerTarget ? balanceOfLocker - lockerTarget : 0;
+        uint256 fromLocker = Math.min(amount, excessLocker);
+
+        // 8. Withdraw any remaining amount from the Side‑car.
+        uint256 fromSidecar = amount - fromLocker;
+        if (fromSidecar > balanceOfSidecar) fromSidecar = balanceOfSidecar;
+
+        // 9. If we’re still short, take the rest from the Locker (may dip below target).
+        uint256 shortfall = amount - (fromLocker + fromSidecar);
+        if (shortfall > 0) {
+            uint256 extraFromLocker = Math.min(shortfall, balanceOfLocker - fromLocker);
+            fromLocker += extraFromLocker;
+        }
+
+        // 10. Assign amounts.
+        alloc.amounts[0] = fromSidecar;
+        alloc.amounts[1] = fromLocker;
     }
 
-    /// @notice Returns the targets for the allocation
-    /// @dev Overrides the base Allocator's getAllocationTargets function to include sidecar logic
-    /// @param gauge Address of the Curve gauge
-    /// @return targets Array of target addresses for the allocation
+    //////////////////////////////////////////////////////
+    /// --- REBALANCE ALLOCATION
+    //////////////////////////////////////////////////////
+
+    /// @inheritdoc Allocator
+    function getRebalancedAllocation(address asset, address gauge, uint256 totalBalance)
+        public
+        view
+        override
+        returns (Allocation memory alloc)
+    {
+        // 1. Resolve sidecar.
+        address sidecar = CONVEX_SIDECAR_FACTORY.sidecar(gauge);
+        if (sidecar == address(0)) {
+            return super.getRebalancedAllocation(asset, gauge, totalBalance);
+        }
+
+        // 2. Prepare struct.
+        alloc.asset = asset;
+        alloc.gauge = gauge;
+        alloc.targets = _targets(sidecar);
+        alloc.amounts = _pair(0, 0);
+
+        // 3. Compute one‑shot optimal split.
+        (uint256 veLocker, uint256 veTotal) = _getVeBoosts();
+        uint256 lockerAmt = totalBalance.mulDiv(veLocker, veTotal);
+
+        alloc.amounts[1] = lockerAmt;
+        alloc.amounts[0] = totalBalance - lockerAmt;
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- VIEW HELPER FUNCTIONS
+    //////////////////////////////////////////////////////
+
+    /// @inheritdoc Allocator
     function getAllocationTargets(address gauge) public view override returns (address[] memory) {
         address sidecar = CONVEX_SIDECAR_FACTORY.sidecar(gauge);
-
-        /// 2. If the sidecar is not set, return the default targets.
-        if (sidecar == address(0)) {
-            return super.getAllocationTargets(gauge);
-        }
-
-        /// 3. Return the targets.
-        address[] memory targets = new address[](2);
-        targets[0] = sidecar;
-        targets[1] = LOCKER;
-
-        return targets;
+        return sidecar == address(0) ? super.getAllocationTargets(gauge) : _targets(sidecar);
     }
 
-    /// @notice Returns the optimal amount of LP token that must be held by Stake DAO Locker
-    /// @dev Calculates the optimal balance based on the ratio of veBoost between Stake DAO and Convex
-    /// @param gauge Address of the Curve gauge
-    /// @return balanceOfLocker Optimal amount of LP token that should be held by Stake DAO Locker
+    /// @notice Computes the optimal Stake DAO Locker balance (legacy helper).
     function getOptimalLockerBalance(address gauge) public view returns (uint256 balanceOfLocker) {
-        // 1. Get the balance of veBoost on Stake DAO and Convex
+        // 1. Current veBoost weights
         uint256 veBoostOfLocker = IBalanceProvider(BOOST_DELEGATION_V3).balanceOf(LOCKER);
         uint256 veBoostOfConvex = IBalanceProvider(BOOST_DELEGATION_V3).balanceOf(CONVEX_BOOST_HOLDER);
 
-        // 2. Get the balance of the liquidity gauge on Convex
+        // 2. Current Convex LP balance on the gauge
         uint256 balanceOfConvex = IBalanceProvider(gauge).balanceOf(CONVEX_BOOST_HOLDER);
+        if (balanceOfConvex == 0 || veBoostOfConvex == 0) return 0;
 
-        // 3. If there is no balance of Convex, return 0
-        if (balanceOfConvex == 0) return 0;
-
-        // 4. If there is no veBoost on Convex, return max uint256
-        if (veBoostOfConvex == 0) return type(uint256).max;
-
-        // 5. Compute the optimal balance for Stake DAO
+        // 3. Compute the optimal balance for Stake DAO
         balanceOfLocker = balanceOfConvex.mulDiv(veBoostOfLocker, veBoostOfConvex);
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- HELPER FUNCTIONS
+    //////////////////////////////////////////////////////
+
+    /// @dev Returns the pair `[sidecar, LOCKER]` used by allocation targets.
+    function _targets(address sidecar) private view returns (address[] memory arr) {
+        arr = new address[](2);
+        arr[0] = sidecar;
+        arr[1] = LOCKER;
+    }
+
+    /// @dev Utility to allocate a two‑element uint256 array.
+    function _pair(uint256 a0, uint256 a1) private pure returns (uint256[] memory arr) {
+        arr = new uint256[](2);
+        arr[0] = a0;
+        arr[1] = a1;
+    }
+
+    /// @dev Returns the veBoost of the locker and the total veBoost (locker + convex).
+    function _getVeBoosts() private view returns (uint256 veLocker, uint256 veTotal) {
+        veLocker = IBalanceProvider(BOOST_DELEGATION_V3).balanceOf(LOCKER);
+        uint256 veConvex = IBalanceProvider(BOOST_DELEGATION_V3).balanceOf(CONVEX_BOOST_HOLDER);
+        veTotal = veLocker + veConvex;
     }
 }
