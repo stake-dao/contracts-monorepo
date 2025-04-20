@@ -12,6 +12,15 @@ interface IAccountant {
         IStrategy.PendingRewards calldata pendingRewards,
         bool claimed
     ) external;
+    function checkpoint(
+        address gauge,
+        address from,
+        address to,
+        uint128 amount,
+        IStrategy.PendingRewards calldata pendingRewards,
+        bool claimed,
+        address referrer
+    ) external;
 
     function totalSupply(address asset) external view returns (uint128);
     function balanceOf(address asset, address account) external view returns (uint128);

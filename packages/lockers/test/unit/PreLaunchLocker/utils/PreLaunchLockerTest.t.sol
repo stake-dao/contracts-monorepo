@@ -32,7 +32,7 @@ abstract contract PreLaunchLockerTest is BaseTest {
         // deploy the locker
         governance = makeAddr("governance");
         vm.prank(governance);
-        locker = new PreLaunchLocker(address(token), address(sdToken), address(gauge));
+        locker = new PreLaunchLocker(address(token), address(sdToken), address(gauge), 0);
 
         // set the operator of the sdToken to the locker
         sdToken.setOperator(address(locker));
@@ -53,11 +53,12 @@ abstract contract PreLaunchLockerTest is BaseTest {
         vm.prank(governance);
         _deployHarnessCode(
             "out/PreLaunchLockerHarness.t.sol/PreLaunchLockerHarness.json",
-            abi.encode(address(token), address(sdToken), address(gauge)),
+            abi.encode(address(token), address(sdToken), address(gauge), locker.FORCE_CANCEL_DELAY()),
             address(locker)
         );
 
         lockerHarness = PreLaunchLockerHarness(address(locker));
+        lockerHarness.transferGovernance(governance);
         vm.label({account: address(lockerHarness), newLabel: "LockerHarness"});
 
         _;

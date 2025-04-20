@@ -189,18 +189,23 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     }
 
     ///////////////////////////////////////////////////////////////
-    /// ~ EXTERNAL/PUBLIC USER-FACING - DEPOSIT & MINT
+    /// ~ DEPOSIT & MINT - PUBLIC
     ///////////////////////////////////////////////////////////////
 
-    /// @notice Deposits assets into the vault and mints shares to `receiver`.
-    /// @dev Handles deposit allocation through strategy and updates rewards.
+    function deposit(uint256 assets, address receiver) external returns (uint256) {
+        return deposit(assets, receiver, address(0));
+    }
+
+    /// @notice Deposits `assets` from `msg.sender` into the vault and mints shares to `receiver`.
+    /// @dev This function tracks the referrer address and handles deposit allocation through strategy and updates rewards.
     /// @param assets The amount of assets to deposit.
     /// @param receiver The address to receive the minted shares. If the receiver is the zero address, the shares will be minted to the caller.
+    /// @param referrer The address of the referrer. Can be the zero address.
     /// @return _ The amount of assets deposited.
-    function deposit(uint256 assets, address receiver) public returns (uint256) {
+    function deposit(uint256 assets, address receiver, address referrer) public returns (uint256) {
         if (receiver == address(0)) receiver = msg.sender;
 
-        _deposit(msg.sender, receiver, assets, assets);
+        _deposit(msg.sender, receiver, assets, assets, referrer);
 
         // return the amount of assets deposited. Thanks to the 1:1 relationship between assets and shares
         // the amount of assets deposited is the same as the amount of shares minted
@@ -212,9 +217,70 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     ///      the mint function is a wrapper of the deposit function.
     /// @param shares The amount of shares to mint.
     /// @param receiver The address to receive the minted shares.
+    /// @param referrer The address of the referrer. Can be the zero address.
     /// @return _ The amount of shares minted.
-    function mint(uint256 shares, address receiver) public returns (uint256) {
-        return deposit(shares, receiver);
+    function mint(uint256 shares, address receiver, address referrer) external returns (uint256) {
+        return deposit(shares, receiver, referrer);
+    }
+
+    /// @notice Mints exact `shares` to `receiver` by depositing assets.
+    /// @dev Due to the 1:1 relationship between the assets and the shares,
+    ///      the mint function is a wrapper of the deposit function.
+    /// @param shares The amount of shares to mint.
+    /// @param receiver The address to receive the minted shares.
+    /// @return _ The amount of shares minted.
+    function mint(uint256 shares, address receiver) external returns (uint256) {
+        return deposit(shares, receiver, address(0));
+    }
+
+    ///////////////////////////////////////////////////////////////
+    /// ~ DEPOSIT & MINT - PERMISSIONED
+    ///////////////////////////////////////////////////////////////
+
+    /// @notice Deposits `assets` from `account` into the vault and mints shares to `account`.
+    /// @dev Only callable by allowed addresses. `account` should have approved this contract to transfer `assets`.
+    /// @param account The address to deposit assets from and mint shares to.
+    /// @param assets The amount of assets to deposit.
+    /// @return _ The amount of assets deposited.
+    function deposit(address account, uint256 assets) external returns (uint256) {
+        return deposit(account, assets, address(0));
+    }
+
+    /// @notice Deposits `assets` from `account` into the vault and mints shares to `account`.
+    /// @dev Only callable by allowed addresses. `account` should have approved this contract to transfer `assets`.
+    ///      This function tracks the referrer address and handles deposit allocation through strategy and updates rewards.
+    /// @param account The address to deposit assets from and mint shares to.
+    /// @param assets The amount of assets to deposit.
+    /// @param referrer The address of the referrer. Can be the zero address.
+    /// @return _ The amount of assets deposited.
+    function deposit(address account, uint256 assets, address referrer) public returns (uint256) {
+        if (account == address(0)) revert ZeroAddress();
+
+        _deposit(account, account, assets, assets, referrer);
+
+        // return the amount of assets deposited. Thanks to the 1:1 relationship between assets and shares
+        // the amount of assets deposited is the same as the amount of shares minted
+        return assets;
+    }
+
+    /// @notice Mints exact `shares` to `account` by depositing `account`'s assets.
+    /// @dev Only callable by allowed addresses.
+    /// @param account The address to deposit assets from and mint shares to.
+    /// @param shares The amount of shares to mint.
+    /// @return _ The amount of shares minted.
+    /// @custom:reverts OnlyAllowed if the caller is not allowed.
+    function mint(address account, uint256 shares, address referrer) external returns (uint256) {
+        return deposit(account, shares, referrer);
+    }
+
+    /// @notice Mints exact `shares` to `account` by depositing `account`'s assets.
+    /// @dev Only callable by allowed addresses.
+    /// @param account The address to deposit assets from and mint shares to.
+    /// @param shares The amount of shares to mint.
+    /// @return _ The amount of shares minted.
+    /// @custom:reverts OnlyAllowed if the caller is not allowed.
+    function mint(address account, uint256 shares) external returns (uint256) {
+        return deposit(account, shares, address(0));
     }
 
     /// @dev Internal function to deposit assets into the vault.
@@ -228,7 +294,8 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @param receiver The address to receive the minted shares.
     /// @param assets The amount of assets to deposit.
     /// @param shares The amount of shares to mint.
-    function _deposit(address account, address receiver, uint256 assets, uint256 shares) internal {
+    /// @param referrer The address of the referrer. Can be the zero address.
+    function _deposit(address account, address receiver, uint256 assets, uint256 shares, address referrer) internal {
         // Update the reward state for the receiver
         _checkpoint(receiver, address(0));
 
@@ -250,7 +317,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         IStrategy.PendingRewards memory pendingRewards = strategy().deposit(allocation, TRIGGER_HARVEST);
 
         // Mint the shares to the receiver
-        _mint(receiver, shares, pendingRewards, TRIGGER_HARVEST);
+        _mint(receiver, shares, pendingRewards, TRIGGER_HARVEST, referrer);
 
         emit Deposit(msg.sender, receiver, assets, shares);
     }
@@ -834,10 +901,15 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @param amount Amount of shares to mint
     /// @param pendingRewards Rewards to process during mint
     /// @param harvested Whether to trigger reward harvesting
-    function _mint(address to, uint256 amount, IStrategy.PendingRewards memory pendingRewards, bool harvested)
-        internal
-    {
-        ACCOUNTANT.checkpoint(gauge(), address(0), to, uint128(amount), pendingRewards, harvested);
+    /// @param referrer The address of the referrer. Can be the zero address.
+    function _mint(
+        address to,
+        uint256 amount,
+        IStrategy.PendingRewards memory pendingRewards,
+        bool harvested,
+        address referrer
+    ) internal {
+        ACCOUNTANT.checkpoint(gauge(), address(0), to, uint128(amount), pendingRewards, harvested, referrer);
     }
 
     /// @notice Burns vault shares

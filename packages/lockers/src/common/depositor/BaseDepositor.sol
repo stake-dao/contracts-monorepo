@@ -14,6 +14,10 @@ import "src/common/interfaces/ITokenMinter.sol";
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
 abstract contract BaseDepositor {
+    ///////////////////////////////////////////////////////////////
+    /// --- STATE VARIABLES & CONSTANTS
+    ///////////////////////////////////////////////////////////////
+
     /// @notice Denominator for fixed point math.
     uint256 public constant DENOMINATOR = 1e18;
 
@@ -44,6 +48,36 @@ abstract contract BaseDepositor {
     /// @notice Address of the future governance contract.
     address public futureGovernance;
 
+    enum STATE {
+        ACTIVE,
+        CANCELED
+    }
+
+    /// @notice The state of the contract.
+    /**
+     * @dev The contract uses a minimalistic state machine pattern to manage the lifecycle of locked tokens:
+     * 1. At construction time, the contract is in the ACTIVE state.
+     * 2. The contract can be shutdown by the governance at any time, transitioning the contract to the CANCELED state.
+     *    This is a terminal state and cannot be reverted.
+     *
+     * Here's the State Machine Diagram:
+     *
+     *  +--------------+
+     *  |   ACTIVE     |
+     *  +--------------+
+     *       |
+     *     shutdown
+     *       |
+     *       ↓
+     *  +--------------+
+     *  |   CANCELED   |
+     *  +--------------+
+     *
+     * Transitions:
+     * - ACTIVE -> CANCELED: via `shutdown()`
+     */
+    STATE public state;
+
     ////////////////////////////////////////////////////////////////
     /// --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
@@ -60,6 +94,9 @@ abstract contract BaseDepositor {
     /// @notice Throws if the lock incentive is too high.
     error LOCK_INCENTIVE_TOO_HIGH();
 
+    /// @notice Throws if the contract is not active.
+    error DEPOSITOR_DISABLED();
+
     /// @notice Event emitted when the gauge is updated
     event GaugeUpdated(address newGauge);
 
@@ -72,12 +109,21 @@ abstract contract BaseDepositor {
     /// @notice Event emitted when the governance update is accepted
     event GovernanceUpdateAccepted(address newGovernance);
 
+    /// @notice Event emitted when the state of the contract is updated.
+    /// @param newState The new state of the contract.
+    event StateUpdated(STATE newState);
+
     ////////////////////////////////////////////////////////////////
     /// --- MODIFIERS
     ///////////////////////////////////////////////////////////////
 
     modifier onlyGovernance() {
         if (msg.sender != governance) revert GOVERNANCE();
+        _;
+    }
+
+    modifier onlyActive() {
+        if (state != STATE.ACTIVE) revert DEPOSITOR_DISABLED();
         _;
     }
 
@@ -95,10 +141,11 @@ abstract contract BaseDepositor {
 
         MAX_LOCK_DURATION = _maxLockDuration;
 
+        // set the state of the contract to ACTIVE
+        _setState(STATE.ACTIVE);
+
         /// Approve sdToken to gauge.
-        if (gauge != address(0)) {
-            SafeTransferLib.safeApprove(minter, gauge, type(uint256).max);
-        }
+        SafeTransferLib.safeApprove(minter, gauge, type(uint256).max);
     }
 
     ////////////////////////////////////////////////////////////////
@@ -115,7 +162,7 @@ abstract contract BaseDepositor {
 
     /// @notice Initiate a lock in the Locker contract and mint the sdTokens to the caller.
     /// @param _amount Amount of tokens to lock.
-    function createLock(uint256 _amount) external virtual {
+    function createLock(uint256 _amount) external virtual onlyActive {
         // Transfer caller's tokens to the locker and lock them
         _createLockFrom(msg.sender, _amount);
 
@@ -128,12 +175,15 @@ abstract contract BaseDepositor {
     /// @param _lock Whether to lock the tokens in the locker contract.
     /// @param _stake Whether to stake the sdToken in the gauge.
     /// @param _user Address of the user to receive the sdToken.
+    /// @custom:reverts DEPOSITOR_DISABLED if the contract is not active.
+    /// @custom:reverts AMOUNT_ZERO if the amount is zero.
+    /// @custom:reverts ADDRESS_ZERO if the user address is zero.
     /// @dev If the lock is true, the tokens are directly sent to the locker and increase the lock amount as veToken.
     /// If the lock is false, the tokens are sent to this contract until someone locks them. A small percent of the deposit
     /// is used to incentivize users to lock the tokens.
     /// If the stake is true, the sdToken is staked in the gauge that distributes rewards. If the stake is false, the sdToken
     /// is sent to the user.
-    function deposit(uint256 _amount, bool _lock, bool _stake, address _user) public {
+    function deposit(uint256 _amount, bool _lock, bool _stake, address _user) public onlyActive {
         if (_amount == 0) revert AMOUNT_ZERO();
         if (_user == address(0)) revert ADDRESS_ZERO();
 
@@ -186,7 +236,7 @@ abstract contract BaseDepositor {
 
     /// @notice Lock tokens held by the contract
     /// @dev The contract must have Token to lock
-    function lockToken() external {
+    function lockToken() external onlyActive {
         uint256 tokenBalance = IERC20(token).balanceOf(address(this));
 
         if (tokenBalance != 0) {
@@ -226,14 +276,32 @@ abstract contract BaseDepositor {
     function transferGovernance(address _governance) external onlyGovernance {
         emit GovernanceUpdateProposed(futureGovernance = _governance);
     }
-
     /// @notice Accept the governance transfer.
+
     function acceptGovernance() external {
         if (msg.sender != futureGovernance) revert GOVERNANCE();
 
         emit GovernanceUpdateAccepted(governance = msg.sender);
 
         futureGovernance = address(0);
+    }
+
+    /// @notice Shutdown the contract and transfer the balance of the contract to the given receiver.
+    /// @param receiver Address who will receive the balance of this contract.
+    /// @dev This will put the contract in the CANCELED state, preventing any further deposits, or locking of tokens.
+    //       Use `shutdown()` to transfer the remaining balance to the governance address.
+    /// @custom:reverts ONLY_GOVERNANCE if the caller is not the governance.
+    function shutdown(address receiver) public onlyGovernance {
+        _setState(STATE.CANCELED);
+
+        // Transfer the remaining balance to the receiver.
+        SafeTransferLib.safeTransfer(token, receiver, IERC20(token).balanceOf(address(this)));
+    }
+
+    /// @notice Shutdown the contract and transfer the balance of the contract to the governance.
+    /// @custom:reverts ONLY_GOVERNANCE if the caller is not the governance.
+    function shutdown() external onlyGovernance {
+        shutdown(governance);
     }
 
     /// @notice Set the new operator for minting sdToken
@@ -259,6 +327,11 @@ abstract contract BaseDepositor {
     function setFees(uint256 _lockIncentive) external onlyGovernance {
         if (_lockIncentive > 0.003e18) revert LOCK_INCENTIVE_TOO_HIGH();
         emit LockIncentiveUpdated(lockIncentivePercent = _lockIncentive);
+    }
+
+    function _setState(STATE _state) internal {
+        state = _state;
+        emit StateUpdated(_state);
     }
 
     function name() external view returns (string memory) {

@@ -5,7 +5,6 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Accountant} from "src/Accountant.sol";
-import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {IAllocator} from "src/interfaces/IAllocator.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
@@ -23,12 +22,12 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
     // Due to the 1:1 relationship of the assets and the shares, the withdraw and the redeem functions
     // do the same thing. This function is a wrapper that calls the appropriate function based on the context
     // of the test. This is a virtual allowing the redeem test to override it to call `redeem` instead of `withdraw`.
-    function withdraw_redeem_wrapper(uint256 assets, address receiver, address owner)
+    function withdraw_redeem_wrapper(uint256 assets, address receiver, address _owner)
         internal
         virtual
         returns (uint256)
     {
-        return cloneRewardVault.withdraw(assets, receiver, owner);
+        return cloneRewardVault.withdraw(assets, receiver, _owner);
     }
 
     function setUp() public virtual override {
@@ -90,36 +89,42 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
         );
 
         // mock the checkpoint function of the accountant
-        vm.mockCall(accountant, abi.encodeWithSelector(IAccountant.checkpoint.selector), abi.encode(true));
+        vm.mockCall(
+            accountant,
+            abi.encodeWithSelector(
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool)"))
+            ),
+            abi.encode(true)
+        );
     }
 
-    function test_GivenSenderIsNotOwner(address owner, address caller)
+    function test_GivenSenderIsNotOwner(address _owner, address caller)
         external
         _cheat_replaceRewardVaultWithRewardVaultHarness
     {
         // it reverts if the allowance is not enough
         // it update the allowance when it is finite
 
-        _assumeUnlabeledAddress(owner);
+        _assumeUnlabeledAddress(_owner);
         _assumeUnlabeledAddress(caller);
-        vm.assume(owner != address(0));
+        vm.assume(_owner != address(0));
         vm.assume(caller != address(0));
-        vm.assume(caller != owner);
+        vm.assume(caller != _owner);
         vm.label({account: caller, newLabel: "caller"});
-        vm.label({account: owner, newLabel: "owner"});
+        vm.label({account: _owner, newLabel: "owner"});
 
         uint256 OWNER_BALANCE = 1e18;
         uint256 OWNER_ALLOWED_BALANCE = OWNER_BALANCE / 2;
 
         // set the owner balance and approve half the balance
-        deal(asset, owner, OWNER_BALANCE);
-        vm.prank(owner);
+        deal(asset, _owner, OWNER_BALANCE);
+        vm.prank(_owner);
         cloneRewardVault.approve(caller, OWNER_ALLOWED_BALANCE);
 
         // attempt to withdraw the rewards with an allowance that is not enough
         vm.expectRevert(RewardVault.NotApproved.selector);
         vm.prank(caller);
-        withdraw_redeem_wrapper(OWNER_BALANCE, address(0), owner);
+        withdraw_redeem_wrapper(OWNER_BALANCE, address(0), _owner);
 
         // mock the dependencies of the withdraw function
         _mock_test_dependencies();
@@ -129,37 +134,37 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
 
         // make the caller withdraw the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
-        withdraw_redeem_wrapper(OWNER_ALLOWED_BALANCE - 1, address(0), owner);
+        withdraw_redeem_wrapper(OWNER_ALLOWED_BALANCE - 1, address(0), _owner);
 
         // allowance must be 1, because
         // - the owner allowed the called to spend 1 + OWNER_BALANCE / 2
         // - the caller withdrew OWNER_BALANCE / 2
-        assertEq(cloneRewardVault.allowance(owner, caller), 1);
+        assertEq(cloneRewardVault.allowance(_owner, caller), 1);
     }
 
-    function test_UpdatesTheRewardForTheOwner(address owner, address caller, address receiver)
+    function test_UpdatesTheRewardForTheOwner(address _owner, address caller, address receiver)
         external
         _cheat_replaceRewardVaultWithRewardVaultHarness
     {
         // it updates the reward for the owner
 
-        _assumeUnlabeledAddress(owner);
+        _assumeUnlabeledAddress(_owner);
         _assumeUnlabeledAddress(caller);
         _assumeUnlabeledAddress(receiver);
-        vm.assume(owner != address(0));
+        vm.assume(_owner != address(0));
         vm.assume(caller != address(0));
         vm.assume(receiver != address(0));
-        vm.assume(caller != owner);
+        vm.assume(caller != _owner);
         vm.label({account: caller, newLabel: "caller"});
-        vm.label({account: owner, newLabel: "owner"});
+        vm.label({account: _owner, newLabel: "owner"});
         vm.label({account: receiver, newLabel: "receiver"});
 
         uint256 OWNER_BALANCE = 1e16;
         uint256 TOTAL_SUPPLY = 1e18;
 
         // set the owner balance and approve half the balance
-        deal(asset, owner, OWNER_BALANCE);
-        vm.prank(owner);
+        deal(asset, _owner, OWNER_BALANCE);
+        vm.prank(_owner);
         cloneRewardVault.approve(caller, OWNER_BALANCE);
 
         // generate plausible fake reward data for a vault
@@ -180,7 +185,7 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
         cloneRewardVault._cheat_override_reward_data(token, rewardData);
         // Put the account in a state with no rewards paid out and no rewards available to claim
         cloneRewardVault._cheat_override_account_data(
-            owner,
+            _owner,
             tokens[0],
             RewardVault.AccountData({
                 // Total rewards paid out to the account since the last update.
@@ -198,7 +203,7 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
         // mock the balance of the account to return 5% of the total supply
         vm.mockCall(
             address(accountant),
-            abi.encodeWithSelector(Accountant.balanceOf.selector, address(cloneRewardVault), owner),
+            abi.encodeWithSelector(Accountant.balanceOf.selector, address(cloneRewardVault), _owner),
             abi.encode(TOTAL_SUPPLY / 20) // 5% of the total supply
         );
 
@@ -210,36 +215,36 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
 
         // make the caller withdraw the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
-        withdraw_redeem_wrapper(OWNER_BALANCE, receiver, owner);
+        withdraw_redeem_wrapper(OWNER_BALANCE, receiver, _owner);
 
         // assert there are new rewards to claim for the account
-        assertNotEq(0, cloneRewardVault.getClaimable(token, owner));
+        assertNotEq(0, cloneRewardVault.getClaimable(token, _owner));
         // assert the reward per token variable in the account is updated with the value of the vault
-        assertEq(cloneRewardVault.getRewardPerTokenStored(token), cloneRewardVault.getRewardPerTokenPaid(token, owner));
+        assertEq(cloneRewardVault.getRewardPerTokenStored(token), cloneRewardVault.getRewardPerTokenPaid(token, _owner));
     }
 
-    function test_TellsTheStrategyToWithdrawTheAssets(address owner, address caller, address receiver)
+    function test_TellsTheStrategyToWithdrawTheAssets(address _owner, address caller, address receiver)
         external
         _cheat_replaceRewardVaultWithRewardVaultHarness
     {
         // it tells the strategy to withdraw the assets
 
-        _assumeUnlabeledAddress(owner);
+        _assumeUnlabeledAddress(_owner);
         _assumeUnlabeledAddress(caller);
         _assumeUnlabeledAddress(receiver);
-        vm.assume(owner != address(0));
+        vm.assume(_owner != address(0));
         vm.assume(caller != address(0));
         vm.assume(receiver != address(0));
-        vm.assume(caller != owner);
+        vm.assume(caller != _owner);
         vm.label({account: caller, newLabel: "caller"});
-        vm.label({account: owner, newLabel: "owner"});
+        vm.label({account: _owner, newLabel: "owner"});
         vm.label({account: receiver, newLabel: "receiver"});
 
         uint256 OWNER_BALANCE = 1e18;
 
         // set the owner balance and approve half the balance
-        deal(asset, owner, OWNER_BALANCE);
-        vm.prank(owner);
+        deal(asset, _owner, OWNER_BALANCE);
+        vm.prank(_owner);
         cloneRewardVault.approve(caller, OWNER_BALANCE);
 
         // mock the dependencies of the withdraw function and return the allocation and pending rewards used for mocking
@@ -248,7 +253,6 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
         // we airdrop enought assets to the reward vault to cover the withdrawal
         deal(address(asset), address(cloneRewardVault), OWNER_BALANCE);
 
-        // vm.mockCall(accountant, abi.encodeWithSelector(IAccountant.checkpoint.selector), abi.encode(true));
         vm.expectCall(
             address(strategyAsset),
             abi.encodeWithSelector(IStrategy.withdraw.selector, allocation, false, address(receiver)),
@@ -257,31 +261,31 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
 
         // make the caller withdraw the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
-        withdraw_redeem_wrapper(OWNER_BALANCE, receiver, owner);
+        withdraw_redeem_wrapper(OWNER_BALANCE, receiver, _owner);
     }
 
-    function test_TellsTheAccoutantToBurnTheTokens(address owner, address caller, address receiver)
+    function test_TellsTheAccoutantToBurnTheTokens(address _owner, address caller, address receiver)
         external
         _cheat_replaceRewardVaultWithRewardVaultHarness
     {
         // it tells the accoutant to burn the tokens
 
-        _assumeUnlabeledAddress(owner);
+        _assumeUnlabeledAddress(_owner);
         _assumeUnlabeledAddress(caller);
         _assumeUnlabeledAddress(receiver);
-        vm.assume(owner != address(0));
+        vm.assume(_owner != address(0));
         vm.assume(caller != address(0));
         vm.assume(receiver != address(0));
-        vm.assume(caller != owner);
+        vm.assume(caller != _owner);
         vm.label({account: caller, newLabel: "caller"});
-        vm.label({account: owner, newLabel: "owner"});
+        vm.label({account: _owner, newLabel: "owner"});
         vm.label({account: receiver, newLabel: "receiver"});
 
         uint256 OWNER_BALANCE = 1e18;
 
         // set the owner balance and approve half the balance
-        deal(asset, owner, OWNER_BALANCE);
-        vm.prank(owner);
+        deal(asset, _owner, OWNER_BALANCE);
+        vm.prank(_owner);
         cloneRewardVault.approve(caller, OWNER_BALANCE);
 
         // mock the dependencies of the withdraw function and return the allocation and pending rewards used for mocking
@@ -292,40 +296,46 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
 
         vm.expectCall(
             address(accountant),
-            abi.encodeCall(
-                IAccountant.checkpoint, (gauge, owner, address(0), uint128(OWNER_BALANCE), pendingRewards, false)
+            abi.encodeWithSelector(
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool)")),
+                gauge,
+                _owner,
+                address(0),
+                uint128(OWNER_BALANCE),
+                pendingRewards,
+                false
             ),
             1
         );
 
         // make the caller withdraw the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
-        withdraw_redeem_wrapper(OWNER_BALANCE, receiver, owner);
+        withdraw_redeem_wrapper(OWNER_BALANCE, receiver, _owner);
     }
 
-    function test_TransfersTheAssetsToTheReceiver(address owner, address caller, address receiver)
+    function test_TransfersTheAssetsToTheReceiver(address _owner, address caller, address receiver)
         external
         _cheat_replaceRewardVaultWithRewardVaultHarness
     {
         // it transfers the assets to the receiver
 
-        _assumeUnlabeledAddress(owner);
+        _assumeUnlabeledAddress(_owner);
         _assumeUnlabeledAddress(caller);
         _assumeUnlabeledAddress(receiver);
-        vm.assume(owner != address(0));
+        vm.assume(_owner != address(0));
         vm.assume(caller != address(0));
         vm.assume(receiver != address(0));
-        vm.assume(caller != owner);
-        vm.assume(receiver != owner);
+        vm.assume(caller != _owner);
+        vm.assume(receiver != _owner);
         vm.label({account: caller, newLabel: "caller"});
-        vm.label({account: owner, newLabel: "owner"});
+        vm.label({account: _owner, newLabel: "owner"});
         vm.label({account: receiver, newLabel: "receiver"});
 
         uint256 OWNER_BALANCE = 1e18;
 
         // set the owner balance and approve half the balance
-        deal(asset, owner, OWNER_BALANCE);
-        vm.prank(owner);
+        deal(asset, _owner, OWNER_BALANCE);
+        vm.prank(_owner);
         cloneRewardVault.approve(caller, OWNER_BALANCE);
 
         // mock the dependencies of the withdraw function
@@ -343,35 +353,35 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
 
         // make the caller withdraw the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
-        withdraw_redeem_wrapper(OWNER_BALANCE, receiver, owner);
+        withdraw_redeem_wrapper(OWNER_BALANCE, receiver, _owner);
 
         // Only if the vault is shutdown that the assets on the vault are transferred to the receiver.
         // Else, they're directly transferred to the receiver from the strategy.
         assertEq(IERC20(asset).balanceOf(address(cloneRewardVault)), OWNER_BALANCE);
     }
 
-    function test_EmitsTheEvent(address owner, address caller, address receiver)
+    function test_EmitsTheEvent(address _owner, address caller, address receiver)
         external
         _cheat_replaceRewardVaultWithRewardVaultHarness
     {
         // it emits a withdraw event
 
-        _assumeUnlabeledAddress(owner);
+        _assumeUnlabeledAddress(_owner);
         _assumeUnlabeledAddress(caller);
         _assumeUnlabeledAddress(receiver);
-        vm.assume(owner != address(0));
+        vm.assume(_owner != address(0));
         vm.assume(caller != address(0));
         vm.assume(receiver != address(0));
-        vm.assume(caller != owner);
+        vm.assume(caller != _owner);
         vm.label({account: caller, newLabel: "caller"});
-        vm.label({account: owner, newLabel: "owner"});
+        vm.label({account: _owner, newLabel: "owner"});
         vm.label({account: receiver, newLabel: "receiver"});
 
         uint256 OWNER_BALANCE = 1e18;
 
         // set the owner balance and approve half the balance
-        deal(asset, owner, OWNER_BALANCE);
-        vm.prank(owner);
+        deal(asset, _owner, OWNER_BALANCE);
+        vm.prank(_owner);
         cloneRewardVault.approve(caller, OWNER_BALANCE);
 
         // mock the dependencies of the withdraw function
@@ -383,32 +393,32 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
         // make the caller withdraw the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
         vm.expectEmit(true, true, true, true);
-        emit IERC4626.Withdraw(caller, receiver, owner, OWNER_BALANCE, OWNER_BALANCE);
-        withdraw_redeem_wrapper(OWNER_BALANCE, receiver, owner);
+        emit IERC4626.Withdraw(caller, receiver, _owner, OWNER_BALANCE, OWNER_BALANCE);
+        withdraw_redeem_wrapper(OWNER_BALANCE, receiver, _owner);
     }
 
-    function test_ReturnsTheAmountOfSharesBurned(address owner, address caller, address receiver)
+    function test_ReturnsTheAmountOfSharesBurned(address _owner, address caller, address receiver)
         external
         _cheat_replaceRewardVaultWithRewardVaultHarness
     {
         // it returns the amount of shares burned
 
-        _assumeUnlabeledAddress(owner);
+        _assumeUnlabeledAddress(_owner);
         _assumeUnlabeledAddress(caller);
         _assumeUnlabeledAddress(receiver);
-        vm.assume(owner != address(0));
+        vm.assume(_owner != address(0));
         vm.assume(caller != address(0));
         vm.assume(receiver != address(0));
-        vm.assume(caller != owner);
+        vm.assume(caller != _owner);
         vm.label({account: caller, newLabel: "caller"});
-        vm.label({account: owner, newLabel: "owner"});
+        vm.label({account: _owner, newLabel: "owner"});
         vm.label({account: receiver, newLabel: "receiver"});
 
         uint256 OWNER_BALANCE = 1e18;
 
         // set the owner balance and approve half the balance
-        deal(asset, owner, OWNER_BALANCE);
-        vm.prank(owner);
+        deal(asset, _owner, OWNER_BALANCE);
+        vm.prank(_owner);
         cloneRewardVault.approve(caller, OWNER_BALANCE);
 
         // mock the dependencies of the withdraw function
@@ -419,7 +429,7 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
 
         // make the caller withdraw the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
-        uint256 sharesBurned = withdraw_redeem_wrapper(OWNER_BALANCE, receiver, owner);
+        uint256 sharesBurned = withdraw_redeem_wrapper(OWNER_BALANCE, receiver, _owner);
 
         // assert that the shares burned are the same as the amount of assets withdrawn
         assertEq(sharesBurned, OWNER_BALANCE);

@@ -4,7 +4,6 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Accountant} from "src/Accountant.sol";
-import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {IAllocator} from "src/interfaces/IAllocator.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
@@ -32,8 +31,23 @@ contract RewardVault__deposit is RewardVaultBaseTest {
     // Due to the 1:1 relationship of the assets and the shares, the deposit and the  functions
     // do the same thing. This function is a wrapper that calls the appropriate function based on the context
     // of the test. This is a virtual allowing the mint test to override it to call `mint` instead of `deposit`.
-    function deposit_mint_wrapper(uint256 assets, address receiver) internal virtual returns (uint256) {
-        return cloneRewardVault.deposit(assets, receiver);
+    function deposit_mint_wrapper(uint256 assets, address receiver, address referrer)
+        internal
+        virtual
+        returns (uint256)
+    {
+        return cloneRewardVault.deposit(assets, receiver, referrer);
+    }
+
+    // Due to the 1:1 relationship of the assets and the shares, the deposit and the  functions
+    // do the same thing. This function is a wrapper that calls the appropriate function based on the context
+    // of the test. This is a virtual allowing the mint test to override it to call `mint` instead of `deposit`.
+    function deposit_mint_permissioned_wrapper(address account, uint256 assets, address referrer)
+        internal
+        virtual
+        returns (uint256)
+    {
+        return cloneRewardVault.deposit(account, assets, referrer);
     }
 
     function setUp() public virtual override {
@@ -147,7 +161,13 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         );
 
         // mock the checkpoint function of the accountant
-        vm.mockCall(accountant, abi.encodeWithSelector(IAccountant.checkpoint.selector), abi.encode(true));
+        vm.mockCall(
+            accountant,
+            abi.encodeWithSelector(
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)"))
+            ),
+            abi.encode(true)
+        );
     }
 
     function test_UpdatesTheRewardForTheReceiver(address caller, address receiver)
@@ -214,7 +234,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
 
         // make the caller deposit the rewards
         vm.prank(caller);
-        deposit_mint_wrapper(OWNER_BALANCE, receiver);
+        deposit_mint_wrapper(OWNER_BALANCE, receiver, address(0));
 
         // assert there are new rewards to claim for the account
         assertNotEq(0, cloneRewardVault.getClaimable(token, receiver));
@@ -255,7 +275,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
 
         // make the caller deposit the rewards
         vm.prank(caller);
-        deposit_mint_wrapper(OWNER_BALANCE, address(0));
+        deposit_mint_wrapper(OWNER_BALANCE, address(0), address(0));
 
         // assert the target has the expected balance
         assertEq(IERC20(asset).balanceOf(allocation.targets[0]), OWNER_BALANCE);
@@ -292,7 +312,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
 
         // make the caller deposit the rewards
         vm.prank(caller);
-        deposit_mint_wrapper(OWNER_BALANCE, address(0));
+        deposit_mint_wrapper(OWNER_BALANCE, address(0), address(0));
 
         // assert the target has the expected balance
         assertEq(IERC20(asset).balanceOf(allocation.targets[0]), OWNER_BALANCE);
@@ -327,7 +347,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
 
         // make the caller deposit the rewards
         vm.prank(caller);
-        deposit_mint_wrapper(OWNER_BALANCE, address(0));
+        deposit_mint_wrapper(OWNER_BALANCE, address(0), address(0));
 
         // assert that the targets have the correct balance
         for (uint256 i; i < allocation.targets.length; i++) {
@@ -362,7 +382,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
 
         // make the caller deposit the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
-        deposit_mint_wrapper(OWNER_BALANCE, receiver);
+        deposit_mint_wrapper(OWNER_BALANCE, receiver, address(0));
     }
 
     function test_GivenZeroAddressReceiver(address caller, address receiver)
@@ -390,23 +410,22 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         // expect the checkpoint to be called with the receiver as the recipient
         vm.expectCall(
             address(accountant),
-            abi.encodeCall(
-                IAccountant.checkpoint,
-                (
-                    gauge,
-                    address(0),
-                    caller, // this is what we are testing
-                    uint128(OWNER_BALANCE),
-                    pendingRewards,
-                    false
-                )
+            abi.encodeWithSelector(
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)")),
+                gauge,
+                address(0),
+                caller, // this is what we are testing
+                uint128(OWNER_BALANCE),
+                pendingRewards,
+                false,
+                address(0)
             ),
             1
         );
 
         // make the caller deposit the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
-        deposit_mint_wrapper(OWNER_BALANCE, address(0));
+        deposit_mint_wrapper(OWNER_BALANCE, address(0), address(0));
     }
 
     function test_GivenAnAddressReceiver(address caller, address receiver)
@@ -435,23 +454,163 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         // expect the checkpoint to be called with the receiver as the recipient
         vm.expectCall(
             address(accountant),
-            abi.encodeCall(
-                IAccountant.checkpoint,
-                (
-                    gauge,
-                    address(0),
-                    receiver, // this is what we are testing
-                    uint128(OWNER_BALANCE),
-                    pendingRewards,
-                    false
-                )
+            abi.encodeWithSelector(
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)")),
+                gauge,
+                address(0),
+                receiver, // this is what we are testing
+                uint128(OWNER_BALANCE),
+                pendingRewards,
+                false,
+                address(0)
             ),
             1
         );
 
         // make the caller deposit the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
-        deposit_mint_wrapper(OWNER_BALANCE, receiver);
+        deposit_mint_wrapper(OWNER_BALANCE, receiver, address(0));
+    }
+
+    function test_GivenAnAddressAccount(address caller, address account)
+        external
+        _cheat_replaceRewardVaultWithRewardVaultHarness
+    {
+        // 1. it reverts if the address is the zero address
+        // 2. it mints the shares to the account
+
+        _assumeUnlabeledAddress(account);
+        vm.assume(account != address(0));
+        vm.assume(caller != address(0));
+        vm.label({account: account, newLabel: "account"});
+        vm.label({account: caller, newLabel: "caller"});
+
+        // set the owner balance and approve half the balance
+        uint256 OWNER_BALANCE = 1e18;
+        deal(asset, account, OWNER_BALANCE);
+        vm.prank(account);
+        IERC20(asset).approve(address(cloneRewardVault), OWNER_BALANCE);
+
+        // mock the dependencies of the withdraw function
+        (, IStrategy.PendingRewards memory pendingRewards) = _mock_test_dependencies(OWNER_BALANCE, Allocation.MIXED);
+
+        //  1. it reverts if the address is the zero address
+        vm.mockCall(
+            address(cloneRewardVault.PROTOCOL_CONTROLLER()),
+            abi.encodeWithSelector(IProtocolController.allowed.selector),
+            abi.encode(true)
+        );
+
+        vm.prank(caller);
+        vm.expectRevert(RewardVault.ZeroAddress.selector);
+        deposit_mint_permissioned_wrapper(address(0), OWNER_BALANCE, address(0));
+
+        // 2. it mints the shares to the account
+        vm.mockCall(
+            address(cloneRewardVault.PROTOCOL_CONTROLLER()),
+            abi.encodeWithSelector(IProtocolController.allowed.selector),
+            abi.encode(true)
+        );
+
+        vm.expectCall(
+            address(accountant),
+            abi.encodeWithSelector(
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)")),
+                gauge,
+                address(0),
+                account, // this is what we are testing
+                uint128(OWNER_BALANCE),
+                pendingRewards,
+                false,
+                address(0)
+            ),
+            1
+        );
+
+        vm.prank(caller);
+        vm.expectEmit(true, true, true, true);
+        emit IERC4626.Deposit(caller, account, OWNER_BALANCE, OWNER_BALANCE);
+        deposit_mint_permissioned_wrapper(account, OWNER_BALANCE, address(0));
+    }
+
+    function test_WhenTheReferrerIsSetInThePublicFunction(address caller, address receiver, address referrer)
+        external
+        _cheat_replaceRewardVaultWithRewardVaultHarness
+    {
+        // it emits the referrer deposit event
+
+        _assumeUnlabeledAddress(caller);
+        _assumeUnlabeledAddress(receiver);
+        vm.assume(caller != address(0));
+        vm.assume(receiver != address(0));
+        vm.assume(referrer != address(0));
+        vm.label({account: caller, newLabel: "caller"});
+        vm.label({account: receiver, newLabel: "receiver"});
+        vm.label({account: referrer, newLabel: "referrer"});
+
+        // set the owner balance and approve half the balance
+        uint256 OWNER_BALANCE = 1e18;
+        deal(asset, caller, OWNER_BALANCE);
+        vm.prank(caller);
+        IERC20(asset).approve(address(cloneRewardVault), OWNER_BALANCE);
+
+        // mock the dependencies of the withdraw function
+        _mock_test_dependencies(OWNER_BALANCE, Allocation.MIXED);
+
+        // expect the version of the checkpoint function with the referrer to be called
+        vm.expectCall(
+            address(accountant),
+            abi.encodeWithSelector(
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)"))
+            ),
+            1
+        );
+
+        vm.prank(caller);
+        deposit_mint_wrapper(OWNER_BALANCE, receiver, referrer);
+    }
+
+    function test_WhenTheReferrerIsSetInThePermissionedFunction(address caller, address account, address referrer)
+        external
+        _cheat_replaceRewardVaultWithRewardVaultHarness
+    {
+        // it emits the referrer deposit event
+
+        _assumeUnlabeledAddress(account);
+        vm.assume(account != address(0));
+        vm.assume(caller != address(0));
+        vm.assume(referrer != address(0));
+        vm.label({account: account, newLabel: "account"});
+        vm.label({account: caller, newLabel: "caller"});
+        vm.label({account: referrer, newLabel: "referrer"});
+
+        // set the owner balance and approve half the balance
+        uint256 OWNER_BALANCE = 1e18;
+        deal(asset, account, OWNER_BALANCE);
+        vm.prank(account);
+        IERC20(asset).approve(address(cloneRewardVault), OWNER_BALANCE);
+
+        // mock the dependencies of the withdraw function
+        _mock_test_dependencies(OWNER_BALANCE, Allocation.MIXED);
+
+        // mock the protocol controller to allow the caller
+        vm.mockCall(
+            address(cloneRewardVault.PROTOCOL_CONTROLLER()),
+            abi.encodeWithSelector(IProtocolController.allowed.selector),
+            abi.encode(true)
+        );
+
+        // expect the version of the checkpoint function with the referrer to be called
+        vm.expectCall(
+            address(accountant),
+            abi.encodeWithSelector(
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)"))
+            ),
+            1
+        );
+
+        vm.prank(caller);
+        deposit_mint_permissioned_wrapper(account, OWNER_BALANCE, referrer);
     }
 
     function test_RevertsIfCallingAccountantCheckpointReverts(address caller, address receiver)
@@ -480,13 +639,14 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         vm.mockCallRevert(
             address(accountant),
             abi.encodeWithSelector(
-                IAccountant.checkpoint.selector,
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)")),
                 gauge,
                 address(0),
                 receiver,
                 uint128(OWNER_BALANCE),
                 pendingRewards,
-                false
+                false,
+                address(0)
             ),
             abi.encode("UNEXPECTED_ERROR")
         );
@@ -494,7 +654,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
 
         // make the caller deposit the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
-        deposit_mint_wrapper(OWNER_BALANCE, receiver);
+        deposit_mint_wrapper(OWNER_BALANCE, receiver, address(0));
     }
 
     function test_RevertsIfTheDepositToTheStrategyReverts(address caller, address receiver)
@@ -529,7 +689,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
 
         // make the caller deposit the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
-        deposit_mint_wrapper(OWNER_BALANCE, receiver);
+        deposit_mint_wrapper(OWNER_BALANCE, receiver, address(0));
     }
 
     function test_RevertsIfOneOfTheERC20TransferReverts(address caller, address receiver, uint256 strategyCoinFlip)
@@ -567,7 +727,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
 
         // make the caller deposit the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
-        deposit_mint_wrapper(OWNER_BALANCE, receiver);
+        deposit_mint_wrapper(OWNER_BALANCE, receiver, address(0));
     }
 
     function test_EmitsTheDepositEvent(address caller, address receiver)
@@ -596,7 +756,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         vm.prank(caller);
         vm.expectEmit(true, true, true, true);
         emit IERC4626.Deposit(caller, receiver, OWNER_BALANCE, OWNER_BALANCE);
-        deposit_mint_wrapper(OWNER_BALANCE, receiver);
+        deposit_mint_wrapper(OWNER_BALANCE, receiver, address(0));
     }
 
     function test_ReturnsTheAmountOfAssetsDeposited(address caller, address receiver)
@@ -623,7 +783,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
 
         // make the caller deposit the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
-        uint256 shares = deposit_mint_wrapper(OWNER_BALANCE, receiver);
+        uint256 shares = deposit_mint_wrapper(OWNER_BALANCE, receiver, address(0));
         assertEq(shares, OWNER_BALANCE);
     }
 }

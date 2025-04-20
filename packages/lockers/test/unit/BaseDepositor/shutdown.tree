@@ -1,0 +1,6 @@
+BaseDepositor__shutdown
+├── it sets the state to CANCELED
+├── it emits the StateUpdated event
+├── it transfer the balance to the given receiver
+├── it transfer the balance to the governance when no receiver
+└── it reverts if the caller is not the governance

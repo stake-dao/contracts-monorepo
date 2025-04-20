@@ -1,11 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
-import {PreLaunchBaseDepositor} from "src/common/depositor/PreLaunchBaseDepositor.sol";
-import {IERC20} from "src/common/interfaces/IERC20.sol";
-import {ILiquidityGaugeV4} from "src/common/interfaces/ILiquidityGaugeV4.sol";
-import {ISdToken} from "src/common/interfaces/ISdToken.sol";
+import { SafeTransferLib } from "solady/src/utils/SafeTransferLib.sol";
+import { PreLaunchBaseDepositor } from "src/common/depositor/PreLaunchBaseDepositor.sol";
+import { IERC20 } from "src/common/interfaces/IERC20.sol";
+import { ILiquidityGaugeV4 } from "src/common/interfaces/ILiquidityGaugeV4.sol";
+import { IPreLaunchLocker } from "src/common/interfaces/IPreLaunchLocker.sol";
+import { ISdToken } from "src/common/interfaces/ISdToken.sol";
 
 /// @title PreLaunchLocker
 /// @dev This contract implements a state machine with three states: IDLE, ACTIVE, and CANCELED
@@ -45,13 +46,14 @@ import {ISdToken} from "src/common/interfaces/ISdToken.sol";
  * 3. Both ACTIVE and CANCELED are terminal states
  */
 /// @custom:contact contact@stakedao.org
-contract PreLaunchLocker {
+contract PreLaunchLocker is IPreLaunchLocker {
     ///////////////////////////////////////////////////////////////
     /// --- STATE VARIABLES & CONSTANTS
     ///////////////////////////////////////////////////////////////
 
     /// @notice The delay after which the locker can be force canceled by anyone.
-    uint256 public constant FORCE_CANCEL_DELAY = 3 * 30 days;
+    uint256 public immutable FORCE_CANCEL_DELAY;
+    uint256 internal constant DEFAULT_FORCE_CANCEL_DELAY = 3 * 30 days;
     /// @notice The immutable token to lock.
     address public immutable token;
     /// @notice The sdToken address.
@@ -120,10 +122,11 @@ contract PreLaunchLocker {
     event LockerStateUpdated(STATE newState);
 
     /// @notice Event emitted each time a user stakes their sdTokens.
-    /// @param account The account that staked the sdTokens.
+    /// @param caller The address who called the function.
+    /// @param receiver The address who received the gauge token.
     /// @param gauge The gauge that the sdTokens were staked to.
     /// @param amount The amount of sdTokens staked.
-    event TokensStaked(address indexed account, address gauge, uint256 amount);
+    event TokensStaked(address indexed caller, address indexed receiver, address indexed gauge, uint256 amount);
 
     /// @notice Error thrown when a required parameter is set to the zero address.
     error REQUIRED_PARAM();
@@ -168,10 +171,11 @@ contract PreLaunchLocker {
     /// @param _token Address of the token to lock.
     /// @param _sdToken Address of the sdToken to mint.
     /// @param _gauge Address of the gauge to stake the sdTokens to.
+    /// @param _customForceCancelDelay The optional custom force cancel delay. If set to 0, the default value will be used (3 months).
     /// @custom:reverts REQUIRED_PARAM if one of the given params is zero.
     /// @custom:reverts INVALID_SD_TOKEN if the given sdToken is not operated by this contract.
     /// @custom:reverts INVALID_GAUGE if the given gauge is not associated with the given sdToken.
-    constructor(address _token, address _sdToken, address _gauge) {
+    constructor(address _token, address _sdToken, address _gauge, uint256 _customForceCancelDelay) {
         if (_token == address(0) || _sdToken == address(0) || _gauge == address(0)) revert REQUIRED_PARAM();
 
         // ensure the given gauge contract is associated with the given sdToken
@@ -185,6 +189,9 @@ contract PreLaunchLocker {
         // start the timer before the locker can be force canceled
         timestamp = uint96(block.timestamp);
 
+        // set the custom force cancel delay if provided
+        FORCE_CANCEL_DELAY = _customForceCancelDelay != 0 ? _customForceCancelDelay : DEFAULT_FORCE_CANCEL_DELAY;
+
         // set the state of the contract to idle and emit the state update event
         _setState(STATE.IDLE);
 
@@ -196,13 +203,14 @@ contract PreLaunchLocker {
     /// --- DEPOSIT
     ///////////////////////////////////////////////////////////////
 
-    /// @notice Deposit tokens in this contract.
+    /// @notice Deposit tokens for a given receiver.
     /// @param amount Amount of tokens to deposit.
     /// @param stake Whether to stake the tokens in the gauge.
+    /// @param receiver The address to receive the sdToken or the gauge token.
     /// @custom:reverts REQUIRED_PARAM if the given amount is zero.
     /// @custom:reverts CANNOT_DEPOSIT_ACTIVE_OR_CANCELED_LOCKER if the locker is already associated with a depositor.
-    function deposit(uint256 amount, bool stake) public {
-        if (amount == 0) revert REQUIRED_PARAM();
+    function deposit(uint256 amount, bool stake, address receiver) public {
+        if (amount == 0 || receiver == address(0)) revert REQUIRED_PARAM();
 
         // deposit aren't allowed once the locker leaves the idle state
         if (state != STATE.IDLE) revert CANNOT_DEPOSIT_ACTIVE_OR_CANCELED_LOCKER();
@@ -219,13 +227,21 @@ contract PreLaunchLocker {
             storedSdToken.mint(address(this), amount);
             storedSdToken.approve(address(storedGauge), amount);
 
-            storedGauge.deposit(amount, msg.sender, false);
+            storedGauge.deposit(amount, receiver, false);
 
-            emit TokensStaked(msg.sender, address(storedGauge), amount);
+            emit TokensStaked(msg.sender, receiver, address(storedGauge), amount);
         } else {
             // 2.b. or mint the sdTokens directly to the caller (ratio 1:1 between token<>sdToken)
-            sdToken.mint(msg.sender, amount);
+            sdToken.mint(receiver, amount);
         }
+    }
+
+    /// @notice Deposit tokens in this contract for the caller.
+    /// @param amount Amount of tokens to deposit.
+    /// @param stake Whether to stake the tokens in the gauge.
+    /// @custom:reverts REQUIRED_PARAM if the given amount is zero.
+    function deposit(uint256 amount, bool stake) external {
+        deposit(amount, stake, msg.sender);
     }
 
     ////////////////////////////////////////////////////////////////

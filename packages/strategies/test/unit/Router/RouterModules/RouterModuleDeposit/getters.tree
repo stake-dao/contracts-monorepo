@@ -1,0 +1,4 @@
+RouterModuleDeposit__getters
+├── it returns the name
+└── it returns the version
+
