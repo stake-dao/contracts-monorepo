@@ -55,11 +55,11 @@ contract Redeem is Ownable2Step, ReentrancyGuard {
     /// --- STORAGE
     //////////////////////////////////////////////////////
 
-    /// @notice Timestamp of the first `redeem()` call. Determines the cooldown window.
-    uint256 public firstRedeemTimestamp;
-
     /// @notice Whether the redeem function has been called.
     bool public isRedemptionFinalized;
+
+    /// @notice Timestamp of the first `redeem()` call. Determines the cooldown window.
+    uint256 public firstRedeemTimestamp;
 
     //////////////////////////////////////////////////////
     /// --- CUSTOM ERRORS
