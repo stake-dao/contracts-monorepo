@@ -38,7 +38,7 @@ contract RedeemAngleTest is Test {
         /// Defined here https://gov.stakedao.org/t/sdgp-50-angle-redemption-proposal/1043
         conversionRate = 922165662297322400;
 
-        redeem = new Redeem(ANGLE.TOKEN, ANGLE.SDTOKEN, ANGLE.GAUGE, conversionRate);
+        redeem = new Redeem(ANGLE.TOKEN, ANGLE.SDTOKEN, ANGLE.GAUGE, conversionRate, address(this));
 
         uint256 balance = token.balanceOf(ANGLE.LOCKER);
 

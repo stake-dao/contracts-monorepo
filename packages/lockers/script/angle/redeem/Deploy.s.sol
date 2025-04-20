@@ -14,7 +14,9 @@ contract Deploy is Script {
         /// @notice The conversion rate is 0.922165662297322400 ANGLE per 1e18 SDANGLE.
         uint256 conversionRate = 922165662297322400;
 
-        new Redeem(address(ANGLE.TOKEN), address(ANGLE.SDTOKEN), address(ANGLE.GAUGE), conversionRate);
+        new Redeem(
+            address(ANGLE.TOKEN), address(ANGLE.SDTOKEN), address(ANGLE.GAUGE), conversionRate, DAO.MAIN_DEPLOYER
+        );
 
         vm.stopBroadcast();
     }
