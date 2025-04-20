@@ -2,7 +2,7 @@ pragma solidity 0.8.28;
 
 import {Accountant} from "src/Accountant.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
-import {AccountantBaseTest, Math} from "test/AccountantBaseTest.t.sol";
+import {AccountantBaseTest, Math, console} from "test/AccountantBaseTest.t.sol";
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 import {AccountantHarness} from "test/unit/Accountant/AccountantHarness.t.sol";
 
@@ -30,7 +30,7 @@ contract Accountant__Harvest is AccountantBaseTest {
         }
 
         vm.expectRevert(Accountant.InvalidHarvestDataLength.selector);
-        accountant.harvest(vaults, harvestData);
+        accountant.harvest(vaults, harvestData, address(this));
     }
 
     function test_RevertIfHarvesterIncorrect() external {
@@ -48,7 +48,7 @@ contract Accountant__Harvest is AccountantBaseTest {
         );
         vm.expectRevert(Accountant.NoStrategy.selector);
 
-        accountant.harvest(vaults, harvestData);
+        accountant.harvest(vaults, harvestData, address(this));
     }
 
     function test_RevertIfRewardTokenMintReverts(uint256 rewards, uint128 amount, address _harvester)
@@ -71,7 +71,15 @@ contract Accountant__Harvest is AccountantBaseTest {
         );
         accountantHarness._cheat_updateVaultData(
             vault,
-            Accountant.VaultData({integral: 0, supply: amount, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
+            Accountant.VaultData({
+                integral: 0,
+                supply: amount,
+                feeSubjectAmount: 0,
+                totalAmount: 0,
+                netCredited: 0,
+                reservedHarvestFee: 0,
+                reservedProtocolFee: 0
+            })
         );
 
         /// Construct realistic vaults/harvest data and call the harvest function as the _harvester
@@ -88,7 +96,7 @@ contract Accountant__Harvest is AccountantBaseTest {
 
         vm.prank(_harvester);
         vm.expectRevert("UNEXPECTED_ERROR_IN_ERC20");
-        accountantHarness.harvest(vaults, harvestData);
+        accountantHarness.harvest(vaults, harvestData, _harvester);
     }
 
     function test_RevertIfRewardTokenNotReceived(uint256 rewards, uint128 amount, address _harvester)
@@ -111,7 +119,15 @@ contract Accountant__Harvest is AccountantBaseTest {
         );
         accountantHarness._cheat_updateVaultData(
             vault,
-            Accountant.VaultData({integral: 0, supply: amount, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
+            Accountant.VaultData({
+                integral: 0,
+                supply: amount,
+                feeSubjectAmount: 0,
+                totalAmount: 0,
+                netCredited: 0,
+                reservedHarvestFee: 0,
+                reservedProtocolFee: 0
+            })
         );
 
         /// Construct realistic vaults/harvest data and call the harvest function as the _harvester
@@ -132,7 +148,7 @@ contract Accountant__Harvest is AccountantBaseTest {
 
         vm.prank(_harvester);
         vm.expectRevert(abi.encodeWithSelector(Accountant.HarvestTokenNotReceived.selector));
-        accountantHarness.harvest(vaults, harvestData);
+        accountantHarness.harvest(vaults, harvestData, _harvester);
     }
 
     function test_DoesNothingIfVaultAndHarvestDataAreEmpty() external {
@@ -144,7 +160,7 @@ contract Accountant__Harvest is AccountantBaseTest {
 
         // start recording storage read/write before calling the function
         vm.record();
-        accountant.harvest(vaults, harvestData);
+        accountant.harvest(vaults, harvestData, address(this));
 
         // as we expect the function to do nothing, ensure there is no storage write made
         (, bytes32[] memory writes) = vm.accesses(address(accountant));
@@ -169,20 +185,26 @@ contract Accountant__Harvest is AccountantBaseTest {
         accountantHarness._cheat_updateUserData(
             vault, makeAddr("user"), Accountant.AccountData({balance: amount, integral: 0, pendingRewards: 0})
         );
+
+        /// Get the current calculated value of the harvestFee
+        uint256 harvestFee = uint256(rewards).mulDiv(accountantHarness.getHarvestFeePercent(), 1e18);
+
         accountantHarness._cheat_updateVaultData(
             vault,
-            Accountant.VaultData({integral: 0, supply: amount, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
+            Accountant.VaultData({
+                integral: 0,
+                supply: amount,
+                feeSubjectAmount: 0,
+                totalAmount: 0,
+                netCredited: 0,
+                reservedHarvestFee: 0,
+                reservedProtocolFee: 0
+            })
         );
 
         /// Ensure that the reward token balance is 0 before the harvest operation
         assertEq(rewardToken.balanceOf(_harvester), 0);
         assertEq(rewardToken.balanceOf(address(accountantHarness)), 0);
-
-        /// Get the current calculated value of the harvestFee
-        uint256 harvestFee = uint256(rewards).mulDiv(accountantHarness.getCurrentHarvestFee(), 1e18);
-
-        /// Since the balance is 0, the harvest fee should be to maximum.
-        assertEq(accountantHarness.getCurrentHarvestFee(), accountantHarness.getHarvestFeePercent());
 
         /// Construct realistic vaults/harvest data and call the harvest function as the _harvester
         address[] memory vaults = new address[](1);
@@ -191,7 +213,7 @@ contract Accountant__Harvest is AccountantBaseTest {
         harvestData[0] = abi.encode(rewards, 1e18);
 
         vm.prank(_harvester);
-        accountantHarness.harvest(vaults, harvestData);
+        accountantHarness.harvest(vaults, harvestData, _harvester);
 
         /// Check that the reward token has been correctly dispatched
         assertEq(rewardToken.balanceOf(address(accountantHarness)), rewards - harvestFee);
@@ -217,7 +239,15 @@ contract Accountant__Harvest is AccountantBaseTest {
         );
         accountantHarness._cheat_updateVaultData(
             vault,
-            Accountant.VaultData({integral: 0, supply: amount, feeSubjectAmount: 50, totalAmount: 100, netCredited: 42})
+            Accountant.VaultData({
+                integral: 0,
+                supply: amount,
+                feeSubjectAmount: 50,
+                totalAmount: 100,
+                netCredited: 42,
+                reservedHarvestFee: 0,
+                reservedProtocolFee: 0
+            })
         );
         assertEq(accountantHarness.exposed_feeSubjectAmount(vault), 50);
         assertEq(accountantHarness.getPendingRewards(vault), 100);
@@ -227,7 +257,7 @@ contract Accountant__Harvest is AccountantBaseTest {
         vaults[0] = vault;
         bytes[] memory harvestData = new bytes[](1);
         harvestData[0] = abi.encode(rewards, 1e18);
-        accountantHarness.harvest(vaults, harvestData);
+        accountantHarness.harvest(vaults, harvestData, address(this));
 
         // ensure vault data has been reset
         assertEq(accountantHarness.exposed_feeSubjectAmount(vault), 0);
@@ -253,7 +283,15 @@ contract Accountant__Harvest is AccountantBaseTest {
         );
         accountantHarness._cheat_updateVaultData(
             vault,
-            Accountant.VaultData({integral: 0, supply: amount, feeSubjectAmount: 0, totalAmount: 100, netCredited: 0})
+            Accountant.VaultData({
+                integral: 0,
+                supply: amount,
+                feeSubjectAmount: 0,
+                totalAmount: 100,
+                netCredited: 0,
+                reservedHarvestFee: 0,
+                reservedProtocolFee: 0
+            })
         );
 
         assertEq(accountantHarness.exposed_integral(vault), 0);
@@ -263,7 +301,7 @@ contract Accountant__Harvest is AccountantBaseTest {
         vaults[0] = vault;
         bytes[] memory harvestData = new bytes[](1);
         harvestData[0] = abi.encode(rewards, 1e18);
-        accountantHarness.harvest(vaults, harvestData);
+        accountantHarness.harvest(vaults, harvestData, address(this));
 
         // ensur vault's integral has been increased
         assertGt(accountantHarness.exposed_integral(vault), 0);
@@ -288,7 +326,15 @@ contract Accountant__Harvest is AccountantBaseTest {
         );
         accountantHarness._cheat_updateVaultData(
             vault,
-            Accountant.VaultData({integral: 0, supply: amount, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
+            Accountant.VaultData({
+                integral: 0,
+                supply: amount,
+                feeSubjectAmount: 0,
+                totalAmount: 0,
+                netCredited: 0,
+                reservedHarvestFee: 0,
+                reservedProtocolFee: 0
+            })
         );
 
         /// Construct realistic vaults/harvest data and call the harvest function as the _harvester
@@ -297,12 +343,17 @@ contract Accountant__Harvest is AccountantBaseTest {
         bytes[] memory harvestData = new bytes[](1);
         harvestData[0] = abi.encode(rewards, 1e18);
 
+        uint256 harvestFee = rewards.mulDiv(accountantHarness.getHarvestFeePercent(), 1e18);
+        uint256 protocolFee = rewards.mulDiv(accountantHarness.getProtocolFeePercent(), 1e18);
+
+        uint256 expectedIntegral = (rewards - protocolFee - harvestFee).mulDiv(1e27, amount);
+
         // Tell the VM we expect an event to be emitted
         // The harvested amount is equal to rewards because pendingRewards equal 0 in this scenario
         vm.expectEmit(true, true, true, true, address(accountantHarness));
-        emit Accountant.Harvest(vault, rewards);
+        emit Accountant.Harvest(vault, expectedIntegral, amount, rewards, protocolFee, harvestFee);
 
-        accountantHarness.harvest(vaults, harvestData);
+        accountantHarness.harvest(vaults, harvestData, address(this));
     }
 
     function test_DoesNothingIfThereIsNothingToHarvest(uint256 rewards, uint128 amount)
@@ -324,7 +375,15 @@ contract Accountant__Harvest is AccountantBaseTest {
         );
         accountantHarness._cheat_updateVaultData(
             vault,
-            Accountant.VaultData({integral: 0, supply: amount, feeSubjectAmount: 0, totalAmount: 0, netCredited: 0})
+            Accountant.VaultData({
+                integral: 0,
+                supply: amount,
+                feeSubjectAmount: 0,
+                totalAmount: 0,
+                netCredited: 0,
+                reservedHarvestFee: 0,
+                reservedProtocolFee: 0
+            })
         );
 
         /// Construct realistic vaults/harvest data with nothing to harvest
@@ -333,7 +392,7 @@ contract Accountant__Harvest is AccountantBaseTest {
         bytes[] memory harvestData = new bytes[](1);
         harvestData[0] = abi.encode(0, 1e18);
 
-        accountantHarness.harvest(vaults, harvestData);
+        accountantHarness.harvest(vaults, harvestData, address(this));
     }
 }
 

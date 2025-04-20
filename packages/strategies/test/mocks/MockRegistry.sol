@@ -12,11 +12,20 @@ contract MockRegistry is IProtocolController {
     address private _feeReceiver;
     address private _accountant;
     address private _rewardReceiver;
+    bool private _isFullyWithdrawn;
 
     bool private _permissionSetter;
 
     function permissionSetters(address) external view returns (bool) {
         return _permissionSetter;
+    }
+
+    function markGaugeAsFullyWithdrawn(address) external {
+        _isFullyWithdrawn = true;
+    }
+
+    function isFullyWithdrawn(address) external view returns (bool) {
+        return _isFullyWithdrawn;
     }
 
     function setPermissionSetter(address, bool) external {}

@@ -135,7 +135,8 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
                 asset: address(0),
                 rewardReceiver: address(0),
                 protocolId: bytes4(0),
-                isShutdown: false
+                isShutdown: false,
+                isFullyWithdrawn: false
             })
         );
 
@@ -155,7 +156,8 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
                 asset: address(0),
                 rewardReceiver: rewardReceiver,
                 protocolId: bytes4(0),
-                isShutdown: false
+                isShutdown: false,
+                isFullyWithdrawn: false
             })
         );
 
@@ -175,7 +177,8 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
                 asset: asset,
                 rewardReceiver: address(0),
                 protocolId: bytes4(0),
-                isShutdown: false
+                isShutdown: false,
+                isFullyWithdrawn: false
             })
         );
 
@@ -244,7 +247,8 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
                 asset: address(0),
                 rewardReceiver: address(0),
                 protocolId: PROTOCOL_ID,
-                isShutdown: false
+                isShutdown: false,
+                isFullyWithdrawn: false
             })
         );
         assertEq(protocolControllerHarness.isShutdown(gauge), true);
@@ -257,7 +261,8 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
                 asset: address(0),
                 rewardReceiver: address(0),
                 protocolId: PROTOCOL_ID,
-                isShutdown: true
+                isShutdown: true,
+                isFullyWithdrawn: false
             })
         );
         assertEq(protocolControllerHarness.isShutdown(gauge), true);
@@ -283,7 +288,8 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
                 asset: address(0),
                 rewardReceiver: address(0),
                 protocolId: PROTOCOL_ID,
-                isShutdown: false
+                isShutdown: false,
+                isFullyWithdrawn: false
             })
         );
         assertEq(protocolControllerHarness.isShutdown(gauge), false);

@@ -20,6 +20,7 @@ contract RewardVault__constructor is RewardVaultBaseTest {
 
     function test_SetProtocolId(bytes4 protocolId) external {
         // it set protocolId
+        vm.assume(protocolId != bytes4(0));
 
         RewardVault newVault =
             new RewardVault(protocolId, makeAddr("protocolController"), makeAddr("accountant"), false);

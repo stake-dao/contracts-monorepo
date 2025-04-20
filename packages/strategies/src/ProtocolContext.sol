@@ -40,6 +40,9 @@ contract ProtocolContext is IProtocolContext {
     /// @notice Error thrown when a required address is zero
     error ZeroAddress();
 
+    /// @notice Error thrown when a protocol ID is zero
+    error InvalidProtocolId();
+
     //////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
     //////////////////////////////////////////////////////
@@ -52,6 +55,7 @@ contract ProtocolContext is IProtocolContext {
     /// @custom:throws ZeroAddress If the protocol controller or gateway address is zero
     constructor(bytes4 _protocolId, address _protocolController, address _locker, address _gateway) {
         require(_protocolController != address(0) && _gateway != address(0), ZeroAddress());
+        require(_protocolId != bytes4(0), InvalidProtocolId());
 
         GATEWAY = _gateway;
         PROTOCOL_ID = _protocolId;

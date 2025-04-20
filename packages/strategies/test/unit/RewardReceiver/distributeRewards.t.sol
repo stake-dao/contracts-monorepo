@@ -91,6 +91,18 @@ contract RewardReceiver__distributeRewards is BaseTest {
             // "airdrop" the reward token to the reward receiver
             deal(token, address(rewardReceiver), balance);
 
+            // mock the vault to have the reward receiver as the rewards distributor for the reward token
+            vm.mockCall(
+                address(rewardVault),
+                abi.encodeWithSelector(RewardVault.getRewardsDistributor.selector, token),
+                abi.encode(address(rewardReceiver))
+            );
+
+            // mock the vault to have a distribution period in progress
+            vm.mockCall(
+                address(rewardVault), abi.encodeWithSelector(RewardVault.getPeriodFinish.selector, token), abi.encode(0)
+            );
+
             // mock the vault to deposit the rewards
             vm.mockCall(
                 address(rewardVault),
@@ -135,6 +147,23 @@ contract RewardReceiver__distributeRewards is BaseTest {
         vm.mockCall(
             rewardVault, abi.encodeWithSelector(RewardVault.getRewardTokens.selector), abi.encode(rewardsTokenList)
         );
+
+        // mock the vault to have the reward receiver as the rewards distributor for each reward token
+        for (uint256 i; i < rewardsTokenList.length; i++) {
+            vm.mockCall(
+                address(rewardVault),
+                abi.encodeWithSelector(RewardVault.getRewardsDistributor.selector, rewardsTokenList[i]),
+                abi.encode(address(rewardReceiver))
+            );
+
+            // mock the vault to have a distribution period in progress
+            vm.mockCall(
+                address(rewardVault),
+                abi.encodeWithSelector(RewardVault.getPeriodFinish.selector, rewardsTokenList[i]),
+                abi.encode(0)
+            );
+        }
+
         rewardReceiver.distributeRewards();
     }
 }

@@ -117,12 +117,4 @@ contract Accountant__Constructor is Test {
 
         new AccountantHarness(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"), bytes4(hex"11"));
     }
-
-    function test_PreservesHarvestUrgencyThresholdValue() external {
-        // it preserves the harvest urgency threshold value
-
-        Accountant accountant =
-            new Accountant(makeAddr("owner"), makeAddr("registry"), makeAddr("rewardToken"), bytes4(hex"11"));
-        assertEq(accountant.HARVEST_URGENCY_THRESHOLD(), 0);
-    }
 }

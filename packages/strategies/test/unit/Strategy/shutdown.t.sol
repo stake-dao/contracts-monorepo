@@ -26,6 +26,7 @@ contract Strategy__shutdown is StrategyBaseTest {
         stakingToken.mint(address(locker), 100);
 
         address allowedCaller = makeAddr("allowedCaller");
+
         vm.mockCall(
             address(registry),
             abi.encodeWithSelector(
@@ -81,6 +82,12 @@ contract Strategy__shutdown is StrategyBaseTest {
     function test_RevertAlreadyShutdown() public {
         vm.mockCall(
             address(registry), abi.encodeWithSelector(IProtocolController.isShutdown.selector, gauge), abi.encode(true)
+        );
+
+        vm.mockCall(
+            address(registry),
+            abi.encodeWithSelector(IProtocolController.isFullyWithdrawn.selector, gauge),
+            abi.encode(true)
         );
 
         vm.expectRevert(abi.encodeWithSelector(Strategy.AlreadyShutdown.selector));

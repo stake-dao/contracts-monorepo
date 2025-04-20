@@ -4,14 +4,15 @@ pragma solidity 0.8.28;
 import {IBaseRewardPool} from "@interfaces/convex/IBaseRewardPool.sol";
 import {IBooster} from "@interfaces/convex/IBooster.sol";
 import {IStashTokenWrapper} from "@interfaces/convex/IStashTokenWrapper.sol";
-import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Sidecar} from "src/Sidecar.sol";
+import {ImmutableArgsParser} from "src/libraries/ImmutableArgsParser.sol";
 
 /// @notice Sidecar for Convex.
 /// @dev For each PID, a minimal proxy is deployed using this contract as implementation.
 contract ConvexSidecar is Sidecar {
     using SafeERC20 for IERC20;
+    using ImmutableArgsParser for address;
 
     /// @notice The bytes4 ID of the Convex protocol
     /// @dev Used to identify the Convex protocol in the registry
@@ -27,26 +28,17 @@ contract ConvexSidecar is Sidecar {
     /// @notice Convex Booster address.
     IBooster public constant BOOSTER = IBooster(0xF403C135812408BFbE8713b5A23a04b3D48AAE31);
 
-    /// @notice Error emitted when a zero address is provided
-    error ZeroAddress();
-
     //////////////////////////////////////////////////////
     /// --- ISIDECAR CLONE IMMUTABLES
     //////////////////////////////////////////////////////
 
     /// @notice Staking token address.
     function asset() public view override returns (IERC20 _asset) {
-        bytes memory args = Clones.fetchCloneArgs(address(this));
-        assembly {
-            _asset := mload(add(args, 20))
-        }
+        return IERC20(address(this).readAddress(0));
     }
 
     function rewardReceiver() public view override returns (address _rewardReceiver) {
-        bytes memory args = Clones.fetchCloneArgs(address(this));
-        assembly {
-            _rewardReceiver := mload(add(args, 40))
-        }
+        return address(this).readAddress(20);
     }
 
     //////////////////////////////////////////////////////
@@ -55,20 +47,12 @@ contract ConvexSidecar is Sidecar {
 
     /// @notice Staking Convex LP contract address.
     function baseRewardPool() public view returns (IBaseRewardPool _baseRewardPool) {
-        bytes memory args = Clones.fetchCloneArgs(address(this));
-        assembly {
-            _baseRewardPool := mload(add(args, 60))
-        }
+        return IBaseRewardPool(address(this).readAddress(40));
     }
 
     /// @notice Identifier of the pool on Convex.
     function pid() public view returns (uint256 _pid) {
-        bytes memory args = Clones.fetchCloneArgs(address(this));
-        assembly {
-            // We need to add 32 bytes for the bytes array length prefix
-            // and then 60 bytes for the three addresses (20 bytes each)
-            _pid := mload(add(add(args, 32), 60))
-        }
+        return address(this).readUint256(60);
     }
 
     //////////////////////////////////////////////////////
@@ -175,11 +159,6 @@ contract ConvexSidecar is Sidecar {
 
     function claimExtraRewards() external {
         address[] memory extraRewardTokens = getRewardTokens();
-
-        /// We can save gas by not claiming extra rewards if we don't need them, there's no extra rewards, or not enough rewards worth to claim.
-        if (extraRewardTokens.length > 0) {
-            baseRewardPool().getReward(address(this), true);
-        }
 
         /// It'll claim rewardToken but we'll leave it here for clarity until the claim() function is called by the strategy.
         baseRewardPool().getReward(address(this), true);

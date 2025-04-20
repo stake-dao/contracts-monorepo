@@ -123,7 +123,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @return pendingRewards Any pending rewards generated during the deposit
     /// @custom:throws OnlyVault If the caller is not the registered vault for the gauge
     /// @custom:throws GaugeShutdown If the pool is shutdown
-    function deposit(IAllocator.Allocation memory allocation, bool doHarvest)
+    function deposit(IAllocator.Allocation calldata allocation, bool doHarvest)
         external
         override
         onlyVault(allocation.gauge)
@@ -132,7 +132,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         /// If the pool is shutdown, prefer to call shutdown instead.
         require(!PROTOCOL_CONTROLLER.isShutdown(allocation.gauge), GaugeShutdown());
 
-        for (uint256 i = 0; i < allocation.targets.length; i++) {
+        for (uint256 i; i < allocation.targets.length; i++) {
             if (allocation.amounts[i] > 0) {
                 if (allocation.targets[i] == LOCKER) {
                     _deposit(allocation.asset, allocation.gauge, allocation.amounts[i]);
@@ -142,13 +142,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
             }
         }
 
-        if (doHarvest) {
-            pendingRewards = _harvest(allocation.gauge, "", false);
-        } else {
-            pendingRewards = _sync(allocation.gauge);
-        }
-
-        return pendingRewards;
+        pendingRewards = _harvestOrSync(allocation.gauge, doHarvest);
     }
 
     /// @notice Withdraws assets according to the provided allocation
@@ -158,35 +152,31 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @return pendingRewards Any pending rewards generated during the withdrawal
     /// @custom:throws OnlyVault If the caller is not the registered vault for the gauge
     /// @custom:throws GaugeShutdown If the pool is shutdown
-    function withdraw(IAllocator.Allocation memory allocation, bool doHarvest, address receiver)
+    function withdraw(IAllocator.Allocation calldata allocation, bool doHarvest, address receiver)
         external
         override
         onlyVault(allocation.gauge)
         returns (PendingRewards memory pendingRewards)
     {
+        address gauge = allocation.gauge;
+
         /// If the pool is shutdown, return the pending rewards.
         /// Use the shutdown function to withdraw the funds.
-        if (PROTOCOL_CONTROLLER.isShutdown(allocation.gauge)) {
-            return _sync(allocation.gauge);
-        }
+        if (PROTOCOL_CONTROLLER.isShutdown(gauge)) return _harvestOrSync(gauge, doHarvest);
 
-        for (uint256 i = 0; i < allocation.targets.length; i++) {
-            if (allocation.amounts[i] > 0) {
+        for (uint256 i; i < allocation.targets.length; i++) {
+            /// When the receiver is not set, it means it's a transfer of the vault shares and we need to checkpoint by
+            /// withdrawing 0.
+            if (allocation.amounts[i] > 0 || receiver == address(0)) {
                 if (allocation.targets[i] == LOCKER) {
-                    _withdraw(allocation.asset, allocation.gauge, allocation.amounts[i], receiver);
+                    _withdraw(allocation.asset, gauge, allocation.amounts[i], receiver);
                 } else {
                     ISidecar(allocation.targets[i]).withdraw(allocation.amounts[i], receiver);
                 }
             }
         }
 
-        if (doHarvest) {
-            pendingRewards = _harvest(allocation.gauge, "", false);
-        } else {
-            pendingRewards = _sync(allocation.gauge);
-        }
-
-        return pendingRewards;
+        return _harvestOrSync(gauge, doHarvest);
     }
 
     /// @notice Harvests rewards from a gauge
@@ -222,26 +212,33 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @dev Only allowed to be called by permissioned addresses, or anyone if the gauge/system is shutdown
     /// @custom:throws OnlyAllowed If the caller is not allowed and the gauge is not shutdown
     function shutdown(address gauge) public onlyAllowed(gauge) {
-        require(balanceOf(gauge) > 0, AlreadyShutdown());
+        require(!PROTOCOL_CONTROLLER.isFullyWithdrawn(gauge), AlreadyShutdown());
 
         /// 1. Get the vault managing the gauge.
         address vault = PROTOCOL_CONTROLLER.vaults(gauge);
 
+        /// 2. Get the asset.
         address asset = IERC4626(vault).asset();
 
-        /// 2. Get the allocation targets for the gauge.
+        /// 3. Get the allocation targets for the gauge.
         address[] memory targets = _getAllocationTargets(gauge);
 
-        /// 3. Withdraw all the assets and send them to the vault.
+        /// 4. Withdraw all the assets and send them to the vault.
         _withdrawFromAllTargets(asset, gauge, targets, vault);
 
-        /// 4. Emit the shutdown event.
+        /// 5. Mark the gauge as fully withdrawn.
+        PROTOCOL_CONTROLLER.markGaugeAsFullyWithdrawn(gauge);
+
+        /// 6. Emit the shutdown event.
         emit Shutdown(gauge);
     }
 
     /// @notice Rebalances the strategy
     /// @param gauge The gauge to rebalance
     function rebalance(address gauge) external {
+        /// If the gauge is shutdown, return.
+        require(!PROTOCOL_CONTROLLER.isShutdown(gauge), GaugeShutdown());
+
         /// 1. Get the allocator.
         address allocator = PROTOCOL_CONTROLLER.allocator(PROTOCOL_ID);
 
@@ -251,27 +248,33 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         /// 3. Snapshot the current balance.
         uint256 currentBalance = balanceOf(gauge);
 
-        /// 4. Get the allocation amounts for the gauge.
+        /// 4. Get the allocation targets for the gauge.
+        address[] memory targets = _getAllocationTargets(gauge);
+
+        /// 5. Withdraw all assets from all targets to this contract
+        _withdrawFromAllTargets(address(asset), gauge, targets, address(this));
+
+        /// 6. Get the allocation amounts for the gauge.
         IAllocator.Allocation memory allocation =
             IAllocator(allocator).getRebalancedAllocation(address(asset), gauge, currentBalance);
 
-        /// 5. Ensure the allocation has more than one target.
-        require(allocation.targets.length > 1, RebalanceNotNeeded());
+        /// 7. Ensure the allocation has more than one target.
+        uint256 allocationLength = allocation.targets.length;
+        require(allocationLength > 1, RebalanceNotNeeded());
 
-        /// 6. Withdraw all assets from all targets to this contract
-        _withdrawFromAllTargets(address(asset), gauge, allocation.targets, address(this));
-
-        /// 7. Deposit the amounts into the gauge with new allocations
-        for (uint256 i = 0; i < allocation.targets.length; i++) {
+        /// 8. Deposit the amounts into the gauge with new allocations
+        for (uint256 i; i < allocationLength; i++) {
             address target = allocation.targets[i];
             uint256 amount = allocation.amounts[i];
 
             asset.safeTransfer(target, amount);
 
-            if (target == LOCKER) {
-                _deposit(address(asset), gauge, amount);
-            } else {
-                ISidecar(target).deposit(amount);
+            if (amount > 0) {
+                if (target == LOCKER) {
+                    _deposit(address(asset), gauge, amount);
+                } else {
+                    ISidecar(target).deposit(amount);
+                }
             }
         }
 
@@ -285,7 +288,8 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     function balanceOf(address gauge) public view virtual returns (uint256 balance) {
         address[] memory targets = _getAllocationTargets(gauge);
 
-        for (uint256 i = 0; i < targets.length; i++) {
+        uint256 length = targets.length;
+        for (uint256 i; i < length; i++) {
             address target = targets[i];
 
             if (target == LOCKER) {
@@ -303,9 +307,9 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @notice Gets allocation targets for a gauge
     /// @param gauge The gauge to get targets for
     /// @return targets Array of target addresses
-    function _getAllocationTargets(address gauge) internal view returns (address[] memory) {
+    function _getAllocationTargets(address gauge) internal view returns (address[] memory targets) {
         address allocator = PROTOCOL_CONTROLLER.allocator(PROTOCOL_ID);
-        return IAllocator(allocator).getAllocationTargets(gauge);
+        targets = IAllocator(allocator).getAllocationTargets(gauge);
     }
 
     /// @notice Withdraws assets from all targets
@@ -316,7 +320,8 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     function _withdrawFromAllTargets(address asset, address gauge, address[] memory targets, address receiver)
         internal
     {
-        for (uint256 i = 0; i < targets.length; i++) {
+        uint256 length = targets.length;
+        for (uint256 i; i < length; i++) {
             address target = targets[i];
             uint256 balance;
 
@@ -346,7 +351,8 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         address[] memory targets = _getAllocationTargets(gauge);
 
         uint256 pendingRewardsAmount;
-        for (uint256 i = 0; i < targets.length; i++) {
+        uint256 length = targets.length;
+        for (uint256 i; i < length; i++) {
             address target = targets[i];
 
             if (target == LOCKER) {
@@ -369,6 +375,14 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         }
 
         return pendingRewards;
+    }
+
+    /// @notice Harvests or synchronizes rewards
+    /// @param gauge The gauge to harvest or synchronize from
+    /// @param doHarvest Whether to perform a harvest operation
+    /// @return pendingRewards The pending rewards after harvesting or synchronization
+    function _harvestOrSync(address gauge, bool doHarvest) internal returns (PendingRewards memory pendingRewards) {
+        pendingRewards = doHarvest ? _harvest(gauge, "", false) : _sync(gauge);
     }
 
     //////////////////////////////////////////////////////

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {IRewardReceiver} from "src/interfaces/IRewardReceiver.sol";
 import {IRewardVault} from "src/interfaces/IRewardVault.sol";
+import {IRewardReceiver} from "src/interfaces/IRewardReceiver.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {ImmutableArgsParser} from "src/libraries/ImmutableArgsParser.sol";
+import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 
 /// @title RewardReceiver - Reward Distribution Intermediary
 /// @notice A contract that receives rewards from gauges and forwards them to a reward vault.
@@ -15,6 +15,7 @@ import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 ///      - Forwards rewards to reward vault.
 ///      - Validates reward tokens against the vault's accepted tokens.
 contract RewardReceiver is IRewardReceiver {
+    using ImmutableArgsParser for address;
     using SafeCast for uint256;
     using SafeERC20 for IERC20;
 
@@ -35,10 +36,7 @@ contract RewardReceiver is IRewardReceiver {
     /// @notice Address of the reward vault contract.
     /// @return _rewardVault The address of the reward vault contract.
     function rewardVault() public view returns (IRewardVault _rewardVault) {
-        bytes memory args = Clones.fetchCloneArgs(address(this));
-        assembly {
-            _rewardVault := mload(add(args, 20))
-        }
+        return IRewardVault(address(this).readAddress(0));
     }
 
     //////////////////////////////////////////////////////
@@ -71,7 +69,7 @@ contract RewardReceiver is IRewardReceiver {
     /// @custom:throws InvalidToken If the token is not registered as a valid reward token in the vault.
     function distributeRewardToken(IERC20 token) external {
         // Check if the token is a valid reward token in the vault
-        if (!rewardVault().isRewardToken(address(token))) revert InvalidToken();
+        require(rewardVault().isRewardToken(address(token)), InvalidToken());
 
         // Get the balance of the reward token
         uint128 amount = token.balanceOf(address(this)).toUint128();
@@ -91,6 +89,11 @@ contract RewardReceiver is IRewardReceiver {
     /// @param token The reward token to deposit.
     /// @param amount The amount of rewards to deposit.
     function _depositRewards(IERC20 token, uint128 amount) internal {
+        /// Check if there's a distribution period in progress.
+        if (rewardVault().getPeriodFinish(address(token)) > block.timestamp) return;
+        /// Check if the reward receiver is a valid rewards distributor for the reward token.
+        if (rewardVault().getRewardsDistributor(address(token)) != address(this)) return;
+
         /// Approve the reward vault to spend the reward token.
         token.safeIncreaseAllowance(address(rewardVault()), amount);
 

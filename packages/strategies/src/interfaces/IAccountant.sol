@@ -23,7 +23,7 @@ interface IAccountant {
         external;
 
     function claimProtocolFees() external;
-    function harvest(address[] calldata _vaults, bytes[] calldata _harvestData) external;
+    function harvest(address[] calldata _vaults, bytes[] calldata _harvestData, address _receiver) external;
 
     function REWARD_TOKEN() external view returns (address);
 }

@@ -1,17 +1,18 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {IERC20, IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {ImmutableArgsParser} from "src/libraries/ImmutableArgsParser.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {IAccountant} from "src/interfaces/IAccountant.sol";
-import {IAllocator} from "src/interfaces/IAllocator.sol";
-import {IProtocolController} from "src/interfaces/IProtocolController.sol";
-import {IRewardVault} from "src/interfaces/IRewardVault.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20, IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+
 import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {IAllocator} from "src/interfaces/IAllocator.sol";
+import {IAccountant} from "src/interfaces/IAccountant.sol";
+import {IRewardVault} from "src/interfaces/IRewardVault.sol";
+import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
 /// @title RewardVault - A Stake DAO vault for managing deposits and rewards
 /// @notice An ERC4626-compatible vault that handles:
@@ -28,7 +29,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     using Math for uint256;
     using SafeCast for uint256;
     using SafeERC20 for IERC20;
-
+    using ImmutableArgsParser for address;
     ///////////////////////////////////////////////////////////////
     /// ~ EVENTS
     ///////////////////////////////////////////////////////////////
@@ -60,6 +61,9 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @notice Thrown when a function is called by an address that isn't a registrar
     error OnlyRegistrar();
 
+    /// @notice Thrown when a protocol ID is zero
+    error InvalidProtocolId();
+
     /// @notice Thrown when attempting to allocate assets to an unapproved target
     error TargetNotApproved();
 
@@ -68,9 +72,6 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
     /// @notice Thrown when attempting to add a reward token that's already registered
     error RewardAlreadyExists();
-
-    /// @notice Thrown when attempting to exceed the maximum allowed reward tokens
-    error MaxRewardTokensExceeded();
 
     /// @notice Thrown when an unauthorized address attempts to distribute rewards
     error UnauthorizedRewardsDistributor();
@@ -94,10 +95,6 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @notice Reference to the ProtocolController for protocol-wide coordination
     /// @dev Controls strategy routing, permissions, and protocol-wide settings
     IProtocolController public immutable PROTOCOL_CONTROLLER;
-
-    /// @notice Maximum number of different reward tokens this vault can handle
-    /// @dev Prevents gas cost scaling issues with too many reward tokens
-    uint256 public constant MAX_REWARD_TOKEN_COUNT = 10;
 
     /// @notice Default duration for reward distribution periods
     /// @dev One week in seconds, can be modified per reward token
@@ -183,6 +180,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         ERC20(string.concat("StakeDAO Vault"), string.concat("sd-vault"))
     {
         require(accountant != address(0) && protocolController != address(0), ZeroAddress());
+        require(protocolId != bytes4(0), InvalidProtocolId());
 
         PROTOCOL_ID = protocolId;
         ACCOUNTANT = IAccountant(accountant);
@@ -242,6 +240,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         // the allocator, transfer the amount from the account to the target
         IERC20 _asset = IERC20(asset());
         for (uint256 i; i < allocation.targets.length; i++) {
+            if (allocation.amounts[i] == 0) continue;
             require(PROTOCOL_CONTROLLER.isValidAllocationTarget(gauge(), allocation.targets[i]), TargetNotApproved());
             SafeERC20.safeTransferFrom(_asset, account, allocation.targets[i], allocation.amounts[i]);
         }
@@ -268,7 +267,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @return _ The amount of assets withdrawn.
     /// @custom:reverts NotApproved if the caller is not allowed to withdraw at least the amount of assets given.
     function withdraw(uint256 assets, address receiver, address owner) public returns (uint256) {
-        if (receiver == address(0)) receiver = owner;
+        if (receiver == address(0)) receiver = msg.sender;
 
         // if the caller isn't the owner, check if the caller is allowed to withdraw the amount of assets
         if (msg.sender != owner) {
@@ -371,11 +370,10 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
             // Calculate earned rewards since last claim
             AccountData storage account = accountData[accountAddress][rewardToken];
-            uint256 accountEarned = _earned(accountAddress, rewardToken, account.claimable, account.rewardPerTokenPaid);
+            uint256 accountEarned = account.claimable;
             if (accountEarned == 0) continue;
 
-            // Reset claimable amount and update reward checkpoint
-            account.rewardPerTokenPaid = rewardPerToken(rewardToken);
+            // Reset claimable amount
             account.claimable = 0;
 
             // Transfer earned rewards to receiver
@@ -395,7 +393,6 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @custom:reverts RewardAlreadyExists if token is already registered
     function addRewardToken(address rewardsToken, address distributor) external onlyRegistrar {
         require(distributor != address(0), ZeroAddress());
-        require(rewardTokens.length < MAX_REWARD_TOKEN_COUNT, MaxRewardTokensExceeded());
 
         RewardData storage reward = rewardData[rewardsToken];
         require(_isRewardToken(reward) == false, RewardAlreadyExists());
@@ -424,11 +421,11 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
         // Calculate new reward rate, accounting for any remaining rewards
         if (currentTime >= periodFinish) {
-            newRewardRate = _amount / DEFAULT_REWARDS_DURATION;
+            newRewardRate = Math.mulDiv(_amount, 1e18, DEFAULT_REWARDS_DURATION).toUint128();
         } else {
             uint32 remainingTime = periodFinish - currentTime;
-            uint128 remainingRewards = remainingTime * reward.rewardRate;
-            newRewardRate = (_amount + remainingRewards) / DEFAULT_REWARDS_DURATION;
+            uint256 remainingRewardsUnscaled = Math.mulDiv(reward.rewardRate, remainingTime, 1e18);
+            newRewardRate = Math.mulDiv(_amount + remainingRewardsUnscaled, 1e18, DEFAULT_REWARDS_DURATION).toUint128();
         }
 
         // Update reward distribution state
@@ -440,6 +437,13 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         IERC20(_rewardsToken).safeTransferFrom(msg.sender, address(this), _amount);
 
         emit RewardsDeposited(_rewardsToken, _amount, newRewardRate);
+    }
+
+    /// @notice Updates reward state for a single account
+    /// @dev Wrapper around _checkpoint for single account updates
+    /// @param account Account to update rewards for
+    function checkpoint(address account) external {
+        _checkpoint(account, address(0));
     }
 
     ///////////////////////////////////////////////////////////////
@@ -516,9 +520,9 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         uint256 timeDelta = _lastTimeRewardApplicable(reward.periodFinish) - reward.lastUpdateTime;
         uint256 rewardRatePerToken = 0;
 
-        if (timeDelta > 0 && _totalSupply > 0) {
+        if (timeDelta > 0) {
             // Calculate additional rewards per token since last update
-            rewardRatePerToken = (timeDelta * reward.rewardRate * 1e18) / _totalSupply;
+            rewardRatePerToken = Math.mulDiv(timeDelta * reward.rewardRate, 1, _totalSupply);
         }
 
         return (reward.rewardPerTokenStored + rewardRatePerToken).toUint128();
@@ -561,12 +565,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @dev Retrieves the token address from the clone's immutable args.
     /// @return _ The address of the underlying token used by the vault.
     function asset() public view returns (address) {
-        bytes memory args = Clones.fetchCloneArgs(address(this));
-        address token;
-        assembly {
-            token := mload(add(args, 40))
-        }
-        return token;
+        return address(this).readAddress(20);
     }
 
     /// @notice Returns the total amount of underlying assets (1:1 with total shares).
@@ -638,17 +637,17 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @notice Returns the maximum amount of assets that can be deposited.
     /// @dev The parameter is not used and is included to satisfy the interface. Pass whatever you want to.
     /// @return _ The maximum amount of assets that can be deposited.
-    function maxDeposit(address) public pure returns (uint256) {
-        return type(uint256).max;
+    function maxDeposit(address _account) public view returns (uint256) {
+        return IERC20(asset()).balanceOf(_account);
     }
 
     /// @notice Returns the maximum amount of shares that can be minted.
     /// @dev Due to the 1:1 relationship between assets and shares, the max mint
     ///      is the same as the max deposit.
-    /// @param __ This parameter is not used and is included to satisfy the interface. Pass whatever you want to.
+    /// @param _account The address of the account to calculate the max mint for.
     /// @return _ The maximum amount of shares that can be minted.
-    function maxMint(address __) external pure returns (uint256) {
-        return maxDeposit(__);
+    function maxMint(address _account) external view returns (uint256) {
+        return maxDeposit(_account);
     }
 
     /// @notice Returns the maximum amount of assets that can be withdrawn.
@@ -768,22 +767,6 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         return _earned(accountAddress, token, account.claimable, account.rewardPerTokenPaid);
     }
 
-    /// @notice Calculates total rewards for the current distribution period
-    /// @dev Multiplies reward rate by duration
-    /// @param token Reward token to calculate for
-    /// @return Total rewards for the period
-    function getRewardForDuration(address token) external view returns (uint256) {
-        RewardData storage reward = rewardData[token];
-        return reward.rewardRate * DEFAULT_REWARDS_DURATION;
-    }
-
-    /// @notice Updates reward state for a single account
-    /// @dev Wrapper around _checkpoint for single account updates
-    /// @param account Account to update rewards for
-    function checkpoint(address account) external {
-        _checkpoint(account, address(0));
-    }
-
     ///////////////////////////////////////////////////////////////
     /// ~ PROTOCOL_CONTROLLER / CLONE ARGUMENT GETTERS ~
     ///////////////////////////////////////////////////////////////
@@ -793,10 +776,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @return _gauge The gauge contract address
     /// @custom:reverts CloneArgsNotFound if clone is incorrectly initialized
     function gauge() public view returns (address _gauge) {
-        bytes memory args = Clones.fetchCloneArgs(address(this));
-        assembly {
-            _gauge := mload(add(args, 20))
-        }
+        return address(this).readAddress(0);
     }
 
     /// @notice Gets the allocator contract for this protocol type
@@ -823,13 +803,26 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @param to Address receiving tokens
     /// @param amount Number of tokens being transferred
     function _update(address from, address to, uint256 amount) internal override {
-        // 1. Update Balances via Accountant
-        ACCOUNTANT.checkpoint(
-            gauge(), from, to, uint128(amount), IStrategy.PendingRewards({feeSubjectAmount: 0, totalAmount: 0}), false
-        );
-
-        // 2. Update Reward State
+        // 1. Update Reward State
         _checkpoint(from, to);
+
+        /// Get addresses where funds are allocated to.
+        address[] memory targets = allocator().getAllocationTargets(gauge());
+
+        /// Create an allocation struct to pass to the strategy.
+        /// We want to withdraw 0, just to get the pending rewards.
+        IAllocator.Allocation memory allocation = IAllocator.Allocation({
+            asset: asset(),
+            gauge: gauge(),
+            targets: targets,
+            amounts: new uint256[](targets.length)
+        });
+
+        /// Withdraw 0, just to get the pending rewards.
+        IStrategy.PendingRewards memory pendingRewards = strategy().withdraw(allocation, TRIGGER_HARVEST, address(0));
+
+        // 2. Update Balances via Accountant
+        ACCOUNTANT.checkpoint(gauge(), from, to, uint128(amount), pendingRewards, TRIGGER_HARVEST);
 
         // 3. Emit Transfer event
         emit Transfer(from, to, amount);

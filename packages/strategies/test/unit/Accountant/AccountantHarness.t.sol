@@ -37,10 +37,6 @@ contract AccountantHarness is Accountant, Test {
         accounts[vault][account] = data;
     }
 
-    function _cheat_updateHarvestUrgencyTreshold(uint256 newValue) external {
-        HARVEST_URGENCY_THRESHOLD = newValue;
-    }
-
     function _cheat_updateFeesParamsProtocolFeePercent(uint128 value) external {
         feesParams.protocolFeePercent = value;
     }

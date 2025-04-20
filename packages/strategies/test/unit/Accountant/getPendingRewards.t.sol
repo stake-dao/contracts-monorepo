@@ -40,7 +40,9 @@ contract Accountant__getPendingRewards is AccountantBaseTest {
                 supply: 0,
                 feeSubjectAmount: 0,
                 totalAmount: pendingRewards,
-                netCredited: 0
+                netCredited: 0,
+                reservedHarvestFee: 0,
+                reservedProtocolFee: 0
             })
         );
 

@@ -13,7 +13,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// --- STORAGE STRUCTURES
     //////////////////////////////////////////////////////
 
-    /// @notice Struct to store protocol components in a single storage slot
+    /// @notice Struct to store protocol components
     struct ProtocolComponents {
         address strategy;
         address allocator;
@@ -29,6 +29,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
         address rewardReceiver;
         bytes4 protocolId;
         bool isShutdown;
+        bool isFullyWithdrawn;
     }
 
     //////////////////////////////////////////////////////
@@ -103,14 +104,32 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @param allowed Whether the permission setter is allowed to set permissions
     event PermissionSetterSet(address indexed setter, bool allowed);
 
+    /// @notice Thrown when a non-strategy calls a strategy-only function
+    error OnlyStrategy();
+
     /// @notice Thrown when a non-registrar calls a registrar-only function
     error OnlyRegistrar();
 
     /// @notice Thrown when a zero address is used
     error ZeroAddress();
 
+    /// @notice Thrown when an accountant is already set
+    error AccountantAlreadySet();
+
     /// @notice Thrown when an unauthorized address tries to set permissions
     error NotPermissionSetter();
+
+    /// @notice Thrown when a gauge is already shutdown
+    error GaugeAlreadyShutdown();
+
+    /// @notice Thrown when an invalid allocation target is set
+    error InvalidAllocationTarget();
+
+    /// @notice Thrown when a protocol is already shutdown
+    error ProtocolAlreadyShutdown();
+
+    /// @notice Thrown when a gauge is already fully withdrawn
+    error GaugeAlreadyFullyWithdrawn();
 
     //////////////////////////////////////////////////////
     /// --- MODIFIERS
@@ -119,7 +138,13 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @notice Modifier to restrict function access to registrars or owner
     /// @custom:reverts OnlyRegistrar if the caller is not a registrar
     modifier onlyRegistrar() {
-        require(registrar[msg.sender], OnlyRegistrar());
+        require(registrar[msg.sender] || msg.sender == owner(), OnlyRegistrar());
+        _;
+    }
+
+    modifier onlyStrategy(address _gauge) {
+        address _strategy = _protocolComponents[gauge[_gauge].protocolId].strategy;
+        require(msg.sender == _strategy, OnlyStrategy());
         _;
     }
 
@@ -208,6 +233,8 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @custom:reverts ZeroAddress if the accountant address is zero
     function setAccountant(bytes4 protocolId, address _accountant) external onlyOwner {
         require(_accountant != address(0), ZeroAddress());
+        require(_protocolComponents[protocolId].accountant == address(0), AccountantAlreadySet());
+
         _protocolComponents[protocolId].accountant = _accountant;
         emit ProtocolComponentSet(protocolId, COMPONENT_ID_ACCOUNTANT, _accountant);
     }
@@ -258,6 +285,8 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @param _target The target address
     /// @custom:reverts OnlyRegistrar if the caller is not a registrar
     function setValidAllocationTarget(address _gauge, address _target) external onlyRegistrar {
+        require(!_isValidAllocationTargets[_gauge][_target], InvalidAllocationTarget());
+
         _isValidAllocationTargets[_gauge][_target] = true;
     }
 
@@ -266,6 +295,8 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @param _target The target address
     /// @custom:reverts OnlyRegistrar if the caller is not a registrar
     function removeValidAllocationTarget(address _gauge, address _target) external onlyRegistrar {
+        require(_isValidAllocationTargets[_gauge][_target], InvalidAllocationTarget());
+
         _isValidAllocationTargets[_gauge][_target] = false;
     }
 
@@ -273,14 +304,28 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @param _gauge The gauge address to shut down
     /// @custom:reverts OnlyOwner if the caller is not the owner
     function shutdown(address _gauge) external onlyOwner {
+        Gauge storage g = gauge[_gauge];
+        require(!g.isShutdown, GaugeAlreadyShutdown());
+
         gauge[_gauge].isShutdown = true;
         emit GaugeShutdown(_gauge);
+    }
+
+    /// @notice Marks a gauge as fully withdrawn
+    /// @param _gauge The gauge address
+    /// @custom:reverts OnlyStrategy if the caller is not the strategy
+    function markGaugeAsFullyWithdrawn(address _gauge) external onlyStrategy(_gauge) {
+        require(!gauge[_gauge].isFullyWithdrawn, GaugeAlreadyFullyWithdrawn());
+
+        gauge[_gauge].isFullyWithdrawn = true;
     }
 
     /// @notice Shuts down a protocol
     /// @param protocolId The protocol identifier
     /// @custom:reverts OnlyOwner if the caller is not the owner
     function shutdownProtocol(bytes4 protocolId) external onlyOwner {
+        require(!_protocolComponents[protocolId].isShutdown, ProtocolAlreadyShutdown());
+
         _protocolComponents[protocolId].isShutdown = true;
         emit ProtocolShutdown(protocolId);
     }
@@ -368,6 +413,13 @@ contract ProtocolController is IProtocolController, Ownable2Step {
         Gauge storage $gauge = gauge[_gauge];
 
         return $gauge.isShutdown || _protocolComponents[$gauge.protocolId].isShutdown;
+    }
+
+    /// @notice Checks if a gauge is fully withdrawn
+    /// @param _gauge The gauge address
+    /// @return _ Whether the gauge is fully withdrawn
+    function isFullyWithdrawn(address _gauge) external view returns (bool) {
+        return gauge[_gauge].isFullyWithdrawn;
     }
 
     /// @notice Checks if a target is a valid allocation target for a gauge
