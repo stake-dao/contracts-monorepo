@@ -38,7 +38,7 @@ contract RedeemAngleTest is Test {
         /// Defined here https://gov.stakedao.org/t/sdgp-50-angle-redemption-proposal/1043
         conversionRate = 922165662297322400;
 
-        redeem = new Redeem(ANGLE.TOKEN, ANGLE.SDTOKEN, ANGLE.GAUGE, conversionRate);
+        redeem = new Redeem(ANGLE.TOKEN, ANGLE.SDTOKEN, ANGLE.GAUGE, conversionRate, address(this));
 
         uint256 balance = token.balanceOf(ANGLE.LOCKER);
 
@@ -105,7 +105,6 @@ contract RedeemAngleTest is Test {
 
         uint256 claimable = ILiquidityGauge(ANGLE.GAUGE).claimable_reward(address(this), ANGLE.TOKEN);
 
-
         /// 5. Redeem
         redeem.redeem();
 
@@ -121,8 +120,8 @@ contract RedeemAngleTest is Test {
         vm.assume(amount < sdToken.totalSupply());
         vm.assume(amount > 1e18);
 
-        uint sdTokenBalance = amount / 2;
-        uint sdTokenGaugeBalance = amount - sdTokenBalance;
+        uint256 sdTokenBalance = amount / 2;
+        uint256 sdTokenGaugeBalance = amount - sdTokenBalance;
 
         deal(address(sdToken), address(this), sdTokenBalance);
         deal(address(sdTokenGauge), address(this), sdTokenGaugeBalance);
