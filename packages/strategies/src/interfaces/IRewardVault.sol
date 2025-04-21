@@ -40,7 +40,7 @@ interface IRewardVault {
 
     function rewardPerToken(address token) external view returns (uint128);
 
-    function earned(address accountAddress, address token) external view returns (uint128);
+    function earned(address account, address token) external view returns (uint128);
 
     function isRewardToken(address rewardToken) external view returns (bool);
 }

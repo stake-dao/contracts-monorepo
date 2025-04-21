@@ -621,7 +621,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
             _harvest(_gauges, harvestData, receiver);
         }
 
-        _claim({_gauges: _gauges, accountAddress: msg.sender, receiver: receiver});
+        _claim({_gauges: _gauges, account: msg.sender, receiver: receiver});
     }
 
     /// @notice Claims multiple vault rewards on behalf of an account.
@@ -653,15 +653,15 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
             _harvest(_gauges, harvestData, receiver);
         }
 
-        _claim({_gauges: _gauges, accountAddress: account, receiver: receiver});
+        _claim({_gauges: _gauges, account: account, receiver: receiver});
     }
 
     /// @dev Internal implementation of claim functionality.
     /// @param _gauges Array of gauges to claim rewards from.
-    /// @param accountAddress Address to claim rewards for.
+    /// @param account Address to claim rewards for.
     /// @param receiver Address that will receive the claimed rewards.
     /// @custom:throws NoPendingRewards If the total claimed amount is zero.
-    function _claim(address[] calldata _gauges, address accountAddress, address receiver) internal nonReentrant {
+    function _claim(address[] calldata _gauges, address account, address receiver) internal nonReentrant {
         uint256 totalAmount;
 
         address vault;
@@ -671,19 +671,19 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
             require(vault != address(0), InvalidVault());
 
             // Get the account data for this gauge
-            AccountData storage account = accounts[vault][accountAddress];
+            AccountData storage accountData = accounts[vault][account];
 
             // Get the current balance for this vault
-            uint128 balance = account.balance;
+            uint128 balance = accountData.balance;
 
             // If account has any rewards to claim for this vault, calculate the amount. Otherwise, skip.
-            if (balance != 0 || account.pendingRewards != 0) {
+            if (balance != 0 || accountData.pendingRewards != 0) {
                 // Get vault's and account's integral
-                uint256 accountIntegral = account.integral;
+                uint256 accountIntegral = accountData.integral;
                 uint256 vaultIntegral = vaults[vault].integral;
 
                 // If vault's integral is higher than account's integral, calculate the rewards and update the total.
-                uint256 claimableAmount = account.pendingRewards;
+                uint256 claimableAmount = accountData.pendingRewards;
                 if (vaultIntegral > accountIntegral) {
                     claimableAmount += (vaultIntegral - accountIntegral).mulDiv(balance, SCALING_FACTOR);
                 }
@@ -692,16 +692,16 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
                 totalAmount += claimableAmount;
 
                 // Update account's integral with the current value of Vault's integral
-                account.integral = vaultIntegral;
+                accountData.integral = vaultIntegral;
 
                 // reset the stored pending rewards for this vault
-                account.pendingRewards = 0;
+                accountData.pendingRewards = 0;
 
                 // Emit the account checkpoint event
-                emit AccountCheckpoint(vault, accountAddress, balance, vaultIntegral, 0);
+                emit AccountCheckpoint(vault, account, balance, vaultIntegral, 0);
 
                 // Emit the claim event
-                emit RewardsClaimed(vault, accountAddress, receiver, claimableAmount);
+                emit RewardsClaimed(vault, account, receiver, claimableAmount);
             }
         }
 
