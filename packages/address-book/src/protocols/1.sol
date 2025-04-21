@@ -3,8 +3,10 @@ pragma solidity >=0.6.0;
 
 library Angle {
     address public constant ANGLE = 0x31429d1856aD1377A8A0079410B297e1a9e214c2;
+    address public constant VEANGLE = 0x0C462Dbb9EC8cD1630f1728B2CFD2769d09f0dd5;
     address public constant SAN_USDC_EUR = 0x9C215206Da4bf108aE5aEEf9dA7caD3352A36Dad;
     address public constant SAN_DAI_EUR = 0x7B8E89b0cE7BAC2cfEC92A371Da899eA8CBdb450;
+    address public constant EURA = 0x1a7e4e63778B4f12a199C062f3eFdD288afCBce8;
 }
 
 library Balancer {
@@ -73,8 +75,15 @@ library Fx {
     address public constant SMART_WALLET_CHECKER = 0xD71B8B76015F296E53D41e8288a8a13eAfFff2ea;
 }
 
-
 library Spectra {
     address public constant APW = 0x4104b135DBC9609Fc1A9490E61369036497660c8;
     address public constant VEAPW = 0xC5ca1EBF6e912E49A6a70Bb0385Ea065061a4F09;
+}
+
+library YieldNest {
+    address public constant YND = 0x7159cc276D7d17Ab4b3bEb19959E1F39368a45Ba;
+    address public constant SDYND = 0x0a885027D84155387B9Bd47485B0fdec10C6B4EC;
+    address public constant PRELAUNCH_LOCKER = 0xE0ffc03bb4086051090646a05ae4aF43843a5b51;
+    address public constant LOCKER = 0x8396A782cc966661cd818a4DaC19C3E0aA893012;
+    address public constant GAUGE = 0x26aB50DC99F14405155013ea580Ea2b3dB1801c7;
 }

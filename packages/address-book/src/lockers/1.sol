@@ -27,6 +27,8 @@ library ANGLE {
     address public constant STRATEGY = 0x22635427C72e8b0028FeAE1B5e1957508d9D7CAF;
     address public constant VE_SDT_FEE_PROXY = 0x1fE537BD59A221854a53a5B7a81585B572787fce;
     address public constant FACTORY = 0x66f3d3210F84fe8cC2c77A1f001a395b2Ae0B801;
+
+    address public constant REDEEM = 0x1D8A9c30E4e25033498347c1A054717bd0c4D356;
 }
 
 library SPECTRA {
@@ -36,6 +38,9 @@ library SPECTRA {
     address public constant DEPOSITOR = 0xFe928ca6a9C0cdf658a26A374b7373B9D6CefBCf;
     address public constant GAUGE = 0x9c9d06C7378909C6d0A2A0017Bb409F7fb8004E0;
     address public constant ACCUMULATOR = 0xB1d7787B8dB300b2d664DA3897116a0135E588A6;
+
+    /// CONVERSION CONTRACT
+    address public constant CONVERTER = 0x90dD9A085f126C79992bb07da65b5abBE85c81c2;
 }
 
 library BAL {

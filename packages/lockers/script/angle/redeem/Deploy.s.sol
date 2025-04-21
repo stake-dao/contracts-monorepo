@@ -11,7 +11,10 @@ contract Deploy is Script {
         vm.createSelectFork("mainnet");
         vm.startBroadcast(DAO.MAIN_DEPLOYER);
 
-        new Redeem(address(FPIS.TOKEN), address(FPIS.SDTOKEN), address(FPIS.GAUGE), 1e18);
+        /// @notice The conversion rate is 0.922165662297322400 ANGLE per 1e18 SDANGLE.
+        uint256 conversionRate = 922165662297322400;
+
+        new Redeem(address(ANGLE.TOKEN), address(ANGLE.SDTOKEN), address(ANGLE.GAUGE), conversionRate);
 
         vm.stopBroadcast();
     }
