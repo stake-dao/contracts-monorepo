@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import {Strategy} from "src/Strategy.sol";
+import {Strategy, IStrategy} from "src/Strategy.sol";
 import {StrategyBaseTest} from "test/StrategyBaseTest.t.sol";
 
 contract Strategy__rebalance is StrategyBaseTest {
@@ -18,7 +18,7 @@ contract Strategy__rebalance is StrategyBaseTest {
         stakingToken.mint(address(sidecar2), 300);
 
         vm.prank(vault);
-        strategy.deposit(allocation, false);
+        strategy.deposit(allocation, IStrategy.HarvestPolicy.CHECKPOINT);
 
         /// Assert the total balance is 600
         assertEq(strategy.balanceOf(gauge), 600);

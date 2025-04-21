@@ -73,7 +73,7 @@ contract StrategyHarness is Strategy, Test {
         vm.mockCall(address(sidecar), abi.encodeWithSelector(ISidecar.balanceOf.selector), abi.encode(balance));
     }
 
-    function _sync(address) internal view override returns (IStrategy.PendingRewards memory) {
+    function _checkpointRewards(address) internal view override returns (IStrategy.PendingRewards memory) {
         return _mockSyncRewards;
     }
 

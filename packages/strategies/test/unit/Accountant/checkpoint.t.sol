@@ -1,5 +1,7 @@
 pragma solidity 0.8.28;
 
+import {console} from "forge-std/src/console.sol";
+
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {Accountant} from "src/Accountant.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
@@ -20,7 +22,8 @@ contract Accountant__checkpoint is AccountantBaseTest {
             makeAddr("to"),
             5,
             IStrategy.PendingRewards({feeSubjectAmount: 0, totalAmount: 0}),
-            true
+            IStrategy.HarvestPolicy.HARVEST,
+            address(0)
         );
     }
 
@@ -34,7 +37,7 @@ contract Accountant__checkpoint is AccountantBaseTest {
             makeAddr("to"),
             5,
             IStrategy.PendingRewards({feeSubjectAmount: 0, totalAmount: 0}),
-            true
+            IStrategy.HarvestPolicy.HARVEST
         );
 
         // mock the call to the Registry. Next time the vaults() method of the registry is called
@@ -52,7 +55,8 @@ contract Accountant__checkpoint is AccountantBaseTest {
             makeAddr("to"),
             5,
             IStrategy.PendingRewards({feeSubjectAmount: 0, totalAmount: 0}),
-            true
+            IStrategy.HarvestPolicy.HARVEST,
+            address(0)
         );
     }
 
@@ -99,7 +103,8 @@ contract Accountant__checkpoint is AccountantBaseTest {
             makeAddr("account"),
             amount,
             IStrategy.PendingRewards({feeSubjectAmount: 1e29, totalAmount: 2e29}),
-            true
+            IStrategy.HarvestPolicy.HARVEST,
+            address(0)
         );
 
         assertLt(beforeProtocolFeesAccrued, accountant.protocolFeesAccrued());
@@ -150,7 +155,8 @@ contract Accountant__checkpoint is AccountantBaseTest {
             makeAddr("account"),
             amount,
             IStrategy.PendingRewards({feeSubjectAmount: pendingTotalAmount / 100, totalAmount: pendingTotalAmount}),
-            false
+            IStrategy.HarvestPolicy.CHECKPOINT,
+            address(0)
         );
 
         assertLt(beforePendingRewards, accountant.getPendingRewards(vault));
@@ -208,7 +214,8 @@ contract Accountant__checkpoint is AccountantBaseTest {
             account,
             amount,
             IStrategy.PendingRewards({feeSubjectAmount: 0, totalAmount: 0}),
-            false
+            IStrategy.HarvestPolicy.CHECKPOINT,
+            address(0)
         );
 
         assertEq(accountant.totalSupply(vault), initialSupply + amount);
@@ -266,7 +273,8 @@ contract Accountant__checkpoint is AccountantBaseTest {
             address(0),
             amount,
             IStrategy.PendingRewards({feeSubjectAmount: 0, totalAmount: 0}),
-            false
+            IStrategy.HarvestPolicy.CHECKPOINT,
+            address(0)
         );
 
         assertEq(accountant.totalSupply(vault), initialSupply);
@@ -317,7 +325,8 @@ contract Accountant__checkpoint is AccountantBaseTest {
             address(0),
             amount,
             IStrategy.PendingRewards({feeSubjectAmount: 0, totalAmount: 0}),
-            false
+            IStrategy.HarvestPolicy.CHECKPOINT,
+            address(0)
         );
 
         assertEq(accountant.totalSupply(vault), initialSupply);
@@ -327,8 +336,10 @@ contract Accountant__checkpoint is AccountantBaseTest {
         assertEq(accountantHarness.exposed_integral(vault), vaultIntegral);
     }
 
-    function test_RevertsWhenTheRegistryReverts(bool hasHarvested) external {
+    function test_RevertsWhenTheRegistryReverts(bool harvested) external {
         // it reverts when the registry reverts
+        IStrategy.HarvestPolicy policy =
+            harvested ? IStrategy.HarvestPolicy.HARVEST : IStrategy.HarvestPolicy.CHECKPOINT;
 
         // mock the call to the registry.vaults and force it to revert
         vm.mockCallRevert(
@@ -346,7 +357,8 @@ contract Accountant__checkpoint is AccountantBaseTest {
             makeAddr("to"),
             5,
             IStrategy.PendingRewards({feeSubjectAmount: 0, totalAmount: 0}),
-            hasHarvested
+            policy,
+            address(0)
         );
     }
 }
@@ -359,7 +371,7 @@ contract MaliciousRegistry {
         address to;
         uint128 amount;
         IStrategy.PendingRewards pendingRewards;
-        bool harvested;
+        IStrategy.HarvestPolicy policy;
     }
 
     AttackData private attackData;
@@ -370,9 +382,9 @@ contract MaliciousRegistry {
         address to,
         uint128 amount,
         IStrategy.PendingRewards memory pendingRewards,
-        bool harvested
+        IStrategy.HarvestPolicy policy
     ) {
-        attackData = AttackData(asset, from, to, amount, pendingRewards, harvested);
+        attackData = AttackData(asset, from, to, amount, pendingRewards, policy);
     }
 
     // this is a malicious transfer() function that will recall accountant.claimProtocolFees()
@@ -383,7 +395,8 @@ contract MaliciousRegistry {
             attackData.to,
             attackData.amount,
             attackData.pendingRewards,
-            attackData.harvested
+            attackData.policy,
+            address(0)
         );
         // expected to never reach this point because the call above MUST revert
         return address(0);

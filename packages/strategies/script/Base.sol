@@ -7,7 +7,7 @@ import "forge-std/src/Script.sol";
 import {Accountant} from "src/Accountant.sol";
 import {ProtocolController} from "src/ProtocolController.sol";
 import {RewardReceiver} from "src/RewardReceiver.sol";
-import {RewardVault} from "src/RewardVault.sol";
+import {RewardVault, IStrategy} from "src/RewardVault.sol";
 import {Safe, SafeLibrary} from "test/utils/SafeLibrary.sol";
 
 abstract contract Base is Script {
@@ -49,7 +49,7 @@ abstract contract Base is Script {
             protocolId: _protocolId,
             protocolController: address(protocolController),
             accountant: address(accountant),
-            triggerHarvest: _harvested
+            policy: _harvested ? IStrategy.HarvestPolicy.HARVEST : IStrategy.HarvestPolicy.CHECKPOINT
         });
 
         /// 4. Deploy Reward Receiver Implementation.
@@ -59,7 +59,7 @@ abstract contract Base is Script {
         owners[0] = deployer;
 
         /// Generate a salt for the Safe.
-        uint256 _saltNonce = _computeSalt(_protocolId, deployer, 1, type(Safe).name);
+        uint256 _saltNonce = _computeSalt({protocolId: _protocolId, version: 1, label: type(Safe).name});
 
         /// 5. Deploy Gateway.
         /// @dev Before continuing, we need to put this Safe as the owner of the LOCKER.
@@ -122,7 +122,7 @@ abstract contract Base is Script {
         }
     }
 
-    function _computeSalt(bytes4 protocolId, address deployer, uint16 version, string memory label)
+    function _computeSalt(bytes4 protocolId, uint16 version, string memory label)
         internal
         view
         returns (uint256 salt)

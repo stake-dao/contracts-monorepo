@@ -177,7 +177,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         uint128 amount,
         uint256 integral,
         uint256 supply,
-        bool harvested
+        IStrategy.HarvestPolicy policy
     );
 
     /// @notice Emitted when an account checkpoint is made.
@@ -252,7 +252,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @param to The destination address (address(0) for burning).
     /// @param amount The amount of tokens being transferred/minted/burned.
     /// @param pendingRewards New rewards to be distributed to the vault.
-    /// @param harvested Whether these rewards were already harvested by the vault and sent to the contract.
+    /// @param policy The harvest policy to use.
     /// @custom:throws OnlyVault If caller is not the registered vault for the gauge.
     function checkpoint(
         address gauge,
@@ -260,7 +260,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         address to,
         uint128 amount,
         IStrategy.PendingRewards calldata pendingRewards,
-        bool harvested
+        IStrategy.HarvestPolicy policy
     ) public nonReentrant {
         require(PROTOCOL_CONTROLLER.vaults(gauge) == msg.sender, OnlyVault());
 
@@ -278,7 +278,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
             require(pendingRewards.feeSubjectAmount <= pendingRewards.totalAmount, FeesExceedRewards());
 
             uint128 totalFees;
-            if (harvested && newRewards > 0) {
+            if (policy == IStrategy.HarvestPolicy.HARVEST && newRewards > 0) {
                 // Calculate total fees in one operation
                 // We charge only protocol fee on the harvested rewards.
                 if (newFeeSubjectAmount > 0) {
@@ -293,7 +293,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
             // If the new rewards are above the minimum meaningful rewards,
             // we update the integral and pending rewards.
             // Otherwise, we don't update the integral to avoid precision loss. It won't be lost, just delayed.
-            else if (newRewards >= MIN_MEANINGFUL_REWARDS) {
+            else if (policy == IStrategy.HarvestPolicy.CHECKPOINT && newRewards >= MIN_MEANINGFUL_REWARDS) {
                 // Calculate total fees in one operation
                 // We charge protocol and harvest fees on the unclaimed rewards.
                 if (newFeeSubjectAmount > 0) {
@@ -358,7 +358,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         _vault.integral = integral;
         _vault.supply = supply;
 
-        emit Checkpoint(msg.sender, from, to, amount, integral, supply, harvested);
+        emit Checkpoint(msg.sender, from, to, amount, integral, supply, policy);
     }
 
     /// @notice Checkpoints the state of the vault on every account action.
@@ -368,7 +368,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @param to The destination address (address(0) for burning).
     /// @param amount The amount of tokens being transferred/minted/burned.
     /// @param pendingRewards New rewards to be distributed to the vault.
-    /// @param harvested Whether these rewards were already harvested by the vault and sent to the contract.
+    /// @param policy The harvest policy to use.
     /// @param referrer The address of the referrer.
     /// @custom:throws OnlyVault If caller is not the registered vault for the gauge.
     function checkpoint(
@@ -377,11 +377,11 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         address to,
         uint128 amount,
         IStrategy.PendingRewards calldata pendingRewards,
-        bool harvested,
+        IStrategy.HarvestPolicy policy,
         address referrer
     ) external {
         // call the checkpoint function as normal (the function check if the caller is the authorized vault)
-        checkpoint(gauge, from, to, amount, pendingRewards, harvested);
+        checkpoint(gauge, from, to, amount, pendingRewards, policy);
 
         // emit the referrer deposit event if the referrer is set
         if (referrer != address(0)) emit Referrer(referrer, to, amount);

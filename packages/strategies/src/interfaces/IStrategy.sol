@@ -4,15 +4,21 @@ pragma solidity 0.8.28;
 import "src/interfaces/IAllocator.sol";
 
 interface IStrategy {
+    /// @notice The policy for harvesting rewards.
+    enum HarvestPolicy {
+        CHECKPOINT,
+        HARVEST
+    }
+
     struct PendingRewards {
         uint128 feeSubjectAmount;
         uint128 totalAmount;
     }
 
-    function deposit(IAllocator.Allocation calldata allocation, bool harvest)
+    function deposit(IAllocator.Allocation calldata allocation, HarvestPolicy policy)
         external
         returns (PendingRewards memory pendingRewards);
-    function withdraw(IAllocator.Allocation calldata allocation, bool harvest, address receiver)
+    function withdraw(IAllocator.Allocation calldata allocation, HarvestPolicy policy, address receiver)
         external
         returns (PendingRewards memory pendingRewards);
 

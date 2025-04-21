@@ -107,13 +107,13 @@ contract RouterModuleMigrationCurve__migrate is RouterModulesTest {
         vm.expectCall(
             address(accountant),
             abi.encodeWithSelector(
-                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)")),
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),uint8,address)")),
                 gauge,
                 address(0),
                 account,
                 uint128(amount),
                 pendingRewards,
-                false,
+                IStrategy.HarvestPolicy.CHECKPOINT,
                 address(0)
             ),
             1

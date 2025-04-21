@@ -5,7 +5,7 @@ import "@openzeppelin/contracts/proxy/Clones.sol";
 import {StdInvariant} from "forge-std/src/StdInvariant.sol";
 import {Test} from "forge-std/src/Test.sol";
 import {Accountant} from "src/Accountant.sol";
-import {RewardVault} from "src/RewardVault.sol";
+import {RewardVault, IStrategy} from "src/RewardVault.sol";
 import {VaultHandler} from "test/invariant/handlers/VaultHandler.sol";
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 import {MockAllocator} from "test/mocks/MockAllocator.sol";
@@ -41,7 +41,9 @@ contract VaultInvariantTest is StdInvariant, Test {
         allocator = new MockAllocator();
         accountant = new Accountant(address(this), address(registry), address(rewardToken), bytes4(bytes("fake_id")));
 
-        vaultImplementation = new RewardVault(bytes4(keccak256("Curve")), address(registry), address(accountant), false);
+        vaultImplementation = new RewardVault(
+            bytes4(keccak256("Curve")), address(registry), address(accountant), IStrategy.HarvestPolicy.CHECKPOINT
+        );
         vault = RewardVault(
             Clones.cloneDeterministicWithImmutableArgs(
                 address(vaultImplementation), abi.encodePacked(address(token), address(token)), ""

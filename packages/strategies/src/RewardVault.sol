@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
-import {ImmutableArgsParser} from "src/libraries/ImmutableArgsParser.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
@@ -12,6 +11,7 @@ import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IAllocator} from "src/interfaces/IAllocator.sol";
 import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {IRewardVault} from "src/interfaces/IRewardVault.sol";
+import {ImmutableArgsParser} from "src/libraries/ImmutableArgsParser.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
 /// @title RewardVault - A Stake DAO vault for managing deposits and rewards
@@ -40,10 +40,10 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     event RewardTokenAdded(address indexed rewardToken, address indexed distributor);
 
     /// @notice Emitted when new rewards are deposited for distribution
-    /// @param rewardsToken The token being distributed as rewards
+    /// @param rewardToken The token being distributed as rewards
     /// @param amount The total amount of rewards being added
     /// @param rewardRate The calculated rate at which rewards will be distributed (tokens/second)
-    event RewardsDeposited(address indexed rewardsToken, uint256 amount, uint128 rewardRate);
+    event RewardsDeposited(address indexed rewardToken, uint256 amount, uint128 rewardRate);
 
     ///////////////////////////////////////////////////////////////
     /// ~ ERRORS
@@ -80,13 +80,12 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// ~ CONSTANTS & IMMUTABLES
     ///////////////////////////////////////////////////////////////
 
+    /// @notice Default duration for reward distribution periods
+    uint32 public constant DEFAULT_REWARDS_DURATION = 7 days;
+
     /// @notice A unique identifier for the protocol/strategy type
     /// @dev Used by the protocol controller to route operations to the correct strategy implementation
     bytes4 public immutable PROTOCOL_ID;
-
-    /// @notice Configuration flag for automatic harvesting on deposits/withdrawals
-    /// @dev When true, rewards are automatically harvested during deposit/withdraw operations
-    bool public immutable TRIGGER_HARVEST;
 
     /// @notice Reference to the Accountant contract for managing balances and rewards
     /// @dev Handles all balance-related operations and reward calculations
@@ -96,9 +95,8 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @dev Controls strategy routing, permissions, and protocol-wide settings
     IProtocolController public immutable PROTOCOL_CONTROLLER;
 
-    /// @notice Default duration for reward distribution periods
-    /// @dev One week in seconds, can be modified per reward token
-    uint32 public constant DEFAULT_REWARDS_DURATION = 7 days;
+    /// @notice The harvest policy. Whether to harvest rewards on deposit/withdraw.
+    IStrategy.HarvestPolicy public immutable POLICY;
 
     ///////////////////////////////////////////////////////////////
     /// ~ STORAGE STRUCTURES
@@ -147,7 +145,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
     /// @notice Double mapping for storing user reward data per token
     /// @dev Maps user address => reward token => reward accounting data
-    mapping(address accountAddress => mapping(address rewardToken => AccountData accountData)) public accountData;
+    mapping(address account => mapping(address rewardToken => AccountData accountData)) public accountData;
 
     ///////////////////////////////////////////////////////////////
     /// ~ MODIFIERS
@@ -174,9 +172,9 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @param protocolId The protocol ID.
     /// @param protocolController The protocol controller address
     /// @param accountant The accountant address
-    /// @param triggerHarvest Whether to trigger a harvest on deposit and withdraw.
+    /// @param policy The harvest policy.
     /// @custom:reverts ZeroAddress if the accountant or protocol controller address is the zero address.
-    constructor(bytes4 protocolId, address protocolController, address accountant, bool triggerHarvest)
+    constructor(bytes4 protocolId, address protocolController, address accountant, IStrategy.HarvestPolicy policy)
         ERC20(string.concat("StakeDAO Vault"), string.concat("sd-vault"))
     {
         require(accountant != address(0) && protocolController != address(0), ZeroAddress());
@@ -185,7 +183,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         PROTOCOL_ID = protocolId;
         ACCOUNTANT = IAccountant(accountant);
         PROTOCOL_CONTROLLER = IProtocolController(protocolController);
-        TRIGGER_HARVEST = triggerHarvest;
+        POLICY = policy;
     }
 
     ///////////////////////////////////////////////////////////////
@@ -314,10 +312,10 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
         // Get the address of the strategy contract from the protocol controller
         // then process the deposit of the allocation
-        IStrategy.PendingRewards memory pendingRewards = strategy().deposit(allocation, TRIGGER_HARVEST);
+        IStrategy.PendingRewards memory pendingRewards = strategy().deposit(allocation, POLICY);
 
         // Mint the shares to the receiver
-        _mint(receiver, shares, pendingRewards, TRIGGER_HARVEST, referrer);
+        _mint(receiver, shares, pendingRewards, POLICY, referrer);
 
         emit Deposit(msg.sender, receiver, assets, shares);
     }
@@ -373,10 +371,10 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
         // Get the address of the strategy contract from the protocol controller
         // then process the withdrawal of the allocation
-        IStrategy.PendingRewards memory pendingRewards = strategy().withdraw(allocation, TRIGGER_HARVEST, receiver);
+        IStrategy.PendingRewards memory pendingRewards = strategy().withdraw(allocation, POLICY, receiver);
 
         // Burn the shares by calling the endpoint function of the accountant contract
-        _burn(owner, shares, pendingRewards, TRIGGER_HARVEST);
+        _burn(owner, shares, pendingRewards, POLICY);
 
         /// @dev If the gauge is shutdown, funds will sit here.
         if (PROTOCOL_CONTROLLER.isShutdown(gauge())) {
@@ -416,19 +414,19 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     }
 
     /// @dev Core reward claiming implementation
-    /// @param accountAddress Account whose rewards are being claimed
+    /// @param account Account whose rewards are being claimed
     /// @param tokens Array of reward tokens to process
     /// @param receiver Destination for the claimed rewards
     /// @return amounts Array of claimed amounts per token
     /// @custom:reverts InvalidRewardToken if any token is not registered
-    function _claim(address accountAddress, address[] calldata tokens, address receiver)
+    function _claim(address account, address[] calldata tokens, address receiver)
         internal
         returns (uint256[] memory amounts)
     {
-        if (receiver == address(0)) receiver = accountAddress;
+        if (receiver == address(0)) receiver = account;
 
         // Update all reward states before processing claims
-        _checkpoint(accountAddress, address(0));
+        _checkpoint(account, address(0));
 
         amounts = new uint256[](tokens.length);
         for (uint256 i; i < tokens.length; i++) {
@@ -436,12 +434,12 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
             if (!isRewardToken(rewardToken)) revert InvalidRewardToken();
 
             // Calculate earned rewards since last claim
-            AccountData storage account = accountData[accountAddress][rewardToken];
-            uint256 accountEarned = account.claimable;
+            AccountData storage accountData_ = accountData[account][rewardToken];
+            uint256 accountEarned = accountData_.claimable;
             if (accountEarned == 0) continue;
 
             // Reset claimable amount
-            account.claimable = 0;
+            accountData_.claimable = 0;
 
             // Transfer earned rewards to receiver
             SafeERC20.safeTransfer(IERC20(rewardToken), receiver, accountEarned);
@@ -452,34 +450,34 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
     /// @notice Registers a new reward token with the vault
     /// @dev Only callable by protocol registrars
-    /// @param rewardsToken Address of the reward token to add
+    /// @param rewardToken Address of the reward token to add
     /// @param distributor Address authorized to manage rewards for this token
     /// @custom:reverts OnlyRegistrar if caller is not a registrar
     /// @custom:reverts ZeroAddress if distributor is zero address
     /// @custom:reverts MaxRewardTokensExceeded if MAX_REWARD_TOKEN_COUNT would be exceeded
     /// @custom:reverts RewardAlreadyExists if token is already registered
-    function addRewardToken(address rewardsToken, address distributor) external onlyRegistrar {
+    function addRewardToken(address rewardToken, address distributor) external onlyRegistrar {
         require(distributor != address(0), ZeroAddress());
 
-        RewardData storage reward = rewardData[rewardsToken];
+        RewardData storage reward = rewardData[rewardToken];
         require(_isRewardToken(reward) == false, RewardAlreadyExists());
 
-        rewardTokens.push(rewardsToken);
+        rewardTokens.push(rewardToken);
         reward.rewardsDistributor = distributor;
 
-        emit RewardTokenAdded(rewardsToken, distributor);
+        emit RewardTokenAdded(rewardToken, distributor);
     }
 
     /// @notice Deposits new rewards for distribution
     /// @dev Calculates new reward rate and updates distribution schedule
-    /// @param _rewardsToken Address of the reward token being deposited
-    /// @param _amount Amount of rewards to distribute
+    /// @param rewardToken Address of the reward token being deposited
+    /// @param amount Amount of rewards to distribute
     /// @custom:reverts UnauthorizedRewardsDistributor if caller is not the authorized distributor
-    function depositRewards(address _rewardsToken, uint128 _amount) external {
+    function depositRewards(address rewardToken, uint128 amount) external {
         // Ensure all reward states are current
         _checkpoint(address(0), address(0));
 
-        RewardData storage reward = rewardData[_rewardsToken];
+        RewardData storage reward = rewardData[rewardToken];
         if (reward.rewardsDistributor != msg.sender) revert UnauthorizedRewardsDistributor();
 
         uint32 currentTime = uint32(block.timestamp);
@@ -488,11 +486,11 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
         // Calculate new reward rate, accounting for any remaining rewards
         if (currentTime >= periodFinish) {
-            newRewardRate = Math.mulDiv(_amount, 1e18, DEFAULT_REWARDS_DURATION).toUint128();
+            newRewardRate = Math.mulDiv(amount, 1e18, DEFAULT_REWARDS_DURATION).toUint128();
         } else {
             uint32 remainingTime = periodFinish - currentTime;
             uint256 remainingRewardsUnscaled = Math.mulDiv(reward.rewardRate, remainingTime, 1e18);
-            newRewardRate = Math.mulDiv(_amount + remainingRewardsUnscaled, 1e18, DEFAULT_REWARDS_DURATION).toUint128();
+            newRewardRate = Math.mulDiv(amount + remainingRewardsUnscaled, 1e18, DEFAULT_REWARDS_DURATION).toUint128();
         }
 
         // Update reward distribution state
@@ -501,9 +499,9 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         reward.rewardRate = newRewardRate;
 
         // Transfer rewards to vault
-        IERC20(_rewardsToken).safeTransferFrom(msg.sender, address(this), _amount);
+        IERC20(rewardToken).safeTransferFrom(msg.sender, address(this), amount);
 
-        emit RewardsDeposited(_rewardsToken, _amount, newRewardRate);
+        emit RewardsDeposited(rewardToken, amount, newRewardRate);
     }
 
     /// @notice Updates reward state for a single account
@@ -550,13 +548,13 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
     /// @notice Updates an account's reward data for a specific token
     /// @dev Calculates and stores earned rewards since last update
-    /// @param accountAddress The account to update
+    /// @param account The account to update
     /// @param token The reward token to process
     /// @param newRewardPerToken Current reward per token value
-    function _updateAccountData(address accountAddress, address token, uint128 newRewardPerToken) internal {
-        AccountData storage account = accountData[accountAddress][token];
-        account.claimable = _earned(accountAddress, token, account.claimable, account.rewardPerTokenPaid);
-        account.rewardPerTokenPaid = newRewardPerToken;
+    function _updateAccountData(address account, address token, uint128 newRewardPerToken) internal {
+        AccountData storage accountData_ = accountData[account][token];
+        accountData_.claimable = _earned(account, token, accountData_.claimable, accountData_.rewardPerTokenPaid);
+        accountData_.rewardPerTokenPaid = newRewardPerToken;
     }
 
     /// @notice Checks if a reward token is properly registered
@@ -597,18 +595,17 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
     /// @notice Calculates earned rewards for an account
     /// @dev Includes both stored claimable amount and newly earned rewards
-    /// @param accountAddress The account to calculate rewards for
+    /// @param account The account to calculate rewards for
     /// @param token The reward token to calculate
     /// @param userClaimable Previously stored claimable amount
     /// @param userRewardPerTokenPaid Last checkpoint of reward per token for user
     /// @return Total earned rewards as uint128
-    function _earned(address accountAddress, address token, uint128 userClaimable, uint128 userRewardPerTokenPaid)
+    function _earned(address account, address token, uint128 userClaimable, uint128 userRewardPerTokenPaid)
         internal
         view
         returns (uint128)
     {
-        uint128 newEarned =
-            balanceOf(accountAddress).mulDiv(rewardPerToken(token) - userRewardPerTokenPaid, 1e18).toUint128();
+        uint128 newEarned = balanceOf(account).mulDiv(rewardPerToken(token) - userRewardPerTokenPaid, 1e18).toUint128();
 
         return userClaimable + newEarned;
     }
@@ -826,12 +823,12 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
     /// @notice Calculates total earned rewards for an account
     /// @dev Includes both claimed and pending rewards
-    /// @param accountAddress Account to check rewards for
+    /// @param account Account to check rewards for
     /// @param token Reward token to calculate
     /// @return Total earned rewards
-    function earned(address accountAddress, address token) external view returns (uint128) {
-        AccountData storage account = accountData[accountAddress][token];
-        return _earned(accountAddress, token, account.claimable, account.rewardPerTokenPaid);
+    function earned(address account, address token) external view returns (uint128) {
+        AccountData storage accountData_ = accountData[account][token];
+        return _earned(account, token, accountData_.claimable, accountData_.rewardPerTokenPaid);
     }
 
     ///////////////////////////////////////////////////////////////
@@ -888,10 +885,10 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         /// Withdraw 0, just to get the pending rewards.
         /// @dev We pass the strategy as the receiver to avoid the zero address check on some tokens.
         IStrategy.PendingRewards memory pendingRewards =
-            strategy().withdraw(allocation, TRIGGER_HARVEST, address(strategy()));
+            strategy().withdraw(allocation, POLICY, address(strategy()));
 
         // 2. Update Balances via Accountant
-        ACCOUNTANT.checkpoint(gauge(), from, to, uint128(amount), pendingRewards, TRIGGER_HARVEST);
+        ACCOUNTANT.checkpoint(gauge(), from, to, uint128(amount), pendingRewards, POLICY);
 
         // 3. Emit Transfer event
         emit Transfer(from, to, amount);
@@ -902,16 +899,16 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @param to Recipient of new shares
     /// @param amount Amount of shares to mint
     /// @param pendingRewards Rewards to process during mint
-    /// @param harvested Whether to trigger reward harvesting
+    /// @param policy The harvest policy.
     /// @param referrer The address of the referrer. Can be the zero address.
     function _mint(
         address to,
         uint256 amount,
         IStrategy.PendingRewards memory pendingRewards,
-        bool harvested,
+        IStrategy.HarvestPolicy policy,
         address referrer
     ) internal {
-        ACCOUNTANT.checkpoint(gauge(), address(0), to, uint128(amount), pendingRewards, harvested, referrer);
+        ACCOUNTANT.checkpoint(gauge(), address(0), to, uint128(amount), pendingRewards, policy, referrer);
     }
 
     /// @notice Burns vault shares
@@ -919,25 +916,28 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @param from Address to burn shares from
     /// @param amount Amount of shares to burn
     /// @param pendingRewards Rewards to process during burn
-    /// @param harvested Whether to trigger reward harvesting
-    function _burn(address from, uint256 amount, IStrategy.PendingRewards memory pendingRewards, bool harvested)
-        internal
-    {
-        ACCOUNTANT.checkpoint(gauge(), from, address(0), uint128(amount), pendingRewards, harvested);
+    /// @param policy The harvest policy.
+    function _burn(
+        address from,
+        uint256 amount,
+        IStrategy.PendingRewards memory pendingRewards,
+        IStrategy.HarvestPolicy policy
+    ) internal {
+        ACCOUNTANT.checkpoint(gauge(), from, address(0), uint128(amount), pendingRewards, policy);
     }
 
     /// @notice Generates the vault's name
     /// @dev Combines "StakeDAO", underlying asset name, and "Vault"
     /// @return Full vault name
     function name() public view override(ERC20, IERC20Metadata) returns (string memory) {
-        return string.concat("StakeDAO ", IERC20Metadata(asset()).name(), " Vault");
+        return string.concat("StakeDAO Fusion", IERC20Metadata(asset()).name(), " Vault");
     }
 
     /// @notice Generates the vault's symbol
     /// @dev Combines "sd-", underlying asset symbol, and "-vault"
     /// @return Full vault symbol
     function symbol() public view override(ERC20, IERC20Metadata) returns (string memory) {
-        return string.concat("sd-", IERC20Metadata(asset()).symbol(), "-vault");
+        return string.concat("sd-fusion-", IERC20Metadata(asset()).symbol(), "-vault");
     }
 
     /// @notice Gets the vault's decimal places

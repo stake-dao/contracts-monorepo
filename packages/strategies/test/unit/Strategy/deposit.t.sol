@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
-import {Strategy} from "src/Strategy.sol";
+import {Strategy, IStrategy} from "src/Strategy.sol";
 import {StrategyBaseTest} from "test/StrategyBaseTest.t.sol";
 
 contract Strategy__deposit is StrategyBaseTest {
@@ -10,7 +10,7 @@ contract Strategy__deposit is StrategyBaseTest {
         vm.prank(makeAddr("not_vault"));
 
         vm.expectRevert(abi.encodeWithSignature("OnlyVault()"));
-        strategy.deposit(allocation, false);
+        strategy.deposit(allocation, IStrategy.HarvestPolicy.CHECKPOINT);
     }
 
     function test_RevertsIfGaugeIsShutdown() public {
@@ -20,7 +20,7 @@ contract Strategy__deposit is StrategyBaseTest {
 
         vm.prank(vault);
         vm.expectRevert(abi.encodeWithSignature("GaugeShutdown()"));
-        strategy.deposit(allocation, false);
+        strategy.deposit(allocation, IStrategy.HarvestPolicy.CHECKPOINT);
     }
 
     function test_CorrectlyDepositsToLocker() public {
@@ -45,7 +45,7 @@ contract Strategy__deposit is StrategyBaseTest {
         stakingToken.mint(address(sidecar2), 300);
 
         vm.prank(vault);
-        Strategy.PendingRewards memory rewards = strategy.deposit(allocation, false);
+        Strategy.PendingRewards memory rewards = strategy.deposit(allocation, IStrategy.HarvestPolicy.CHECKPOINT);
 
         /// 1. It correctly deposits the specified amount.
         assertEq(stakingToken.balanceOf(address(locker)), allocation.amounts[0]);

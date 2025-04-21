@@ -164,7 +164,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         vm.mockCall(
             accountant,
             abi.encodeWithSelector(
-                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)"))
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),uint8,address)"))
             ),
             abi.encode(true)
         );
@@ -378,7 +378,11 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         (IAllocator.Allocation memory allocation,) = _mock_test_dependencies(OWNER_BALANCE, Allocation.MIXED);
 
         // expect the strategy to be called with the allocation
-        vm.expectCall(address(strategyAsset), abi.encodeCall(IStrategy.deposit, (allocation, false)), 1);
+        vm.expectCall(
+            address(strategyAsset),
+            abi.encodeCall(IStrategy.deposit, (allocation, IStrategy.HarvestPolicy.CHECKPOINT)),
+            1
+        );
 
         // make the caller deposit the rewards. It should succeed because the allowance is enough
         vm.prank(caller);
@@ -411,13 +415,13 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         vm.expectCall(
             address(accountant),
             abi.encodeWithSelector(
-                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)")),
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),uint8,address)")),
                 gauge,
                 address(0),
                 caller, // this is what we are testing
                 uint128(OWNER_BALANCE),
                 pendingRewards,
-                false,
+                IStrategy.HarvestPolicy.CHECKPOINT,
                 address(0)
             ),
             1
@@ -455,13 +459,13 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         vm.expectCall(
             address(accountant),
             abi.encodeWithSelector(
-                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)")),
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),uint8,address)")),
                 gauge,
                 address(0),
                 receiver, // this is what we are testing
                 uint128(OWNER_BALANCE),
                 pendingRewards,
-                false,
+                IStrategy.HarvestPolicy.CHECKPOINT,
                 address(0)
             ),
             1
@@ -515,13 +519,13 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         vm.expectCall(
             address(accountant),
             abi.encodeWithSelector(
-                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)")),
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),uint8,address)")),
                 gauge,
                 address(0),
                 account, // this is what we are testing
                 uint128(OWNER_BALANCE),
                 pendingRewards,
-                false,
+                IStrategy.HarvestPolicy.CHECKPOINT,
                 address(0)
             ),
             1
@@ -561,7 +565,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         vm.expectCall(
             address(accountant),
             abi.encodeWithSelector(
-                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)"))
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),uint8,address)"))
             ),
             1
         );
@@ -604,7 +608,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         vm.expectCall(
             address(accountant),
             abi.encodeWithSelector(
-                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)"))
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),uint8,address)"))
             ),
             1
         );
@@ -639,13 +643,13 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         vm.mockCallRevert(
             address(accountant),
             abi.encodeWithSelector(
-                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)")),
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),uint8,address)")),
                 gauge,
                 address(0),
                 receiver,
                 uint128(OWNER_BALANCE),
                 pendingRewards,
-                false,
+                IStrategy.HarvestPolicy.CHECKPOINT,
                 address(0)
             ),
             abi.encode("UNEXPECTED_ERROR")

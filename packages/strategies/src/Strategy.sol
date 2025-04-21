@@ -119,11 +119,11 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @notice Deposits assets according to the provided allocation
     /// @dev Iterates through allocation targets and deposits to each one
     /// @param allocation The allocation data specifying where and how much to deposit
-    /// @param doHarvest Whether to harvest rewards during the deposit
+    /// @param policy The harvest policy to use
     /// @return pendingRewards Any pending rewards generated during the deposit
     /// @custom:throws OnlyVault If the caller is not the registered vault for the gauge
     /// @custom:throws GaugeShutdown If the pool is shutdown
-    function deposit(IAllocator.Allocation calldata allocation, bool doHarvest)
+    function deposit(IAllocator.Allocation calldata allocation, HarvestPolicy policy)
         external
         override
         onlyVault(allocation.gauge)
@@ -142,17 +142,18 @@ abstract contract Strategy is IStrategy, ProtocolContext {
             }
         }
 
-        pendingRewards = _harvestOrSync(allocation.gauge, doHarvest);
+        pendingRewards = _harvestOrCheckpoint(allocation.gauge, policy);
     }
 
     /// @notice Withdraws assets according to the provided allocation
     /// @dev Iterates through allocation targets and withdraws from each one
     /// @param allocation The allocation data specifying where and how much to withdraw
-    /// @param doHarvest Whether to harvest rewards during the withdrawal
+    /// @param policy The harvest policy to use
+    /// @param receiver The address to receive the withdrawn assets
     /// @return pendingRewards Any pending rewards generated during the withdrawal
     /// @custom:throws OnlyVault If the caller is not the registered vault for the gauge
     /// @custom:throws GaugeShutdown If the pool is shutdown
-    function withdraw(IAllocator.Allocation calldata allocation, bool doHarvest, address receiver)
+    function withdraw(IAllocator.Allocation calldata allocation, IStrategy.HarvestPolicy policy, address receiver)
         external
         override
         onlyVault(allocation.gauge)
@@ -162,7 +163,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
 
         /// If the pool is shutdown, return the pending rewards.
         /// Use the shutdown function to withdraw the funds.
-        if (PROTOCOL_CONTROLLER.isShutdown(gauge)) return _harvestOrSync(gauge, doHarvest);
+        if (PROTOCOL_CONTROLLER.isShutdown(gauge)) return _harvestOrCheckpoint(gauge, policy);
 
         for (uint256 i; i < allocation.targets.length; i++) {
             /// When the receiver is not set, it means it's a transfer of the vault shares and we need to checkpoint by
@@ -176,7 +177,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
             }
         }
 
-        return _harvestOrSync(gauge, doHarvest);
+        return _harvestOrCheckpoint(gauge, policy);
     }
 
     /// @notice Harvests rewards from a gauge
@@ -379,10 +380,14 @@ abstract contract Strategy is IStrategy, ProtocolContext {
 
     /// @notice Harvests or synchronizes rewards
     /// @param gauge The gauge to harvest or synchronize from
-    /// @param doHarvest Whether to perform a harvest operation
+    /// @param policy The harvest policy to use
     /// @return pendingRewards The pending rewards after harvesting or synchronization
-    function _harvestOrSync(address gauge, bool doHarvest) internal returns (PendingRewards memory pendingRewards) {
-        pendingRewards = doHarvest ? _harvest(gauge, "", false) : _sync(gauge);
+    function _harvestOrCheckpoint(address gauge, IStrategy.HarvestPolicy policy)
+        internal
+        returns (PendingRewards memory pendingRewards)
+    {
+        pendingRewards =
+            policy == IStrategy.HarvestPolicy.HARVEST ? _harvest(gauge, "", false) : _checkpointRewards(gauge);
     }
 
     //////////////////////////////////////////////////////
@@ -415,7 +420,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @dev Must be implemented by derived strategies to handle protocol-specific reward collection
     /// @param gauge The gauge to synchronize
     /// @return Pending rewards collected during synchronization
-    function _sync(address gauge) internal virtual returns (PendingRewards memory);
+    function _checkpointRewards(address gauge) internal virtual returns (PendingRewards memory);
 
     /// @notice Harvests rewards from the locker
     /// @dev Must be implemented by derived strategies to handle protocol-specific reward collection

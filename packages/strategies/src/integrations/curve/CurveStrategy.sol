@@ -53,7 +53,7 @@ contract CurveStrategy is Strategy {
     /// @dev Retrieves allocation targets and calculates pending rewards for each target
     /// @param gauge The address of the Curve gauge to sync
     /// @return pendingRewards A struct containing the total and fee subject pending rewards
-    function _sync(address gauge) internal view override returns (PendingRewards memory pendingRewards) {
+    function _checkpointRewards(address gauge) internal view override returns (PendingRewards memory pendingRewards) {
         address allocator = PROTOCOL_CONTROLLER.allocator(PROTOCOL_ID);
 
         address[] memory targets = IAllocator(allocator).getAllocationTargets(gauge);

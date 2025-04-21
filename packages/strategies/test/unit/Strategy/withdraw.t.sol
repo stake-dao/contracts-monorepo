@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-import {Strategy} from "src/Strategy.sol";
+import {Strategy, IStrategy} from "src/Strategy.sol";
 import {StrategyBaseTest} from "test/StrategyBaseTest.t.sol";
 
 contract Strategy__withdraw is StrategyBaseTest {
@@ -11,7 +11,7 @@ contract Strategy__withdraw is StrategyBaseTest {
 
         vm.prank(notAllowed);
         vm.expectRevert(abi.encodeWithSelector(Strategy.OnlyVault.selector));
-        strategy.withdraw(allocation, false, address(vault));
+        strategy.withdraw(allocation, IStrategy.HarvestPolicy.CHECKPOINT, address(vault));
     }
 
     function test_Withdraw() public {
@@ -20,7 +20,7 @@ contract Strategy__withdraw is StrategyBaseTest {
         stakingToken.mint(address(sidecar2), 300);
 
         vm.prank(vault);
-        strategy.deposit(allocation, false);
+        strategy.deposit(allocation, IStrategy.HarvestPolicy.CHECKPOINT);
 
         assertEq(strategy.balanceOf(gauge), 600);
         assertEq(stakingToken.balanceOf(address(locker)), 100);
@@ -32,7 +32,8 @@ contract Strategy__withdraw is StrategyBaseTest {
         vm.mockCall(address(vault), abi.encodeWithSelector(IERC4626.asset.selector), abi.encode(address(stakingToken)));
 
         vm.prank(vault);
-        Strategy.PendingRewards memory pendingRewards = strategy.withdraw(allocation, false, address(vault));
+        Strategy.PendingRewards memory pendingRewards =
+            strategy.withdraw(allocation, IStrategy.HarvestPolicy.CHECKPOINT, address(vault));
 
         assertEq(strategy.balanceOf(gauge), 0);
         assertEq(stakingToken.balanceOf(address(locker)), 0);

@@ -81,7 +81,7 @@ contract RouterModulesTest is RewardVaultBaseTest {
         vm.mockCall(
             accountant,
             abi.encodeWithSelector(
-                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),bool,address)"))
+                bytes4(keccak256("checkpoint(address,address,address,uint128,(uint128,uint128),uint8,address)"))
             ),
             abi.encode(true)
         );

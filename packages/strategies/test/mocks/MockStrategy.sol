@@ -17,11 +17,20 @@ contract MockStrategy is IStrategy {
         rewardToken = ERC20Mock(rewardToken_);
     }
 
-    function deposit(IAllocator.Allocation memory, bool) external pure override returns (PendingRewards memory) {
+    function deposit(IAllocator.Allocation memory, IStrategy.HarvestPolicy)
+        external
+        pure
+        override
+        returns (PendingRewards memory)
+    {
         return PendingRewards({feeSubjectAmount: 0, totalAmount: 0});
     }
 
-    function withdraw(IAllocator.Allocation memory, bool, address) external pure returns (PendingRewards memory) {
+    function withdraw(IAllocator.Allocation memory, IStrategy.HarvestPolicy, address)
+        external
+        pure
+        returns (PendingRewards memory)
+    {
         return PendingRewards({feeSubjectAmount: 0, totalAmount: 0});
     }
 

@@ -10,15 +10,16 @@ interface IAccountant {
         address to,
         uint128 amount,
         IStrategy.PendingRewards calldata pendingRewards,
-        bool claimed
+        IStrategy.HarvestPolicy policy
     ) external;
+
     function checkpoint(
         address gauge,
         address from,
         address to,
         uint128 amount,
         IStrategy.PendingRewards calldata pendingRewards,
-        bool claimed,
+        IStrategy.HarvestPolicy policy,
         address referrer
     ) external;
 
