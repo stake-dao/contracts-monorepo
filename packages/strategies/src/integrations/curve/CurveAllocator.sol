@@ -22,12 +22,6 @@ contract CurveAllocator is Allocator {
     /// @notice Address of the Convex Boost Holder contract
     address public constant CONVEX_BOOST_HOLDER = 0x989AEb4d175e16225E39E87d0D97A3360524AD80;
 
-    /// @dev drift is expressed in 1 e18 = 100 %
-    event RebalanceNeeded(address indexed gauge, uint256 drift);
-
-    /// @dev 1 e16 = 0.01  = 1 %
-    uint256 internal constant DRIFT_THRESHOLD = 1e16;
-
     /// @notice Initializes the CurveAllocator contract
     /// @param _locker Address of the Stake DAO Liquidity Locker
     /// @param _gateway Address of the gateway contract
