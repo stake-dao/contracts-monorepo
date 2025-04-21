@@ -71,4 +71,5 @@ interface ILiquidityGauge is IERC20 {
     function totalSupply() external view returns (uint256);
     function working_balances(address arg0) external view returns (uint256);
     function working_supply() external view returns (uint256);
+    function admin() external view returns (address);
 }

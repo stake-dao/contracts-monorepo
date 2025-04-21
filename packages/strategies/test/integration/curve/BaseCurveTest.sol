@@ -89,7 +89,11 @@ abstract contract BaseCurveTest is BaseForkTest {
             abi.encodeWithSelector(IStrategy.isShutdown.selector, address(gauge)),
             abi.encode(false)
         );
-
+        vm.mockCall(
+            address(OLD_STRATEGY),
+            abi.encodeWithSelector(IStrategy.rewardDistributors.selector, address(gauge)),
+            abi.encode(makeAddr("RewardDistributor"))
+        );
         _;
     }
 
@@ -98,7 +102,7 @@ abstract contract BaseCurveTest is BaseForkTest {
     }
 
     function setUp() public virtual {
-        vm.createSelectFork("mainnet", 22_044_945);
+        vm.createSelectFork("mainnet", 22_316_395);
 
         /// Get the LP token and base reward pool from Convex
         (address _lpToken,, address _gauge,,,) = BOOSTER.poolInfo(pid);

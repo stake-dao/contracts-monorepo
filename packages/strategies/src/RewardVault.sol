@@ -886,7 +886,8 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         });
 
         /// Withdraw 0, just to get the pending rewards.
-        IStrategy.PendingRewards memory pendingRewards = strategy().withdraw(allocation, TRIGGER_HARVEST, address(0));
+        /// @dev We pass the strategy as the receiver to avoid the zero address check on some tokens.
+        IStrategy.PendingRewards memory pendingRewards = strategy().withdraw(allocation, TRIGGER_HARVEST, address(strategy()));
 
         // 2. Update Balances via Accountant
         ACCOUNTANT.checkpoint(gauge(), from, to, uint128(amount), pendingRewards, TRIGGER_HARVEST);
