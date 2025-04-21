@@ -1,4 +1,4 @@
-// SPDX-License-Identifier: AGPL-3.0-only
+// SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
 import {ImmutableArgsParser} from "src/libraries/ImmutableArgsParser.sol";
@@ -887,7 +887,8 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
         /// Withdraw 0, just to get the pending rewards.
         /// @dev We pass the strategy as the receiver to avoid the zero address check on some tokens.
-        IStrategy.PendingRewards memory pendingRewards = strategy().withdraw(allocation, TRIGGER_HARVEST, address(strategy()));
+        IStrategy.PendingRewards memory pendingRewards =
+            strategy().withdraw(allocation, TRIGGER_HARVEST, address(strategy()));
 
         // 2. Update Balances via Accountant
         ACCOUNTANT.checkpoint(gauge(), from, to, uint128(amount), pendingRewards, TRIGGER_HARVEST);

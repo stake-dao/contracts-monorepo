@@ -58,16 +58,18 @@ abstract contract Base is Script {
         address[] memory owners = new address[](1);
         owners[0] = deployer;
 
+        /// Generate a salt for the Safe.
+        uint256 _saltNonce = _computeSalt(_protocolId, deployer, 1, type(Safe).name);
+
         /// 5. Deploy Gateway.
         /// @dev Before continuing, we need to put this Safe as the owner of the LOCKER.
-        gateway = SafeLibrary.deploySafe({_owners: owners, _threshold: 1, _saltNonce: uint256(uint32(_protocolId))});
+        gateway = SafeLibrary.deploySafe({_owners: owners, _threshold: 1, _saltNonce: _saltNonce});
 
         if (address(locker) == address(0)) {
             locker = address(gateway);
         }
 
         /// 6. Setup contracts in protocol controller.
-        /// @dev TODO: Update this to use the correct fee receiver.
         protocolController.setFeeReceiver(_protocolId, deployer);
 
         /// 7. Setup the accountant in the protocol controller.
@@ -118,5 +120,23 @@ abstract contract Base is Script {
                 signatures
             );
         }
+    }
+
+    function _computeSalt(bytes4 protocolId, address deployer, uint16 version, string memory label)
+        internal
+        view
+        returns (uint256 salt)
+    {
+        salt = uint256(
+            keccak256(
+                abi.encodePacked(
+                    bytes4(protocolId), // 4  bytes
+                    uint32(block.chainid), // 4  bytes – makes sidechains and mainnet diverge
+                    deployer, // 20 bytes
+                    version, // 2  bytes – or uint16/uint32 to taste
+                    label // 6+ bytes – arbitrary label so future salts
+                )
+            )
+        );
     }
 }

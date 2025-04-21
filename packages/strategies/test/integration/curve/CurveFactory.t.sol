@@ -87,7 +87,7 @@ abstract contract CurveFactoryTest is BaseCurveTest {
             address gaugeRewardReceiver = ILiquidityGauge(address(gauge)).rewards_receiver(LOCKER);
 
             uint256 rewardCount = ILiquidityGauge(address(gauge)).reward_count();
-            uint finalCount;
+            uint256 finalCount;
 
             for (uint256 i; i < rewardCount; i++) {
                 address rewardToken = ILiquidityGauge(address(gauge)).reward_tokens(i);

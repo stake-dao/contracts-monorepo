@@ -9,32 +9,6 @@ import {CurveAllocator} from "src/integrations/curve/CurveAllocator.sol";
 import {CurveFactory} from "src/integrations/curve/CurveFactory.sol";
 import {CurveStrategy} from "src/integrations/curve/CurveStrategy.sol";
 
-/// @notice A harness contract for the CurveFactory.
-/// @dev TODO: Remove this for the real deployment.
-contract CurveFactoryHarness is CurveFactory {
-    constructor(
-        address _protocolController,
-        address _vaultImplementation,
-        address _rewardReceiverImplementation,
-        address _locker,
-        address _gateway,
-        address _convexSidecarFactory
-    )
-        CurveFactory(
-            _protocolController,
-            _vaultImplementation,
-            _rewardReceiverImplementation,
-            _locker,
-            _gateway,
-            _convexSidecarFactory
-        )
-    {}
-
-    function _isValidDeployment(address) internal pure override returns (bool) {
-        return true;
-    }
-}
-
 contract Deploy is Base {
     string public NETWORK = "mainnet";
     address public DEPLOYER = 0xf1C9775ef36e1F633c362e3011589AC9781AB0ff;
@@ -53,7 +27,7 @@ contract Deploy is Base {
     address internal constant MINTER = 0xd061D61a4d941c39E5453435B6345Dc261C2fcE0;
 
     /// @notice Whether the strategy is harvested.
-    bool public HARVESTED = true;
+    bool public HARVESTED = false;
 
     /// @notice The Curve Strategy contract.
     CurveStrategy public curveStrategy;
@@ -62,7 +36,7 @@ contract Deploy is Base {
     CurveAllocator public curveAllocator;
 
     /// @notice The Curve Factory contract.
-    CurveFactoryHarness public curveFactory;
+    CurveFactory public curveFactory;
 
     /// @notice The Convex Sidecar contract.
     ConvexSidecar public convexSidecar;
@@ -90,7 +64,7 @@ contract Deploy is Base {
             new ConvexSidecarFactory(address(convexSidecarImplementation), address(protocolController));
 
         /// 4. Deploy the factory.
-        curveFactory = new CurveFactoryHarness(
+        curveFactory = new CurveFactory(
             address(protocolController),
             address(rewardVaultImplementation),
             address(rewardReceiverImplementation),
