@@ -44,7 +44,7 @@ contract Redeem is Ownable2Step, ReentrancyGuard {
     /// @notice Conversion rate between `sdToken` and `token` expressed with 1e18 precision.
     uint256 public immutable conversionRateWad;
 
-    /// @notice The amount of sdTokens that can be redeemed.
+    /// @notice The cooldown duration before the owner can retrieve unredeemed `token`.
     uint256 public immutable reedeemCooldownDuration;
 
     //////////////////////////////////////////////////////
