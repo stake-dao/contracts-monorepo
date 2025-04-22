@@ -178,7 +178,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="rewardvault"><a class="header" href="#rewardvault">RewardVault</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/c07f0a111633b74fc0daf68109600e78c9450c33/src/RewardVault.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/9bf68c8d10d340752e59af11d8759ab43c872b03/src/RewardVault.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="/src/interfaces/IRewardVault.sol/interface.IRewardVault.html">IRewardVault</a>, IERC4626, ERC20</p>
 <p>An ERC4626-compatible vault that handles:</p>
@@ -196,7 +196,6 @@
 </ul>
 <h2 id="state-variables"><a class="header" href="#state-variables">State Variables</a></h2>
 <h3 id="default_rewards_duration"><a class="header" href="#default_rewards_duration">DEFAULT_REWARDS_DURATION</a></h3>
-<p>~ CONSTANTS &amp; IMMUTABLES</p>
 <p>Default duration for reward distribution periods</p>
 <pre><code class="language-solidity">uint32 public constant DEFAULT_REWARDS_DURATION = 7 days;
 </code></pre>
@@ -220,7 +219,6 @@
 <pre><code class="language-solidity">IStrategy.HarvestPolicy public immutable POLICY;
 </code></pre>
 <h3 id="rewardtokens"><a class="header" href="#rewardtokens">rewardTokens</a></h3>
-<p>~ STATE VARIABLES</p>
 <p>Array of all reward token addresses supported by this vault</p>
 <pre><code class="language-solidity">address[] internal rewardTokens;
 </code></pre>
@@ -236,7 +234,6 @@
 </code></pre>
 <h2 id="functions"><a class="header" href="#functions">Functions</a></h2>
 <h3 id="onlyallowed"><a class="header" href="#onlyallowed">onlyAllowed</a></h3>
-<p>~ MODIFIERS</p>
 <p>Modifier to check if the caller is allowed by the protocol controller to do a specific action</p>
 <p><strong>Note:</strong>
 reverts: OnlyAllowed if the caller is not allowed.</p>
@@ -265,7 +262,6 @@ reverts: ZeroAddress if the accountant or protocol controller address is the zer
 </tbody></table>
 </div>
 <h3 id="deposit"><a class="header" href="#deposit">deposit</a></h3>
-<p>~ DEPOSIT &amp; MINT - PUBLIC</p>
 <pre><code class="language-solidity">function deposit(uint256 assets, address receiver) external returns (uint256);
 </code></pre>
 <h3 id="deposit-1"><a class="header" href="#deposit-1">deposit</a></h3>
@@ -321,7 +317,6 @@ the mint function is a wrapper of the deposit function.</em></p>
 </tbody></table>
 </div>
 <h3 id="deposit-2"><a class="header" href="#deposit-2">deposit</a></h3>
-<p>~ DEPOSIT &amp; MINT - PERMISSIONED</p>
 <p>Deposits <code>assets</code> from <code>account</code> into the vault and mints shares to <code>account</code>.</p>
 <p><em>Only callable by allowed addresses. <code>account</code> should have approved this contract to transfer <code>assets</code>.</em></p>
 <pre><code class="language-solidity">function deposit(address account, uint256 assets) external returns (uint256);
@@ -414,7 +409,6 @@ reverts: OnlyAllowed if the caller is not allowed.</p>
 </tbody></table>
 </div>
 <h3 id="withdraw"><a class="header" href="#withdraw">withdraw</a></h3>
-<p>~ EXTERNAL/PUBLIC USER-FACING - WITHDRAW &amp; REDEEM</p>
 <p>Withdraws <code>assets</code> from the vault to <code>receiver</code> by burning shares from <code>owner</code>.</p>
 <p><em>Checks allowances and calls strategy withdrawal logic.</em></p>
 <p><strong>Note:</strong>
@@ -458,8 +452,7 @@ wrapper of the withdraw function.</em></p>
 </code></pre>
 <h3 id="claim"><a class="header" href="#claim">claim</a></h3>
 <p>Claims rewards for multiple tokens in a single transaction</p>
-<p><em>If the gauge is shutdown, funds will sit here.
-~ EXTERNAL/PUBLIC USER-FACING - REWARDS</em></p>
+<p><em>If the gauge is shutdown, funds will sit here.</em></p>
 <p><em>Updates reward state and transfers claimed rewards to the receiver</em></p>
 <pre><code class="language-solidity">function claim(address[] calldata tokens, address receiver) public returns (uint256[] memory amounts);
 </code></pre>
@@ -566,7 +559,6 @@ reverts: UnauthorizedRewardsDistributor if caller is not the authorized distribu
 </tbody></table>
 </div>
 <h3 id="_checkpoint"><a class="header" href="#_checkpoint">_checkpoint</a></h3>
-<p>~ INTERNAL REWARD UPDATES &amp; HELPERS ~</p>
 <p>Updates reward state for specified accounts</p>
 <p><em>Core function for maintaining reward distribution state</em></p>
 <pre><code class="language-solidity">function _checkpoint(address _from, address _to) internal;
@@ -671,7 +663,6 @@ reverts: UnauthorizedRewardsDistributor if caller is not the authorized distribu
 </tbody></table>
 </div>
 <h3 id="isrewardtoken"><a class="header" href="#isrewardtoken">isRewardToken</a></h3>
-<p>~ VIEW / PURE METHODS ~</p>
 <p>Checks if a reward token exists.</p>
 <p><em>The check is based on the assumption that the distributor is always set for a
 active address and it can not be zero.</em></p>
@@ -1042,7 +1033,6 @@ reverts: Overflow if the total supply is greater than the maximum value of a uin
 </tbody></table>
 </div>
 <h3 id="gauge"><a class="header" href="#gauge">gauge</a></h3>
-<p>~ PROTOCOL_CONTROLLER / CLONE ARGUMENT GETTERS ~</p>
 <p>Retrieves the gauge address from clone arguments</p>
 <p><em>Uses assembly to read from clone initialization data</em></p>
 <p><strong>Note:</strong>
@@ -1075,7 +1065,6 @@ reverts: CloneArgsNotFound if clone is incorrectly initialized</p>
 </tbody></table>
 </div>
 <h3 id="_update"><a class="header" href="#_update">_update</a></h3>
-<p>~ ERC20 OVERRIDES ~</p>
 <p>Handles reward state updates during token transfers</p>
 <p><em>Updates balances via Accountant and reward states</em></p>
 <pre><code class="language-solidity">function _update(address from, address to, uint256 amount) internal override;
@@ -1162,7 +1151,6 @@ Withdraw 0, just to get the pending rewards.</p>
 </div>
 <h2 id="events"><a class="header" href="#events">Events</a></h2>
 <h3 id="rewardtokenadded"><a class="header" href="#rewardtokenadded">RewardTokenAdded</a></h3>
-<p>~ EVENTS</p>
 <p>Emitted when a new reward token is added to the vault</p>
 <pre><code class="language-solidity">event RewardTokenAdded(address indexed rewardToken, address indexed distributor);
 </code></pre>
@@ -1185,7 +1173,6 @@ Withdraw 0, just to get the pending rewards.</p>
 </div>
 <h2 id="errors"><a class="header" href="#errors">Errors</a></h2>
 <h3 id="notapproved"><a class="header" href="#notapproved">NotApproved</a></h3>
-<p>~ ERRORS</p>
 <p>Thrown when an operation is attempted by an unauthorized caller</p>
 <pre><code class="language-solidity">error NotApproved();
 </code></pre>
@@ -1223,7 +1210,6 @@ Withdraw 0, just to get the pending rewards.</p>
 </code></pre>
 <h2 id="structs"><a class="header" href="#structs">Structs</a></h2>
 <h3 id="rewarddata-1"><a class="header" href="#rewarddata-1">RewardData</a></h3>
-<p>~ STORAGE STRUCTURES</p>
 <p>Stores all data related to a specific reward token's distribution</p>
 <p><em>Optimized to fit in exactly 2 storage slots (2 * 256 bits)</em></p>
 <pre><code class="language-solidity">struct RewardData {
