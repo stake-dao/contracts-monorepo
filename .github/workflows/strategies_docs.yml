@@ -1,0 +1,84 @@
+name: Deploy Strategies Docs to GitHub Pages
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - "packages/strategies/**"
+      - ".github/workflows/strategies_docs.yml" # this file
+      - "packages/address-book/**" # dependency
+      - "packages/interfaces/**" # dependency
+    branches:
+      - main
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          submodules: recursive
+
+      - uses: pnpm/action-setup@v4
+        name: Install pnpm
+        with:
+          run_install: false
+
+      - name: Install Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 21.4
+          cache: "pnpm"
+
+      - name: Install dependencies
+        run: pnpm install
+
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Install mdbook
+        run: |
+          mkdir mdbook
+          curl -sSL https://github.com/rust-lang/mdBook/releases/download/v0.4.36/mdbook-v0.4.36-x86_64-unknown-linux-gnu.tar.gz | tar -xz --directory=./mdbook
+          echo `pwd`/mdbook >> $GITHUB_PATH
+
+      - name: Generate Documentation
+        working-directory: packages/strategies
+        run: forge doc
+
+      - name: Edit book.toml
+        working-directory: packages/strategies
+        run: |
+          sed -i 's/title = ""/title = "Stake DAO Fusion"/' ./docs/book.toml                         # Set the title of the book
+          sed -i 's/authors = \[\]/authors = \["Stake DAO"\]/' ./docs/book.toml                     # Set the author of the book
+          sed -i '/\[book\]/a language = "en"' ./docs/book.toml                                     # Add language setting under [book]
+          sed -i '/\[book\]/a multilingual = false' ./docs/book.toml                                # Add multilingual setting under [book]
+          sed -i 's/no-section-label = true/no-section-label = false/' ./docs/book.toml             # Change no-section-label to false
+          sed -i '/^\[output.html.fold\]$/,/^\[/ s/^enable = true/enable = false/' ./docs/book.toml # Change enable under [output.html.fold]
+
+      - name: Edit SUMMARY.md
+        working-directory: packages/strategies
+        run: |
+          sed -i 's/❱ //g' ./docs/src/SUMMARY.md                                        # Removes the "❱ " from lines
+          sed -i '/^# src$/d' ./docs/src/SUMMARY.md                                     # Deletes the line containing exactly "# src"
+          sed -i 's/- \[Home\](README.md)/[README](README.md)/' ./docs/src/SUMMARY.md   # Replaces "- [Home](README.md)" with "[README](README.md)"
+
+      - name: Build book
+        working-directory: packages/strategies
+        run: |
+          cd ./docs
+          mdbook build
+
+      - name: Deploy to GitHub Pages
+        uses: peaceiris/actions-gh-pages@v3
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          publish_dir: ./packages/strategies/docs/book
+          publish_branch: gh-pages-strategies
