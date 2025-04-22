@@ -10,6 +10,8 @@ library CAKE {
     address public constant ACCUMULATOR = 0xAA14AD0AD8B48406Baf2473692901e47430414F5;
     address public constant EXECUTOR = 0x74B7639503bb632FfE86382af7C5a3121a41613a;
     address public constant VOTER = 0x3c7b193aa39a85FDE911465d35CE3A74499F0A7B;
+
+    address public constant REDEEM = 0xD1Aa72713ccB1FE2983141EC176F1181F98E4908;
 }
 
 library MAV {
