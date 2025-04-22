@@ -15,7 +15,12 @@ contract Deploy is Script {
         uint256 conversionRate = 922165662297322400;
 
         new Redeem(
-            address(ANGLE.TOKEN), address(ANGLE.SDTOKEN), address(ANGLE.GAUGE), conversionRate, DAO.MAIN_DEPLOYER
+            address(ANGLE.TOKEN),
+            address(ANGLE.SDTOKEN),
+            address(ANGLE.GAUGE),
+            conversionRate,
+            365 days,
+            DAO.MAIN_DEPLOYER
         );
 
         vm.stopBroadcast();
