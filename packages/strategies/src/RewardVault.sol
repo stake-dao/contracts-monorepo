@@ -175,7 +175,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @param policy The harvest policy.
     /// @custom:reverts ZeroAddress if the accountant or protocol controller address is the zero address.
     constructor(bytes4 protocolId, address protocolController, address accountant, IStrategy.HarvestPolicy policy)
-        ERC20("StakeDAO Fusion Vault", "sd-fusion-vault")
+        ERC20("", "")
     {
         require(accountant != address(0) && protocolController != address(0), ZeroAddress());
         require(protocolId != bytes4(0), InvalidProtocolId());
