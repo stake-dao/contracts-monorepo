@@ -29,7 +29,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     using SafeERC20 for IERC20;
     using ImmutableArgsParser for address;
     ///////////////////////////////////////////////////////////////
-    /// ~ EVENTS
+    // --- EVENTS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Emitted when a new reward token is added to the vault
@@ -44,7 +44,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     event RewardsDeposited(address indexed rewardToken, uint256 amount, uint128 rewardRate);
 
     ///////////////////////////////////////////////////////////////
-    /// ~ ERRORS
+    // --- ERRORS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Thrown when an operation is attempted by an unauthorized caller
@@ -75,7 +75,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     error UnauthorizedRewardsDistributor();
 
     ///////////////////////////////////////////////////////////////
-    /// ~ CONSTANTS & IMMUTABLES
+    // --- CONSTANTS & IMMUTABLES
     ///////////////////////////////////////////////////////////////
 
     /// @notice Default duration for reward distribution periods
@@ -97,7 +97,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     IStrategy.HarvestPolicy public immutable POLICY;
 
     ///////////////////////////////////////////////////////////////
-    /// ~ STORAGE STRUCTURES
+    // --- STORAGE STRUCTURES
     ///////////////////////////////////////////////////////////////
 
     /// @notice Stores all data related to a specific reward token's distribution
@@ -130,7 +130,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     }
 
     ///////////////////////////////////////////////////////////////
-    /// ~ STATE VARIABLES
+    // --- STATE VARIABLES
     ///////////////////////////////////////////////////////////////
 
     /// @notice Array of all reward token addresses supported by this vault
@@ -145,7 +145,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     mapping(address account => mapping(address rewardToken => AccountData accountData)) public accountData;
 
     ///////////////////////////////////////////////////////////////
-    /// ~ MODIFIERS
+    // --- MODIFIERS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Modifier to check if the caller is allowed by the protocol controller to do a specific action
@@ -184,7 +184,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     }
 
     ///////////////////////////////////////////////////////////////
-    /// ~ DEPOSIT & MINT - PUBLIC
+    // --- DEPOSIT & MINT - PUBLIC
     ///////////////////////////////////////////////////////////////
 
     function deposit(uint256 assets, address receiver) external returns (uint256) {
@@ -229,7 +229,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     }
 
     ///////////////////////////////////////////////////////////////
-    /// ~ DEPOSIT & MINT - PERMISSIONED
+    // --- DEPOSIT & MINT - PERMISSIONED
     ///////////////////////////////////////////////////////////////
 
     /// @notice Deposits `assets` from `account` into the vault and mints shares to `account`.
@@ -318,7 +318,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     }
 
     ///////////////////////////////////////////////////////////////
-    /// ~ EXTERNAL/PUBLIC USER-FACING - WITHDRAW & REDEEM
+    // --- EXTERNAL/PUBLIC USER-FACING - WITHDRAW & REDEEM
     ///////////////////////////////////////////////////////////////
 
     /// @notice Withdraws `assets` from the vault to `receiver` by burning shares from `owner`.
@@ -383,7 +383,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     }
 
     ///////////////////////////////////////////////////////////////
-    /// ~ EXTERNAL/PUBLIC USER-FACING - REWARDS
+    // --- EXTERNAL/PUBLIC USER-FACING - REWARDS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Claims rewards for multiple tokens in a single transaction
@@ -509,7 +509,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     }
 
     ///////////////////////////////////////////////////////////////
-    /// ~ INTERNAL REWARD UPDATES & HELPERS ~
+    // --- INTERNAL REWARD UPDATES & HELPERS ~
     ///////////////////////////////////////////////////////////////
 
     /// @notice Updates reward state for specified accounts
@@ -608,7 +608,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     }
 
     ///////////////////////////////////////////////////////////////
-    /// ~ VIEW / PURE METHODS ~
+    // --- VIEW / PURE METHODS ~
     ///////////////////////////////////////////////////////////////
 
     /// @notice Checks if a reward token exists.
@@ -829,7 +829,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     }
 
     ///////////////////////////////////////////////////////////////
-    /// ~ PROTOCOL_CONTROLLER / CLONE ARGUMENT GETTERS ~
+    // --- PROTOCOL_CONTROLLER / CLONE ARGUMENT GETTERS ~
     ///////////////////////////////////////////////////////////////
 
     /// @notice Retrieves the gauge address from clone arguments
@@ -855,7 +855,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     }
 
     ///////////////////////////////////////////////////////////////
-    /// ~ ERC20 OVERRIDES ~
+    // --- ERC20 OVERRIDES ~
     ///////////////////////////////////////////////////////////////
 
     /// @notice Handles reward state updates during token transfers

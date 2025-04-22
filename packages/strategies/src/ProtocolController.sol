@@ -10,7 +10,7 @@ import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 /// @dev Manages protocol components, permissions, and shutdown functionality
 contract ProtocolController is IProtocolController, Ownable2Step {
     //////////////////////////////////////////////////////
-    /// --- STORAGE STRUCTURES
+    // --- STORAGE STRUCTURES
     //////////////////////////////////////////////////////
 
     /// @notice Struct to store protocol components
@@ -33,7 +33,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     }
 
     //////////////////////////////////////////////////////
-    /// --- STATE VARIABLES
+    // --- STATE VARIABLES
     //////////////////////////////////////////////////////
     /// @notice Mapping of gauge address to Gauge struct
     mapping(address => Gauge) public gauge;
@@ -54,7 +54,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     mapping(address => mapping(address => mapping(bytes4 => bool))) internal _permissions;
 
     //////////////////////////////////////////////////////
-    /// --- ERRORS & EVENTS
+    // --- ERRORS & EVENTS
     //////////////////////////////////////////////////////
 
     /// @notice Event emitted when a protocol component is set
@@ -132,7 +132,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     error GaugeAlreadyFullyWithdrawn();
 
     //////////////////////////////////////////////////////
-    /// --- MODIFIERS
+    // --- MODIFIERS
     //////////////////////////////////////////////////////
 
     /// @notice Modifier to restrict function access to registrars or owner
@@ -156,7 +156,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     }
 
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
     /// @notice Constructor for the ProtocolController
@@ -165,7 +165,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
 
     //////////////////////////////////////////////////////
     //////////////////////////////////////////////////////
-    /// --- PERMISSION MANAGEMENT
+    // --- PERMISSION MANAGEMENT
     //////////////////////////////////////////////////////
 
     /// @notice Sets or revokes registrar permission for an address
@@ -204,7 +204,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     }
 
     //////////////////////////////////////////////////////
-    /// --- PROTOCOL COMPONENT MANAGEMENT
+    // --- PROTOCOL COMPONENT MANAGEMENT
     //////////////////////////////////////////////////////
 
     /// @notice Sets a protocol strategy
@@ -250,7 +250,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     }
 
     //////////////////////////////////////////////////////
-    /// --- VAULT REGISTRATION & SHUTDOWN
+    // --- VAULT REGISTRATION & SHUTDOWN
     //////////////////////////////////////////////////////
 
     /// @notice Registers a vault for a gauge
@@ -331,7 +331,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     }
 
     //////////////////////////////////////////////////////
-    /// --- VIEW FUNCTIONS
+    // --- VIEW FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Returns the strategy address for a protocol

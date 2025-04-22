@@ -20,7 +20,7 @@ contract RewardReceiver is IRewardReceiver {
     using SafeERC20 for IERC20;
 
     //////////////////////////////////////////////////////
-    /// --- ERRORS
+    // --- ERRORS
     //////////////////////////////////////////////////////
 
     /// @notice Throws if the reward token is not valid.
@@ -30,7 +30,7 @@ contract RewardReceiver is IRewardReceiver {
     error NoRewards();
 
     //////////////////////////////////////////////////////
-    /// --- IMMUTABLES
+    // --- IMMUTABLES
     //////////////////////////////////////////////////////
 
     /// @notice Address of the reward vault contract.
@@ -40,7 +40,7 @@ contract RewardReceiver is IRewardReceiver {
     }
 
     //////////////////////////////////////////////////////
-    /// --- EXTERNAL FUNCTIONS
+    // --- EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Distributes all rewards to the reward vault.
@@ -82,7 +82,7 @@ contract RewardReceiver is IRewardReceiver {
     }
 
     //////////////////////////////////////////////////////
-    /// --- INTERNAL FUNCTIONS
+    // --- INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Deposit rewards to the reward vault.

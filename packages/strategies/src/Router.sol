@@ -13,7 +13,7 @@ import {IRouterModule} from "src/interfaces/IRouterModule.sol";
  */
 contract Router is IRouter, Ownable {
     ///////////////////////////////////////////////////////////////
-    /// ~ CONSTANTS
+    // --- CONSTANTS
     ///////////////////////////////////////////////////////////////
 
     /// @notice The storage buffer for the modules
@@ -31,7 +31,7 @@ contract Router is IRouter, Ownable {
     string public constant version = "1.0.0";
 
     ///////////////////////////////////////////////////////////////
-    /// ~ EVENTS - ERRORS
+    // --- EVENTS - ERRORS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Emitted when a module is set
@@ -51,7 +51,7 @@ contract Router is IRouter, Ownable {
     constructor() Ownable(msg.sender) {}
 
     ///////////////////////////////////////////////////////////////
-    /// ~ MODULES MANAGEMENT
+    // --- MODULES MANAGEMENT
     ///////////////////////////////////////////////////////////////
 
     /**
@@ -133,7 +133,7 @@ contract Router is IRouter, Ownable {
     }
 
     ///////////////////////////////////////////////////////////////
-    /// ~ EXECUTION
+    // --- EXECUTION
     ///////////////////////////////////////////////////////////////
 
     /// @notice Executes a batch of delegate calls to registered modules.

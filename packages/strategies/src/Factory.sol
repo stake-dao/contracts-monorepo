@@ -14,7 +14,7 @@ import {ProtocolContext} from "src/ProtocolContext.sol";
 ///      - Sets up reward tokens for vaults
 abstract contract Factory is ProtocolContext {
     //////////////////////////////////////////////////////
-    /// --- IMMUTABLES
+    // --- IMMUTABLES
     //////////////////////////////////////////////////////
 
     /// @notice Reward vault implementation address
@@ -26,7 +26,7 @@ abstract contract Factory is ProtocolContext {
     address public immutable REWARD_RECEIVER_IMPLEMENTATION;
 
     //////////////////////////////////////////////////////
-    /// --- ERRORS
+    // --- ERRORS
     //////////////////////////////////////////////////////
 
     /// @notice Error thrown when the gauge is not a valid candidate
@@ -45,7 +45,7 @@ abstract contract Factory is ProtocolContext {
     error AlreadyDeployed();
 
     //////////////////////////////////////////////////////
-    /// --- EVENTS
+    // --- EVENTS
     //////////////////////////////////////////////////////
 
     /// @notice Emitted when a new vault is deployed
@@ -55,7 +55,7 @@ abstract contract Factory is ProtocolContext {
     event VaultDeployed(address vault, address asset, address gauge);
 
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
     /// @notice Initializes the factory with protocol controller, reward token, and vault implementation
@@ -84,7 +84,7 @@ abstract contract Factory is ProtocolContext {
     }
 
     //////////////////////////////////////////////////////
-    /// --- EXTERNAL FUNCTIONS
+    // --- EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Create a new vault for a given gauge
@@ -155,7 +155,7 @@ abstract contract Factory is ProtocolContext {
     }
 
     //////////////////////////////////////////////////////
-    /// --- INTERNAL VIRTUAL FUNCTIONS
+    // --- INTERNAL VIRTUAL FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Get the asset address from a gauge

@@ -30,7 +30,7 @@ contract CurveAllocator is Allocator {
     }
 
     //////////////////////////////////////////////////////
-    /// --- DEPOSIT ALLOCATION
+    // --- DEPOSIT ALLOCATION
     //////////////////////////////////////////////////////
 
     /// @inheritdoc Allocator
@@ -73,7 +73,7 @@ contract CurveAllocator is Allocator {
     }
 
     //////////////////////////////////////////////////////
-    /// --- WITHDRAWAL ALLOCATION
+    // --- WITHDRAWAL ALLOCATION
     //////////////////////////////////////////////////////
 
     /// @inheritdoc Allocator
@@ -136,7 +136,7 @@ contract CurveAllocator is Allocator {
     }
 
     //////////////////////////////////////////////////////
-    /// --- REBALANCE ALLOCATION
+    // --- REBALANCE ALLOCATION
     //////////////////////////////////////////////////////
 
     /// @inheritdoc Allocator
@@ -167,7 +167,7 @@ contract CurveAllocator is Allocator {
     }
 
     //////////////////////////////////////////////////////
-    /// --- VIEW HELPER FUNCTIONS
+    // --- VIEW HELPER FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @inheritdoc Allocator
@@ -191,7 +191,7 @@ contract CurveAllocator is Allocator {
     }
 
     //////////////////////////////////////////////////////
-    /// --- HELPER FUNCTIONS
+    // --- HELPER FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @dev Returns the pair `[sidecar, LOCKER]` used by allocation targets.
