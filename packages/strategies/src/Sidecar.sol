@@ -13,7 +13,7 @@ abstract contract Sidecar is ISidecar {
     using SafeERC20 for IERC20;
 
     //////////////////////////////////////////////////////
-    /// --- IMMUTABLES
+    // --- IMMUTABLES
     //////////////////////////////////////////////////////
 
     /// @notice The protocol identifier
@@ -29,14 +29,14 @@ abstract contract Sidecar is ISidecar {
     IProtocolController public immutable PROTOCOL_CONTROLLER;
 
     //////////////////////////////////////////////////////
-    /// --- STORAGE
+    // --- STORAGE
     //////////////////////////////////////////////////////
 
     /// @notice Whether the sidecar has been initialized
     bool private _initialized;
 
     //////////////////////////////////////////////////////
-    /// --- ERRORS
+    // --- ERRORS
     //////////////////////////////////////////////////////
 
     /// @notice Error thrown when an address is zero
@@ -58,7 +58,7 @@ abstract contract Sidecar is ISidecar {
     error InvalidProtocolId();
 
     //////////////////////////////////////////////////////
-    /// --- MODIFIERS
+    // --- MODIFIERS
     //////////////////////////////////////////////////////
 
     /// @notice Ensures the caller is the strategy
@@ -69,7 +69,7 @@ abstract contract Sidecar is ISidecar {
     }
 
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
     /// @notice Initializes the sidecar with protocol ID, accountant, and protocol controller
@@ -89,7 +89,7 @@ abstract contract Sidecar is ISidecar {
     }
 
     //////////////////////////////////////////////////////
-    /// --- EXTERNAL FUNCTIONS
+    // --- EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Initializes the sidecar
@@ -123,7 +123,7 @@ abstract contract Sidecar is ISidecar {
     }
 
     //////////////////////////////////////////////////////
-    /// --- IMMUTABLES
+    // --- IMMUTABLES
     //////////////////////////////////////////////////////
 
     /// @notice Returns the asset of the sidecar
@@ -135,7 +135,7 @@ abstract contract Sidecar is ISidecar {
     function rewardReceiver() public view virtual returns (address);
 
     //////////////////////////////////////////////////////
-    /// --- INTERNAL VIRTUAL FUNCTIONS
+    // --- INTERNAL VIRTUAL FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Initializes the sidecar

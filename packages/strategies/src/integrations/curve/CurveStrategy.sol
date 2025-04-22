@@ -17,7 +17,7 @@ contract CurveStrategy is Strategy {
     using SafeCast for uint256;
 
     //////////////////////////////////////////////////////
-    /// --- CONSTANTS & IMMUTABLES
+    // --- CONSTANTS & IMMUTABLES
     //////////////////////////////////////////////////////
 
     /// @notice The address of the Curve Minter contract
@@ -35,7 +35,7 @@ contract CurveStrategy is Strategy {
     error CheckpointFailed();
 
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
     /// @notice Initializes the CurveStrategy contract
@@ -49,7 +49,7 @@ contract CurveStrategy is Strategy {
     }
 
     //////////////////////////////////////////////////////
-    /// --- INTERNAL FUNCTIONS
+    // --- INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Syncs and calculates pending rewards from a Curve gauge

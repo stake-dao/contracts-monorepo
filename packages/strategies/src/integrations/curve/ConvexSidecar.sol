@@ -19,7 +19,7 @@ contract ConvexSidecar is Sidecar {
     bytes4 private constant CURVE_PROTOCOL_ID = bytes4(keccak256("CURVE"));
 
     //////////////////////////////////////////////////////
-    /// ---  IMPLEMENTATION CONSTANTS
+    // ---  IMPLEMENTATION CONSTANTS
     //////////////////////////////////////////////////////
 
     /// @notice Convex Reward Token address.
@@ -29,7 +29,7 @@ contract ConvexSidecar is Sidecar {
     IBooster public constant BOOSTER = IBooster(0xF403C135812408BFbE8713b5A23a04b3D48AAE31);
 
     //////////////////////////////////////////////////////
-    /// --- ISIDECAR CLONE IMMUTABLES
+    // --- ISIDECAR CLONE IMMUTABLES
     //////////////////////////////////////////////////////
 
     /// @notice Staking token address.
@@ -42,7 +42,7 @@ contract ConvexSidecar is Sidecar {
     }
 
     //////////////////////////////////////////////////////
-    /// --- CONVEX CLONE IMMUTABLES
+    // --- CONVEX CLONE IMMUTABLES
     //////////////////////////////////////////////////////
 
     /// @notice Staking Convex LP contract address.
@@ -56,7 +56,7 @@ contract ConvexSidecar is Sidecar {
     }
 
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
     constructor(address _accountant, address _protocolController)
@@ -64,7 +64,7 @@ contract ConvexSidecar is Sidecar {
     {}
 
     //////////////////////////////////////////////////////
-    /// --- INITIALIZATION
+    // --- INITIALIZATION
     //////////////////////////////////////////////////////
 
     /// @notice Initialize the contract by approving the ConvexCurve booster to spend the LP token.
@@ -75,7 +75,7 @@ contract ConvexSidecar is Sidecar {
     }
 
     //////////////////////////////////////////////////////
-    /// --- ISIDECAR OPERATIONS OVERRIDE
+    // --- ISIDECAR OPERATIONS OVERRIDE
     //////////////////////////////////////////////////////
 
     /// @notice Deposit LP token into Convex.
@@ -152,7 +152,7 @@ contract ConvexSidecar is Sidecar {
     }
 
     //////////////////////////////////////////////////////
-    /// --- EXTRA CONVEX OPERATIONS
+    // --- EXTRA CONVEX OPERATIONS
     //////////////////////////////////////////////////////
 
     function claimExtraRewards() external {

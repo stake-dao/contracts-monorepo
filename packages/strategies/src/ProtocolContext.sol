@@ -12,7 +12,7 @@ import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 /// @dev Provides shared functionality for handling GATEWAY and LOCKER relationships
 contract ProtocolContext is IProtocolContext {
     //////////////////////////////////////////////////////
-    /// --- IMMUTABLES
+    // --- IMMUTABLES
     //////////////////////////////////////////////////////
 
     /// @notice The protocol identifier
@@ -34,7 +34,7 @@ contract ProtocolContext is IProtocolContext {
     IProtocolController public immutable PROTOCOL_CONTROLLER;
 
     //////////////////////////////////////////////////////
-    /// --- ERRORS
+    // --- ERRORS
     //////////////////////////////////////////////////////
 
     /// @notice Error thrown when a required address is zero
@@ -44,7 +44,7 @@ contract ProtocolContext is IProtocolContext {
     error InvalidProtocolId();
 
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
     /// @notice Initializes the base contract with protocol ID, controller, locker, and gateway
@@ -72,7 +72,7 @@ contract ProtocolContext is IProtocolContext {
     }
 
     //////////////////////////////////////////////////////
-    /// --- INTERNAL FUNCTIONS
+    // --- INTERNAL FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Executes a transaction through the gateway/module manager

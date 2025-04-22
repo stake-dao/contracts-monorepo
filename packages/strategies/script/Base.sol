@@ -77,7 +77,7 @@ abstract contract Base is Script {
     }
 
     //////////////////////////////////////////////////////
-    /// --- HELPER FUNCTIONS
+    // --- HELPER FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Enable a module on the gateway

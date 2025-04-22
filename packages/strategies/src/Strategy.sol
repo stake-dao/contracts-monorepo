@@ -27,7 +27,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     bytes32 internal constant FLUSH_AMOUNT_SLOT = keccak256("strategy.flushAmount");
 
     //////////////////////////////////////////////////////
-    /// --- ERRORS & EVENTS
+    // --- ERRORS & EVENTS
     //////////////////////////////////////////////////////
 
     /// @notice Error thrown when the caller is not the vault for the gauge
@@ -70,7 +70,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     event Rebalance(address indexed gauge, address[] targets, uint256[] amounts);
 
     //////////////////////////////////////////////////////
-    /// --- MODIFIERS
+    // --- MODIFIERS
     //////////////////////////////////////////////////////
 
     /// @notice Ensures the caller is the vault registered for the gauge
@@ -100,7 +100,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     }
 
     //////////////////////////////////////////////////////
-    /// --- CONSTRUCTOR
+    // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
     /// @notice Initializes the strategy with registry, protocol ID, and locker and gateway
@@ -113,7 +113,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     {}
 
     //////////////////////////////////////////////////////
-    /// --- EXTERNAL FUNCTIONS
+    // --- EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Deposits assets according to the provided allocation
@@ -300,7 +300,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     }
 
     //////////////////////////////////////////////////////
-    /// --- INTERNAL HELPER FUNCTIONS
+    // --- INTERNAL HELPER FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Gets allocation targets for a gauge
@@ -389,7 +389,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     }
 
     //////////////////////////////////////////////////////
-    /// --- INTERNAL VIRTUAL FUNCTIONS
+    // --- INTERNAL VIRTUAL FUNCTIONS
     //////////////////////////////////////////////////////
 
     /// @notice Gets the flush amount from transient storage
