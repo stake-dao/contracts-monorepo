@@ -1,0 +1,407 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Sidecar - StakeDAO Fusion</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../../favicon.svg">
+        <link rel="shortcut icon" href="../../favicon.png">
+        <link rel="stylesheet" href="../../css/variables.css">
+        <link rel="stylesheet" href="../../css/general.css">
+        <link rel="stylesheet" href="../../css/chrome.css">
+        <link rel="stylesheet" href="../../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../../highlight.css">
+        <link rel="stylesheet" href="../../tomorrow-night.css">
+        <link rel="stylesheet" href="../../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../../book.css">
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../../index.html">README</a></li><li class="chapter-item expanded "><a href="../../src/RouterModules/index.html"><strong aria-hidden="true">1.</strong> RouterModules</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../src/RouterModules/RouterIdentifierMapping.sol/library.RouterIdentifierMapping.html"><strong aria-hidden="true">1.1.</strong> RouterIdentifierMapping</a></li><li class="chapter-item expanded "><a href="../../src/RouterModules/RouterModuleClaim.sol/contract.RouterModuleClaim.html"><strong aria-hidden="true">1.2.</strong> RouterModuleClaim</a></li><li class="chapter-item expanded "><a href="../../src/RouterModules/RouterModuleDeposit.sol/contract.RouterModuleDeposit.html"><strong aria-hidden="true">1.3.</strong> RouterModuleDeposit</a></li><li class="chapter-item expanded "><a href="../../src/RouterModules/RouterModuleMigrationCurve.sol/contract.RouterModuleMigrationCurve.html"><strong aria-hidden="true">1.4.</strong> RouterModuleMigrationCurve</a></li><li class="chapter-item expanded "><a href="../../src/RouterModules/RouterModuleMigrationStakeDAOV1.sol/interface.IVault.html"><strong aria-hidden="true">1.5.</strong> IVault</a></li><li class="chapter-item expanded "><a href="../../src/RouterModules/RouterModuleMigrationStakeDAOV1.sol/contract.RouterModuleMigrationStakeDAOV1.html"><strong aria-hidden="true">1.6.</strong> RouterModuleMigrationStakeDAOV1</a></li><li class="chapter-item expanded "><a href="../../src/RouterModules/RouterModuleMigrationYearn.sol/contract.RouterModuleMigrationYearn.html"><strong aria-hidden="true">1.7.</strong> RouterModuleMigrationYearn</a></li><li class="chapter-item expanded "><a href="../../src/RouterModules/RouterModuleMigrationYearn.sol/interface.IYearnVault.html"><strong aria-hidden="true">1.8.</strong> IYearnVault</a></li><li class="chapter-item expanded "><a href="../../src/RouterModules/RouterModuleWithdraw.sol/contract.RouterModuleWithdraw.html"><strong aria-hidden="true">1.9.</strong> RouterModuleWithdraw</a></li></ol></li><li class="chapter-item expanded "><a href="../../src/integrations/index.html"><strong aria-hidden="true">2.</strong> integrations</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../src/integrations/curve/index.html"><strong aria-hidden="true">2.1.</strong> curve</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../src/integrations/curve/ConvexSidecar.sol/contract.ConvexSidecar.html"><strong aria-hidden="true">2.1.1.</strong> ConvexSidecar</a></li><li class="chapter-item expanded "><a href="../../src/integrations/curve/ConvexSidecarFactory.sol/contract.ConvexSidecarFactory.html"><strong aria-hidden="true">2.1.2.</strong> ConvexSidecarFactory</a></li><li class="chapter-item expanded "><a href="../../src/integrations/curve/CurveAllocator.sol/contract.CurveAllocator.html"><strong aria-hidden="true">2.1.3.</strong> CurveAllocator</a></li><li class="chapter-item expanded "><a href="../../src/integrations/curve/CurveFactory.sol/contract.CurveFactory.html"><strong aria-hidden="true">2.1.4.</strong> CurveFactory</a></li><li class="chapter-item expanded "><a href="../../src/integrations/curve/CurveStrategy.sol/contract.CurveStrategy.html"><strong aria-hidden="true">2.1.5.</strong> CurveStrategy</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../../src/interfaces/index.html"><strong aria-hidden="true">3.</strong> interfaces</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../src/interfaces/IAccountant.sol/interface.IAccountant.html"><strong aria-hidden="true">3.1.</strong> IAccountant</a></li><li class="chapter-item expanded "><a href="../../src/interfaces/IAllocator.sol/interface.IAllocator.html"><strong aria-hidden="true">3.2.</strong> IAllocator</a></li><li class="chapter-item expanded "><a href="../../src/interfaces/IBalanceProvider.sol/interface.IBalanceProvider.html"><strong aria-hidden="true">3.3.</strong> IBalanceProvider</a></li><li class="chapter-item expanded "><a href="../../src/interfaces/IProtocolContext.sol/interface.IProtocolContext.html"><strong aria-hidden="true">3.4.</strong> IProtocolContext</a></li><li class="chapter-item expanded "><a href="../../src/interfaces/IProtocolController.sol/interface.IProtocolController.html"><strong aria-hidden="true">3.5.</strong> IProtocolController</a></li><li class="chapter-item expanded "><a href="../../src/interfaces/IRewardReceiver.sol/interface.IRewardReceiver.html"><strong aria-hidden="true">3.6.</strong> IRewardReceiver</a></li><li class="chapter-item expanded "><a href="../../src/interfaces/IRewardVault.sol/interface.IRewardVault.html"><strong aria-hidden="true">3.7.</strong> IRewardVault</a></li><li class="chapter-item expanded "><a href="../../src/interfaces/IRouter.sol/interface.IRouter.html"><strong aria-hidden="true">3.8.</strong> IRouter</a></li><li class="chapter-item expanded "><a href="../../src/interfaces/IRouterModule.sol/interface.IRouterModule.html"><strong aria-hidden="true">3.9.</strong> IRouterModule</a></li><li class="chapter-item expanded "><a href="../../src/interfaces/ISidecar.sol/interface.ISidecar.html"><strong aria-hidden="true">3.10.</strong> ISidecar</a></li><li class="chapter-item expanded "><a href="../../src/interfaces/ISidecarFactory.sol/interface.ISidecarFactory.html"><strong aria-hidden="true">3.11.</strong> ISidecarFactory</a></li><li class="chapter-item expanded "><a href="../../src/interfaces/IStrategy.sol/interface.IStrategy.html"><strong aria-hidden="true">3.12.</strong> IStrategy</a></li></ol></li><li class="chapter-item expanded "><a href="../../src/libraries/index.html"><strong aria-hidden="true">4.</strong> libraries</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../src/libraries/ImmutableArgsParser.sol/library.ImmutableArgsParser.html"><strong aria-hidden="true">4.1.</strong> ImmutableArgsParser</a></li></ol></li><li class="chapter-item expanded "><a href="../../src/Accountant.sol/contract.Accountant.html"><strong aria-hidden="true">5.</strong> Accountant</a></li><li class="chapter-item expanded "><a href="../../src/Allocator.sol/contract.Allocator.html"><strong aria-hidden="true">6.</strong> Allocator</a></li><li class="chapter-item expanded "><a href="../../src/Factory.sol/abstract.Factory.html"><strong aria-hidden="true">7.</strong> Factory</a></li><li class="chapter-item expanded "><a href="../../src/ProtocolContext.sol/contract.ProtocolContext.html"><strong aria-hidden="true">8.</strong> ProtocolContext</a></li><li class="chapter-item expanded "><a href="../../src/ProtocolController.sol/contract.ProtocolController.html"><strong aria-hidden="true">9.</strong> ProtocolController</a></li><li class="chapter-item expanded "><a href="../../src/RewardReceiver.sol/contract.RewardReceiver.html"><strong aria-hidden="true">10.</strong> RewardReceiver</a></li><li class="chapter-item expanded "><a href="../../src/RewardVault.sol/contract.RewardVault.html"><strong aria-hidden="true">11.</strong> RewardVault</a></li><li class="chapter-item expanded "><a href="../../src/Router.sol/contract.Router.html"><strong aria-hidden="true">12.</strong> Router</a></li><li class="chapter-item expanded "><a href="../../src/Sidecar.sol/abstract.Sidecar.html" class="active"><strong aria-hidden="true">13.</strong> Sidecar</a></li><li class="chapter-item expanded "><a href="../../src/SidecarFactory.sol/abstract.SidecarFactory.html"><strong aria-hidden="true">14.</strong> SidecarFactory</a></li><li class="chapter-item expanded "><a href="../../src/Strategy.sol/abstract.Strategy.html"><strong aria-hidden="true">15.</strong> Strategy</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">StakeDAO Fusion</h1>
+
+                    <div class="right-buttons">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/stake-dao/contracts-monorepo" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="sidecar"><a class="header" href="#sidecar">Sidecar</a></h1>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/b923c78590829555cd2bca60d6e3a54b54db44bb/src/Sidecar.sol">Git Source</a></p>
+<p><strong>Inherits:</strong>
+<a href="/src/interfaces/ISidecar.sol/interface.ISidecar.html">ISidecar</a></p>
+<p>A base contract for implementing protocol-specific sidecars</p>
+<p><em>Provides core functionality for depositing, withdrawing, and managing assets across different protocols</em></p>
+<h2 id="state-variables"><a class="header" href="#state-variables">State Variables</a></h2>
+<h3 id="protocol_id"><a class="header" href="#protocol_id">PROTOCOL_ID</a></h3>
+<p>The protocol identifier</p>
+<pre><code class="language-solidity">bytes4 public immutable PROTOCOL_ID;
+</code></pre>
+<h3 id="accountant"><a class="header" href="#accountant">ACCOUNTANT</a></h3>
+<p>The accountant contract address</p>
+<pre><code class="language-solidity">address public immutable ACCOUNTANT;
+</code></pre>
+<h3 id="reward_token"><a class="header" href="#reward_token">REWARD_TOKEN</a></h3>
+<p>The reward token address</p>
+<pre><code class="language-solidity">IERC20 public immutable REWARD_TOKEN;
+</code></pre>
+<h3 id="protocol_controller"><a class="header" href="#protocol_controller">PROTOCOL_CONTROLLER</a></h3>
+<p>The protocol controller contract</p>
+<pre><code class="language-solidity">IProtocolController public immutable PROTOCOL_CONTROLLER;
+</code></pre>
+<h3 id="_initialized"><a class="header" href="#_initialized">_initialized</a></h3>
+<p>Whether the sidecar has been initialized</p>
+<pre><code class="language-solidity">bool private _initialized;
+</code></pre>
+<h2 id="functions"><a class="header" href="#functions">Functions</a></h2>
+<h3 id="onlystrategy"><a class="header" href="#onlystrategy">onlyStrategy</a></h3>
+<p>Ensures the caller is the strategy</p>
+<p><strong>Note:</strong>
+throws: OnlyStrategy If the caller is not the strategy</p>
+<pre><code class="language-solidity">modifier onlyStrategy();
+</code></pre>
+<h3 id="constructor"><a class="header" href="#constructor">constructor</a></h3>
+<p>Initializes the sidecar with protocol ID, accountant, and protocol controller</p>
+<pre><code class="language-solidity">constructor(bytes4 _protocolId, address _accountant, address _protocolController);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>_protocolId</code></td><td><code>bytes4</code></td><td>The identifier for the protocol this sidecar interacts with</td></tr>
+<tr><td><code>_accountant</code></td><td><code>address</code></td><td>The address of the accountant contract</td></tr>
+<tr><td><code>_protocolController</code></td><td><code>address</code></td><td>The address of the protocol controller</td></tr>
+</tbody></table>
+</div>
+<h3 id="initialize"><a class="header" href="#initialize">initialize</a></h3>
+<p>Initializes the sidecar</p>
+<p><em>Can only be called once</em></p>
+<p><strong>Note:</strong>
+throws: AlreadyInitialized If the sidecar is already initialized</p>
+<pre><code class="language-solidity">function initialize() external;
+</code></pre>
+<h3 id="deposit"><a class="header" href="#deposit">deposit</a></h3>
+<p>Deposits assets into the sidecar</p>
+<p><strong>Note:</strong>
+throws: OnlyStrategy If the caller is not the strategy</p>
+<pre><code class="language-solidity">function deposit(uint256 amount) external onlyStrategy;
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>amount</code></td><td><code>uint256</code></td><td>The amount to deposit</td></tr>
+</tbody></table>
+</div>
+<h3 id="withdraw"><a class="header" href="#withdraw">withdraw</a></h3>
+<p>Withdraws assets from the sidecar</p>
+<p><strong>Note:</strong>
+throws: OnlyStrategy If the caller is not the strategy</p>
+<pre><code class="language-solidity">function withdraw(uint256 amount, address receiver) external onlyStrategy;
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>amount</code></td><td><code>uint256</code></td><td>The amount to withdraw</td></tr>
+<tr><td><code>receiver</code></td><td><code>address</code></td><td>The address to receive the withdrawn assets</td></tr>
+</tbody></table>
+</div>
+<h3 id="claim"><a class="header" href="#claim">claim</a></h3>
+<p>Claims pending rewards from the sidecar</p>
+<p><strong>Note:</strong>
+throws: OnlyAccountant If the caller is not the accountant</p>
+<pre><code class="language-solidity">function claim() external onlyStrategy returns (uint256);
+</code></pre>
+<h3 id="asset"><a class="header" href="#asset">asset</a></h3>
+<p>Returns the asset of the sidecar</p>
+<pre><code class="language-solidity">function asset() public view virtual returns (IERC20);
+</code></pre>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>&lt;none&gt;</code></td><td><code>IERC20</code></td><td>The asset of the sidecar</td></tr>
+</tbody></table>
+</div>
+<h3 id="rewardreceiver"><a class="header" href="#rewardreceiver">rewardReceiver</a></h3>
+<p>Returns the reward receiver of the sidecar</p>
+<pre><code class="language-solidity">function rewardReceiver() public view virtual returns (address);
+</code></pre>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>&lt;none&gt;</code></td><td><code>address</code></td><td>The reward receiver of the sidecar</td></tr>
+</tbody></table>
+</div>
+<h3 id="_initialize"><a class="header" href="#_initialize">_initialize</a></h3>
+<p>Initializes the sidecar</p>
+<p><em>Must be implemented by derived sidecars to handle protocol-specific initialization</em></p>
+<pre><code class="language-solidity">function _initialize() internal virtual;
+</code></pre>
+<h3 id="_deposit"><a class="header" href="#_deposit">_deposit</a></h3>
+<p>Deposits assets into the sidecar</p>
+<p><em>Must be implemented by derived sidecars to handle protocol-specific deposits</em></p>
+<pre><code class="language-solidity">function _deposit(uint256 amount) internal virtual;
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>amount</code></td><td><code>uint256</code></td><td>The amount to deposit</td></tr>
+</tbody></table>
+</div>
+<h3 id="_claim"><a class="header" href="#_claim">_claim</a></h3>
+<p>Claims pending rewards from the sidecar</p>
+<p><em>Must be implemented by derived sidecars to handle protocol-specific claims</em></p>
+<pre><code class="language-solidity">function _claim() internal virtual returns (uint256);
+</code></pre>
+<h3 id="_withdraw"><a class="header" href="#_withdraw">_withdraw</a></h3>
+<p>Withdraws assets from the sidecar</p>
+<p><em>Must be implemented by derived sidecars to handle protocol-specific withdrawals</em></p>
+<pre><code class="language-solidity">function _withdraw(uint256 amount, address receiver) internal virtual;
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>amount</code></td><td><code>uint256</code></td><td>The amount to withdraw</td></tr>
+<tr><td><code>receiver</code></td><td><code>address</code></td><td>The address to receive the withdrawn assets</td></tr>
+</tbody></table>
+</div>
+<h3 id="balanceof"><a class="header" href="#balanceof">balanceOf</a></h3>
+<p>Returns the balance of the sidecar</p>
+<p><em>Must be implemented by derived sidecars to handle protocol-specific balance calculation</em></p>
+<pre><code class="language-solidity">function balanceOf() public view virtual returns (uint256);
+</code></pre>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>&lt;none&gt;</code></td><td><code>uint256</code></td><td>The balance of the sidecar</td></tr>
+</tbody></table>
+</div>
+<h3 id="getpendingrewards"><a class="header" href="#getpendingrewards">getPendingRewards</a></h3>
+<p>Returns the pending rewards of the sidecar</p>
+<p><em>Must be implemented by derived sidecars to handle protocol-specific reward calculation</em></p>
+<pre><code class="language-solidity">function getPendingRewards() public view virtual returns (uint256);
+</code></pre>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>&lt;none&gt;</code></td><td><code>uint256</code></td><td>The pending rewards of the sidecar</td></tr>
+</tbody></table>
+</div>
+<h2 id="errors"><a class="header" href="#errors">Errors</a></h2>
+<h3 id="zeroaddress"><a class="header" href="#zeroaddress">ZeroAddress</a></h3>
+<p>Error thrown when an address is zero</p>
+<pre><code class="language-solidity">error ZeroAddress();
+</code></pre>
+<h3 id="onlystrategy-1"><a class="header" href="#onlystrategy-1">OnlyStrategy</a></h3>
+<p>Error thrown when the caller is not the strategy</p>
+<pre><code class="language-solidity">error OnlyStrategy();
+</code></pre>
+<h3 id="onlyaccountant"><a class="header" href="#onlyaccountant">OnlyAccountant</a></h3>
+<p>Error thrown when the caller is not the accountant</p>
+<pre><code class="language-solidity">error OnlyAccountant();
+</code></pre>
+<h3 id="alreadyinitialized"><a class="header" href="#alreadyinitialized">AlreadyInitialized</a></h3>
+<p>Error thrown when the sidecar is already initialized</p>
+<pre><code class="language-solidity">error AlreadyInitialized();
+</code></pre>
+<h3 id="notinitialized"><a class="header" href="#notinitialized">NotInitialized</a></h3>
+<p>Error thrown when the sidecar is not initialized</p>
+<pre><code class="language-solidity">error NotInitialized();
+</code></pre>
+<h3 id="invalidprotocolid"><a class="header" href="#invalidprotocolid">InvalidProtocolId</a></h3>
+<p>Error thrown when a protocol ID is zero</p>
+<pre><code class="language-solidity">error InvalidProtocolId();
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../src/Router.sol/contract.Router.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../../src/SidecarFactory.sol/abstract.SidecarFactory.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../src/Router.sol/contract.Router.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../../src/SidecarFactory.sol/abstract.SidecarFactory.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../../elasticlunr.min.js"></script>
+        <script src="../../mark.min.js"></script>
+        <script src="../../searcher.js"></script>
+
+        <script src="../../clipboard.min.js"></script>
+        <script src="../../highlight.js"></script>
+        <script src="../../book.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../../solidity.min.js"></script>
+
+
+    </div>
+    </body>
+</html>

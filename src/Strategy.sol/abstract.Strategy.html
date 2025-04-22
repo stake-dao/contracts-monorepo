@@ -1,0 +1,629 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>Strategy - StakeDAO Fusion</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../../favicon.svg">
+        <link rel="shortcut icon" href="../../favicon.png">
+        <link rel="stylesheet" href="../../css/variables.css">
+        <link rel="stylesheet" href="../../css/general.css">
+        <link rel="stylesheet" href="../../css/chrome.css">
+        <link rel="stylesheet" href="../../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../../highlight.css">
+        <link rel="stylesheet" href="../../tomorrow-night.css">
+        <link rel="stylesheet" href="../../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../../book.css">
+
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../../index.html">README</a></li><li class="chapter-item expanded "><a href="../../src/RouterModules/index.html"><strong aria-hidden="true">1.</strong> RouterModules</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../src/RouterModules/RouterIdentifierMapping.sol/library.RouterIdentifierMapping.html"><strong aria-hidden="true">1.1.</strong> RouterIdentifierMapping</a></li><li class="chapter-item expanded "><a href="../../src/RouterModules/RouterModuleClaim.sol/contract.RouterModuleClaim.html"><strong aria-hidden="true">1.2.</strong> RouterModuleClaim</a></li><li class="chapter-item expanded "><a href="../../src/RouterModules/RouterModuleDeposit.sol/contract.RouterModuleDeposit.html"><strong aria-hidden="true">1.3.</strong> RouterModuleDeposit</a></li><li class="chapter-item expanded "><a href="../../src/RouterModules/RouterModuleMigrationCurve.sol/contract.RouterModuleMigrationCurve.html"><strong aria-hidden="true">1.4.</strong> RouterModuleMigrationCurve</a></li><li class="chapter-item expanded "><a href="../../src/RouterModules/RouterModuleMigrationStakeDAOV1.sol/interface.IVault.html"><strong aria-hidden="true">1.5.</strong> IVault</a></li><li class="chapter-item expanded "><a href="../../src/RouterModules/RouterModuleMigrationStakeDAOV1.sol/contract.RouterModuleMigrationStakeDAOV1.html"><strong aria-hidden="true">1.6.</strong> RouterModuleMigrationStakeDAOV1</a></li><li class="chapter-item expanded "><a href="../../src/RouterModules/RouterModuleMigrationYearn.sol/contract.RouterModuleMigrationYearn.html"><strong aria-hidden="true">1.7.</strong> RouterModuleMigrationYearn</a></li><li class="chapter-item expanded "><a href="../../src/RouterModules/RouterModuleMigrationYearn.sol/interface.IYearnVault.html"><strong aria-hidden="true">1.8.</strong> IYearnVault</a></li><li class="chapter-item expanded "><a href="../../src/RouterModules/RouterModuleWithdraw.sol/contract.RouterModuleWithdraw.html"><strong aria-hidden="true">1.9.</strong> RouterModuleWithdraw</a></li></ol></li><li class="chapter-item expanded "><a href="../../src/integrations/index.html"><strong aria-hidden="true">2.</strong> integrations</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../src/integrations/curve/index.html"><strong aria-hidden="true">2.1.</strong> curve</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../src/integrations/curve/ConvexSidecar.sol/contract.ConvexSidecar.html"><strong aria-hidden="true">2.1.1.</strong> ConvexSidecar</a></li><li class="chapter-item expanded "><a href="../../src/integrations/curve/ConvexSidecarFactory.sol/contract.ConvexSidecarFactory.html"><strong aria-hidden="true">2.1.2.</strong> ConvexSidecarFactory</a></li><li class="chapter-item expanded "><a href="../../src/integrations/curve/CurveAllocator.sol/contract.CurveAllocator.html"><strong aria-hidden="true">2.1.3.</strong> CurveAllocator</a></li><li class="chapter-item expanded "><a href="../../src/integrations/curve/CurveFactory.sol/contract.CurveFactory.html"><strong aria-hidden="true">2.1.4.</strong> CurveFactory</a></li><li class="chapter-item expanded "><a href="../../src/integrations/curve/CurveStrategy.sol/contract.CurveStrategy.html"><strong aria-hidden="true">2.1.5.</strong> CurveStrategy</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../../src/interfaces/index.html"><strong aria-hidden="true">3.</strong> interfaces</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../src/interfaces/IAccountant.sol/interface.IAccountant.html"><strong aria-hidden="true">3.1.</strong> IAccountant</a></li><li class="chapter-item expanded "><a href="../../src/interfaces/IAllocator.sol/interface.IAllocator.html"><strong aria-hidden="true">3.2.</strong> IAllocator</a></li><li class="chapter-item expanded "><a href="../../src/interfaces/IBalanceProvider.sol/interface.IBalanceProvider.html"><strong aria-hidden="true">3.3.</strong> IBalanceProvider</a></li><li class="chapter-item expanded "><a href="../../src/interfaces/IProtocolContext.sol/interface.IProtocolContext.html"><strong aria-hidden="true">3.4.</strong> IProtocolContext</a></li><li class="chapter-item expanded "><a href="../../src/interfaces/IProtocolController.sol/interface.IProtocolController.html"><strong aria-hidden="true">3.5.</strong> IProtocolController</a></li><li class="chapter-item expanded "><a href="../../src/interfaces/IRewardReceiver.sol/interface.IRewardReceiver.html"><strong aria-hidden="true">3.6.</strong> IRewardReceiver</a></li><li class="chapter-item expanded "><a href="../../src/interfaces/IRewardVault.sol/interface.IRewardVault.html"><strong aria-hidden="true">3.7.</strong> IRewardVault</a></li><li class="chapter-item expanded "><a href="../../src/interfaces/IRouter.sol/interface.IRouter.html"><strong aria-hidden="true">3.8.</strong> IRouter</a></li><li class="chapter-item expanded "><a href="../../src/interfaces/IRouterModule.sol/interface.IRouterModule.html"><strong aria-hidden="true">3.9.</strong> IRouterModule</a></li><li class="chapter-item expanded "><a href="../../src/interfaces/ISidecar.sol/interface.ISidecar.html"><strong aria-hidden="true">3.10.</strong> ISidecar</a></li><li class="chapter-item expanded "><a href="../../src/interfaces/ISidecarFactory.sol/interface.ISidecarFactory.html"><strong aria-hidden="true">3.11.</strong> ISidecarFactory</a></li><li class="chapter-item expanded "><a href="../../src/interfaces/IStrategy.sol/interface.IStrategy.html"><strong aria-hidden="true">3.12.</strong> IStrategy</a></li></ol></li><li class="chapter-item expanded "><a href="../../src/libraries/index.html"><strong aria-hidden="true">4.</strong> libraries</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../src/libraries/ImmutableArgsParser.sol/library.ImmutableArgsParser.html"><strong aria-hidden="true">4.1.</strong> ImmutableArgsParser</a></li></ol></li><li class="chapter-item expanded "><a href="../../src/Accountant.sol/contract.Accountant.html"><strong aria-hidden="true">5.</strong> Accountant</a></li><li class="chapter-item expanded "><a href="../../src/Allocator.sol/contract.Allocator.html"><strong aria-hidden="true">6.</strong> Allocator</a></li><li class="chapter-item expanded "><a href="../../src/Factory.sol/abstract.Factory.html"><strong aria-hidden="true">7.</strong> Factory</a></li><li class="chapter-item expanded "><a href="../../src/ProtocolContext.sol/contract.ProtocolContext.html"><strong aria-hidden="true">8.</strong> ProtocolContext</a></li><li class="chapter-item expanded "><a href="../../src/ProtocolController.sol/contract.ProtocolController.html"><strong aria-hidden="true">9.</strong> ProtocolController</a></li><li class="chapter-item expanded "><a href="../../src/RewardReceiver.sol/contract.RewardReceiver.html"><strong aria-hidden="true">10.</strong> RewardReceiver</a></li><li class="chapter-item expanded "><a href="../../src/RewardVault.sol/contract.RewardVault.html"><strong aria-hidden="true">11.</strong> RewardVault</a></li><li class="chapter-item expanded "><a href="../../src/Router.sol/contract.Router.html"><strong aria-hidden="true">12.</strong> Router</a></li><li class="chapter-item expanded "><a href="../../src/Sidecar.sol/abstract.Sidecar.html"><strong aria-hidden="true">13.</strong> Sidecar</a></li><li class="chapter-item expanded "><a href="../../src/SidecarFactory.sol/abstract.SidecarFactory.html"><strong aria-hidden="true">14.</strong> SidecarFactory</a></li><li class="chapter-item expanded "><a href="../../src/Strategy.sol/abstract.Strategy.html" class="active"><strong aria-hidden="true">15.</strong> Strategy</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">StakeDAO Fusion</h1>
+
+                    <div class="right-buttons">
+                        <a href="../../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/stake-dao/contracts-monorepo" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="strategy"><a class="header" href="#strategy">Strategy</a></h1>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/b923c78590829555cd2bca60d6e3a54b54db44bb/src/Strategy.sol">Git Source</a></p>
+<p><strong>Inherits:</strong>
+<a href="/src/interfaces/IStrategy.sol/interface.IStrategy.html">IStrategy</a>, <a href="/src/ProtocolContext.sol/contract.ProtocolContext.html">ProtocolContext</a></p>
+<p>A base contract for implementing protocol-specific strategies</p>
+<p>*Provides core functionality for depositing, withdrawing, and managing assets across different protocols
+Key responsibilities:</p>
+<ul>
+<li>Handles deposits and withdrawals through protocol-specific implementations</li>
+<li>Manages gauge allocations across different targets</li>
+<li>Tracks and reports pending rewards</li>
+<li>Provides emergency shutdown functionality*</li>
+</ul>
+<h2 id="state-variables"><a class="header" href="#state-variables">State Variables</a></h2>
+<h3 id="flush_amount_slot"><a class="header" href="#flush_amount_slot">FLUSH_AMOUNT_SLOT</a></h3>
+<p><em>Slot for the flush amount in transient storage</em></p>
+<pre><code class="language-solidity">bytes32 internal constant FLUSH_AMOUNT_SLOT = keccak256(&quot;strategy.flushAmount&quot;);
+</code></pre>
+<h2 id="functions"><a class="header" href="#functions">Functions</a></h2>
+<h3 id="onlyvault"><a class="header" href="#onlyvault">onlyVault</a></h3>
+<p>Ensures the caller is the vault registered for the gauge</p>
+<p><strong>Note:</strong>
+throws: OnlyVault If the caller is not the registered vault for the gauge</p>
+<pre><code class="language-solidity">modifier onlyVault(address gauge);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>gauge</code></td><td><code>address</code></td><td>The gauge to check vault authorization for</td></tr>
+</tbody></table>
+</div>
+<h3 id="onlyaccountant"><a class="header" href="#onlyaccountant">onlyAccountant</a></h3>
+<p>Ensures the caller is the accountant for the strategy</p>
+<p><strong>Note:</strong>
+throws: OnlyAccountant If the caller is not the accountant for the strategy</p>
+<pre><code class="language-solidity">modifier onlyAccountant();
+</code></pre>
+<h3 id="onlyallowed"><a class="header" href="#onlyallowed">onlyAllowed</a></h3>
+<p>Ensures the caller is allowed to perform the action or the gauge is shutdown</p>
+<p><strong>Note:</strong>
+throws: OnlyAllowed If the caller is not allowed and the gauge is not shutdown</p>
+<pre><code class="language-solidity">modifier onlyAllowed(address gauge);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>gauge</code></td><td><code>address</code></td><td>The gauge to check permissions for</td></tr>
+</tbody></table>
+</div>
+<h3 id="constructor"><a class="header" href="#constructor">constructor</a></h3>
+<p>Initializes the strategy with registry, protocol ID, and locker and gateway</p>
+<pre><code class="language-solidity">constructor(address _registry, bytes4 _protocolId, address _locker, address _gateway)
+    ProtocolContext(_protocolId, _registry, _locker, _gateway);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>_registry</code></td><td><code>address</code></td><td>The address of the protocol controller</td></tr>
+<tr><td><code>_protocolId</code></td><td><code>bytes4</code></td><td>The identifier for the protocol this strategy interacts with</td></tr>
+<tr><td><code>_locker</code></td><td><code>address</code></td><td>The address of the locker contract</td></tr>
+<tr><td><code>_gateway</code></td><td><code>address</code></td><td>The address of the gateway contract</td></tr>
+</tbody></table>
+</div>
+<h3 id="deposit"><a class="header" href="#deposit">deposit</a></h3>
+<p>Deposits assets according to the provided allocation</p>
+<p><em>Iterates through allocation targets and deposits to each one</em></p>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>
+<p>throws: OnlyVault If the caller is not the registered vault for the gauge</p>
+</li>
+<li>
+<p>throws: GaugeShutdown If the pool is shutdown</p>
+</li>
+</ul>
+<pre><code class="language-solidity">function deposit(IAllocator.Allocation calldata allocation, HarvestPolicy policy)
+    external
+    override
+    onlyVault(allocation.gauge)
+    returns (PendingRewards memory pendingRewards);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>allocation</code></td><td><code>IAllocator.Allocation</code></td><td>The allocation data specifying where and how much to deposit</td></tr>
+<tr><td><code>policy</code></td><td><code>HarvestPolicy</code></td><td>The harvest policy to use</td></tr>
+</tbody></table>
+</div>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>pendingRewards</code></td><td><code>PendingRewards</code></td><td>Any pending rewards generated during the deposit</td></tr>
+</tbody></table>
+</div>
+<h3 id="withdraw"><a class="header" href="#withdraw">withdraw</a></h3>
+<p>If the pool is shutdown, prefer to call shutdown instead.</p>
+<p>Withdraws assets according to the provided allocation</p>
+<p><em>Iterates through allocation targets and withdraws from each one</em></p>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>
+<p>throws: OnlyVault If the caller is not the registered vault for the gauge</p>
+</li>
+<li>
+<p>throws: GaugeShutdown If the pool is shutdown</p>
+</li>
+</ul>
+<pre><code class="language-solidity">function withdraw(IAllocator.Allocation calldata allocation, IStrategy.HarvestPolicy policy, address receiver)
+    external
+    override
+    onlyVault(allocation.gauge)
+    returns (PendingRewards memory pendingRewards);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>allocation</code></td><td><code>IAllocator.Allocation</code></td><td>The allocation data specifying where and how much to withdraw</td></tr>
+<tr><td><code>policy</code></td><td><code>IStrategy.HarvestPolicy</code></td><td>The harvest policy to use</td></tr>
+<tr><td><code>receiver</code></td><td><code>address</code></td><td>The address to receive the withdrawn assets</td></tr>
+</tbody></table>
+</div>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>pendingRewards</code></td><td><code>PendingRewards</code></td><td>Any pending rewards generated during the withdrawal</td></tr>
+</tbody></table>
+</div>
+<h3 id="harvest"><a class="header" href="#harvest">harvest</a></h3>
+<p>If the pool is shutdown, return the pending rewards.
+Use the shutdown function to withdraw the funds.
+When the receiver is not set, it means it's a transfer of the vault shares and we need to checkpoint by
+withdrawing 0.</p>
+<p>Harvests rewards from a gauge</p>
+<p><em>Called using delegatecall from the Accountant contract</em></p>
+<pre><code class="language-solidity">function harvest(address gauge, bytes memory extraData)
+    external
+    override
+    onlyAccountant
+    returns (IStrategy.PendingRewards memory pendingRewards);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>gauge</code></td><td><code>address</code></td><td>The gauge address to harvest from</td></tr>
+<tr><td><code>extraData</code></td><td><code>bytes</code></td><td>Additional data needed for harvesting (protocol-specific)</td></tr>
+</tbody></table>
+</div>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>pendingRewards</code></td><td><code>IStrategy.PendingRewards</code></td><td>The pending rewards after harvesting</td></tr>
+</tbody></table>
+</div>
+<h3 id="flush"><a class="header" href="#flush">flush</a></h3>
+<p>Flushes the reward token to the locker</p>
+<p><em>Only allowed to be called by the accountant during harvest operation</em></p>
+<pre><code class="language-solidity">function flush() public onlyAccountant;
+</code></pre>
+<h3 id="shutdown"><a class="header" href="#shutdown">shutdown</a></h3>
+<p>Shuts down the strategy by withdrawing all the assets and sending them to the vault</p>
+<p><em>Only allowed to be called by permissioned addresses, or anyone if the gauge/system is shutdown</em></p>
+<p><strong>Note:</strong>
+throws: OnlyAllowed If the caller is not allowed and the gauge is not shutdown</p>
+<pre><code class="language-solidity">function shutdown(address gauge) public onlyAllowed(gauge);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>gauge</code></td><td><code>address</code></td><td>The gauge to shut down</td></tr>
+</tbody></table>
+</div>
+<h3 id="rebalance"><a class="header" href="#rebalance">rebalance</a></h3>
+<ol>
+<li>Get the vault managing the gauge.</li>
+<li>Get the asset.</li>
+<li>Get the allocation targets for the gauge.</li>
+<li>Withdraw all the assets and send them to the vault.</li>
+<li>Mark the gauge as fully withdrawn.</li>
+<li>Emit the shutdown event.</li>
+</ol>
+<p>Rebalances the strategy</p>
+<pre><code class="language-solidity">function rebalance(address gauge) external;
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>gauge</code></td><td><code>address</code></td><td>The gauge to rebalance</td></tr>
+</tbody></table>
+</div>
+<h3 id="balanceof"><a class="header" href="#balanceof">balanceOf</a></h3>
+<p>If the gauge is shutdown, return.</p>
+<ol>
+<li>Get the allocator.</li>
+<li>Get the asset.</li>
+<li>Snapshot the current balance.</li>
+<li>Get the allocation targets for the gauge.</li>
+<li>Withdraw all assets from all targets to this contract</li>
+<li>Get the allocation amounts for the gauge.</li>
+<li>Ensure the allocation has more than one target.</li>
+<li>Deposit the amounts into the gauge with new allocations</li>
+<li>Emit the rebalance event.</li>
+</ol>
+<p>Returns the balance of the strategy</p>
+<pre><code class="language-solidity">function balanceOf(address gauge) public view virtual returns (uint256 balance);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>gauge</code></td><td><code>address</code></td><td>The gauge to get the balance of</td></tr>
+</tbody></table>
+</div>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>balance</code></td><td><code>uint256</code></td><td>The balance of the strategy</td></tr>
+</tbody></table>
+</div>
+<h3 id="_getallocationtargets"><a class="header" href="#_getallocationtargets">_getAllocationTargets</a></h3>
+<p>Gets allocation targets for a gauge</p>
+<pre><code class="language-solidity">function _getAllocationTargets(address gauge) internal view returns (address[] memory targets);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>gauge</code></td><td><code>address</code></td><td>The gauge to get targets for</td></tr>
+</tbody></table>
+</div>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>targets</code></td><td><code>address[]</code></td><td>Array of target addresses</td></tr>
+</tbody></table>
+</div>
+<h3 id="_withdrawfromalltargets"><a class="header" href="#_withdrawfromalltargets">_withdrawFromAllTargets</a></h3>
+<p>Withdraws assets from all targets</p>
+<pre><code class="language-solidity">function _withdrawFromAllTargets(address asset, address gauge, address[] memory targets, address receiver) internal;
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>asset</code></td><td><code>address</code></td><td>The asset to withdraw</td></tr>
+<tr><td><code>gauge</code></td><td><code>address</code></td><td>The gauge to withdraw from</td></tr>
+<tr><td><code>targets</code></td><td><code>address[]</code></td><td>Array of target addresses</td></tr>
+<tr><td><code>receiver</code></td><td><code>address</code></td><td>Address to receive the withdrawn assets</td></tr>
+</tbody></table>
+</div>
+<h3 id="_harvest"><a class="header" href="#_harvest">_harvest</a></h3>
+<p>Handles the harvest operation</p>
+<pre><code class="language-solidity">function _harvest(address gauge, bytes memory extraData, bool deferRewards)
+    internal
+    returns (IStrategy.PendingRewards memory pendingRewards);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>gauge</code></td><td><code>address</code></td><td>The gauge to harvest from</td></tr>
+<tr><td><code>extraData</code></td><td><code>bytes</code></td><td>Additional data needed for harvesting</td></tr>
+<tr><td><code>deferRewards</code></td><td><code>bool</code></td><td>Whether to store rewards for later flush (true) or transfer immediately (false)</td></tr>
+</tbody></table>
+</div>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>pendingRewards</code></td><td><code>IStrategy.PendingRewards</code></td><td>The pending rewards after harvesting</td></tr>
+</tbody></table>
+</div>
+<h3 id="_harvestorcheckpoint"><a class="header" href="#_harvestorcheckpoint">_harvestOrCheckpoint</a></h3>
+<p>Harvests or synchronizes rewards</p>
+<pre><code class="language-solidity">function _harvestOrCheckpoint(address gauge, IStrategy.HarvestPolicy policy)
+    internal
+    returns (PendingRewards memory pendingRewards);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>gauge</code></td><td><code>address</code></td><td>The gauge to harvest or synchronize from</td></tr>
+<tr><td><code>policy</code></td><td><code>IStrategy.HarvestPolicy</code></td><td>The harvest policy to use</td></tr>
+</tbody></table>
+</div>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>pendingRewards</code></td><td><code>PendingRewards</code></td><td>The pending rewards after harvesting or synchronization</td></tr>
+</tbody></table>
+</div>
+<h3 id="_getflushamount"><a class="header" href="#_getflushamount">_getFlushAmount</a></h3>
+<p>Gets the flush amount from transient storage</p>
+<pre><code class="language-solidity">function _getFlushAmount() internal view virtual returns (uint256);
+</code></pre>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>&lt;none&gt;</code></td><td><code>uint256</code></td><td>The flush amount</td></tr>
+</tbody></table>
+</div>
+<h3 id="_setflushamount"><a class="header" href="#_setflushamount">_setFlushAmount</a></h3>
+<p>Sets the flush amount in transient storage</p>
+<pre><code class="language-solidity">function _setFlushAmount(uint256 amount) internal virtual;
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>amount</code></td><td><code>uint256</code></td><td>The amount to set</td></tr>
+</tbody></table>
+</div>
+<h3 id="_transfertoaccountant"><a class="header" href="#_transfertoaccountant">_transferToAccountant</a></h3>
+<p>Flushes the reward token to the accountant</p>
+<p><em>Transfers the specified amount of reward tokens to the accountant</em></p>
+<pre><code class="language-solidity">function _transferToAccountant(uint256 amount) internal;
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>amount</code></td><td><code>uint256</code></td><td>The amount of reward tokens to flush</td></tr>
+</tbody></table>
+</div>
+<h3 id="_checkpointrewards"><a class="header" href="#_checkpointrewards">_checkpointRewards</a></h3>
+<p>Synchronizes state of pending rewards.</p>
+<p><em>Must be implemented by derived strategies to handle protocol-specific reward collection</em></p>
+<pre><code class="language-solidity">function _checkpointRewards(address gauge) internal virtual returns (PendingRewards memory);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>gauge</code></td><td><code>address</code></td><td>The gauge to synchronize</td></tr>
+</tbody></table>
+</div>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>&lt;none&gt;</code></td><td><code>PendingRewards</code></td><td>Pending rewards collected during synchronization</td></tr>
+</tbody></table>
+</div>
+<h3 id="_harvestlocker"><a class="header" href="#_harvestlocker">_harvestLocker</a></h3>
+<p>Harvests rewards from the locker</p>
+<p><em>Must be implemented by derived strategies to handle protocol-specific reward collection</em></p>
+<pre><code class="language-solidity">function _harvestLocker(address gauge, bytes memory extraData) internal virtual returns (uint256 pendingRewards);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>gauge</code></td><td><code>address</code></td><td>The gauge to harvest rewards from</td></tr>
+<tr><td><code>extraData</code></td><td><code>bytes</code></td><td>Additional data needed for harvesting (protocol-specific)</td></tr>
+</tbody></table>
+</div>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>pendingRewards</code></td><td><code>uint256</code></td><td>The pending rewards collected during harvesting</td></tr>
+</tbody></table>
+</div>
+<h3 id="_deposit"><a class="header" href="#_deposit">_deposit</a></h3>
+<p>Deposits assets into a specific target</p>
+<p><em>Must be implemented by derived strategies to handle protocol-specific deposits</em></p>
+<pre><code class="language-solidity">function _deposit(address asset, address gauge, uint256 amount) internal virtual;
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>asset</code></td><td><code>address</code></td><td>The asset to deposit</td></tr>
+<tr><td><code>gauge</code></td><td><code>address</code></td><td>The gauge to deposit into</td></tr>
+<tr><td><code>amount</code></td><td><code>uint256</code></td><td>The amount to deposit</td></tr>
+</tbody></table>
+</div>
+<h3 id="_withdraw"><a class="header" href="#_withdraw">_withdraw</a></h3>
+<p>Withdraws assets from a specific target</p>
+<p><em>Must be implemented by derived strategies to handle protocol-specific withdrawals</em></p>
+<pre><code class="language-solidity">function _withdraw(address asset, address gauge, uint256 amount, address receiver) internal virtual;
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>asset</code></td><td><code>address</code></td><td>The asset to withdraw</td></tr>
+<tr><td><code>gauge</code></td><td><code>address</code></td><td>The gauge to withdraw from</td></tr>
+<tr><td><code>amount</code></td><td><code>uint256</code></td><td>The amount to withdraw</td></tr>
+<tr><td><code>receiver</code></td><td><code>address</code></td><td>The address to receive the withdrawn assets</td></tr>
+</tbody></table>
+</div>
+<h2 id="events"><a class="header" href="#events">Events</a></h2>
+<h3 id="shutdown-1"><a class="header" href="#shutdown-1">Shutdown</a></h3>
+<p>Event emitted when the strategy is shutdown</p>
+<pre><code class="language-solidity">event Shutdown(address indexed gauge);
+</code></pre>
+<h3 id="rebalance-1"><a class="header" href="#rebalance-1">Rebalance</a></h3>
+<p>Event emitted when the strategy is rebalanced</p>
+<pre><code class="language-solidity">event Rebalance(address indexed gauge, address[] targets, uint256[] amounts);
+</code></pre>
+<h2 id="errors"><a class="header" href="#errors">Errors</a></h2>
+<h3 id="onlyvault-1"><a class="header" href="#onlyvault-1">OnlyVault</a></h3>
+<p>Error thrown when the caller is not the vault for the gauge</p>
+<pre><code class="language-solidity">error OnlyVault();
+</code></pre>
+<h3 id="onlyaccountant-1"><a class="header" href="#onlyaccountant-1">OnlyAccountant</a></h3>
+<p>Error thrown when the caller is not the accountant for the strategy</p>
+<pre><code class="language-solidity">error OnlyAccountant();
+</code></pre>
+<h3 id="onlyallowed-1"><a class="header" href="#onlyallowed-1">OnlyAllowed</a></h3>
+<p>Error thrown when the caller is not allowed to perform the action</p>
+<pre><code class="language-solidity">error OnlyAllowed();
+</code></pre>
+<h3 id="gaugeshutdown"><a class="header" href="#gaugeshutdown">GaugeShutdown</a></h3>
+<p>Error thrown when trying to interact with a shutdown gauge</p>
+<pre><code class="language-solidity">error GaugeShutdown();
+</code></pre>
+<h3 id="depositfailed"><a class="header" href="#depositfailed">DepositFailed</a></h3>
+<p>Error thrown when the deposit fails</p>
+<pre><code class="language-solidity">error DepositFailed();
+</code></pre>
+<h3 id="withdrawfailed"><a class="header" href="#withdrawfailed">WithdrawFailed</a></h3>
+<p>Error thrown when the withdraw fails</p>
+<pre><code class="language-solidity">error WithdrawFailed();
+</code></pre>
+<h3 id="transferfailed"><a class="header" href="#transferfailed">TransferFailed</a></h3>
+<p>Error thrown when the transfer fails</p>
+<pre><code class="language-solidity">error TransferFailed();
+</code></pre>
+<h3 id="approvefailed"><a class="header" href="#approvefailed">ApproveFailed</a></h3>
+<p>Error thrown when the approve fails</p>
+<pre><code class="language-solidity">error ApproveFailed();
+</code></pre>
+<h3 id="rebalancenotneeded"><a class="header" href="#rebalancenotneeded">RebalanceNotNeeded</a></h3>
+<p>Error thrown when rebalance is not needed</p>
+<pre><code class="language-solidity">error RebalanceNotNeeded();
+</code></pre>
+<h3 id="alreadyshutdown"><a class="header" href="#alreadyshutdown">AlreadyShutdown</a></h3>
+<p>Error thrown when the strategy is already shutdown</p>
+<pre><code class="language-solidity">error AlreadyShutdown();
+</code></pre>
+<h3 id="transfertoaccountantfailed"><a class="header" href="#transfertoaccountantfailed">TransferToAccountantFailed</a></h3>
+<p>Error thrown when the transfer to the accountant fails</p>
+<pre><code class="language-solidity">error TransferToAccountantFailed();
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../src/SidecarFactory.sol/abstract.SidecarFactory.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../src/SidecarFactory.sol/abstract.SidecarFactory.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../../elasticlunr.min.js"></script>
+        <script src="../../mark.min.js"></script>
+        <script src="../../searcher.js"></script>
+
+        <script src="../../clipboard.min.js"></script>
+        <script src="../../highlight.js"></script>
+        <script src="../../book.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../../solidity.min.js"></script>
+
+
+    </div>
+    </body>
+</html>
