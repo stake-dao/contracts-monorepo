@@ -1,18 +1,17 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IERC20, IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
-
-import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {IAllocator} from "src/interfaces/IAllocator.sol";
+import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {IAccountant} from "src/interfaces/IAccountant.sol";
-import {IRewardVault} from "src/interfaces/IRewardVault.sol";
-import {ImmutableArgsParser} from "src/libraries/ImmutableArgsParser.sol";
+import {IAllocator} from "src/interfaces/IAllocator.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
+import {IRewardVault} from "src/interfaces/IRewardVault.sol";
+import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {ImmutableArgsParser} from "src/libraries/ImmutableArgsParser.sol";
 
 /// @title RewardVault - A Stake DAO vault for managing deposits and rewards
 /// @notice An ERC4626-compatible vault that handles:

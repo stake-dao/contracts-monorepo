@@ -5,8 +5,8 @@ import {IBaseRewardPool} from "@interfaces/convex/IBaseRewardPool.sol";
 import {IBooster} from "@interfaces/convex/IBooster.sol";
 import {IStashTokenWrapper} from "@interfaces/convex/IStashTokenWrapper.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {Sidecar} from "src/Sidecar.sol";
 import {ImmutableArgsParser} from "src/libraries/ImmutableArgsParser.sol";
+import {Sidecar} from "src/Sidecar.sol";
 
 /// @notice Sidecar for Convex.
 /// @dev For each PID, a minimal proxy is deployed using this contract as implementation.
