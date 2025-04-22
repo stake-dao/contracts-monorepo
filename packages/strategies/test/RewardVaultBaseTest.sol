@@ -4,6 +4,8 @@ pragma solidity 0.8.28;
 import "src/RewardVault.sol";
 import "test/unit/RewardVault/RewardVaultHarness.t.sol";
 import "./Base.t.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 
 /// @title RewardVaultTest
 /// @notice Base test contract specifically for RewardVault tests
@@ -17,8 +19,18 @@ abstract contract RewardVaultBaseTest is BaseTest {
     function setUp() public virtual override {
         super.setUp();
 
-        // Initialize Accountant
-        rewardVault = new RewardVault(protocolId, address(registry), accountant, IStrategy.HarvestPolicy.CHECKPOINT);
+        /// Prepare the initialization data for the vault
+        ERC20Mock asset = new ERC20Mock("Curve DAO Token", "CRV", 18);
+        bytes memory data = abi.encodePacked(makeAddr("gauge"), asset);
+
+        /// Deploy then clone the vault implementation with the initialization data
+        rewardVault = RewardVault(
+            Clones.cloneDeterministicWithImmutableArgs(
+                address(new RewardVault(protocolId, address(registry), accountant, IStrategy.HarvestPolicy.CHECKPOINT)),
+                data,
+                keccak256("salt")
+            )
+        );
 
         protocolController = address(registry);
     }

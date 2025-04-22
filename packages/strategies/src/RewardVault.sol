@@ -174,7 +174,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @param policy The harvest policy.
     /// @custom:reverts ZeroAddress if the accountant or protocol controller address is the zero address.
     constructor(bytes4 protocolId, address protocolController, address accountant, IStrategy.HarvestPolicy policy)
-        ERC20(string.concat("StakeDAO Vault"), string.concat("sd-vault"))
+        ERC20("", "")
     {
         require(accountant != address(0) && protocolController != address(0), ZeroAddress());
         require(protocolId != bytes4(0), InvalidProtocolId());
@@ -928,7 +928,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @dev Combines "StakeDAO", underlying asset name, and "Vault"
     /// @return Full vault name
     function name() public view override(ERC20, IERC20Metadata) returns (string memory) {
-        return string.concat("StakeDAO Fusion", IERC20Metadata(asset()).name(), " Vault");
+        return string.concat("StakeDAO Fusion ", IERC20Metadata(asset()).name(), " Vault");
     }
 
     /// @notice Generates the vault's symbol
