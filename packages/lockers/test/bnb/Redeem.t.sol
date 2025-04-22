@@ -3,9 +3,9 @@ pragma solidity ^0.8.19;
 
 import "forge-std/src/Test.sol";
 
-import "address-book/src/dao/1.sol";
-import "address-book/src/lockers/1.sol";
-import "address-book/src/protocols/1.sol";
+import "address-book/src/dao/56.sol";
+import "address-book/src/lockers/56.sol";
+import "address-book/src/protocols/56.sol";
 
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import "src/common/locker/Redeem.sol";
@@ -13,7 +13,7 @@ import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {IVeANGLE} from "src/common/interfaces/IVeANGLE.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 
-contract RedeemAngleTest is Test {
+contract RedeemCakeTest is Test {
     using Math for uint256;
 
     ERC20 public token;
@@ -25,46 +25,27 @@ contract RedeemAngleTest is Test {
     uint256 public conversionRate;
 
     function setUp() public virtual {
-        vm.createSelectFork(vm.rpcUrl("mainnet"), 22_168_158);
+        vm.createSelectFork(vm.rpcUrl("bnb"), 48_580_933);
 
-        token = ERC20(ANGLE.TOKEN);
-        sdToken = ERC20(ANGLE.SDTOKEN);
-        sdTokenGauge = ERC20(ANGLE.GAUGE);
+        token = ERC20(CAKE.TOKEN);
+        sdToken = ERC20(CAKE.SDTOKEN);
+        sdTokenGauge = ERC20(CAKE.GAUGE);
 
-        vm.prank(ANGLE.LOCKER);
-        IVeANGLE(Angle.VEANGLE).withdraw_fast();
+        conversionRate = 1e18;
 
-        /// @notice The conversion rate is 0.922165662297322400 ANGLE per 1e18 SDANGLE.
-        /// Defined here https://gov.stakedao.org/t/sdgp-50-angle-redemption-proposal/1043
-        conversionRate = 922165662297322400;
+        redeem = new Redeem(CAKE.TOKEN, CAKE.SDTOKEN, CAKE.GAUGE, conversionRate, 27 weeks, address(this));
 
-        redeem = new Redeem(ANGLE.TOKEN, ANGLE.SDTOKEN, ANGLE.GAUGE, conversionRate, 365 days, address(this));
+        uint256 balance = sdToken.totalSupply();
+        deal(CAKE.TOKEN, address(redeem), balance);
 
-        uint256 balance = token.balanceOf(ANGLE.LOCKER);
-
-        vm.prank(ANGLE.LOCKER);
-        token.transfer(address(redeem), balance);
-
-        vm.prank(ANGLE.DEPOSITOR);
-        ISdToken(ANGLE.SDTOKEN).setOperator(address(redeem));
-
-        /// These tokens are lost as there's no way to claim them.
-        /// This is due to the fact that when Angle deprecated veANGLE, lockToken reverted, but sdAngle mint was still possible
-        /// if you deposit with lock = false.
-        balance = token.balanceOf(ANGLE.DEPOSITOR);
-
-        vm.prank(ANGLE.DEPOSITOR);
-        token.transfer(address(redeem), balance);
+        vm.prank(CAKE.DEPOSITOR);
+        ISdToken(CAKE.SDTOKEN).setOperator(address(redeem));
 
         /// To avoid revert when dealing with sdTokenGauge.
-        deal(Angle.EURA, address(sdTokenGauge), 100_000_000e18);
-        deal(ANGLE.TOKEN, address(sdTokenGauge), 100_000_000e18);
-        deal(Angle.SAN_USDC_EUR, address(sdTokenGauge), 100_000_000e18);
+        deal(CAKE.TOKEN, address(sdTokenGauge), 100_000_000e18);
     }
 
     function test_setup() public view {
-        assertEq(token.balanceOf(ANGLE.LOCKER), 0);
-        assertEq(token.balanceOf(ANGLE.DEPOSITOR), 0);
         assertGe(token.balanceOf(address(redeem)), sdToken.totalSupply());
     }
 
@@ -103,7 +84,7 @@ contract RedeemAngleTest is Test {
         /// 4. Snapshot the balance of the redeem contract
         uint256 balanceBefore = token.balanceOf(address(redeem));
 
-        uint256 claimable = ILiquidityGauge(ANGLE.GAUGE).claimable_reward(address(this), ANGLE.TOKEN);
+        uint256 claimable = ILiquidityGauge(CAKE.GAUGE).claimable_reward(address(this), CAKE.TOKEN);
 
         /// 5. Redeem
         redeem.redeem();
@@ -132,7 +113,7 @@ contract RedeemAngleTest is Test {
         /// 2. Approve sdTokenGauge
         sdTokenGauge.approve(address(redeem), sdTokenGaugeBalance);
 
-        uint256 claimable = ILiquidityGauge(ANGLE.GAUGE).claimable_reward(address(this), ANGLE.TOKEN);
+        uint256 claimable = ILiquidityGauge(CAKE.GAUGE).claimable_reward(address(this), CAKE.TOKEN);
 
         /// 3. Snapshot the balance of the redeem contract
         uint256 balanceBefore = token.balanceOf(address(redeem));
@@ -146,5 +127,18 @@ contract RedeemAngleTest is Test {
         /// 5. Assert
         assertEq(token.balanceOf(address(redeem)), balanceBefore - expected);
         assertEq(token.balanceOf(address(this)), expected + claimable);
+
+        /// 6. Assert that the redeem is not finalized
+        vm.expectRevert(Redeem.RedeemCooldown.selector);
+        redeem.retrieve();
+
+        skip(27 weeks);
+
+        uint256 balanceBeforeRetrieve = token.balanceOf(address(this));
+        uint256 balanceBeforeRedeem = token.balanceOf(address(redeem));
+
+        redeem.retrieve();
+
+        assertEq(token.balanceOf(address(this)), balanceBeforeRetrieve + balanceBeforeRedeem);
     }
 }
