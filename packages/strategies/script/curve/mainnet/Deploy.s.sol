@@ -51,7 +51,7 @@ contract Deploy is Base {
         vm.createSelectFork(NETWORK);
         vm.startBroadcast(DEPLOYER);
 
-        _run(DEPLOYER, CRV, LOCKER, PROTOCOL_ID, HARVESTED);
+        _run({_deployer: DEPLOYER, _rewardToken: CRV, _locker: LOCKER, _protocolId: PROTOCOL_ID, _harvested: HARVESTED});
 
         /// 1. Deploy the Curve Strategy contract.
         curveStrategy = new CurveStrategy(address(protocolController), locker, address(gateway), MINTER);

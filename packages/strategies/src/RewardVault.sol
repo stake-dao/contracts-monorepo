@@ -20,7 +20,6 @@ import {ImmutableArgsParser} from "src/libraries/ImmutableArgsParser.sol";
 ///         3. Integration with Stake DAO's protocol controller and strategy system
 /// @dev Key features:
 ///      - ERC4626 compliance for standardized vault operations
-///      - Multi-reward token support (up to MAX_REWARD_TOKEN_COUNT)
 ///      - Reward distribution with configurable periods and rates
 ///      - Integration with protocol controller for strategy management
 ///      - Automated reward checkpointing on transfers
@@ -135,7 +134,6 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     ///////////////////////////////////////////////////////////////
 
     /// @notice Array of all reward token addresses supported by this vault
-    /// @dev Limited to MAX_REWARD_TOKEN_COUNT elements
     address[] internal rewardTokens;
 
     /// @notice Mapping of reward token address to its distribution data
@@ -906,7 +904,15 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         IStrategy.HarvestPolicy policy,
         address referrer
     ) internal {
-        ACCOUNTANT.checkpoint(gauge(), address(0), to, uint128(amount), pendingRewards, policy, referrer);
+        ACCOUNTANT.checkpoint({
+            gauge: gauge(),
+            from: address(0),
+            to: to,
+            amount: uint128(amount),
+            pendingRewards: pendingRewards,
+            policy: policy,
+            referrer: referrer
+        });
     }
 
     /// @notice Burns vault shares
@@ -921,7 +927,14 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         IStrategy.PendingRewards memory pendingRewards,
         IStrategy.HarvestPolicy policy
     ) internal {
-        ACCOUNTANT.checkpoint(gauge(), from, address(0), uint128(amount), pendingRewards, policy);
+        ACCOUNTANT.checkpoint({
+            gauge: gauge(),
+            from: from,
+            to: address(0),
+            amount: uint128(amount),
+            pendingRewards: pendingRewards,
+            policy: policy
+        });
     }
 
     /// @notice Generates the vault's name
