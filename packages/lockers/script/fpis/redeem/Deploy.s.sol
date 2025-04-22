@@ -11,7 +11,7 @@ contract Deploy is Script {
         vm.createSelectFork("mainnet");
         vm.startBroadcast(DAO.MAIN_DEPLOYER);
 
-        new Redeem(address(FPIS.TOKEN), address(FPIS.SDTOKEN), address(FPIS.GAUGE), 1e18, DAO.MAIN_DEPLOYER);
+        new Redeem(address(FPIS.TOKEN), address(FPIS.SDTOKEN), address(FPIS.GAUGE), 1e18, 365 days, DAO.MAIN_DEPLOYER);
 
         vm.stopBroadcast();
     }

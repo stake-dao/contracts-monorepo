@@ -44,12 +44,12 @@ contract Redeem is Ownable2Step, ReentrancyGuard {
     /// @notice Conversion rate between `sdToken` and `token` expressed with 1e18 precision.
     uint256 public immutable conversionRateWad;
 
+    /// @notice The amount of sdTokens that can be redeemed.
+    uint256 public immutable reedeemCooldownDuration;
+
     //////////////////////////////////////////////////////
     /// --- CONSTANTS
     //////////////////////////////////////////////////////
-
-    /// @dev Time window after which the owner can sweep unredeemed `token`.
-    uint256 public constant REDEEM_COOLDOWN_DURATION = 365 days;
 
     //////////////////////////////////////////////////////
     /// --- STORAGE
@@ -87,14 +87,21 @@ contract Redeem is Ownable2Step, ReentrancyGuard {
     /// @param _sdToken         The sdToken wrapper to burn.
     /// @param _sdTokenGauge    The staking contract linked to `_sdToken`.
     /// @param _conversionRate  Conversion rate (1e18 precision) between `_sdToken` and `_token`.
+    /// @param _redeemCooldownDuration The cooldown duration for the redeem function.
     /// @param _owner           Initial owner.
-    constructor(address _token, address _sdToken, address _sdTokenGauge, uint256 _conversionRate, address _owner)
-        Ownable()
-    {
+    constructor(
+        address _token,
+        address _sdToken,
+        address _sdTokenGauge,
+        uint256 _conversionRate,
+        uint256 _redeemCooldownDuration,
+        address _owner
+    ) Ownable() {
         token = _token;
         sdToken = _sdToken;
         sdTokenGauge = _sdTokenGauge;
         conversionRateWad = _conversionRate;
+        reedeemCooldownDuration = _redeemCooldownDuration;
 
         _transferOwnership(_owner);
     }
@@ -107,8 +114,10 @@ contract Redeem is Ownable2Step, ReentrancyGuard {
     ///         Any gauge rewards are claimed directly to the caller.
     /// @dev    Non‑reentrant. Records `firstRedeemTimestamp` on the first successful call.
     function redeem() external nonReentrant {
-        // 1. Record the redemption start time (for owner cooldown) if not set.
+        /// @dev This is to prevent redeeming after the cooldown period has elapsed.
         if (isRedemptionFinalized) revert RedemptionFinalized();
+
+        // 1. Record the redemption start time (for owner cooldown) if not set.
         if (firstRedeemTimestamp == 0) firstRedeemTimestamp = block.timestamp;
 
         uint256 sdAmount;
@@ -150,7 +159,7 @@ contract Redeem is Ownable2Step, ReentrancyGuard {
 
     /// @notice Allows the owner to retrieve unredeemed `token` *after* the cooldown period.
     function retrieve() external onlyOwner {
-        if (block.timestamp < firstRedeemTimestamp + REDEEM_COOLDOWN_DURATION) revert RedeemCooldown();
+        if (block.timestamp < firstRedeemTimestamp + reedeemCooldownDuration) revert RedeemCooldown();
 
         uint256 amount = IERC20(token).balanceOf(address(this));
         IERC20(token).safeTransfer(msg.sender, amount);

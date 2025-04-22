@@ -46,7 +46,7 @@ contract RedeemTest is Test {
         vm.prank(FPIS.LOCKER);
         IVeFPIS(Frax.VEFPIS).withdraw();
 
-        redeem = new Redeem(FPIS.TOKEN, FPIS.SDTOKEN, FPIS.GAUGE, 1e18, address(this));
+        redeem = new Redeem(FPIS.TOKEN, FPIS.SDTOKEN, FPIS.GAUGE, 1e18, 365 days, address(this));
 
         vm.startPrank(FPIS.LOCKER);
         token.transfer(address(redeem), token.balanceOf(FPIS.LOCKER));
