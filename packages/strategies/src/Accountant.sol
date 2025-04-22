@@ -241,11 +241,37 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     //////////////////////////////////////////////////////
 
     /// @notice Checkpoints the state of the vault on every account action.
-    /// @dev Handles four types of operations:
-    ///      1. Minting (from = address(0)): Creates new tokens.
-    ///      2. Burning (to = address(0)): Destroys tokens.
-    ///      3. Transfers: Updates balances and rewards for both sender and receiver.
-    ///      4. Reward Distribution: Processes pending rewards if any exist.
+    /// @dev Handles four types of operations with complex reward and balance management:
+    ///      1. Minting (from == address(0)):
+    ///         - Creates new tokens by increasing supply
+    ///         - Updates receiver's rewards based on current integral if receiver exists
+    ///
+    ///      2. Burning (to == address(0)):
+    ///         - Destroys tokens by decreasing supply
+    ///         - Updates sender's rewards based on current integral
+    ///
+    ///      3. Transfers:
+    ///         - Supply remains unchanged
+    ///         - Updates sender's rewards based on current integral and decreases balance
+    ///         - Updates receiver's rewards based on current integral and increases balance
+    ///
+    ///      4. Reward Distribution: Processes pending rewards if they exist and supply > 0
+    ///         Two possible policies:
+    ///         a) HARVEST policy [1]:
+    ///            - Charges only protocol fee on harvested rewards
+    ///            - Updates integral immediately
+    ///            - Protocol fees are accrued immediately
+    ///
+    ///         b) CHECKPOINT policy [0] (if newRewards >= MIN_MEANINGFUL_REWARDS):
+    ///            - Charges both protocol and harvest fees
+    ///            - Updates integral
+    ///            - Fees are reserved rather than immediately accrued
+    ///            - Updates vault's total amounts and credited rewards
+    ///
+    ///     The function follows this execution flow:
+    ///         1. First processes any pending rewards if they exist
+    ///         2. Then handles the token operation (mint/burn/transfer)
+    ///         3. Finally updates the vault's state
     /// @param gauge The underlying gauge address of the vault.
     /// @param from The source address (address(0) for minting).
     /// @param to The destination address (address(0) for burning).
@@ -476,12 +502,11 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         address strategy = PROTOCOL_CONTROLLER.strategy(PROTOCOL_ID);
         require(strategy != address(0), NoStrategy());
 
-        uint256 totalHarvesterFee;
-        uint256 totalRewardsAmount;
-
         // Fetch the balance of the Accountant contract before harvesting.
         uint256 balanceBefore = IERC20(REWARD_TOKEN).balanceOf(address(this));
 
+        uint256 totalHarvesterFee;
+        uint256 totalRewardsAmount;
         // First pass: harvest all gauges and update vault states
         for (uint256 i; i < _gauges.length; i++) {
             address gauge = _gauges[i];
@@ -511,11 +536,10 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
             // 4. Start accounting
             uint256 protocolFee = _vault.reservedProtocolFee;
             uint256 harvesterFee = _vault.reservedHarvestFee;
-
-            uint256 netAfterReservedFees = pendingRewards.totalAmount - protocolFee - harvesterFee;
             uint256 netCredited = _vault.netCredited;
 
             // Strategy must at least make LPs whole
+            uint256 netAfterReservedFees = pendingRewards.totalAmount - protocolFee - harvesterFee;
             require(netAfterReservedFees >= netCredited, NetCreditsNotEnough());
 
             if (netAfterReservedFees > netCredited && _vault.supply > 0) {
