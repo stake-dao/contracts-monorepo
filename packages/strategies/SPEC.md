@@ -48,7 +48,7 @@ Vaults are the primary user entry points for depositing and withdrawing assets.
 - Extends ERC20 with ERC4626 functionality
 - Uses clone factory pattern for efficient deployment
 - Delegates reward accounting to the Accountant contract
-- Supports up to 10 additional reward tokens per vault
+- Support for additional reward tokens per vault
 
 ### 2.3 Allocator
 
