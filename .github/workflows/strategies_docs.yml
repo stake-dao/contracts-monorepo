@@ -1,4 +1,4 @@
-name: Deploy Strategies Docs to GitHub Pages
+name: Strategies - Deploy Docs
 
 on:
   workflow_dispatch:
