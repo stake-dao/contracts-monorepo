@@ -31,6 +31,9 @@ contract CurveStrategy is Strategy {
     /// @notice Error thrown when the mint fails.
     error MintFailed();
 
+    /// @notice Error thrown when the checkpoint fails.
+    error CheckpointFailed();
+
     //////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
     //////////////////////////////////////////////////////
@@ -53,10 +56,15 @@ contract CurveStrategy is Strategy {
     /// @dev Retrieves allocation targets and calculates pending rewards for each target
     /// @param gauge The address of the Curve gauge to sync
     /// @return pendingRewards A struct containing the total and fee subject pending rewards
-    function _checkpointRewards(address gauge) internal view override returns (PendingRewards memory pendingRewards) {
+    function _checkpointRewards(address gauge) internal override returns (PendingRewards memory pendingRewards) {
         address allocator = PROTOCOL_CONTROLLER.allocator(PROTOCOL_ID);
 
         address[] memory targets = IAllocator(allocator).getAllocationTargets(gauge);
+
+        /// @dev Checkpoint the locker
+        require(
+            _executeTransaction(gauge, abi.encodeWithSignature("user_checkpoint(address)", LOCKER)), CheckpointFailed()
+        );
 
         uint256 pendingRewardsAmount;
         for (uint256 i = 0; i < targets.length; i++) {
