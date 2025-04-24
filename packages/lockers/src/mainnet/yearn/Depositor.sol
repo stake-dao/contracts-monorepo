@@ -1,18 +1,40 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "src/common/extension/CurveExchangeDepositor.sol";
-import "src/common/interfaces/IVeYFI.sol";
+import {SafeModule} from "src/common/utils/SafeModule.sol";
+import {BaseDepositor} from "src/common/depositor/BaseDepositor.sol";
+import {IVeYFI} from "src/common/interfaces/IVeYFI.sol";
+import {Yearn} from "address-book/src/protocols/1.sol";
 
-/// @title Depositor
-/// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return
+/// @title Stake DAO Yearn Depositor
+/// @notice Contract responsible for managing YFI token deposits, locking them in the Locker,
+///         and minting sdYFI tokens in return.
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-contract Depositor is CurveExchangeDepositor {
-    address public constant VE_YFI = 0x90c1f9220d90d3966FbeE24045EDd73E1d588aD5;
+contract YearnDepositor is BaseDepositor, SafeModule {
+    ///////////////////////////////////////////////////////////////
+    /// --- CONSTANTS
+    ///////////////////////////////////////////////////////////////
 
-    constructor(address _token, address _locker, address _minter, address _gauge, address _pool)
-        CurveExchangeDepositor(_token, _locker, _minter, _gauge, 4 * 370 days, _pool)
+    /// @notice Address of the veYFI token.
+    address public constant VE_YFI = Yearn.VEYFI;
+
+    ////////////////////////////////////////////////////////////////
+    /// --- CONSTRUCTOR
+    ///////////////////////////////////////////////////////////////
+
+    /// @notice Initializes the Depositor contract with required dependencies
+    /// @param _token Address of the YFI token
+    /// @param _locker Address of the Stake DAO Yearn Locker contract
+    /// @param _minter Address of the sdYFI minter contract
+    /// @param _gauge Address of the sdYFI-gauge contract
+    /// @param _gateway Address of the gateway contract
+    /// @dev If `locker` and `gateway` are the same, internal calls will be done directly on the target from the gateway.
+    ///      Otherwise, the gateway will pass the execution to the `locker` to call the target contracts.
+    /// @custom:throws InvalidGateway if the provided gateway is a zero address
+    constructor(address _token, address _locker, address _minter, address _gauge, address _gateway)
+        BaseDepositor(_token, _locker, _minter, _gauge, 4 * 370 days)
+        SafeModule(_gateway)
     {}
 
     /// Override the createLock function to prevent reverting.
@@ -21,22 +43,43 @@ contract Depositor is CurveExchangeDepositor {
     /// @notice Locks the tokens held by the contract
     /// @dev The contract must have tokens to lock
     function _lockToken(uint256 _amount) internal override {
-        // If there is Token available in the contract transfer it to the locker
-        if (_amount != 0) {
-            /// Increase the amount.
-            ILocker(locker).increaseAmount(_amount);
-        }
+        // Get current locker's locked balance in veYFI
+        IVeYFI.LockedBalance memory _lockedBalance = IVeYFI(VE_YFI).locked(locker);
 
         /// In the case of Yearn, we can lock up to 10 years.
-        /// But we will lock for 4 years and couple months more to avoid decay.
+        /// But 4 years plus a couple months is enough to avoid decay.
         uint256 _unlockTime = block.timestamp + MAX_LOCK_DURATION;
 
-        IVeYFI.LockedBalance memory _lockedBalance = IVeYFI(VE_YFI).locked(address(locker));
-        bool _canIncrease = (_unlockTime / 1 weeks * 1 weeks) > _lockedBalance.end;
+        // Calculate the new unlock time.
+        // If the new unlock time is greater than the current locked balance's end time, use the new unlock time.
+        // Otherwise, use 0 as the unlock time.
+        uint256 _newUnlockTime = (_unlockTime / 1 weeks * 1 weeks) > _lockedBalance.end ? _unlockTime : 0;
 
-        if (_canIncrease) {
-            /// Increase the unlock time.
-            ILocker(locker).increaseUnlockTime(_unlockTime);
-        }
+        // If it's needed, modify the lock of the locker
+        if (_amount != 0 || _newUnlockTime != 0) _execute_modifyLock(_amount, _newUnlockTime);
+    }
+
+    /// @notice Modifies the lock of the locker
+    /// @dev Compare to the ve contract depositors, Yearn allow us to increase the amount AND the unlock time at the same time.
+    /// @param amount The amount of YFI to modify Can be 0.
+    /// @param unlockTime The new unlock time. Can be 0.
+    function _execute_modifyLock(uint256 amount, uint256 unlockTime) internal virtual {
+        _executeTransaction(VE_YFI, abi.encodeWithSelector(IVeYFI.modify_lock.selector, amount, unlockTime));
+    }
+
+    function _getLocker() internal view override returns (address) {
+        return locker;
+    }
+
+    ///////////////////////////////////////////////////////////////
+    /// --- GETTERS
+    ///////////////////////////////////////////////////////////////
+
+    function version() external pure virtual override returns (string memory) {
+        return "2.0.0";
+    }
+
+    function name() external view virtual override returns (string memory) {
+        return type(YearnDepositor).name;
     }
 }
