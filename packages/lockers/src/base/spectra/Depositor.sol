@@ -4,19 +4,19 @@ pragma solidity 0.8.19;
 import "solady/src/utils/SafeTransferLib.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {ILocker} from "src/common/interfaces/spectra/stakedao/ILocker.sol";
-import {SafeModuleDepositor} from "src/base/spectra/SafeModuleDepositor.sol";
 import {ITokenMinter, ILiquidityGauge} from "src/common/depositor/BaseDepositor.sol";
 import {ISpectraVoter} from "src/common/interfaces/spectra/spectra/ISpectraVoter.sol";
 import {ISpectraLocker} from "src/common/interfaces/spectra/spectra/ISpectraLocker.sol";
 import {ISpectraRewardsDistributor} from "src/common/interfaces/spectra/spectra/ISpectraRewardsDistributor.sol";
+import {SafeModule} from "src/common/utils/SafeModule.sol";
+import {BaseDepositor} from "src/common/depositor/BaseDepositor.sol";
 
 /// @title Stake DAO Spectra Depositor
 /// @notice Contract responsible for managing SPECTRA token deposits, locking them in the Locker,
 ///         and minting sdSPECTRA tokens in return.
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-contract Depositor is SafeModuleDepositor {
+contract Depositor is BaseDepositor, SafeModule {
     ///////////////////////////////////////////////////////////////
     /// --- STATE VARIABLES & CONSTANTS
     ///////////////////////////////////////////////////////////////
@@ -64,12 +64,14 @@ contract Depositor is SafeModuleDepositor {
     ///////////////////////////////////////////////////////////////
 
     /// @notice Initializes the Depositor contract with required dependencies
+    /// @dev The locker is also the gateway
     /// @param _token Address of the SPECTRA token
     /// @param _locker Address of the SD locker contract
     /// @param _minter Address of the sdSPECTRA minter contract
     /// @param _gauge Address of the sdSPECTRA-gauge contract
     constructor(address _token, address _locker, address _minter, address _gauge)
-        SafeModuleDepositor(_token, _locker, _minter, _gauge, 4 * 365 days)
+        BaseDepositor(_token, _locker, _minter, _gauge, 4 * 365 days)
+        SafeModule(_locker)
     {}
 
     ////////////////////////////////////////////////////////////////
@@ -182,6 +184,10 @@ contract Depositor is SafeModuleDepositor {
             // Mint difference from rebasing to the accumulator
             ITokenMinter(minter).mint(accumulator, rewardAmount);
         }
+    }
+
+    function _getLocker() internal view override returns (address) {
+        return locker;
     }
 
     ////////////////////////////////////////////////////////////////

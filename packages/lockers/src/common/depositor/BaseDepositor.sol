@@ -334,7 +334,7 @@ abstract contract BaseDepositor {
         emit StateUpdated(_state);
     }
 
-    function name() external view returns (string memory) {
+    function name() external view virtual returns (string memory) {
         return string(abi.encodePacked(IERC20(token).symbol(), " Depositor"));
     }
 
@@ -343,7 +343,7 @@ abstract contract BaseDepositor {
     /// Major version is increased when backward compatibility is broken in this base contract.
     /// Minor version is increased when new features are added in this base contract.
     /// Patch version is increased when child contracts are updated.
-    function version() external pure returns (string memory) {
+    function version() external pure virtual returns (string memory) {
         return "4.0.0";
     }
 }

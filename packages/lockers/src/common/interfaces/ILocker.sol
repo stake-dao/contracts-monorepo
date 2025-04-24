@@ -27,6 +27,8 @@ interface ILocker {
 
     function claimRewards(address, address, address) external;
 
+    function claimRewards(address _recipient, address[] calldata _pools) external;
+
     function claimFXSRewards(address) external;
 
     function claimFPISRewards(address) external;
@@ -66,6 +68,4 @@ interface ILocker {
     function acceptGovernance() external;
 
     function setStrategy(address _strategy) external;
-
-    function claimRewards(address _recipient, address[] calldata _pools) external;
 }

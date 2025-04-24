@@ -1,26 +1,37 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "src/common/accumulator/BaseAccumulator.sol";
-import {ILocker} from "src/common/interfaces/ILocker.sol";
+import {Pendle} from "address-book/src/protocols/1.sol";
+import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {IFeeReceiver} from "common/interfaces/IFeeReceiver.sol";
+import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {IPendleFeeDistributor} from "src/common/interfaces/IPendleFeeDistributor.sol";
+import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
+import {SafeModule} from "src/common/utils/SafeModule.sol";
+import {PENDLE as PendleProtocol} from "address-book/src/lockers/1.sol";
 
-interface IWETH {
-    function deposit() external payable;
-}
-
-/// @title Accumulator - BaseAccumulator for Pendle
+/// @title PendleAccumulator
+/// @notice A contract that accumulates Pendle rewards and notifies them to the sdPENDLE gauge
 /// @author StakeDAO
-contract Accumulator is BaseAccumulator {
+contract PendleAccumulator is BaseAccumulator, SafeModule {
+    ///////////////////////////////////////////////////////////////
+    /// --- CONSTANTS
+    ///////////////////////////////////////////////////////////////
+
     /// @notice Base fee (10_000 = 100%)
     uint256 private constant BASE_FEE = 10_000;
 
     address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address public constant PENDLE = 0x808507121B80c02388fAd14726482e061B8da827;
-    address public constant VE_PENDLE = 0x4f30A9D41B80ecC5B94306AB4364951AE3170210;
-    address public constant FEE_DISTRIBUTOR = 0x8C237520a8E14D658170A633D96F8e80764433b9;
+    address public constant PENDLE = Pendle.PENDLE;
+    address public constant VE_PENDLE = Pendle.VEPENDLE;
+    address public constant FEE_DISTRIBUTOR = Pendle.FEE_DISTRIBUTOR;
 
-    /// @notice WETH Distribution fee.
+    ///////////////////////////////////////////////////////////////
+    /// --- STATE
+    ///////////////////////////////////////////////////////////////
+
+    /// @notice Period to add on each claim
     uint256 public periodsToAdd = 4;
 
     /// @notice WETH Rewards period to notify.
@@ -33,10 +44,10 @@ contract Accumulator is BaseAccumulator {
     address public votesRewardRecipient;
 
     /// @notice Rewards for the period.
-    mapping(uint256 => uint256) public rewards; // period -> reward amount
+    mapping(uint256 period => uint256 rewardAmount) public rewards;
 
     ////////////////////////////////////////////////////////////////
-    /// --- EVENTS & ERRORS
+    /// --- ERRORS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Error emitted when a token not supported is used.
@@ -58,59 +69,71 @@ contract Accumulator is BaseAccumulator {
     /// --- CONSTRUCTOR
     ////////////////////////////////////////////////////////////
 
-    constructor(address _gauge, address _locker, address _governance)
+    /// @notice Initializes the Accumulator
+    /// @param _gauge Address of the sdPENDLE-gauge contract
+    /// @param _locker Address of the Stake DAO Pendle Locker contract
+    /// @param _governance Address of the governance contract
+    constructor(address _gauge, address _locker, address _governance, address _gateway)
         BaseAccumulator(_gauge, WETH, _locker, _governance)
+        SafeModule(_gateway)
     {
+        strategy = PendleProtocol.STRATEGY;
+
+        // Give full approval to the gauge for the WETH and PENDLE tokens
         SafeTransferLib.safeApprove(WETH, gauge, type(uint256).max);
         SafeTransferLib.safeApprove(PENDLE, gauge, type(uint256).max);
     }
 
-    function claimAndNotifyAll(address[] memory _pools, bool notifySDT, bool claimFeeStrategy) external {
-        // Sending strategy fees to fee receiver
-        if (claimFeeStrategy && strategy != address(0)) {
-            _claimFeeStrategy();
-        }
+    //////////////////////////////////////////////////////
+    /// --- OVERRIDDEN FUNCTIONS
+    //////////////////////////////////////////////////////
 
-        /// Check historical rewards.
+    /// @notice Make the locker claim all the reward tokens before depositing them to the Liquidity Gauge (v4)
+    /// @param _pools Array of pools to claim rewards from
+    function claimAndNotifyAll(address[] memory _pools) external {
+        // Tell the Strategy to send the fees accrued by it to the fee receiver
+        _claimFeeStrategy();
+
+        // Check the historical rewards.
         uint256 totalAccrued = IPendleFeeDistributor(FEE_DISTRIBUTOR).getProtocolTotalAccrued(address(locker));
 
-        /// Check claimed rewards.
+        // Check the claimed rewards.
         uint256 claimed = IPendleFeeDistributor(FEE_DISTRIBUTOR).claimed(address(locker));
 
+        // Check how many native reward are claimable.
         address[] memory vePendle = new address[](1);
         vePendle[0] = VE_PENDLE;
-
-        /// Check the native reward claimable.
         uint256 nativeRewardClaimable =
             IPendleFeeDistributor(FEE_DISTRIBUTOR).getProtocolClaimables(address(locker), vePendle)[0];
 
-        /// Claim on behalf of the locker.
+        // Claim the rewards from the pools to this contract and wrap them into wETH
         uint256 totalReward = _claimReward(_pools);
 
-        /// There's 1e4 wei of tolerance to avoid rounding errors because of a mistake in the Pendle FEE_DISTRIBUTOR contract.
+        // Ensure the total claimed reward is correct
+        // @dev There's 1e4 wei of tolerance to avoid rounding errors because of a mistake in the Pendle FEE_DISTRIBUTOR contract.
         if (totalReward + 1e4 < totalAccrued - claimed) revert NOT_CLAIMED_ALL();
 
-        /// Update the remaining periods.
+        // Update the remaining periods.
         remainingPeriods += periodsToAdd;
 
-        /// Charge fee on the total reward.
+        // Charge the fee on the total reward.
         totalReward -= _chargeFee(WETH, totalReward);
 
-        /// If the voters rewards are not transferred to the recipient, they will be distributed to the gauge.
+        // If the voters rewards must be transferred to the recipient, do it.
         if (transferVotersRewards) {
             uint256 votersTotalReward = totalReward - nativeRewardClaimable;
             // transfer the amount without charging fees
             SafeTransferLib.safeTransfer(WETH, votesRewardRecipient, votersTotalReward);
         }
 
-        /// We put 0 as the amount to notify, as it'll distribute the balance.
+        // Notify the rewards to the Liquidity Gauge (V4)
+        // We set 0 as the amount to notify, because the overriden version of `_notifyReward` is charged for
+        // calculating the exact amount to deposit into the gauge
         _notifyReward(WETH, 0, false);
-        _notifyReward(PENDLE, 0, claimFeeStrategy);
+        _notifyReward(PENDLE, 0, true);
 
-        /// Just in case, but it should be needed anymore.
-        if (notifySDT) {
-            _distributeSDT();
-        }
+        // legacy: just in case, but it shouldn't be needed anymore.
+        _distributeSDT();
     }
 
     /// @notice Notify the new reward to the LGV4
@@ -140,31 +163,72 @@ contract Accumulator is BaseAccumulator {
         ILiquidityGauge(gauge).deposit_reward_token(tokenReward, amount);
     }
 
-    /// @notice Claim reward for the pools
-    /// @param _pools pools to claim the rewards
+    function _getLocker() internal view override returns (address) {
+        return locker;
+    }
+
+    ////////////////////////////////////////////////////////////////
+    /// --- INTERNAL FUNCTIONS
+    ///////////////////////////////////////////////////////////////
+
+    /// @notice Claim locker's rewards to this contract
+    /// @dev The `ETH` rewards are wrapped into `WETH`
+    /// @param _pools pools to claim the rewards from
     function _claimReward(address[] memory _pools) internal returns (uint256 claimed) {
         uint256 balanceBefore = address(this).balance;
-        ILocker(locker).claimRewards(address(this), _pools);
+        _execute_claimRewards(_pools);
 
-        // Wrap Eth to WETH
+        // Wrap ETHs to WETHs
         claimed = address(this).balance - balanceBefore;
         if (claimed == 0) revert NO_BALANCE();
         IWETH(WETH).deposit{value: address(this).balance}();
     }
 
+    ////////////////////////////////////////////////////////////////
+    /// --- SAFE MODULE RELATED FUNCTIONS
+    ///////////////////////////////////////////////////////////////
+
+    function _execute_claimRewards(address[] memory _pools) internal {
+        _executeTransaction(
+            FEE_DISTRIBUTOR, abi.encodeWithSelector(IPendleFeeDistributor.claimProtocol.selector, address(this), _pools)
+        );
+    }
+
+    ///////////////////////////////////////////////////////////////
+    /// --- SETTERS
+    ///////////////////////////////////////////////////////////////
+
+    /// @notice Set the address to receive the voters rewards
+    /// @param _votesRewardRecipient address to receive the voters rewards
     function setVotesRewardRecipient(address _votesRewardRecipient) external onlyGovernance {
         votesRewardRecipient = _votesRewardRecipient;
     }
 
+    /// @notice Set if the voters rewards will be distributed to the gauge
+    /// @param _transferVotersRewards if true, the voters rewards will be distributed to the gauge
     function setTransferVotersRewards(bool _transferVotersRewards) external onlyGovernance {
         transferVotersRewards = _transferVotersRewards;
     }
 
+    /// @notice Set the number of periods to add to the remaining periods at each claim
+    /// @param _periodsToAdd number of periods to add
     function setPeriodsToAdd(uint256 _periodsToAdd) external onlyGovernance {
         periodsToAdd = _periodsToAdd;
     }
 
-    function name() external pure override returns (string memory) {
-        return "PENDLE Accumulator";
+    ///////////////////////////////////////////////////////////////
+    /// --- GETTERS
+    ///////////////////////////////////////////////////////////////
+
+    function version() external pure virtual override returns (string memory) {
+        return "3.1.0";
     }
+
+    function name() external view virtual override returns (string memory) {
+        return type(PendleAccumulator).name;
+    }
+}
+
+interface IWETH {
+    function deposit() external payable;
 }
