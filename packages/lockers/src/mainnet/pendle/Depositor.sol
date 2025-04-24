@@ -1,46 +1,87 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "src/common/depositor/BaseDepositor.sol";
-import {IPendleLocker} from "src/common/interfaces/IPendleLocker.sol";
+import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+import {PENDLE} from "address-book/src/lockers/1.sol";
+import {Pendle} from "address-book/src/protocols/1.sol";
 import {IVePendle} from "src/common/interfaces/IVePendle.sol";
+import {SafeModule} from "src/common/utils/SafeModule.sol";
+import {BaseDepositor} from "src/common/depositor/BaseDepositor.sol";
 
-/// @title BaseDepositor
-/// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return
+/// @title Stake DAO Pendle Depositor
+/// @notice Contract responsible for managing PENDLE token deposits, locking them in the Locker,
+///         and minting sdPENDLE tokens in return.
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-contract Depositor is BaseDepositor {
-    /// @notice Address of the veCRV token.
-    address public constant VE_PENDLE = 0x4f30A9D41B80ecC5B94306AB4364951AE3170210;
+contract PendleDepositor is BaseDepositor, SafeModule {
+    using SafeCast for uint256;
 
-    constructor(address _token, address _locker, address _minter, address _gauge)
+    ///////////////////////////////////////////////////////////////
+    /// --- CONSTANTS
+    ///////////////////////////////////////////////////////////////
+
+    /// @notice Address of the vePENDLE token.
+    address public constant VE_PENDLE = Pendle.VEPENDLE;
+
+    ////////////////////////////////////////////////////////////////
+    /// --- CONSTRUCTOR
+    ///////////////////////////////////////////////////////////////
+
+    /// @notice Initializes the Depositor contract with required dependencies
+    /// @param _token Address of the PENDLE token
+    /// @param _locker Address of the Stake DAO Pendle Locker contract
+    /// @param _minter Address of the sdPENDLE minter contract
+    /// @param _gauge Address of the sdPENDLE-gauge contract
+    /// @param _gateway Address of the gateway contract
+    /// @dev If `locker` and `gateway` are the same, internal calls will be done directly on the target from the gateway.
+    ///      Otherwise, the gateway will pass the execution to the `locker` to call the target contracts.
+    /// @custom:throws InvalidGateway if the provided gateway is a zero address
+    constructor(address _token, address _locker, address _minter, address _gauge, address _gateway)
         BaseDepositor(_token, _locker, _minter, _gauge, 104 weeks)
+        SafeModule(_gateway)
     {}
 
     /// Override the createLock function to prevent reverting.
-    function createLock(uint256 _amount) external override {}
+    function createLock(uint256) external override {}
 
     /// @notice Locks the tokens held by the contract
     /// @dev The contract must have tokens to lock
-    function _lockToken(uint256 _amount) internal override {
-        // If there is Token available in the contract transfer it to the locker
-        if (_amount != 0) {
-            /// Increase the lock.
-            IPendleLocker(locker).increaseAmount(uint128(_amount));
-        }
+    /// @param amount The amount of PENDLE to lock
+    function _lockToken(uint256 amount) internal virtual override {
+        // Get the current expiry of the lock.
+        (, uint128 expiry) = IVePendle(VE_PENDLE).positionData(locker);
 
-        /// Define the "new" unlock time.
-        uint256 _unlockTime = (block.timestamp + MAX_LOCK_DURATION) / 1 weeks * 1 weeks;
+        // Calculate the "new" possible unlock time.
+        uint256 unlockTime = (block.timestamp + MAX_LOCK_DURATION) / 1 weeks * 1 weeks;
 
-        /// Get the current expiry of the lock.
-        (, uint128 _expiry) = IVePendle(VE_PENDLE).positionData(locker);
+        // If the new unlock time is greater than the current locked balance's end time, use it.
+        // Otherwise, use the current locked balance's end time (a valid unlock time is needed).
+        uint256 _newUnlockTime = unlockTime > expiry ? unlockTime : expiry;
 
-        /// Define if the unlock time can be increased.
-        bool _canIncrease = _unlockTime > _expiry;
+        // Tell the locker to increase the current position by `amount` and set the unlock time to `_newUnlockTime`.
+        _execute_increaseLockPosition(amount, _newUnlockTime);
+    }
 
-        /// Increase the unlock time if the lock is not at the maximum duration.
-        if (_canIncrease) {
-            IPendleLocker(locker).increaseUnlockTime(uint128(_unlockTime));
-        }
+    function _execute_increaseLockPosition(uint256 amount, uint256 unlockTime) internal virtual {
+        _executeTransaction(
+            VE_PENDLE,
+            abi.encodeWithSelector(IVePendle.increaseLockPosition.selector, amount.toUint128(), unlockTime.toUint128())
+        );
+    }
+
+    function _getLocker() internal view override returns (address) {
+        return locker;
+    }
+
+    ///////////////////////////////////////////////////////////////
+    /// --- GETTERS
+    ///////////////////////////////////////////////////////////////
+
+    function version() external pure virtual override returns (string memory) {
+        return "5.0.0";
+    }
+
+    function name() external view virtual override returns (string memory) {
+        return type(PendleDepositor).name;
     }
 }

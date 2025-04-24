@@ -13,8 +13,25 @@ import {ISDTDistributor} from "src/common/interfaces/ISDTDistributor.sol";
 /// @dev Interacting with the FeeReceiver (receiving and splitting fees)
 /// @author StakeDAO
 abstract contract BaseAccumulator {
+    ///////////////////////////////////////////////////////////////
+    /// --- CONSTANTS
+    ///////////////////////////////////////////////////////////////
+
     /// @notice Denominator for fixed point math.
     uint256 public constant DENOMINATOR = 1e18;
+
+    /// @notice sd gauge
+    address public immutable gauge;
+
+    /// @notice Main Reward Token distributed.
+    address public immutable rewardToken;
+
+    /// @notice sd locker
+    address public immutable locker;
+
+    ///////////////////////////////////////////////////////////////
+    /// --- STATE
+    ///////////////////////////////////////////////////////////////
 
     /// @notice Split struct
     /// @param receivers Array of receivers
@@ -33,15 +50,6 @@ abstract contract BaseAccumulator {
 
     /// @notice Claimer Fee.
     uint256 public claimerFee;
-
-    /// @notice sd gauge
-    address public immutable gauge;
-
-    /// @notice Main Reward Token distributed.
-    address public immutable rewardToken;
-
-    /// @notice sd locker
-    address public immutable locker;
 
     /// @notice Strategy address.
     address public strategy;
@@ -141,7 +149,7 @@ abstract contract BaseAccumulator {
     //////////////////////////////////////////////////////
 
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4
-    function claimAndNotifyAll(bool notifySDT, bool claimFeeStrategy) external virtual {}
+    function claimAndNotifyAll() external virtual {}
 
     /// @notice Notify the whole acc balance of a token
     /// @param token token to notify
@@ -307,7 +315,7 @@ abstract contract BaseAccumulator {
     }
 
     function name() external view virtual returns (string memory) {
-        return string("Base Accumulator");
+        return type(BaseAccumulator).name;
     }
 
     /// @notice Get the version of the contract
@@ -315,7 +323,7 @@ abstract contract BaseAccumulator {
     /// Major version is increased when backward compatibility is broken in this base contract.
     /// Minor version is increased when new features are added in this base contract.
     /// Patch version is increased when child contracts are updated.
-    function version() external pure returns (string memory) {
+    function version() external pure virtual returns (string memory) {
         return "3.0.0";
     }
 
