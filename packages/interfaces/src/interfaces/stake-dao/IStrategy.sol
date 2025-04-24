@@ -14,6 +14,8 @@ interface IStrategy {
     function rewardDistributors(address _gauge) external view returns (address);
     function isShutdown(address _gauge) external view returns (bool);
 
+    function feeDistributor() external view returns (address);
+
     /// Factory functions
     function toggleVault(address vault) external;
     function setGauge(address token, address gauge) external;

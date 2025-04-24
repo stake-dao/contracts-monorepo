@@ -18,6 +18,8 @@ library Balancer {
 library Curve {
     address public constant CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
     address public constant VECRV = 0x5f3b5DfEb7B28CDbD7FAba78963EE202a494e2A2;
+    address public constant CRV_USD = 0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E;
+    address public constant SD_VE_CRV = 0x478bBC744811eE8310B461514BDc29D03739084D;
 
     address public constant FEE_DISTRIBUTOR = 0xD16d5eC345Dd86Fb63C6a9C43c517210F1027914;
     address public constant GAUGE_CONTROLLER = 0x2F50D538606Fa9EDD2B11E2446BEb18C9D5846bB;
