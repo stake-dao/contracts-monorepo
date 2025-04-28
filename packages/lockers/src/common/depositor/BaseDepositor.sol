@@ -170,6 +170,15 @@ abstract contract BaseDepositor {
         ITokenMinter(minter).mint(msg.sender, _amount);
     }
 
+    /// @notice Deposit all tokens held by the contract.
+    /// @param _lock Whether to lock the tokens in the locker contract.
+    /// @param _stake Whether to stake the sdToken in the gauge.
+    /// @param _user Address of the user to receive the sdToken.
+    function depositAll(bool _lock, bool _stake, address _user) external {
+        uint256 tokenBalance = IERC20(token).balanceOf(msg.sender);
+        deposit(tokenBalance, _lock, _stake, _user);
+    }
+
     /// @notice Deposit tokens, and receive sdToken or sdTokenGauge in return.
     /// @param _amount Amount of tokens to deposit.
     /// @param _lock Whether to lock the tokens in the locker contract.
@@ -276,8 +285,8 @@ abstract contract BaseDepositor {
     function transferGovernance(address _governance) external onlyGovernance {
         emit GovernanceUpdateProposed(futureGovernance = _governance);
     }
-    /// @notice Accept the governance transfer.
 
+    /// @notice Accept the governance transfer.
     function acceptGovernance() external {
         if (msg.sender != futureGovernance) revert GOVERNANCE();
 
