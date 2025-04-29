@@ -10,21 +10,25 @@ import {IPendleFeeDistributor} from "src/common/interfaces/IPendleFeeDistributor
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {SafeModule} from "src/common/utils/SafeModule.sol";
 import {PENDLE as PendleProtocol} from "address-book/src/lockers/1.sol";
+import {CommonAddresses} from "address-book/src/common.sol";
 
 /// @title PendleAccumulator
-/// @notice A contract that accumulates Pendle rewards and notifies them to the sdPENDLE gauge
+/// @notice This contract is used to claim all the rewards the locker has received
+///         from the different reward pools before sending them to Stake DAO's Liquidity Gauge (v4)
+/// @dev This contract is the authorized distributor of the WETH and PENDLE rewards in the gauge
 /// @author StakeDAO
+/// @custom:contact contact@stakedao.org
 contract PendleAccumulator is BaseAccumulator, SafeModule {
     ///////////////////////////////////////////////////////////////
     /// --- CONSTANTS
     ///////////////////////////////////////////////////////////////
 
+    address public constant token = Pendle.PENDLE;
+    address public constant veToken = Pendle.VEPENDLE;
+
     /// @notice Base fee (10_000 = 100%)
     uint256 private constant BASE_FEE = 10_000;
 
-    address public constant WETH = 0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2;
-    address public constant PENDLE = Pendle.PENDLE;
-    address public constant VE_PENDLE = Pendle.VEPENDLE;
     address public constant FEE_DISTRIBUTOR = Pendle.FEE_DISTRIBUTOR;
 
     ///////////////////////////////////////////////////////////////
@@ -73,15 +77,23 @@ contract PendleAccumulator is BaseAccumulator, SafeModule {
     /// @param _gauge Address of the sdPENDLE-gauge contract
     /// @param _locker Address of the Stake DAO Pendle Locker contract
     /// @param _governance Address of the governance contract
+    /// @dev If `locker` and `gateway` are the same, internal calls will be done directly on the target from the gateway.
+    ///      Otherwise, the gateway will pass the execution to the `locker` to call the target contracts.
+    ///
+    ///      Here are some hardcoded parameters automatically set by the contract:
+    ///      - WETH is the reward token
+    ///      - PENDLE is the token
+    ///      - VePENDLE is the veToken
+    /// @custom:throws InvalidGateway if the provided gateway is a zero address
     constructor(address _gauge, address _locker, address _governance, address _gateway)
-        BaseAccumulator(_gauge, WETH, _locker, _governance)
+        BaseAccumulator(_gauge, CommonAddresses.WETH, _locker, _governance)
         SafeModule(_gateway)
     {
         strategy = PendleProtocol.STRATEGY;
 
         // Give full approval to the gauge for the WETH and PENDLE tokens
-        SafeTransferLib.safeApprove(WETH, gauge, type(uint256).max);
-        SafeTransferLib.safeApprove(PENDLE, gauge, type(uint256).max);
+        SafeTransferLib.safeApprove(CommonAddresses.WETH, gauge, type(uint256).max);
+        SafeTransferLib.safeApprove(token, gauge, type(uint256).max);
     }
 
     //////////////////////////////////////////////////////
@@ -102,7 +114,7 @@ contract PendleAccumulator is BaseAccumulator, SafeModule {
 
         // Check how many native reward are claimable.
         address[] memory vePendle = new address[](1);
-        vePendle[0] = VE_PENDLE;
+        vePendle[0] = veToken;
         uint256 nativeRewardClaimable =
             IPendleFeeDistributor(FEE_DISTRIBUTOR).getProtocolClaimables(address(locker), vePendle)[0];
 
@@ -117,20 +129,20 @@ contract PendleAccumulator is BaseAccumulator, SafeModule {
         remainingPeriods += periodsToAdd;
 
         // Charge the fee on the total reward.
-        totalReward -= _chargeFee(WETH, totalReward);
+        totalReward -= _chargeFee(rewardToken, totalReward);
 
         // If the voters rewards must be transferred to the recipient, do it.
         if (transferVotersRewards) {
             uint256 votersTotalReward = totalReward - nativeRewardClaimable;
             // transfer the amount without charging fees
-            SafeTransferLib.safeTransfer(WETH, votesRewardRecipient, votersTotalReward);
+            SafeTransferLib.safeTransfer(rewardToken, votesRewardRecipient, votersTotalReward);
         }
 
         // Notify the rewards to the Liquidity Gauge (V4)
         // We set 0 as the amount to notify, because the overriden version of `_notifyReward` is charged for
         // calculating the exact amount to deposit into the gauge
-        _notifyReward(WETH, 0, false);
-        _notifyReward(PENDLE, 0, true);
+        _notifyReward(rewardToken, 0, false);
+        _notifyReward(token, 0, true);
 
         // legacy: just in case, but it shouldn't be needed anymore.
         _distributeSDT();
@@ -141,17 +153,18 @@ contract PendleAccumulator is BaseAccumulator, SafeModule {
     /// @param amount amount to notify
     /// @param claimFeeStrategy if pull tokens from the fee receiver or not (tokens already in that contract)
     function _notifyReward(address tokenReward, uint256 amount, bool claimFeeStrategy) internal override {
+        // Split fees for the specified token using the fee receiver contract
+        // Function not permissionless, to prevent sending to that accumulator and re-splitting (_chargeFee)
         if (claimFeeStrategy && feeReceiver != address(0)) {
-            // Split fees for the specified token using the fee receiver contract
-            // Function not permissionless, to prevent sending to that accumulator and re-splitting (_chargeFee)
             IFeeReceiver(feeReceiver).split(tokenReward);
         }
 
-        if (tokenReward == WETH && remainingPeriods != 0) {
+        // If the reward is the reward token and there are remaining periods, set the reward for the current period
+        if (tokenReward == rewardToken && remainingPeriods != 0) {
             uint256 currentWeek = block.timestamp * 1 weeks / 1 weeks;
             if (rewards[currentWeek] != 0) revert ONGOING_REWARD();
 
-            amount = ERC20(WETH).balanceOf(address(this)) / remainingPeriods;
+            amount = ERC20(rewardToken).balanceOf(address(this)) / remainingPeriods;
             rewards[currentWeek] = amount;
 
             remainingPeriods -= 1;
@@ -181,7 +194,7 @@ contract PendleAccumulator is BaseAccumulator, SafeModule {
         // Wrap ETHs to WETHs
         claimed = address(this).balance - balanceBefore;
         if (claimed == 0) revert NO_BALANCE();
-        IWETH(WETH).deposit{value: address(this).balance}();
+        IWETH(rewardToken).deposit{value: address(this).balance}();
     }
 
     ////////////////////////////////////////////////////////////////
