@@ -4,14 +4,15 @@ pragma solidity 0.8.19;
 import "address-book/src/dao/1.sol";
 import "address-book/src/lockers/1.sol";
 import "address-book/src/protocols/1.sol";
-import "forge-std/src/console.sol";
 import "forge-std/src/Test.sol";
 import "forge-std/src/Vm.sol";
 import "src/common/interfaces/IDepositor.sol";
 import "src/common/interfaces/ILiquidityGauge.sol";
 import "src/common/interfaces/ILocker.sol";
 import "src/common/interfaces/ISdToken.sol";
-import "src/mainnet/pendle/Depositor.sol";
+import {PendleDepositor} from "src/mainnet/pendle/Depositor.sol";
+import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import {IVePendle} from "src/common/interfaces/IVePendle.sol";
 
 contract DepositorTest is Test {
     uint256 private constant MIN_LOCK_DURATION = 1 weeks;
@@ -25,7 +26,7 @@ contract DepositorTest is Test {
     IVePendle private veToken;
 
     ISdToken private _sdToken;
-    Depositor private depositor;
+    PendleDepositor private depositor;
     ILiquidityGauge internal liquidityGauge;
 
     uint256 private constant amount = 100e18;
@@ -42,7 +43,9 @@ contract DepositorTest is Test {
 
         locker = ILocker(PENDLE.LOCKER);
 
-        depositor = new Depositor(address(token), address(locker), address(_sdToken), address(liquidityGauge));
+        depositor = new PendleDepositor(
+            address(token), address(locker), address(_sdToken), address(liquidityGauge), address(locker)
+        );
 
         vm.prank(locker.governance());
         locker.setPendleDepositor(address(depositor));

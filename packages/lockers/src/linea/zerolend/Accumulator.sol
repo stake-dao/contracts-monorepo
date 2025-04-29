@@ -53,7 +53,7 @@ contract Accumulator is BaseAccumulator {
     //////////////////////////////////////////////////////
 
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4.
-    function claimAndNotifyAll(bool, bool) external override {
+    function claimAndNotifyAll() external override {
         uint256 lockerZeroBalanceBefore = IERC20(ZERO).balanceOf(locker);
         uint256 lockerWethBalanceBefore = IERC20(WETH).balanceOf(locker);
 

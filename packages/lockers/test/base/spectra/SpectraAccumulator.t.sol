@@ -52,7 +52,7 @@ contract SpectraAccumulatorTest is BaseSpectraTokenTest {
 
     function test_cantDistributeWithoutSettingAccumulatorOnDepositor() public {
         vm.expectRevert(ISdSpectraDepositor.AccumulatorNotSet.selector);
-        accumulator.claimAndNotifyAll(false, false);
+        accumulator.claimAndNotifyAll();
     }
 
     function test_onlyGovernanceCanSetAccumulator() public {
@@ -94,7 +94,7 @@ contract SpectraAccumulatorTest is BaseSpectraTokenTest {
         IERC20(sdToken).transfer(address(accumulator), rewardAmount);
 
         // Call claim and notify all, should transfer to liquidity gauge
-        accumulator.claimAndNotifyAll(false, false);
+        accumulator.claimAndNotifyAll();
 
         // Rate should be the reward amount divided by seconds of a week
         assertEq(liquidityGauge.reward_data(sdToken).rate, rewardAmount / 1 weeks);
@@ -136,7 +136,7 @@ contract SpectraAccumulatorTest is BaseSpectraTokenTest {
         uint256 sdTokenSupplyBefore = IERC20(sdToken).totalSupply();
 
         // Call claim and notify all, should rebase, mint and transfer to liquidity gauge
-        accumulator.claimAndNotifyAll(false, false);
+        accumulator.claimAndNotifyAll();
 
         // Check that the right amount is minted
         assertEq(IERC20(sdToken).totalSupply() - sdTokenSupplyBefore, claimable);

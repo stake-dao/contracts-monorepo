@@ -92,7 +92,7 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
     }
 
     function _claimRewards() public {
-        accumulator.claimAndNotifyAll(false, false);
+        accumulator.claimAndNotifyAll();
     }
 
     function test_canClaimRewards() public {

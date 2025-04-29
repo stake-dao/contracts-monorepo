@@ -1,8 +1,14 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import "src/mainnet/curve/Accumulator.sol";
-import "test/common/BaseAccumulatorTest.sol";
+import {CurveAccumulator} from "src/mainnet/curve/Accumulator.sol";
+import {BaseAccumulatorTest} from "test/common/BaseAccumulatorTest.sol";
+import {IVeBoost} from "src/common/interfaces/IVeBoost.sol";
+import {IVeBoostDelegation} from "src/common/interfaces/IVeBoostDelegation.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {Curve} from "address-book/src/protocols/1.sol";
+import {CRV} from "address-book/src/lockers/1.sol";
+import {IStrategy} from "common/interfaces/stake-dao/IStrategy.sol";
 
 contract AccumulatorTest is BaseAccumulatorTest {
     address public constant CRV_USD = 0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E;
@@ -18,7 +24,7 @@ contract AccumulatorTest is BaseAccumulatorTest {
     {}
 
     function _deployAccumulator() internal override returns (address payable accumulator) {
-        accumulator = payable(new Accumulator(address(liquidityGauge), locker, address(this)));
+        accumulator = payable(new CurveAccumulator(address(liquidityGauge), locker, address(this), locker));
 
         // TODO: legacy governance address -- This test must be rewritten ASAP
         address governance = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
@@ -34,12 +40,12 @@ contract AccumulatorTest is BaseAccumulatorTest {
         IStrategy(CRV.STRATEGY).setFeeRewardToken(address(CRV_USD));
 
         /// For the purpose of parent tests, we reset veBoost and veBoostDelegation to the test contract.
-        Accumulator(accumulator).setVeBoost(address(0));
-        Accumulator(accumulator).setVeBoostDelegation(address(0));
+        CurveAccumulator(accumulator).setVeBoost(address(0));
+        CurveAccumulator(accumulator).setVeBoostDelegation(address(0));
     }
 
     function test_shareWithDelegation() public {
-        Accumulator accumulator = Accumulator(payable(accumulator));
+        CurveAccumulator accumulator = CurveAccumulator(payable(accumulator));
 
         accumulator.setVeBoost(address(veBoost));
         accumulator.setVeBoostDelegation(address(veBoostDelegation));

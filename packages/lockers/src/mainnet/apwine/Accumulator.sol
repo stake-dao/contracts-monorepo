@@ -29,15 +29,13 @@ contract Accumulator is BaseAccumulator {
     //////////////////////////////////////////////////////
 
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4
-    function claimAndNotifyAll(bool notifySDT, bool claimFeeStrategy) external override {
+    function claimAndNotifyAll() external override {
         ILocker(locker).claimRewards(APW, address(this));
 
         // Sending strategy fees to fee receiver
-        if (claimFeeStrategy) {
-            _claimFeeStrategy();
-        }
+        _claimFeeStrategy();
 
-        notifyReward(APW, notifySDT, claimFeeStrategy);
+        notifyReward(APW, true, true);
     }
 
     function name() external pure override returns (string memory) {
