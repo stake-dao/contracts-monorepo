@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import {IERC721Enumerable} from "@openzeppelin/contracts/interfaces/IERC721Enumerable.sol";
 
-interface ISpectraLocker is IERC721Enumerable {
+interface IVENFTSpectra is IERC721Enumerable {
     struct LockedBalance {
         uint256 amount;
         uint256 end;

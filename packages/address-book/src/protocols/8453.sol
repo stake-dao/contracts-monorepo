@@ -9,5 +9,6 @@ library Maverick {
 library Spectra {
     address public constant SPECTRA = 0x64FCC3A02eeEba05Ef701b7eed066c6ebD5d4E51;
     address public constant VESPECTRA = 0x6a89228055C7C28430692E342F149f37462B478B;
-    address public constant REWARDDISTRIBUTOR = 0xBE6271FA207D2cD29C7F9efa90FC725C18560bff;
+    address public constant FEE_DISTRIBUTOR = 0xBE6271FA207D2cD29C7F9efa90FC725C18560bff;
+    address public constant VENFT = 0x6a89228055C7C28430692E342F149f37462B478B;
 }
