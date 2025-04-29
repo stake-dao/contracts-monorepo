@@ -4,12 +4,12 @@ pragma solidity ^0.8.19;
 import "forge-std/src/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
-import {Converter} from "src/mainnet/apwine/Converter.sol";
+import {APWine2SpectraConverter} from "src/base/spectra/APWine2SpectraConverter.sol";
 import {BaseSpectraTokenTest} from "test/base/spectra/common/BaseSpectraTokenTest.sol";
 import {ISdSpectraDepositor} from "src/common/interfaces/spectra/stakedao/ISdSpectraDepositor.sol";
 
 contract SpectraTest is BaseSpectraTokenTest {
-    Converter public converter;
+    APWine2SpectraConverter public converter;
     ISdSpectraDepositor spectraDepositor;
 
     address alice = makeAddr("alice");
@@ -43,7 +43,7 @@ contract SpectraTest is BaseSpectraTokenTest {
         // Base, destination chain id is not necessary.
         // sdAPWine supply : 1459843245173853310837177
         // We use the balance of the governance after a deposit to have the amount of sdSEPCTRA to distribute
-        converter = new Converter(sdToken, address(liquidityGauge), address(this), 8453, 20 ether);
+        converter = new APWine2SpectraConverter(sdToken, address(liquidityGauge), address(this), 8453, 20 ether);
 
         vm.prank(GOVERNANCE);
         IERC20(sdToken).transfer(address(converter), totalSdSpectraToDistribute);
@@ -71,7 +71,7 @@ contract SpectraTest is BaseSpectraTokenTest {
 
     function test_resolveConvert() public {
         // Simulate data set by La poste to call convert contract
-        bytes memory payload = abi.encode(Converter.Payload({amount: 11 ether, receiver: bob}));
+        bytes memory payload = abi.encode(APWine2SpectraConverter.Payload({amount: 11 ether, receiver: bob}));
 
         // 1 for chain Id, sender should be converter address in mainnet
         converter.receiveMessage(1, address(converter), payload);
@@ -83,7 +83,7 @@ contract SpectraTest is BaseSpectraTokenTest {
 
     function test_resolveConvertAllSupply() public {
         // Simulate data set by La poste to call convert contract
-        bytes memory payload = abi.encode(Converter.Payload({amount: sdAPWineSupply, receiver: alice}));
+        bytes memory payload = abi.encode(APWine2SpectraConverter.Payload({amount: sdAPWineSupply, receiver: alice}));
 
         // 1 for chain Id, sender should be converter address in mainnet
         converter.receiveMessage(1, address(converter), payload);
@@ -95,15 +95,15 @@ contract SpectraTest is BaseSpectraTokenTest {
 
     function test_cantResolveConvertIfWrongOrigin() public {
         // Simulate data set by La poste to call convert contract
-        bytes memory payload = abi.encode(Converter.Payload({amount: sdAPWineSupply, receiver: alice}));
+        bytes memory payload = abi.encode(APWine2SpectraConverter.Payload({amount: sdAPWineSupply, receiver: alice}));
 
         // sender should revert if not the converter address in mainnet
-        vm.expectRevert(Converter.InvalidSender.selector);
+        vm.expectRevert(APWine2SpectraConverter.InvalidSender.selector);
         converter.receiveMessage(1, alice, payload);
 
         // msg.sender should revert if not the la poste address
         vm.startPrank(alice);
-        vm.expectRevert(Converter.NotLaPoste.selector);
+        vm.expectRevert(APWine2SpectraConverter.NotLaPoste.selector);
         converter.receiveMessage(1, address(this), payload);
         vm.stopPrank();
     }

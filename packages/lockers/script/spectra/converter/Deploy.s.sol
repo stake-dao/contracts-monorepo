@@ -5,7 +5,7 @@ import "forge-std/src/Script.sol";
 import "address-book/src/dao/1.sol";
 import "address-book/src/lockers/8453.sol";
 import {SPECTRA as APWINE} from "address-book/src/lockers/1.sol";
-import {Converter} from "../../../src/mainnet/apwine/Converter.sol";
+import {APWine2SpectraConverter} from "src/base/spectra/APWine2SpectraConverter.sol";
 
 interface ICreate3Factory {
     function deployCreate3(bytes32 salt, bytes memory code) external returns (address);
@@ -19,14 +19,15 @@ contract Deploy is Script {
 
     function run() public {
         vm.createSelectFork("mainnet");
-        bytes memory converterInitCode =
-            abi.encodePacked(type(Converter).creationCode, abi.encode(APWINE.SDTOKEN, APWINE.GAUGE, laPoste, 8453, 0));
+        bytes memory converterInitCode = abi.encodePacked(
+            type(APWine2SpectraConverter).creationCode, abi.encode(APWINE.SDTOKEN, APWINE.GAUGE, laPoste, 8453, 0)
+        );
         vm.broadcast(DAO.MAIN_DEPLOYER);
         address converterMainnet = ICreate3Factory(CREATE3_FACTORY).deployCreate3(salt, converterInitCode);
 
         vm.createSelectFork("base");
         converterInitCode = abi.encodePacked(
-            type(Converter).creationCode, abi.encode(SPECTRA.SDTOKEN, SPECTRA.GAUGE, laPoste, 0, 20 ether)
+            type(APWine2SpectraConverter).creationCode, abi.encode(SPECTRA.SDTOKEN, SPECTRA.GAUGE, laPoste, 0, 20 ether)
         );
         vm.broadcast(DAO.MAIN_DEPLOYER);
         address converterBase = ICreate3Factory(CREATE3_FACTORY).deployCreate3(salt, converterInitCode);

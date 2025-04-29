@@ -7,7 +7,7 @@ import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {ILaPoste} from "src/common/interfaces/ILaPoste.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 
-contract Converter {
+contract APWine2SpectraConverter {
     using SafeERC20 for IERC20;
 
     /////////////////////////////
