@@ -6,14 +6,14 @@ import {ERC20} from "solady/src/tokens/ERC20.sol";
 
 import "address-book/src/lockers/1.sol";
 
-import {Converter} from "src/mainnet/apwine/Converter.sol";
+import {APWine2SpectraConverter} from "src/base/spectra/APWine2SpectraConverter.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {ILaPoste} from "src/common/interfaces/ILaPoste.sol";
 
 contract ConverterTest is Test {
     ERC20 public sdToken;
     ERC20 public sdTokenGauge;
-    Converter public converter;
+    APWine2SpectraConverter public converter;
 
     address alice = makeAddr("alice");
     address bob = makeAddr("bob");
@@ -24,7 +24,7 @@ contract ConverterTest is Test {
         sdToken = ERC20(SPECTRA.SDTOKEN);
         sdTokenGauge = ERC20(SPECTRA.GAUGE);
 
-        converter = new Converter(SPECTRA.SDTOKEN, SPECTRA.GAUGE, address(this), 8453, 0); // Mainnet, conversion rate is not necessary
+        converter = new APWine2SpectraConverter(SPECTRA.SDTOKEN, SPECTRA.GAUGE, address(this), 8453, 0); // Mainnet, conversion rate is not necessary
 
         vm.prank(ISdToken(SPECTRA.SDTOKEN).operator());
         ISdToken(SPECTRA.SDTOKEN).setOperator(address(converter));
@@ -41,7 +41,7 @@ contract ConverterTest is Test {
         assertEq(messageParams.tokens.length, 0);
         assertEq(messageParams.to, address(converter));
         assertEq(messageParams.destinationChainId, 8453);
-        assertEq(messageParams.payload, abi.encode(Converter.Payload({amount: 11 ether, receiver: bob})));
+        assertEq(messageParams.payload, abi.encode(APWine2SpectraConverter.Payload({amount: 11 ether, receiver: bob})));
     }
 
     function test_initConversion() public {
@@ -77,7 +77,7 @@ contract ConverterTest is Test {
         sdToken.approve(address(converter), type(uint256).max);
         sdTokenGauge.approve(address(converter), type(uint256).max);
 
-        vm.expectRevert(Converter.ZeroAddress.selector);
+        vm.expectRevert(APWine2SpectraConverter.ZeroAddress.selector);
         converter.initConvert{value: 10 ** 16}(address(0), 200 gwei);
         vm.stopPrank();
     }
@@ -93,7 +93,7 @@ contract ConverterTest is Test {
         sdToken.approve(address(converter), type(uint256).max);
         sdTokenGauge.approve(address(converter), type(uint256).max);
 
-        vm.expectRevert(Converter.NothingToRedeem.selector);
+        vm.expectRevert(APWine2SpectraConverter.NothingToRedeem.selector);
         converter.initConvert{value: 10 ** 16}(alice, 200 gwei);
         vm.stopPrank();
     }
@@ -113,7 +113,7 @@ contract ConverterTest is Test {
         sdToken.approve(address(converter), type(uint256).max);
         sdTokenGauge.approve(address(converter), type(uint256).max);
 
-        vm.expectRevert(Converter.WrongChain.selector);
+        vm.expectRevert(APWine2SpectraConverter.WrongChain.selector);
         converter.initConvert{value: 10 ** 16}(bob, 200 gwei);
         vm.stopPrank();
     }
