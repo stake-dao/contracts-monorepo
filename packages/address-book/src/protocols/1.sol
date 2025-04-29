@@ -13,6 +13,10 @@ library Balancer {
     address public constant HELPER = 0x5aDDCCa35b7A0D07C74063c48700C8590E87864E;
     address public constant VEBAL = 0xC128a9954e6c874eA3d62ce62B468bA073093F25;
     address public constant BAL = 0xba100000625a3754423978a60c9317c58a424e3D;
+
+    address public constant VE_BOOST = 0x67F8DF125B796B05895a6dc8Ecf944b9556ecb0B;
+    address public constant VE_BOOST_DELEGATION = 0xda9846665Bdb44b0d0CAFFd0d1D4A539932BeBdf;
+    address public constant FEE_DISTRIBUTOR = 0xD3cf852898b21fc233251427c2DC93d3d604F3BB;
 }
 
 library Curve {
@@ -26,6 +30,9 @@ library Curve {
     address public constant SMART_WALLET_CHECKER = 0xca719728Ef172d0961768581fdF35CB116e0B7a4;
 
     address public constant VOTING_APP = 0xE478de485ad2fe566d49342Cbd03E49ed7DB3356;
+
+    address public constant VE_BOOST = 0xD37A6aa3d8460Bd2b6536d608103D880695A23CD;
+    address public constant VE_BOOST_DELEGATION = 0xe1F9C8ebBC80A013cAf0940fdD1A8554d763b9cf;
 }
 
 library Frax {
@@ -80,6 +87,7 @@ library Fx {
 library Spectra {
     address public constant APW = 0x4104b135DBC9609Fc1A9490E61369036497660c8;
     address public constant VEAPW = 0xC5ca1EBF6e912E49A6a70Bb0385Ea065061a4F09;
+    address public constant VENFT = 0x6a89228055C7C28430692E342F149f37462B478B;
 }
 
 library YieldNest {
