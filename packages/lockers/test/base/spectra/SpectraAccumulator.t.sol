@@ -2,14 +2,11 @@
 pragma solidity ^0.8.19;
 
 import "forge-std/src/Test.sol";
-import "forge-std/src/console.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {Accumulator} from "src/base/spectra/Accumulator.sol";
-import {ISpectraVoter} from "src/common/interfaces/spectra/spectra/ISpectraVoter.sol";
 import {BaseSpectraTokenTest} from "test/base/spectra/common/BaseSpectraTokenTest.sol";
-import {ISpectraLocker} from "src/common/interfaces/spectra/spectra/ISpectraLocker.sol";
 import {ISdSpectraDepositor} from "src/common/interfaces/spectra/stakedao/ISdSpectraDepositor.sol";
 import {ISpectraRewardsDistributor} from "src/common/interfaces/spectra/spectra/ISpectraRewardsDistributor.sol";
 

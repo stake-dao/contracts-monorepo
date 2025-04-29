@@ -6,10 +6,11 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {ITokenMinter, ILiquidityGauge} from "src/common/depositor/BaseDepositor.sol";
 import {ISpectraVoter} from "src/common/interfaces/spectra/spectra/ISpectraVoter.sol";
-import {ISpectraLocker} from "src/common/interfaces/spectra/spectra/ISpectraLocker.sol";
+import {IVENFTSpectra} from "src/common/interfaces/spectra/spectra/IVENFTSpectra.sol";
 import {ISpectraRewardsDistributor} from "src/common/interfaces/spectra/spectra/ISpectraRewardsDistributor.sol";
 import {SafeModule} from "src/common/utils/SafeModule.sol";
 import {BaseDepositor} from "src/common/depositor/BaseDepositor.sol";
+import {Spectra} from "address-book/src/protocols/8453.sol";
 
 /// @title Stake DAO Spectra Depositor
 /// @notice Contract responsible for managing SPECTRA token deposits, locking them in the Locker,
@@ -22,11 +23,11 @@ contract Depositor is BaseDepositor, SafeModule {
     ///////////////////////////////////////////////////////////////
 
     /// @notice Spectra locker NFT contract interface
-    ISpectraLocker public constant spectraLocker = ISpectraLocker(0x6a89228055C7C28430692E342F149f37462B478B);
+    IVENFTSpectra public constant VE_NFT = IVENFTSpectra(Spectra.VENFT);
 
     /// @notice Spectra rewards distributor
     ISpectraRewardsDistributor public constant spectraRewardDistributor =
-        ISpectraRewardsDistributor(0xBE6271FA207D2cD29C7F9efa90FC725C18560bff);
+        ISpectraRewardsDistributor(Spectra.FEE_DISTRIBUTOR);
 
     /// @notice Token ID representing the locked SPECTRA tokens in the locker ERC721
     uint256 public spectraLockedTokenId;
@@ -136,10 +137,10 @@ contract Depositor is BaseDepositor, SafeModule {
         if (_tokenIds.length == 0) revert EmptyTokenIdList();
 
         for (uint256 index; index < _tokenIds.length;) {
-            if (spectraLocker.ownerOf(_tokenIds[index]) != msg.sender) revert NotOwnerOfToken(_tokenIds[index]);
+            if (VE_NFT.ownerOf(_tokenIds[index]) != msg.sender) revert NotOwnerOfToken(_tokenIds[index]);
 
             // Reset votes of the veNFT
-            if (spectraLocker.voted(_tokenIds[index])) {
+            if (VE_NFT.voted(_tokenIds[index])) {
                 _resetVotes(_tokenIds[index]);
             }
 
@@ -148,7 +149,7 @@ contract Depositor is BaseDepositor, SafeModule {
                 spectraRewardDistributor.claim(_tokenIds[index]);
             }
 
-            ISpectraLocker.LockedBalance memory lockedBalance = spectraLocker.locked(_tokenIds[index]);
+            IVENFTSpectra.LockedBalance memory lockedBalance = VE_NFT.locked(_tokenIds[index]);
             if (lockedBalance.isPermanent) {
                 // The Locked permanently tokens can't be merged
                 _unlockPermanent(_tokenIds[index]);
@@ -176,7 +177,7 @@ contract Depositor is BaseDepositor, SafeModule {
 
         // Check the difference between sdToken supply and tokens locked
         uint256 sdTokenSupply = IERC20(minter).totalSupply();
-        uint256 locked = spectraLocker.locked(spectraLockedTokenId).amount;
+        uint256 locked = VE_NFT.locked(spectraLockedTokenId).amount;
 
         uint256 rewardAmount = locked - sdTokenSupply;
 
@@ -199,7 +200,7 @@ contract Depositor is BaseDepositor, SafeModule {
     /// @param _amount Amount of tokens to lock
     function _addTokensToNft(uint256 _tokenId, uint256 _amount) internal {
         _executeTransaction(
-            address(spectraLocker), abi.encodeWithSelector(ISpectraLocker.depositFor.selector, _tokenId, _amount)
+            address(VE_NFT), abi.encodeWithSelector(IVENFTSpectra.depositFor.selector, _tokenId, _amount)
         );
     }
 
@@ -208,24 +209,20 @@ contract Depositor is BaseDepositor, SafeModule {
     /// @param _tokenIdTo Destination token ID to merge into
     function _merge(uint256 _tokenIdFrom, uint256 _tokenIdTo) internal {
         _executeTransaction(
-            address(spectraLocker), abi.encodeWithSelector(ISpectraLocker.merge.selector, _tokenIdFrom, _tokenIdTo)
+            address(VE_NFT), abi.encodeWithSelector(IVENFTSpectra.merge.selector, _tokenIdFrom, _tokenIdTo)
         );
     }
 
     /// @notice unlocks the permanent status of a veNFT
     /// @param _tokenId token ID to unlock
     function _unlockPermanent(uint256 _tokenId) internal {
-        _executeTransaction(
-            address(spectraLocker), abi.encodeWithSelector(ISpectraLocker.unlockPermanent.selector, _tokenId)
-        );
+        _executeTransaction(address(VE_NFT), abi.encodeWithSelector(IVENFTSpectra.unlockPermanent.selector, _tokenId));
     }
 
     /// @notice locks the permanent status of a veNFT
     /// @param _tokenId token ID to unlock
     function _lockPermanent(uint256 _tokenId) internal {
-        _executeTransaction(
-            address(spectraLocker), abi.encodeWithSelector(ISpectraLocker.lockPermanent.selector, _tokenId)
-        );
+        _executeTransaction(address(VE_NFT), abi.encodeWithSelector(IVENFTSpectra.lockPermanent.selector, _tokenId));
     }
 
     /// @notice Creates initial lock for the locker
@@ -234,8 +231,7 @@ contract Depositor is BaseDepositor, SafeModule {
         if (spectraLockedTokenId != 0) revert LockAlreadyExists();
 
         bytes memory newTokenId = _executeTransaction(
-            address(spectraLocker),
-            abi.encodeWithSelector(ISpectraLocker.createLock.selector, _amount, MAX_LOCK_DURATION)
+            address(VE_NFT), abi.encodeWithSelector(IVENFTSpectra.createLock.selector, _amount, MAX_LOCK_DURATION)
         );
 
         spectraLockedTokenId = abi.decode(newTokenId, (uint256));
@@ -246,8 +242,7 @@ contract Depositor is BaseDepositor, SafeModule {
     /// @param _tokenId token ID to reset
     function _resetVotes(uint256 _tokenId) internal {
         _executeTransaction(
-            address(spectraLocker.voter()),
-            abi.encodeWithSelector(ISpectraVoter.reset.selector, address(spectraLocker), _tokenId)
+            address(VE_NFT.voter()), abi.encodeWithSelector(ISpectraVoter.reset.selector, address(VE_NFT), _tokenId)
         );
     }
 

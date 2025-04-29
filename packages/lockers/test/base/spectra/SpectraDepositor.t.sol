@@ -2,13 +2,10 @@
 pragma solidity ^0.8.19;
 
 import "forge-std/src/Test.sol";
-import "forge-std/src/console.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
-import {ISpectraVoter} from "src/common/interfaces/spectra/spectra/ISpectraVoter.sol";
 import {BaseSpectraTokenTest} from "test/base/spectra/common/BaseSpectraTokenTest.sol";
-import {ISpectraLocker} from "src/common/interfaces/spectra/spectra/ISpectraLocker.sol";
+import {IVENFTSpectra} from "src/common/interfaces/spectra/spectra/IVENFTSpectra.sol";
 import {ISdSpectraDepositor} from "src/common/interfaces/spectra/stakedao/ISdSpectraDepositor.sol";
 
 contract SpectraTest is BaseSpectraTokenTest {
@@ -16,7 +13,7 @@ contract SpectraTest is BaseSpectraTokenTest {
     address initializer = address(0x2);
 
     // interface for veSpectra
-    ISpectraLocker veSpectraLocker = ISpectraLocker(address(veSpectra));
+    IVENFTSpectra veSpectraLocker = IVENFTSpectra(address(veSpectra));
     // interface for sdSpectra depositor
     ISdSpectraDepositor spectraDepositor;
 
@@ -81,7 +78,7 @@ contract SpectraTest is BaseSpectraTokenTest {
         assertGt(createdTokenId, 0);
         assertEq(createdTokenId, spectraDepositor.spectraLockedTokenId());
 
-        ISpectraLocker.LockedBalance memory lockedBalance = veSpectraLocker.locked(createdTokenId);
+        IVENFTSpectra.LockedBalance memory lockedBalance = veSpectraLocker.locked(createdTokenId);
         assertEq(lockedBalance.amount, _amount);
         assertTrue(lockedBalance.isPermanent);
 
@@ -112,7 +109,7 @@ contract SpectraTest is BaseSpectraTokenTest {
         assertGt(createdTokenId, 0);
         assertEq(createdTokenId, spectraDepositor.spectraLockedTokenId());
 
-        ISpectraLocker.LockedBalance memory lockedBalance = veSpectraLocker.locked(createdTokenId);
+        IVENFTSpectra.LockedBalance memory lockedBalance = veSpectraLocker.locked(createdTokenId);
         assertEq(lockedBalance.amount, _amount);
         assertTrue(lockedBalance.isPermanent);
 
@@ -205,7 +202,7 @@ contract SpectraTest is BaseSpectraTokenTest {
 
         //Store initial token id and state of the locker
         uint256 initialTokenId = veSpectraLocker.ownerToNFTokenIdList(locker, 0);
-        ISpectraLocker.LockedBalance memory lockedBalanceBefore = veSpectraLocker.locked(initialTokenId);
+        IVENFTSpectra.LockedBalance memory lockedBalanceBefore = veSpectraLocker.locked(initialTokenId);
 
         uint256 _amount = 10 ether;
 
@@ -229,7 +226,7 @@ contract SpectraTest is BaseSpectraTokenTest {
         assertEq(initialTokenId, checkedTokenId);
         assertEq(checkedTokenId, spectraDepositor.spectraLockedTokenId());
 
-        ISpectraLocker.LockedBalance memory lockedBalance = veSpectraLocker.locked(checkedTokenId);
+        IVENFTSpectra.LockedBalance memory lockedBalance = veSpectraLocker.locked(checkedTokenId);
         assertEq(lockedBalance.amount - lockedBalanceBefore.amount, _amount);
         assertTrue(lockedBalance.isPermanent);
     }
@@ -239,7 +236,7 @@ contract SpectraTest is BaseSpectraTokenTest {
 
         //Store initial token id and state of the locker
         uint256 initialTokenId = veSpectraLocker.ownerToNFTokenIdList(locker, 0);
-        ISpectraLocker.LockedBalance memory lockedBalanceBefore = veSpectraLocker.locked(initialTokenId);
+        IVENFTSpectra.LockedBalance memory lockedBalanceBefore = veSpectraLocker.locked(initialTokenId);
 
         uint256 _amount = 10 ether;
 
@@ -263,7 +260,7 @@ contract SpectraTest is BaseSpectraTokenTest {
         assertEq(initialTokenId, checkedTokenId);
         assertEq(checkedTokenId, spectraDepositor.spectraLockedTokenId());
 
-        ISpectraLocker.LockedBalance memory lockedBalance = veSpectraLocker.locked(checkedTokenId);
+        IVENFTSpectra.LockedBalance memory lockedBalance = veSpectraLocker.locked(checkedTokenId);
         assertEq(lockedBalance.amount - lockedBalanceBefore.amount, _amount);
         assertTrue(lockedBalance.isPermanent);
     }
@@ -273,7 +270,7 @@ contract SpectraTest is BaseSpectraTokenTest {
 
         //Store initial token id and state of the locker
         uint256 initialTokenId = veSpectraLocker.ownerToNFTokenIdList(locker, 0);
-        ISpectraLocker.LockedBalance memory lockedBalanceBefore = veSpectraLocker.locked(initialTokenId);
+        IVENFTSpectra.LockedBalance memory lockedBalanceBefore = veSpectraLocker.locked(initialTokenId);
 
         uint256 _amount = 10 ether;
 
@@ -301,7 +298,7 @@ contract SpectraTest is BaseSpectraTokenTest {
         assertEq(initialTokenId, checkedTokenId);
         assertEq(checkedTokenId, spectraDepositor.spectraLockedTokenId());
 
-        ISpectraLocker.LockedBalance memory lockedBalance = veSpectraLocker.locked(checkedTokenId);
+        IVENFTSpectra.LockedBalance memory lockedBalance = veSpectraLocker.locked(checkedTokenId);
         assertEq(lockedBalance.amount - lockedBalanceBefore.amount, _amount);
         assertTrue(lockedBalance.isPermanent);
     }
@@ -311,7 +308,7 @@ contract SpectraTest is BaseSpectraTokenTest {
 
         //Store initial token id and state of the locker
         uint256 initialTokenId = veSpectraLocker.ownerToNFTokenIdList(locker, 0);
-        ISpectraLocker.LockedBalance memory lockedBalanceBefore = veSpectraLocker.locked(initialTokenId);
+        IVENFTSpectra.LockedBalance memory lockedBalanceBefore = veSpectraLocker.locked(initialTokenId);
 
         uint256 _amount = 10 ether;
 
@@ -350,7 +347,7 @@ contract SpectraTest is BaseSpectraTokenTest {
         assertEq(initialTokenId, checkedTokenId);
         assertEq(checkedTokenId, spectraDepositor.spectraLockedTokenId());
 
-        ISpectraLocker.LockedBalance memory lockedBalance = veSpectraLocker.locked(checkedTokenId);
+        IVENFTSpectra.LockedBalance memory lockedBalance = veSpectraLocker.locked(checkedTokenId);
         assertEq(lockedBalance.amount - lockedBalanceBefore.amount, 20 * _amount);
         assertTrue(lockedBalance.isPermanent);
     }
@@ -377,12 +374,12 @@ contract SpectraTest is BaseSpectraTokenTest {
         _initializeLocker();
 
         uint256 amountLockedBeforeDeposit =
-            ISpectraLocker(address(veSpectra)).locked(spectraDepositor.spectraLockedTokenId()).amount;
+            IVENFTSpectra(address(veSpectra)).locked(spectraDepositor.spectraLockedTokenId()).amount;
 
         uint256[] memory tokenIds = new uint256[](1);
         tokenIds[0] = 592;
 
-        uint256 amountDepositNft = ISpectraLocker(address(veSpectra)).locked(592).amount;
+        uint256 amountDepositNft = IVENFTSpectra(address(veSpectra)).locked(592).amount;
         uint256 claimable = spectraRewardsDistributor.claimable(592);
 
         // Check that the the nft to deposit has locked amount and claimable amount
@@ -395,7 +392,7 @@ contract SpectraTest is BaseSpectraTokenTest {
         vm.stopPrank();
 
         uint256 amountLockedAfterDeposit =
-            ISpectraLocker(address(veSpectra)).locked(spectraDepositor.spectraLockedTokenId()).amount;
+            IVENFTSpectra(address(veSpectra)).locked(spectraDepositor.spectraLockedTokenId()).amount;
 
         uint256 expectDepositAmount = amountDepositNft + claimable;
 

@@ -2,11 +2,10 @@
 pragma solidity 0.8.19;
 
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {ISdSpectraDepositor} from "src/common/interfaces/spectra/stakedao/ISdSpectraDepositor.sol";
 import {ISpectraRewardsDistributor} from "src/common/interfaces/spectra/spectra/ISpectraRewardsDistributor.sol";
+import {Spectra} from "address-book/src/protocols/8453.sol";
 
 /// @title StakeDAO SPECTRA Accumulator
 /// @notice A contract that accumulates SPECTRA rewards and notifies them to the sdSPECTRA gauge
@@ -18,8 +17,7 @@ contract Accumulator is BaseAccumulator {
     //////////////////////////////////////////////////////
 
     /// @notice SPECTRA Rewards distributor address.
-    ISpectraRewardsDistributor public constant rewardsDistributor =
-        ISpectraRewardsDistributor(0xBE6271FA207D2cD29C7F9efa90FC725C18560bff);
+    ISpectraRewardsDistributor public constant rewardsDistributor = ISpectraRewardsDistributor(Spectra.FEE_DISTRIBUTOR);
 
     //////////////////////////////////////////////////////
     /// --- VARIABLES
