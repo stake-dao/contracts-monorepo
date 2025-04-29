@@ -12,6 +12,7 @@ import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {Balancer} from "address-book/src/protocols/1.sol";
 import {BalancerFeeDistributor} from "src/common/interfaces/BalancerFeeDistributor.sol";
 import {BAL as BalancerProtocol} from "address-book/src/lockers/1.sol";
+import {CommonAddresses} from "address-book/src/common.sol";
 
 /// @notice BAL BaseAccumulator
 /// @author StakeDAO
@@ -24,7 +25,7 @@ contract BalancerAccumulator is BaseAccumulator, SafeModule {
     address public constant BAL = Balancer.BAL;
 
     /// @notice USDC token address.
-    address public constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address public constant USDC = CommonAddresses.USDC;
 
     /// @notice VeBAL token address.
     address public constant VE_BAL = Balancer.VEBAL;
