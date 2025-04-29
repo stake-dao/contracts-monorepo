@@ -5,7 +5,7 @@ import "address-book/src/dao/1.sol";
 import "address-book/src/lockers/1.sol";
 import "forge-std/src/Script.sol";
 import "script/common/DeployAccumulator.sol";
-import "src/mainnet/balancer/Accumulator.sol";
+import {BalancerAccumulator} from "src/mainnet/balancer/Accumulator.sol";
 
 contract Deploy is DeployAccumulator {
     function run() public {
@@ -14,7 +14,7 @@ contract Deploy is DeployAccumulator {
     }
 
     function _deployAccumulator() internal override returns (address payable) {
-        return payable(new Accumulator(address(BAL.GAUGE), BAL.LOCKER, DAO.MAIN_DEPLOYER));
+        return payable(new BalancerAccumulator(address(BAL.GAUGE), BAL.LOCKER, DAO.MAIN_DEPLOYER, BAL.LOCKER));
     }
 
     function _afterDeploy() internal virtual override {}

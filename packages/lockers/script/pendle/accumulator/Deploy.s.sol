@@ -5,7 +5,7 @@ import "address-book/src/dao/1.sol";
 import "address-book/src/lockers/1.sol";
 import "forge-std/src/Script.sol";
 import "script/common/DeployAccumulator.sol";
-import "src/mainnet/pendle/Accumulator.sol";
+import {PendleAccumulator} from "src/mainnet/pendle/Accumulator.sol";
 
 contract Deploy is DeployAccumulator {
     function run() public {
@@ -14,12 +14,12 @@ contract Deploy is DeployAccumulator {
     }
 
     function _deployAccumulator() internal override returns (address payable) {
-        return payable(new Accumulator(address(PENDLE.GAUGE), PENDLE.LOCKER, DAO.MAIN_DEPLOYER));
+        return payable(new PendleAccumulator(address(PENDLE.GAUGE), PENDLE.LOCKER, DAO.MAIN_DEPLOYER, PENDLE.LOCKER));
     }
 
     function _afterDeploy() internal virtual override {
-        Accumulator(payable(accumulator)).setTransferVotersRewards(true);
-        Accumulator(payable(accumulator)).setVotesRewardRecipient(PENDLE.VOTERS_REWARDS_RECIPIENT);
+        PendleAccumulator(payable(accumulator)).setTransferVotersRewards(true);
+        PendleAccumulator(payable(accumulator)).setVotesRewardRecipient(PENDLE.VOTERS_REWARDS_RECIPIENT);
     }
 
     function _beforeDeploy() internal virtual override {}

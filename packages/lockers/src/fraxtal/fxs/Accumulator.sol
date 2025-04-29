@@ -45,13 +45,10 @@ contract Accumulator is BaseAccumulator, FXTLDelegation {
     /// --- MUTATIVE FUNCTIONS
     //////////////////////////////////////////////////////
 
-    /// @notice Claim FXS rewards for the locker and notify all to the LGV4
-    /// @param _notifySDT if notify SDT or not
-    /// @param _claimStrategyFee if claim or not strategy fees
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4
-    function claimAndNotifyAll(bool _notifySDT, bool _claimStrategyFee) external override {
+    function claimAndNotifyAll() external override {
         // Sending strategy fees to fee receiver
-        if (_claimStrategyFee && strategy != address(0)) {
+        if (strategy != address(0)) {
             _claimFeeStrategy();
         }
 
@@ -62,7 +59,7 @@ contract Accumulator is BaseAccumulator, FXTLDelegation {
         ILocker(locker).claimRewards(yieldDistributor, FXS, address(this));
 
         /// Notify FXS to the gauge.
-        notifyReward(FXS, _notifySDT, _claimStrategyFee);
+        notifyReward(FXS, true, true);
     }
 
     /// @notice Set frax yield distributor

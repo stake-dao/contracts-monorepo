@@ -1,8 +1,13 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import "src/mainnet/pendle/Accumulator.sol";
-import "test/common/BaseAccumulatorTest.sol";
+import {PendleAccumulator} from "src/mainnet/pendle/Accumulator.sol";
+import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
+import {BaseAccumulatorTest} from "test/common/BaseAccumulatorTest.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {Pendle} from "address-book/src/protocols/1.sol";
+import {PENDLE} from "address-book/src/lockers/1.sol";
+import {ILocker} from "src/common/interfaces/ILocker.sol";
 
 contract AccumulatorTest is BaseAccumulatorTest {
     ERC20 public WETH = ERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
@@ -21,7 +26,7 @@ contract AccumulatorTest is BaseAccumulatorTest {
     {}
 
     function _deployAccumulator() internal override returns (address payable accumulator) {
-        accumulator = payable(new Accumulator(address(liquidityGauge), locker, address(this)));
+        accumulator = payable(new PendleAccumulator(address(liquidityGauge), locker, address(this), locker));
 
         /// Set up the accumulator in the locker.
         vm.prank(ILocker(locker).governance());
@@ -42,7 +47,7 @@ contract AccumulatorTest is BaseAccumulatorTest {
     ];
 
     function test_claimAll() public override {
-        Accumulator accumulator = Accumulator(payable(accumulator));
+        PendleAccumulator accumulator = PendleAccumulator(payable(accumulator));
         accumulator.setVotesRewardRecipient(PENDLE.VOTERS_REWARDS_RECIPIENT);
 
         uint256 id = vm.snapshot();
@@ -51,7 +56,7 @@ contract AccumulatorTest is BaseAccumulatorTest {
         _testWithTransferAt(accumulator, false);
     }
 
-    function _testWithTransferAt(Accumulator accumulator, bool _transfer) internal {
+    function _testWithTransferAt(PendleAccumulator accumulator, bool _transfer) internal {
         //Check Dao recipient
         assertEq(WETH.balanceOf(address(treasuryRecipient)), 0);
         //// Check Bounty recipient
@@ -64,11 +69,11 @@ contract AccumulatorTest is BaseAccumulatorTest {
         /// Remove 1 pool from the list to trigger NOT_CLAIMED_ALL.
         _pools.pop();
 
-        vm.expectRevert(Accumulator.NOT_CLAIMED_ALL.selector);
-        accumulator.claimAndNotifyAll(_pools, false, false);
+        vm.expectRevert(PendleAccumulator.NOT_CLAIMED_ALL.selector);
+        accumulator.claimAndNotifyAll(_pools);
 
         accumulator.setTransferVotersRewards(_transfer);
-        accumulator.claimAndNotifyAll(_poolsCopy, false, false);
+        accumulator.claimAndNotifyAll(_poolsCopy);
 
         uint256 treasury = WETH.balanceOf(address(treasuryRecipient));
         uint256 voters = WETH.balanceOf(address(PENDLE.VOTERS_REWARDS_RECIPIENT));
@@ -92,16 +97,16 @@ contract AccumulatorTest is BaseAccumulatorTest {
             assertEq(voters, 0);
         }
 
-        vm.expectRevert(Accumulator.ONGOING_REWARD.selector);
+        vm.expectRevert(PendleAccumulator.ONGOING_REWARD.selector);
         accumulator.notifyReward(address(WETH), false, false);
 
-        vm.expectRevert(Accumulator.NO_BALANCE.selector);
-        accumulator.claimAndNotifyAll(_pools, false, false);
+        vm.expectRevert(PendleAccumulator.NO_BALANCE.selector);
+        accumulator.claimAndNotifyAll(_pools);
 
         skip(1 weeks);
 
-        vm.expectRevert(Accumulator.NO_BALANCE.selector);
-        accumulator.claimAndNotifyAll(_pools, false, false);
+        vm.expectRevert(PendleAccumulator.NO_BALANCE.selector);
+        accumulator.claimAndNotifyAll(_pools);
 
         uint256 toDistribute = WETH.balanceOf(address(accumulator)) / 3;
         accumulator.notifyReward(address(WETH), false, false);

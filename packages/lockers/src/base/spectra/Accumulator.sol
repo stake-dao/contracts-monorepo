@@ -55,7 +55,7 @@ contract Accumulator is BaseAccumulator {
     //////////////////////////////////////////////////////
 
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4.
-    function claimAndNotifyAll(bool, bool) external override {
+    function claimAndNotifyAll() external override {
         // If SPECTRA are available for rebasing, trigger rebase
         if (rewardsDistributor.claimable(ISdSpectraDepositor(depositor).spectraLockedTokenId()) > 0) {
             rewardsDistributor.claim(ISdSpectraDepositor(depositor).spectraLockedTokenId());

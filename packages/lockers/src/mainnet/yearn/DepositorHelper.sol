@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
-import {Depositor} from "src/mainnet/yearn/Depositor.sol";
+import {YearnDepositor} from "src/mainnet/yearn/Depositor.sol";
 
 /// @title DepositorHelper
 /// @notice Helper contract to enable Yearn vesting factory
@@ -24,8 +24,8 @@ contract DepositorHelper {
     function deposit(uint256 _amount) external returns (uint256) {
         IERC20(token).safeTransferFrom(msg.sender, address(this), _amount);
         IERC20(token).approve(depositor, _amount);
-        uint256 lockIncentive = Depositor(depositor).incentiveToken();
-        Depositor(depositor).deposit(_amount, true, true, msg.sender);
+        uint256 lockIncentive = YearnDepositor(depositor).incentiveToken();
+        YearnDepositor(depositor).deposit(_amount, true, true, msg.sender);
 
         return _amount + lockIncentive;
     }

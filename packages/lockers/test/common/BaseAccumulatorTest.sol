@@ -6,9 +6,10 @@ import "address-book/src/lockers/1.sol";
 import "address-book/src/protocols/1.sol";
 import "forge-std/src/Test.sol";
 import "forge-std/src/Vm.sol";
-import "src/common/accumulator/BaseAccumulator.sol";
+import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {CommonBase} from "test/common/CommonBase.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
 
 abstract contract BaseAccumulatorTest is CommonBase, Test {
     uint256 internal blockNumber;
@@ -107,7 +108,7 @@ abstract contract BaseAccumulatorTest is CommonBase, Test {
         //// Check lgv4
         uint256 gaugeBalanceBefore = rewardToken.balanceOf(address(liquidityGauge));
 
-        accumulator.claimAndNotifyAll(false, false);
+        accumulator.claimAndNotifyAll();
 
         uint256 treasury = rewardToken.balanceOf(address(treasuryRecipient));
         uint256 liquidityFee = rewardToken.balanceOf(address(liquidityFeeRecipient));

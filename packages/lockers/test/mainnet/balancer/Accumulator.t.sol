@@ -1,8 +1,14 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import "src/mainnet/balancer/Accumulator.sol";
-import "test/common/BaseAccumulatorTest.sol";
+import {BalancerAccumulator} from "src/mainnet/balancer/Accumulator.sol";
+import {IVeBoost} from "src/common/interfaces/IVeBoost.sol";
+import {IVeBoostDelegation} from "src/common/interfaces/IVeBoostDelegation.sol";
+import {BaseAccumulatorTest} from "test/common/BaseAccumulatorTest.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {Balancer} from "address-book/src/protocols/1.sol";
+import {BAL} from "address-book/src/lockers/1.sol";
+import {ILocker} from "src/common/interfaces/ILocker.sol";
 
 contract AccumulatorTest is BaseAccumulatorTest {
     address internal constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
@@ -17,21 +23,21 @@ contract AccumulatorTest is BaseAccumulatorTest {
     {}
 
     function _deployAccumulator() internal override returns (address payable accumulator) {
-        accumulator = payable(new Accumulator(address(liquidityGauge), locker, address(this)));
+        accumulator = payable(new BalancerAccumulator(address(liquidityGauge), locker, address(this), locker));
 
         /// Set up the accumulator in the locker.
         vm.prank(ILocker(locker).governance());
         ILocker(locker).setAccumulator(address(accumulator));
 
         /// For the purpose of parent tests, we reset veBoost and veBoostDelegation to the test contract.
-        Accumulator(accumulator).setVeBoost(address(0));
-        Accumulator(accumulator).setVeBoostDelegation(address(0));
+        BalancerAccumulator(accumulator).setVeBoost(address(0));
+        BalancerAccumulator(accumulator).setVeBoostDelegation(address(0));
 
         return accumulator;
     }
 
     function test_shareWithDelegation() public {
-        Accumulator accumulator = Accumulator(payable(accumulator));
+        BalancerAccumulator accumulator = BalancerAccumulator(payable(accumulator));
 
         accumulator.setVeBoost(address(veBoost));
         accumulator.setVeBoostDelegation(address(veBoostDelegation));
