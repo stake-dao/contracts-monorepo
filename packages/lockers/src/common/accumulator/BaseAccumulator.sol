@@ -34,15 +34,16 @@ abstract contract BaseAccumulator {
     ///////////////////////////////////////////////////////////////
 
     /// @notice Split struct
-    /// @param receivers Array of receivers
-    /// @param fees Array of fees
-    /// @dev First go to the first receiver, then the second, and so on
+    /// @dev Each split occupies 1 slot of storage
+    /// @param receiver Receiver address
+    /// @param fee Fee in basis points with 1e18 precision
     struct Split {
         address receiver;
-        uint96 fee; // Fee in basis points with 1e18 precision
+        uint96 fee;
     }
 
     /// @notice Fee split.
+    /// @dev Receivers are processed in order of insertion
     Split[] private feeSplits;
 
     /// @notice SDT distributor
@@ -64,7 +65,7 @@ abstract contract BaseAccumulator {
     address public feeReceiver;
 
     ////////////////////////////////////////////////////////////////
-    /// --- EVENTS & ERRORS
+    /// --- ERRORS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Error emitted when an onlyGovernance function has called by a different address
@@ -81,6 +82,10 @@ abstract contract BaseAccumulator {
 
     /// @notice Error emitted when the fee is invalid
     error INVALID_SPLIT();
+
+    ////////////////////////////////////////////////////////////////
+    /// --- EVENTS
+    ///////////////////////////////////////////////////////////////
 
     /// @notice Event emitted when the fee split is set
     event FeeSplitUpdated(Split[] newFeeSplit);
@@ -105,6 +110,9 @@ abstract contract BaseAccumulator {
 
     /// @notice Event emitted when the governance update is accepted
     event GovernanceUpdateAccepted(address newGovernance);
+
+    /// @notice Event emitted when the fee is sent to the fee receiver
+    event FeeTransferred(address indexed receiver, uint256 amount, bool indexed isClaimerFee);
 
     //////////////////////////////////////////////////////
     /// --- MODIFIERS
@@ -202,18 +210,22 @@ abstract contract BaseAccumulator {
     function _chargeFee(address _token, uint256 _amount) internal virtual returns (uint256 _charged) {
         if (_amount == 0 || _token != rewardToken) return 0;
 
+        // Send the fees to all the stored fee receivers based on their fee weight
         Split[] memory _feeSplit = getFeeSplit();
+
         uint256 fee;
         for (uint256 i = 0; i < _feeSplit.length; i++) {
             fee = (_amount * _feeSplit[i].fee) / DENOMINATOR;
             SafeTransferLib.safeTransfer(_token, _feeSplit[i].receiver, fee);
+            emit FeeTransferred(_feeSplit[i].receiver, fee, false);
 
             _charged += fee;
         }
 
-        /// Claimer fee.
+        // Send the claimer fee to the caller
         fee = (_amount * claimerFee) / DENOMINATOR;
         SafeTransferLib.safeTransfer(_token, msg.sender, fee);
+        emit FeeTransferred(msg.sender, fee, true);
 
         _charged += fee;
     }
