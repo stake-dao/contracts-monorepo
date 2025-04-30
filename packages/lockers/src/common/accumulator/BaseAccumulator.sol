@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {IFeeReceiver} from "common/interfaces/IFeeReceiver.sol";
-import {IStrategy} from "common/interfaces/stake-dao/IStrategy.sol";
+import {IAccountant} from "src/common/interfaces/IAccountant.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
@@ -52,8 +52,8 @@ abstract contract BaseAccumulator {
     /// @notice Claimer Fee.
     uint256 public claimerFee;
 
-    /// @notice Strategy address.
-    address public strategy;
+    /// @notice Accountant address.
+    address public accountant;
 
     /// @notice governance
     address public governance;
@@ -102,8 +102,8 @@ abstract contract BaseAccumulator {
     /// @notice Event emitted when the fee receiver is set
     event FeeReceiverUpdated(address newFeeReceiver);
 
-    /// @notice Event emitted when the strategy is set
-    event StrategyUpdated(address newStrategy);
+    /// @notice Event emitted when the accountant is set
+    event AccountantUpdated(address newAccountant);
 
     /// @notice Event emitted when the governance update is proposed
     event GovernanceUpdateProposed(address newFutureGovernance);
@@ -230,11 +230,10 @@ abstract contract BaseAccumulator {
         _charged += fee;
     }
 
-    /// @notice Take the fees accumulated from the strategy and sending to the fee receiver
-    /// @dev Need to be done before calling `split`, but claimProtocolFees is permissionless.
-    /// @dev Strategy not set in that abstract contract, must be implemented by child contracts
-    function _claimFeeStrategy() internal virtual {
-        IStrategy(strategy).claimProtocolFees();
+    /// @notice Send the fees accumulated by the accountant to the fee receiver
+    /// @dev `accountant` MUST be set by the child contract
+    function _claimAccumulatedFee() internal virtual {
+        IAccountant(accountant).claimProtocolFees();
     }
 
     //////////////////////////////////////////////////////
@@ -312,8 +311,8 @@ abstract contract BaseAccumulator {
         emit FeeSplitUpdated(splits);
     }
 
-    function setStrategy(address _strategy) external onlyGovernance {
-        emit StrategyUpdated(strategy = _strategy);
+    function setAccountant(address _accountant) external onlyGovernance {
+        emit AccountantUpdated(accountant = _accountant);
     }
 
     /// @notice A function that rescue any ERC20 token

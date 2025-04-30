@@ -40,7 +40,7 @@ contract Accumulator is BaseAccumulator {
         ILocker(locker).claimRewards(FEE_DISTRIBUTOR, WSTETH, address(this));
 
         /// Claim Extra FXN rewards.
-        if (strategy != address(0)) _claimFeeStrategy();
+        if (accountant != address(0)) _claimAccumulatedFee();
 
         notifyReward(WSTETH, true, true);
     }

@@ -53,7 +53,10 @@ contract BalancerAccumulator is DelegableAccumulator, SafeModule {
         )
         SafeModule(_gateway)
     {
-        strategy = BalancerProtocol.STRATEGY;
+        // @dev: Legacy lockers (before v4) used to claim fees from the strategy contract
+        //       In v4, fees are claimed by calling the unique accountant contract.
+        //       Here we initially set the already deployed strategy contract to smoothen the migration
+        accountant = BalancerProtocol.STRATEGY;
 
         // Give full approval to the gauge for the BAL and USDC tokens
         SafeTransferLib.safeApprove(Balancer.BAL, _gauge, type(uint256).max);
@@ -71,7 +74,7 @@ contract BalancerAccumulator is DelegableAccumulator, SafeModule {
         _execute_transfer(claimed);
 
         // Tell the Strategy to send the accrued fees to the fee receiver
-        _claimFeeStrategy();
+        _claimAccumulatedFee();
 
         // Notify the rewards to the Liquidity Gauge (V4)
         notifyReward(rewardToken, false, false);

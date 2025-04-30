@@ -89,7 +89,10 @@ contract PendleAccumulator is BaseAccumulator, SafeModule {
         BaseAccumulator(_gauge, CommonAddresses.WETH, _locker, _governance)
         SafeModule(_gateway)
     {
-        strategy = PendleProtocol.STRATEGY;
+        // @dev: Legacy lockers (before v4) used to claim fees from the strategy contract
+        //       In v4, fees are claimed by calling the unique accountant contract.
+        //       Here we initially set the already deployed strategy contract to smoothen the migration
+        accountant = PendleProtocol.STRATEGY;
 
         // Give full approval to the gauge for the WETH and PENDLE tokens
         SafeTransferLib.safeApprove(CommonAddresses.WETH, gauge, type(uint256).max);
@@ -104,7 +107,7 @@ contract PendleAccumulator is BaseAccumulator, SafeModule {
     /// @param _pools Array of pools to claim rewards from
     function claimAndNotifyAll(address[] memory _pools) external {
         // Tell the Strategy to send the fees accrued by it to the fee receiver
-        _claimFeeStrategy();
+        _claimAccumulatedFee();
 
         // Check the historical rewards.
         uint256 totalAccrued = IPendleFeeDistributor(FEE_DISTRIBUTOR).getProtocolTotalAccrued(address(locker));

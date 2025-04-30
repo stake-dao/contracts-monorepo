@@ -47,7 +47,10 @@ contract YearnAccumulator is BaseAccumulator, SafeModule {
         BaseAccumulator(_gauge, Yearn.DYFI, _locker, _governance)
         SafeModule(_gateway)
     {
-        strategy = YearnProtocol.STRATEGY;
+        // @dev: Legacy lockers (before v4) used to claim fees from the strategy contract
+        //       In v4, fees are claimed by calling the unique accountant contract.
+        //       Here we initially set the already deployed strategy contract to smoothen the migration
+        accountant = YearnProtocol.STRATEGY;
 
         // Give full approval to the gauge for the YFI and DYFI tokens
         SafeTransferLib.safeApprove(token, _gauge, type(uint256).max);
@@ -79,7 +82,7 @@ contract YearnAccumulator is BaseAccumulator, SafeModule {
         if (claimedDYFI != 0) _execute_transfer(rewardToken, claimedDYFI);
 
         // 3. Tell the Strategy to send the accrued fees to the fee receiver
-        _claimFeeStrategy();
+        _claimAccumulatedFee();
 
         // 4. Notify the rewards to the Liquidity Gauge (V4)
         notifyReward(token, false, false);
