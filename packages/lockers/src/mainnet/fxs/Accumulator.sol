@@ -33,7 +33,7 @@ contract Accumulator is BaseAccumulator {
         ILocker(locker).claimFXSRewards(address(this));
 
         // Sending strategy fees to fee receiver
-        _claimFeeStrategy();
+        _claimAccumulatedFee();
 
         notifyReward(FXS, true, true);
     }

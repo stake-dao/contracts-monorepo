@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {IStrategy} from "common/interfaces/stake-dao/IStrategy.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
@@ -50,7 +49,10 @@ contract CurveAccumulator is DelegableAccumulator, SafeModule {
         )
         SafeModule(_gateway)
     {
-        strategy = CurveLockerAddressBook.STRATEGY;
+        // @dev: Legacy lockers (before v4) used to claim fees from the strategy contract
+        //       In v4, fees are claimed by calling the unique accountant contract.
+        //       Here we initially set the already deployed strategy contract to smoothen the migration
+        accountant = CurveLockerAddressBook.STRATEGY;
 
         // Give full approval to the gauge for the CRV and CRV_USD tokens
         SafeTransferLib.safeApprove(Curve.CRV, _gauge, type(uint256).max);
@@ -63,7 +65,7 @@ contract CurveAccumulator is DelegableAccumulator, SafeModule {
 
     /// @notice Make the locker claim all the reward tokens before depositing them to the Liquidity Gauge (v4)
     function claimAndNotifyAll() external override {
-        // 1. Claim locker's claimable CRVUSD rewards
+        // 1. Claim locker's claimable CRVUSD rewards from Curve's fee distributor
         _execute_claim();
 
         // 2. Tell the locker to send the CRVUSD rewards to this contract if there are any
@@ -72,7 +74,7 @@ contract CurveAccumulator is DelegableAccumulator, SafeModule {
         _execute_transfer(claimedToken);
 
         // 3. Tell the Strategy to send the accrued fees to the fee receiver
-        _claimFeeStrategy();
+        _claimAccumulatedFee();
 
         // 4. Notify the rewards to the Liquidity Gauge (V4)
         notifyReward(rewardToken, false, false);
@@ -102,9 +104,7 @@ contract CurveAccumulator is DelegableAccumulator, SafeModule {
     ///////////////////////////////////////////////////////////////
 
     function _execute_claim() internal virtual {
-        _executeTransaction(
-            IStrategy(strategy).feeDistributor(), abi.encodeWithSelector(IFeeDistributor.claim.selector)
-        );
+        _executeTransaction(Curve.FEE_DISTRIBUTOR, abi.encodeWithSelector(IFeeDistributor.claim.selector));
     }
 
     function _execute_transfer(uint256 amount) internal virtual {

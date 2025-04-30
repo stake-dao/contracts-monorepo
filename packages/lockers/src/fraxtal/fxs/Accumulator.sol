@@ -47,9 +47,9 @@ contract Accumulator is BaseAccumulator, FXTLDelegation {
 
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4
     function claimAndNotifyAll() external override {
-        // Sending strategy fees to fee receiver
-        if (strategy != address(0)) {
-            _claimFeeStrategy();
+        // Sending accountant fees to fee receiver
+        if (accountant != address(0)) {
+            _claimAccumulatedFee();
         }
 
         /// Claim FXS reward for L1's veFXS bridged, on behalf of the eth locker
