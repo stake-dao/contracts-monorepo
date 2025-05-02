@@ -164,7 +164,7 @@ contract PendleAccumulator is BaseAccumulator, SafeModule {
 
         // If the reward is the reward token and there are remaining periods, set the reward for the current period
         if (tokenReward == rewardToken && remainingPeriods != 0) {
-            uint256 currentWeek = block.timestamp * 1 weeks / 1 weeks;
+            uint256 currentWeek = block.timestamp / 1 weeks * 1 weeks;
             if (rewards[currentWeek] != 0) revert ONGOING_REWARD();
 
             amount = ERC20(rewardToken).balanceOf(address(this)) / remainingPeriods;
