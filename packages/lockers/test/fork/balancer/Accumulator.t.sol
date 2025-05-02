@@ -4,13 +4,13 @@ pragma solidity ^0.8.4;
 import {BalancerAccumulator} from "src/mainnet/balancer/Accumulator.sol";
 import {IVeBoost} from "src/common/interfaces/IVeBoost.sol";
 import {IVeBoostDelegation} from "src/common/interfaces/IVeBoostDelegation.sol";
-import {BaseAccumulatorTest} from "test/common/BaseAccumulatorTest.sol";
+import {BaseAccumulatorTest} from "test/fork/common/BaseAccumulatorTest.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {Balancer} from "address-book/src/protocols/1.sol";
 import {BAL} from "address-book/src/lockers/1.sol";
 import {ILocker} from "src/common/interfaces/ILocker.sol";
 
-contract AccumulatorTest is BaseAccumulatorTest {
+contract BalancerAccumulatorTest is BaseAccumulatorTest {
     address internal constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
 
     IVeBoost public veBoost = IVeBoost(0x67F8DF125B796B05895a6dc8Ecf944b9556ecb0B);

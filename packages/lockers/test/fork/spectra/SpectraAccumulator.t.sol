@@ -6,7 +6,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {Accumulator} from "src/base/spectra/Accumulator.sol";
-import {BaseSpectraTokenTest} from "test/base/spectra/common/BaseSpectraTokenTest.sol";
+import {BaseSpectraTokenTest} from "test/fork/spectra/common/BaseSpectraTokenTest.sol";
 import {ISdSpectraDepositor} from "src/common/interfaces/spectra/stakedao/ISdSpectraDepositor.sol";
 import {ISpectraRewardsDistributor} from "src/common/interfaces/spectra/spectra/ISpectraRewardsDistributor.sol";
 

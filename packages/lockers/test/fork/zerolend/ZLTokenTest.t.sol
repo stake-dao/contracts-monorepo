@@ -11,7 +11,7 @@ import {ILocker} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
 import {ISdZeroDepositor} from "src/common/interfaces/zerolend/stakedao/ISdZeroDepositor.sol";
 import {ILockerToken} from "src/common/interfaces/zerolend/zerolend/ILockerToken.sol";
 import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
-import {BaseZeroLendTokenTest} from "test/linea/zerolend/common/BaseZeroLendTokenTest.sol";
+import {BaseZeroLendTokenTest} from "test/fork/zerolend/common/BaseZeroLendTokenTest.sol";
 
 // end to end tests for the ZeroLend integration
 contract ZeroLendTest is BaseZeroLendTokenTest {

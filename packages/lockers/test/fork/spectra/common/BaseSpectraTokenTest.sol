@@ -6,7 +6,7 @@ import {Enum} from "@safe/contracts/Safe.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 
-import {SafeLibrary} from "test/utils/SafeLibrary.sol";
+import {SafeLibrary} from "test/common/SafeLibrary.sol";
 import {Depositor} from "src/base/spectra/Depositor.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {Accumulator} from "src/base/spectra/Accumulator.sol";
@@ -14,7 +14,7 @@ import {sdToken as SdToken} from "src/common/token/sdToken.sol";
 import {IDepositor} from "src/common/interfaces/IDepositor.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
-import {BaseSpectraTest} from "test/base/spectra/common/BaseSpectraTest.sol";
+import {BaseSpectraTest} from "test/fork/spectra/common/BaseSpectraTest.sol";
 import {ILocker, ISafe} from "src/common/interfaces/spectra/stakedao/ILocker.sol";
 import {ISpectraRewardsDistributor} from "src/common/interfaces/spectra/spectra/ISpectraRewardsDistributor.sol";
 

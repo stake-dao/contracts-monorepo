@@ -2,7 +2,7 @@
 pragma solidity ^0.8.4;
 
 import {CurveAccumulator} from "src/mainnet/curve/Accumulator.sol";
-import {BaseAccumulatorTest} from "test/common/BaseAccumulatorTest.sol";
+import {BaseAccumulatorTest} from "test/fork/common/BaseAccumulatorTest.sol";
 import {IVeBoost} from "src/common/interfaces/IVeBoost.sol";
 import {IVeBoostDelegation} from "src/common/interfaces/IVeBoostDelegation.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
@@ -10,17 +10,23 @@ import {Curve} from "address-book/src/protocols/1.sol";
 import {CRV} from "address-book/src/lockers/1.sol";
 import {IStrategy} from "common/interfaces/stake-dao/IStrategy.sol";
 
-contract AccumulatorTest is BaseAccumulatorTest {
-    address public constant CRV_USD = 0xf939E0A03FB07F59A73314E73794Be0E57ac1b4E;
-
+contract CurveAccumulatorTest is BaseAccumulatorTest {
     address public constant CONVEX_PROXY = 0x989AEb4d175e16225E39E87d0D97A3360524AD80;
 
-    IVeBoost public veBoost = IVeBoost(0xD37A6aa3d8460Bd2b6536d608103D880695A23CD);
-
-    IVeBoostDelegation public veBoostDelegation = IVeBoostDelegation(0xe1F9C8ebBC80A013cAf0940fdD1A8554d763b9cf);
+    IVeBoost public veBoost = IVeBoost(Curve.VE_BOOST);
+    IVeBoostDelegation public veBoostDelegation = IVeBoostDelegation(Curve.VE_BOOST_DELEGATION);
 
     constructor()
-        BaseAccumulatorTest(20_661_622, "mainnet", CRV.LOCKER, CRV.SDTOKEN, Curve.VECRV, CRV.GAUGE, CRV_USD, CRV.TOKEN)
+        BaseAccumulatorTest(
+            20_661_622, // blockNumber
+            "mainnet", // chain
+            CRV.LOCKER, // locker
+            CRV.SDTOKEN, // sdToken
+            Curve.VECRV, // veToken
+            CRV.GAUGE, // liquidityGauge
+            Curve.CRV_USD, // rewardToken
+            Curve.CRV // strategyRewardToken
+        )
     {}
 
     function _deployAccumulator() internal override returns (address payable accumulator) {
@@ -35,9 +41,8 @@ contract AccumulatorTest is BaseAccumulatorTest {
 
         vm.prank(governance);
         IStrategy(CRV.STRATEGY).setFeeDistributor(address(Curve.FEE_DISTRIBUTOR));
-
         vm.prank(governance);
-        IStrategy(CRV.STRATEGY).setFeeRewardToken(address(CRV_USD));
+        IStrategy(CRV.STRATEGY).setFeeRewardToken(Curve.CRV_USD);
 
         /// For the purpose of parent tests, we reset veBoost and veBoostDelegation to the test contract.
         CurveAccumulator(accumulator).setVeBoost(address(0));
