@@ -2,11 +2,11 @@
 pragma solidity ^0.8.4;
 
 import {YearnAccumulator} from "src/mainnet/yearn/Accumulator.sol";
-import {BaseAccumulatorTest} from "test/common/BaseAccumulatorTest.sol";
+import {BaseAccumulatorTest} from "test/fork/common/BaseAccumulatorTest.sol";
 import {Yearn} from "address-book/src/protocols/1.sol";
 import {YFI} from "address-book/src/lockers/1.sol";
 
-contract AccumulatorTest is BaseAccumulatorTest {
+contract YearnAccumulatorTest is BaseAccumulatorTest {
     address internal constant DYFI = 0x41252E8691e964f7DE35156B68493bAb6797a275;
 
     constructor()

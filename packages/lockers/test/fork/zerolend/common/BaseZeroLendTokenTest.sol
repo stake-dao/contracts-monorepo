@@ -12,7 +12,7 @@ import {ILocker, ISafe} from "src/common/interfaces/zerolend/stakedao/ILocker.so
 import {sdToken as SdToken} from "src/common/token/sdToken.sol";
 import "src/linea/zerolend/Accumulator.sol";
 import {Depositor} from "src/linea/zerolend/Depositor.sol";
-import {BaseZeroLendTest} from "test/linea/zerolend/common/BaseZeroLendTest.sol";
+import {BaseZeroLendTest} from "test/fork/zerolend/common/BaseZeroLendTest.sol";
 
 // end to end tests for the ZeroLend integration
 abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {

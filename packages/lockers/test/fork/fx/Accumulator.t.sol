@@ -2,9 +2,9 @@
 pragma solidity ^0.8.4;
 
 import "src/mainnet/fx/Accumulator.sol";
-import "test/common/BaseAccumulatorTest.sol";
+import "test/fork/common/BaseAccumulatorTest.sol";
 
-contract AccumulatorTest is BaseAccumulatorTest {
+contract FXAccumulatorTest is BaseAccumulatorTest {
     address internal constant WSETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
 
     constructor()

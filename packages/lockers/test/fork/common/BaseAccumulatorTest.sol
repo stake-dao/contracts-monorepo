@@ -28,23 +28,45 @@ abstract contract BaseAccumulatorTest is CommonBase, Test {
         blockNumber = _blockNumber;
         chain = _chain;
         locker = _locker;
+
         sdToken = _sdToken;
         veToken = _veToken;
         liquidityGauge = ILiquidityGauge(_liquidityGauge);
 
         rewardToken = ERC20(_rewardToken);
         strategyRewardToken = ERC20(_strategyRewardToken);
+
+        vm.label(locker, "locker");
+        vm.label(sdToken, "sdToken");
+        vm.label(veToken, "veToken");
+        vm.label(address(liquidityGauge), "liquidityGauge");
+        vm.label(address(rewardToken), "rewardToken");
+        vm.label(address(strategyRewardToken), "strategyRewardToken");
     }
 
     function setUp() public virtual {
         uint256 forkId = vm.createFork(vm.rpcUrl(chain), blockNumber);
         vm.selectFork(forkId);
 
+        // Each time there is an attempt to call the missing `execTransactionFromModuleReturnData` function from the already deployed locker,
+        // the VM will keep the context (address(this) == deployed locker) but will execute the bytecode of the function
+        // from the `LockerMock` contract implementation. It's like extending the already deployed locker with the function
+        // `execTransactionFromModuleReturnData` defined in the `LockerMock` contract.
+        address lockerMock = address(new LockerMock());
+        vm.mockFunction(
+            locker, lockerMock, abi.encodeWithSelector(LockerMock.execTransactionFromModuleReturnData.selector)
+        );
+
         /// Deploy BaseAccumulator Contract.
         accumulator = BaseAccumulator(_deployAccumulator());
         vm.prank(accumulator.governance());
         accumulator.transferGovernance(address(this));
         accumulator.acceptGovernance();
+
+        // Set the accountant to a mock implementation
+        address mockAccountant = address(new MockAccountant());
+        vm.prank(BaseAccumulator(accumulator).governance());
+        BaseAccumulator(accumulator).setAccountant(mockAccountant);
 
         BaseAccumulator.Split[] memory splits = new BaseAccumulator.Split[](2);
         splits[0] = BaseAccumulator.Split(treasuryRecipient, 5e16);
@@ -72,6 +94,10 @@ abstract contract BaseAccumulatorTest is CommonBase, Test {
         }
 
         vm.stopPrank();
+
+        vm.label(address(accumulator), "accumulator");
+        vm.label(treasuryRecipient, "treasuryRecipient");
+        vm.label(liquidityFeeRecipient, "liquidityFeeRecipient");
     }
 
     function _deployAccumulator() internal virtual returns (address payable) {}
@@ -177,4 +203,18 @@ abstract contract BaseAccumulatorTest is CommonBase, Test {
         vm.expectRevert(BaseAccumulator.GOVERNANCE.selector);
         accumulator.setFeeReceiver(address(2));
     }
+}
+
+contract LockerMock {
+    function execTransactionFromModuleReturnData(address target, uint256 value, bytes memory data, uint8)
+        external
+        returns (bool success, bytes memory returnData)
+    {
+        (success, returnData) = target.call{value: value}(data);
+        return (success, returnData);
+    }
+}
+
+contract MockAccountant {
+    function claimProtocolFees() external {}
 }

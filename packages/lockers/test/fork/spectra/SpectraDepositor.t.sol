@@ -4,7 +4,7 @@ pragma solidity ^0.8.19;
 import "forge-std/src/Test.sol";
 
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
-import {BaseSpectraTokenTest} from "test/base/spectra/common/BaseSpectraTokenTest.sol";
+import {BaseSpectraTokenTest} from "test/fork/spectra/common/BaseSpectraTokenTest.sol";
 import {IVENFTSpectra} from "src/common/interfaces/spectra/spectra/IVENFTSpectra.sol";
 import {ISdSpectraDepositor} from "src/common/interfaces/spectra/stakedao/ISdSpectraDepositor.sol";
 

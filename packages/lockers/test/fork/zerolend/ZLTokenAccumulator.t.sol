@@ -3,8 +3,8 @@ pragma solidity ^0.8.4;
 
 import {IDepositor} from "src/common/interfaces/IDepositor.sol";
 import "src/mainnet/fx/Accumulator.sol";
-import "test/common/BaseAccumulatorTest.sol";
-import {BaseZeroLendTokenTest} from "test/linea/zerolend/common/BaseZeroLendTokenTest.sol";
+import "test/fork/common/BaseAccumulatorTest.sol";
+import {BaseZeroLendTokenTest} from "test/fork/zerolend/common/BaseZeroLendTokenTest.sol";
 
 contract ZLTokenAccumulator is BaseZeroLendTokenTest, BaseAccumulatorTest {
     constructor()

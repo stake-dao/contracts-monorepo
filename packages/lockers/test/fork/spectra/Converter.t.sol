@@ -5,7 +5,7 @@ import "forge-std/src/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import {APWine2SpectraConverter} from "src/base/spectra/APWine2SpectraConverter.sol";
-import {BaseSpectraTokenTest} from "test/base/spectra/common/BaseSpectraTokenTest.sol";
+import {BaseSpectraTokenTest} from "test/fork/spectra/common/BaseSpectraTokenTest.sol";
 import {ISdSpectraDepositor} from "src/common/interfaces/spectra/stakedao/ISdSpectraDepositor.sol";
 
 contract SpectraTest is BaseSpectraTokenTest {
