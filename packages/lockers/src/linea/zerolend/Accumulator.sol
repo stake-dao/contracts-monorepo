@@ -79,7 +79,7 @@ contract Accumulator is BaseAccumulator {
             );
             if (!_success) revert ExecFromSafeModuleFailed();
 
-            notifyReward(ZERO, false, false);
+            notifyReward({token: ZERO, claimFeeStrategy: false});
         }
 
         if (wethReward > 0) {
@@ -91,7 +91,7 @@ contract Accumulator is BaseAccumulator {
             );
             if (!_success) revert ExecFromSafeModuleFailed();
 
-            notifyReward(WETH, false, false);
+            notifyReward({token: WETH, claimFeeStrategy: false});
         }
     }
 

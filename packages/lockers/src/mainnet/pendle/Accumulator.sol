@@ -134,11 +134,8 @@ contract PendleAccumulator is DrippingAccumulator, SafeModule {
         // Notify the rewards to the Liquidity Gauge (V4)
         // We set 0 as the amount to notify, because the overriden version of `_notifyReward` is charged for
         // calculating the exact amount to deposit into the gauge
-        _notifyReward(rewardToken, 0, false);
-        _notifyReward(token, 0, true);
-
-        // legacy: just in case, but it shouldn't be needed anymore.
-        _distributeSDT();
+        _notifyReward({tokenReward: rewardToken, amount: 0, claimFeeStrategy: false});
+        _notifyReward({tokenReward: token, amount: 0, claimFeeStrategy: true});
     }
 
     /// @notice Notify the new reward to the LGV4

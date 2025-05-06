@@ -70,7 +70,7 @@ contract AccumulatorTest is BaseAccumulatorTest {
         uint256 expectedDelegation = 1_000_000e18 * bpsDelegated / 1e18;
 
         // Notify the reward.
-        accumulator.notifyReward(CRV.TOKEN, false, false);
+        accumulator.notifyReward(CRV.TOKEN, false);
 
         assertEq(ERC20(CRV.TOKEN).balanceOf(address(veBoostDelegation)), expectedDelegation);
         assertEq(
@@ -100,7 +100,7 @@ contract AccumulatorTest is BaseAccumulatorTest {
         expectedDelegation = expectedDelegation * 9e17 / 1e18;
 
         /// Notify the reward.
-        accumulator.notifyReward(CRV.TOKEN, false, false);
+        accumulator.notifyReward({token: CRV.TOKEN, claimFeeStrategy: false});
 
         assertEq(ERC20(CRV.TOKEN).balanceOf(address(veBoostDelegation)), expectedDelegation);
         assertEq(

@@ -42,7 +42,7 @@ contract Accumulator is BaseAccumulator {
         /// Claim Extra FXN rewards.
         if (accountant != address(0)) _claimAccumulatedFee();
 
-        notifyReward(WSTETH, true, true);
+        notifyReward({token: WSTETH, claimFeeStrategy: true});
     }
 
     function name() external pure override returns (string memory) {

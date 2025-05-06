@@ -57,7 +57,7 @@ contract AccumulatorTest is BaseAccumulatorTest {
         uint256 expectedDelegation = 1_000_000e18 * bpsDelegated / 1e18;
 
         /// Notify the reward.
-        accumulator.notifyReward(Balancer.BAL, false, false);
+        accumulator.notifyReward(Balancer.BAL, false);
 
         assertEq(ERC20(Balancer.BAL).balanceOf(address(veBoostDelegation)), expectedDelegation);
         assertEq(
@@ -87,7 +87,7 @@ contract AccumulatorTest is BaseAccumulatorTest {
         expectedDelegation = expectedDelegation * 9e17 / 1e18;
 
         /// Notify the reward.
-        accumulator.notifyReward(Balancer.BAL, false, false);
+        accumulator.notifyReward({token: Balancer.BAL, claimFeeStrategy: false});
 
         assertEq(ERC20(Balancer.BAL).balanceOf(address(veBoostDelegation)), expectedDelegation);
         assertEq(
