@@ -7,10 +7,10 @@ import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {IFeeReceiver} from "common/interfaces/IFeeReceiver.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {IPendleFeeDistributor} from "src/common/interfaces/IPendleFeeDistributor.sol";
-import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {SafeModule} from "src/common/utils/SafeModule.sol";
 import {PENDLE as PendleProtocol} from "address-book/src/lockers/1.sol";
 import {CommonAddresses} from "address-book/src/common.sol";
+import {DrippingAccumulator} from "src/common/accumulator/DrippingAccumulator.sol";
 
 /// @title PendleAccumulator
 /// @notice This contract is used to claim all the rewards the locker has received
@@ -18,7 +18,8 @@ import {CommonAddresses} from "address-book/src/common.sol";
 /// @dev This contract is the authorized distributor of the WETH and PENDLE rewards in the gauge
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-contract PendleAccumulator is BaseAccumulator, SafeModule {
+
+contract PendleAccumulator is DrippingAccumulator, SafeModule {
     ///////////////////////////////////////////////////////////////
     /// --- CONSTANTS
     ///////////////////////////////////////////////////////////////
@@ -35,39 +36,21 @@ contract PendleAccumulator is BaseAccumulator, SafeModule {
     /// --- STATE
     ///////////////////////////////////////////////////////////////
 
-    /// @notice Period to add on each claim
-    uint256 public periodsToAdd = 4;
-
-    /// @notice WETH Rewards period to notify.
-    uint256 public remainingPeriods;
-
     /// @notice If false, the voters rewards will be distributed to the gauge
     bool public transferVotersRewards;
 
     /// @notice Address to receive the voters rewards.
     address public votesRewardRecipient;
 
-    /// @notice Rewards for the period.
-    mapping(uint256 period => uint256 rewardAmount) public rewards;
-
     ////////////////////////////////////////////////////////////////
     /// --- ERRORS
     ///////////////////////////////////////////////////////////////
-
-    /// @notice Error emitted when a token not supported is used.
-    error WRONG_TOKEN();
-
-    /// @notice Error emitted when there is no balance to claim.
-    error NO_REWARD();
 
     /// @notice Error emitted when there is no balance to claim.
     error NO_BALANCE();
 
     /// @notice Error emitted when the claim is not successful.
     error NOT_CLAIMED_ALL();
-
-    /// @notice Error emitted when the reward is ongoing.
-    error ONGOING_REWARD();
 
     ////////////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
@@ -86,7 +69,13 @@ contract PendleAccumulator is BaseAccumulator, SafeModule {
     ///      - VePENDLE is the veToken
     /// @custom:throws InvalidGateway if the provided gateway is a zero address
     constructor(address _gauge, address _locker, address _governance, address _gateway)
-        BaseAccumulator(_gauge, CommonAddresses.WETH, _locker, _governance)
+        DrippingAccumulator(
+            _gauge,
+            CommonAddresses.WETH, // reward token
+            _locker,
+            _governance,
+            4 // distribution length (in weeks)
+        )
         SafeModule(_gateway)
     {
         // @dev: Legacy lockers (before v4) used to claim fees from the strategy contract
@@ -105,6 +94,7 @@ contract PendleAccumulator is BaseAccumulator, SafeModule {
 
     /// @notice Make the locker claim all the reward tokens before depositing them to the Liquidity Gauge (v4)
     /// @param _pools Array of pools to claim rewards from
+    /// @custom:throws CampaignNotOver if this function is called when the current campaign is still ongoing
     function claimAndNotifyAll(address[] memory _pools) external {
         // Tell the Strategy to send the fees accrued by it to the fee receiver
         _claimAccumulatedFee();
@@ -128,8 +118,8 @@ contract PendleAccumulator is BaseAccumulator, SafeModule {
         // @dev There's 1e4 wei of tolerance to avoid rounding errors because of a mistake in the Pendle FEE_DISTRIBUTOR contract.
         if (totalReward + 1e4 < totalAccrued - claimed) revert NOT_CLAIMED_ALL();
 
-        // Update the remaining periods.
-        remainingPeriods += periodsToAdd;
+        // Start a new distribution campaign of `DrippingAccumulator.periodLength` weeks
+        startNewDistribution();
 
         // Charge the fee on the total reward.
         totalReward -= _chargeFee(rewardToken, totalReward);
@@ -162,15 +152,12 @@ contract PendleAccumulator is BaseAccumulator, SafeModule {
             IFeeReceiver(feeReceiver).split(tokenReward);
         }
 
-        // If the reward is the reward token and there are remaining periods, set the reward for the current period
-        if (tokenReward == rewardToken && remainingPeriods != 0) {
-            uint256 currentWeek = block.timestamp / 1 weeks * 1 weeks;
-            if (rewards[currentWeek] != 0) revert ONGOING_REWARD();
+        // If the reward is the reward token, set the reward for the current period
+        if (tokenReward == rewardToken) {
+            amount = calculateDistributableReward();
 
-            amount = ERC20(rewardToken).balanceOf(address(this)) / remainingPeriods;
-            rewards[currentWeek] = amount;
-
-            remainingPeriods -= 1;
+            // If there are some rewards to distribute, start a new epoch
+            if (amount != 0) advanceDistributionStep();
         } else {
             amount = ERC20(tokenReward).balanceOf(address(this));
         }
@@ -224,12 +211,6 @@ contract PendleAccumulator is BaseAccumulator, SafeModule {
     /// @param _transferVotersRewards if true, the voters rewards will be distributed to the gauge
     function setTransferVotersRewards(bool _transferVotersRewards) external onlyGovernance {
         transferVotersRewards = _transferVotersRewards;
-    }
-
-    /// @notice Set the number of periods to add to the remaining periods at each claim
-    /// @param _periodsToAdd number of periods to add
-    function setPeriodsToAdd(uint256 _periodsToAdd) external onlyGovernance {
-        periodsToAdd = _periodsToAdd;
     }
 
     ///////////////////////////////////////////////////////////////
