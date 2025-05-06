@@ -77,8 +77,8 @@ contract BalancerAccumulator is DelegableAccumulator, SafeModule {
         _claimAccumulatedFee();
 
         // Notify the rewards to the Liquidity Gauge (V4)
-        notifyReward(rewardToken, false, false);
-        notifyReward(token, true, true);
+        notifyReward({token: rewardToken, claimFeeStrategy: false});
+        notifyReward({token: token, claimFeeStrategy: true});
     }
 
     function _notifyReward(address _tokenReward, uint256 _amount, bool _pullFromFeeReceiver) internal override {

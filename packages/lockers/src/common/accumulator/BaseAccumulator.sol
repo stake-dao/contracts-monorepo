@@ -6,7 +6,6 @@ import {IAccountant} from "src/common/interfaces/IAccountant.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
-import {ISDTDistributor} from "src/common/interfaces/ISDTDistributor.sol";
 
 /// @title BaseAccumulator
 /// @notice Abstract contract used for any accumulator
@@ -45,9 +44,6 @@ abstract contract BaseAccumulator {
     /// @notice Fee split.
     /// @dev Receivers are processed in order of insertion
     Split[] private feeSplits;
-
-    /// @notice SDT distributor
-    address public sdtDistributor;
 
     /// @notice Claimer Fee.
     uint256 public claimerFee;
@@ -95,9 +91,6 @@ abstract contract BaseAccumulator {
 
     /// @notice Event emitted when the claimer fee is set
     event ClaimerFeeUpdated(uint256 newClaimerFee);
-
-    /// @notice Event emitted when the SDT distributor is set
-    event SDTDistributorUpdated(address newSDTDistributor);
 
     /// @notice Event emitted when the fee receiver is set
     event FeeReceiverUpdated(address newFeeReceiver);
@@ -159,19 +152,13 @@ abstract contract BaseAccumulator {
     /// @notice Claims all rewards tokens for the locker and notify them to the LGV4
     function claimAndNotifyAll() external virtual {}
 
-    /// @notice Notify the whole acc balance of a token
+    /// @notice Notify the whole accumulator balance of a token
     /// @param token token to notify
-    /// @param notifySDT if notify SDT or not
     /// @param claimFeeStrategy if pull tokens from the fee receiver or not
-    function notifyReward(address token, bool notifySDT, bool claimFeeStrategy) public virtual {
+    function notifyReward(address token, bool claimFeeStrategy) public virtual {
         uint256 amount = ERC20(token).balanceOf(address(this));
-        // notify token as reward in sdToken gauge
-        _notifyReward(token, amount, claimFeeStrategy);
-
-        if (notifySDT) {
-            // notify SDT
-            _distributeSDT();
-        }
+        // notify the token to the liquidity gauge
+        _notifyReward({tokenReward: token, amount: amount, claimFeeStrategy: claimFeeStrategy});
     }
 
     //////////////////////////////////////////////////////
@@ -195,13 +182,6 @@ abstract contract BaseAccumulator {
 
         if (amount == 0) return;
         ILiquidityGauge(gauge).deposit_reward_token(tokenReward, amount);
-    }
-
-    /// @notice Distribute SDT to the gauge
-    function _distributeSDT() internal {
-        if (sdtDistributor != address(0)) {
-            ISDTDistributor(sdtDistributor).distribute(gauge);
-        }
     }
 
     /// @notice Charge fee for dao, liquidity, claimer
@@ -247,12 +227,6 @@ abstract contract BaseAccumulator {
     function setClaimerFee(uint256 _claimerFee) external onlyGovernance {
         if (_claimerFee > DENOMINATOR) revert FEE_TOO_HIGH();
         emit ClaimerFeeUpdated(claimerFee = _claimerFee);
-    }
-
-    /// @notice Set SDT distributor.
-    /// @param _distributor SDT distributor address.
-    function setDistributor(address _distributor) external onlyGovernance {
-        emit SDTDistributorUpdated(sdtDistributor = _distributor);
     }
 
     /// @notice Set fee receiver (from Stategy)

@@ -102,7 +102,7 @@ contract AccumulatorTest is BaseAccumulatorTest {
         vm.expectCall(
             address(liquidityGauge), 0, abi.encodeWithSelector(ILiquidityGauge.deposit_reward_token.selector), 0
         );
-        accumulator.notifyReward(address(WETH), false, false);
+        accumulator.notifyReward(address(WETH), false);
 
         vm.expectRevert(PendleAccumulator.NO_BALANCE.selector);
         accumulator.claimAndNotifyAll(_pools);
@@ -113,7 +113,7 @@ contract AccumulatorTest is BaseAccumulatorTest {
         accumulator.claimAndNotifyAll(_pools);
 
         uint256 toDistribute = WETH.balanceOf(address(accumulator)) / 3;
-        accumulator.notifyReward(address(WETH), false, false);
+        accumulator.notifyReward(address(WETH), false);
 
         /// Balances should be the same as we already took fees.
         assertEq(WETH.balanceOf(address(treasuryRecipient)), treasury);
@@ -126,7 +126,7 @@ contract AccumulatorTest is BaseAccumulatorTest {
         uint256 _before = ERC20(PENDLE.TOKEN).balanceOf(address(liquidityGauge));
 
         deal(PENDLE.TOKEN, address(accumulator), 1_000_000e18);
-        accumulator.notifyReward(address(PENDLE.TOKEN), false, false);
+        accumulator.notifyReward({token: address(PENDLE.TOKEN), claimFeeStrategy: false});
 
         /// It should distribute 1_000_000 PENDLE to LGV4, meaning no fees were taken.
         assertEq(ERC20(PENDLE.TOKEN).balanceOf(address(liquidityGauge)), _before + 1_000_000e18);
