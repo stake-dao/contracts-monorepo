@@ -1,0 +1,6 @@
+DrippingAccumulator__advanceDistributionStep
+├── it reverts if the distribution is not started yet
+├── it reverts if the distribution is already over
+├── it reverts if the step has already been distributed
+├── it moves to the next step of the distribution
+└── it emits an event

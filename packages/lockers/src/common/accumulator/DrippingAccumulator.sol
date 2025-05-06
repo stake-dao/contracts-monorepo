@@ -193,7 +193,7 @@ abstract contract DrippingAccumulator is BaseAccumulator {
 
     /// @notice Get the remaining steps of the current distribution.
     /// @return remainingSteps The remaining steps of the current distribution.
-    function getRemainingSteps() public view returns (uint16) {
+    function getRemainingSchedule() public view returns (uint16) {
         return distribution.remainingSteps;
     }
 }

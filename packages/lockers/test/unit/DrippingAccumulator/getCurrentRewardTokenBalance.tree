@@ -1,0 +1,2 @@
+DrippingAccumulator__getCurrentRewardTokenBalance
+└── it returns the correct balance

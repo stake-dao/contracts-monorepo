@@ -92,7 +92,7 @@ contract AccumulatorTest is BaseAccumulatorTest {
         assertEq(total * feeSplit[0].fee / 1e18, treasury);
         assertEq(total * feeSplit[1].fee / 1e18, liquidityFee);
 
-        assertEq(accumulator.getRemainingSteps(), 3);
+        assertEq(accumulator.getRemainingSchedule(), 3);
 
         if (!_transfer) {
             assertEq(voters, 0);
@@ -121,7 +121,7 @@ contract AccumulatorTest is BaseAccumulatorTest {
         assertEq(WETH.balanceOf(address(liquidityGauge)) - gaugeBalanceBefore, gauge + toDistribute);
         assertEq(WETH.balanceOf(address(this)), claimer);
 
-        assertEq(accumulator.getRemainingSteps(), 2);
+        assertEq(accumulator.getRemainingSchedule(), 2);
 
         uint256 _before = ERC20(PENDLE.TOKEN).balanceOf(address(liquidityGauge));
 
