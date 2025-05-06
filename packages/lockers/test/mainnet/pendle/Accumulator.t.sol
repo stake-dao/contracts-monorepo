@@ -8,6 +8,7 @@ import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {Pendle} from "address-book/src/protocols/1.sol";
 import {PENDLE} from "address-book/src/lockers/1.sol";
 import {ILocker} from "src/common/interfaces/ILocker.sol";
+import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 
 contract AccumulatorTest is BaseAccumulatorTest {
     ERC20 public WETH = ERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
@@ -91,13 +92,16 @@ contract AccumulatorTest is BaseAccumulatorTest {
         assertEq(total * feeSplit[0].fee / 1e18, treasury);
         assertEq(total * feeSplit[1].fee / 1e18, liquidityFee);
 
-        assertEq(accumulator.remainingPeriods(), 3);
+        assertEq(accumulator.getRemainingSteps(), 3);
 
         if (!_transfer) {
             assertEq(voters, 0);
         }
 
-        vm.expectRevert(PendleAccumulator.ONGOING_REWARD.selector);
+        /// Expect the accumulator to not call the gauge to deposit the reward token as the distribution has already been distributed.
+        vm.expectCall(
+            address(liquidityGauge), 0, abi.encodeWithSelector(ILiquidityGauge.deposit_reward_token.selector), 0
+        );
         accumulator.notifyReward(address(WETH), false, false);
 
         vm.expectRevert(PendleAccumulator.NO_BALANCE.selector);
@@ -117,7 +121,7 @@ contract AccumulatorTest is BaseAccumulatorTest {
         assertEq(WETH.balanceOf(address(liquidityGauge)) - gaugeBalanceBefore, gauge + toDistribute);
         assertEq(WETH.balanceOf(address(this)), claimer);
 
-        assertEq(accumulator.remainingPeriods(), 2);
+        assertEq(accumulator.getRemainingSteps(), 2);
 
         uint256 _before = ERC20(PENDLE.TOKEN).balanceOf(address(liquidityGauge));
 
