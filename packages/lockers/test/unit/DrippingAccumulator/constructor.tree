@@ -1,0 +1,3 @@
+DrippingAccumulator__constructor
+├── it sets the period length
+└── it reverts if the period length is zero

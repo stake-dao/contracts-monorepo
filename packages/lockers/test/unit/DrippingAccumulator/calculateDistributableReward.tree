@@ -1,0 +1,5 @@
+DrippingAccumulator__calculateDistributableReward
+├── it returns 0 if the distribution is over
+├── it returns 0 if the current week timestamp is before the next step timestamp
+├── it returns 0 if the accumulator has no reward token
+└── it returns the correct reward depending on the remaining steps

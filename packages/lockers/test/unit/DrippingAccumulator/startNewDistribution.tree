@@ -1,0 +1,5 @@
+DrippingAccumulator__startNewDistribution
+├── it reverts if the distribution is still ongoing
+├── it reverts if there is no balance to distribute for the new distribution
+├── it emits an event
+└── it starts a new distribution with the correct parameters

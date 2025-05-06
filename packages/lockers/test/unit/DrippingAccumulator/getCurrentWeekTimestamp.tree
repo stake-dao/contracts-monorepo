@@ -1,0 +1,2 @@
+DrippingAccumulator__getCurrentWeekTimestamp
+└── it returns the correct timestamp
