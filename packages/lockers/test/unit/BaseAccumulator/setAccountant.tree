@@ -1,0 +1,5 @@
+BaseAccumulator__setAccountant
+├── it reverts if the caller is not the governance
+├── it reverts if the given accountant is the zero address
+├── it sets the accountant to the given accountant
+└── it emits a event

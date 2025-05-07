@@ -1,0 +1,4 @@
+BaseAccumulator__setFeeReceiver
+├── it reverts if the caller is not the governance
+├── it sets the fee receiver to the given fee receiver
+└── it emits a event

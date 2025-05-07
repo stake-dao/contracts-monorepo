@@ -1,0 +1,7 @@
+BaseAccumulator__setFeeSplit
+├── it reverts if the caller is not the governance
+├── it reverts if the splits are empty
+├── it reverts if the total fees are greater than the denominator
+├── it reverts if one of the receivers is the zero address
+├── it sets the fee splits
+└── it emits a event

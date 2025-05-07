@@ -1,0 +1,4 @@
+BaseAccumulator__acceptGovernance
+├── it reverts if the caller is not the future governance
+├── it sets the governance to the future governance
+└── it emits a event

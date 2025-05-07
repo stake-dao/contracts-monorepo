@@ -1,0 +1,7 @@
+BaseAccumulator__chargeFee
+├── it returns 0 if the amount is zero
+├── it returns 0 if the token is not the reward token
+├── it transfers the fee to the fee receivers
+├── it transfers the claimer fee to the caller
+├── it returns the amount charged
+└── it emits several FeeTransferred events

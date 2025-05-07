@@ -1,0 +1,5 @@
+BaseAccumulator__setClaimerFree
+├── it reverts if the caller is not the governance
+├── it reverts if the given claimer free is greater than the denominator
+├── it sets the claimer free to the given claimer free
+└── it emits a event

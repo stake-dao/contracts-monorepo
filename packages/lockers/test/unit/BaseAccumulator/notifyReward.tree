@@ -1,0 +1,4 @@
+BaseAccumulator__notifyReward
+├── it calls fee receiver on demand if there is one
+├── it calls the gauge to deposit tokens if there are some
+└── it charges the fees

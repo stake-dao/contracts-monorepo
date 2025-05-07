@@ -1,0 +1,5 @@
+BaseAccumulator__rescueERC20
+├── it reverts if the caller is not the governance
+├── it reverts if the recipient is the zero address
+├── it reverts if the amount exceeds the balance
+└── it transfer the held tokens to the recipient

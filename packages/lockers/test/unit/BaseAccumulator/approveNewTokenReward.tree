@@ -1,0 +1,4 @@
+BaseAccumulator__approveNewTokenReward
+├── it reverts if the caller is not the governance
+├── it set max approval for the new token reward to the gauge
+└── it emits a event
