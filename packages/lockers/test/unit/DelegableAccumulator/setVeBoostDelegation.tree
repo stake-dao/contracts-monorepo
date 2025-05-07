@@ -1,0 +1,4 @@
+DelegableAccumulator__setVeBoostDelegation
+├── it reverts if the caller is not the governance
+├── it sets the veBoostDelegation
+└── it emits an event

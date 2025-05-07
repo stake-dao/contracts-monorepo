@@ -1,0 +1,6 @@
+DelegableAccumulator__contructor
+├── it sets the token
+├── it sets the veToken
+├── it sets the veBoost
+├── it sets the veBoostDelegation
+└── it sets the multiplier

@@ -31,7 +31,7 @@ contract DelegableAccumulatorTest is BaseAccumulatorTest {
         veBoost = new MockVeBoost();
 
         veBoostDelegation = makeAddr("veBoostDelegation");
-        multiplier = 1000;
+        multiplier = 0;
 
         delegableAccumulator = new DelegableAccumulatorHarness(
             address(gauge),

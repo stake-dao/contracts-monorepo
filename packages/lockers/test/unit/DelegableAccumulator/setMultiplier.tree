@@ -1,0 +1,4 @@
+DelegableAccumulator__setMultiplier
+├── it reverts if the caller is not the governance
+├── it sets the multiplier
+└── it emits an event
