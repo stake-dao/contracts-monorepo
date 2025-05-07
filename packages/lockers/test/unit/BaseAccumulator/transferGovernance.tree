@@ -1,0 +1,5 @@
+BaseAccumulator__transferGovernance
+├── it reverts if the caller is not the governance
+├── it reverts if the given future governance is the zero address
+├── it store the future governance
+└── it emits a event

@@ -193,21 +193,29 @@ abstract contract BaseAccumulator {
         // Send the fees to all the stored fee receivers based on their fee weight
         Split[] memory _feeSplit = getFeeSplit();
 
+        uint256 _length = _feeSplit.length;
         uint256 fee;
-        for (uint256 i = 0; i < _feeSplit.length; i++) {
+        for (uint256 i; i < _length;) {
             fee = (_amount * _feeSplit[i].fee) / DENOMINATOR;
             SafeTransferLib.safeTransfer(_token, _feeSplit[i].receiver, fee);
             emit FeeTransferred(_feeSplit[i].receiver, fee, false);
 
             _charged += fee;
+
+            unchecked {
+                ++i;
+            }
         }
 
-        // Send the claimer fee to the caller
-        fee = (_amount * claimerFee) / DENOMINATOR;
-        SafeTransferLib.safeTransfer(_token, msg.sender, fee);
-        emit FeeTransferred(msg.sender, fee, true);
+        // If claimer fee is set, send the claimer fee to the caller
+        uint256 _claimerFee = claimerFee;
+        if (_claimerFee > 0) {
+            fee = (_amount * _claimerFee) / DENOMINATOR;
+            _charged += fee;
 
-        _charged += fee;
+            SafeTransferLib.safeTransfer(_token, msg.sender, fee);
+            emit FeeTransferred(msg.sender, fee, true);
+        }
     }
 
     /// @notice Send the fees accumulated by the accountant to the fee receiver
@@ -286,6 +294,7 @@ abstract contract BaseAccumulator {
     }
 
     function setAccountant(address _accountant) external onlyGovernance {
+        if (_accountant == address(0)) revert ZERO_ADDRESS();
         emit AccountantUpdated(accountant = _accountant);
     }
 

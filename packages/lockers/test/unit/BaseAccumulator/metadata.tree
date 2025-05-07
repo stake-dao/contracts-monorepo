@@ -1,0 +1,3 @@
+BaseAccumulator__metadata
+├── it returns the name of the contract
+└── it returns the version of the contract

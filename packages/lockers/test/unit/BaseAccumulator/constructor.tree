@@ -1,0 +1,10 @@
+BaseAccumulator__constructor
+├── it reverts if the given gauge is the zero address
+├── it reverts if the given locker is the zero address
+├── it reverts if the given governance is the zero address
+├── it reverts if the given reward token is the zero address
+├── it initializes the gauge to the given gauge
+├── it initializes the locker to the given locker
+├── it initializes the reward token to the given reward token
+├── it initializes the governance to the given governance
+└── it initializes the claimer fee
