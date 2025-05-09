@@ -2,5 +2,5 @@
 pragma solidity 0.8.19;
 
 interface IAccumulator {
-    function depositTokenWithoutChargingFee(address _token, uint256 _amount) external;
+    function setAccountant(address _accountant) external;
 }
