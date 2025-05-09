@@ -1,0 +1,12 @@
+BalancerAccumulator__constructor
+├── it sets the given gauge
+├── it sets USDC as the reward token
+├── it sets the given locker
+├── it sets the given governance
+├── it sets BAL as the token
+├── it sets veBAL as the veToken
+├── it sets the correct veBoost contract
+├── it sets the correct veBoost delegation contract
+├── it sets 0 as the multiplier
+├── it sets the given gateway
+└── it gives full approval to the gauge for the BAL and USDC tokens
