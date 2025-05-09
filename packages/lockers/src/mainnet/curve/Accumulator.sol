@@ -73,7 +73,7 @@ contract CurveAccumulator is DelegableAccumulator, SafeModule {
         if (claimedToken == 0) return;
         _execute_transfer(claimedToken);
 
-        // 3. Tell the Strategy to send the accrued fees to the fee receiver
+        // 3. Tell the Strategy to send the accrued fees (CRV) to the fee receiver
         _claimAccumulatedFee();
 
         // 4. Notify the rewards to the Liquidity Gauge (V4)
