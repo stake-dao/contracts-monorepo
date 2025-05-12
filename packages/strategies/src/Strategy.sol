@@ -166,9 +166,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         if (PROTOCOL_CONTROLLER.isShutdown(gauge)) return _harvestOrCheckpoint(gauge, policy);
 
         for (uint256 i; i < allocation.targets.length; i++) {
-            /// When the receiver is not set, it means it's a transfer of the vault shares and we need to checkpoint by
-            /// withdrawing 0.
-            if (allocation.amounts[i] > 0 || receiver == address(this)) {
+            if (allocation.amounts[i] > 0) {
                 if (allocation.targets[i] == LOCKER) {
                     _withdraw(allocation.asset, gauge, allocation.amounts[i], receiver);
                 } else {
