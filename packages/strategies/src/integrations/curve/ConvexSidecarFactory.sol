@@ -23,6 +23,9 @@ contract ConvexSidecarFactory is SidecarFactory {
     /// @notice Error emitted when the reward receiver is not set
     error VaultNotDeployed();
 
+    /// @notice Error emitted when the arguments are invalid
+    error InvalidArguments();
+
     /// @notice Constructor
     /// @param _implementation Address of the sidecar implementation
     /// @param _protocolController Address of the protocol controller
@@ -42,6 +45,8 @@ contract ConvexSidecarFactory is SidecarFactory {
     /// @param gauge The gauge to validate
     /// @param args The arguments containing the pool ID
     function _isValidGauge(address gauge, bytes memory args) internal view override {
+        require(args.length == 32, InvalidArguments());
+
         uint256 pid = abi.decode(args, (uint256));
 
         // Get the pool info from Convex
