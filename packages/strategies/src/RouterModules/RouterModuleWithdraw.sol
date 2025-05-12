@@ -15,13 +15,9 @@ contract RouterModuleWithdraw is IRouterModule {
     /// @param rewardVault The address of the reward vault to call
     /// @param assets The amount of assets to withdraw.
     /// @param receiver The address to receive the assets. If the receiver is the zero address, the assets will be sent to the owner.
-    /// @param owner The address to burn shares from.
     /// @return _ The amount of assets withdrawn.
     /// @custom:throws NotApproved if the Router is not allowed to withdraw the assets
-    function withdraw(address rewardVault, uint256 assets, address receiver, address owner)
-        external
-        returns (uint256)
-    {
-        return IERC4626(rewardVault).withdraw(assets, receiver, owner);
+    function withdraw(address rewardVault, uint256 assets, address receiver) external returns (uint256) {
+        return IERC4626(rewardVault).withdraw(assets, receiver, msg.sender);
     }
 }

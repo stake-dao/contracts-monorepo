@@ -78,10 +78,9 @@ contract RouterModuleWithdraw__withdraw is RouterModulesTest {
         bytes memory dataModule = bytes.concat(
             bytes1(uint8(1)),
             abi.encodeWithSelector(
-                bytes4(keccak256("withdraw(address,uint256,address,address)")),
+                bytes4(keccak256("withdraw(address,uint256,address)")),
                 address(cloneRewardVault),
                 OWNER_ALLOWED_BALANCE - 1,
-                account,
                 account
             )
         );
@@ -93,7 +92,7 @@ contract RouterModuleWithdraw__withdraw is RouterModulesTest {
         emit IERC4626.Withdraw(address(router), account, account, OWNER_ALLOWED_BALANCE - 1, OWNER_ALLOWED_BALANCE - 1);
 
         // make the caller withdraw the rewards. It should succeed because the allowance is enough
-        vm.prank(routerOwner);
+        vm.prank(account);
         bytes[] memory moduleReturn = router.execute(calls);
 
         // assert the shares returned by the module is the expected amount
