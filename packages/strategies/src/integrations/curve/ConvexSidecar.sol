@@ -14,8 +14,8 @@ contract ConvexSidecar is Sidecar {
     using SafeERC20 for IERC20;
     using ImmutableArgsParser for address;
 
-    /// @notice The bytes4 ID of the Convex protocol
-    /// @dev Used to identify the Convex protocol in the registry
+    /// @notice The bytes4 ID of the Curve protocol
+    /// @dev Used to identify the Curve protocol in the registry
     bytes4 private constant CURVE_PROTOCOL_ID = bytes4(keccak256("CURVE"));
 
     //////////////////////////////////////////////////////
