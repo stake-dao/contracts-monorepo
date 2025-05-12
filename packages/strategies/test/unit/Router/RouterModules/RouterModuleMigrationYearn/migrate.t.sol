@@ -132,6 +132,7 @@ contract RouterModuleMigrationYearn__migrate is RouterModulesTest {
 
         // validate the fuzzed shares amount
         vm.assume(amount > 0);
+        vm.assume(amount < type(uint128).max);
 
         // deploy the asset expected as an input to both vault
         asset = address(new ERC20Mock("Asset", "ASSET", 18));

@@ -887,7 +887,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         IStrategy.PendingRewards memory pendingRewards = strategy().withdraw(allocation, POLICY, address(strategy()));
 
         // 2. Update Balances via Accountant
-        ACCOUNTANT.checkpoint(gauge(), from, to, uint128(amount), pendingRewards, POLICY);
+        ACCOUNTANT.checkpoint(gauge(), from, to, amount.toUint128(), pendingRewards, POLICY);
 
         // 3. Emit Transfer event
         emit Transfer(from, to, amount);
@@ -907,7 +907,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         IStrategy.HarvestPolicy policy,
         address referrer
     ) internal {
-        ACCOUNTANT.checkpoint(gauge(), address(0), to, uint128(amount), pendingRewards, policy, referrer);
+        ACCOUNTANT.checkpoint(gauge(), address(0), to, amount.toUint128(), pendingRewards, policy, referrer);
     }
 
     /// @notice Burns vault shares
@@ -922,7 +922,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         IStrategy.PendingRewards memory pendingRewards,
         IStrategy.HarvestPolicy policy
     ) internal {
-        ACCOUNTANT.checkpoint(gauge(), from, address(0), uint128(amount), pendingRewards, policy);
+        ACCOUNTANT.checkpoint(gauge(), from, address(0), amount.toUint128(), pendingRewards, policy);
     }
 
     /// @notice Generates the vault's name
