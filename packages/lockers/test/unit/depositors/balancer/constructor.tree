@@ -1,0 +1,8 @@
+BalancerDepositor__constructor
+├── it sets the given token
+├── it sets the given locker
+├── it sets the given minter
+├── it sets the given gauge
+├── it sets the given gateway
+├── it sets 1 year as the max lock duration
+└── it sets the expected veToken

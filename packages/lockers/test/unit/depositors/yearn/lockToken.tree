@@ -1,0 +1,3 @@
+YearnDepositor__lockToken
+├── it increases the amount and the unlock time if needed
+└── it does nothing if none the amount or the unlock time is positive
