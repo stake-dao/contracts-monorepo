@@ -726,9 +726,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @param newProtocolFeePercent New protocol fee percentage (scaled by 1e18).
     /// @custom:throws FeeExceedsMaximum If fee would exceed maximum.
     function setProtocolFeePercent(uint128 newProtocolFeePercent) external onlyOwner {
-        // check that the provided protocol fee is valid
-        require(newProtocolFeePercent <= MAX_FEE_PERCENT, FeeExceedsMaximum());
-
         FeesParams storage currentFees = feesParams;
 
         // check that the total fee (protocol + harvest) is valid
