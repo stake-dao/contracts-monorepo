@@ -24,20 +24,19 @@ contract RouterModuleMigrationStakeDAOV1 is IRouterModule {
     /// @dev The account must have approved the token to the router contract
     /// @param from The address of the old vault
     /// @param to The address of the new reward vault
-    /// @param account The address of the account to migrate
     /// @param shares The number of shares to migrate
-    function migrate(address from, address to, address account, uint256 shares) external {
+    function migrate(address from, address to, uint256 shares) external {
         address asset = RewardVault(to).asset();
         require(IVault(from).token() == asset, VaultNotCompatible());
 
         // 1. Transfer user's gauge token to the router contract
-        IERC20(IVault(from).liquidityGauge()).safeTransferFrom(account, address(this), shares);
+        IERC20(IVault(from).liquidityGauge()).safeTransferFrom(msg.sender, address(this), shares);
 
         // 2. Withdraw the shares from the old vault
         IVault(from).withdraw(shares);
 
         // 3. Deposit the shares in the new reward vault
         IERC20(asset).safeIncreaseAllowance(to, shares);
-        RewardVault(to).deposit(shares, account);
+        RewardVault(to).deposit(shares, msg.sender);
     }
 }
