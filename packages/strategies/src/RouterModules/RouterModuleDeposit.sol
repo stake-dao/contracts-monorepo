@@ -16,7 +16,7 @@ contract RouterModuleDeposit is IRouterModule {
     /// @custom:throws ZeroAddress if the account is the zero address
     /// @custom:throws SafeERC20FailedOperation if the account does not have enough allowance
     ///                for the reward vault to transfer the assets
-    function deposit(address rewardVault, address receiver, uint256 assets) external returns (uint256) {
+    function deposit(address rewardVault, address receiver, uint256 assets) public returns (uint256) {
         return IRewardVault(rewardVault).deposit(msg.sender, receiver, assets, address(0));
     }
 
@@ -29,7 +29,6 @@ contract RouterModuleDeposit is IRouterModule {
     ///                for the reward vault to transfer the assets
     function deposit(address rewardVault, address receiver, uint256 assets, address referrer)
         public
-        payable
         returns (uint256)
     {
         return IRewardVault(rewardVault).deposit(msg.sender, receiver, assets, referrer);
