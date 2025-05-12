@@ -46,7 +46,7 @@ contract RouterModuleMigrationYearn__migrate is RouterModulesTest {
         vm.mockCall(address(to), abi.encodeWithSelector(IERC4626.asset.selector), abi.encode(toToken));
 
         vm.expectRevert(abi.encodeWithSelector(RouterModuleMigrationYearn.VaultNotCompatible.selector));
-        module.migrate(address(from), to, address(0), 100);
+        module.migrate(address(from), to, 100);
     }
 
     function _test_token_migration(address account, uint256 amount)
@@ -102,20 +102,17 @@ contract RouterModuleMigrationYearn__migrate is RouterModulesTest {
         bytes memory dataModule = bytes.concat(
             bytes1(uint8(4)),
             abi.encodeWithSelector(
-                bytes4(keccak256("migrate(address,address,address,uint256)")),
-                address(from),
-                address(cloneRewardVault),
-                account,
-                amount
+                bytes4(keccak256("migrate(address,address,uint256)")), address(from), address(cloneRewardVault), amount
             )
         );
         bytes[] memory calls = new bytes[](1);
         calls[0] = dataModule;
 
         // execute the calls as the router owner
-        vm.prank(routerOwner);
         vm.expectEmit(true, true, true, true);
         emit IERC4626.Deposit(address(router), account, amount, amount);
+
+        vm.prank(account);
         router.execute(calls);
 
         assertEq(ERC20Mock(asset).balanceOf(account), 0);
