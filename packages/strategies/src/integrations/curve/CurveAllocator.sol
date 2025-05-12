@@ -177,20 +177,6 @@ contract CurveAllocator is Allocator {
         return sidecar == address(0) ? super.getAllocationTargets(gauge) : _targets(sidecar);
     }
 
-    /// @notice Computes the optimal Stake DAO Locker balance (legacy helper).
-    function getOptimalLockerBalance(address gauge) public view returns (uint256 balanceOfLocker) {
-        // 1. Current veBoost weights
-        uint256 veBoostOfLocker = IBalanceProvider(BOOST_DELEGATION_V3).balanceOf(LOCKER);
-        uint256 veBoostOfConvex = IBalanceProvider(BOOST_DELEGATION_V3).balanceOf(CONVEX_BOOST_HOLDER);
-
-        // 2. Current Convex LP balance on the gauge
-        uint256 balanceOfConvex = IBalanceProvider(gauge).balanceOf(CONVEX_BOOST_HOLDER);
-        if (balanceOfConvex == 0 || veBoostOfConvex == 0) return 0;
-
-        // 3. Compute the optimal balance for Stake DAO
-        balanceOfLocker = balanceOfConvex.mulDiv(veBoostOfLocker, veBoostOfConvex);
-    }
-
     //////////////////////////////////////////////////////
     /// --- HELPER FUNCTIONS
     //////////////////////////////////////////////////////
