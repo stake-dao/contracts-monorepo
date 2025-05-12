@@ -89,7 +89,7 @@ contract RouterModuleDeposit__deposit is RouterModulesTest {
                 IProtocolController.allowed.selector,
                 address(cloneRewardVault),
                 address(router),
-                bytes4(keccak256("deposit(address,uint256)"))
+                bytes4(keccak256("deposit(address,address,uint256,address)"))
             ),
             abi.encode(true)
         );
@@ -98,16 +98,18 @@ contract RouterModuleDeposit__deposit is RouterModulesTest {
         bytes memory dataModule = bytes.concat(
             bytes1(uint8(0)),
             abi.encodeWithSelector(
-                bytes4(keccak256("deposit(address,address,uint256)")), address(cloneRewardVault), account, OWNER_BALANCE
+                bytes4(keccak256("deposit(address,address,uint256,address)")), address(cloneRewardVault), account, OWNER_BALANCE, address(0)
             )
         );
+
         bytes[] memory calls = new bytes[](1);
         calls[0] = dataModule;
 
         // execute the calls as the router owner
-        vm.prank(routerOwner);
         vm.expectEmit(true, true, true, true);
         emit IERC4626.Deposit(address(router), account, OWNER_BALANCE, OWNER_BALANCE);
+
+        vm.prank(account);
         bytes[] memory moduleReturn = router.execute(calls);
 
         // assert the shares returned by the module is the expected amount
