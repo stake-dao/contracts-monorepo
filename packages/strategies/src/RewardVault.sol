@@ -251,7 +251,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @param assets The amount of assets to deposit.
     /// @param referrer The address of the referrer. Can be the zero address.
     /// @return _ The amount of assets deposited.
-    function deposit(address account, uint256 assets, address referrer) public returns (uint256) {
+    function deposit(address account, uint256 assets, address referrer) public onlyAllowed returns (uint256) {
         if (account == address(0)) revert ZeroAddress();
 
         _deposit(account, account, assets, assets, referrer);
