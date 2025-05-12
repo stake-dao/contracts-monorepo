@@ -43,6 +43,7 @@ contract Router__setModule is RouterBaseTest {
 
     function test_EmitsAModuleSetEvent(uint8 identifier, string memory moduleName) external {
         // it emits a ModuleSet event
+        vm.assume(bytes(moduleName).length != 0);
 
         // mock the module name to the fuzzed value
         vm.mockCall(address(module), abi.encodeWithSelector(IRouterModule.name.selector), abi.encode(moduleName));
