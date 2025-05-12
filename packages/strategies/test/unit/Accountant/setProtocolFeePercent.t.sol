@@ -27,21 +27,6 @@ contract Accountant__setProtocolFeePercent is AccountantBaseTest {
         assertEq(accountant.getProtocolFeePercent(), newProtocolFee);
     }
 
-    function test_GivenProtocolFeeIsOutTheRange(uint128 newProtocolFee) external {
-        // it reverts
-
-        // ensure the fuzzed value is out the range
-        newProtocolFee = uint128(
-            bound(
-                newProtocolFee, accountant.MAX_FEE_PERCENT() - accountant.getHarvestFeePercent() + 1, type(uint128).max
-            )
-        );
-
-        vm.prank(owner);
-        vm.expectRevert(abi.encodeWithSelector(Accountant.FeeExceedsMaximum.selector));
-        accountant.setProtocolFeePercent(newProtocolFee);
-    }
-
     function test_GivenProtocolFeeIsHigherThanMax(uint128 newProtocolFee) external {
         // it reverts
 

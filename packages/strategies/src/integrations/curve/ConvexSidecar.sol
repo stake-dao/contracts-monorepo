@@ -132,11 +132,9 @@ contract ConvexSidecar is Sidecar {
             /// For PIDs greater than 150, the virtual balance pool also has a wrapper.
             /// So we need to get the token from the wrapper.
             /// More: https://docs.convexfinance.com/convexfinanceintegration/baserewardpool
+            tokens[i] = IBaseRewardPool(_token).rewardToken();
             if (pid() >= 151) {
-                address wrapper = IBaseRewardPool(_token).rewardToken();
-                tokens[i] = IStashTokenWrapper(wrapper).token();
-            } else {
-                tokens[i] = IBaseRewardPool(_token).rewardToken();
+                tokens[i] = IStashTokenWrapper(tokens[i]).token();
             }
 
             unchecked {
