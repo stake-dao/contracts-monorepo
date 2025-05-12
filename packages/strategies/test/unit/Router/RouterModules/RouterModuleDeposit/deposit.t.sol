@@ -98,7 +98,11 @@ contract RouterModuleDeposit__deposit is RouterModulesTest {
         bytes memory dataModule = bytes.concat(
             bytes1(uint8(0)),
             abi.encodeWithSelector(
-                bytes4(keccak256("deposit(address,address,uint256,address)")), address(cloneRewardVault), account, OWNER_BALANCE, address(0)
+                bytes4(keccak256("deposit(address,address,uint256,address)")),
+                address(cloneRewardVault),
+                account,
+                OWNER_BALANCE,
+                address(0)
             )
         );
 
