@@ -36,7 +36,7 @@ contract RouterModuleMigrationStakeDAOV1 is IRouterModule {
         IVault(from).withdraw(shares);
 
         // 3. Deposit the shares in the new reward vault
-        IERC20(asset).safeIncreaseAllowance(to, shares);
+        IERC20(asset).forceApprove(to, shares);
         RewardVault(to).deposit(shares, msg.sender);
     }
 }

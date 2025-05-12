@@ -71,7 +71,7 @@ contract ConvexSidecar is Sidecar {
     function _initialize() internal override {
         require(asset().allowance(address(this), address(BOOSTER)) == 0, AlreadyInitialized());
 
-        asset().safeIncreaseAllowance(address(BOOSTER), type(uint256).max);
+        asset().forceApprove(address(BOOSTER), type(uint256).max);
     }
 
     //////////////////////////////////////////////////////

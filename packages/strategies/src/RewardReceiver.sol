@@ -95,7 +95,7 @@ contract RewardReceiver is IRewardReceiver {
         if (rewardVault().getRewardsDistributor(address(token)) != address(this)) return;
 
         /// Approve the reward vault to spend the reward token.
-        token.safeIncreaseAllowance(address(rewardVault()), amount);
+        token.forceApprove(address(rewardVault()), amount);
 
         // Deposit rewards to the vault
         rewardVault().depositRewards(address(token), amount);

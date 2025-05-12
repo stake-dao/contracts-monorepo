@@ -30,7 +30,7 @@ contract RouterModuleMigrationCurve is IRouterModule {
         ILiquidityGauge(from).withdraw(shares);
 
         // 3. Deposit the tokens in the reward vault
-        ILiquidityGauge(asset).safeIncreaseAllowance(to, shares);
+        ILiquidityGauge(asset).forceApprove(to, shares);
         RewardVault(to).deposit(shares, msg.sender);
     }
 }

@@ -30,7 +30,7 @@ contract RouterModuleMigrationYearn is IRouterModule {
         IYearnVault(from).withdraw(shares);
 
         // 3. Deposit the tokens in the reward vault
-        IYearnVault(asset).safeIncreaseAllowance(to, shares);
+        IYearnVault(asset).forceApprove(to, shares);
         RewardVault(to).deposit(shares, msg.sender);
     }
 }
