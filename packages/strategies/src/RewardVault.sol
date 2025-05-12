@@ -587,7 +587,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
         if (timeDelta > 0) {
             // Calculate additional rewards per token since last update
-            rewardRatePerToken = Math.mulDiv(timeDelta * reward.rewardRate, 1, _totalSupply);
+            rewardRatePerToken = Math.mulDiv(timeDelta, reward.rewardRate, _totalSupply);
         }
 
         return (reward.rewardPerTokenStored + rewardRatePerToken).toUint128();
