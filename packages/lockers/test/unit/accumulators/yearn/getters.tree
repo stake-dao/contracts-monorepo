@@ -1,0 +1,3 @@
+YearnAccumulator__getters
+├── it returns the version
+└── it returns the name
