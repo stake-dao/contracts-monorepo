@@ -34,6 +34,9 @@ contract Router is IRouter, Ownable {
     /// ~ EVENTS - ERRORS
     ///////////////////////////////////////////////////////////////
 
+    // @notice Thrown when trying to set a module with an empty name
+    error EmptyModuleName();
+
     /// @notice Emitted when a module is set
     /// @param identifier The unique identifier of the module (indexed value)
     /// @param module The address of the module
@@ -75,6 +78,9 @@ contract Router is IRouter, Ownable {
     /// @param module The address of the module
     /// @custom:throws OwnableUnauthorizedAccount if the caller is not the owner
     function setModule(uint8 identifier, address module) public onlyOwner {
+        string memory moduleName = IRouterModule(module).name();
+        require(bytes(moduleName).length != 0, EmptyModuleName());
+
         bytes32 buffer = getStorageBuffer();
         assembly ("memory-safe") {
             sstore(add(buffer, identifier), module)
