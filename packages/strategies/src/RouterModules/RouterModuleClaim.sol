@@ -14,8 +14,6 @@ contract RouterModuleClaim is IRouterModule {
     /// @param rewardVault The address of the reward vault to call
     /// @param tokens The array of tokens to claim
     /// @param receiver The address to receive the rewards
-    /// @custom:throws OnlyAllowed if this function is not called using delegatecall
-    ///                from an account authorized by the protocol controller
     function claim(address rewardVault, address[] calldata tokens, address receiver)
         external
         returns (uint256[] memory amounts)
