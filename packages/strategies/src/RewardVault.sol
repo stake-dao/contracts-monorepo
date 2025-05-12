@@ -249,7 +249,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         onlyAllowed
         returns (uint256)
     {
-        if (account == address(0) || receiver == address(0)) revert ZeroAddress();
+        require(account != address(0) && receiver != address(0), ZeroAddress());
 
         _deposit(account, receiver, assets, assets, referrer);
 
@@ -318,7 +318,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         // if the caller isn't the owner, check if the caller is allowed to withdraw the amount of assets
         if (msg.sender != owner) {
             uint256 allowed = allowance(owner, msg.sender);
-            if (assets > allowed) revert NotApproved();
+            require(assets <= allowed, NotApproved());
             if (allowed != type(uint256).max) _spendAllowance(owner, msg.sender, assets);
         }
 
@@ -412,7 +412,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         amounts = new uint256[](tokens.length);
         for (uint256 i; i < tokens.length; i++) {
             address rewardToken = tokens[i];
-            if (!isRewardToken(rewardToken)) revert InvalidRewardToken();
+            require(isRewardToken(rewardToken), InvalidRewardToken());
 
             // Calculate earned rewards since last claim
             AccountData storage accountData_ = accountData[account][rewardToken];
@@ -441,7 +441,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         require(distributor != address(0), ZeroAddress());
 
         RewardData storage reward = rewardData[rewardToken];
-        require(_isRewardToken(reward) == false, RewardAlreadyExists());
+        require(!_isRewardToken(reward), RewardAlreadyExists());
 
         rewardTokens.push(rewardToken);
         reward.rewardsDistributor = distributor;
@@ -459,7 +459,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         _checkpoint(address(0), address(0));
 
         RewardData storage reward = rewardData[rewardToken];
-        if (reward.rewardsDistributor != msg.sender) revert UnauthorizedRewardsDistributor();
+        require(reward.rewardsDistributor == msg.sender, UnauthorizedRewardsDistributor());
 
         uint32 currentTime = uint32(block.timestamp);
         uint32 periodFinish = reward.periodFinish;
