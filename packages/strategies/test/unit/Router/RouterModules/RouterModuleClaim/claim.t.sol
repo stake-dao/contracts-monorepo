@@ -45,7 +45,7 @@ contract RouterModuleClaim__claim is RouterModulesTest {
         // it reverts if used directly
 
         vm.expectRevert(abi.encodeWithSelector(RewardVault.OnlyAllowed.selector));
-        module.claim(address(rewardVault), makeAddr("account"), tokens, makeAddr("receiver"));
+        module.claim(address(rewardVault), tokens, makeAddr("receiver"));
     }
 
     function test_RevertsIfNotDelegatecallByAuthorizedContract(bytes32 randomNonce) external {
@@ -68,18 +68,14 @@ contract RouterModuleClaim__claim is RouterModulesTest {
         bytes memory dataModule = bytes.concat(
             bytes1(uint8(2)),
             abi.encodeWithSelector(
-                bytes4(keccak256("claim(address,address,address[],address)")),
-                address(cloneRewardVault),
-                account,
-                tokens,
-                receiver
+                bytes4(keccak256("claim(address,address[],address)")), address(cloneRewardVault), tokens, receiver
             )
         );
         bytes[] memory calls = new bytes[](1);
         calls[0] = dataModule;
 
         // execute the calls as the router owner
-        vm.prank(routerOwner);
+        vm.prank(account);
         bytes[] memory moduleReturn = router.execute(calls);
 
         // assert the rewards are transferred to the receiver
