@@ -1,0 +1,8 @@
+YearnAccumulator__constructor
+├── it sets the gauge to the given value
+├── it sets the locker to the given value
+├── it sets the governance to the given value
+├── it sets the token to the expected value
+├── it sets the reward token to the expected value
+├── it approves the gauge for the tokens
+└── it sets the pools to the expected values
