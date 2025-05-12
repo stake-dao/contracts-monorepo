@@ -237,49 +237,30 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
     /// @notice Deposits `assets` from `account` into the vault and mints shares to `account`.
     /// @dev Only callable by allowed addresses. `account` should have approved this contract to transfer `assets`.
-    /// @param account The address to deposit assets from and mint shares to.
-    /// @param assets The amount of assets to deposit.
-    /// @return _ The amount of assets deposited.
-    function deposit(address account, uint256 assets) external returns (uint256) {
-        return deposit(account, assets, address(0));
-    }
-
-    /// @notice Deposits `assets` from `account` into the vault and mints shares to `account`.
-    /// @dev Only callable by allowed addresses. `account` should have approved this contract to transfer `assets`.
     ///      This function tracks the referrer address and handles deposit allocation through strategy and updates rewards.
     /// @param account The address to deposit assets from and mint shares to.
+    /// @param receiver The address to receive the minted shares.
     /// @param assets The amount of assets to deposit.
     /// @param referrer The address of the referrer. Can be the zero address.
     /// @return _ The amount of assets deposited.
-    function deposit(address account, uint256 assets, address referrer) public onlyAllowed returns (uint256) {
-        if (account == address(0)) revert ZeroAddress();
+    /// @custom:reverts ZeroAddress if the account or receiver address is the zero address.
+    function deposit(address account, address receiver, uint256 assets, address referrer)
+        public
+        onlyAllowed
+        returns (uint256)
+    {
+        if (account == address(0) || receiver == address(0)) revert ZeroAddress();
 
-        _deposit(account, account, assets, assets, referrer);
+        _deposit(account, receiver, assets, assets, referrer);
 
         // return the amount of assets deposited. Thanks to the 1:1 relationship between assets and shares
         // the amount of assets deposited is the same as the amount of shares minted
         return assets;
     }
 
-    /// @notice Mints exact `shares` to `account` by depositing `account`'s assets.
-    /// @dev Only callable by allowed addresses.
-    /// @param account The address to deposit assets from and mint shares to.
-    /// @param shares The amount of shares to mint.
-    /// @return _ The amount of shares minted.
-    /// @custom:reverts OnlyAllowed if the caller is not allowed.
-    function mint(address account, uint256 shares, address referrer) external returns (uint256) {
-        return deposit(account, shares, referrer);
-    }
-
-    /// @notice Mints exact `shares` to `account` by depositing `account`'s assets.
-    /// @dev Only callable by allowed addresses.
-    /// @param account The address to deposit assets from and mint shares to.
-    /// @param shares The amount of shares to mint.
-    /// @return _ The amount of shares minted.
-    /// @custom:reverts OnlyAllowed if the caller is not allowed.
-    function mint(address account, uint256 shares) external returns (uint256) {
-        return deposit(account, shares, address(0));
-    }
+    ///////////////////////////////////////////////////////////////
+    /// ~ DEPOSIT - INTERNAL
+    ///////////////////////////////////////////////////////////////
 
     /// @dev Internal function to deposit assets into the vault.
     ///      1. Update the reward state for the receiver.

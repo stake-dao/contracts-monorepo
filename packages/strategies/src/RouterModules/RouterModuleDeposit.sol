@@ -12,32 +12,26 @@ contract RouterModuleDeposit is IRouterModule {
 
     /// @notice Deposit assets into the reward vault
     /// @param rewardVault The address of the reward vault to call
-    /// @param account The address of the account to deposit for
     /// @param assets The amount of assets to deposit
-    /// @custom:throws OnlyAllowed if this function is not called using delegatecall
-    ///                from an account authorized by the protocol controller
     /// @custom:throws ZeroAddress if the account is the zero address
     /// @custom:throws SafeERC20FailedOperation if the account does not have enough allowance
     ///                for the reward vault to transfer the assets
-    function deposit(address rewardVault, address account, uint256 assets) external returns (uint256) {
-        return IRewardVault(rewardVault).deposit(account, assets);
+    function deposit(address rewardVault, address receiver, uint256 assets) external returns (uint256) {
+        return IRewardVault(rewardVault).deposit(msg.sender, receiver, assets, address(0));
     }
 
     /// @notice Deposit assets into the reward vault
     /// @param rewardVault The address of the reward vault to call
-    /// @param account The address of the account to deposit for
     /// @param assets The amount of assets to deposit
     /// @param referrer The address of the referrer
-    /// @custom:throws OnlyAllowed if this function is not called using delegatecall
-    ///                from an account authorized by the protocol controller
     /// @custom:throws ZeroAddress if the account is the zero address
     /// @custom:throws SafeERC20FailedOperation if the account does not have enough allowance
     ///                for the reward vault to transfer the assets
-    function deposit(address rewardVault, address account, uint256 assets, address referrer)
+    function deposit(address rewardVault, address receiver, uint256 assets, address referrer)
         public
         payable
         returns (uint256)
     {
-        return IRewardVault(rewardVault).deposit(account, assets, referrer);
+        return IRewardVault(rewardVault).deposit(msg.sender, receiver, assets, referrer);
     }
 }

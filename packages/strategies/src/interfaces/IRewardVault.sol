@@ -10,9 +10,9 @@ interface IRewardVault {
 
     function deposit(uint256 assets, address receiver, address referrer) external returns (uint256 shares);
 
-    function deposit(address account, uint256 assets) external returns (uint256 shares);
-
-    function deposit(address account, uint256 assets, address referrer) external returns (uint256 shares);
+    function deposit(address account, address receiver, uint256 assets, address referrer)
+        external
+        returns (uint256 shares);
 
     function claim(address[] calldata tokens, address receiver) external returns (uint256[] memory amounts);
 
