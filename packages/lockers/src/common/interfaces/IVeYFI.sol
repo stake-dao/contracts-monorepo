@@ -2,8 +2,6 @@
 pragma solidity ^0.8.7;
 
 interface IVeYFI {
-    function modify_lock(uint256 amount, uint256 unlock_time, address user) external;
-
     struct LockedBalance {
         uint256 amount;
         uint256 end;
@@ -14,4 +12,6 @@ interface IVeYFI {
     function withdraw() external;
 
     function locked(address) external view returns (LockedBalance memory);
+
+    function modify_lock(uint256 amount, uint256 unlock_time) external;
 }
