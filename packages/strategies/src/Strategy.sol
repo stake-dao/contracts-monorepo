@@ -440,5 +440,5 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @param gauge The gauge to withdraw from
     /// @param amount The amount to withdraw
     /// @param receiver The address to receive the withdrawn assets
-    function _withdraw(address asset, address gauge, uint256 amount, address receiver) internal virtual {}
+    function _withdraw(address asset, address gauge, uint256 amount, address receiver) internal virtual;
 }
