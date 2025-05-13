@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {CurveAccumulator} from "src/mainnet/curve/Accumulator.sol";
 import {CRV as CurveLocker} from "address-book/src/lockers/1.sol";
 import {Curve} from "address-book/src/protocols/1.sol";
 import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
+import {CurveAccumulator} from "src/mainnet/curve/Accumulator.sol";
 import {AccumulatorTest} from "test/unit/accumulators/AccumulatorTest.t.sol";
 
 contract CurveAccumulator__constructor is AccumulatorTest {
@@ -23,7 +23,7 @@ contract CurveAccumulator__constructor is AccumulatorTest {
         assertEq(curveAccumulator.gauge(), _gauge);
     }
 
-    function test_SetsCrvUSDAsTheRewardToken() external {
+    function test_SetsCrvUSDAsTheRewardToken() external view {
         // it sets crvUSD as the reward token
 
         assertEq(CurveAccumulator(accumulator).rewardToken(), Curve.CRV_USD);
@@ -47,31 +47,31 @@ contract CurveAccumulator__constructor is AccumulatorTest {
         assertEq(curveAccumulator.governance(), _governance);
     }
 
-    function test_SetsCRVAsTheToken() external {
+    function test_SetsCRVAsTheToken() external view {
         // it sets CRV as the token
 
         assertEq(CurveAccumulator(accumulator).token(), Curve.CRV);
     }
 
-    function test_SetsVeCRVAsTheVeToken() external {
+    function test_SetsVeCRVAsTheVeToken() external view {
         // it sets veCRV as the veToken
 
         assertEq(CurveAccumulator(accumulator).veToken(), Curve.VECRV);
     }
 
-    function test_SetsTheCorrectVeBoostContract() external {
+    function test_SetsTheCorrectVeBoostContract() external view {
         // it sets the correct veBoost contract
 
         assertEq(CurveAccumulator(accumulator).veBoost(), Curve.VE_BOOST);
     }
 
-    function test_SetsTheCorrectVeBoostDelegationContract() external {
+    function test_SetsTheCorrectVeBoostDelegationContract() external view {
         // it sets the correct veBoost delegation contract
 
         assertEq(CurveAccumulator(accumulator).veBoostDelegation(), Curve.VE_BOOST_DELEGATION);
     }
 
-    function test_Sets0AsTheMultiplier() external {
+    function test_Sets0AsTheMultiplier() external view {
         // it sets 0 as the multiplier
 
         assertEq(CurveAccumulator(accumulator).multiplier(), 0);

@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {SafeModule} from "src/common/utils/SafeModule.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
-import {IFeeReceiver} from "common/interfaces/IFeeReceiver.sol";
-import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
-import {Balancer} from "address-book/src/protocols/1.sol";
-import {BalancerFeeDistributor} from "src/common/interfaces/BalancerFeeDistributor.sol";
-import {BAL as BalancerProtocol} from "address-book/src/lockers/1.sol";
 import {CommonAddresses} from "address-book/src/common.sol";
+import {BAL as BalancerProtocol} from "address-book/src/lockers/1.sol";
+import {Balancer} from "address-book/src/protocols/1.sol";
+import {IFeeReceiver} from "common/interfaces/IFeeReceiver.sol";
+import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {DelegableAccumulator} from "src/common/accumulator/DelegableAccumulator.sol";
+import {BalancerFeeDistributor} from "src/common/interfaces/BalancerFeeDistributor.sol";
+import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
+import {SafeModule} from "src/common/utils/SafeModule.sol";
 
 /// @title BalancerAccumulator
 /// @notice This contract is used to claim all the rewards the locker has received

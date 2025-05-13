@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
-import {IVeBoost} from "src/common/interfaces/IVeBoost.sol";
+import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
+import {IVeBoost} from "src/common/interfaces/IVeBoost.sol";
 
 /// @title DelegableAccumulator
 /// @notice This contract is an extension of the BaseAccumulator, designed to manage and distribute rewards

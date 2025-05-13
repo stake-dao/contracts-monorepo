@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {SafeModule} from "src/common/utils/SafeModule.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {FXS as FraxMainnet} from "address-book/src/lockers/1.sol";
+import {Frax} from "address-book/src/protocols/252.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {IYieldDistributor} from "src/common/interfaces/IYieldDistributor.sol";
-import {Frax} from "address-book/src/protocols/252.sol";
-import {FXS as FraxMainnet} from "address-book/src/lockers/1.sol";
+import {SafeModule} from "src/common/utils/SafeModule.sol";
 import {FXTLDelegation} from "src/fraxtal/FXTLDelegation.sol";
 
 /// @title A contract that accumulates FXS rewards and notifies them to the LGV4

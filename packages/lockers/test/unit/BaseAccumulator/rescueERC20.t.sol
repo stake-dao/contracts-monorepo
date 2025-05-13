@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
+import {MockERC20} from "forge-std/src/mocks/MockERC20.sol";
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {BaseAccumulatorTest} from "test/unit/BaseAccumulator/utils/BaseAccumulatorTest.sol";
-import {MockERC20} from "forge-std/src/mocks/MockERC20.sol";
 
 contract BaseAccumulator__rescueERC20 is BaseAccumulatorTest {
     MockERC20 internal randomToken;

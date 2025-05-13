@@ -6,10 +6,10 @@ import "address-book/src/lockers/1.sol";
 import "address-book/src/protocols/1.sol";
 import "forge-std/src/Test.sol";
 import "forge-std/src/Vm.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {CommonBase} from "test/common/CommonBase.sol";
-import {ERC20} from "solady/src/tokens/ERC20.sol";
 
 abstract contract BaseAccumulatorTest is CommonBase, Test {
     uint256 internal blockNumber;

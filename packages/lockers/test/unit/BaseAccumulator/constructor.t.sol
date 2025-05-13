@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
+import {Test} from "forge-std/src/Test.sol";
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {BaseAccumulatorHarness} from "test/unit/BaseAccumulator/utils/BaseAccumulatorHarness.sol";
-import {Test} from "forge-std/src/Test.sol";
 
 contract BaseAccumulator__constructor is Test {
     function test_RevertsIfTheGivenGaugeIsTheZeroAddress() external {

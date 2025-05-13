@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {DAO} from "address-book/src/dao/1.sol";
 import {YearnDepositor} from "src/mainnet/yearn/Depositor.sol";
 
 contract YearnDepositorHarness is YearnDepositor {

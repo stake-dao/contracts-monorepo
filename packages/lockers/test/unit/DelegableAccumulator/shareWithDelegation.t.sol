@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {DelegableAccumulatorTest} from "test/unit/DelegableAccumulator/utils/DelegableAccumulatorTest.t.sol";
-import {IVeBoost} from "src/common/interfaces/IVeBoost.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
+import {IVeBoost} from "src/common/interfaces/IVeBoost.sol";
+import {DelegableAccumulatorTest} from "test/unit/DelegableAccumulator/utils/DelegableAccumulatorTest.t.sol";
 
 contract DelegableAccumulator__shareWithDelegation is DelegableAccumulatorTest {
     function setUp() public virtual override {

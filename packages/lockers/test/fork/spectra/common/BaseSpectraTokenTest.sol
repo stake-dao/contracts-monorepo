@@ -1,30 +1,28 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "forge-std/src/console.sol";
-import {Enum} from "@safe/contracts/Safe.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
-
-import {SafeLibrary} from "test/common/SafeLibrary.sol";
-import {Depositor} from "src/base/spectra/Depositor.sol";
-import {ISdToken} from "src/common/interfaces/ISdToken.sol";
+import {Enum} from "@safe/contracts/Safe.sol";
 import {Accumulator} from "src/base/spectra/Accumulator.sol";
-import {sdToken as SdToken} from "src/common/token/sdToken.sol";
+import {Depositor} from "src/base/spectra/Depositor.sol";
+import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {IDepositor} from "src/common/interfaces/IDepositor.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
-import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
-import {BaseSpectraTest} from "test/fork/spectra/common/BaseSpectraTest.sol";
-import {ILocker, ISafe} from "src/common/interfaces/spectra/stakedao/ILocker.sol";
+import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {ISpectraRewardsDistributor} from "src/common/interfaces/spectra/spectra/ISpectraRewardsDistributor.sol";
+import {ILocker, ISafe} from "src/common/interfaces/spectra/stakedao/ILocker.sol";
+import {sdToken as SdToken} from "src/common/token/sdToken.sol";
+import {SafeLibrary} from "test/common/SafeLibrary.sol";
+import {BaseSpectraTest} from "test/fork/spectra/common/BaseSpectraTest.sol";
 
 // Base Spectra Test including deployments and setup
 abstract contract BaseSpectraTokenTest is BaseSpectraTest {
-    address GOVERNANCE = address(0xB0552b6860CE5C0202976Db056b5e3Cc4f9CC765);
+    address internal GOVERNANCE = address(0xB0552b6860CE5C0202976Db056b5e3Cc4f9CC765);
 
-    IERC20 spectraToken = IERC20(0x64FCC3A02eeEba05Ef701b7eed066c6ebD5d4E51);
-    IERC721 veSpectra = IERC721(0x6a89228055C7C28430692E342F149f37462B478B);
-    ISpectraRewardsDistributor spectraRewardsDistributor =
+    IERC20 internal spectraToken = IERC20(0x64FCC3A02eeEba05Ef701b7eed066c6ebD5d4E51);
+    IERC721 internal veSpectra = IERC721(0x6a89228055C7C28430692E342F149f37462B478B);
+    ISpectraRewardsDistributor internal spectraRewardsDistributor =
         ISpectraRewardsDistributor(0xBE6271FA207D2cD29C7F9efa90FC725C18560bff);
 
     constructor() {}

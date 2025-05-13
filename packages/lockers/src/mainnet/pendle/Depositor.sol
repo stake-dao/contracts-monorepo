@@ -2,11 +2,10 @@
 pragma solidity 0.8.19;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {PENDLE} from "address-book/src/lockers/1.sol";
 import {Pendle} from "address-book/src/protocols/1.sol";
+import {BaseDepositor} from "src/common/depositor/BaseDepositor.sol";
 import {IVePendle} from "src/common/interfaces/IVePendle.sol";
 import {SafeModule} from "src/common/utils/SafeModule.sol";
-import {BaseDepositor} from "src/common/depositor/BaseDepositor.sol";
 
 /// @title Stake DAO Pendle Depositor
 /// @notice Contract responsible for managing PENDLE token deposits, locking them in the Locker,

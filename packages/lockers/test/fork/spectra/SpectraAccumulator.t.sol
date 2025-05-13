@@ -1,23 +1,21 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "forge-std/src/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
+import "forge-std/src/Test.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
-import {Accumulator} from "src/base/spectra/Accumulator.sol";
-import {BaseSpectraTokenTest} from "test/fork/spectra/common/BaseSpectraTokenTest.sol";
-import {ISdSpectraDepositor} from "src/common/interfaces/spectra/stakedao/ISdSpectraDepositor.sol";
 import {ISpectraRewardsDistributor} from "src/common/interfaces/spectra/spectra/ISpectraRewardsDistributor.sol";
+import {ISdSpectraDepositor} from "src/common/interfaces/spectra/stakedao/ISdSpectraDepositor.sol";
+import {BaseSpectraTokenTest} from "test/fork/spectra/common/BaseSpectraTokenTest.sol";
 
 contract SpectraAccumulatorTest is BaseSpectraTokenTest {
-    ISdSpectraDepositor spectraDepositor;
+    ISdSpectraDepositor internal spectraDepositor;
 
-    address alice = makeAddr("alice");
-    address bob = makeAddr("bob");
-    address initializer = makeAddr("initializer");
+    address internal alice = makeAddr("alice");
+    address internal bob = makeAddr("bob");
+    address internal initializer = makeAddr("initializer");
 
-    ISpectraRewardsDistributor rewardsDistributor =
+    ISpectraRewardsDistributor internal rewardsDistributor =
         ISpectraRewardsDistributor(0xBE6271FA207D2cD29C7F9efa90FC725C18560bff);
 
     function setUp() public {

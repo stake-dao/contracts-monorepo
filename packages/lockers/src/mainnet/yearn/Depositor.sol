@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {SafeModule} from "src/common/utils/SafeModule.sol";
+import {Yearn} from "address-book/src/protocols/1.sol";
 import {BaseDepositor} from "src/common/depositor/BaseDepositor.sol";
 import {IVeYFI} from "src/common/interfaces/IVeYFI.sol";
-import {Yearn} from "address-book/src/protocols/1.sol";
+import {SafeModule} from "src/common/utils/SafeModule.sol";
 
 /// @title Stake DAO Yearn Depositor
 /// @notice Contract responsible for managing YFI token deposits, locking them in the Locker,

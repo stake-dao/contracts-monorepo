@@ -1,16 +1,16 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
+import {CommonAddresses} from "address-book/src/common.sol";
+import {PENDLE as PendleProtocol} from "address-book/src/lockers/1.sol";
 import {Pendle} from "address-book/src/protocols/1.sol";
-import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
-import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {IFeeReceiver} from "common/interfaces/IFeeReceiver.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
+import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
+import {DrippingAccumulator} from "src/common/accumulator/DrippingAccumulator.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {IPendleFeeDistributor} from "src/common/interfaces/IPendleFeeDistributor.sol";
 import {SafeModule} from "src/common/utils/SafeModule.sol";
-import {PENDLE as PendleProtocol} from "address-book/src/lockers/1.sol";
-import {CommonAddresses} from "address-book/src/common.sol";
-import {DrippingAccumulator} from "src/common/accumulator/DrippingAccumulator.sol";
 
 /// @title PendleAccumulator
 /// @notice This contract is used to claim all the rewards the locker has received

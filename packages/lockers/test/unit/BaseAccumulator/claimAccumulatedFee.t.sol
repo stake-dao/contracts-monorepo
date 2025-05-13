@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
-import {BaseAccumulatorTest} from "test/unit/BaseAccumulator/utils/BaseAccumulatorTest.sol";
 import {IAccountant} from "src/common/interfaces/IAccountant.sol";
+import {BaseAccumulatorTest} from "test/unit/BaseAccumulator/utils/BaseAccumulatorTest.sol";
 
 contract BaseAccumulator__claimAccumulatedFee is BaseAccumulatorTest {
     function test_RevertsIfTheAccountantIsNotSet() external {

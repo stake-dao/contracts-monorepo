@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {DelegableAccumulatorTest} from "test/unit/DelegableAccumulator/utils/DelegableAccumulatorTest.t.sol";
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
+import {DelegableAccumulatorTest} from "test/unit/DelegableAccumulator/utils/DelegableAccumulatorTest.t.sol";
 
 contract DelegableAccumulator__setMultiplier is DelegableAccumulatorTest {
     function test_RevertsIfTheCallerIsNotTheGovernance(address caller) external {

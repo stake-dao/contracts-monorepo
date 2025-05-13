@@ -6,13 +6,13 @@ import "address-book/src/lockers/1.sol";
 import "address-book/src/protocols/1.sol";
 import "forge-std/src/Test.sol";
 import "forge-std/src/Vm.sol";
+import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import "src/common/interfaces/IDepositor.sol";
 import "src/common/interfaces/ILiquidityGauge.sol";
 import "src/common/interfaces/ILocker.sol";
 import "src/common/interfaces/ISdToken.sol";
-import {PendleDepositor} from "src/mainnet/pendle/Depositor.sol";
-import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {IVePendle} from "src/common/interfaces/IVePendle.sol";
+import {PendleDepositor} from "src/mainnet/pendle/Depositor.sol";
 
 contract DepositorTest is Test {
     uint256 private constant MIN_LOCK_DURATION = 1 weeks;

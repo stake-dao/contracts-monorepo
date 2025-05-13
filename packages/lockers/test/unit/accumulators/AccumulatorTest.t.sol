@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {YearnAccumulator} from "src/mainnet/yearn/Accumulator.sol";
 import {DAO} from "address-book/src/dao/1.sol";
 import {MockERC20} from "forge-std/src/mocks/MockERC20.sol";
+import {YearnAccumulator} from "src/mainnet/yearn/Accumulator.sol";
 import {BaseTest} from "test/BaseTest.t.sol";
 
 abstract contract AccumulatorTest is BaseTest {

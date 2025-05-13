@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "solady/src/utils/SafeTransferLib.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
+import {Spectra} from "address-book/src/protocols/8453.sol";
+import "solady/src/utils/SafeTransferLib.sol";
 import {ITokenMinter, ILiquidityGauge} from "src/common/depositor/BaseDepositor.sol";
+import {BaseDepositor} from "src/common/depositor/BaseDepositor.sol";
+import {ISpectraRewardsDistributor} from "src/common/interfaces/spectra/spectra/ISpectraRewardsDistributor.sol";
 import {ISpectraVoter} from "src/common/interfaces/spectra/spectra/ISpectraVoter.sol";
 import {IVENFTSpectra} from "src/common/interfaces/spectra/spectra/IVENFTSpectra.sol";
-import {ISpectraRewardsDistributor} from "src/common/interfaces/spectra/spectra/ISpectraRewardsDistributor.sol";
 import {SafeModule} from "src/common/utils/SafeModule.sol";
-import {BaseDepositor} from "src/common/depositor/BaseDepositor.sol";
-import {Spectra} from "address-book/src/protocols/8453.sol";
 
 /// @title Stake DAO Spectra Depositor
 /// @notice Contract responsible for managing SPECTRA token deposits, locking them in the Locker,
