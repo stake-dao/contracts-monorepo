@@ -95,7 +95,7 @@ contract Router is IRouter, Ownable {
     /// @param module The address of the module
     /// @custom:throws OwnableUnauthorizedAccount if the caller is not the owner
     /// @custom:throws IdentifierAlreadyUsed if the identifier is already set
-    function safeSetModule(uint8 identifier, address module) external onlyOwner {
+    function safeSetModule(uint8 identifier, address module) external {
         require(getModule(identifier) == address(0), IdentifierAlreadyUsed(identifier));
 
         setModule(identifier, module);
