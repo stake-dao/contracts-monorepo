@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IRouterModule} from "src/interfaces/IRouterModule.sol";
-import {RewardVault} from "src/RewardVault.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 contract RouterModuleMigrationYearn is IRouterModule {
     using SafeERC20 for IYearnVault;
@@ -20,7 +20,7 @@ contract RouterModuleMigrationYearn is IRouterModule {
     /// @param to The address of the new reward vault
     /// @param shares The number of shares to migrate
     function migrate(address from, address to, uint256 shares) external {
-        address asset = RewardVault(to).asset();
+        address asset = IERC4626(to).asset();
         require(IYearnVault(from).token() == asset, VaultNotCompatible());
 
         // 1. Transfer the token of the user to the router contract
@@ -31,7 +31,7 @@ contract RouterModuleMigrationYearn is IRouterModule {
 
         // 3. Deposit the tokens in the reward vault
         IYearnVault(asset).forceApprove(to, shares);
-        RewardVault(to).deposit(shares, msg.sender);
+        IERC4626(to).deposit(shares, msg.sender);
     }
 }
 

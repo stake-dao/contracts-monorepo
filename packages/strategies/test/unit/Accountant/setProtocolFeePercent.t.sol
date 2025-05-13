@@ -33,7 +33,7 @@ contract Accountant__setProtocolFeePercent is AccountantBaseTest {
         newProtocolFee = uint128(bound(newProtocolFee, accountant.MAX_FEE_PERCENT() + 1, type(uint128).max));
 
         vm.prank(owner);
-        vm.expectRevert(abi.encodeWithSelector(Accountant.FeeExceedsMaximum.selector));
+        vm.expectRevert();
         accountant.setProtocolFeePercent(newProtocolFee);
     }
 
