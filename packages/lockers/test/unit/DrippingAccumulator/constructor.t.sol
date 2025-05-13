@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.8.19 <0.9.0;
 
+import {Test} from "forge-std/src/Test.sol";
 import {DrippingAccumulator} from "src/common/accumulator/DrippingAccumulator.sol";
 import {DrippingAccumulatorHarness} from "test/unit/DrippingAccumulator/utils/DrippingAccumulatorHarness.sol";
-import {Test} from "forge-std/src/Test.sol";
 
 contract DrippingAccumulator__constructor is Test {
     function test_SetsThePeriodLength(uint256 _periodLength) external {

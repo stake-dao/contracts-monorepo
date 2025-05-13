@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {Balancer} from "address-book/src/protocols/1.sol";
 import {BAL} from "address-book/src/lockers/1.sol";
-import {DepositorTest} from "test/unit/depositors/DepositorTest.t.sol";
+import {Balancer} from "address-book/src/protocols/1.sol";
+import {IVeToken} from "src/common/interfaces/IVeToken.sol";
 import {BalancerDepositor} from "src/mainnet/balancer/Depositor.sol";
 import {BalancerDepositorHarness} from "test/unit/depositors/balancer/BalancerDepositorHarness.sol";
-import {IVeToken} from "src/common/interfaces/IVeToken.sol";
+import {DepositorTest} from "test/unit/depositors/DepositorTest.t.sol";
 
 contract BalancerDepositor__lockToken is DepositorTest {
     function test_IncreasesTheAmountAndTheUnlockTimeIfNeeded(

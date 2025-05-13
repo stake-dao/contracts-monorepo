@@ -1,22 +1,20 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
+import "address-book/src/lockers/1.sol";
 import "forge-std/src/Test.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
-
-import "address-book/src/lockers/1.sol";
-
 import {APWine2SpectraConverter} from "src/base/spectra/APWine2SpectraConverter.sol";
-import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {ILaPoste} from "src/common/interfaces/ILaPoste.sol";
+import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 
 contract ConverterTest is Test {
     ERC20 public sdToken;
     ERC20 public sdTokenGauge;
     APWine2SpectraConverter public converter;
 
-    address alice = makeAddr("alice");
-    address bob = makeAddr("bob");
+    address internal alice = makeAddr("alice");
+    address internal bob = makeAddr("bob");
 
     function setUp() public virtual {
         vm.createSelectFork(vm.rpcUrl("mainnet"));

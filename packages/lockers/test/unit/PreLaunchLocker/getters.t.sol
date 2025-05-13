@@ -5,37 +5,37 @@ import {PreLaunchLocker} from "src/common/locker/PreLaunchLocker.sol";
 import {PreLaunchLockerTest} from "test/unit/PreLaunchLocker/utils/PreLaunchLockerTest.t.sol";
 
 contract PreLaunchLocker__getters is PreLaunchLockerTest {
-    function test_ExposesTheForceCancelDelay() external {
+    function test_ExposesTheForceCancelDelay() external view {
         // it exposes the force cancel delay
 
         assertEq(locker.FORCE_CANCEL_DELAY(), 3 * 30 days);
     }
 
-    function test_ExposesTheToken() external {
+    function test_ExposesTheToken() external view {
         // it exposes the token
 
         assertNotEq(locker.token(), address(0));
     }
 
-    function test_ExposesTheSdToken() external {
+    function test_ExposesTheSdToken() external view {
         // it exposes the sdToken
 
         assertNotEq(locker.token(), address(0));
     }
 
-    function test_ExposesTheGauge() external {
+    function test_ExposesTheGauge() external view {
         // it exposes the gauge
 
         assertNotEq(locker.token(), address(0));
     }
 
-    function test_ExposesTheGovernance() external {
+    function test_ExposesTheGovernance() external view {
         // it exposes the governance
 
         assertNotEq(locker.governance(), address(0));
     }
 
-    function test_ExposesTheTimestamp() external {
+    function test_ExposesTheTimestamp() external view {
         // it exposes the timestamp
 
         assertNotEq(locker.timestamp(), 0);

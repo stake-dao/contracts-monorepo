@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.8.19 <0.9.0;
 
-import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {MockERC20} from "forge-std/src/mocks/MockERC20.sol";
 import {Test} from "forge-std/src/Test.sol";
 import {BaseAccumulatorHarness} from "test/unit/BaseAccumulator/utils/BaseAccumulatorHarness.sol";

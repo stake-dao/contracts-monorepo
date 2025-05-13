@@ -1,9 +1,8 @@
 /// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.19;
 
-import {Safe, Enum} from "@safe/contracts/Safe.sol";
-import {SafeProxy} from "@safe/contracts/proxies/SafeProxy.sol";
 import {SafeProxyFactory} from "@safe/contracts/proxies/SafeProxyFactory.sol";
+import {Safe, Enum} from "@safe/contracts/Safe.sol";
 
 library SafeLibrary {
     /// @notice Safe proxy factory address. Same address on all chains.

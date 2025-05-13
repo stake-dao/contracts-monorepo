@@ -2,9 +2,9 @@
 pragma solidity ^0.8.19;
 
 import {IFeeReceiver} from "common/interfaces/IFeeReceiver.sol";
-import {IAccountant} from "src/common/interfaces/IAccountant.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
+import {IAccountant} from "src/common/interfaces/IAccountant.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 
 /// @title BaseAccumulator

@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import {CurveAccumulator} from "src/mainnet/curve/Accumulator.sol";
-import {BaseAccumulatorTest} from "test/fork/common/BaseAccumulatorTest.sol";
+import {CRV} from "address-book/src/lockers/1.sol";
+import {Curve} from "address-book/src/protocols/1.sol";
+import {IStrategy} from "common/interfaces/stake-dao/IStrategy.sol";
+import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {IVeBoost} from "src/common/interfaces/IVeBoost.sol";
 import {IVeBoostDelegation} from "src/common/interfaces/IVeBoostDelegation.sol";
-import {ERC20} from "solady/src/tokens/ERC20.sol";
-import {Curve} from "address-book/src/protocols/1.sol";
-import {CRV} from "address-book/src/lockers/1.sol";
-import {IStrategy} from "common/interfaces/stake-dao/IStrategy.sol";
+import {CurveAccumulator} from "src/mainnet/curve/Accumulator.sol";
+import {BaseAccumulatorTest} from "test/fork/common/BaseAccumulatorTest.sol";
 
 contract CurveAccumulatorTest is BaseAccumulatorTest {
     address public constant CONVEX_PROXY = 0x989AEb4d175e16225E39E87d0D97A3360524AD80;

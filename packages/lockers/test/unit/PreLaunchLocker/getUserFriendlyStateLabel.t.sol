@@ -5,7 +5,7 @@ import {PreLaunchLocker} from "src/common/locker/PreLaunchLocker.sol";
 import {PreLaunchLockerTest} from "test/unit/PreLaunchLocker/utils/PreLaunchLockerTest.t.sol";
 
 contract PreLaunchLocker__getUserFriendlyStateLabel is PreLaunchLockerTest {
-    function test_ReturnsDifferentValuesBasedOnTheState() external {
+    function test_ReturnsDifferentValuesBasedOnTheState() external view {
         // it returns different values based on the state
 
         string memory idleLabel = locker.getUserFriendlyStateLabel(PreLaunchLocker.STATE.IDLE);

@@ -1,11 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {BaseAccumulator__chargeFee} from "test/unit/BaseAccumulator/chargeFee.t.sol";
 import {IFeeReceiver} from "common/interfaces/IFeeReceiver.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
+import {BaseAccumulator__chargeFee} from "test/unit/BaseAccumulator/chargeFee.t.sol";
 
 contract BaseAccumulator__notifyReward is BaseAccumulator__chargeFee {
     function setUp() public virtual override {

@@ -1,25 +1,24 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "forge-std/src/Test.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-
+import "forge-std/src/Test.sol";
 import {APWine2SpectraConverter} from "src/base/spectra/APWine2SpectraConverter.sol";
-import {BaseSpectraTokenTest} from "test/fork/spectra/common/BaseSpectraTokenTest.sol";
 import {ISdSpectraDepositor} from "src/common/interfaces/spectra/stakedao/ISdSpectraDepositor.sol";
+import {BaseSpectraTokenTest} from "test/fork/spectra/common/BaseSpectraTokenTest.sol";
 
 contract SpectraTest is BaseSpectraTokenTest {
     APWine2SpectraConverter public converter;
-    ISdSpectraDepositor spectraDepositor;
+    ISdSpectraDepositor internal spectraDepositor;
 
-    address alice = makeAddr("alice");
-    address bob = makeAddr("bob");
-    address initializer = makeAddr("initializer");
+    address internal alice = makeAddr("alice");
+    address internal bob = makeAddr("bob");
+    address internal initializer = makeAddr("initializer");
 
-    uint256 sdAPWineSupply = 1459843245173853310837177;
-    uint256 totalSdSpectraToDistribute = sdAPWineSupply * 20;
+    uint256 internal sdAPWineSupply = 1459843245173853310837177;
+    uint256 internal totalSdSpectraToDistribute = sdAPWineSupply * 20;
 
-    uint256 ratio = 20 ether;
+    uint256 internal ratio = 20 ether;
 
     function setUp() public {
         vm.createSelectFork(vm.rpcUrl("base"), 28026639);

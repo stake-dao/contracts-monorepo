@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {Curve} from "address-book/src/protocols/1.sol";
 import {CRV} from "address-book/src/lockers/1.sol";
-import {DepositorTest} from "test/unit/depositors/DepositorTest.t.sol";
+import {Curve} from "address-book/src/protocols/1.sol";
+import {IVeToken} from "src/common/interfaces/IVeToken.sol";
 import {CurveDepositor} from "src/mainnet/curve/Depositor.sol";
 import {CurveDepositorHarness} from "test/unit/depositors/curve/CurveDepositorHarness.sol";
-import {IVeToken} from "src/common/interfaces/IVeToken.sol";
+import {DepositorTest} from "test/unit/depositors/DepositorTest.t.sol";
 
 contract CurveDepositor__lockToken is DepositorTest {
     function test_IncreasesTheAmountAndTheUnlockTimeIfNeeded(

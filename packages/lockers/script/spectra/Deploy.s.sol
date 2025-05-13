@@ -1,27 +1,26 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "script/common/DeployAccumulator.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeProxyFactory} from "@safe/contracts/proxies/SafeProxyFactory.sol";
 import {Safe, Enum} from "@safe/contracts/Safe.sol";
 import {DAO} from "address-book/src/dao/8453.sol";
 import {Spectra} from "address-book/src/protocols/8453.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeProxyFactory} from "@safe/contracts/proxies/SafeProxyFactory.sol";
-
-import {Depositor} from "src/base/spectra/Depositor.sol";
+import "script/common/DeployAccumulator.sol";
 import {Accumulator} from "src/base/spectra/Accumulator.sol";
-import {sdToken as SdToken} from "src/common/token/sdToken.sol";
+import {Depositor} from "src/base/spectra/Depositor.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {ILocker, ISafe} from "src/common/interfaces/spectra/stakedao/ILocker.sol";
+import {sdToken as SdToken} from "src/common/token/sdToken.sol";
 
 contract Deploy is DeployAccumulator {
-    address sdSpectra;
-    address liquidityGauge;
-    address locker;
-    address depositor;
+    address internal sdSpectra;
+    address internal liquidityGauge;
+    address internal locker;
+    address internal depositor;
 
-    SafeProxyFactory safeProxyFactory = SafeProxyFactory(0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67);
-    address safeSingleton = 0x41675C099F32341bf84BFc5382aF534df5C7461a;
+    SafeProxyFactory internal safeProxyFactory = SafeProxyFactory(0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67);
+    address internal safeSingleton = 0x41675C099F32341bf84BFc5382aF534df5C7461a;
 
     function run() public {
         vm.createSelectFork("base");

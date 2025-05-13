@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {Yearn} from "address-book/src/protocols/1.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {YFI as YearnProtocol} from "address-book/src/lockers/1.sol";
+import {Yearn} from "address-book/src/protocols/1.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
-import {SafeModule} from "src/common/utils/SafeModule.sol";
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {IFeeDistributor} from "src/common/interfaces/IFeeDistributor.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {SafeModule} from "src/common/utils/SafeModule.sol";
 
 /// @title YearnAccumulator
 /// @notice This contract is used to claim all the rewards the locker has received

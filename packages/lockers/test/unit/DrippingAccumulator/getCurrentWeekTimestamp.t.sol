@@ -1,7 +1,6 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity >=0.8.19 <0.9.0;
 
-import {DrippingAccumulator} from "src/common/accumulator/DrippingAccumulator.sol";
 import {DrippingAccumulatorTest} from "test/unit/DrippingAccumulator/utils/DrippingAccumulatorTest.sol";
 
 contract DrippingAccumulator__getCurrentWeekTimestamp is DrippingAccumulatorTest {

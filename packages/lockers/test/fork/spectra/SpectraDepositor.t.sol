@@ -2,20 +2,19 @@
 pragma solidity ^0.8.19;
 
 import "forge-std/src/Test.sol";
-
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
-import {BaseSpectraTokenTest} from "test/fork/spectra/common/BaseSpectraTokenTest.sol";
 import {IVENFTSpectra} from "src/common/interfaces/spectra/spectra/IVENFTSpectra.sol";
 import {ISdSpectraDepositor} from "src/common/interfaces/spectra/stakedao/ISdSpectraDepositor.sol";
+import {BaseSpectraTokenTest} from "test/fork/spectra/common/BaseSpectraTokenTest.sol";
 
 contract SpectraTest is BaseSpectraTokenTest {
-    address alice = address(0x1);
-    address initializer = address(0x2);
+    address internal alice = address(0x1);
+    address internal initializer = address(0x2);
 
     // interface for veSpectra
-    IVENFTSpectra veSpectraLocker = IVENFTSpectra(address(veSpectra));
+    IVENFTSpectra internal veSpectraLocker = IVENFTSpectra(address(veSpectra));
     // interface for sdSpectra depositor
-    ISdSpectraDepositor spectraDepositor;
+    ISdSpectraDepositor internal spectraDepositor;
 
     function setUp() public {
         vm.createSelectFork(vm.rpcUrl("base"), 28026639);

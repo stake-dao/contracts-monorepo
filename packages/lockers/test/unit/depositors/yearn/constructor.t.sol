@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {Yearn} from "address-book/src/protocols/1.sol";
 import {YFI} from "address-book/src/lockers/1.sol";
+import {Yearn} from "address-book/src/protocols/1.sol";
 import {MockERC20} from "forge-std/src/mocks/MockERC20.sol";
 import {YearnDepositor} from "src/mainnet/yearn/Depositor.sol";
 import {DepositorTest} from "test/unit/depositors/DepositorTest.t.sol";

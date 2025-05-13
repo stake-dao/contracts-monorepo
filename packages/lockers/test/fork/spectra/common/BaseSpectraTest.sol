@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "forge-std/src/Vm.sol";
-import "forge-std/src/Test.sol";
 import "forge-std/src/console.sol";
-
+import "forge-std/src/Test.sol";
+import "forge-std/src/Vm.sol";
 import {CommonBase} from "test/common/CommonBase.sol";
 
 // Base Spectra test overriding functions from CommonBase

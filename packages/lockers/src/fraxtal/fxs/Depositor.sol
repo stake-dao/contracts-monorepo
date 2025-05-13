@@ -2,13 +2,13 @@
 pragma solidity ^0.8.19;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {IVestedFXS} from "src/common/interfaces/IVestedFXS.sol";
-import {SafeModule} from "src/common/utils/SafeModule.sol";
+import {Frax} from "address-book/src/protocols/252.sol";
+import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {BaseDepositor} from "src/common/depositor/BaseDepositor.sol";
 import {ISdTokenOperator} from "src/common/interfaces/ISdTokenOperator.sol";
-import {Frax} from "address-book/src/protocols/252.sol";
+import {IVestedFXS} from "src/common/interfaces/IVestedFXS.sol";
+import {SafeModule} from "src/common/utils/SafeModule.sol";
 import {FXTLDelegation} from "src/fraxtal/FXTLDelegation.sol";
-import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 
 /// @title BaseDepositor
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return

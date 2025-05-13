@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {Yearn} from "address-book/src/protocols/1.sol";
 import {YFI} from "address-book/src/lockers/1.sol";
-import {DepositorTest} from "test/unit/depositors/DepositorTest.t.sol";
-import {YearnDepositor} from "src/mainnet/yearn/Depositor.sol";
-import {YearnDepositorHarness} from "test/unit/depositors/yearn/YearnDepositorHarness.sol";
+import {Yearn} from "address-book/src/protocols/1.sol";
 import {IVeYFI} from "src/common/interfaces/IVeYFI.sol";
+import {YearnDepositor} from "src/mainnet/yearn/Depositor.sol";
+import {DepositorTest} from "test/unit/depositors/DepositorTest.t.sol";
+import {YearnDepositorHarness} from "test/unit/depositors/yearn/YearnDepositorHarness.sol";
 
 contract YearnDepositor__lockToken is DepositorTest {
     function test_IncreasesTheAmountAndTheUnlockTimeIfNeeded(

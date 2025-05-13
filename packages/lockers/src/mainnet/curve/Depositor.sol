@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
+import {Curve} from "address-book/src/protocols/1.sol";
 import {BaseDepositor} from "src/common/depositor/BaseDepositor.sol";
 import {IVeToken} from "src/common/interfaces/IVeToken.sol";
 import {SafeModule} from "src/common/utils/SafeModule.sol";
-import {Curve} from "address-book/src/protocols/1.sol";
 
 /// @title CurveDepositor
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return

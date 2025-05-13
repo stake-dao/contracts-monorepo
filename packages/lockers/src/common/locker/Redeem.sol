@@ -6,16 +6,12 @@ pragma solidity ^0.8.19;
 //////////////////////////////////////////////////////
 
 // External Libraries
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-
-// Access Control & Security
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
 import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
-
-// Local Interfaces
-import {ISdToken} from "src/common/interfaces/ISdToken.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
+import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 
 /// @title  Redeem
 /// @notice Allows users to redeem *sdTokens*—including staked balances—for the underlying

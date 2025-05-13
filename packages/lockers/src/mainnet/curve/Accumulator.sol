@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
+import {CRV as CurveLockerAddressBook} from "address-book/src/lockers/1.sol";
+import {Curve} from "address-book/src/protocols/1.sol";
+import {IFeeReceiver} from "common/interfaces/IFeeReceiver.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
+import {DelegableAccumulator} from "src/common/accumulator/DelegableAccumulator.sol";
+import {IFeeDistributor} from "src/common/interfaces/IFeeDistributor.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {SafeModule} from "src/common/utils/SafeModule.sol";
-import {Curve} from "address-book/src/protocols/1.sol";
-import {IFeeDistributor} from "src/common/interfaces/IFeeDistributor.sol";
-import {CRV as CurveLockerAddressBook} from "address-book/src/lockers/1.sol";
-import {IFeeReceiver} from "common/interfaces/IFeeReceiver.sol";
-import {DelegableAccumulator} from "src/common/accumulator/DelegableAccumulator.sol";
 
 /// @author CurveAccumulator
 /// @notice This contract is used to claim all the rewards the locker has received

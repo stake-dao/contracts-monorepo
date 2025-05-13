@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {YearnAccumulator} from "src/mainnet/yearn/Accumulator.sol";
-import {AccumulatorTest} from "test/unit/accumulators/AccumulatorTest.t.sol";
 import {YFI as YearnLocker} from "address-book/src/lockers/1.sol";
 import {Yearn as YearnProtocol} from "address-book/src/protocols/1.sol";
+import {YearnAccumulator} from "src/mainnet/yearn/Accumulator.sol";
+import {AccumulatorTest} from "test/unit/accumulators/AccumulatorTest.t.sol";
 
 contract YearnAccumulator__getters is AccumulatorTest {
     constructor() AccumulatorTest(YearnLocker.TOKEN, YearnProtocol.DYFI, YearnLocker.GAUGE) {}
