@@ -8,23 +8,25 @@ import {ConvexSidecarFactory} from "src/integrations/curve/ConvexSidecarFactory.
 import {CurveAllocator} from "src/integrations/curve/CurveAllocator.sol";
 import {CurveFactory} from "src/integrations/curve/CurveFactory.sol";
 import {CurveStrategy} from "src/integrations/curve/CurveStrategy.sol";
+import {CurveProtocol} from "address-book/src/CurveEthereum.sol";
+import {DAO} from "address-book/src/DAOEthereum.sol";
 
 contract Deploy is Base {
     string public NETWORK = "mainnet";
-    address public DEPLOYER = 0xf1C9775ef36e1F633c362e3011589AC9781AB0ff;
+    address public DEPLOYER = DAO.MAIN_DEPLOYER;
 
     /// @notice The protocol ID.
     bytes4 internal constant PROTOCOL_ID = bytes4(keccak256("CURVE"));
 
     /// @notice The reward token.
-    address internal constant CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
+    address internal constant CRV = CurveProtocol.CRV;
 
     /// @notice The locker address.
     /// @dev For the real deployment, replace with the actual locker address.
     address public LOCKER = 0x0000000000000000000000000000000000000000;
 
     /// @notice The minter contract.
-    address internal constant MINTER = 0xd061D61a4d941c39E5453435B6345Dc261C2fcE0;
+    address internal constant MINTER = CurveProtocol.MINTER;
 
     /// @notice Whether the strategy is harvested.
     bool public HARVESTED = false;

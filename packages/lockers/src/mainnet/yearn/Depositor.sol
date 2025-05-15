@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {Yearn} from "address-book/src/protocols/1.sol";
+import {YearnProtocol} from "address-book/src/YearnEthereum.sol";
 import {BaseDepositor} from "src/common/depositor/BaseDepositor.sol";
 import {IVeYFI} from "src/common/interfaces/IVeYFI.sol";
 import {SafeModule} from "src/common/utils/SafeModule.sol";
@@ -17,7 +17,7 @@ contract YearnDepositor is BaseDepositor, SafeModule {
     ///////////////////////////////////////////////////////////////
 
     /// @notice Address of the veYFI token.
-    address public constant VE_YFI = Yearn.VEYFI;
+    address public constant VE_YFI = YearnProtocol.VEYFI;
 
     ////////////////////////////////////////////////////////////////
     /// --- CONSTRUCTOR

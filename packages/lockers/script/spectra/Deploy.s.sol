@@ -4,14 +4,15 @@ pragma solidity 0.8.19;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeProxyFactory} from "@safe/contracts/proxies/SafeProxyFactory.sol";
 import {Safe, Enum} from "@safe/contracts/Safe.sol";
-import {DAO} from "address-book/src/dao/8453.sol";
-import {Spectra} from "address-book/src/protocols/8453.sol";
-import "script/common/DeployAccumulator.sol";
+import {DAO} from "address-book/src/DAOBase.sol";
+import {SpectraProtocol} from "address-book/src/SpectraBase.sol";
+import {DeployAccumulator} from "script/common/DeployAccumulator.sol";
 import {Accumulator} from "src/base/spectra/Accumulator.sol";
 import {Depositor} from "src/base/spectra/Depositor.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {ILocker, ISafe} from "src/common/interfaces/spectra/stakedao/ILocker.sol";
 import {sdToken as SdToken} from "src/common/token/sdToken.sol";
+import {Common} from "address-book/src/CommonBase.sol";
 
 contract Deploy is DeployAccumulator {
     address internal sdSpectra;
@@ -19,8 +20,8 @@ contract Deploy is DeployAccumulator {
     address internal locker;
     address internal depositor;
 
-    SafeProxyFactory internal safeProxyFactory = SafeProxyFactory(0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67);
-    address internal safeSingleton = 0x41675C099F32341bf84BFc5382aF534df5C7461a;
+    SafeProxyFactory internal safeProxyFactory = SafeProxyFactory(Common.SAFE_PROXY_FACTORY);
+    address internal safeSingleton = Common.SAFE_SINGLETON;
 
     function run() public {
         vm.createSelectFork("base");
@@ -55,9 +56,9 @@ contract Deploy is DeployAccumulator {
         _locker = address(safeProxyFactory.createProxyWithNonce(safeSingleton, initializer, salt));
 
         ILocker(_locker).execTransaction(
-            Spectra.SPECTRA,
+            SpectraProtocol.SPECTRA,
             0,
-            abi.encodeWithSelector(IERC20.approve.selector, Spectra.VESPECTRA, type(uint256).max),
+            abi.encodeWithSelector(IERC20.approve.selector, SpectraProtocol.VESPECTRA, type(uint256).max),
             Enum.Operation.Call,
             0,
             0,
@@ -122,7 +123,7 @@ contract Deploy is DeployAccumulator {
         liquidityGauge = deployCode("vyper/LiquidityGaugeV4XChain.vy", abi.encode(sdSpectra, DAO.MAIN_DEPLOYER));
 
         // Deploy depositor.
-        depositor = address(new Depositor(Spectra.SPECTRA, locker, sdSpectra, liquidityGauge));
+        depositor = address(new Depositor(SpectraProtocol.SPECTRA, locker, sdSpectra, liquidityGauge));
     }
 
     function _deployAccumulator() internal override returns (address payable) {

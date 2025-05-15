@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {CommonAddresses} from "address-book/src/common.sol";
-import {BAL as BalancerLocker} from "address-book/src/lockers/1.sol";
-import {Balancer as BalancerProtocol} from "address-book/src/protocols/1.sol";
+import {BalancerLocker, BalancerProtocol} from "address-book/src/BalancerEthereum.sol";
+import {Common} from "address-book/src/CommonEthereum.sol";
 import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import {BalancerAccumulator} from "src/mainnet/balancer/Accumulator.sol";
 import {AccumulatorTest} from "test/unit/accumulators/AccumulatorTest.t.sol";
 
 contract BalancerAccumulator__constructor is AccumulatorTest {
-    constructor() AccumulatorTest(CommonAddresses.USDC, BalancerProtocol.BAL, BalancerLocker.GAUGE) {}
+    constructor() AccumulatorTest(Common.USDC, BalancerProtocol.BAL, BalancerLocker.GAUGE) {}
 
     function _deployAccumulator() internal override returns (address) {
         return address(new BalancerAccumulator(gauge, locker, governance, locker));
@@ -27,7 +26,7 @@ contract BalancerAccumulator__constructor is AccumulatorTest {
     function test_SetsUSDCAsTheRewardToken() external view {
         // it sets USDC as the reward token
 
-        assertEq(BalancerAccumulator(accumulator).rewardToken(), CommonAddresses.USDC);
+        assertEq(BalancerAccumulator(accumulator).rewardToken(), Common.USDC);
     }
 
     function test_SetsTheGivenLocker(address _locker) external assumeNotZero(_locker) {
@@ -90,7 +89,7 @@ contract BalancerAccumulator__constructor is AccumulatorTest {
     function test_GivesFullApprovalToTheGaugeForTheBALAndUSDCTokens() external view {
         // it gives full approval to the gauge for the BAL and USDC tokens
 
-        assertEq(ERC20(CommonAddresses.USDC).allowance(address(accumulator), gauge), type(uint256).max);
+        assertEq(ERC20(Common.USDC).allowance(address(accumulator), gauge), type(uint256).max);
         assertEq(ERC20(BalancerProtocol.BAL).allowance(address(accumulator), gauge), type(uint256).max);
     }
 

@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import "forge-std/src/Vm.sol";
-import "forge-std/src/Test.sol";
-import "forge-std/src/console.sol";
-import "../src/CakeGaugeVoter.sol";
+import {Test} from "forge-std/src/Test.sol";
+import {CakeGaugeVoter} from "../src/CakeGaugeVoter.sol";
+import {PancakeswapLocker, PancakeswapProtocol} from "address-book/src/PancakeswapBSC.sol";
+import {DAO} from "address-book/src/DAOBSC.sol";
 
 interface Safe {
     function enableModule(address module) external;
@@ -17,13 +17,13 @@ struct VotedSlope {
 }
 
 interface ICakeGaugeController {
-    function voteUserSlopes(address gauge, bytes32 hash) external view returns(VotedSlope memory);
+    function voteUserSlopes(address gauge, bytes32 hash) external view returns (VotedSlope memory);
 }
 
 contract CakeGaugeVoterTest is Test {
-    address public constant DEPLOYER = address(0x428419Ad92317B09FE00675F181ac09c87D16450);
-    address public constant CAKE_GAUGE_CONTROLLER = address(0xbCfBf7ED1756FE478B071687cb430C7B3eB682f1);
-    address public constant CAKE_LOCKER = address(0x1E6F87A9ddF744aF31157d8DaA1e3025648d042d);
+    address public constant DEPLOYER = DAO.MAIN_DEPLOYER;
+    address public constant CAKE_GAUGE_CONTROLLER = PancakeswapProtocol.GAUGE_CONTROLLER;
+    address public constant CAKE_LOCKER = PancakeswapLocker.LOCKER;
 
     CakeGaugeVoter cakeGaugeVoter;
 
@@ -97,7 +97,7 @@ contract CakeGaugeVoterTest is Test {
 
         // Check votes
         ICakeGaugeController cakeGaugeController = ICakeGaugeController(CAKE_GAUGE_CONTROLLER);
-        for(uint256 i = 0; i < nbGauges; i++) {
+        for (uint256 i = 0; i < nbGauges; i++) {
             address gauge = gaugeAddresses[i];
             uint256 weight = weights[i];
             uint256 chainId = chainIds[i];
@@ -109,7 +109,7 @@ contract CakeGaugeVoterTest is Test {
             VotedSlope memory votedSlope = cakeGaugeController.voteUserSlopes(CAKE_LOCKER, gauge_hash);
             assertTrue(votedSlope.power == weight);
         }
-        
+
         vm.stopPrank();
     }
 }

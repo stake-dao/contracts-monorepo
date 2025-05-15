@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {YFI} from "address-book/src/lockers/1.sol";
-import {Yearn} from "address-book/src/protocols/1.sol";
+import {YearnLocker, YearnProtocol} from "address-book/src/YearnEthereum.sol";
 import {IVeYFI} from "src/common/interfaces/IVeYFI.sol";
 import {YearnDepositor} from "src/mainnet/yearn/Depositor.sol";
 import {DepositorTest} from "test/unit/depositors/DepositorTest.t.sol";
 import {YearnDepositorHarness} from "test/unit/depositors/yearn/YearnDepositorHarness.sol";
 
 contract YearnDepositor__lockToken is DepositorTest {
+    constructor() DepositorTest(YearnProtocol.YFI, YearnProtocol.VEYFI, YearnLocker.GAUGE) {}
+
     function test_IncreasesTheAmountAndTheUnlockTimeIfNeeded(
         uint256 amount,
         uint128 timestamp,
@@ -62,8 +63,6 @@ contract YearnDepositor__lockToken is DepositorTest {
 
         YearnDepositorHarness(depositor)._expose_lockToken(0);
     }
-
-    constructor() DepositorTest(Yearn.YFI, Yearn.VEYFI, YFI.GAUGE) {}
 
     function _deployDepositor() internal override returns (address) {
         return address(new YearnDepositorHarness(token, locker, minter, gauge, locker));

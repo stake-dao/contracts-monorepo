@@ -3,7 +3,8 @@ pragma solidity ^0.8.19;
 
 import "forge-std/src/Test.sol";
 import "forge-std/src/Script.sol";
-
+import {DAO} from "address-book/src/DAOEthereum.sol";
+import {Common} from "address-book/src/CommonPolygon.sol";
 import {UniversalRewardsDistributor} from "src/distributors/UniversalRewardDistributor.sol";
 
 interface ImmutableCreate2Factory {
@@ -11,13 +12,13 @@ interface ImmutableCreate2Factory {
 }
 
 contract Deploy is Script, Test {
-    address deployer = 0x8898502BA35AB64b3562aBC509Befb7Eb178D4df;
+    address deployer = DAO.MAIN_DEPLOYER;
 
     function run() public {
         vm.createSelectFork("polygon");
         vm.startBroadcast(deployer);
 
-        ImmutableCreate2Factory factory = ImmutableCreate2Factory(0x0000000000FFe8B47B3e2130213B802212439497);
+        ImmutableCreate2Factory factory = ImmutableCreate2Factory(Common.CREATE2_FACTORY);
 
         bytes32 initalizeCode = keccak256(
             abi.encodePacked(

@@ -5,13 +5,14 @@ import {Enum} from "@safe/contracts/common/Enum.sol";
 import {SafeProxyFactory} from "@safe/contracts/proxies/SafeProxyFactory.sol";
 import {Safe} from "@safe/contracts/Safe.sol";
 import {ILocker, ISafe} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
+import {Common} from "address-book/src/CommonEthereum.sol";
 
 /// @title SafeProxyFactoryLibrary
 /// @notice This library is used to deploy a Safe proxy contract.
 /// @custom:contact contact@stakedao.org
 library SafeProxyFactoryLibrary {
-    SafeProxyFactory internal constant SAFE_PROXY_FACTORY = SafeProxyFactory(0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67);
-    address internal constant SAFE_SINGLETON = 0x41675C099F32341bf84BFc5382aF534df5C7461a;
+    SafeProxyFactory internal constant SAFE_PROXY_FACTORY = SafeProxyFactory(Common.SAFE_PROXY_FACTORY);
+    address internal constant SAFE_SINGLETON = Common.SAFE_SINGLETON;
 
     function _getSafeInitializationData(address[] memory owners, uint256 threshold)
         private

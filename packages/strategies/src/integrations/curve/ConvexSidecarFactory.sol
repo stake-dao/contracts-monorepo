@@ -5,6 +5,7 @@ import {IBooster} from "@interfaces/convex/IBooster.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
 import {SidecarFactory} from "src/SidecarFactory.sol";
+import {CurveProtocol} from "address-book/src/CurveEthereum.sol";
 
 /// @title ConvexSidecarFactory
 /// @notice Factory contract for deploying ConvexSidecar instances
@@ -15,7 +16,7 @@ contract ConvexSidecarFactory is SidecarFactory {
     bytes4 private constant CURVE_PROTOCOL_ID = bytes4(keccak256("CURVE"));
 
     /// @notice Convex Booster contract address
-    IBooster public constant BOOSTER = IBooster(0xF403C135812408BFbE8713b5A23a04b3D48AAE31);
+    IBooster public constant BOOSTER = IBooster(CurveProtocol.CONVEX_BOOSTER);
 
     /// @notice Error emitted when the pool is shutdown
     error PoolShutdown();

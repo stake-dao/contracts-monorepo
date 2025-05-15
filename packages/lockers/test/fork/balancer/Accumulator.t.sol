@@ -1,25 +1,34 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import {BAL} from "address-book/src/lockers/1.sol";
-import {Balancer} from "address-book/src/protocols/1.sol";
+import {BalancerLocker, BalancerProtocol} from "address-book/src/BalancerEthereum.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {ILocker} from "src/common/interfaces/ILocker.sol";
 import {IVeBoost} from "src/common/interfaces/IVeBoost.sol";
 import {IVeBoostDelegation} from "src/common/interfaces/IVeBoostDelegation.sol";
 import {BalancerAccumulator} from "src/mainnet/balancer/Accumulator.sol";
 import {BaseAccumulatorTest} from "test/fork/common/BaseAccumulatorTest.sol";
+import {Common} from "address-book/src/CommonEthereum.sol";
 
 contract BalancerAccumulatorTest is BaseAccumulatorTest {
-    address internal constant USDC = 0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48;
+    address internal constant USDC = Common.USDC;
 
-    IVeBoost public veBoost = IVeBoost(0x67F8DF125B796B05895a6dc8Ecf944b9556ecb0B);
+    IVeBoost public veBoost = IVeBoost(BalancerProtocol.VE_BOOST);
 
     /// @notice Ve Boost FXTLDelegation.
-    IVeBoostDelegation public veBoostDelegation = IVeBoostDelegation(0xda9846665Bdb44b0d0CAFFd0d1D4A539932BeBdf);
+    IVeBoostDelegation public veBoostDelegation = IVeBoostDelegation(BalancerProtocol.VE_BOOST_DELEGATION);
 
     constructor()
-        BaseAccumulatorTest(20_237_852, "mainnet", BAL.LOCKER, BAL.SDTOKEN, Balancer.VEBAL, BAL.GAUGE, USDC, Balancer.BAL)
+        BaseAccumulatorTest(
+            20_237_852,
+            "mainnet",
+            BalancerLocker.LOCKER,
+            BalancerLocker.SDTOKEN,
+            BalancerProtocol.VEBAL,
+            BalancerLocker.GAUGE,
+            USDC,
+            BalancerProtocol.BAL
+        )
     {}
 
     function _deployAccumulator() internal override returns (address payable accumulator) {
@@ -43,25 +52,25 @@ contract BalancerAccumulatorTest is BaseAccumulatorTest {
         accumulator.setVeBoostDelegation(address(veBoostDelegation));
 
         /// Reset the current balance of the delegation contract.
-        deal(Balancer.BAL, address(veBoostDelegation), 0);
+        deal(BalancerProtocol.BAL, address(veBoostDelegation), 0);
 
         /// Mint some BAL tokens to the accumulator.
-        deal(Balancer.BAL, address(accumulator), 1_000_000e18);
+        deal(BalancerProtocol.BAL, address(accumulator), 1_000_000e18);
 
-        uint256 snapshotGaugeBalance = ERC20(Balancer.BAL).balanceOf(address(liquidityGauge));
+        uint256 snapshotGaugeBalance = ERC20(BalancerProtocol.BAL).balanceOf(address(liquidityGauge));
 
-        uint256 sizeDelegation = veBoost.received_balance(BAL.LOCKER);
-        uint256 sizeLocker = veBoost.balanceOf(BAL.LOCKER) - sizeDelegation;
+        uint256 sizeDelegation = veBoost.received_balance(BalancerLocker.LOCKER);
+        uint256 sizeLocker = veBoost.balanceOf(BalancerLocker.LOCKER) - sizeDelegation;
 
         uint256 bpsDelegated = (sizeDelegation * 1e18 / sizeLocker);
         uint256 expectedDelegation = 1_000_000e18 * bpsDelegated / 1e18;
 
         /// Notify the reward.
-        accumulator.notifyReward(Balancer.BAL); // TODO: notifyReward
+        accumulator.notifyReward(BalancerProtocol.BAL);
 
-        assertEq(ERC20(Balancer.BAL).balanceOf(address(veBoostDelegation)), expectedDelegation);
+        assertEq(ERC20(BalancerProtocol.BAL).balanceOf(address(veBoostDelegation)), expectedDelegation);
         assertEq(
-            ERC20(Balancer.BAL).balanceOf(address(liquidityGauge)),
+            ERC20(BalancerProtocol.BAL).balanceOf(address(liquidityGauge)),
             snapshotGaugeBalance + 1_000_000e18 - expectedDelegation
         );
 
@@ -70,15 +79,15 @@ contract BalancerAccumulatorTest is BaseAccumulatorTest {
         accumulator.setMultiplier(9e17);
 
         /// Reset the current balance of the delegation contract.
-        deal(Balancer.BAL, address(veBoostDelegation), 0);
+        deal(BalancerProtocol.BAL, address(veBoostDelegation), 0);
 
         /// Mint some BAL tokens to the accumulator.
-        deal(Balancer.BAL, address(accumulator), 1_000_000e18);
+        deal(BalancerProtocol.BAL, address(accumulator), 1_000_000e18);
 
-        snapshotGaugeBalance = ERC20(Balancer.BAL).balanceOf(address(liquidityGauge));
+        snapshotGaugeBalance = ERC20(BalancerProtocol.BAL).balanceOf(address(liquidityGauge));
 
-        sizeDelegation = veBoost.received_balance(BAL.LOCKER);
-        sizeLocker = veBoost.balanceOf(BAL.LOCKER) - sizeDelegation;
+        sizeDelegation = veBoost.received_balance(BalancerLocker.LOCKER);
+        sizeLocker = veBoost.balanceOf(BalancerLocker.LOCKER) - sizeDelegation;
 
         bpsDelegated = (sizeDelegation * 1e18 / sizeLocker);
         expectedDelegation = 1_000_000e18 * bpsDelegated / 1e18;
@@ -87,11 +96,11 @@ contract BalancerAccumulatorTest is BaseAccumulatorTest {
         expectedDelegation = expectedDelegation * 9e17 / 1e18;
 
         /// Notify the reward.
-        accumulator.notifyReward(Balancer.BAL); // TODO: notifyReward
+        accumulator.notifyReward(BalancerProtocol.BAL);
 
-        assertEq(ERC20(Balancer.BAL).balanceOf(address(veBoostDelegation)), expectedDelegation);
+        assertEq(ERC20(BalancerProtocol.BAL).balanceOf(address(veBoostDelegation)), expectedDelegation);
         assertEq(
-            ERC20(Balancer.BAL).balanceOf(address(liquidityGauge)),
+            ERC20(BalancerProtocol.BAL).balanceOf(address(liquidityGauge)),
             snapshotGaugeBalance + 1_000_000e18 - expectedDelegation
         );
     }

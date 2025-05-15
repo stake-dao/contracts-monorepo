@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {YFI as YearnLocker} from "address-book/src/lockers/1.sol";
-import {Yearn as YearnProtocol} from "address-book/src/protocols/1.sol";
+import {YearnLocker, YearnProtocol} from "address-book/src/YearnEthereum.sol";
 import {MockERC20} from "forge-std/src/mocks/MockERC20.sol";
 import {YearnAccumulator} from "src/mainnet/yearn/Accumulator.sol";
 import {AccumulatorTest} from "test/unit/accumulators/AccumulatorTest.t.sol";
 
 contract YearnAccumulator__constructor is AccumulatorTest {
-    constructor() AccumulatorTest(YearnLocker.TOKEN, YearnProtocol.DYFI, YearnLocker.GAUGE) {}
+    constructor() AccumulatorTest(YearnProtocol.YFI, YearnProtocol.DYFI, YearnLocker.GAUGE) {}
 
     function _deployAccumulator() internal override returns (address) {
         return address(new YearnAccumulator(gauge, locker, governance, locker));

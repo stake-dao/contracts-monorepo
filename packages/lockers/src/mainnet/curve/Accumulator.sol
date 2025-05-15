@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {CRV as CurveLockerAddressBook} from "address-book/src/lockers/1.sol";
-import {Curve} from "address-book/src/protocols/1.sol";
+import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
 import {IFeeReceiver} from "common/interfaces/IFeeReceiver.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
@@ -38,13 +37,13 @@ contract CurveAccumulator is DelegableAccumulator, SafeModule {
     constructor(address _gauge, address _locker, address _governance, address _gateway)
         DelegableAccumulator(
             _gauge,
-            Curve.CRV_USD, // rewardToken
+            CurveProtocol.CRV_USD, // rewardToken
             _locker,
             _governance,
-            Curve.CRV, // token
-            Curve.VECRV, // veToken
-            Curve.VE_BOOST, // veBoost
-            Curve.VE_BOOST_DELEGATION, // veBoostDelegation
+            CurveProtocol.CRV, // token
+            CurveProtocol.VECRV, // veToken
+            CurveProtocol.VE_BOOST, // veBoost
+            CurveProtocol.VE_BOOST_DELEGATION, // veBoostDelegation
             0 // multiplier
         )
         SafeModule(_gateway)
@@ -52,11 +51,11 @@ contract CurveAccumulator is DelegableAccumulator, SafeModule {
         // @dev: Legacy lockers (before v4) used to claim fees from the strategy contract
         //       In v4, fees are claimed by calling the unique accountant contract.
         //       Here we initially set the already deployed strategy contract to smoothen the migration
-        accountant = CurveLockerAddressBook.STRATEGY;
+        accountant = CurveLocker.STRATEGY;
 
         // Give full approval to the gauge for the CRV and CRV_USD tokens
-        SafeTransferLib.safeApprove(Curve.CRV, _gauge, type(uint256).max);
-        SafeTransferLib.safeApprove(Curve.CRV_USD, _gauge, type(uint256).max);
+        SafeTransferLib.safeApprove(CurveProtocol.CRV, _gauge, type(uint256).max);
+        SafeTransferLib.safeApprove(CurveProtocol.CRV_USD, _gauge, type(uint256).max);
     }
 
     //////////////////////////////////////////////////////
@@ -102,7 +101,7 @@ contract CurveAccumulator is DelegableAccumulator, SafeModule {
     ///////////////////////////////////////////////////////////////
 
     function _execute_claim() internal virtual {
-        _executeTransaction(Curve.FEE_DISTRIBUTOR, abi.encodeWithSelector(IFeeDistributor.claim.selector));
+        _executeTransaction(CurveProtocol.FEE_DISTRIBUTOR, abi.encodeWithSelector(IFeeDistributor.claim.selector));
     }
 
     function _execute_transfer(uint256 amount) internal virtual {

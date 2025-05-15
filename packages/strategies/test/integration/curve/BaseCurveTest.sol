@@ -11,6 +11,7 @@ import {CurveFactory} from "src/integrations/curve/CurveFactory.sol";
 import {CurveStrategy, IMinter} from "src/integrations/curve/CurveStrategy.sol";
 import {IBalanceProvider} from "src/interfaces/IBalanceProvider.sol";
 import {BaseForkTest} from "test/BaseFork.sol";
+import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
 
 abstract contract BaseCurveTest is BaseForkTest {
     ///////////////////////////////////////////////////////////////////////////
@@ -21,28 +22,28 @@ abstract contract BaseCurveTest is BaseForkTest {
     bytes4 internal constant PROTOCOL_ID = bytes4(keccak256("CURVE"));
 
     /// @notice The reward token.
-    address internal constant CRV = 0xD533a949740bb3306d119CC777fa900bA034cd52;
+    address internal constant CRV = CurveProtocol.CRV;
 
     /// @notice The CVX token.
-    address internal constant CVX = 0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B;
+    address internal constant CVX = CurveProtocol.CONVEX_TOKEN;
 
     /// @notice The minter contract.
-    address internal constant MINTER = 0xd061D61a4d941c39E5453435B6345Dc261C2fcE0;
+    address internal constant MINTER = CurveProtocol.MINTER;
 
     /// @notice The locker.
-    address internal constant LOCKER = 0x52f541764E6e90eeBc5c21Ff570De0e2D63766B6;
+    address internal constant LOCKER = CurveLocker.LOCKER;
 
     /// @notice The Boost Delegation V3 contract.
-    address public constant BOOST_DELEGATION_V3 = 0xD37A6aa3d8460Bd2b6536d608103D880695A23CD;
+    address public constant BOOST_DELEGATION_V3 = CurveProtocol.VE_BOOST;
 
     /// @notice The Convex Boost Holder contract.
-    address public constant CONVEX_BOOST_HOLDER = 0x989AEb4d175e16225E39E87d0D97A3360524AD80;
+    address public constant CONVEX_BOOST_HOLDER = CurveProtocol.CONVEX_PROXY;
 
     /// @notice The Booster contract.
-    IBooster public constant BOOSTER = IBooster(0xF403C135812408BFbE8713b5A23a04b3D48AAE31);
+    IBooster public constant BOOSTER = IBooster(CurveProtocol.CONVEX_BOOSTER);
 
     /// @notice The old strategy.
-    address public constant OLD_STRATEGY = 0x69D61428d089C2F35Bf6a472F540D0F82D1EA2cd;
+    address public constant OLD_STRATEGY = CurveLocker.STRATEGY;
 
     ///////////////////////////////////////////////////////////////////////////
     //// - HELPER STORAGE

@@ -15,15 +15,17 @@ import {ILocker, ISafe} from "src/common/interfaces/spectra/stakedao/ILocker.sol
 import {sdToken as SdToken} from "src/common/token/sdToken.sol";
 import {SafeLibrary} from "test/common/SafeLibrary.sol";
 import {BaseSpectraTest} from "test/fork/spectra/common/BaseSpectraTest.sol";
+import {DAO} from "address-book/src/DAOBase.sol";
+import {SpectraProtocol} from "address-book/src/SpectraBase.sol";
 
 // Base Spectra Test including deployments and setup
 abstract contract BaseSpectraTokenTest is BaseSpectraTest {
-    address internal GOVERNANCE = address(0xB0552b6860CE5C0202976Db056b5e3Cc4f9CC765);
+    address internal GOVERNANCE = address(DAO.GOVERNANCE);
 
-    IERC20 internal spectraToken = IERC20(0x64FCC3A02eeEba05Ef701b7eed066c6ebD5d4E51);
-    IERC721 internal veSpectra = IERC721(0x6a89228055C7C28430692E342F149f37462B478B);
+    IERC20 internal spectraToken = IERC20(SpectraProtocol.SPECTRA);
+    IERC721 internal veSpectra = IERC721(SpectraProtocol.VESPECTRA);
     ISpectraRewardsDistributor internal spectraRewardsDistributor =
-        ISpectraRewardsDistributor(0xBE6271FA207D2cD29C7F9efa90FC725C18560bff);
+        ISpectraRewardsDistributor(SpectraProtocol.FEE_DISTRIBUTOR);
 
     constructor() {}
 

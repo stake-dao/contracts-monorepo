@@ -7,24 +7,27 @@ import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {ILocker} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
 import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
+import {Common} from "address-book/src/CommonLinea.sol";
+import {ZeroLocker} from "address-book/src/ZeroLinea.sol";
 
 /// @title StakeDAO ZERO Accumulator
 /// @notice A contract that accumulates ZERO rewards and notifies them to the sdZERO gauge
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-contract Accumulator is BaseAccumulator {
+
+contract ZeroLendAccumulator is BaseAccumulator {
     //////////////////////////////////////////////////////
     /// --- CONSTANTS
     //////////////////////////////////////////////////////
 
     /// @notice ZERO token address.
-    address public constant ZERO = 0x78354f8DcCB269a615A7e0a24f9B0718FDC3C7A7;
+    address public constant ZERO = ZeroLocker.TOKEN;
 
     /// @notice WETH token address.
-    address public constant WETH = 0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f;
+    address public constant WETH = Common.WETH;
 
     /// @notice ZEROvp (veToken) address.
-    address public constant ZERO_VP = 0xf374229a18ff691406f99CCBD93e8a3f16B68888;
+    address public constant ZERO_VP = ZeroLocker.VE_ZERO;
 
     //////////////////////////////////////////////////////
     /// --- ERRORS

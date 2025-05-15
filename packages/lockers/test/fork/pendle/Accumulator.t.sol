@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import {PENDLE} from "address-book/src/lockers/1.sol";
-import {Pendle} from "address-book/src/protocols/1.sol";
+import {Common} from "address-book/src/CommonEthereum.sol";
+import {PendleLocker, PendleProtocol} from "address-book/src/PendleEthereum.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
@@ -11,18 +11,18 @@ import {PendleAccumulator} from "src/mainnet/pendle/Accumulator.sol";
 import {BaseAccumulatorTest} from "test/fork/common/BaseAccumulatorTest.sol";
 
 contract PendleAccumulatorTest is BaseAccumulatorTest {
-    ERC20 public WETH = ERC20(0xC02aaA39b223FE8D0A0e5C4F27eAD9083C756Cc2);
+    ERC20 public WETH = ERC20(Common.WETH);
 
     constructor()
         BaseAccumulatorTest(
             20_031_924,
             "mainnet",
-            PENDLE.LOCKER,
-            PENDLE.SDTOKEN,
-            Pendle.VEPENDLE,
-            PENDLE.GAUGE,
+            PendleLocker.LOCKER,
+            PendleLocker.SDTOKEN,
+            PendleProtocol.VEPENDLE,
+            PendleLocker.GAUGE,
             address(WETH),
-            PENDLE.TOKEN
+            PendleLocker.TOKEN
         )
     {}
 
@@ -36,7 +36,7 @@ contract PendleAccumulatorTest is BaseAccumulatorTest {
 
     /// Pools where rewards accrued at the block number 20_031_924.
     address[] public _pools = [
-        0x4f30A9D41B80ecC5B94306AB4364951AE3170210, // VePendle
+        PendleProtocol.VEPENDLE, // VePendle
         0x107a2e3cD2BB9a32B9eE2E4d51143149F8367eBa,
         0x90c98ab215498B72Abfec04c651e2e496bA364C0,
         0xd7E0809998693fD87E81D51dE1619fd0EE658031,
@@ -49,7 +49,7 @@ contract PendleAccumulatorTest is BaseAccumulatorTest {
 
     function test_claimAll() public override {
         PendleAccumulator accumulator = PendleAccumulator(payable(accumulator));
-        accumulator.setVotesRewardRecipient(PENDLE.VOTERS_REWARDS_RECIPIENT);
+        accumulator.setVotesRewardRecipient(PendleLocker.VOTERS_REWARDS_RECIPIENT);
 
         uint256 id = vm.snapshot();
 
@@ -84,7 +84,7 @@ contract PendleAccumulatorTest is BaseAccumulatorTest {
         accumulator.claimAndNotifyAll(_poolsCopy);
 
         uint256 treasury = WETH.balanceOf(address(treasuryRecipient));
-        uint256 voters = WETH.balanceOf(address(PENDLE.VOTERS_REWARDS_RECIPIENT));
+        uint256 voters = WETH.balanceOf(address(PendleLocker.VOTERS_REWARDS_RECIPIENT));
         uint256 liquidityFee = WETH.balanceOf(address(liquidityFeeRecipient));
         uint256 gauge = WETH.balanceOf(address(liquidityGauge)) - gaugeBalanceBefore;
         uint256 claimer = WETH.balanceOf(address(this));
@@ -106,7 +106,7 @@ contract PendleAccumulatorTest is BaseAccumulatorTest {
         }
 
         /// Expect the accumulator to not call the gauge to deposit the reward token as the distribution has already been distributed.
-        accumulator.notifyReward(address(WETH)); // TODO: notifyReward
+        accumulator.notifyReward(address(WETH));
 
         vm.expectRevert(PendleAccumulator.NO_BALANCE.selector);
         accumulator.claimAndNotifyAll(_pools);
@@ -117,7 +117,7 @@ contract PendleAccumulatorTest is BaseAccumulatorTest {
         accumulator.claimAndNotifyAll(_pools);
 
         uint256 toDistribute = WETH.balanceOf(address(accumulator)) / 3;
-        accumulator.notifyReward(address(WETH)); // TODO: notifyReward
+        accumulator.notifyReward(address(WETH));
 
         /// Balances should be the same as we already took fees.
         assertEq(WETH.balanceOf(address(treasuryRecipient)), treasury);
@@ -127,12 +127,12 @@ contract PendleAccumulatorTest is BaseAccumulatorTest {
 
         assertEq(accumulator.getRemainingSchedule(), 2);
 
-        uint256 _before = ERC20(PENDLE.TOKEN).balanceOf(address(liquidityGauge));
+        uint256 _before = ERC20(PendleLocker.TOKEN).balanceOf(address(liquidityGauge));
 
-        deal(PENDLE.TOKEN, address(accumulator), 1_000_000e18);
-        accumulator.notifyReward({token: address(PENDLE.TOKEN)}); // TODO: notifyReward
+        deal(PendleLocker.TOKEN, address(accumulator), 1_000_000e18);
+        accumulator.notifyReward({token: address(PendleLocker.TOKEN)});
 
         /// It should distribute 1_000_000 PENDLE to LGV4, meaning no fees were taken.
-        assertEq(ERC20(PENDLE.TOKEN).balanceOf(address(liquidityGauge)), _before + 1_000_000e18);
+        assertEq(ERC20(PendleLocker.TOKEN).balanceOf(address(liquidityGauge)), _before + 1_000_000e18);
     }
 }

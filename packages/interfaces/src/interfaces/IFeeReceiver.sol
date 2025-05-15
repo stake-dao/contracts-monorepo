@@ -12,7 +12,10 @@ interface IFeeReceiver {
     function acceptGovernance() external;
     function transferGovernance(address _futureGovernance) external;
 
-    function getRepartition(address rewardToken) external view returns (address[] memory receivers, uint256[] memory fees);
+    function getRepartition(address rewardToken)
+        external
+        view
+        returns (address[] memory receivers, uint256[] memory fees);
     function setRepartition(address rewardToken, address[] calldata receivers, uint256[] calldata fees) external;
 
     function split(address rewardToken) external;

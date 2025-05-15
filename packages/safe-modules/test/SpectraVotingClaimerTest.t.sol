@@ -1,23 +1,23 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import "forge-std/src/Vm.sol";
-import "forge-std/src/Test.sol";
-import "forge-std/src/console.sol";
-import "../src/SpectraVotingClaimer.sol";
-import "../src/interfaces/ISpectraVoter.sol";
-import "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import {Test} from "forge-std/src/Test.sol";
+import {SpectraVotingClaimer} from "src/SpectraVotingClaimer.sol";
+import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import {DAO} from "address-book/src/DAOBase.sol";
+import {SpectraLocker} from "address-book/src/SpectraBase.sol";
+import {Common} from "address-book/src/CommonBase.sol";
 
 interface Safe {
     function enableModule(address module) external;
 }
 
 contract SpectraVotingClaimerTest is Test {
-    address public constant DEPLOYER = address(0x428419Ad92317B09FE00675F181ac09c87D16450);
-    address public immutable SD_SAFE = address(0xC0295F271c4fD531d436F55b0ceF4Cc316188046);
+    address public constant DEPLOYER = DAO.MAIN_DEPLOYER;
+    address public immutable SD_SAFE = SpectraLocker.LOCKER;
 
-    address public immutable WETH = address(0x4200000000000000000000000000000000000006);
-    address public immutable GHO = address(0x6Bb7a212910682DCFdbd5BCBb3e28FB4E8da10Ee);
+    address public immutable WETH = Common.WETH;
+    address public immutable GHO = Common.GHO;
 
     SpectraVotingClaimer spectraVotingClaimer;
 
@@ -67,7 +67,7 @@ contract SpectraVotingClaimerTest is Test {
         // Should be equals for the Safe
         assertEq(usdcSafeBalanceBeforeClaim, usdcSafeBalanceAfterClaim);
         assertEq(spectraSafeBalanceBeforeClaim, spectraSafeBalanceAfterClaim);
-        
+
         // And should be higher for the recipient and treasury
         assertGt(usdcTreasuryBalanceAfterClaim, usdcTreasuryBalanceBeforeClaim);
         assertGt(spectraTreasuryBalanceAfterClaim, spectraTreasuryBalanceBeforeClaim);

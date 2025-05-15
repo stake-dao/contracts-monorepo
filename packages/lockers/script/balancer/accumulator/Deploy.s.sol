@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "address-book/src/dao/1.sol";
-import "address-book/src/lockers/1.sol";
-import "forge-std/src/Script.sol";
-import "script/common/DeployAccumulator.sol";
+import {DAO} from "address-book/src/DAOEthereum.sol";
+import {BalancerLocker} from "address-book/src/BalancerEthereum.sol";
+import {DeployAccumulator} from "script/common/DeployAccumulator.sol";
 import {BalancerAccumulator} from "src/mainnet/balancer/Accumulator.sol";
 
 contract Deploy is DeployAccumulator {
@@ -14,7 +13,11 @@ contract Deploy is DeployAccumulator {
     }
 
     function _deployAccumulator() internal override returns (address payable) {
-        return payable(new BalancerAccumulator(address(BAL.GAUGE), BAL.LOCKER, DAO.MAIN_DEPLOYER, BAL.LOCKER));
+        return payable(
+            new BalancerAccumulator(
+                address(BalancerLocker.GAUGE), BalancerLocker.LOCKER, DAO.MAIN_DEPLOYER, BalancerLocker.LOCKER
+            )
+        );
     }
 
     function _afterDeploy() internal virtual override {}

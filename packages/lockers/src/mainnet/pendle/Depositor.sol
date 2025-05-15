@@ -2,7 +2,7 @@
 pragma solidity 0.8.19;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {Pendle} from "address-book/src/protocols/1.sol";
+import {PendleProtocol} from "address-book/src/PendleEthereum.sol";
 import {BaseDepositor} from "src/common/depositor/BaseDepositor.sol";
 import {IVePendle} from "src/common/interfaces/IVePendle.sol";
 import {SafeModule} from "src/common/utils/SafeModule.sol";
@@ -20,7 +20,7 @@ contract PendleDepositor is BaseDepositor, SafeModule {
     ///////////////////////////////////////////////////////////////
 
     /// @notice Address of the vePENDLE token.
-    address public constant VE_PENDLE = Pendle.VEPENDLE;
+    address public constant VE_PENDLE = PendleProtocol.VEPENDLE;
 
     ////////////////////////////////////////////////////////////////
     /// --- CONSTRUCTOR

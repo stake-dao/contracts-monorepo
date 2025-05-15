@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {YFI} from "address-book/src/lockers/1.sol";
-import {Yearn} from "address-book/src/protocols/1.sol";
+import {YearnLocker, YearnProtocol} from "address-book/src/YearnEthereum.sol";
 import {MockERC20} from "forge-std/src/mocks/MockERC20.sol";
 import {YearnDepositor} from "src/mainnet/yearn/Depositor.sol";
 import {DepositorTest} from "test/unit/depositors/DepositorTest.t.sol";
@@ -70,10 +69,10 @@ contract YearnDepositor__constructor is DepositorTest {
     function test_SetsTheExpectedVeToken() external view {
         // it sets the expected veToken
 
-        assertEq(YearnDepositor(depositor).VE_YFI(), Yearn.VEYFI);
+        assertEq(YearnDepositor(depositor).VE_YFI(), YearnProtocol.VEYFI);
     }
 
-    constructor() DepositorTest(Yearn.YFI, Yearn.VEYFI, YFI.GAUGE) {}
+    constructor() DepositorTest(YearnProtocol.YFI, YearnProtocol.VEYFI, YearnLocker.GAUGE) {}
 
     function _deployDepositor() internal override returns (address) {
         return address(new YearnDepositor(token, locker, minter, gauge, locker));

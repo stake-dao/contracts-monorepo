@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {PENDLE} from "address-book/src/lockers/1.sol";
-import {Pendle} from "address-book/src/protocols/1.sol";
+import {PendleLocker, PendleProtocol} from "address-book/src/PendleEthereum.sol";
 import {IVePendle} from "src/common/interfaces/IVePendle.sol";
 import {PendleDepositor} from "src/mainnet/pendle/Depositor.sol";
 import {DepositorTest} from "test/unit/depositors/DepositorTest.t.sol";
 import {PendleDepositorHarness} from "test/unit/depositors/pendle/PendleDepositorHarness.sol";
 
 contract PendleDepositor__lockToken is DepositorTest {
+    constructor() DepositorTest(PendleProtocol.PENDLE, PendleProtocol.VEPENDLE, PendleLocker.GAUGE) {}
+
     function test_IncreasesTheAmountAndTheUnlockTimeIfNeeded(
         uint128 amount,
         uint96 timestamp,
@@ -57,8 +58,6 @@ contract PendleDepositor__lockToken is DepositorTest {
 
         PendleDepositorHarness(depositor)._expose_lockToken(0);
     }
-
-    constructor() DepositorTest(Pendle.PENDLE, Pendle.VEPENDLE, PENDLE.GAUGE) {}
 
     function _deployDepositor() internal override returns (address) {
         return address(new PendleDepositorHarness(token, locker, minter, gauge, locker));

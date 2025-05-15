@@ -1,16 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "address-book/src/dao/1.sol";
-import "address-book/src/lockers/1.sol";
-import "address-book/src/protocols/1.sol";
-import "forge-std/src/Test.sol";
-import "forge-std/src/Vm.sol";
+import {PendleLocker, PendleProtocol} from "address-book/src/PendleEthereum.sol";
+import {Test} from "forge-std/src/Test.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import "src/common/interfaces/IDepositor.sol";
-import "src/common/interfaces/ILiquidityGauge.sol";
-import "src/common/interfaces/ILocker.sol";
-import "src/common/interfaces/ISdToken.sol";
+import {IDepositor} from "src/common/interfaces/IDepositor.sol";
+import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
+import {ILocker} from "src/common/interfaces/ILocker.sol";
+import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {IVePendle} from "src/common/interfaces/IVePendle.sol";
 import {PendleDepositor} from "src/mainnet/pendle/Depositor.sol";
 
@@ -36,12 +33,12 @@ contract DepositorTest is Test {
     function setUp() public virtual {
         uint256 forkId = vm.createFork(vm.rpcUrl("mainnet"), 21_415_198);
         vm.selectFork(forkId);
-        token = IERC20(Pendle.PENDLE);
-        veToken = IVePendle(Pendle.VEPENDLE);
-        _sdToken = ISdToken(PENDLE.SDTOKEN);
-        liquidityGauge = ILiquidityGauge(PENDLE.GAUGE);
+        token = IERC20(PendleProtocol.PENDLE);
+        veToken = IVePendle(PendleProtocol.VEPENDLE);
+        _sdToken = ISdToken(PendleLocker.SDTOKEN);
+        liquidityGauge = ILiquidityGauge(PendleLocker.GAUGE);
 
-        locker = ILocker(PENDLE.LOCKER);
+        locker = ILocker(PendleLocker.LOCKER);
 
         depositor = new PendleDepositor(
             address(token), address(locker), address(_sdToken), address(liquidityGauge), address(locker)
@@ -50,7 +47,6 @@ contract DepositorTest is Test {
         vm.prank(locker.governance());
         locker.setPendleDepositor(address(depositor));
 
-        // TODO: legacy governance address -- This test must be rewritten ASAP
         address governance = 0xF930EBBd05eF8b25B1797b9b2109DDC9B0d43063;
         vm.prank(governance);
         IDepositor(OLD_DEPOSITOR).setSdTokenOperator(address(depositor));

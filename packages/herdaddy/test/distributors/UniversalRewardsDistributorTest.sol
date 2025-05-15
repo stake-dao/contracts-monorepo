@@ -9,7 +9,7 @@ import {ERC20Mock} from "test/Mocks.sol";
 import {Multicallable} from "solady/src/utils/Multicallable.sol";
 import {UniversalRewardsDistributor} from "src/distributors/UniversalRewardDistributor.sol";
 import {EventsLib} from "src/utils/EventsLib.sol";
-
+import {DAO} from "address-book/src/DAOEthereum.sol";
 import {Merkle} from "murky/Merkle.sol";
 import "forge-std/src/Test.sol";
 
@@ -56,8 +56,7 @@ contract UniversalRewardsDistributorTest is Test {
 
     function test_GetInitCodeHash() public {
         bytes32 initCodeHash = hashInitCode(
-            type(UniversalRewardsDistributor).creationCode,
-            abi.encode(0x8898502BA35AB64b3562aBC509Befb7Eb178D4df, 0, bytes32(0), bytes32(0))
+            type(UniversalRewardsDistributor).creationCode, abi.encode(DAO.MAIN_DEPLOYER, 0, bytes32(0), bytes32(0))
         );
         console.logBytes32(initCodeHash);
         console.log(address(0));

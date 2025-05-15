@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {CRV} from "address-book/src/lockers/1.sol";
-import {Curve} from "address-book/src/protocols/1.sol";
+import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
 import {IVeToken} from "src/common/interfaces/IVeToken.sol";
 import {CurveDepositor} from "src/mainnet/curve/Depositor.sol";
 import {CurveDepositorHarness} from "test/unit/depositors/curve/CurveDepositorHarness.sol";
 import {DepositorTest} from "test/unit/depositors/DepositorTest.t.sol";
 
 contract CurveDepositor__lockToken is DepositorTest {
+    constructor() DepositorTest(CurveProtocol.CRV, CurveProtocol.VECRV, CurveLocker.GAUGE) {}
+
     function test_IncreasesTheAmountAndTheUnlockTimeIfNeeded(
         uint256 amount,
         uint128 timestamp,
@@ -65,8 +66,6 @@ contract CurveDepositor__lockToken is DepositorTest {
 
         CurveDepositorHarness(depositor)._expose_lockToken(0);
     }
-
-    constructor() DepositorTest(Curve.CRV, Curve.VECRV, CRV.GAUGE) {}
 
     function _deployDepositor() internal override returns (address) {
         return address(new CurveDepositorHarness(token, locker, minter, gauge, locker));

@@ -3,16 +3,17 @@ pragma solidity 0.8.28;
 
 import {SafeProxyFactory} from "@safe/contracts/proxies/SafeProxyFactory.sol";
 import {Safe, Enum} from "@safe/contracts/Safe.sol";
+import {Common} from "address-book/src/CommonEthereum.sol";
 
 library SafeLibrary {
     /// @notice Safe proxy factory address. Same address on all chains.
-    SafeProxyFactory public constant SAFE_PROXY_FACTORY = SafeProxyFactory(0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67);
+    SafeProxyFactory public constant SAFE_PROXY_FACTORY = SafeProxyFactory(Common.SAFE_PROXY_FACTORY);
 
     /// @notice Safe singleton address. Same address on all chains.
-    address public constant SAFE_SINGLETON = 0x41675C099F32341bf84BFc5382aF534df5C7461a;
+    address public constant SAFE_SINGLETON = Common.SAFE_SINGLETON;
 
     /// @notice Fallback handler address. Same address on all chains.
-    address public constant FALLBACK_HANDLER = 0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99;
+    address public constant FALLBACK_HANDLER = Common.SAFE_FALLBACK_HANDLER;
 
     function deploySafe(address[] memory _owners, uint256 _threshold, uint256 _saltNonce) internal returns (Safe) {
         bytes memory initializer = abi.encodeWithSelector(

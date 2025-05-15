@@ -10,20 +10,22 @@ import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {ILocker, ISafe} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
 import {sdToken as SdToken} from "src/common/token/sdToken.sol";
-import "src/linea/zerolend/Accumulator.sol";
+import {ZeroLendAccumulator} from "src/linea/zerolend/Accumulator.sol";
 import {Depositor} from "src/linea/zerolend/Depositor.sol";
 import {BaseZeroLendTest} from "test/fork/zerolend/common/BaseZeroLendTest.sol";
+import {Common} from "address-book/src/CommonLinea.sol";
+import {ZeroLocker} from "address-book/src/ZeroLinea.sol";
 
 // end to end tests for the ZeroLend integration
 abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
     address internal GOVERNANCE = address(1234);
 
-    address internal zeroLockerToken = 0x08D5FEA625B1dBf9Bae0b97437303a0374ee02F8;
-    IERC20 internal zeroToken = IERC20(0x78354f8DcCB269a615A7e0a24f9B0718FDC3C7A7);
-    IERC20 internal veZero = IERC20(0xf374229a18ff691406f99CCBD93e8a3f16B68888);
+    address internal zeroLockerToken = ZeroLocker.LOCKER_TOKEN;
+    IERC20 internal zeroToken = IERC20(ZeroLocker.TOKEN);
+    IERC20 internal veZero = IERC20(ZeroLocker.VE_ZERO);
 
-    SafeProxyFactory internal safeProxyFactory = SafeProxyFactory(0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67);
-    address internal safeSingleton = 0x41675C099F32341bf84BFc5382aF534df5C7461a;
+    SafeProxyFactory internal safeProxyFactory = SafeProxyFactory(Common.SAFE_PROXY_FACTORY);
+    address internal safeSingleton = Common.SAFE_SINGLETON;
 
     address internal zeroTokenHolder = 0xA05D8213472620292D4D96DCDA2Dd5dB4B65df2f;
 
@@ -37,7 +39,7 @@ abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
         vm.label(address(veZero), "veZero");
         vm.label(zeroLockerToken, "Locked ZERO Tokens (T-ZERO)");
         vm.label(0xb320Fa6C84d67145759f2e6B06e2Fc14B0BADb5d, "OmnichainStakingToken impl.");
-        vm.label(0xe5D7C2a44FfDDf6b295A15c148167daaAf5Cf34f, "WETH");
+        vm.label(Common.WETH, "WETH");
     }
 
     function _deployZeroIntegration() internal {
@@ -123,7 +125,7 @@ abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
     }
 
     function _deployAccumulator() internal virtual returns (address payable _accumulator) {
-        _accumulator = payable(address(new Accumulator(address(liquidityGauge), locker, GOVERNANCE)));
+        _accumulator = payable(address(new ZeroLendAccumulator(address(liquidityGauge), locker, GOVERNANCE)));
 
         // Add accumulator as a module on the Safe locker.
         _enableModule(_accumulator);

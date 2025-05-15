@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import "forge-std/src/Test.sol";
+import {SpectraProtocol} from "address-book/src/SpectraBase.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {ISpectraRewardsDistributor} from "src/common/interfaces/spectra/spectra/ISpectraRewardsDistributor.sol";
 import {ISdSpectraDepositor} from "src/common/interfaces/spectra/stakedao/ISdSpectraDepositor.sol";
@@ -15,8 +15,7 @@ contract SpectraAccumulatorTest is BaseSpectraTokenTest {
     address internal bob = makeAddr("bob");
     address internal initializer = makeAddr("initializer");
 
-    ISpectraRewardsDistributor internal rewardsDistributor =
-        ISpectraRewardsDistributor(0xBE6271FA207D2cD29C7F9efa90FC725C18560bff);
+    ISpectraRewardsDistributor internal rewardsDistributor = ISpectraRewardsDistributor(SpectraProtocol.FEE_DISTRIBUTOR);
 
     function setUp() public {
         vm.createSelectFork(vm.rpcUrl("base"), 28026639);

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import {Curve} from "address-book/src/protocols/1.sol";
+import {CurveProtocol} from "address-book/src/CurveEthereum.sol";
 import {BaseDepositor} from "src/common/depositor/BaseDepositor.sol";
 import {IVeToken} from "src/common/interfaces/IVeToken.sol";
 import {SafeModule} from "src/common/utils/SafeModule.sol";
@@ -16,7 +16,7 @@ contract CurveDepositor is BaseDepositor, SafeModule {
     ///////////////////////////////////////////////////////////////
 
     /// @notice Address of the veCRV token.
-    address public constant VE_CRV = Curve.VECRV;
+    address public constant VE_CRV = CurveProtocol.VECRV;
 
     ////////////////////////////////////////////////////////////////
     /// --- CONSTRUCTOR

@@ -2,7 +2,7 @@
 pragma solidity ^0.8.19;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {Frax} from "address-book/src/protocols/252.sol";
+import {FraxProtocol} from "address-book/src/FraxFraxtal.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {BaseDepositor} from "src/common/depositor/BaseDepositor.sol";
 import {ISdTokenOperator} from "src/common/interfaces/ISdTokenOperator.sol";
@@ -21,7 +21,7 @@ contract FraxDepositor is BaseDepositor, FXTLDelegation, SafeModule {
     /// --- CONSTANTS
     //////////////////////////////////////////////////////
 
-    address public constant VE_TOKEN = Frax.VEFXS;
+    address public constant VE_TOKEN = FraxProtocol.VEFXS;
 
     //////////////////////////////////////////////////////
     /// --- CONSTRUCTOR

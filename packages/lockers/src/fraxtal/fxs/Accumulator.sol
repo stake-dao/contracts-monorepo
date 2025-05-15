@@ -2,8 +2,8 @@
 pragma solidity 0.8.19;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {FXS as FraxMainnet} from "address-book/src/lockers/1.sol";
-import {Frax} from "address-book/src/protocols/252.sol";
+import {FraxProtocol} from "address-book/src/FraxFraxtal.sol";
+import {FraxLocker} from "address-book/src/FraxEthereum.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {IYieldDistributor} from "src/common/interfaces/IYieldDistributor.sol";
@@ -18,7 +18,7 @@ contract FraxAccumulator is BaseAccumulator, FXTLDelegation, SafeModule {
     //////////////////////////////////////////////////////
 
     /// @notice Frax ethereum locker
-    address public constant ETH_LOCKER = FraxMainnet.LOCKER;
+    address public constant ETH_LOCKER = FraxLocker.LOCKER;
 
     //////////////////////////////////////////////////////
     /// --- STORAGE
@@ -55,7 +55,7 @@ contract FraxAccumulator is BaseAccumulator, FXTLDelegation, SafeModule {
     )
         BaseAccumulator(
             _gauge,
-            Frax.FXS, // rewardToken
+            FraxProtocol.FXS, // rewardToken
             _locker,
             _governance
         )
@@ -63,10 +63,10 @@ contract FraxAccumulator is BaseAccumulator, FXTLDelegation, SafeModule {
         SafeModule(_gateway)
     {
         // Set the initial yield distributor
-        yieldDistributor = Frax.YIELD_DISTRIBUTOR;
+        yieldDistributor = FraxProtocol.YIELD_DISTRIBUTOR;
 
         // Give full approval to the gauge for the FXS token
-        SafeTransferLib.safeApprove(Frax.FXS, _gauge, type(uint256).max);
+        SafeTransferLib.safeApprove(FraxProtocol.FXS, _gauge, type(uint256).max);
     }
 
     //////////////////////////////////////////////////////

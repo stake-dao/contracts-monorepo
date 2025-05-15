@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import "address-book/src/dao/1.sol";
+import "address-book/src/DAOEthereum.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {IDepositor} from "src/common/interfaces/IDepositor.sol";

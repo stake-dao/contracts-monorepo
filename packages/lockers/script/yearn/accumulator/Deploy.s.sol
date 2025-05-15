@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "address-book/src/dao/1.sol";
-import "address-book/src/lockers/1.sol";
-import "forge-std/src/Script.sol";
-import "script/common/DeployAccumulator.sol";
+import {DAO} from "address-book/src/DAOEthereum.sol";
+import {YearnLocker} from "address-book/src/YearnEthereum.sol";
+import {DeployAccumulator} from "script/common/DeployAccumulator.sol";
 import {YearnAccumulator} from "src/mainnet/yearn/Accumulator.sol";
 
 contract Deploy is DeployAccumulator {
@@ -14,7 +13,9 @@ contract Deploy is DeployAccumulator {
     }
 
     function _deployAccumulator() internal override returns (address payable) {
-        return payable(new YearnAccumulator(address(YFI.GAUGE), YFI.LOCKER, DAO.MAIN_DEPLOYER, YFI.LOCKER));
+        return payable(
+            new YearnAccumulator(address(YearnLocker.GAUGE), YearnLocker.LOCKER, DAO.MAIN_DEPLOYER, YearnLocker.LOCKER)
+        );
     }
 
     function _afterDeploy() internal virtual override {}

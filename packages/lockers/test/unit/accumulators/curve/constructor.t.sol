@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {CRV as CurveLocker} from "address-book/src/lockers/1.sol";
-import {Curve} from "address-book/src/protocols/1.sol";
+import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
 import {ERC20} from "openzeppelin-contracts/token/ERC20/ERC20.sol";
 import {CurveAccumulator} from "src/mainnet/curve/Accumulator.sol";
 import {AccumulatorTest} from "test/unit/accumulators/AccumulatorTest.t.sol";
 
 contract CurveAccumulator__constructor is AccumulatorTest {
-    constructor() AccumulatorTest(Curve.CRV_USD, Curve.CRV, CurveLocker.GAUGE) {}
+    constructor() AccumulatorTest(CurveProtocol.CRV_USD, CurveProtocol.CRV, CurveLocker.GAUGE) {}
 
     function _deployAccumulator() internal override returns (address) {
         return address(new CurveAccumulator(gauge, locker, governance, locker));
@@ -26,7 +25,7 @@ contract CurveAccumulator__constructor is AccumulatorTest {
     function test_SetsCrvUSDAsTheRewardToken() external view {
         // it sets crvUSD as the reward token
 
-        assertEq(CurveAccumulator(accumulator).rewardToken(), Curve.CRV_USD);
+        assertEq(CurveAccumulator(accumulator).rewardToken(), CurveProtocol.CRV_USD);
     }
 
     function test_SetsTheGivenLocker(address _locker) external assumeNotZero(_locker) {
@@ -50,25 +49,25 @@ contract CurveAccumulator__constructor is AccumulatorTest {
     function test_SetsCRVAsTheToken() external view {
         // it sets CRV as the token
 
-        assertEq(CurveAccumulator(accumulator).token(), Curve.CRV);
+        assertEq(CurveAccumulator(accumulator).token(), CurveProtocol.CRV);
     }
 
     function test_SetsVeCRVAsTheVeToken() external view {
         // it sets veCRV as the veToken
 
-        assertEq(CurveAccumulator(accumulator).veToken(), Curve.VECRV);
+        assertEq(CurveAccumulator(accumulator).veToken(), CurveProtocol.VECRV);
     }
 
     function test_SetsTheCorrectVeBoostContract() external view {
         // it sets the correct veBoost contract
 
-        assertEq(CurveAccumulator(accumulator).veBoost(), Curve.VE_BOOST);
+        assertEq(CurveAccumulator(accumulator).veBoost(), CurveProtocol.VE_BOOST);
     }
 
     function test_SetsTheCorrectVeBoostDelegationContract() external view {
         // it sets the correct veBoost delegation contract
 
-        assertEq(CurveAccumulator(accumulator).veBoostDelegation(), Curve.VE_BOOST_DELEGATION);
+        assertEq(CurveAccumulator(accumulator).veBoostDelegation(), CurveProtocol.VE_BOOST_DELEGATION);
     }
 
     function test_Sets0AsTheMultiplier() external view {
@@ -91,10 +90,11 @@ contract CurveAccumulator__constructor is AccumulatorTest {
         // it gives full approval to the gauge for the CRV and CRV_USD tokens
 
         assertEq(
-            ERC20(Curve.CRV).allowance(address(accumulator), CurveAccumulator(accumulator).gauge()), type(uint256).max
+            ERC20(CurveProtocol.CRV).allowance(address(accumulator), CurveAccumulator(accumulator).gauge()),
+            type(uint256).max
         );
         assertEq(
-            ERC20(Curve.CRV_USD).allowance(address(accumulator), CurveAccumulator(accumulator).gauge()),
+            ERC20(CurveProtocol.CRV_USD).allowance(address(accumulator), CurveAccumulator(accumulator).gauge()),
             type(uint256).max
         );
     }

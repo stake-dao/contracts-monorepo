@@ -1,11 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import "address-book/src/dao/1.sol";
-import "address-book/src/lockers/1.sol";
-import "address-book/src/protocols/1.sol";
-import "forge-std/src/Test.sol";
-import "forge-std/src/Vm.sol";
+import {Test} from "forge-std/src/Test.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
@@ -157,7 +153,7 @@ abstract contract BaseAccumulatorTest is CommonBase, Test {
         uint256 _before = ERC20(strategyRewardToken).balanceOf(address(liquidityGauge));
 
         deal(address(strategyRewardToken), address(accumulator), 1_000e18);
-        accumulator.notifyReward(address(strategyRewardToken)); // TODO: notifyReward
+        accumulator.notifyReward(address(strategyRewardToken));
 
         /// It should distribute 1_000_000 PENDLE to LGV4, meaning no fees were taken.
         if (rewardToken != strategyRewardToken) {

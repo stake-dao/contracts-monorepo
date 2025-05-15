@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "address-book/src/dao/1.sol";
-import "address-book/src/lockers/1.sol";
-import "forge-std/src/Script.sol";
-import "script/common/DeployAccumulator.sol";
+import {DAO} from "address-book/src/DAOEthereum.sol";
+import {CurveLocker} from "address-book/src/CurveEthereum.sol";
+import {DeployAccumulator} from "script/common/DeployAccumulator.sol";
 import {CurveAccumulator} from "src/mainnet/curve/Accumulator.sol";
 
 contract Deploy is DeployAccumulator {
@@ -14,7 +13,9 @@ contract Deploy is DeployAccumulator {
     }
 
     function _deployAccumulator() internal override returns (address payable) {
-        return payable(new CurveAccumulator(address(CRV.GAUGE), CRV.LOCKER, DAO.MAIN_DEPLOYER, CRV.LOCKER));
+        return payable(
+            new CurveAccumulator(address(CurveLocker.GAUGE), CurveLocker.LOCKER, DAO.MAIN_DEPLOYER, CurveLocker.LOCKER)
+        );
     }
 
     function _afterDeploy() internal virtual override {}

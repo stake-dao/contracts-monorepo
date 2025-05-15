@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {PENDLE} from "address-book/src/lockers/1.sol";
-import {Pendle} from "address-book/src/protocols/1.sol";
+import {PendleLocker, PendleProtocol} from "address-book/src/PendleEthereum.sol";
 import {MockERC20} from "forge-std/src/mocks/MockERC20.sol";
 import {PendleDepositor} from "src/mainnet/pendle/Depositor.sol";
 import {DepositorTest} from "test/unit/depositors/DepositorTest.t.sol";
 
 contract PendleDepositor__constructor is DepositorTest {
+    constructor() DepositorTest(PendleProtocol.PENDLE, PendleProtocol.VEPENDLE, PendleLocker.GAUGE) {}
+
     function test_SetsTheGivenToken(address _token) external {
         // it sets the given token
 
@@ -70,10 +71,8 @@ contract PendleDepositor__constructor is DepositorTest {
     function test_SetsTheExpectedVeToken() external view {
         // it sets the expected veToken
 
-        assertEq(PendleDepositor(depositor).VE_PENDLE(), Pendle.VEPENDLE);
+        assertEq(PendleDepositor(depositor).VE_PENDLE(), PendleProtocol.VEPENDLE);
     }
-
-    constructor() DepositorTest(Pendle.PENDLE, Pendle.VEPENDLE, PENDLE.GAUGE) {}
 
     function _deployDepositor() internal override returns (address) {
         return address(new PendleDepositor(token, locker, minter, gauge, locker));

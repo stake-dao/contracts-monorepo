@@ -1,10 +1,14 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import "forge-std/src/Vm.sol";
-import "forge-std/src/Test.sol";
-import "forge-std/src/console.sol";
-import "../src/GaugeVoter.sol";
+import {GaugeVoter} from "src/GaugeVoter.sol";
+import {Test} from "forge-std/src/Test.sol";
+import {PendleLocker} from "address-book/src/PendleEthereum.sol";
+import {FXNLocker} from "address-book/src/FXNEthereum.sol";
+import {FraxLocker, FraxProtocol} from "address-book/src/FraxEthereum.sol";
+import {BalancerLocker, BalancerProtocol} from "address-book/src/BalancerEthereum.sol";
+import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
+import {DAO} from "address-book/src/DAOEthereum.sol";
 
 struct VeBalance {
     uint128 bias;
@@ -21,33 +25,33 @@ interface Safe {
 }
 
 interface CurveGaugeController {
-    function last_user_vote(address,address) external view returns(uint256);
+    function last_user_vote(address, address) external view returns (uint256);
 }
 
 interface PendleGaugeController {
-    function getUserPoolVote(address,address) external view returns(UserPoolData memory);
+    function getUserPoolVote(address, address) external view returns (UserPoolData memory);
 }
 
 contract GaugeVoterTest is Test {
-    address public constant DEPLOYER = address(0x428419Ad92317B09FE00675F181ac09c87D16450);
-    address public constant CURVE_VOTER = address(0x20b22019406Cf990F0569a6161cf30B8e6651dDa);
-    address public constant BALANCER_VOTER = address(0xff09A9b50A4E9b9AB95D2DCb552E8469f9c891Ff);
-    address public constant FRAX_VOTER = address(0xaE26E4478FF6BbC555EAE020AFFea3B505fC4D05);
-    address public constant FXN_VOTER = address(0x5181291355Abe5F3f1812a0aA888A73B9A16c91F);
-    address public constant PENDLE_LOCKER = address(0xD8fa8dC5aDeC503AcC5e026a98F32Ca5C1Fa289A);
-    address public constant PENDLE_VOTER = address(0x44087E105137a5095c008AaB6a6530182821F2F0);
+    address public constant DEPLOYER = DAO.MAIN_DEPLOYER;
+    address public constant CURVE_VOTER = CurveLocker.VOTER;
+    address public constant BALANCER_VOTER = BalancerLocker.VOTER;
+    address public constant FRAX_VOTER = FraxLocker.VOTER;
+    address public constant FXN_VOTER = FXNLocker.VOTER;
+    address public constant PENDLE_LOCKER = PendleLocker.LOCKER;
+    address public constant PENDLE_VOTER = PendleLocker.VOTER;
 
     // Gauge controllers
-    address public constant CURVE_GC = address(0x2F50D538606Fa9EDD2B11E2446BEb18C9D5846bB);
-    address public constant BALANCER_GC = address(0xC128468b7Ce63eA702C1f104D55A2566b13D3ABD);
-    address public constant FRAX_GC = address(0x3669C421b77340B2979d1A00a792CC2ee0FcE737);
-    address public constant FXN_GC = address(0xe60eB8098B34eD775ac44B1ddE864e098C6d7f37);
+    address public constant CURVE_GC = CurveProtocol.GAUGE_CONTROLLER;
+    address public constant BALANCER_GC = BalancerProtocol.GAUGE_CONTROLLER;
+    address public constant FRAX_GC = 0x3669C421b77340B2979d1A00a792CC2ee0FcE737;
+    address public constant FXN_GC = FraxProtocol.GAUGE_CONTROLLER;
 
     // Lockers
-    address public constant CURVE_LOCKER = address(0x52f541764E6e90eeBc5c21Ff570De0e2D63766B6);
-    address public constant BALANCER_LOCKER = address(0xea79d1A83Da6DB43a85942767C389fE0ACf336A5);
-    address public constant FRAX_LOCKER = address(0xCd3a267DE09196C48bbB1d9e842D7D7645cE448f);
-    address public constant FXN_LOCKER = address(0x75736518075a01034fa72D675D36a47e9B06B2Fb);
+    address public constant CURVE_LOCKER = CurveLocker.LOCKER;
+    address public constant BALANCER_LOCKER = BalancerLocker.LOCKER;
+    address public constant FRAX_LOCKER = FraxLocker.LOCKER;
+    address public constant FXN_LOCKER = FXNLocker.LOCKER;
 
     GaugeVoter gaugeVoter;
 
@@ -130,18 +134,18 @@ contract GaugeVoterTest is Test {
         gaugeAddresses[46] = address(0x5Dd3e384621e00a9fe1868c257c03FA78AE24e47);
 
         // Init weights
-        for(uint256 i = 0; i < nbGauges; i++) {
+        for (uint256 i = 0; i < nbGauges; i++) {
             weights[i] = 0;
         }
-        
+
         // Vote
         gaugeVoter.vote_with_voter(CURVE_VOTER, gaugeAddresses, weights);
 
         // Check votes
-        for(uint256 i = 0; i < nbGauges; i++) {
+        for (uint256 i = 0; i < nbGauges; i++) {
             assertTrue(checkBasicVotes(CURVE_GC, CURVE_LOCKER, gaugeAddresses[i]));
         }
-        
+
         vm.stopPrank();
     }
 
@@ -151,7 +155,7 @@ contract GaugeVoterTest is Test {
         uint256 nbGauges = 22;
         address[] memory gaugeAddresses = new address[](nbGauges);
         uint256[] memory weights = new uint256[](nbGauges);
-        
+
         // Init gauge addresses
         gaugeAddresses[0] = address(0xDc2Df969EE5E66236B950F5c4c5f8aBe62035df2);
         gaugeAddresses[1] = address(0x80CD37A62A8A58C4Cbf64003410c5cCC4d01519f);
@@ -175,16 +179,16 @@ contract GaugeVoterTest is Test {
         gaugeAddresses[19] = address(0x9965713498c74aee49cEf80B2195461F188F24f8);
         gaugeAddresses[20] = address(0x84f7F5cD2218f31B750E7009Bb6fD34e0b945DaC);
         gaugeAddresses[21] = address(0x79eF6103A513951a3b25743DB509E267685726B7);
-        
+
         // Init weights
-        for(uint256 i = 0; i < nbGauges; i++) {
+        for (uint256 i = 0; i < nbGauges; i++) {
             weights[i] = 0;
         }
 
         gaugeVoter.vote_with_voter(BALANCER_VOTER, gaugeAddresses, weights);
-        
+
         // Check votes
-        for(uint256 i = 0; i < nbGauges; i++) {
+        for (uint256 i = 0; i < nbGauges; i++) {
             assertTrue(checkBasicVotes(BALANCER_GC, BALANCER_LOCKER, gaugeAddresses[i]));
         }
 
@@ -197,7 +201,7 @@ contract GaugeVoterTest is Test {
         uint256 nbGauges = 6;
         address[] memory gaugeAddresses = new address[](nbGauges);
         uint256[] memory weights = new uint256[](nbGauges);
-        
+
         // Init gauge addresses
         gaugeAddresses[0] = address(0x83Dc6775c1B0fc7AaA46680D78B04b4a3d4f5650);
         gaugeAddresses[1] = address(0xE1e697Fd7EC9b3675808Ba8Ad508fD51cac756a3);
@@ -205,16 +209,16 @@ contract GaugeVoterTest is Test {
         gaugeAddresses[3] = address(0x6f82A6551cc351Bc295602C3ea99C78EdACF590C);
         gaugeAddresses[4] = address(0x711d650Cd10dF656C2c28D375649689f137005fA);
         gaugeAddresses[5] = address(0xB4fdD7444E1d86b2035c97124C46b1528802DA35);
-        
+
         // Init weights
-        for(uint256 i = 0; i < nbGauges; i++) {
+        for (uint256 i = 0; i < nbGauges; i++) {
             weights[i] = 0;
         }
 
         gaugeVoter.vote_with_voter(FRAX_VOTER, gaugeAddresses, weights);
-        
+
         // Check votes
-        for(uint256 i = 0; i < nbGauges; i++) {
+        for (uint256 i = 0; i < nbGauges; i++) {
             assertTrue(checkBasicVotes(FRAX_GC, FRAX_LOCKER, gaugeAddresses[i]));
         }
 
@@ -227,22 +231,22 @@ contract GaugeVoterTest is Test {
         uint256 nbGauges = 4;
         address[] memory gaugeAddresses = new address[](nbGauges);
         uint256[] memory weights = new uint256[](nbGauges);
-        
+
         // Init gauge addresses
         gaugeAddresses[0] = address(0xf0A3ECed42Dbd8353569639c0eaa833857aA0A75);
         gaugeAddresses[1] = address(0x61F32964C39Cca4353144A6DB2F8Efdb3216b35B);
         gaugeAddresses[2] = address(0x5b1D12365BEc01b8b672eE45912d1bbc86305dba);
         gaugeAddresses[3] = address(0x9c7003bC16F2A1AA47451C858FEe6480B755363e);
-        
+
         // Init weights
-        for(uint256 i = 0; i < nbGauges; i++) {
+        for (uint256 i = 0; i < nbGauges; i++) {
             weights[i] = 0;
         }
 
         gaugeVoter.vote_with_voter(FXN_VOTER, gaugeAddresses, weights);
-        
+
         // Check votes
-        for(uint256 i = 0; i < nbGauges; i++) {
+        for (uint256 i = 0; i < nbGauges; i++) {
             assertTrue(checkBasicVotes(FXN_GC, FXN_LOCKER, gaugeAddresses[i]));
         }
 
@@ -271,27 +275,27 @@ contract GaugeVoterTest is Test {
         gaugeAddresses[12] = address(0x58612beB0e8a126735b19BB222cbC7fC2C162D2a);
 
         // Init weights
-        for(uint256 i = 0; i < nbGauges; i++) {
+        for (uint256 i = 0; i < nbGauges; i++) {
             weights[i] = 0;
         }
 
         // Vote
         gaugeVoter.vote_pendle(gaugeAddresses, weights);
-        
+
         // Check votes
-        for(uint256 i = 0; i < nbGauges; i++) {
+        for (uint256 i = 0; i < nbGauges; i++) {
             assertTrue(checkPendleVotes(gaugeAddresses[i]));
         }
 
         vm.stopPrank();
     }
 
-    function checkBasicVotes(address gc, address locker, address gauge) internal view returns(bool) {
+    function checkBasicVotes(address gc, address locker, address gauge) internal view returns (bool) {
         uint256 last_vote = CurveGaugeController(gc).last_user_vote(locker, gauge);
         return last_vote == block.timestamp;
     }
 
-    function checkPendleVotes(address gauge) internal view returns(bool) {
+    function checkPendleVotes(address gauge) internal view returns (bool) {
         UserPoolData memory userVote = PendleGaugeController(PENDLE_VOTER).getUserPoolVote(PENDLE_LOCKER, gauge);
         return userVote.weight == 0;
     }

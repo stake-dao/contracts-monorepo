@@ -1,12 +1,11 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.19;
 
-import "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import "./governance/AllowanceManager.sol";
-
+import {AllowanceManager} from "./governance/AllowanceManager.sol";
 import {FixedPointMathLib} from "solady/src/utils/FixedPointMathLib.sol";
-
-import "./interfaces/ISpectraVoter.sol";
+import {ISpectraVoter} from "./interfaces/ISpectraVoter.sol";
+import {SpectraLocker, SpectraProtocol} from "address-book/src/SpectraBase.sol";
+import {DAO} from "address-book/src/DAOBase.sol";
 
 enum Operation {
     Call,
@@ -14,14 +13,14 @@ enum Operation {
 }
 
 interface ISpectraVotingReward {
-    function earned(address ve, address token, uint256 tokenId) external view returns(uint256);
-    function rewardsListLength() external view returns(uint256);
-    function rewards(uint256 i) external view returns(address);
+    function earned(address ve, address token, uint256 tokenId) external view returns (uint256);
+    function rewardsListLength() external view returns (uint256);
+    function rewards(uint256 i) external view returns (address);
     function getReward(address ve, uint256 tokenId, address[] memory tokens) external;
 }
 
 interface ISpectraGovernance {
-    function poolsData(uint160 poolId) external view returns(address,uint256,bool);
+    function poolsData(uint160 poolId) external view returns (address, uint256, bool);
 }
 
 interface ISafe {
@@ -30,7 +29,9 @@ interface ISafe {
     /// @param value Ether value of module transaction.
     /// @param data Data payload of module transaction.
     /// @param operation Operation type of module transaction.
-    function execTransactionFromModule(address to, uint256 value, bytes calldata data, Operation operation) external returns (bool success);
+    function execTransactionFromModule(address to, uint256 value, bytes calldata data, Operation operation)
+        external
+        returns (bool success);
 }
 
 contract SpectraVotingClaimer is AllowanceManager {
@@ -39,10 +40,10 @@ contract SpectraVotingClaimer is AllowanceManager {
     /// @notice Address which will receive our funds
     address public recipient;
 
-    address public immutable SPECTRA_VOTER = address(0x174a1f4135Fab6e7B6Dbe207fF557DFF14799D33);
-    address public immutable SPECTRA_VE_NFT = address(0x6a89228055C7C28430692E342F149f37462B478B);
-    address public immutable SPECTRA_GOVERNANCE = address(0xa3eeA13183421c9A8BDA0BDEe191B70De8CA445D);
-    address public immutable LOCKER = address(0xC0295F271c4fD531d436F55b0ceF4Cc316188046);
+    address public immutable SPECTRA_VOTER = SpectraProtocol.VOTER;
+    address public immutable SPECTRA_VE_NFT = SpectraProtocol.VESPECTRA;
+    address public immutable SPECTRA_GOVERNANCE = SpectraProtocol.GOVERNANCE;
+    address public immutable LOCKER = SpectraLocker.LOCKER;
 
     /// @notice The Stake DAO NFT ID which owns the voting power
     uint256 public immutable SD_SPECTRA_NFT_ID = 1263;
@@ -55,7 +56,7 @@ contract SpectraVotingClaimer is AllowanceManager {
     uint256 public immutable DENOMINATOR = 10_000;
 
     /// @notice Stake DAO Treasury
-    address public immutable SD_TREASURY = address(0x5DA07af8913A4EAf09E5F569c20138b658906c17);
+    address public immutable SD_TREASURY = DAO.TREASURY;
 
     /// @notice Event emitted when a claim occured
     /// @param tokenAddress Address that was claimed.
@@ -63,8 +64,16 @@ contract SpectraVotingClaimer is AllowanceManager {
     /// @param poolId Pool id that we claimed to.
     /// @param chainId The pool chain id.
     /// @param amount Amount claimed.
-    /// @param timestamp The claim timestamp 
-    event Claimed(address tokenAddress, address poolAddress, uint160 poolId, uint256 chainId, uint256 amount, uint256 fees, uint256 timestamp);
+    /// @param timestamp The claim timestamp
+    event Claimed(
+        address tokenAddress,
+        address poolAddress,
+        uint160 poolId,
+        uint256 chainId,
+        uint256 amount,
+        uint256 fees,
+        uint256 timestamp
+    );
 
     constructor(address _recipient) AllowanceManager(msg.sender) {
         recipient = _recipient;
@@ -73,13 +82,13 @@ contract SpectraVotingClaimer is AllowanceManager {
     /// @notice Claim pending Spectra voting rewards
     /// @dev Can be called only by the current owner and recipient address mut not be ZERO
     function claim() external onlyGovernanceOrAllowed {
-        // We must have a recipient otherwise tokens will be stuck in the Safe 
-        if(recipient == address(0)) revert ZERO_ADDRESS();
+        // We must have a recipient otherwise tokens will be stuck in the Safe
+        if (recipient == address(0)) revert ZERO_ADDRESS();
 
         ISpectraVoter voter = ISpectraVoter(SPECTRA_VOTER);
         uint256 poolLength = voter.length();
 
-        for(uint256 i = 0; i < poolLength; i++) {
+        for (uint256 i = 0; i < poolLength; i++) {
             uint160 poolId = voter.poolIds(i);
             bribe(voter.poolToBribe(poolId), poolId);
             fee(voter.poolToFees(poolId), poolId);
@@ -89,10 +98,11 @@ contract SpectraVotingClaimer is AllowanceManager {
     function bribe(address votingRewardAddress, uint160 poolId) internal {
         address[] memory rewardTokens = _getTokenRewards(votingRewardAddress);
 
-        for(uint256 a = 0; a < rewardTokens.length; a++) {
+        for (uint256 a = 0; a < rewardTokens.length; a++) {
             // Check if we have something to claim
-            uint256 earned = ISpectraVotingReward(votingRewardAddress).earned(SPECTRA_VE_NFT, rewardTokens[a], SD_SPECTRA_NFT_ID);
-            if(earned == 0) {
+            uint256 earned =
+                ISpectraVotingReward(votingRewardAddress).earned(SPECTRA_VE_NFT, rewardTokens[a], SD_SPECTRA_NFT_ID);
+            if (earned == 0) {
                 continue;
             }
 
@@ -103,10 +113,11 @@ contract SpectraVotingClaimer is AllowanceManager {
     function fee(address votingRewardAddress, uint160 poolId) internal {
         address[] memory rewardTokens = _getTokenRewards(votingRewardAddress);
 
-        for(uint256 a = 0; a < rewardTokens.length; a++) {
+        for (uint256 a = 0; a < rewardTokens.length; a++) {
             // Check if we have something to claim
-            uint256 earned = ISpectraVotingReward(votingRewardAddress).earned(SPECTRA_VE_NFT, rewardTokens[a], SD_SPECTRA_NFT_ID);
-            if(earned == 0) {
+            uint256 earned =
+                ISpectraVotingReward(votingRewardAddress).earned(SPECTRA_VE_NFT, rewardTokens[a], SD_SPECTRA_NFT_ID);
+            if (earned == 0) {
                 continue;
             }
 
@@ -114,7 +125,9 @@ contract SpectraVotingClaimer is AllowanceManager {
         }
     }
 
-    function _claimAndDistribute(uint256 earned, address rewardToken, uint160 poolId, address votingRewardAddress) internal {
+    function _claimAndDistribute(uint256 earned, address rewardToken, uint160 poolId, address votingRewardAddress)
+        internal
+    {
         // Calculate Stake DAO Treasury fees
         uint256 fees = earned.mulDiv(FEE, DENOMINATOR);
 
@@ -136,33 +149,36 @@ contract SpectraVotingClaimer is AllowanceManager {
     }
 
     /// @notice Check if there is something to claim
-    function canClaim() external view returns(bool) {
+    function canClaim() external view returns (bool) {
         ISpectraVoter voter = ISpectraVoter(SPECTRA_VOTER);
         uint256 poolLength = voter.length();
 
-        for(uint256 i = 0; i < poolLength; i++) {
+        for (uint256 i = 0; i < poolLength; i++) {
             uint160 poolId = voter.poolIds(i);
-            
+
             // Bribes
             address votingRewardAddress = voter.poolToBribe(poolId);
             address[] memory rewardTokens = _getTokenRewards(votingRewardAddress);
 
-            for(uint256 a = 0; a < rewardTokens.length; a++) {
+            for (uint256 a = 0; a < rewardTokens.length; a++) {
                 // Check if we have something to claim
-                uint256 earned = ISpectraVotingReward(votingRewardAddress).earned(SPECTRA_VE_NFT, rewardTokens[a], SD_SPECTRA_NFT_ID);
-                if(earned > 0) {
+                uint256 earned =
+                    ISpectraVotingReward(votingRewardAddress).earned(SPECTRA_VE_NFT, rewardTokens[a], SD_SPECTRA_NFT_ID);
+                if (earned > 0) {
                     return true;
                 }
             }
 
             // Fees
-            votingRewardAddress = voter.poolToFees(poolId);(poolId);
+            votingRewardAddress = voter.poolToFees(poolId);
+            (poolId);
             rewardTokens = _getTokenRewards(votingRewardAddress);
 
-            for(uint256 a = 0; a < rewardTokens.length; a++) {
+            for (uint256 a = 0; a < rewardTokens.length; a++) {
                 // Check if we have something to claim
-                uint256 earned = ISpectraVotingReward(votingRewardAddress).earned(SPECTRA_VE_NFT, rewardTokens[a], SD_SPECTRA_NFT_ID);
-                if(earned > 0) {
+                uint256 earned =
+                    ISpectraVotingReward(votingRewardAddress).earned(SPECTRA_VE_NFT, rewardTokens[a], SD_SPECTRA_NFT_ID);
+                if (earned > 0) {
                     return true;
                 }
             }
@@ -173,12 +189,12 @@ contract SpectraVotingClaimer is AllowanceManager {
 
     /// @notice Get all token rewards associated to a voting reward contract
     /// @param votingRewardAddress Address to the voting reward
-    function _getTokenRewards(address votingRewardAddress) internal view returns(address[] memory) {
+    function _getTokenRewards(address votingRewardAddress) internal view returns (address[] memory) {
         ISpectraVotingReward votingReward = ISpectraVotingReward(votingRewardAddress);
         uint256 rewardTokensLength = votingReward.rewardsListLength();
-        
+
         address[] memory rewardTokens = new address[](rewardTokensLength);
-        for(uint256 i = 0; i < rewardTokensLength; i++) {
+        for (uint256 i = 0; i < rewardTokensLength; i++) {
             rewardTokens[i] = votingReward.rewards(i);
         }
 
@@ -193,8 +209,12 @@ contract SpectraVotingClaimer is AllowanceManager {
         address[] memory tokens = new address[](1);
         tokens[0] = reward;
 
-        bytes memory data = abi.encodeWithSignature("getReward(address,uint256,address[])", SPECTRA_VE_NFT, SD_SPECTRA_NFT_ID, tokens);
-        require(ISafe(LOCKER).execTransactionFromModule(votingRewardAddress, 0, data, Operation.Call), "Could not execute claim");
+        bytes memory data =
+            abi.encodeWithSignature("getReward(address,uint256,address[])", SPECTRA_VE_NFT, SD_SPECTRA_NFT_ID, tokens);
+        require(
+            ISafe(LOCKER).execTransactionFromModule(votingRewardAddress, 0, data, Operation.Call),
+            "Could not execute claim"
+        );
     }
 
     /// @notice Send some tokens to the recipient
@@ -203,7 +223,9 @@ contract SpectraVotingClaimer is AllowanceManager {
     /// @param amount Amount to transfer
     function _transferToRecipient(address token, uint256 amount) internal {
         bytes memory data = abi.encodeWithSignature("transfer(address,uint256)", payable(recipient), amount);
-        require(ISafe(LOCKER).execTransactionFromModule(token, 0, data, Operation.Call), "Could not execute token transfer");
+        require(
+            ISafe(LOCKER).execTransactionFromModule(token, 0, data, Operation.Call), "Could not execute token transfer"
+        );
     }
 
     /// @notice Send some tokens to the Stake DAO Treasury
@@ -212,7 +234,9 @@ contract SpectraVotingClaimer is AllowanceManager {
     /// @param amount Amount to transfer
     function _transferToTreasury(address token, uint256 amount) internal {
         bytes memory data = abi.encodeWithSignature("transfer(address,uint256)", payable(SD_TREASURY), amount);
-        require(ISafe(LOCKER).execTransactionFromModule(token, 0, data, Operation.Call), "Could not execute token transfer");
+        require(
+            ISafe(LOCKER).execTransactionFromModule(token, 0, data, Operation.Call), "Could not execute token transfer"
+        );
     }
 
     ////////////////////////////////////////////////////////////////
@@ -236,4 +260,3 @@ contract SpectraVotingClaimer is AllowanceManager {
         recipient = _newRecipient;
     }
 }
-

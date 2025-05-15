@@ -1,14 +1,13 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {CommonAddresses} from "address-book/src/common.sol";
-import {BAL as BalancerLocker} from "address-book/src/lockers/1.sol";
-import {Balancer as BalancerProtocol} from "address-book/src/protocols/1.sol";
+import {BalancerLocker, BalancerProtocol} from "address-book/src/BalancerEthereum.sol";
+import {Common} from "address-book/src/CommonEthereum.sol";
 import {BalancerAccumulator} from "src/mainnet/balancer/Accumulator.sol";
 import {AccumulatorTest} from "test/unit/accumulators/AccumulatorTest.t.sol";
 
 contract BalancerAccumulator__getters is AccumulatorTest {
-    constructor() AccumulatorTest(CommonAddresses.USDC, BalancerProtocol.BAL, BalancerLocker.GAUGE) {}
+    constructor() AccumulatorTest(Common.USDC, BalancerProtocol.BAL, BalancerLocker.GAUGE) {}
 
     function _deployAccumulator() internal override returns (address) {
         return address(new BalancerAccumulator(gauge, locker, governance, locker));

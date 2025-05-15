@@ -2,9 +2,8 @@
 pragma solidity 0.8.19;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {CommonAddresses} from "address-book/src/common.sol";
-import {BAL as BalancerProtocol} from "address-book/src/lockers/1.sol";
-import {Balancer} from "address-book/src/protocols/1.sol";
+import {Common} from "address-book/src/CommonEthereum.sol";
+import {BalancerLocker, BalancerProtocol} from "address-book/src/BalancerEthereum.sol";
 import {IFeeReceiver} from "common/interfaces/IFeeReceiver.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {DelegableAccumulator} from "src/common/accumulator/DelegableAccumulator.sol";
@@ -20,7 +19,7 @@ import {SafeModule} from "src/common/utils/SafeModule.sol";
 /// @custom:contact contact@stakedao.org
 contract BalancerAccumulator is DelegableAccumulator, SafeModule {
     /// @notice Fee distributor address.
-    address public constant FEE_DISTRIBUTOR = Balancer.FEE_DISTRIBUTOR;
+    address public constant FEE_DISTRIBUTOR = BalancerProtocol.FEE_DISTRIBUTOR;
 
     ////////////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
@@ -42,13 +41,13 @@ contract BalancerAccumulator is DelegableAccumulator, SafeModule {
     constructor(address _gauge, address _locker, address _governance, address _gateway)
         DelegableAccumulator(
             _gauge,
-            CommonAddresses.USDC, // rewardToken
+            Common.USDC, // rewardToken
             _locker,
             _governance,
-            Balancer.BAL, // token
-            Balancer.VEBAL, // veToken
-            Balancer.VE_BOOST, // veBoost
-            Balancer.VE_BOOST_DELEGATION, // veBoostDelegation
+            BalancerProtocol.BAL, // token
+            BalancerProtocol.VEBAL, // veToken
+            BalancerProtocol.VE_BOOST, // veBoost
+            BalancerProtocol.VE_BOOST_DELEGATION, // veBoostDelegation
             0 // multiplier
         )
         SafeModule(_gateway)
@@ -56,11 +55,11 @@ contract BalancerAccumulator is DelegableAccumulator, SafeModule {
         // @dev: Legacy lockers (before v4) used to claim fees from the strategy contract
         //       In v4, fees are claimed by calling the unique accountant contract.
         //       Here we initially set the already deployed strategy contract to smoothen the migration
-        accountant = BalancerProtocol.STRATEGY;
+        accountant = BalancerLocker.STRATEGY;
 
         // Give full approval to the gauge for the BAL and USDC tokens
-        SafeTransferLib.safeApprove(Balancer.BAL, _gauge, type(uint256).max);
-        SafeTransferLib.safeApprove(CommonAddresses.USDC, _gauge, type(uint256).max);
+        SafeTransferLib.safeApprove(BalancerProtocol.BAL, _gauge, type(uint256).max);
+        SafeTransferLib.safeApprove(Common.USDC, _gauge, type(uint256).max);
     }
 
     ///////////////////////////////////////////////////////////////

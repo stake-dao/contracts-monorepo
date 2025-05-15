@@ -7,6 +7,7 @@ import {IStashTokenWrapper} from "@interfaces/convex/IStashTokenWrapper.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Sidecar} from "src/Sidecar.sol";
 import {ImmutableArgsParser} from "src/libraries/ImmutableArgsParser.sol";
+import {CurveProtocol} from "address-book/src/CurveEthereum.sol";
 
 /// @notice Sidecar for Convex.
 /// @dev For each PID, a minimal proxy is deployed using this contract as implementation.
@@ -23,10 +24,10 @@ contract ConvexSidecar is Sidecar {
     //////////////////////////////////////////////////////
 
     /// @notice Convex Reward Token address.
-    IERC20 public constant CVX = IERC20(0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B);
+    IERC20 public constant CVX = IERC20(CurveProtocol.CONVEX_TOKEN);
 
     /// @notice Convex Booster address.
-    IBooster public constant BOOSTER = IBooster(0xF403C135812408BFbE8713b5A23a04b3D48AAE31);
+    IBooster public constant BOOSTER = IBooster(CurveProtocol.CONVEX_BOOSTER);
 
     //////////////////////////////////////////////////////
     // --- ISIDECAR CLONE IMMUTABLES

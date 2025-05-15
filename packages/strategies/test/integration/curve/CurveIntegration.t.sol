@@ -11,6 +11,7 @@ import {IBalanceProvider} from "src/interfaces/IBalanceProvider.sol";
 import {RewardReceiver} from "src/RewardReceiver.sol";
 import {RewardVault} from "src/RewardVault.sol";
 import {BaseCurveTest} from "test/integration/curve/BaseCurveTest.sol";
+import {Common} from "address-book/src/CommonEthereum.sol";
 
 abstract contract CurveIntegrationTest is BaseCurveTest {
     constructor(uint256 _pid1, uint256 _pid2) BaseCurveTest(_pid1) {
@@ -19,7 +20,7 @@ abstract contract CurveIntegrationTest is BaseCurveTest {
 
     /// @notice The WBTC address
     /// @dev Used to test small decimal rewards
-    address public constant WBTC = 0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599;
+    address public constant WBTC = Common.WBTC;
 
     /// @notice The Curve Admin address
     address public constant CURVE_ADMIN = 0x40907540d8a6C65c637785e8f8B742ae6b0b9968;

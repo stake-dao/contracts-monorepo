@@ -2,8 +2,8 @@
 pragma solidity 0.8.19;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {Spectra} from "address-book/src/protocols/8453.sol";
-import "solady/src/utils/SafeTransferLib.sol";
+import {SpectraProtocol} from "address-book/src/SpectraBase.sol";
+import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {ITokenMinter, ILiquidityGauge} from "src/common/depositor/BaseDepositor.sol";
 import {BaseDepositor} from "src/common/depositor/BaseDepositor.sol";
 import {ISpectraRewardsDistributor} from "src/common/interfaces/spectra/spectra/ISpectraRewardsDistributor.sol";
@@ -22,11 +22,11 @@ contract Depositor is BaseDepositor, SafeModule {
     ///////////////////////////////////////////////////////////////
 
     /// @notice Spectra locker NFT contract interface
-    IVENFTSpectra public constant VE_NFT = IVENFTSpectra(Spectra.VENFT);
+    IVENFTSpectra public constant VE_NFT = IVENFTSpectra(SpectraProtocol.VENFT);
 
     /// @notice Spectra rewards distributor
     ISpectraRewardsDistributor public constant spectraRewardDistributor =
-        ISpectraRewardsDistributor(Spectra.FEE_DISTRIBUTOR);
+        ISpectraRewardsDistributor(SpectraProtocol.FEE_DISTRIBUTOR);
 
     /// @notice Token ID representing the locked SPECTRA tokens in the locker ERC721
     uint256 public spectraLockedTokenId;

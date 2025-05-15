@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {CommonAddresses} from "address-book/src/common.sol";
-import {PENDLE as PendleProtocol} from "address-book/src/lockers/1.sol";
-import {Pendle} from "address-book/src/protocols/1.sol";
+import {Common} from "address-book/src/CommonEthereum.sol";
+import {PendleLocker, PendleProtocol} from "address-book/src/PendleEthereum.sol";
 import {IFeeReceiver} from "common/interfaces/IFeeReceiver.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
@@ -24,13 +23,13 @@ contract PendleAccumulator is DrippingAccumulator, SafeModule {
     /// --- CONSTANTS
     ///////////////////////////////////////////////////////////////
 
-    address public constant token = Pendle.PENDLE;
-    address public constant veToken = Pendle.VEPENDLE;
+    address public constant token = PendleProtocol.PENDLE;
+    address public constant veToken = PendleProtocol.VEPENDLE;
 
     /// @notice Base fee (10_000 = 100%)
     uint256 private constant BASE_FEE = 10_000;
 
-    address public constant FEE_DISTRIBUTOR = Pendle.FEE_DISTRIBUTOR;
+    address public constant FEE_DISTRIBUTOR = PendleProtocol.FEE_DISTRIBUTOR;
 
     ///////////////////////////////////////////////////////////////
     /// --- STATE
@@ -71,7 +70,7 @@ contract PendleAccumulator is DrippingAccumulator, SafeModule {
     constructor(address _gauge, address _locker, address _governance, address _gateway)
         DrippingAccumulator(
             _gauge,
-            CommonAddresses.WETH, // reward token
+            Common.WETH, // reward token
             _locker,
             _governance,
             4 // distribution length (in weeks)
@@ -81,11 +80,11 @@ contract PendleAccumulator is DrippingAccumulator, SafeModule {
         // @dev: Legacy lockers (before v4) used to claim fees from the strategy contract
         //       In v4, fees are claimed by calling the unique accountant contract.
         //       Here we initially set the already deployed strategy contract to smoothen the migration
-        accountant = PendleProtocol.STRATEGY;
+        accountant = PendleLocker.STRATEGY;
 
         // Give full approval to the gauge for the WETH and PENDLE tokens
-        SafeTransferLib.safeApprove(CommonAddresses.WETH, gauge, type(uint256).max);
-        SafeTransferLib.safeApprove(token, gauge, type(uint256).max);
+        SafeTransferLib.safeApprove(Common.WETH, gauge, type(uint256).max);
+        SafeTransferLib.safeApprove(PendleProtocol.PENDLE, gauge, type(uint256).max);
     }
 
     //////////////////////////////////////////////////////

@@ -1,19 +1,24 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import "src/common/accumulator/BaseAccumulator.sol";
+import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {ILocker} from "src/common/interfaces/ILocker.sol";
+import {FXNProtocol} from "address-book/src/FXNEthereum.sol";
+import {Common} from "address-book/src/CommonEthereum.sol";
+import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 
 /// @notice A contract that accumulates FXN rewards and notifies them to the sdFXN gauge
 /// @author StakeDAO
-contract Accumulator is BaseAccumulator {
+
+contract FXNAccumulator is BaseAccumulator {
     /// @notice FXN token address.
-    address public constant FXN = 0x365AccFCa291e7D3914637ABf1F7635dB165Bb09;
+    address public constant FXN = FXNProtocol.FXN;
 
     /// @notice WSTETH token address.
-    address public constant WSTETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+    address public constant WSTETH = Common.WSTETH;
 
     /// @notice Fee distributor address.
+    // TODO: Double check this address.
     address public constant FEE_DISTRIBUTOR = 0xd116513EEa4Efe3908212AfBAeFC76cb29245681;
 
     //////////////////////////////////////////////////////
@@ -45,7 +50,15 @@ contract Accumulator is BaseAccumulator {
         notifyReward(WSTETH);
     }
 
-    function name() external pure override returns (string memory) {
-        return "FXN Accumulator";
+    ///////////////////////////////////////////////////////////////
+    /// --- GETTERS
+    ///////////////////////////////////////////////////////////////
+
+    function version() external pure virtual override returns (string memory) {
+        return "4.0.0";
+    }
+
+    function name() external view virtual override returns (string memory) {
+        return type(FXNAccumulator).name;
     }
 }

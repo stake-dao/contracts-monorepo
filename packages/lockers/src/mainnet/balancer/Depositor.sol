@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.19;
 
-import {Balancer} from "address-book/src/protocols/1.sol";
+import {BalancerProtocol} from "address-book/src/BalancerEthereum.sol";
 import {BaseDepositor} from "src/common/depositor/BaseDepositor.sol";
 import {IVeToken} from "src/common/interfaces/IVeToken.sol";
 import {SafeModule} from "src/common/utils/SafeModule.sol";
@@ -14,7 +14,7 @@ contract BalancerDepositor is BaseDepositor, SafeModule {
     ///////////////////////////////////////////////////////////////
 
     /// @notice Address of the veBAL token.
-    address public constant VE_BAL = Balancer.VEBAL;
+    address public constant VE_BAL = BalancerProtocol.VEBAL;
 
     ////////////////////////////////////////////////////////////////
     /// --- CONSTRUCTOR

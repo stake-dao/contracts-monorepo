@@ -2,8 +2,7 @@
 pragma solidity 0.8.19;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {YFI as YearnProtocol} from "address-book/src/lockers/1.sol";
-import {Yearn} from "address-book/src/protocols/1.sol";
+import {YearnLocker, YearnProtocol} from "address-book/src/YearnEthereum.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {IFeeDistributor} from "src/common/interfaces/IFeeDistributor.sol";
@@ -21,11 +20,11 @@ contract YearnAccumulator is BaseAccumulator, SafeModule {
     ///////////////////////////////////////////////////////////////
 
     /// @notice YFI token address
-    address public constant token = Yearn.YFI;
+    address public constant token = YearnProtocol.YFI;
     /// @notice YFI reward pool address
-    address public constant YFI_REWARD_POOL = Yearn.YFI_REWARD_POOL;
+    address public constant YFI_REWARD_POOL = YearnProtocol.YFI_REWARD_POOL;
     /// @notice dYFI reward pool address
-    address public constant DYFI_REWARD_POOL = Yearn.DYFI_REWARD_POOL;
+    address public constant DYFI_REWARD_POOL = YearnProtocol.DYFI_REWARD_POOL;
 
     //////////////////////////////////////////////////////
     /// --- CONSTRUCTOR
@@ -44,17 +43,17 @@ contract YearnAccumulator is BaseAccumulator, SafeModule {
     ///      - YFI is the token
     /// @custom:throws InvalidGateway if the provided gateway is a zero address
     constructor(address _gauge, address _locker, address _governance, address _gateway)
-        BaseAccumulator(_gauge, Yearn.DYFI, _locker, _governance)
+        BaseAccumulator(_gauge, YearnProtocol.DYFI, _locker, _governance)
         SafeModule(_gateway)
     {
         // @dev: Legacy lockers (before v4) used to claim fees from the strategy contract
         //       In v4, fees are claimed by calling the unique accountant contract.
         //       Here we initially set the already deployed strategy contract to smoothen the migration
-        accountant = YearnProtocol.STRATEGY;
+        accountant = YearnLocker.STRATEGY;
 
         // Give full approval to the gauge for the YFI and DYFI tokens
-        SafeTransferLib.safeApprove(token, _gauge, type(uint256).max);
-        SafeTransferLib.safeApprove(Yearn.DYFI, _gauge, type(uint256).max);
+        SafeTransferLib.safeApprove(YearnProtocol.YFI, _gauge, type(uint256).max);
+        SafeTransferLib.safeApprove(YearnProtocol.DYFI, _gauge, type(uint256).max);
     }
 
     //////////////////////////////////////////////////////

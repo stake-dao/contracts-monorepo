@@ -1,18 +1,30 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import "src/mainnet/fx/Accumulator.sol";
-import "test/fork/common/BaseAccumulatorTest.sol";
+import {FXNAccumulator} from "src/mainnet/fx/Accumulator.sol";
+import {BaseAccumulatorTest} from "test/fork/common/BaseAccumulatorTest.sol";
+import {Common} from "address-book/src/CommonEthereum.sol";
+import {FXNLocker, FXNProtocol} from "address-book/src/FXNEthereum.sol";
+import {ILocker} from "src/common/interfaces/ILocker.sol";
 
 contract FXAccumulatorTest is BaseAccumulatorTest {
-    address internal constant WSETH = 0x7f39C581F595B53c5cb19bD0b3f8dA6c935E2Ca0;
+    address internal constant WSETH = Common.WSTETH;
 
     constructor()
-        BaseAccumulatorTest(20_187_797, "mainnet", FXN.LOCKER, FXN.SDTOKEN, Fx.VEFXN, FXN.GAUGE, WSETH, FXN.TOKEN)
+        BaseAccumulatorTest(
+            20_187_797,
+            "mainnet",
+            FXNLocker.LOCKER,
+            FXNLocker.SDTOKEN,
+            FXNProtocol.VEFXN,
+            FXNLocker.GAUGE,
+            WSETH,
+            FXNLocker.TOKEN
+        )
     {}
 
     function _deployAccumulator() internal override returns (address payable accumulator) {
-        accumulator = payable(new Accumulator(address(liquidityGauge), locker, address(this)));
+        accumulator = payable(new FXNAccumulator(address(liquidityGauge), locker, address(this)));
 
         /// Set up the accumulator in the locker.
         vm.prank(ILocker(locker).governance());

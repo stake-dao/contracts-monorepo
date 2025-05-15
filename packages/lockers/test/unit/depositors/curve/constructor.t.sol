@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {CRV} from "address-book/src/lockers/1.sol";
-import {Curve} from "address-book/src/protocols/1.sol";
+import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
 import {MockERC20} from "forge-std/src/mocks/MockERC20.sol";
 import {CurveDepositor} from "src/mainnet/curve/Depositor.sol";
 import {DepositorTest} from "test/unit/depositors/DepositorTest.t.sol";
 
 contract CurveDepositor__constructor is DepositorTest {
+    constructor() DepositorTest(CurveProtocol.CRV, CurveProtocol.VECRV, CurveLocker.GAUGE) {}
+
     function test_SetsTheGivenToken(address _token) external {
         // it sets the given token
 
@@ -70,10 +71,8 @@ contract CurveDepositor__constructor is DepositorTest {
     function test_SetsTheExpectedVeToken() external view {
         // it sets the expected veToken
 
-        assertEq(CurveDepositor(depositor).VE_CRV(), Curve.VECRV);
+        assertEq(CurveDepositor(depositor).VE_CRV(), CurveProtocol.VECRV);
     }
-
-    constructor() DepositorTest(Curve.CRV, Curve.VECRV, CRV.GAUGE) {}
 
     function _deployDepositor() internal override returns (address) {
         return address(new CurveDepositor(token, locker, minter, gauge, locker));

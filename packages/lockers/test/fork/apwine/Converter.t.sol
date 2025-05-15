@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.19;
 
-import "address-book/src/lockers/1.sol";
-import "forge-std/src/Test.sol";
+import {SpectraLocker} from "address-book/src/SpectraEthereum.sol";
+import {Test} from "forge-std/src/Test.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {APWine2SpectraConverter} from "src/base/spectra/APWine2SpectraConverter.sol";
 import {ILaPoste} from "src/common/interfaces/ILaPoste.sol";
@@ -19,13 +19,13 @@ contract ConverterTest is Test {
     function setUp() public virtual {
         vm.createSelectFork(vm.rpcUrl("mainnet"));
 
-        sdToken = ERC20(SPECTRA.SDTOKEN);
-        sdTokenGauge = ERC20(SPECTRA.GAUGE);
+        sdToken = ERC20(SpectraLocker.SDTOKEN);
+        sdTokenGauge = ERC20(SpectraLocker.GAUGE);
 
-        converter = new APWine2SpectraConverter(SPECTRA.SDTOKEN, SPECTRA.GAUGE, address(this), 8453, 0); // Mainnet, conversion rate is not necessary
+        converter = new APWine2SpectraConverter(SpectraLocker.SDTOKEN, SpectraLocker.GAUGE, address(this), 8453, 0); // Mainnet, conversion rate is not necessary
 
-        vm.prank(ISdToken(SPECTRA.SDTOKEN).operator());
-        ISdToken(SPECTRA.SDTOKEN).setOperator(address(converter));
+        vm.prank(ISdToken(SpectraLocker.SDTOKEN).operator());
+        ISdToken(SpectraLocker.SDTOKEN).setOperator(address(converter));
     }
 
     function sendMessage(ILaPoste.MessageParams memory messageParams, uint256 additionalGasLimit, address _receiver)

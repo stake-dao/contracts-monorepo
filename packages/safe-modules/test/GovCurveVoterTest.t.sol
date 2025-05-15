@@ -1,18 +1,18 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity ^0.8.4;
 
-import "forge-std/src/Vm.sol";
-import "forge-std/src/Test.sol";
-import "forge-std/src/console.sol";
-import "../src/GovCurveVoter.sol";
+import {Test} from "forge-std/src/Test.sol";
+import {GovCurveVoter, ICurveVoter, VoterState} from "../src/GovCurveVoter.sol";
+import {CurveLocker} from "address-book/src/CurveEthereum.sol";
+import {DAO} from "address-book/src/DAOEthereum.sol";
 
 interface Safe {
     function enableModule(address module) external;
 }
 
 contract GovCurveVoterTest is Test {
-    address public constant DEPLOYER = address(0x428419Ad92317B09FE00675F181ac09c87D16450);
-    address public constant SD_CURVE_LOCKER = address(0x52f541764E6e90eeBc5c21Ff570De0e2D63766B6);
+    address public constant DEPLOYER = address(DAO.MAIN_DEPLOYER);
+    address public constant SD_CURVE_LOCKER = address(CurveLocker.LOCKER);
 
     GovCurveVoter govCurveVoter;
 
@@ -47,7 +47,7 @@ contract GovCurveVoterTest is Test {
         // eq to 1 because yea > nay
         voterState = curveVoterOwnership.getVoterState(voteId, SD_CURVE_LOCKER);
         assertTrue(voterState == VoterState.Yea, "!VoterState");
-        
+
         vm.stopPrank();
     }
 }

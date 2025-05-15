@@ -7,6 +7,7 @@ import {Allocator} from "src/Allocator.sol";
 import {ISidecar} from "src/interfaces/ISidecar.sol";
 import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
 import {IBalanceProvider} from "src/interfaces/IBalanceProvider.sol";
+import {CurveProtocol} from "address-book/src/CurveEthereum.sol";
 
 /// @title CurveAllocator
 /// @notice Contract that calculates the optimal LP token allocation for Stake DAO Locker and Convex
@@ -17,10 +18,10 @@ contract CurveAllocator is Allocator {
     ISidecarFactory public immutable CONVEX_SIDECAR_FACTORY;
 
     /// @notice Address of the Curve Boost Delegation V3 contract
-    address public constant BOOST_DELEGATION_V3 = 0xD37A6aa3d8460Bd2b6536d608103D880695A23CD;
+    address public constant BOOST_DELEGATION_V3 = CurveProtocol.VE_BOOST;
 
     /// @notice Address of the Convex Boost Holder contract
-    address public constant CONVEX_BOOST_HOLDER = 0x989AEb4d175e16225E39E87d0D97A3360524AD80;
+    address public constant CONVEX_BOOST_HOLDER = CurveProtocol.CONVEX_PROXY;
 
     /// @notice Initializes the CurveAllocator contract
     /// @param _locker Address of the Stake DAO Liquidity Locker

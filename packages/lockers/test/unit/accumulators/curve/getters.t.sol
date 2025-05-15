@@ -1,13 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {CRV as CurveLocker} from "address-book/src/lockers/1.sol";
-import {Curve} from "address-book/src/protocols/1.sol";
+import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
 import {CurveAccumulator} from "src/mainnet/curve/Accumulator.sol";
 import {AccumulatorTest} from "test/unit/accumulators/AccumulatorTest.t.sol";
 
 contract CurveAccumulator__getters is AccumulatorTest {
-    constructor() AccumulatorTest(Curve.CRV_USD, Curve.CRV, CurveLocker.GAUGE) {}
+    constructor() AccumulatorTest(CurveProtocol.CRV_USD, CurveProtocol.CRV, CurveLocker.GAUGE) {}
 
     function _deployAccumulator() internal override returns (address) {
         return address(new CurveAccumulator(gauge, locker, governance, locker));

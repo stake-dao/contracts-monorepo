@@ -4,16 +4,16 @@ pragma solidity 0.8.19;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeProxyFactory} from "@safe/contracts/proxies/SafeProxyFactory.sol";
 import {Safe, Enum} from "@safe/contracts/Safe.sol";
-import {DAO} from "address-book/src/dao/59144.sol";
-
-import "forge-std/src/Script.sol";
-import "script/common/DeployAccumulator.sol";
+import {DAO} from "address-book/src/DAOLinea.sol";
+import {Common} from "address-book/src/CommonLinea.sol";
+import {ZeroLocker} from "address-book/src/ZeroLinea.sol";
+import {DeployAccumulator} from "script/common/DeployAccumulator.sol";
 import {IDepositor} from "src/common/interfaces/IDepositor.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";
 import {ILocker, ISafe} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
 import {sdToken as SdToken} from "src/common/token/sdToken.sol";
-import {Accumulator} from "src/linea/zerolend/Accumulator.sol";
+import {ZeroLendAccumulator} from "src/linea/zerolend/Accumulator.sol";
 import {Depositor} from "src/linea/zerolend/Depositor.sol";
 
 contract Deploy is DeployAccumulator {
@@ -22,12 +22,12 @@ contract Deploy is DeployAccumulator {
     address internal locker;
     address internal depositor;
 
-    address internal zeroLockerToken = 0x08D5FEA625B1dBf9Bae0b97437303a0374ee02F8; // NFT token contract.
-    address internal zeroToken = 0x78354f8DcCB269a615A7e0a24f9B0718FDC3C7A7;
-    address internal veZero = 0xf374229a18ff691406f99CCBD93e8a3f16B68888;
+    address internal zeroLockerToken = ZeroLocker.LOCKER_TOKEN; // NFT token contract.
+    address internal zeroToken = ZeroLocker.TOKEN;
+    address internal veZero = ZeroLocker.VE_ZERO;
 
-    SafeProxyFactory internal safeProxyFactory = SafeProxyFactory(0x4e1DCf7AD4e460CfD30791CCC4F9c8a4f820ec67);
-    address internal safeSingleton = 0x41675C099F32341bf84BFc5382aF534df5C7461a;
+    SafeProxyFactory internal safeProxyFactory = SafeProxyFactory(Common.SAFE_PROXY_FACTORY);
+    address internal safeSingleton = Common.SAFE_SINGLETON;
 
     function run() public {
         vm.createSelectFork("linea");
@@ -161,7 +161,7 @@ contract Deploy is DeployAccumulator {
         require(liquidityGauge != address(0));
         require(locker != address(0));
 
-        return payable(new Accumulator(liquidityGauge, locker, DAO.MAIN_DEPLOYER));
+        return payable(new ZeroLendAccumulator(liquidityGauge, locker, DAO.MAIN_DEPLOYER));
     }
 
     function _afterDeploy() internal virtual override {

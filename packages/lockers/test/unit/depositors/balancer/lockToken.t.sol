@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.19 <0.9.0;
 
-import {BAL} from "address-book/src/lockers/1.sol";
-import {Balancer} from "address-book/src/protocols/1.sol";
+import {BalancerLocker, BalancerProtocol} from "address-book/src/BalancerEthereum.sol";
 import {IVeToken} from "src/common/interfaces/IVeToken.sol";
 import {BalancerDepositor} from "src/mainnet/balancer/Depositor.sol";
 import {BalancerDepositorHarness} from "test/unit/depositors/balancer/BalancerDepositorHarness.sol";
 import {DepositorTest} from "test/unit/depositors/DepositorTest.t.sol";
 
 contract BalancerDepositor__lockToken is DepositorTest {
+    constructor() DepositorTest(BalancerProtocol.BAL, BalancerProtocol.VEBAL, BalancerLocker.GAUGE) {}
+
     function test_IncreasesTheAmountAndTheUnlockTimeIfNeeded(
         uint256 amount,
         uint128 timestamp,
@@ -65,8 +66,6 @@ contract BalancerDepositor__lockToken is DepositorTest {
 
         BalancerDepositorHarness(depositor)._expose_lockToken(0);
     }
-
-    constructor() DepositorTest(Balancer.BAL, Balancer.VEBAL, BAL.GAUGE) {}
 
     function _deployDepositor() internal override returns (address) {
         return address(new BalancerDepositorHarness(token, locker, minter, gauge, locker));
