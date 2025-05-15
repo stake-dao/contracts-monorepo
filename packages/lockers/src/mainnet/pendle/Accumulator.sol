@@ -125,7 +125,7 @@ contract Accumulator is BaseAccumulator {
         }
 
         if (tokenReward == WETH && remainingPeriods != 0) {
-            uint256 currentWeek = block.timestamp * 1 weeks / 1 weeks;
+            uint256 currentWeek = block.timestamp / 1 weeks * 1 weeks;
             if (rewards[currentWeek] != 0) revert ONGOING_REWARD();
 
             amount = ERC20(WETH).balanceOf(address(this)) / remainingPeriods;
