@@ -31,7 +31,7 @@ contract Deploy is DeployAccumulator {
 
     function run() public {
         vm.createSelectFork("linea");
-        _run(DAO.MAIN_DEPLOYER, DAO.TREASURY, DAO.TREASURY, DAO.GOVERNANCE);
+        _run(DAO.TREASURY, DAO.TREASURY, DAO.GOVERNANCE);
     }
 
     function _getSafeInitializationData(address[] memory _owners, uint256 _threshold)
@@ -55,7 +55,7 @@ contract Deploy is DeployAccumulator {
     function _deploySafeLocker() internal returns (address _locker) {
         uint256 _salt = uint256(keccak256(abi.encodePacked()));
         address[] memory _owners = new address[](1);
-        _owners[0] = DAO.MAIN_DEPLOYER;
+        _owners[0] = msg.sender;
         uint256 _threshold = 1;
 
         bytes memory initializer = _getSafeInitializationData(_owners, _threshold);
@@ -72,7 +72,7 @@ contract Deploy is DeployAccumulator {
             0,
             address(0),
             payable(0),
-            abi.encodePacked(uint256(uint160(DAO.MAIN_DEPLOYER)), uint8(0), uint256(1))
+            abi.encodePacked(uint256(uint160(msg.sender)), uint8(0), uint256(1))
         );
     }
 
@@ -87,7 +87,7 @@ contract Deploy is DeployAccumulator {
             0,
             address(0),
             payable(0),
-            abi.encodePacked(uint256(uint160(DAO.MAIN_DEPLOYER)), uint8(0), uint256(1))
+            abi.encodePacked(uint256(uint160(msg.sender)), uint8(0), uint256(1))
         );
     }
 
@@ -104,20 +104,20 @@ contract Deploy is DeployAccumulator {
             0,
             address(0),
             payable(0),
-            abi.encodePacked(uint256(uint160(DAO.MAIN_DEPLOYER)), uint8(0), uint256(1))
+            abi.encodePacked(uint256(uint160(msg.sender)), uint8(0), uint256(1))
         );
 
         ILocker(locker).execTransaction(
             locker,
             0,
-            abi.encodeWithSelector(ISafe.removeOwner.selector, DAO.GOVERNANCE, DAO.MAIN_DEPLOYER, 1),
+            abi.encodeWithSelector(ISafe.removeOwner.selector, DAO.GOVERNANCE, msg.sender, 1),
             Enum.Operation.Call,
             0,
             0,
             0,
             address(0),
             payable(0),
-            abi.encodePacked(uint256(uint160(DAO.MAIN_DEPLOYER)), uint8(0), uint256(1))
+            abi.encodePacked(uint256(uint160(msg.sender)), uint8(0), uint256(1))
         );
     }
 
@@ -132,7 +132,7 @@ contract Deploy is DeployAccumulator {
             0,
             address(0),
             payable(0),
-            abi.encodePacked(uint256(uint160(DAO.MAIN_DEPLOYER)), uint8(0), uint256(1))
+            abi.encodePacked(uint256(uint160(msg.sender)), uint8(0), uint256(1))
         );
     }
 
@@ -146,10 +146,10 @@ contract Deploy is DeployAccumulator {
 
         // Deploy gauge.
         /// For some reason, the deployCode function is not working.
-        /// liquidityGauge = deployCode("vyper/LiquidityGaugeV4XChain.vy", abi.encode(sdZero, DAO.MAIN_DEPLOYER));
+        /// liquidityGauge = deployCode("vyper/LiquidityGaugeV4XChain.vy", abi.encode(sdZero, msg.sender));
         bytes memory liquidityGaugeBytecode = vm.getCode("vyper/LiquidityGaugeV4XChain.vy");
 
-        liquidityGauge = address(deployBytecode(liquidityGaugeBytecode, abi.encode(sdZero, DAO.MAIN_DEPLOYER)));
+        liquidityGauge = address(deployBytecode(liquidityGaugeBytecode, abi.encode(sdZero, msg.sender)));
 
         // Deploy depositor.
         depositor =
@@ -161,7 +161,7 @@ contract Deploy is DeployAccumulator {
         require(liquidityGauge != address(0));
         require(locker != address(0));
 
-        return payable(new ZeroLendAccumulator(liquidityGauge, locker, DAO.MAIN_DEPLOYER));
+        return payable(new ZeroLendAccumulator(liquidityGauge, locker, msg.sender));
     }
 
     function _afterDeploy() internal virtual override {

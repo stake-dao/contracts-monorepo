@@ -9,13 +9,13 @@ import {BalancerAccumulator} from "src/mainnet/balancer/Accumulator.sol";
 contract Deploy is DeployAccumulator {
     function run() public {
         vm.createSelectFork("mainnet");
-        _run(DAO.MAIN_DEPLOYER, DAO.TREASURY, DAO.LIQUIDITY_FEES_RECIPIENT, DAO.GOVERNANCE);
+        _run(DAO.TREASURY, DAO.LIQUIDITY_FEES_RECIPIENT, DAO.GOVERNANCE);
     }
 
     function _deployAccumulator() internal override returns (address payable) {
         return payable(
             new BalancerAccumulator(
-                address(BalancerLocker.GAUGE), BalancerLocker.LOCKER, DAO.MAIN_DEPLOYER, BalancerLocker.LOCKER
+                address(BalancerLocker.GAUGE), BalancerLocker.LOCKER, msg.sender, BalancerLocker.LOCKER
             )
         );
     }

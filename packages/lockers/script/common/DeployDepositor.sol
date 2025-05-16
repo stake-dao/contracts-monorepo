@@ -7,8 +7,8 @@ import "src/common/depositor/BaseDepositor.sol";
 abstract contract DeployDepositor is Script {
     address internal depositor;
 
-    function _run(address deployer, address governance) internal {
-        vm.startBroadcast(deployer);
+    function _run(address governance) internal {
+        vm.startBroadcast();
 
         depositor = _deployDepositor();
 

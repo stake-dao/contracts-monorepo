@@ -9,7 +9,7 @@ import {PendleDepositor} from "src/mainnet/pendle/Depositor.sol";
 contract Deploy is DeployDepositor {
     function run() public {
         vm.createSelectFork("mainnet");
-        _run(DAO.MAIN_DEPLOYER, DAO.GOVERNANCE);
+        _run(DAO.GOVERNANCE);
     }
 
     function _deployDepositor() internal override returns (address) {

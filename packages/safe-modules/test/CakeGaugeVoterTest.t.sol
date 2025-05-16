@@ -2,9 +2,8 @@
 pragma solidity ^0.8.4;
 
 import {Test} from "forge-std/src/Test.sol";
-import {CakeGaugeVoter} from "../src/CakeGaugeVoter.sol";
+import {CakeGaugeVoter} from "src/CakeGaugeVoter.sol";
 import {PancakeswapLocker, PancakeswapProtocol} from "address-book/src/PancakeswapBSC.sol";
-import {DAO} from "address-book/src/DAOBSC.sol";
 
 interface Safe {
     function enableModule(address module) external;
@@ -21,19 +20,16 @@ interface ICakeGaugeController {
 }
 
 contract CakeGaugeVoterTest is Test {
-    address public constant DEPLOYER = DAO.MAIN_DEPLOYER;
     address public constant CAKE_GAUGE_CONTROLLER = PancakeswapProtocol.GAUGE_CONTROLLER;
     address public constant CAKE_LOCKER = PancakeswapLocker.LOCKER;
 
-    CakeGaugeVoter cakeGaugeVoter;
+    CakeGaugeVoter internal cakeGaugeVoter;
 
     function setUp() public virtual {
         vm.createSelectFork(vm.rpcUrl("bnb"), 46974558);
 
         // Deploy the claimer
-        vm.startPrank(DEPLOYER);
         cakeGaugeVoter = new CakeGaugeVoter();
-        vm.stopPrank();
 
         // Authorize the module in the Safe
         vm.startPrank(cakeGaugeVoter.SD_SAFE());
@@ -42,8 +38,6 @@ contract CakeGaugeVoterTest is Test {
     }
 
     function testCakeVote() public {
-        vm.startPrank(DEPLOYER);
-
         // Compute vote params
         uint256 nbGauges = 13;
         address[] memory gaugeAddresses = new address[](nbGauges);

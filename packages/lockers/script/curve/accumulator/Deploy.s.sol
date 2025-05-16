@@ -9,12 +9,12 @@ import {CurveAccumulator} from "src/mainnet/curve/Accumulator.sol";
 contract Deploy is DeployAccumulator {
     function run() public {
         vm.createSelectFork("mainnet");
-        _run(DAO.MAIN_DEPLOYER, DAO.TREASURY, DAO.LIQUIDITY_FEES_RECIPIENT, DAO.GOVERNANCE);
+        _run(DAO.TREASURY, DAO.LIQUIDITY_FEES_RECIPIENT, DAO.GOVERNANCE);
     }
 
     function _deployAccumulator() internal override returns (address payable) {
         return payable(
-            new CurveAccumulator(address(CurveLocker.GAUGE), CurveLocker.LOCKER, DAO.MAIN_DEPLOYER, CurveLocker.LOCKER)
+            new CurveAccumulator(address(CurveLocker.GAUGE), CurveLocker.LOCKER, msg.sender, CurveLocker.LOCKER)
         );
     }
 

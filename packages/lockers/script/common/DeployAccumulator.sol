@@ -7,8 +7,8 @@ import "src/common/accumulator/BaseAccumulator.sol";
 abstract contract DeployAccumulator is Script {
     address payable internal accumulator;
 
-    function _run(address deployer, address treasury, address liquidityFeeRecipient, address governance) internal {
-        vm.startBroadcast(deployer);
+    function _run(address treasury, address liquidityFeeRecipient, address governance) internal {
+        vm.startBroadcast();
 
         _beforeDeploy();
 

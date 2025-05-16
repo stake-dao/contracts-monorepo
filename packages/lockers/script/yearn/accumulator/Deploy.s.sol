@@ -9,12 +9,12 @@ import {YearnAccumulator} from "src/mainnet/yearn/Accumulator.sol";
 contract Deploy is DeployAccumulator {
     function run() public {
         vm.createSelectFork("mainnet");
-        _run(DAO.MAIN_DEPLOYER, DAO.TREASURY, DAO.LIQUIDITY_FEES_RECIPIENT, DAO.GOVERNANCE);
+        _run(DAO.TREASURY, DAO.LIQUIDITY_FEES_RECIPIENT, DAO.GOVERNANCE);
     }
 
     function _deployAccumulator() internal override returns (address payable) {
         return payable(
-            new YearnAccumulator(address(YearnLocker.GAUGE), YearnLocker.LOCKER, DAO.MAIN_DEPLOYER, YearnLocker.LOCKER)
+            new YearnAccumulator(address(YearnLocker.GAUGE), YearnLocker.LOCKER, msg.sender, YearnLocker.LOCKER)
         );
     }
 

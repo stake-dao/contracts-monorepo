@@ -8,7 +8,6 @@ import {FXNLocker} from "address-book/src/FXNEthereum.sol";
 import {FraxLocker, FraxProtocol} from "address-book/src/FraxEthereum.sol";
 import {BalancerLocker, BalancerProtocol} from "address-book/src/BalancerEthereum.sol";
 import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
-import {DAO} from "address-book/src/DAOEthereum.sol";
 
 struct VeBalance {
     uint128 bias;
@@ -33,7 +32,6 @@ interface PendleGaugeController {
 }
 
 contract GaugeVoterTest is Test {
-    address public constant DEPLOYER = DAO.MAIN_DEPLOYER;
     address public constant CURVE_VOTER = CurveLocker.VOTER;
     address public constant BALANCER_VOTER = BalancerLocker.VOTER;
     address public constant FRAX_VOTER = FraxLocker.VOTER;
@@ -53,13 +51,13 @@ contract GaugeVoterTest is Test {
     address public constant FRAX_LOCKER = FraxLocker.LOCKER;
     address public constant FXN_LOCKER = FXNLocker.LOCKER;
 
-    GaugeVoter gaugeVoter;
+    GaugeVoter internal gaugeVoter;
 
     function setUp() public virtual {
         vm.createSelectFork(vm.rpcUrl("mainnet"), 21_875_357);
 
         // Deploy the claimer
-        vm.startPrank(DEPLOYER);
+        vm.startPrank(address(this));
         gaugeVoter = new GaugeVoter();
         vm.stopPrank();
 
@@ -69,7 +67,7 @@ contract GaugeVoterTest is Test {
         vm.stopPrank();
 
         // Allow voters
-        vm.startPrank(DEPLOYER);
+        vm.startPrank(address(this));
         gaugeVoter.toggle_voter(CURVE_VOTER, true);
         gaugeVoter.toggle_voter(BALANCER_VOTER, true);
         gaugeVoter.toggle_voter(FRAX_VOTER, true);
@@ -78,8 +76,6 @@ contract GaugeVoterTest is Test {
     }
 
     function testCurveVote() public {
-        vm.startPrank(DEPLOYER);
-
         uint256 nbGauges = 47;
         address[] memory gaugeAddresses = new address[](nbGauges);
         uint256[] memory weights = new uint256[](nbGauges);
@@ -150,8 +146,6 @@ contract GaugeVoterTest is Test {
     }
 
     function testBalancerVoter() public {
-        vm.startPrank(DEPLOYER);
-
         uint256 nbGauges = 22;
         address[] memory gaugeAddresses = new address[](nbGauges);
         uint256[] memory weights = new uint256[](nbGauges);
@@ -196,8 +190,6 @@ contract GaugeVoterTest is Test {
     }
 
     function testFraxVote() public {
-        vm.startPrank(DEPLOYER);
-
         uint256 nbGauges = 6;
         address[] memory gaugeAddresses = new address[](nbGauges);
         uint256[] memory weights = new uint256[](nbGauges);
@@ -226,7 +218,7 @@ contract GaugeVoterTest is Test {
     }
 
     function testFxnVote() public {
-        vm.startPrank(DEPLOYER);
+        vm.startPrank(address(this));
 
         uint256 nbGauges = 4;
         address[] memory gaugeAddresses = new address[](nbGauges);
@@ -254,8 +246,6 @@ contract GaugeVoterTest is Test {
     }
 
     function testPendleVote() public {
-        vm.startPrank(DEPLOYER);
-
         uint256 nbGauges = 13;
         address[] memory gaugeAddresses = new address[](nbGauges);
         uint64[] memory weights = new uint64[](nbGauges);

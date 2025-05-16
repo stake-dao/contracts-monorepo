@@ -9,14 +9,12 @@ import {PendleAccumulator} from "src/mainnet/pendle/Accumulator.sol";
 contract Deploy is DeployAccumulator {
     function run() public {
         vm.createSelectFork("mainnet");
-        _run(DAO.MAIN_DEPLOYER, DAO.TREASURY, DAO.LIQUIDITY_FEES_RECIPIENT, DAO.GOVERNANCE);
+        _run(DAO.TREASURY, DAO.LIQUIDITY_FEES_RECIPIENT, DAO.GOVERNANCE);
     }
 
     function _deployAccumulator() internal override returns (address payable) {
         return payable(
-            new PendleAccumulator(
-                address(PendleLocker.GAUGE), PendleLocker.LOCKER, DAO.MAIN_DEPLOYER, PendleLocker.LOCKER
-            )
+            new PendleAccumulator(address(PendleLocker.GAUGE), PendleLocker.LOCKER, msg.sender, PendleLocker.LOCKER)
         );
     }
 

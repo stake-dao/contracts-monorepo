@@ -3,7 +3,6 @@ pragma solidity ^0.8.19;
 
 import "forge-std/src/Test.sol";
 import "forge-std/src/Script.sol";
-import {DAO} from "address-book/src/DAOEthereum.sol";
 import {Common} from "address-book/src/CommonPolygon.sol";
 import {UniversalRewardsDistributor} from "src/distributors/UniversalRewardDistributor.sol";
 
@@ -12,17 +11,15 @@ interface ImmutableCreate2Factory {
 }
 
 contract Deploy is Script, Test {
-    address deployer = DAO.MAIN_DEPLOYER;
-
     function run() public {
         vm.createSelectFork("polygon");
-        vm.startBroadcast(deployer);
+        vm.startBroadcast();
 
         ImmutableCreate2Factory factory = ImmutableCreate2Factory(Common.CREATE2_FACTORY);
 
         bytes32 initalizeCode = keccak256(
             abi.encodePacked(
-                type(UniversalRewardsDistributor).creationCode, abi.encode(deployer, 0, bytes32(0), bytes32(0))
+                type(UniversalRewardsDistributor).creationCode, abi.encode(msg.sender, 0, bytes32(0), bytes32(0))
             )
         );
         console.logBytes32(initalizeCode);
@@ -40,12 +37,12 @@ contract Deploy is Script, Test {
         factory.safeCreate2(
             salt,
             abi.encodePacked(
-                type(UniversalRewardsDistributor).creationCode, abi.encode(deployer, 0, bytes32(0), bytes32(0))
+                type(UniversalRewardsDistributor).creationCode, abi.encode(msg.sender, 0, bytes32(0), bytes32(0))
             )
         );
 
         UniversalRewardsDistributor distributor = UniversalRewardsDistributor(address(expectedAddress));
 
-        if (address(distributor.owner()) != deployer) revert("NOPE");
+        if (address(distributor.owner()) != msg.sender) revert("NOPE");
     }
 }

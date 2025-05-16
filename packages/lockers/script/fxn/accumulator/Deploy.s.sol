@@ -9,11 +9,11 @@ import {FXNAccumulator} from "src/mainnet/fx/Accumulator.sol";
 contract Deploy is DeployAccumulator {
     function run() public {
         vm.createSelectFork("mainnet");
-        _run(DAO.MAIN_DEPLOYER, DAO.TREASURY, DAO.LIQUIDITY_FEES_RECIPIENT, DAO.GOVERNANCE);
+        _run(DAO.TREASURY, DAO.LIQUIDITY_FEES_RECIPIENT, DAO.GOVERNANCE);
     }
 
     function _deployAccumulator() internal override returns (address payable) {
-        return payable(new FXNAccumulator(address(FXNLocker.GAUGE), FXNLocker.LOCKER, DAO.MAIN_DEPLOYER));
+        return payable(new FXNAccumulator(address(FXNLocker.GAUGE), FXNLocker.LOCKER, msg.sender));
     }
 
     function _afterDeploy() internal virtual override {}

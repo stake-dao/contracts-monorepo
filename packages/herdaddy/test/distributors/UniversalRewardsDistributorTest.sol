@@ -56,7 +56,7 @@ contract UniversalRewardsDistributorTest is Test {
 
     function test_GetInitCodeHash() public {
         bytes32 initCodeHash = hashInitCode(
-            type(UniversalRewardsDistributor).creationCode, abi.encode(DAO.MAIN_DEPLOYER, 0, bytes32(0), bytes32(0))
+            type(UniversalRewardsDistributor).creationCode, abi.encode(msg.sender, 0, bytes32(0), bytes32(0))
         );
         console.logBytes32(initCodeHash);
         console.log(address(0));

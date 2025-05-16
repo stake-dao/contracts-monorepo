@@ -9,11 +9,9 @@ import {CurveAllocator} from "src/integrations/curve/CurveAllocator.sol";
 import {CurveFactory} from "src/integrations/curve/CurveFactory.sol";
 import {CurveStrategy} from "src/integrations/curve/CurveStrategy.sol";
 import {CurveProtocol} from "address-book/src/CurveEthereum.sol";
-import {DAO} from "address-book/src/DAOEthereum.sol";
 
 contract Deploy is Base {
     string public NETWORK = "mainnet";
-    address public DEPLOYER = DAO.MAIN_DEPLOYER;
 
     /// @notice The protocol ID.
     bytes4 internal constant PROTOCOL_ID = bytes4(keccak256("CURVE"));
@@ -51,9 +49,15 @@ contract Deploy is Base {
 
     function run() public {
         vm.createSelectFork(NETWORK);
-        vm.startBroadcast(DEPLOYER);
+        vm.startBroadcast();
 
-        _run({_deployer: DEPLOYER, _rewardToken: CRV, _locker: LOCKER, _protocolId: PROTOCOL_ID, _harvested: HARVESTED});
+        _run({
+            _deployer: msg.sender,
+            _rewardToken: CRV,
+            _locker: LOCKER,
+            _protocolId: PROTOCOL_ID,
+            _harvested: HARVESTED
+        });
 
         /// 1. Deploy the Curve Strategy contract.
         curveStrategy = new CurveStrategy(address(protocolController), locker, address(gateway), MINTER);
