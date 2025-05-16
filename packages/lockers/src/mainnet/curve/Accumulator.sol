@@ -77,18 +77,16 @@ contract CurveAccumulator is DelegableAccumulator, SafeModule {
         _claimAccumulatedFee();
 
         // 4. Notify the rewards to the Liquidity Gauge (V4)
-        notifyReward({token: rewardToken, claimFeeStrategy: false});
-        notifyReward({token: token, claimFeeStrategy: true});
+        notifyReward(rewardToken);
+        notifyReward(token);
     }
 
-    function _notifyReward(address _tokenReward, uint256 _amount, bool _pullFromFeeReceiver) internal override {
+    function _notifyReward(address _tokenReward, uint256 _amount) internal override {
+        // Charge the fee for the DAO, liquidity and claimer
         _chargeFee(_tokenReward, _amount);
 
         // Split fees for the specified token using the fee receiver contract
-        // Function not permissionless, to prevent sending to that accumulator and re-splitting (_chargeFee)
-        if (_pullFromFeeReceiver && feeReceiver != address(0)) {
-            IFeeReceiver(feeReceiver).split(_tokenReward);
-        }
+        if (feeReceiver != address(0)) IFeeReceiver(feeReceiver).split(_tokenReward);
 
         _amount = ERC20(_tokenReward).balanceOf(address(this));
 

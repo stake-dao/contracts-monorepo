@@ -154,11 +154,10 @@ abstract contract BaseAccumulator {
 
     /// @notice Notify the whole accumulator balance of a token
     /// @param token token to notify
-    /// @param claimFeeStrategy if pull tokens from the fee receiver or not
-    function notifyReward(address token, bool claimFeeStrategy) public virtual {
+    function notifyReward(address token) public virtual {
         uint256 amount = ERC20(token).balanceOf(address(this));
         // notify the token to the liquidity gauge
-        _notifyReward({tokenReward: token, amount: amount, claimFeeStrategy: claimFeeStrategy});
+        _notifyReward(token, amount);
     }
 
     //////////////////////////////////////////////////////
@@ -168,19 +167,18 @@ abstract contract BaseAccumulator {
     /// @notice Notify the new reward to the LGV4
     /// @param tokenReward token to notify
     /// @param amount amount to notify
-    /// @param claimFeeStrategy if pull tokens from the fee receiver or not (tokens already in that contract)
-    function _notifyReward(address tokenReward, uint256 amount, bool claimFeeStrategy) internal virtual {
+    function _notifyReward(address tokenReward, uint256 amount) internal virtual {
+        // Charge the fee for the DAO, liquidity and claimer
         _chargeFee(tokenReward, amount);
 
-        if (claimFeeStrategy && feeReceiver != address(0)) {
-            // Split fees for the specified token using the fee receiver contract
-            // Function not permissionless, to prevent sending to that accumulator and re-splitting (_chargeFee)
-            IFeeReceiver(feeReceiver).split(tokenReward);
-        }
+        // Split fees for the specified token using the fee receiver contract
+        if (feeReceiver != address(0)) IFeeReceiver(feeReceiver).split(tokenReward);
 
+        // Get the balance of the token in the accumulator and return if 0
         amount = ERC20(tokenReward).balanceOf(address(this));
-
         if (amount == 0) return;
+
+        // Deposit the token to the gauge
         ILiquidityGauge(gauge).deposit_reward_token(tokenReward, amount);
     }
 

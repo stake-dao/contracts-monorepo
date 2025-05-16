@@ -157,7 +157,7 @@ abstract contract BaseAccumulatorTest is CommonBase, Test {
         uint256 _before = ERC20(strategyRewardToken).balanceOf(address(liquidityGauge));
 
         deal(address(strategyRewardToken), address(accumulator), 1_000e18);
-        accumulator.notifyReward({token: address(strategyRewardToken), claimFeeStrategy: false});
+        accumulator.notifyReward(address(strategyRewardToken)); // TODO: notifyReward
 
         /// It should distribute 1_000_000 PENDLE to LGV4, meaning no fees were taken.
         if (rewardToken != strategyRewardToken) {

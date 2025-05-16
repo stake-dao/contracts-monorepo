@@ -89,7 +89,7 @@ contract FraxAccumulator is BaseAccumulator, FXTLDelegation, SafeModule {
         if (lockerFXSBalance != 0) _execute_transfer(lockerFXSBalance);
 
         // Notify FXS to the gauge.
-        notifyReward({token: rewardToken, claimFeeStrategy: true});
+        notifyReward(rewardToken);
     }
 
     ////////////////////////////////////////////////////////////////

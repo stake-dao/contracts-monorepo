@@ -134,20 +134,17 @@ contract PendleAccumulator is DrippingAccumulator, SafeModule {
         // Notify the rewards to the Liquidity Gauge (V4)
         // We set 0 as the amount to notify, because the overriden version of `_notifyReward` is charged for
         // calculating the exact amount to deposit into the gauge
-        _notifyReward({tokenReward: rewardToken, amount: 0, claimFeeStrategy: false});
-        _notifyReward({tokenReward: token, amount: 0, claimFeeStrategy: true});
+        _notifyReward({tokenReward: rewardToken, amount: 0});
+        _notifyReward({tokenReward: token, amount: 0});
     }
 
     /// @notice Notify the new reward to the LGV4
     /// @param tokenReward token to notify
     /// @param amount amount to notify
-    /// @param claimFeeStrategy if pull tokens from the fee receiver or not (tokens already in that contract)
-    function _notifyReward(address tokenReward, uint256 amount, bool claimFeeStrategy) internal override {
+    function _notifyReward(address tokenReward, uint256 amount) internal override {
         // Split fees for the specified token using the fee receiver contract
         // Function not permissionless, to prevent sending to that accumulator and re-splitting (_chargeFee)
-        if (claimFeeStrategy && feeReceiver != address(0)) {
-            IFeeReceiver(feeReceiver).split(tokenReward);
-        }
+        if (feeReceiver != address(0)) IFeeReceiver(feeReceiver).split(tokenReward);
 
         // If the reward is the reward token, set the reward for the current period
         if (tokenReward == rewardToken) {

@@ -20,10 +20,10 @@ contract BaseAccumulator__notifyReward is BaseAccumulator__chargeFee {
 
         // expect the fee receiver to be called
         vm.expectCall(address(feeReceiver), abi.encodeWithSelector(IFeeReceiver.split.selector, address(rewardToken)));
-        baseAccumulator.notifyReward(address(rewardToken), true);
+        baseAccumulator.notifyReward(address(rewardToken));
     }
 
-    function test_CallsTheGaugeToDepositTokensIfThereAreSome(bool claimFeeStrategy) external {
+    function test_CallsTheGaugeToDepositTokensIfThereAreSome() external {
         // it calls the gauge to deposit tokens if there are some
 
         // calculate the expected charged fee (fee receivers + claimer)
@@ -37,16 +37,16 @@ contract BaseAccumulator__notifyReward is BaseAccumulator__chargeFee {
             )
         );
 
-        baseAccumulator.notifyReward(address(rewardToken), claimFeeStrategy);
+        baseAccumulator.notifyReward(address(rewardToken));
     }
 
-    function test_ChargesTheFees(bool claimFeeStrategy) external {
+    function test_ChargesTheFees() external {
         // it charges the fees
 
         // assert that the balance of the reward token is the initial balance
         assertEq(ERC20(address(rewardToken)).balanceOf(address(baseAccumulator)), initialBalance);
 
-        baseAccumulator.notifyReward(address(rewardToken), claimFeeStrategy);
+        baseAccumulator.notifyReward(address(rewardToken));
 
         // assert that the balance of the reward token is 0
         assertEq(ERC20(address(rewardToken)).balanceOf(address(baseAccumulator)), 0);
