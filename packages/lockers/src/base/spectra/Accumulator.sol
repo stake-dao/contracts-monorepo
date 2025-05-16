@@ -62,7 +62,7 @@ contract Accumulator is BaseAccumulator {
         ISdSpectraDepositor(depositor).mintRewards();
 
         // Notify rewards, sending them to the liquidity gauge
-        notifyReward({token: sdSPECTRA, claimFeeStrategy: false});
+        notifyReward(sdSPECTRA);
     }
 
     function name() external pure override returns (string memory) {

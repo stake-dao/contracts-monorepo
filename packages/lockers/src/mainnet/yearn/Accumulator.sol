@@ -85,8 +85,8 @@ contract YearnAccumulator is BaseAccumulator, SafeModule {
         _claimAccumulatedFee();
 
         // 4. Notify the rewards to the Liquidity Gauge (V4)
-        notifyReward({token: token, claimFeeStrategy: false});
-        notifyReward({token: rewardToken, claimFeeStrategy: true});
+        notifyReward(token);
+        notifyReward(rewardToken);
     }
 
     function _getLocker() internal view override returns (address) {
