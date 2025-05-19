@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >=0.8.19 <0.9.0;
+pragma solidity 0.8.28;
 
 import {PendleLocker, PendleProtocol} from "address-book/src/PendleEthereum.sol";
 import {IVePendle} from "src/common/interfaces/IVePendle.sol";

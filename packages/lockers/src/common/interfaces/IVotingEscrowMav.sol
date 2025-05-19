@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity 0.8.28;
 
 interface IVotingEscrowMav {
     function lockupCount(address staker) external view returns (uint256 count);

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.4;
+pragma solidity 0.8.28;
 
 import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
 import {IStrategy} from "common/interfaces/stake-dao/IStrategy.sol";

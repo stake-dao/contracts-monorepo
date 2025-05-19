@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity 0.8.28;
 
 import {SpectraLocker} from "address-book/src/SpectraEthereum.sol";
 import {Test} from "forge-std/src/Test.sol";

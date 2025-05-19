@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.4;
+pragma solidity 0.8.28;
 
 import {Common} from "address-book/src/CommonEthereum.sol";
 import {PendleLocker, PendleProtocol} from "address-book/src/PendleEthereum.sol";

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.4;
+pragma solidity 0.8.28;
 
 import "address-book/src/DAOEthereum.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";

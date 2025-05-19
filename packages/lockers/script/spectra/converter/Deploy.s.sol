@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.19;
+pragma solidity 0.8.28;
 
 import {Common} from "address-book/src/CommonEthereum.sol";
 import {DAO} from "address-book/src/DAOEthereum.sol";

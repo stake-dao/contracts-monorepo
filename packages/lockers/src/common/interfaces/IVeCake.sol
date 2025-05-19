@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.19;
+pragma solidity 0.8.28;
 
 interface IVeCake {
     function createLock(uint256 _amount, uint256 _unlockTime) external;

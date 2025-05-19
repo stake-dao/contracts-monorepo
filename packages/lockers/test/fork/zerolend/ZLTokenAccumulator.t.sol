@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.4;
+pragma solidity 0.8.28;
 
 import {IDepositor} from "src/common/interfaces/IDepositor.sol";
 import "src/mainnet/fx/Accumulator.sol";

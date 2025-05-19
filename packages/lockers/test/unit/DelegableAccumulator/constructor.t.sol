@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >=0.8.19 <0.9.0;
+pragma solidity 0.8.28;
 
 import {Test} from "forge-std/src/Test.sol";
 import {DelegableAccumulatorHarness} from "test/unit/DelegableAccumulator/utils/DelegableAccumulatorHarness.sol";

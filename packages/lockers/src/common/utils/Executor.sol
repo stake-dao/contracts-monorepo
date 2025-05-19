@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: GPL-3.0
-pragma solidity 0.8.19;
+pragma solidity 0.8.28;
 
 interface IExecuteCompatible {
     function execute(address _to, uint256 _value, bytes memory _data) external returns (bool, bytes memory);

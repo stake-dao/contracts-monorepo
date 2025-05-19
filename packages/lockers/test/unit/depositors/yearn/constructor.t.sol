@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >=0.8.19 <0.9.0;
+pragma solidity 0.8.28;
 
 import {YearnLocker, YearnProtocol} from "address-book/src/YearnEthereum.sol";
 import {MockERC20} from "forge-std/src/mocks/MockERC20.sol";

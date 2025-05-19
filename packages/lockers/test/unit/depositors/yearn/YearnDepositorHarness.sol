@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity >=0.8.19 <0.9.0;
+pragma solidity 0.8.28;
 
 import {YearnDepositor} from "src/mainnet/yearn/Depositor.sol";
 

@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.4;
+pragma solidity 0.8.28;
 
 import {FXNAccumulator} from "src/mainnet/fx/Accumulator.sol";
 import {BaseAccumulatorTest} from "test/fork/common/BaseAccumulatorTest.sol";

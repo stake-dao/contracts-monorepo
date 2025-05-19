@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.19;
+pragma solidity 0.8.28;
 
 import {PendleLocker, PendleProtocol} from "address-book/src/PendleEthereum.sol";
 import {Test} from "forge-std/src/Test.sol";

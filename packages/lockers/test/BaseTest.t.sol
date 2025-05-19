@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.19;
+pragma solidity 0.8.28;
 
 import {Test} from "forge-std/src/Test.sol";
 import {stdStorage, StdStorage} from "forge-std/src/Test.sol";

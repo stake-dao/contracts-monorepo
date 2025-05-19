@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: UNLICENSED
-pragma solidity 0.8.19;
+pragma solidity 0.8.28;
 
 import {PreLaunchBaseDepositor} from "src/common/depositor/PreLaunchBaseDepositor.sol";
 import {PreLaunchLocker} from "src/common/locker/PreLaunchLocker.sol";

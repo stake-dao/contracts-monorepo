@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.19;
+pragma solidity 0.8.28;
 
 import {BalancerProtocol} from "address-book/src/BalancerEthereum.sol";
 import {BaseDepositor} from "src/common/depositor/BaseDepositor.sol";

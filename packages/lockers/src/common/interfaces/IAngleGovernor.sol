@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity 0.8.19;
+pragma solidity 0.8.28;
 
 interface IAngleGovernor {
     function getVotes(address account, uint256 timepoint) external view returns (uint256);

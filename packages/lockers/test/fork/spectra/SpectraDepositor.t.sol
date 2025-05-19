@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: MIT
-pragma solidity ^0.8.19;
+pragma solidity 0.8.28;
 
 import "forge-std/src/Test.sol";
 import {ISdToken} from "src/common/interfaces/ISdToken.sol";

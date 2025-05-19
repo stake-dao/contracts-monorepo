@@ -1,5 +1,5 @@
 // SPDX-License-Identifier: AGPL-3.0-only
-pragma solidity ^0.8.19;
+pragma solidity 0.8.28;
 
 import {Enum} from "@safe/contracts/Safe.sol";
 import {ISafe} from "src/common/interfaces/spectra/stakedao/ILocker.sol";
