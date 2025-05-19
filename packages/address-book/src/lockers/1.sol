@@ -15,6 +15,24 @@ library CRV {
     address public constant FACTORY = 0xDC9718E7704f10DB1aFaad737f8A04bcd14C20AA;
 }
 
+library CRV_STAKING_PREPROD {
+    address public constant ACCOUNTANT = 0x4813Ee3665D746264B035E49bDf81AD9c3904A3A;
+    address public constant PROTOCOL_CONTROLLER = 0xC8beDF267fa6D4bE6d7C2146122936535130dd2B;
+    address public constant LOCKER = 0x0000000000000000000000000000000000000000;
+    address public constant GATEWAY = 0x9e75df8ee120c7342b634EE3c5A47015b399E321;
+
+    address public constant STRATEGY = 0x0D40dB4f5eCe56FEe57fDef3Bf796AB943349C98;
+
+    address public constant CONVEX_SIDECAR = 0x7fC725De09C05312D89066b3d14ffb4D87A38853;
+    address public constant CONVEX_SIDECAR_FACTORY = 0x3D88bF4Ad8c119AD6Da3Ae44e1825AcDa85a377D;
+
+    address public constant FACTORY = 0xF4CF447ef5f3668304eBeB3B5a4397c3dae1F31A;
+    address public constant ALLOCATOR = 0xe8CCF44a276DCD9CD3ccE05483EFf1bb26637Cfc;
+
+    address public constant REWARD_VAULT = 0x81E57d40a7D7900719C47963A76C2763C78b2af2;
+    address public constant REWARD_RECEIVER = 0x2a6e4F61c3CF575e1561A45613B58b46C506b4Ad;
+}
+
 library ANGLE {
     address public constant TOKEN = 0x31429d1856aD1377A8A0079410B297e1a9e214c2;
     address public constant SDTOKEN = 0x752B4c6e92d96467fE9b9a2522EF07228E00F87c;
