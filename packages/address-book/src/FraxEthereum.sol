@@ -10,7 +10,8 @@ library FraxProtocol {
 
     address internal constant FRAX = 0x853d955aCEf822Db058eb8505911ED77F175b99e;
 
-    address internal constant GAUGE_CONTROLLER = 0x44ade9AA409B0C29463fF7fcf07c9d3c939166ce;
+    // Contract v2
+    address internal constant GAUGE_CONTROLLER = 0x3669C421b77340B2979d1A00a792CC2ee0FcE737;
     address internal constant SMART_WALLET_CHECKER = 0x53c13BA8834a1567474b19822aAD85c6F90D9f9F;
 
     address internal constant FRAX_YIELD_DISTRIBUTOR = 0xc6764e58b36e26b08Fd1d2AeD4538c02171fA872;

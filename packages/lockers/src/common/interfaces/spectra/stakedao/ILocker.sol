@@ -93,6 +93,8 @@ interface ISafe {
      * @param _threshold New threshold.
      */
     function removeOwner(address prevOwner, address owner, uint256 _threshold) external;
+
+    function isModuleEnabled(address module) external view returns (bool);
 }
 
 interface ILocker is ISafe {}

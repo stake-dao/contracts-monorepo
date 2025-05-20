@@ -15,7 +15,7 @@ library PendleLocker {
     address internal constant GAUGE = 0x50DC9aE51f78C593d4138263da7088A973b8184E;
     address internal constant ACCUMULATOR = 0x65682CB35C8DEa1d3027CD37F37a245356BC4526;
 
-    address internal constant VOTER = 0x44087E105137a5095c008AaB6a6530182821F2F0;
+    address internal constant VOTING_CONTROLLER = 0x44087E105137a5095c008AaB6a6530182821F2F0;
     address internal constant VOTERS_REWARDS_RECIPIENT = 0xe42a462dbF54F281F95776e663D8c942dcf94f17;
 
     address internal constant STRATEGY = 0xA7641acBc1E85A7eD70ea7bCFFB91afb12AD0c54;

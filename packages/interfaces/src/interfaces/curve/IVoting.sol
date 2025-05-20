@@ -1,6 +1,13 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity ^0.8.0;
 
+enum VoterState {
+    Absent, // 0 -- No vote
+    Yea, // 1 -- Vote in favor of the proposal
+    Nay, // 2 -- Vote against the proposal
+    Even
+}
+
 interface IVoting {
     event CastVote(uint256 indexed voteId, address indexed voter, bool _supports, uint256 stake);
     event ChangeMinQuorum(uint64 minAcceptQuorumPct);
@@ -86,7 +93,7 @@ interface IVoting {
             uint256 votingPower,
             bytes memory script
         );
-    function getVoterState(uint256 _voteId, address _voter) external view returns (uint8);
+    function getVoterState(uint256 _voteId, address _voter) external view returns (VoterState);
     function hasInitialized() external view returns (bool);
     function isPetrified() external view returns (bool);
     function kernel() external view returns (address);

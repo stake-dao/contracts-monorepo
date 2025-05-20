@@ -59,6 +59,7 @@ contract PendleAccumulator is DrippingAccumulator, SafeModule {
     /// @param _gauge Address of the sdPENDLE-gauge contract
     /// @param _locker Address of the Stake DAO Pendle Locker contract
     /// @param _governance Address of the governance contract
+    /// @param _gateway Address of the gateway contract
     /// @dev If `locker` and `gateway` are the same, internal calls will be done directly on the target from the gateway.
     ///      Otherwise, the gateway will pass the execution to the `locker` to call the target contracts.
     ///

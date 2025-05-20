@@ -1,13 +1,14 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.4;
+pragma solidity 0.8.28;
 
-import {GaugeVoter} from "src/GaugeVoter.sol";
+import {CurveVoter} from "src/voters/CurveVoter.sol";
+import {PendleVoter} from "src/voters/PendleVoter.sol";
+import {FXNVoter} from "src/voters/FXNVoter.sol";
+import {FraxVoter} from "src/voters/FraxVoter.sol";
+import {BalancerVoter} from "src/voters/BalancerVoter.sol";
 import {Test} from "forge-std/src/Test.sol";
-import {PendleLocker} from "address-book/src/PendleEthereum.sol";
-import {FXNLocker} from "address-book/src/FXNEthereum.sol";
-import {FraxLocker, FraxProtocol} from "address-book/src/FraxEthereum.sol";
-import {BalancerLocker, BalancerProtocol} from "address-book/src/BalancerEthereum.sol";
-import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
+import {MockGateway} from "test/common/MockGateway.sol";
+import {ILocker} from "src/common/interfaces/ILocker.sol";
 
 struct VeBalance {
     uint128 bias;
@@ -31,48 +32,92 @@ interface PendleGaugeController {
     function getUserPoolVote(address, address) external view returns (UserPoolData memory);
 }
 
+interface IVoter {
+    function governance() external view returns (address);
+    function setGovernance(address governance) external;
+    function transferGovernance(address newGovernance) external;
+    function acceptGovernance() external;
+}
+
 contract GaugeVoterTest is Test {
-    address public constant CURVE_VOTER = CurveLocker.VOTER;
-    address public constant BALANCER_VOTER = BalancerLocker.VOTER;
-    address public constant FRAX_VOTER = FraxLocker.VOTER;
-    address public constant FXN_VOTER = FXNLocker.VOTER;
-    address public constant PENDLE_LOCKER = PendleLocker.LOCKER;
-    address public constant PENDLE_VOTER = PendleLocker.VOTER;
-
-    // Gauge controllers
-    address public constant CURVE_GC = CurveProtocol.GAUGE_CONTROLLER;
-    address public constant BALANCER_GC = BalancerProtocol.GAUGE_CONTROLLER;
-    address public constant FRAX_GC = 0x3669C421b77340B2979d1A00a792CC2ee0FcE737;
-    address public constant FXN_GC = FraxProtocol.GAUGE_CONTROLLER;
-
-    // Lockers
-    address public constant CURVE_LOCKER = CurveLocker.LOCKER;
-    address public constant BALANCER_LOCKER = BalancerLocker.LOCKER;
-    address public constant FRAX_LOCKER = FraxLocker.LOCKER;
-    address public constant FXN_LOCKER = FXNLocker.LOCKER;
-
-    GaugeVoter internal gaugeVoter;
+    CurveVoter internal curveVoter;
+    BalancerVoter internal balancerVoter;
+    FraxVoter internal fraxVoter;
+    FXNVoter internal fxnVoter;
+    PendleVoter internal pendleVoter;
 
     function setUp() public virtual {
         vm.createSelectFork(vm.rpcUrl("mainnet"), 21_875_357);
 
-        // Deploy the claimer
-        vm.startPrank(address(this));
-        gaugeVoter = new GaugeVoter();
-        vm.stopPrank();
+        // Deploy the gateway
+        MockGateway gateway = new MockGateway();
 
-        // Authorize the module in the Safe
-        vm.startPrank(gaugeVoter.SD_SAFE());
-        Safe(gaugeVoter.SD_SAFE()).enableModule(address(gaugeVoter));
-        vm.stopPrank();
+        // Deploy the voters
+        curveVoter = new CurveVoter(address(gateway));
+        balancerVoter = new BalancerVoter(address(gateway));
+        fraxVoter = new FraxVoter(address(gateway));
+        fxnVoter = new FXNVoter(address(gateway));
+        pendleVoter = new PendleVoter(address(gateway));
 
-        // Allow voters
-        vm.startPrank(address(this));
-        gaugeVoter.toggle_voter(CURVE_VOTER, true);
-        gaugeVoter.toggle_voter(BALANCER_VOTER, true);
-        gaugeVoter.toggle_voter(FRAX_VOTER, true);
-        gaugeVoter.toggle_voter(FXN_VOTER, true);
-        vm.stopPrank();
+        /////// SET LOCKERS GOVERNANCE ///////
+        ILocker locker = ILocker(curveVoter.LOCKER());
+        vm.prank(locker.governance());
+        locker.setGovernance(address(gateway));
+
+        locker = ILocker(balancerVoter.LOCKER());
+        vm.prank(locker.governance());
+        locker.setGovernance(address(gateway));
+
+        locker = ILocker(fraxVoter.LOCKER());
+        vm.prank(locker.governance());
+        locker.setGovernance(address(gateway));
+
+        locker = ILocker(fxnVoter.LOCKER());
+        vm.prank(locker.governance());
+        locker.transferGovernance(address(gateway));
+        vm.prank(address(gateway));
+        locker.acceptGovernance();
+
+        locker = ILocker(pendleVoter.LOCKER());
+        vm.prank(locker.governance());
+        locker.setGovernance(address(gateway));
+
+        /////// VOTER -- ALLOW ADDRESS ///////
+        vm.prank(curveVoter.governance());
+        curveVoter.allowAddress(address(this));
+
+        vm.prank(balancerVoter.governance());
+        balancerVoter.allowAddress(address(this));
+
+        vm.prank(fraxVoter.governance());
+        fraxVoter.allowAddress(address(this));
+
+        vm.prank(fxnVoter.governance());
+        fxnVoter.allowAddress(address(this));
+
+        vm.prank(pendleVoter.governance());
+        pendleVoter.allowAddress(address(this));
+
+        // labels
+        vm.label(address(gateway), "gateway");
+
+        vm.label(address(curveVoter), "CURVE_VOTER");
+        vm.label(address(balancerVoter), "BALANCER_VOTER");
+        vm.label(address(fraxVoter), "FRAX_VOTER");
+        vm.label(address(fxnVoter), "FXN_VOTER");
+        vm.label(address(pendleVoter), "PENDLE_VOTER");
+
+        vm.label(curveVoter.CONTROLLER(), "CURVE_GAUGE_CONTROLLER");
+        vm.label(balancerVoter.CONTROLLER(), "BALANCER_GAUGE_CONTROLLER");
+        vm.label(fraxVoter.CONTROLLER(), "FRAX_GAUGE_CONTROLLER");
+        vm.label(fxnVoter.CONTROLLER(), "FXN_GAUGE_CONTROLLER");
+        vm.label(pendleVoter.CONTROLLER(), "PENDLE_VOTING_CONTROLLER");
+
+        vm.label(curveVoter.LOCKER(), "CURVE_LOCKER");
+        vm.label(balancerVoter.LOCKER(), "BALANCER_LOCKER");
+        vm.label(fraxVoter.LOCKER(), "FRAX_LOCKER");
+        vm.label(fxnVoter.LOCKER(), "FXN_LOCKER");
+        vm.label(pendleVoter.LOCKER(), "PENDLE_LOCKER");
     }
 
     function testCurveVote() public {
@@ -135,14 +180,12 @@ contract GaugeVoterTest is Test {
         }
 
         // Vote
-        gaugeVoter.vote_with_voter(CURVE_VOTER, gaugeAddresses, weights);
+        curveVoter.voteGauges(gaugeAddresses, weights);
 
         // Check votes
-        for (uint256 i = 0; i < nbGauges; i++) {
-            assertTrue(checkBasicVotes(CURVE_GC, CURVE_LOCKER, gaugeAddresses[i]));
+        for (uint256 i; i < nbGauges; i++) {
+            assertTrue(checkBasicVotes(curveVoter.CONTROLLER(), curveVoter.LOCKER(), gaugeAddresses[i]));
         }
-
-        vm.stopPrank();
     }
 
     function testBalancerVoter() public {
@@ -179,14 +222,12 @@ contract GaugeVoterTest is Test {
             weights[i] = 0;
         }
 
-        gaugeVoter.vote_with_voter(BALANCER_VOTER, gaugeAddresses, weights);
+        balancerVoter.voteGauges(gaugeAddresses, weights);
 
         // Check votes
-        for (uint256 i = 0; i < nbGauges; i++) {
-            assertTrue(checkBasicVotes(BALANCER_GC, BALANCER_LOCKER, gaugeAddresses[i]));
+        for (uint256 i; i < nbGauges; i++) {
+            assertTrue(checkBasicVotes(balancerVoter.CONTROLLER(), balancerVoter.LOCKER(), gaugeAddresses[i]));
         }
-
-        vm.stopPrank();
     }
 
     function testFraxVote() public {
@@ -207,19 +248,15 @@ contract GaugeVoterTest is Test {
             weights[i] = 0;
         }
 
-        gaugeVoter.vote_with_voter(FRAX_VOTER, gaugeAddresses, weights);
+        fraxVoter.voteGauges(gaugeAddresses, weights);
 
         // Check votes
-        for (uint256 i = 0; i < nbGauges; i++) {
-            assertTrue(checkBasicVotes(FRAX_GC, FRAX_LOCKER, gaugeAddresses[i]));
+        for (uint256 i; i < nbGauges; i++) {
+            assertTrue(checkBasicVotes(fraxVoter.CONTROLLER(), fraxVoter.LOCKER(), gaugeAddresses[i]));
         }
-
-        vm.stopPrank();
     }
 
     function testFxnVote() public {
-        vm.startPrank(address(this));
-
         uint256 nbGauges = 4;
         address[] memory gaugeAddresses = new address[](nbGauges);
         uint256[] memory weights = new uint256[](nbGauges);
@@ -235,14 +272,12 @@ contract GaugeVoterTest is Test {
             weights[i] = 0;
         }
 
-        gaugeVoter.vote_with_voter(FXN_VOTER, gaugeAddresses, weights);
+        fxnVoter.voteGauges(gaugeAddresses, weights);
 
         // Check votes
-        for (uint256 i = 0; i < nbGauges; i++) {
-            assertTrue(checkBasicVotes(FXN_GC, FXN_LOCKER, gaugeAddresses[i]));
+        for (uint256 i; i < nbGauges; i++) {
+            assertTrue(checkBasicVotes(fxnVoter.CONTROLLER(), fxnVoter.LOCKER(), gaugeAddresses[i]));
         }
-
-        vm.stopPrank();
     }
 
     function testPendleVote() public {
@@ -270,14 +305,12 @@ contract GaugeVoterTest is Test {
         }
 
         // Vote
-        gaugeVoter.vote_pendle(gaugeAddresses, weights);
+        pendleVoter.voteGauges(gaugeAddresses, weights);
 
         // Check votes
-        for (uint256 i = 0; i < nbGauges; i++) {
+        for (uint256 i; i < nbGauges; i++) {
             assertTrue(checkPendleVotes(gaugeAddresses[i]));
         }
-
-        vm.stopPrank();
     }
 
     function checkBasicVotes(address gc, address locker, address gauge) internal view returns (bool) {
@@ -286,7 +319,8 @@ contract GaugeVoterTest is Test {
     }
 
     function checkPendleVotes(address gauge) internal view returns (bool) {
-        UserPoolData memory userVote = PendleGaugeController(PENDLE_VOTER).getUserPoolVote(PENDLE_LOCKER, gauge);
+        UserPoolData memory userVote =
+            PendleGaugeController(pendleVoter.CONTROLLER()).getUserPoolVote(pendleVoter.LOCKER(), gauge);
         return userVote.weight == 0;
     }
 }

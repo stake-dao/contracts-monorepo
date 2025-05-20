@@ -52,7 +52,7 @@ abstract contract SafeModule {
         // If the `gateway` is the locker, tell the `gateway` to directly call `target`
         if (locker == GATEWAY) {
             (success, returnData) =
-                ISafe(GATEWAY).execTransactionFromModuleReturnData(_target, 0, _data, Enum.Operation.Call);
+                ISafe(locker).execTransactionFromModuleReturnData(_target, 0, _data, Enum.Operation.Call);
         } else {
             // Otherwise, the `gateway` pass the execution to the `locker` to call `target`
             (success, returnData) = ISafe(GATEWAY).execTransactionFromModuleReturnData(

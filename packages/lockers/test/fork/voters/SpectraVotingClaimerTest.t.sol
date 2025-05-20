@@ -1,15 +1,14 @@
 // SPDX-License-Identifier: Unlicense
-pragma solidity ^0.8.4;
+pragma solidity 0.8.28;
 
 import {Test} from "forge-std/src/Test.sol";
-import {SpectraVotingClaimer} from "src/SpectraVotingClaimer.sol";
+import {SpectraVotingClaimer} from "src/voters/SpectraVotingClaimer.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import {SpectraLocker} from "address-book/src/SpectraBase.sol";
+import {ILocker, ISafe} from "src/common/interfaces/spectra/stakedao/ILocker.sol";
+import {Enum} from "@safe/contracts/Safe.sol";
 import {Common} from "address-book/src/CommonBase.sol";
-
-interface Safe {
-    function enableModule(address module) external;
-}
+import {DAO} from "address-book/src/DAOBase.sol";
+import {SpectraLocker} from "address-book/src/SpectraBase.sol";
 
 contract SpectraVotingClaimerTest is Test {
     address public immutable WETH = Common.WETH;
@@ -17,17 +16,38 @@ contract SpectraVotingClaimerTest is Test {
 
     SpectraVotingClaimer spectraVotingClaimer;
 
+    function _enableModule(address _locker, address _module) internal {
+        vm.prank(DAO.GOVERNANCE);
+        ILocker(_locker).execTransaction(
+            _locker,
+            0,
+            abi.encodeWithSelector(ISafe.enableModule.selector, _module),
+            Enum.Operation.Call,
+            0,
+            0,
+            0,
+            address(0),
+            payable(0),
+            abi.encodePacked(uint256(uint160(DAO.GOVERNANCE)), uint8(0), uint256(1))
+        );
+    }
+
     function setUp() public virtual {
         vm.createSelectFork(vm.rpcUrl("base"), 28_965_463);
 
         // Deploy the claimer
-        spectraVotingClaimer = new SpectraVotingClaimer(msg.sender);
-        address locker = address(spectraVotingClaimer.LOCKER());
+        spectraVotingClaimer = new SpectraVotingClaimer(msg.sender, address(SpectraLocker.LOCKER));
 
-        // Authorize the module in the Safe
-        vm.startPrank(locker);
-        Safe(locker).enableModule(address(spectraVotingClaimer));
-        vm.stopPrank();
+        // Enable the claimer as a Safe module of the locker Safe Account, as this is the new version of the locker.
+        _enableModule(spectraVotingClaimer.LOCKER(), address(spectraVotingClaimer));
+        assertEq(ILocker(spectraVotingClaimer.LOCKER()).isModuleEnabled(address(spectraVotingClaimer)), true);
+
+        // Allow this test to call the claim function
+        vm.prank(spectraVotingClaimer.governance());
+        spectraVotingClaimer.allowAddress(address(this));
+
+        vm.label(address(spectraVotingClaimer), "SPECTRA_VOTING_CLAIMER");
+        vm.label(spectraVotingClaimer.LOCKER(), "SPECTRA_LOCKER");
     }
 
     function testClaim() public {
@@ -67,7 +87,5 @@ contract SpectraVotingClaimerTest is Test {
         assertGt(spectraTreasuryBalanceAfterClaim, spectraTreasuryBalanceBeforeClaim);
         assertGt(usdcRecipientBalanceAfterClaim, usdcRecipientBalanceBeforeClaim);
         assertGt(spectraRecipientBalanceAfterClaim, spectraRecipientBalanceBeforeClaim);
-
-        vm.stopPrank();
     }
 }

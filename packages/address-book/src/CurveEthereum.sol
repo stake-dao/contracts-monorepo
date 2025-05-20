@@ -11,7 +11,8 @@ library CurveProtocol {
     address internal constant GAUGE_CONTROLLER = 0x2F50D538606Fa9EDD2B11E2446BEb18C9D5846bB;
     address internal constant SMART_WALLET_CHECKER = 0xca719728Ef172d0961768581fdF35CB116e0B7a4;
 
-    address internal constant VOTING_APP = 0xE478de485ad2fe566d49342Cbd03E49ed7DB3356;
+    address internal constant VOTING_APP_OWNERSHIP = 0xE478de485ad2fe566d49342Cbd03E49ed7DB3356;
+    address internal constant VOTING_APP_PARAMETER = 0xBCfF8B0b9419b9A88c44546519b1e909cF330399;
     address internal constant MINTER = 0xd061D61a4d941c39E5453435B6345Dc261C2fcE0;
     address internal constant VE_BOOST = 0xD37A6aa3d8460Bd2b6536d608103D880695A23CD;
 
