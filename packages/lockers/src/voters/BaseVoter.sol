@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
-import {AllowanceManager} from "common/governance/AllowanceManager.sol";
 import {SafeModule} from "src/common/utils/SafeModule.sol";
 import {IGaugeController} from "@interfaces/curve/IGaugeController.sol";
+import {VoterPermissionManager} from "src/voters/utils/VoterPermissionManager.sol";
 
 /// @title BaseVoter
 /// @notice This contract is the base contract for all the voting related to the different protocols
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-abstract contract BaseVoter is AllowanceManager, SafeModule {
+abstract contract BaseVoter is VoterPermissionManager, SafeModule {
     ////////////////////////////////////////////////////////////////
     /// --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
@@ -17,7 +17,7 @@ abstract contract BaseVoter is AllowanceManager, SafeModule {
     /// @notice Error emitted when the length of the gauges and weights are not the same
     error INCORRECT_LENGTH();
 
-    constructor(address gateway) AllowanceManager(msg.sender) SafeModule(gateway) {}
+    constructor(address gateway) VoterPermissionManager(msg.sender) SafeModule(gateway) {}
 
     ////////////////////////////////////////////////////////////////
     /// --- PUBLIC FUNCTIONS
@@ -26,7 +26,7 @@ abstract contract BaseVoter is AllowanceManager, SafeModule {
     function voteGauges(address[] calldata _gauges, uint256[] calldata _weights)
         external
         virtual
-        onlyGovernanceOrAllowed
+        hasGaugesOrAllPermission
     {
         require(_gauges.length == _weights.length, INCORRECT_LENGTH());
 

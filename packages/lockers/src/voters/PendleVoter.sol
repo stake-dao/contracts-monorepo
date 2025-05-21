@@ -41,7 +41,7 @@ contract PendleVoter is BaseVoter {
     /// @param _weights uint64 gauges weights
     /// @dev The `_gauges` and `_weights` parameters must have the same length
     /// @custom:throws WRONG_DATA if the `_gauges` and `_weights` parameters have different lengths
-    function voteGauges(address[] calldata _gauges, uint64[] calldata _weights) external onlyGovernanceOrAllowed {
+    function voteGauges(address[] calldata _gauges, uint64[] calldata _weights) external hasGaugesOrAllPermission {
         if (_gauges.length != _weights.length) revert WRONG_DATA();
 
         bytes memory votes_data = abi.encodeWithSignature("vote(address[],uint64[])", _gauges, _weights);
@@ -49,7 +49,7 @@ contract PendleVoter is BaseVoter {
     }
 
     /// @notice DEPRECATED: Use `voteGauges(address[],uint64[])` instead
-    function voteGauges(address[] calldata, uint256[] calldata) external override {
+    function voteGauges(address[] calldata, uint256[] calldata) external pure override {
         revert("NOT_IMPLEMENTED");
     }
 

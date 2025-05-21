@@ -9,6 +9,7 @@ import {BalancerVoter} from "src/voters/BalancerVoter.sol";
 import {Test} from "forge-std/src/Test.sol";
 import {MockGateway} from "test/common/MockGateway.sol";
 import {ILocker} from "src/common/interfaces/ILocker.sol";
+import {VoterPermissionManager} from "src/voters/utils/VoterPermissionManager.sol";
 
 struct VeBalance {
     uint128 bias;
@@ -84,19 +85,19 @@ contract GaugeVoterTest is Test {
 
         /////// VOTER -- ALLOW ADDRESS ///////
         vm.prank(curveVoter.governance());
-        curveVoter.allowAddress(address(this));
+        curveVoter.setPermission(address(this), VoterPermissionManager.Permission.GAUGES_ONLY);
 
         vm.prank(balancerVoter.governance());
-        balancerVoter.allowAddress(address(this));
+        balancerVoter.setPermission(address(this), VoterPermissionManager.Permission.GAUGES_ONLY);
 
         vm.prank(fraxVoter.governance());
-        fraxVoter.allowAddress(address(this));
+        fraxVoter.setPermission(address(this), VoterPermissionManager.Permission.GAUGES_ONLY);
 
         vm.prank(fxnVoter.governance());
-        fxnVoter.allowAddress(address(this));
+        fxnVoter.setPermission(address(this), VoterPermissionManager.Permission.GAUGES_ONLY);
 
         vm.prank(pendleVoter.governance());
-        pendleVoter.allowAddress(address(this));
+        pendleVoter.setPermission(address(this), VoterPermissionManager.Permission.GAUGES_ONLY);
 
         // labels
         vm.label(address(gateway), "gateway");

@@ -98,7 +98,7 @@ contract SpectraVotingClaimer is AllowanceManager, SafeModule {
     /// @param _newRecipient new recipient address
     /// @custom:throws ZERO_ADDRESS if the recipient is a zero address
     /// @custom:throws NotAuthorized if the caller is not the governance or an allowed address
-    function changeRecipient(address _newRecipient) external onlyGovernanceOrAllowed {
+    function changeRecipient(address _newRecipient) external onlyGovernance {
         if (_newRecipient == address(0)) revert ZERO_ADDRESS();
         recipient = _newRecipient;
     }
@@ -135,7 +135,7 @@ contract SpectraVotingClaimer is AllowanceManager, SafeModule {
     /// @notice Claim pending Spectra voting rewards
     /// @custom:throws ZERO_ADDRESS if the recipient is a zero address
     /// @custom:throws NotAuthorized if the caller is not the governance or an allowed address
-    function claim() external onlyGovernanceOrAllowed {
+    function claim() external onlyGovernance {
         if (recipient == address(0)) revert ZERO_ADDRESS();
 
         ISpectraVoter voter = ISpectraVoter(SPECTRA_VOTER);

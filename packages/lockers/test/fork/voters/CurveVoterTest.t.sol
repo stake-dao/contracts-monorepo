@@ -6,9 +6,11 @@ import {MockGateway} from "test/common/MockGateway.sol";
 import {ILocker} from "src/common/interfaces/ILocker.sol";
 import {CurveVoter} from "src/voters/CurveVoter.sol";
 import {IVoting, VoterState} from "@interfaces/curve/IVoting.sol";
+import {VoterPermissionManager} from "src/voters/utils/VoterPermissionManager.sol";
 
 contract GovCurveVoterTest is Test {
     CurveVoter internal curveVoter;
+    address internal immutable authorizedAddress = makeAddr("caller");
 
     function setUp() public virtual {
         vm.createSelectFork(vm.rpcUrl("mainnet"), 21_603_167);
@@ -23,6 +25,9 @@ contract GovCurveVoterTest is Test {
         address locker = curveVoter.LOCKER();
         vm.prank(ILocker(locker).governance());
         ILocker(locker).setGovernance(gateway);
+
+        // Set this contract the permission to interact with the voter
+        curveVoter.setPermission(authorizedAddress, VoterPermissionManager.Permission.PROPOSALS_ONLY);
 
         // Labels the important addresses
         vm.label(address(curveVoter), "curveVoter");
@@ -40,7 +45,9 @@ contract GovCurveVoterTest is Test {
         assertTrue(voterState == VoterState.Absent, "Invalid initial state");
 
         // Vote with the Safe Module
-        curveVoter.voteOwnership(voteId, curveVoterOwnership.PCT_BASE(), 0);
+        uint256 pctBase = curveVoterOwnership.PCT_BASE();
+        vm.prank(authorizedAddress);
+        curveVoter.voteOwnership(voteId, pctBase, 0);
 
         // Check if the vote is applied
         // eq to 1 because yea > nay

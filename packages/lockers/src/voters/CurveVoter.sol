@@ -62,7 +62,7 @@ contract CurveVoter is BaseVoter {
     /// @dev The given vote type must be either Ownership (0) or Parameter (1)
     /// @custom:throws WRONG_VOTE_TYPE when the vote type is not valid
     /// @custom:throws NotAuthorized when the caller is not allowed
-    function votes(Vote[] calldata _votes) external onlyGovernanceOrAllowed {
+    function votes(Vote[] calldata _votes) external hasProposalsOrAllPermission {
         uint256 length = _votes.length;
 
         // Vote for each proposal atomically
@@ -84,7 +84,7 @@ contract CurveVoter is BaseVoter {
     /// @param _yeaPct Percent of votes in favor of the proposal
     /// @param _nayPct Percent of votes against the proposal
     /// @custom:throws NotAuthorized when the caller is not allowed
-    function voteOwnership(uint256 _voteId, uint256 _yeaPct, uint256 _nayPct) public onlyGovernanceOrAllowed {
+    function voteOwnership(uint256 _voteId, uint256 _yeaPct, uint256 _nayPct) public hasProposalsOrAllPermission {
         _votePercent(_voteId, _yeaPct, _nayPct, VOTER_OWNERSHIP);
     }
 
@@ -93,7 +93,7 @@ contract CurveVoter is BaseVoter {
     /// @param _yeaPct Percent of votes in favor of the proposal
     /// @param _nayPct Percent of votes against the proposal
     /// @custom:throws NotAuthorized when the caller is not allowed
-    function voteParameter(uint256 _voteId, uint256 _yeaPct, uint256 _nayPct) public onlyGovernanceOrAllowed {
+    function voteParameter(uint256 _voteId, uint256 _yeaPct, uint256 _nayPct) public hasProposalsOrAllPermission {
         _votePercent(_voteId, _yeaPct, _nayPct, VOTER_PARAMETER);
     }
 
