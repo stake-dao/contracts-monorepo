@@ -175,7 +175,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @param policy The harvest policy.
     /// @custom:reverts ZeroAddress if the accountant or protocol controller address is the zero address.
     constructor(bytes4 protocolId, address protocolController, address accountant, IStrategy.HarvestPolicy policy)
-        ERC20(string.concat("StakeDAO Vault"), string.concat("sd-vault"))
+        ERC20("StakeDAO Fusion Vault", "sd-fusion-vault")
     {
         require(accountant != address(0) && protocolController != address(0), ZeroAddress());
         require(protocolId != bytes4(0), InvalidProtocolId());
@@ -237,49 +237,30 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
     /// @notice Deposits `assets` from `account` into the vault and mints shares to `account`.
     /// @dev Only callable by allowed addresses. `account` should have approved this contract to transfer `assets`.
-    /// @param account The address to deposit assets from and mint shares to.
-    /// @param assets The amount of assets to deposit.
-    /// @return _ The amount of assets deposited.
-    function deposit(address account, uint256 assets) external returns (uint256) {
-        return deposit(account, assets, address(0));
-    }
-
-    /// @notice Deposits `assets` from `account` into the vault and mints shares to `account`.
-    /// @dev Only callable by allowed addresses. `account` should have approved this contract to transfer `assets`.
     ///      This function tracks the referrer address and handles deposit allocation through strategy and updates rewards.
     /// @param account The address to deposit assets from and mint shares to.
+    /// @param receiver The address to receive the minted shares.
     /// @param assets The amount of assets to deposit.
     /// @param referrer The address of the referrer. Can be the zero address.
     /// @return _ The amount of assets deposited.
-    function deposit(address account, uint256 assets, address referrer) public returns (uint256) {
-        if (account == address(0)) revert ZeroAddress();
+    /// @custom:reverts ZeroAddress if the account or receiver address is the zero address.
+    function deposit(address account, address receiver, uint256 assets, address referrer)
+        public
+        onlyAllowed
+        returns (uint256)
+    {
+        require(account != address(0) && receiver != address(0), ZeroAddress());
 
-        _deposit(account, account, assets, assets, referrer);
+        _deposit(account, receiver, assets, assets, referrer);
 
         // return the amount of assets deposited. Thanks to the 1:1 relationship between assets and shares
         // the amount of assets deposited is the same as the amount of shares minted
         return assets;
     }
 
-    /// @notice Mints exact `shares` to `account` by depositing `account`'s assets.
-    /// @dev Only callable by allowed addresses.
-    /// @param account The address to deposit assets from and mint shares to.
-    /// @param shares The amount of shares to mint.
-    /// @return _ The amount of shares minted.
-    /// @custom:reverts OnlyAllowed if the caller is not allowed.
-    function mint(address account, uint256 shares, address referrer) external returns (uint256) {
-        return deposit(account, shares, referrer);
-    }
-
-    /// @notice Mints exact `shares` to `account` by depositing `account`'s assets.
-    /// @dev Only callable by allowed addresses.
-    /// @param account The address to deposit assets from and mint shares to.
-    /// @param shares The amount of shares to mint.
-    /// @return _ The amount of shares minted.
-    /// @custom:reverts OnlyAllowed if the caller is not allowed.
-    function mint(address account, uint256 shares) external returns (uint256) {
-        return deposit(account, shares, address(0));
-    }
+    ///////////////////////////////////////////////////////////////
+    /// ~ DEPOSIT - INTERNAL
+    ///////////////////////////////////////////////////////////////
 
     /// @dev Internal function to deposit assets into the vault.
     ///      1. Update the reward state for the receiver.
@@ -337,7 +318,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         // if the caller isn't the owner, check if the caller is allowed to withdraw the amount of assets
         if (msg.sender != owner) {
             uint256 allowed = allowance(owner, msg.sender);
-            if (assets > allowed) revert NotApproved();
+            require(assets <= allowed, NotApproved());
             if (allowed != type(uint256).max) _spendAllowance(owner, msg.sender, assets);
         }
 
@@ -431,7 +412,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         amounts = new uint256[](tokens.length);
         for (uint256 i; i < tokens.length; i++) {
             address rewardToken = tokens[i];
-            if (!isRewardToken(rewardToken)) revert InvalidRewardToken();
+            require(isRewardToken(rewardToken), InvalidRewardToken());
 
             // Calculate earned rewards since last claim
             AccountData storage accountData_ = accountData[account][rewardToken];
@@ -460,7 +441,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         require(distributor != address(0), ZeroAddress());
 
         RewardData storage reward = rewardData[rewardToken];
-        require(_isRewardToken(reward) == false, RewardAlreadyExists());
+        require(!_isRewardToken(reward), RewardAlreadyExists());
 
         rewardTokens.push(rewardToken);
         reward.rewardsDistributor = distributor;
@@ -478,7 +459,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         _checkpoint(address(0), address(0));
 
         RewardData storage reward = rewardData[rewardToken];
-        if (reward.rewardsDistributor != msg.sender) revert UnauthorizedRewardsDistributor();
+        require(reward.rewardsDistributor == msg.sender, UnauthorizedRewardsDistributor());
 
         uint32 currentTime = uint32(block.timestamp);
         uint32 periodFinish = reward.periodFinish;
@@ -587,7 +568,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
         if (timeDelta > 0) {
             // Calculate additional rewards per token since last update
-            rewardRatePerToken = Math.mulDiv(timeDelta * reward.rewardRate, 1, _totalSupply);
+            rewardRatePerToken = Math.mulDiv(timeDelta, reward.rewardRate, _totalSupply);
         }
 
         return (reward.rewardPerTokenStored + rewardRatePerToken).toUint128();
@@ -701,8 +682,8 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @notice Returns the maximum amount of assets that can be deposited.
     /// @dev The parameter is not used and is included to satisfy the interface. Pass whatever you want to.
     /// @return _ The maximum amount of assets that can be deposited.
-    function maxDeposit(address _account) public view returns (uint256) {
-        return IERC20(asset()).balanceOf(_account);
+    function maxDeposit(address) public pure returns (uint256) {
+        return type(uint128).max;
     }
 
     /// @notice Returns the maximum amount of shares that can be minted.
@@ -710,7 +691,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     ///      is the same as the max deposit.
     /// @param _account The address of the account to calculate the max mint for.
     /// @return _ The maximum amount of shares that can be minted.
-    function maxMint(address _account) external view returns (uint256) {
+    function maxMint(address _account) external pure returns (uint256) {
         return maxDeposit(_account);
     }
 
@@ -882,12 +863,12 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
             amounts: new uint256[](targets.length)
         });
 
-        /// Withdraw 0, just to get the pending rewards.
+        /// Checkpoint to get the pending rewards.
         /// @dev We pass the strategy as the receiver to avoid the zero address check on some tokens.
         IStrategy.PendingRewards memory pendingRewards = strategy().withdraw(allocation, POLICY, address(strategy()));
 
         // 2. Update Balances via Accountant
-        ACCOUNTANT.checkpoint(gauge(), from, to, uint128(amount), pendingRewards, POLICY);
+        ACCOUNTANT.checkpoint(gauge(), from, to, amount.toUint128(), pendingRewards, POLICY);
 
         // 3. Emit Transfer event
         emit Transfer(from, to, amount);
@@ -907,7 +888,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         IStrategy.HarvestPolicy policy,
         address referrer
     ) internal {
-        ACCOUNTANT.checkpoint(gauge(), address(0), to, uint128(amount), pendingRewards, policy, referrer);
+        ACCOUNTANT.checkpoint(gauge(), address(0), to, amount.toUint128(), pendingRewards, policy, referrer);
     }
 
     /// @notice Burns vault shares
@@ -922,14 +903,14 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         IStrategy.PendingRewards memory pendingRewards,
         IStrategy.HarvestPolicy policy
     ) internal {
-        ACCOUNTANT.checkpoint(gauge(), from, address(0), uint128(amount), pendingRewards, policy);
+        ACCOUNTANT.checkpoint(gauge(), from, address(0), amount.toUint128(), pendingRewards, policy);
     }
 
     /// @notice Generates the vault's name
     /// @dev Combines "StakeDAO", underlying asset name, and "Vault"
     /// @return Full vault name
     function name() public view override(ERC20, IERC20Metadata) returns (string memory) {
-        return string.concat("StakeDAO Fusion", IERC20Metadata(asset()).name(), " Vault");
+        return string.concat("StakeDAO Fusion ", IERC20Metadata(asset()).name(), " Vault");
     }
 
     /// @notice Generates the vault's symbol

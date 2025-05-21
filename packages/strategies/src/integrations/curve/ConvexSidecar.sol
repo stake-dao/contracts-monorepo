@@ -14,8 +14,8 @@ contract ConvexSidecar is Sidecar {
     using SafeERC20 for IERC20;
     using ImmutableArgsParser for address;
 
-    /// @notice The bytes4 ID of the Convex protocol
-    /// @dev Used to identify the Convex protocol in the registry
+    /// @notice The bytes4 ID of the Curve protocol
+    /// @dev Used to identify the Curve protocol in the registry
     bytes4 private constant CURVE_PROTOCOL_ID = bytes4(keccak256("CURVE"));
 
     //////////////////////////////////////////////////////
@@ -71,7 +71,7 @@ contract ConvexSidecar is Sidecar {
     function _initialize() internal override {
         require(asset().allowance(address(this), address(BOOSTER)) == 0, AlreadyInitialized());
 
-        asset().safeIncreaseAllowance(address(BOOSTER), type(uint256).max);
+        asset().forceApprove(address(BOOSTER), type(uint256).max);
     }
 
     //////////////////////////////////////////////////////
@@ -132,11 +132,9 @@ contract ConvexSidecar is Sidecar {
             /// For PIDs greater than 150, the virtual balance pool also has a wrapper.
             /// So we need to get the token from the wrapper.
             /// More: https://docs.convexfinance.com/convexfinanceintegration/baserewardpool
+            tokens[i] = IBaseRewardPool(_token).rewardToken();
             if (pid() >= 151) {
-                address wrapper = IBaseRewardPool(_token).rewardToken();
-                tokens[i] = IStashTokenWrapper(wrapper).token();
-            } else {
-                tokens[i] = IBaseRewardPool(_token).rewardToken();
+                tokens[i] = IStashTokenWrapper(tokens[i]).token();
             }
 
             unchecked {

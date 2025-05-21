@@ -42,12 +42,12 @@ contract RewardVault__deposit is RewardVaultBaseTest {
     // Due to the 1:1 relationship of the assets and the shares, the deposit and the  functions
     // do the same thing. This function is a wrapper that calls the appropriate function based on the context
     // of the test. This is a virtual allowing the mint test to override it to call `mint` instead of `deposit`.
-    function deposit_mint_permissioned_wrapper(address account, uint256 assets, address referrer)
+    function deposit_mint_permissioned_wrapper(address account, address receiver, uint256 assets, address referrer)
         internal
         virtual
         returns (uint256)
     {
-        return cloneRewardVault.deposit(account, assets, referrer);
+        return cloneRewardVault.deposit(account, receiver, assets, referrer);
     }
 
     function setUp() public virtual override {
@@ -507,7 +507,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
 
         vm.prank(caller);
         vm.expectRevert(RewardVault.ZeroAddress.selector);
-        deposit_mint_permissioned_wrapper(address(0), OWNER_BALANCE, address(0));
+        deposit_mint_permissioned_wrapper(address(0), address(0), OWNER_BALANCE, address(0));
 
         // 2. it mints the shares to the account
         vm.mockCall(
@@ -534,7 +534,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         vm.prank(caller);
         vm.expectEmit(true, true, true, true);
         emit IERC4626.Deposit(caller, account, OWNER_BALANCE, OWNER_BALANCE);
-        deposit_mint_permissioned_wrapper(account, OWNER_BALANCE, address(0));
+        deposit_mint_permissioned_wrapper(account, account, OWNER_BALANCE, address(0));
     }
 
     function test_WhenTheReferrerIsSetInThePublicFunction(address caller, address receiver, address referrer)
@@ -614,7 +614,7 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         );
 
         vm.prank(caller);
-        deposit_mint_permissioned_wrapper(account, OWNER_BALANCE, referrer);
+        deposit_mint_permissioned_wrapper(account, account, OWNER_BALANCE, referrer);
     }
 
     function test_RevertsIfCallingAccountantCheckpointReverts(address caller, address receiver)

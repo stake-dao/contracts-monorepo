@@ -61,8 +61,7 @@ contract CurveAllocator is Allocator {
         uint256 total = balanceOfLocker + balanceOfSidecar + amount;
 
         // 5. Compute the optimal Locker balance after the deposit.
-        (uint256 veLocker, uint256 veTotal) = _getVeBoosts();
-        uint256 optimalLocker = total.mulDiv(veLocker, veTotal);
+        uint256 optimalLocker = _computeLockerAllocation(total);
 
         // 6. Determine how much to send to the Locker.
         uint256 toLocker = optimalLocker > balanceOfLocker ? optimalLocker - balanceOfLocker : 0;
@@ -113,8 +112,7 @@ contract CurveAllocator is Allocator {
         // 6. Compute optimal post‑withdraw Locker target.
         uint256 total = totalBalance - amount;
 
-        (uint256 veLocker, uint256 veTotal) = _getVeBoosts();
-        uint256 lockerTarget = total.mulDiv(veLocker, veTotal);
+        uint256 lockerTarget = _computeLockerAllocation(total);
 
         // 7. Withdraw up to the Locker’s excess first.
         uint256 excessLocker = balanceOfLocker > lockerTarget ? balanceOfLocker - lockerTarget : 0;
@@ -160,8 +158,7 @@ contract CurveAllocator is Allocator {
         alloc.amounts = _pair(0, 0);
 
         // 3. Compute one‑shot optimal split.
-        (uint256 veLocker, uint256 veTotal) = _getVeBoosts();
-        uint256 lockerAmt = totalBalance.mulDiv(veLocker, veTotal);
+        uint256 lockerAmt = _computeLockerAllocation(totalBalance);
 
         alloc.amounts[1] = lockerAmt;
         alloc.amounts[0] = totalBalance - lockerAmt;
@@ -175,20 +172,6 @@ contract CurveAllocator is Allocator {
     function getAllocationTargets(address gauge) public view override returns (address[] memory) {
         address sidecar = CONVEX_SIDECAR_FACTORY.sidecar(gauge);
         return sidecar == address(0) ? super.getAllocationTargets(gauge) : _targets(sidecar);
-    }
-
-    /// @notice Computes the optimal Stake DAO Locker balance (legacy helper).
-    function getOptimalLockerBalance(address gauge) public view returns (uint256 balanceOfLocker) {
-        // 1. Current veBoost weights
-        uint256 veBoostOfLocker = IBalanceProvider(BOOST_DELEGATION_V3).balanceOf(LOCKER);
-        uint256 veBoostOfConvex = IBalanceProvider(BOOST_DELEGATION_V3).balanceOf(CONVEX_BOOST_HOLDER);
-
-        // 2. Current Convex LP balance on the gauge
-        uint256 balanceOfConvex = IBalanceProvider(gauge).balanceOf(CONVEX_BOOST_HOLDER);
-        if (balanceOfConvex == 0 || veBoostOfConvex == 0) return 0;
-
-        // 3. Compute the optimal balance for Stake DAO
-        balanceOfLocker = balanceOfConvex.mulDiv(veBoostOfLocker, veBoostOfConvex);
     }
 
     //////////////////////////////////////////////////////
@@ -209,10 +192,12 @@ contract CurveAllocator is Allocator {
         arr[1] = a1;
     }
 
-    /// @dev Returns the veBoost of the locker and the total veBoost (locker + convex).
-    function _getVeBoosts() private view returns (uint256 veLocker, uint256 veTotal) {
-        veLocker = IBalanceProvider(BOOST_DELEGATION_V3).balanceOf(LOCKER);
+    /// @dev Computes the optimal amount to allocate to the locker based on ratio of veBoosts.
+    /// @param totalBalance The total balance of the gauge.
+    /// @return lockerAmt The optimal amount to allocate to the locker.
+    function _computeLockerAllocation(uint256 totalBalance) private view returns (uint256 lockerAmt) {
+        uint256 veLocker = IBalanceProvider(BOOST_DELEGATION_V3).balanceOf(LOCKER);
         uint256 veConvex = IBalanceProvider(BOOST_DELEGATION_V3).balanceOf(CONVEX_BOOST_HOLDER);
-        veTotal = veLocker + veConvex;
+        lockerAmt = totalBalance.mulDiv(veLocker, veLocker + veConvex);
     }
 }
