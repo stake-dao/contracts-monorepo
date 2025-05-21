@@ -43,11 +43,11 @@ contract SpectraVotingClaimerTest is Test {
         assertEq(canClaim, true);
 
         // Fetch all balances before the claim
-        uint256 usdcSafeBalanceBeforeClaim = IERC20(WETH).balanceOf(spectraVotingClaimer.SD_SAFE());
+        uint256 usdcSafeBalanceBeforeClaim = IERC20(WETH).balanceOf(spectraVotingClaimer.LOCKER());
         uint256 usdcTreasuryBalanceBeforeClaim = IERC20(WETH).balanceOf(spectraVotingClaimer.SD_TREASURY());
         uint256 usdcRecipientBalanceBeforeClaim = IERC20(WETH).balanceOf(spectraVotingClaimer.recipient());
 
-        uint256 spectraSafeBalanceBeforeClaim = IERC20(GHO).balanceOf(spectraVotingClaimer.SD_SAFE());
+        uint256 spectraSafeBalanceBeforeClaim = IERC20(GHO).balanceOf(spectraVotingClaimer.LOCKER());
         uint256 spectraTreasuryBalanceBeforeClaim = IERC20(GHO).balanceOf(spectraVotingClaimer.SD_TREASURY());
         uint256 spectraRecipientBalanceBeforeClaim = IERC20(GHO).balanceOf(spectraVotingClaimer.recipient());
 
@@ -55,11 +55,11 @@ contract SpectraVotingClaimerTest is Test {
         spectraVotingClaimer.claim();
 
         // Fetch balances after the claim
-        uint256 usdcSafeBalanceAfterClaim = IERC20(WETH).balanceOf(spectraVotingClaimer.SD_SAFE());
+        uint256 usdcSafeBalanceAfterClaim = IERC20(WETH).balanceOf(spectraVotingClaimer.LOCKER());
         uint256 usdcTreasuryBalanceAfterClaim = IERC20(WETH).balanceOf(spectraVotingClaimer.SD_TREASURY());
         uint256 usdcRecipientBalanceAfterClaim = IERC20(WETH).balanceOf(spectraVotingClaimer.recipient());
 
-        uint256 spectraSafeBalanceAfterClaim = IERC20(GHO).balanceOf(spectraVotingClaimer.SD_SAFE());
+        uint256 spectraSafeBalanceAfterClaim = IERC20(GHO).balanceOf(spectraVotingClaimer.LOCKER());
         uint256 spectraTreasuryBalanceAfterClaim = IERC20(GHO).balanceOf(spectraVotingClaimer.SD_TREASURY());
         uint256 spectraRecipientBalanceAfterClaim = IERC20(GHO).balanceOf(spectraVotingClaimer.recipient());
 
