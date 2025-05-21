@@ -14,10 +14,10 @@ contract PendleVoter is BaseVoter {
     ///////////////////////////////////////////////////////////////
 
     /// @notice The address of the Pendle locker
-    address public immutable LOCKER = PendleLocker.LOCKER;
+    address public constant LOCKER = PendleLocker.LOCKER;
 
     /// @notice The address of the Pendle voting controller contract
-    address public immutable CONTROLLER = PendleLocker.VOTING_CONTROLLER;
+    address public constant CONTROLLER = PendleLocker.VOTING_CONTROLLER;
 
     ////////////////////////////////////////////////////////////////
     /// --- EVENTS & ERRORS

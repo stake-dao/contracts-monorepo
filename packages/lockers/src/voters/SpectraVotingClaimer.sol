@@ -98,7 +98,7 @@ contract SpectraVotingClaimer is AllowanceManager, SafeModule {
     /// @param _newRecipient new recipient address
     /// @custom:throws ZERO_ADDRESS if the recipient is a zero address
     /// @custom:throws NotAuthorized if the caller is not the governance or an allowed address
-    function changeRecipient(address _newRecipient) external onlyGovernance {
+    function setRecipient(address _newRecipient) external onlyGovernance {
         if (_newRecipient == address(0)) revert ZERO_ADDRESS();
         recipient = _newRecipient;
     }
@@ -144,8 +144,8 @@ contract SpectraVotingClaimer is AllowanceManager, SafeModule {
         for (uint256 i; i < poolLength; i++) {
             uint160 poolId = voter.poolIds(i);
 
-            _bribe(voter.poolToBribe(poolId), poolId);
-            _fee(voter.poolToFees(poolId), poolId);
+            _claimRewards(voter.poolToBribe(poolId), poolId);
+            _claimRewards(voter.poolToFees(poolId), poolId);
         }
     }
 
@@ -153,32 +153,14 @@ contract SpectraVotingClaimer is AllowanceManager, SafeModule {
     /// --- INTERNAL FUNCTIONS
     ///////////////////////////////////////////////////////////////
 
-    /// @notice Claim the claimable bribes for a given pool
+    /// @notice Claim the claimable rewards (bribes or fees) for a given pool
     /// @param votingRewardAddress Address of the voting reward contract
-    /// @param poolId Pool id to claim the bribes for
-    function _bribe(address votingRewardAddress, uint160 poolId) internal {
+    /// @param poolId Pool id to claim the rewards for
+    function _claimRewards(address votingRewardAddress, uint160 poolId) internal {
         address[] memory rewardTokens = _getTokenRewards(votingRewardAddress);
         uint256 length = rewardTokens.length;
 
         // Check the claimable bribes for each token and claim them if there are any
-        for (uint256 a; a < length; a++) {
-            address rewardToken = rewardTokens[a];
-
-            uint256 earned = _earnedAmount(votingRewardAddress, rewardToken);
-            if (earned == 0) continue;
-
-            _claimAndDistribute(earned, rewardToken, poolId, votingRewardAddress);
-        }
-    }
-
-    /// @notice Claim the claimable fees for a given pool
-    /// @param votingRewardAddress Address of the voting reward contract
-    /// @param poolId Pool id to claim the fees for
-    function _fee(address votingRewardAddress, uint160 poolId) internal {
-        address[] memory rewardTokens = _getTokenRewards(votingRewardAddress);
-        uint256 length = rewardTokens.length;
-
-        // Check the claimable fees for each token and claim them if there are any
         for (uint256 a; a < length; a++) {
             address rewardToken = rewardTokens[a];
 
