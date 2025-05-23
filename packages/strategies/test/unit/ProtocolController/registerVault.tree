@@ -1,8 +1,0 @@
-ProtocolController__registerVault
-├── it reverts if the gauge is the zero address
-├── it reverts if the vault is the zero address
-├── it reverts if the asset is the zero address
-├── it reverts if the reward receiver is the zero address
-├── it reverts if caller is not the registrar
-├── it registers a vault for a gauge
-└── it emits a VaultRegistered event

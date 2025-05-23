@@ -1,3 +1,0 @@
-Router__getModule
-├── it returns the module at the given identifier
-└── it returns address(0) if the module is not set

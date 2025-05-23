@@ -1,5 +1,0 @@
-Allocator__constructor
-├── it sets the gateway to the given gateway
-├── it sets the gateway to the locker if locker is address 0
-├── it sets the locker to the given locker if locker is not address 0
-└── it reverts if the gateway is zero address

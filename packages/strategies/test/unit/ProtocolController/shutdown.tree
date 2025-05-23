@@ -1,4 +1,0 @@
-ProtocolController__shutdown
-├── it reverts if caller is not the owner
-├── it shuts down a gauge
-└── it emits a GaugeShutdown event

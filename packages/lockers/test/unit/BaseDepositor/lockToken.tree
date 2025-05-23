@@ -1,2 +1,0 @@
-BaseDepositor__lockToken
-└── it reverts if the state is CANCELED

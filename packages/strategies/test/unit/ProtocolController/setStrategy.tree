@@ -1,5 +1,0 @@
-ProtocolController__setStrategy
-├── it sets the strategy for a protocol
-├── it emits a ProtocolComponentSet event
-├── it reverts if the sender is not the owner
-└── it reverts if the strategy is the zero address

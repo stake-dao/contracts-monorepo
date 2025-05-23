@@ -1,4 +1,0 @@
-Router__getters
-├── it returns the version
-├── it returns the buffer
-└── it returns the owner

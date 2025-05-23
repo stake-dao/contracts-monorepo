@@ -1,5 +1,0 @@
-ProtocolController__setAccountant
-├── it sets the accountant for a protocol
-├── it emits the update event
-├── it reverts if the caller is not the owner
-└── it reverts if the accountant is the zero address

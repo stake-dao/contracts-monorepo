@@ -1,5 +1,0 @@
-Accountant__setHarvestFeePercent
-├── it revert when total fee exceed the max fee percent
-├── it store valid harvest fee percent value
-├── it revert if called by non owner
-└── it emit the harvest event

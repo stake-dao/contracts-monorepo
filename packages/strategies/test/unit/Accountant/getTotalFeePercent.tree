@@ -1,3 +1,0 @@
-Accountant__getTotalFeePercent
-├── it returns the correct value
-└── it reads the storage

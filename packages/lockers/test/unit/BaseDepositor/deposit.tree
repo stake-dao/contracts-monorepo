@@ -1,2 +1,0 @@
-BaseDepositor__deposit
-└── it reverts if the state is CANCELED

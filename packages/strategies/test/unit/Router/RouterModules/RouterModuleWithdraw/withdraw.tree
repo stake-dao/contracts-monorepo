@@ -1,3 +1,0 @@
-RouterModuleWithdraw__withdraw
-├── it reverts if used directly
-└── it withdraws assets from the reward vault to the account

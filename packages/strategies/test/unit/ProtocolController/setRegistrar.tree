@@ -1,5 +1,0 @@
-ProtocolController__setRegistrar
-├── it sets the registrar for a protocol
-├── it emits a RegistrarPermissionSet event
-├── it reverts if the caller is not the owner
-└── it reverts if the registrar is the zero address

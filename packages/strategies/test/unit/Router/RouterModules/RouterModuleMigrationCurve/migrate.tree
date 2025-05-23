@@ -1,4 +1,0 @@
-RouterModuleMigrationCurve__migrate
-├── it reverts if called by unauthorized address
-├── it reverts if the from and to doesn't have the same token
-└── it migrates the token from the liquidity gauge to the reward vault

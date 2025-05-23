@@ -1,7 +1,0 @@
-ProtocolContext__executeTransaction
-├── it executes on the given target if locker equals gateway
-├── it returns the success of the transaction if locker equals gateway
-├── it revert if the transaction reverts if locker equals gateway
-├── it executes on the locker if locker not equals gateway
-├── it returns the success of the transaction if locker not equals gateway
-└── it revert if the transaction reverts if locker not equals gateway

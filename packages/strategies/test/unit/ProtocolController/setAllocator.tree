@@ -1,5 +1,0 @@
-ProtocolController__setAllocator
-├── it sets the allocator for a protocol
-├── it emits the update event
-├── it reverts if the caller is not the owner
-└── it reverts if the allocator is the zero address

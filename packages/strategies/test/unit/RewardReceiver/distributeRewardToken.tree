@@ -1,5 +1,0 @@
-RewardReceiver__distributeRewardToken
-├── it reverts if the token is not present in the vault
-├── it reverts if there are no rewards to distribute
-├── it reverts if the balance is higher than uint128 max
-└── it asks the vault to get the reward tokens

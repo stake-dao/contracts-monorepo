@@ -1,8 +1,0 @@
-Strategy__flush
-├── it reverts if not called by the accountant
-├── it correctly retrieves the flush amount from transient storage
-├── it correctly executes the transfer transaction
-│   ├── it calls transfer on the reward token
-│   ├── it transfers to the accountant address
-│   └── it transfers the correct amount
-└── it correctly resets the flush amount in transient storage

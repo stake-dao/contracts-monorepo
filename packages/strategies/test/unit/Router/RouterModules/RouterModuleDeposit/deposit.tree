@@ -1,4 +1,0 @@
-RouterModuleDeposit__deposit
-├── it reverts if used directly
-├── it reverts if not delegatecall by authorized contract
-└── it deposits assets into the reward vault

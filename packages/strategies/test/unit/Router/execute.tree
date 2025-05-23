@@ -1,7 +1,0 @@
-Router__execute
-├── it reverts if one of the modules is not set
-├── it reverts if one of the calls is invalid
-├── it reverts if one of the calls reverts
-├── it executes the calls and returns the results
-├── it executes modules with delegatecall
-└── it can receive ether

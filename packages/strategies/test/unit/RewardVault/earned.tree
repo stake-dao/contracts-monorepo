@@ -1,7 +1,0 @@
-RewardVault__earned
-├── it returns the earned reward and claimable amount for a given account
-├── it returns zero for incorrect token
-├── it returns zero for incorrect account
-├── it returns zero when the balance is zero
-└── it returns the claimable when there is no earning
-
