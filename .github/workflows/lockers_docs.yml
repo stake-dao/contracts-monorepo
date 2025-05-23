@@ -1,5 +1,8 @@
 name: Lockers - Deploy Docs
 
+env:
+  VYPER_VERSION: "0.3.10"
+
 on:
   workflow_dispatch:
   push:
@@ -36,6 +39,9 @@ jobs:
 
       - name: Install dependencies
         run: pnpm install
+
+      - name: Install vyper
+        run: pipx install vyper==${{ env.VYPER_VERSION }}
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1
