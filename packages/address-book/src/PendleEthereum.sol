@@ -19,7 +19,6 @@ library PendleLocker {
     address internal constant VOTERS_REWARDS_RECIPIENT = 0xe42a462dbF54F281F95776e663D8c942dcf94f17;
 
     address internal constant STRATEGY = 0xA7641acBc1E85A7eD70ea7bCFFB91afb12AD0c54;
-    address internal constant VE_SDT_FEE_PROXY = 0x12992595328E52267c95e45B1a97014D6Ddf8683;
     address internal constant FACTORY = 0x4C1CF444Bbbfd3eD6608659B61A1107aF01181e5;
 }
 

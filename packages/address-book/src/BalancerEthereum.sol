@@ -22,7 +22,6 @@ library BalancerLocker {
     address internal constant VOTER = 0xff09A9b50A4E9b9AB95D2DCb552E8469f9c891Ff;
 
     address internal constant STRATEGY = 0x873b031Ea6E4236E44d933Aae5a66AF6d4DA419d;
-    address internal constant VE_SDT_FEE_PROXY = 0xF94492a9efEE2A6A82256e5794C988D3A711539d;
     address internal constant FACTORY = 0x6e37f0f744377936205610591Eb8787d7bE7946f;
     address internal constant VE_BOOST_DELEGATION = 0xda9846665Bdb44b0d0CAFFd0d1D4A539932BeBdf;
 }

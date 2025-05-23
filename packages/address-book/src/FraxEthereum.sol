@@ -29,7 +29,6 @@ library FraxLocker {
     address internal constant VOTER = 0xaE26E4478FF6BbC555EAE020AFFea3B505fC4D05;
 
     address internal constant STRATEGY = 0xf285Dec3217E779353350443fC276c07D05917c3;
-    address internal constant VE_SDT_FEE_PROXY = 0x86Ebcd1bC876782670FE0B9ea23d8504569B9ffc;
 }
 
 library FraxVotemarket {

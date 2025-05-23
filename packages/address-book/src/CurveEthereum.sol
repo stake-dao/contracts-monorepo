@@ -32,7 +32,6 @@ library CurveLocker {
     address internal constant VOTER = 0x20b22019406Cf990F0569a6161cf30B8e6651dDa;
 
     address internal constant STRATEGY = 0x69D61428d089C2F35Bf6a472F540D0F82D1EA2cd;
-    address internal constant VE_SDT_FEE_PROXY = 0x1fE537BD59A221854a53a5B7a81585B572787fce;
     address internal constant FACTORY = 0xDC9718E7704f10DB1aFaad737f8A04bcd14C20AA;
 }
 
