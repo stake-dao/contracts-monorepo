@@ -180,7 +180,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="strategy"><a class="header" href="#strategy">Strategy</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/Strategy.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/Strategy.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="/src/interfaces/IStrategy.sol/interface.IStrategy.html">IStrategy</a>, <a href="/src/ProtocolContext.sol/contract.ProtocolContext.html">ProtocolContext</a></p>
 <p>A base contract for implementing protocol-specific strategies</p>
@@ -301,9 +301,7 @@ throws: OnlyAllowed If the caller is not allowed and the gauge is not shutdown</
 </div>
 <h3 id="harvest"><a class="header" href="#harvest">harvest</a></h3>
 <p>If the pool is shutdown, return the pending rewards.
-Use the shutdown function to withdraw the funds.
-When the receiver is not set, it means it's a transfer of the vault shares and we need to checkpoint by
-withdrawing 0.</p>
+Use the shutdown function to withdraw the funds.</p>
 <p>Harvests rewards from a gauge</p>
 <p><em>Called using delegatecall from the Accountant contract</em></p>
 <pre><code class="language-solidity">function harvest(address gauge, bytes memory extraData)

@@ -180,7 +180,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="routermodulemigrationcurve"><a class="header" href="#routermodulemigrationcurve">RouterModuleMigrationCurve</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/RouterModules/RouterModuleMigrationCurve.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/RouterModules/RouterModuleMigrationCurve.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="/src/interfaces/IRouterModule.sol/interface.IRouterModule.html">IRouterModule</a></p>
 <h2 id="state-variables"><a class="header" href="#state-variables">State Variables</a></h2>
@@ -194,13 +194,12 @@
 <h3 id="migrate"><a class="header" href="#migrate">migrate</a></h3>
 <p>Migrates shares from a liquidity gauge to a reward vault</p>
 <p><em>The account must have approved the token to the router contract</em></p>
-<pre><code class="language-solidity">function migrate(address from, address to, address account, uint256 shares) external;
+<pre><code class="language-solidity">function migrate(address from, address to, uint256 shares) external;
 </code></pre>
 <p><strong>Parameters</strong></p>
 <div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>from</code></td><td><code>address</code></td><td>The address of the old vault</td></tr>
 <tr><td><code>to</code></td><td><code>address</code></td><td>The address of the new reward vault</td></tr>
-<tr><td><code>account</code></td><td><code>address</code></td><td>The address of the account to migrate</td></tr>
 <tr><td><code>shares</code></td><td><code>uint256</code></td><td>The number of shares to migrate</td></tr>
 </tbody></table>
 </div>

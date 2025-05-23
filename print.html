@@ -212,7 +212,7 @@
 <li><a href="src/RouterModules/RouterModuleWithdraw.sol/contract.RouterModuleWithdraw.html">RouterModuleWithdraw</a></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="routeridentifiermapping"><a class="header" href="#routeridentifiermapping">RouterIdentifierMapping</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/RouterModules/RouterIdentifierMapping.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/RouterModules/RouterIdentifierMapping.sol">Git Source</a></p>
 <h2 id="state-variables"><a class="header" href="#state-variables">State Variables</a></h2>
 <h3 id="deposit"><a class="header" href="#deposit">DEPOSIT</a></h3>
 <pre><code class="language-solidity">uint8 internal constant DEPOSIT = 0x00;
@@ -233,7 +233,7 @@
 <pre><code class="language-solidity">uint8 internal constant MIGRATION_YEARN = 0x05;
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="routermoduleclaim"><a class="header" href="#routermoduleclaim">RouterModuleClaim</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/RouterModules/RouterModuleClaim.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/RouterModules/RouterModuleClaim.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="src/RouterModules/RouterModuleClaim.sol//src/interfaces/IRouterModule.sol/interface.IRouterModule.html">IRouterModule</a></p>
 <p>An upgradeable module that allows for the claim of rewards from a given reward vault</p>
@@ -247,22 +247,18 @@
 <h2 id="functions"><a class="header" href="#functions">Functions</a></h2>
 <h3 id="claim-1"><a class="header" href="#claim-1">claim</a></h3>
 <p>Claim rewards from the reward vault</p>
-<p><strong>Note:</strong>
-throws: OnlyAllowed if this function is not called using delegatecall
-from an account authorized by the protocol controller</p>
-<pre><code class="language-solidity">function claim(address rewardVault, address account, address[] calldata tokens, address receiver)
+<pre><code class="language-solidity">function claim(address rewardVault, address[] calldata tokens, address receiver)
     external
     returns (uint256[] memory amounts);
 </code></pre>
 <p><strong>Parameters</strong></p>
 <div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>rewardVault</code></td><td><code>address</code></td><td>The address of the reward vault to call</td></tr>
-<tr><td><code>account</code></td><td><code>address</code></td><td>The address of the account to claim for</td></tr>
 <tr><td><code>tokens</code></td><td><code>address[]</code></td><td>The array of tokens to claim</td></tr>
 <tr><td><code>receiver</code></td><td><code>address</code></td><td>The address to receive the rewards</td></tr>
 </tbody></table>
 </div><div style="break-before: page; page-break-before: always;"></div><h1 id="routermoduledeposit"><a class="header" href="#routermoduledeposit">RouterModuleDeposit</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/RouterModules/RouterModuleDeposit.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/RouterModules/RouterModuleDeposit.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="src/RouterModules/RouterModuleDeposit.sol//src/interfaces/IRouterModule.sol/interface.IRouterModule.html">IRouterModule</a></p>
 <p>An upgradeable module that allows for the deposit of assets into a given reward vault</p>
@@ -279,10 +275,6 @@ from an account authorized by the protocol controller</p>
 <p><strong>Notes:</strong></p>
 <ul>
 <li>
-<p>throws: OnlyAllowed if this function is not called using delegatecall
-from an account authorized by the protocol controller</p>
-</li>
-<li>
 <p>throws: ZeroAddress if the account is the zero address</p>
 </li>
 <li>
@@ -290,12 +282,12 @@ from an account authorized by the protocol controller</p>
 for the reward vault to transfer the assets</p>
 </li>
 </ul>
-<pre><code class="language-solidity">function deposit(address rewardVault, address account, uint256 assets) external returns (uint256);
+<pre><code class="language-solidity">function deposit(address rewardVault, address receiver, uint256 assets) public returns (uint256);
 </code></pre>
 <p><strong>Parameters</strong></p>
 <div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>rewardVault</code></td><td><code>address</code></td><td>The address of the reward vault to call</td></tr>
-<tr><td><code>account</code></td><td><code>address</code></td><td>The address of the account to deposit for</td></tr>
+<tr><td><code>receiver</code></td><td><code>address</code></td><td></td></tr>
 <tr><td><code>assets</code></td><td><code>uint256</code></td><td>The amount of assets to deposit</td></tr>
 </tbody></table>
 </div>
@@ -304,10 +296,6 @@ for the reward vault to transfer the assets</p>
 <p><strong>Notes:</strong></p>
 <ul>
 <li>
-<p>throws: OnlyAllowed if this function is not called using delegatecall
-from an account authorized by the protocol controller</p>
-</li>
-<li>
 <p>throws: ZeroAddress if the account is the zero address</p>
 </li>
 <li>
@@ -315,20 +303,17 @@ from an account authorized by the protocol controller</p>
 for the reward vault to transfer the assets</p>
 </li>
 </ul>
-<pre><code class="language-solidity">function deposit(address rewardVault, address account, uint256 assets, address referrer)
-    public
-    payable
-    returns (uint256);
+<pre><code class="language-solidity">function deposit(address rewardVault, address receiver, uint256 assets, address referrer) public returns (uint256);
 </code></pre>
 <p><strong>Parameters</strong></p>
 <div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>rewardVault</code></td><td><code>address</code></td><td>The address of the reward vault to call</td></tr>
-<tr><td><code>account</code></td><td><code>address</code></td><td>The address of the account to deposit for</td></tr>
+<tr><td><code>receiver</code></td><td><code>address</code></td><td></td></tr>
 <tr><td><code>assets</code></td><td><code>uint256</code></td><td>The amount of assets to deposit</td></tr>
 <tr><td><code>referrer</code></td><td><code>address</code></td><td>The address of the referrer</td></tr>
 </tbody></table>
 </div><div style="break-before: page; page-break-before: always;"></div><h1 id="routermodulemigrationcurve"><a class="header" href="#routermodulemigrationcurve">RouterModuleMigrationCurve</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/RouterModules/RouterModuleMigrationCurve.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/RouterModules/RouterModuleMigrationCurve.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="src/RouterModules/RouterModuleMigrationCurve.sol//src/interfaces/IRouterModule.sol/interface.IRouterModule.html">IRouterModule</a></p>
 <h2 id="state-variables-3"><a class="header" href="#state-variables-3">State Variables</a></h2>
@@ -342,13 +327,12 @@ for the reward vault to transfer the assets</p>
 <h3 id="migrate"><a class="header" href="#migrate">migrate</a></h3>
 <p>Migrates shares from a liquidity gauge to a reward vault</p>
 <p><em>The account must have approved the token to the router contract</em></p>
-<pre><code class="language-solidity">function migrate(address from, address to, address account, uint256 shares) external;
+<pre><code class="language-solidity">function migrate(address from, address to, uint256 shares) external;
 </code></pre>
 <p><strong>Parameters</strong></p>
 <div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>from</code></td><td><code>address</code></td><td>The address of the old vault</td></tr>
 <tr><td><code>to</code></td><td><code>address</code></td><td>The address of the new reward vault</td></tr>
-<tr><td><code>account</code></td><td><code>address</code></td><td>The address of the account to migrate</td></tr>
 <tr><td><code>shares</code></td><td><code>uint256</code></td><td>The number of shares to migrate</td></tr>
 </tbody></table>
 </div>
@@ -357,7 +341,7 @@ for the reward vault to transfer the assets</p>
 <pre><code class="language-solidity">error VaultNotCompatible();
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="ivault"><a class="header" href="#ivault">IVault</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/RouterModules/RouterModuleMigrationStakeDAOV1.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/RouterModules/RouterModuleMigrationStakeDAOV1.sol">Git Source</a></p>
 <h2 id="functions-3"><a class="header" href="#functions-3">Functions</a></h2>
 <h3 id="token"><a class="header" href="#token">token</a></h3>
 <pre><code class="language-solidity">function token() external view returns (address);
@@ -369,7 +353,7 @@ for the reward vault to transfer the assets</p>
 <pre><code class="language-solidity">function liquidityGauge() external view returns (address);
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="routermodulemigrationstakedaov1"><a class="header" href="#routermodulemigrationstakedaov1">RouterModuleMigrationStakeDAOV1</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/RouterModules/RouterModuleMigrationStakeDAOV1.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/RouterModules/RouterModuleMigrationStakeDAOV1.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="src/RouterModules/RouterModuleMigrationStakeDAOV1.sol//src/interfaces/IRouterModule.sol/interface.IRouterModule.html">IRouterModule</a></p>
 <h2 id="state-variables-4"><a class="header" href="#state-variables-4">State Variables</a></h2>
@@ -383,13 +367,12 @@ for the reward vault to transfer the assets</p>
 <h3 id="migrate-1"><a class="header" href="#migrate-1">migrate</a></h3>
 <p>Migrates shares from a liquidity gauge to a reward vault</p>
 <p><em>The account must have approved the token to the router contract</em></p>
-<pre><code class="language-solidity">function migrate(address from, address to, address account, uint256 shares) external;
+<pre><code class="language-solidity">function migrate(address from, address to, uint256 shares) external;
 </code></pre>
 <p><strong>Parameters</strong></p>
 <div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>from</code></td><td><code>address</code></td><td>The address of the old vault</td></tr>
 <tr><td><code>to</code></td><td><code>address</code></td><td>The address of the new reward vault</td></tr>
-<tr><td><code>account</code></td><td><code>address</code></td><td>The address of the account to migrate</td></tr>
 <tr><td><code>shares</code></td><td><code>uint256</code></td><td>The number of shares to migrate</td></tr>
 </tbody></table>
 </div>
@@ -398,7 +381,7 @@ for the reward vault to transfer the assets</p>
 <pre><code class="language-solidity">error VaultNotCompatible();
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="routermodulemigrationyearn"><a class="header" href="#routermodulemigrationyearn">RouterModuleMigrationYearn</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/RouterModules/RouterModuleMigrationYearn.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/RouterModules/RouterModuleMigrationYearn.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="src/RouterModules/RouterModuleMigrationYearn.sol//src/interfaces/IRouterModule.sol/interface.IRouterModule.html">IRouterModule</a></p>
 <h2 id="state-variables-5"><a class="header" href="#state-variables-5">State Variables</a></h2>
@@ -412,13 +395,12 @@ for the reward vault to transfer the assets</p>
 <h3 id="migrate-2"><a class="header" href="#migrate-2">migrate</a></h3>
 <p>Migrates shares from convex to a reward vault</p>
 <p><em>The account must have approved the token to the router contract</em></p>
-<pre><code class="language-solidity">function migrate(address from, address to, address account, uint256 shares) external;
+<pre><code class="language-solidity">function migrate(address from, address to, uint256 shares) external;
 </code></pre>
 <p><strong>Parameters</strong></p>
 <div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>from</code></td><td><code>address</code></td><td>The address of the old vault</td></tr>
 <tr><td><code>to</code></td><td><code>address</code></td><td>The address of the new reward vault</td></tr>
-<tr><td><code>account</code></td><td><code>address</code></td><td>The address of the account to migrate</td></tr>
 <tr><td><code>shares</code></td><td><code>uint256</code></td><td>The number of shares to migrate</td></tr>
 </tbody></table>
 </div>
@@ -427,7 +409,7 @@ for the reward vault to transfer the assets</p>
 <pre><code class="language-solidity">error VaultNotCompatible();
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="iyearnvault"><a class="header" href="#iyearnvault">IYearnVault</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/RouterModules/RouterModuleMigrationYearn.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/RouterModules/RouterModuleMigrationYearn.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 IERC20</p>
 <h2 id="functions-6"><a class="header" href="#functions-6">Functions</a></h2>
@@ -441,7 +423,7 @@ IERC20</p>
 <pre><code class="language-solidity">function transferFrom(address from, address to, uint256 amount) external returns (bool);
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="routermodulewithdraw"><a class="header" href="#routermodulewithdraw">RouterModuleWithdraw</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/RouterModules/RouterModuleWithdraw.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/RouterModules/RouterModuleWithdraw.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="src/RouterModules/RouterModuleWithdraw.sol//src/interfaces/IRouterModule.sol/interface.IRouterModule.html">IRouterModule</a></p>
 <p>An upgradeable module that allows for the withdrawal of assets from a given reward vault</p>
@@ -458,14 +440,13 @@ IERC20</p>
 <p><em><code>owner</code> must allow the <code>rewardVault</code> to spend the <code>assets</code></em></p>
 <p><strong>Note:</strong>
 throws: NotApproved if the Router is not allowed to withdraw the assets</p>
-<pre><code class="language-solidity">function withdraw(address rewardVault, uint256 assets, address receiver, address owner) external returns (uint256);
+<pre><code class="language-solidity">function withdraw(address rewardVault, uint256 assets, address receiver) external returns (uint256);
 </code></pre>
 <p><strong>Parameters</strong></p>
 <div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>rewardVault</code></td><td><code>address</code></td><td>The address of the reward vault to call</td></tr>
 <tr><td><code>assets</code></td><td><code>uint256</code></td><td>The amount of assets to withdraw.</td></tr>
 <tr><td><code>receiver</code></td><td><code>address</code></td><td>The address to receive the assets. If the receiver is the zero address, the assets will be sent to the owner.</td></tr>
-<tr><td><code>owner</code></td><td><code>address</code></td><td>The address to burn shares from.</td></tr>
 </tbody></table>
 </div>
 <p><strong>Returns</strong></p>
@@ -485,24 +466,24 @@ throws: NotApproved if the Router is not allowed to withdraw the assets</p>
 <li><a href="src/integrations/curve/CurveStrategy.sol/contract.CurveStrategy.html">CurveStrategy</a></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="convexsidecar"><a class="header" href="#convexsidecar">ConvexSidecar</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/integrations/curve/ConvexSidecar.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/integrations/curve/ConvexSidecar.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="src/integrations/curve/ConvexSidecar.sol//src/Sidecar.sol/abstract.Sidecar.html">Sidecar</a></p>
 <p>Sidecar for Convex.</p>
 <p><em>For each PID, a minimal proxy is deployed using this contract as implementation.</em></p>
 <h2 id="state-variables-7"><a class="header" href="#state-variables-7">State Variables</a></h2>
 <h3 id="curve_protocol_id"><a class="header" href="#curve_protocol_id">CURVE_PROTOCOL_ID</a></h3>
-<p>The bytes4 ID of the Convex protocol</p>
-<p><em>Used to identify the Convex protocol in the registry</em></p>
+<p>The bytes4 ID of the Curve protocol</p>
+<p><em>Used to identify the Curve protocol in the registry</em></p>
 <pre><code class="language-solidity">bytes4 private constant CURVE_PROTOCOL_ID = bytes4(keccak256(&quot;CURVE&quot;));
 </code></pre>
 <h3 id="cvx"><a class="header" href="#cvx">CVX</a></h3>
 <p>Convex Reward Token address.</p>
-<pre><code class="language-solidity">IERC20 public constant CVX = IERC20(0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B);
+<pre><code class="language-solidity">IERC20 public constant CVX = IERC20(CurveProtocol.CONVEX_TOKEN);
 </code></pre>
 <h3 id="booster"><a class="header" href="#booster">BOOSTER</a></h3>
 <p>Convex Booster address.</p>
-<pre><code class="language-solidity">IBooster public constant BOOSTER = IBooster(0xF403C135812408BFbE8713b5A23a04b3D48AAE31);
+<pre><code class="language-solidity">IBooster public constant BOOSTER = IBooster(CurveProtocol.CONVEX_BOOSTER);
 </code></pre>
 <h2 id="functions-8"><a class="header" href="#functions-8">Functions</a></h2>
 <h3 id="asset"><a class="header" href="#asset">asset</a></h3>
@@ -594,7 +575,7 @@ More: https://docs.convexfinance.com/convexfinanceintegration/baserewardpool</p>
 <pre><code class="language-solidity">function claimExtraRewards() external;
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="convexsidecarfactory"><a class="header" href="#convexsidecarfactory">ConvexSidecarFactory</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/integrations/curve/ConvexSidecarFactory.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/integrations/curve/ConvexSidecarFactory.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="src/integrations/curve/ConvexSidecarFactory.sol//src/SidecarFactory.sol/abstract.SidecarFactory.html">SidecarFactory</a></p>
 <p>Factory contract for deploying ConvexSidecar instances</p>
@@ -607,7 +588,7 @@ More: https://docs.convexfinance.com/convexfinanceintegration/baserewardpool</p>
 </code></pre>
 <h3 id="booster-1"><a class="header" href="#booster-1">BOOSTER</a></h3>
 <p>Convex Booster contract address</p>
-<pre><code class="language-solidity">IBooster public constant BOOSTER = IBooster(0xF403C135812408BFbE8713b5A23a04b3D48AAE31);
+<pre><code class="language-solidity">IBooster public constant BOOSTER = IBooster(CurveProtocol.CONVEX_BOOSTER);
 </code></pre>
 <h2 id="functions-9"><a class="header" href="#functions-9">Functions</a></h2>
 <h3 id="constructor-1"><a class="header" href="#constructor-1">constructor</a></h3>
@@ -670,8 +651,12 @@ More: https://docs.convexfinance.com/convexfinanceintegration/baserewardpool</p>
 <p>Error emitted when the reward receiver is not set</p>
 <pre><code class="language-solidity">error VaultNotDeployed();
 </code></pre>
+<h3 id="invalidarguments"><a class="header" href="#invalidarguments">InvalidArguments</a></h3>
+<p>Error emitted when the arguments are invalid</p>
+<pre><code class="language-solidity">error InvalidArguments();
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="curveallocator"><a class="header" href="#curveallocator">CurveAllocator</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/integrations/curve/CurveAllocator.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/integrations/curve/CurveAllocator.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="src/integrations/curve/CurveAllocator.sol//src/Allocator.sol/contract.Allocator.html">Allocator</a></p>
 <p>Contract that calculates the optimal LP token allocation for Stake DAO Locker and Convex</p>
@@ -682,11 +667,11 @@ More: https://docs.convexfinance.com/convexfinanceintegration/baserewardpool</p>
 </code></pre>
 <h3 id="boost_delegation_v3"><a class="header" href="#boost_delegation_v3">BOOST_DELEGATION_V3</a></h3>
 <p>Address of the Curve Boost Delegation V3 contract</p>
-<pre><code class="language-solidity">address public constant BOOST_DELEGATION_V3 = 0xD37A6aa3d8460Bd2b6536d608103D880695A23CD;
+<pre><code class="language-solidity">address public constant BOOST_DELEGATION_V3 = CurveProtocol.VE_BOOST;
 </code></pre>
 <h3 id="convex_boost_holder"><a class="header" href="#convex_boost_holder">CONVEX_BOOST_HOLDER</a></h3>
 <p>Address of the Convex Boost Holder contract</p>
-<pre><code class="language-solidity">address public constant CONVEX_BOOST_HOLDER = 0x989AEb4d175e16225E39E87d0D97A3360524AD80;
+<pre><code class="language-solidity">address public constant CONVEX_BOOST_HOLDER = CurveProtocol.CONVEX_PROXY;
 </code></pre>
 <h2 id="functions-10"><a class="header" href="#functions-10">Functions</a></h2>
 <h3 id="constructor-2"><a class="header" href="#constructor-2">constructor</a></h3>
@@ -774,10 +759,6 @@ gauge The address of the gauge contract (unused in this implementation)</p>
 <tr><td><code>&lt;none&gt;</code></td><td><code>address[]</code></td><td>An array containing the target addresses</td></tr>
 </tbody></table>
 </div>
-<h3 id="getoptimallockerbalance"><a class="header" href="#getoptimallockerbalance">getOptimalLockerBalance</a></h3>
-<p>Computes the optimal Stake DAO Locker balance (legacy helper).</p>
-<pre><code class="language-solidity">function getOptimalLockerBalance(address gauge) public view returns (uint256 balanceOfLocker);
-</code></pre>
 <h3 id="_targets"><a class="header" href="#_targets">_targets</a></h3>
 <p><em>Returns the pair <code>[sidecar, LOCKER]</code> used by allocation targets.</em></p>
 <pre><code class="language-solidity">function _targets(address sidecar) private view returns (address[] memory arr);
@@ -786,12 +767,21 @@ gauge The address of the gauge contract (unused in this implementation)</p>
 <p><em>Utility to allocate a two‑element uint256 array.</em></p>
 <pre><code class="language-solidity">function _pair(uint256 a0, uint256 a1) private pure returns (uint256[] memory arr);
 </code></pre>
-<h3 id="_getveboosts"><a class="header" href="#_getveboosts">_getVeBoosts</a></h3>
-<p><em>Returns the veBoost of the locker and the total veBoost (locker + convex).</em></p>
-<pre><code class="language-solidity">function _getVeBoosts() private view returns (uint256 veLocker, uint256 veTotal);
+<h3 id="_computelockerallocation"><a class="header" href="#_computelockerallocation">_computeLockerAllocation</a></h3>
+<p><em>Computes the optimal amount to allocate to the locker based on ratio of veBoosts.</em></p>
+<pre><code class="language-solidity">function _computeLockerAllocation(uint256 totalBalance) private view returns (uint256 lockerAmt);
 </code></pre>
-<div style="break-before: page; page-break-before: always;"></div><h1 id="curvefactory"><a class="header" href="#curvefactory">CurveFactory</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/integrations/curve/CurveFactory.sol">Git Source</a></p>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>totalBalance</code></td><td><code>uint256</code></td><td>The total balance of the gauge.</td></tr>
+</tbody></table>
+</div>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>lockerAmt</code></td><td><code>uint256</code></td><td>The optimal amount to allocate to the locker.</td></tr>
+</tbody></table>
+</div><div style="break-before: page; page-break-before: always;"></div><h1 id="curvefactory"><a class="header" href="#curvefactory">CurveFactory</a></h1>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/integrations/curve/CurveFactory.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="src/integrations/curve/CurveFactory.sol//src/Factory.sol/abstract.Factory.html">Factory</a></p>
 <h2 id="state-variables-10"><a class="header" href="#state-variables-10">State Variables</a></h2>
@@ -802,19 +792,19 @@ gauge The address of the gauge contract (unused in this implementation)</p>
 </code></pre>
 <h3 id="gauge_controller"><a class="header" href="#gauge_controller">GAUGE_CONTROLLER</a></h3>
 <p>Curve Gauge Controller.</p>
-<pre><code class="language-solidity">IGaugeController public constant GAUGE_CONTROLLER = IGaugeController(0x2F50D538606Fa9EDD2B11E2446BEb18C9D5846bB);
+<pre><code class="language-solidity">IGaugeController public constant GAUGE_CONTROLLER = IGaugeController(CurveProtocol.GAUGE_CONTROLLER);
 </code></pre>
 <h3 id="cvx-1"><a class="header" href="#cvx-1">CVX</a></h3>
 <p>CVX token address.</p>
-<pre><code class="language-solidity">address public constant CVX = 0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B;
+<pre><code class="language-solidity">address public constant CVX = CurveProtocol.CONVEX_TOKEN;
 </code></pre>
 <h3 id="old_strategy"><a class="header" href="#old_strategy">OLD_STRATEGY</a></h3>
 <p>Address of the old strategy.</p>
-<pre><code class="language-solidity">address public constant OLD_STRATEGY = 0x69D61428d089C2F35Bf6a472F540D0F82D1EA2cd;
+<pre><code class="language-solidity">address public constant OLD_STRATEGY = CurveLocker.STRATEGY;
 </code></pre>
 <h3 id="booster-2"><a class="header" href="#booster-2">BOOSTER</a></h3>
 <p>Convex Booster.</p>
-<pre><code class="language-solidity">address public immutable BOOSTER = 0xF403C135812408BFbE8713b5A23a04b3D48AAE31;
+<pre><code class="language-solidity">address public immutable BOOSTER = CurveProtocol.CONVEX_BOOSTER;
 </code></pre>
 <h3 id="convex_sidecar_factory-1"><a class="header" href="#convex_sidecar_factory-1">CONVEX_SIDECAR_FACTORY</a></h3>
 <p>Convex Minimal Proxy Factory for Only Boost.</p>
@@ -902,7 +892,7 @@ Then we add the extra reward token to the reward distributor through the strateg
 <pre><code class="language-solidity">error SetRewardReceiverFailed();
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="curvestrategy"><a class="header" href="#curvestrategy">CurveStrategy</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/integrations/curve/CurveStrategy.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/integrations/curve/CurveStrategy.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="src/integrations/curve/CurveStrategy.sol//src/Strategy.sol/abstract.Strategy.html">Strategy</a></p>
 <p>A strategy implementation for interacting with Curve protocol gauges</p>
@@ -941,7 +931,7 @@ Key responsibilities:</p>
 <h3 id="_checkpointrewards"><a class="header" href="#_checkpointrewards">_checkpointRewards</a></h3>
 <p>Syncs and calculates pending rewards from a Curve gauge</p>
 <p><em>Retrieves allocation targets and calculates pending rewards for each target</em></p>
-<pre><code class="language-solidity">function _checkpointRewards(address gauge) internal view override returns (PendingRewards memory pendingRewards);
+<pre><code class="language-solidity">function _checkpointRewards(address gauge) internal override returns (PendingRewards memory pendingRewards);
 </code></pre>
 <p><strong>Parameters</strong></p>
 <div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
@@ -955,6 +945,7 @@ Key responsibilities:</p>
 </div>
 <h3 id="_deposit-1"><a class="header" href="#_deposit-1">_deposit</a></h3>
 <p>Deposits tokens into a Curve gauge</p>
+<p><em>Checkpoint the locker</em></p>
 <p><em>Executes a deposit transaction through the gateway/module manager</em></p>
 <pre><code class="language-solidity">function _deposit(address, address gauge, uint256 amount) internal override;
 </code></pre>
@@ -993,6 +984,10 @@ Key responsibilities:</p>
 <p>Error thrown when the mint fails.</p>
 <pre><code class="language-solidity">error MintFailed();
 </code></pre>
+<h3 id="checkpointfailed"><a class="header" href="#checkpointfailed">CheckpointFailed</a></h3>
+<p>Error thrown when the checkpoint fails.</p>
+<pre><code class="language-solidity">error CheckpointFailed();
+</code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="contents-3"><a class="header" href="#contents-3">Contents</a></h1>
 <ul>
 <li><a href="src/interfaces/IAccountant.sol/interface.IAccountant.html">IAccountant</a></li>
@@ -1009,7 +1004,7 @@ Key responsibilities:</p>
 <li><a href="src/interfaces/IStrategy.sol/interface.IStrategy.html">IStrategy</a></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="iaccountant"><a class="header" href="#iaccountant">IAccountant</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/interfaces/IAccountant.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/interfaces/IAccountant.sol">Git Source</a></p>
 <h2 id="functions-13"><a class="header" href="#functions-13">Functions</a></h2>
 <h3 id="checkpoint"><a class="header" href="#checkpoint">checkpoint</a></h3>
 <pre><code class="language-solidity">function checkpoint(
@@ -1060,7 +1055,7 @@ Key responsibilities:</p>
 <pre><code class="language-solidity">function REWARD_TOKEN() external view returns (address);
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="iallocator"><a class="header" href="#iallocator">IAllocator</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/interfaces/IAllocator.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/interfaces/IAllocator.sol">Git Source</a></p>
 <h2 id="functions-14"><a class="header" href="#functions-14">Functions</a></h2>
 <h3 id="getdepositallocation-1"><a class="header" href="#getdepositallocation-1">getDepositAllocation</a></h3>
 <pre><code class="language-solidity">function getDepositAllocation(address asset, address gauge, uint256 amount) external view returns (Allocation memory);
@@ -1090,7 +1085,7 @@ Key responsibilities:</p>
 }
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="ibalanceprovider"><a class="header" href="#ibalanceprovider">IBalanceProvider</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/interfaces/IBalanceProvider.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/interfaces/IBalanceProvider.sol">Git Source</a></p>
 <h2 id="functions-15"><a class="header" href="#functions-15">Functions</a></h2>
 <h3 id="balanceof-2"><a class="header" href="#balanceof-2">balanceOf</a></h3>
 <pre><code class="language-solidity">function balanceOf(address _address) external view returns (uint256);
@@ -1099,7 +1094,7 @@ Key responsibilities:</p>
 <pre><code class="language-solidity">function totalSupply() external view returns (uint256);
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="iprotocolcontext"><a class="header" href="#iprotocolcontext">IProtocolContext</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/interfaces/IProtocolContext.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/interfaces/IProtocolContext.sol">Git Source</a></p>
 <h2 id="functions-16"><a class="header" href="#functions-16">Functions</a></h2>
 <h3 id="protocol_id"><a class="header" href="#protocol_id">PROTOCOL_ID</a></h3>
 <pre><code class="language-solidity">function PROTOCOL_ID() external view returns (bytes4);
@@ -1120,7 +1115,7 @@ Key responsibilities:</p>
 <pre><code class="language-solidity">function PROTOCOL_CONTROLLER() external view returns (IProtocolController);
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="iprotocolcontroller"><a class="header" href="#iprotocolcontroller">IProtocolController</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/interfaces/IProtocolController.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/interfaces/IProtocolController.sol">Git Source</a></p>
 <p>SPDX-License-Identifier: BUSL-1.1</p>
 <h2 id="functions-17"><a class="header" href="#functions-17">Functions</a></h2>
 <h3 id="vaults"><a class="header" href="#vaults">vaults</a></h3>
@@ -1185,7 +1180,7 @@ Key responsibilities:</p>
 <pre><code class="language-solidity">function setPermission(address _contract, address _caller, bytes4 _selector, bool _allowed) external;
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="irewardreceiver"><a class="header" href="#irewardreceiver">IRewardReceiver</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/interfaces/IRewardReceiver.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/interfaces/IRewardReceiver.sol">Git Source</a></p>
 <h2 id="functions-18"><a class="header" href="#functions-18">Functions</a></h2>
 <h3 id="distributerewards"><a class="header" href="#distributerewards">distributeRewards</a></h3>
 <pre><code class="language-solidity">function distributeRewards() external;
@@ -1194,7 +1189,7 @@ Key responsibilities:</p>
 <pre><code class="language-solidity">function distributeRewardToken(IERC20 token) external;
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="irewardvault"><a class="header" href="#irewardvault">IRewardVault</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/interfaces/IRewardVault.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/interfaces/IRewardVault.sol">Git Source</a></p>
 <p>Interface for the RewardVault contract</p>
 <h2 id="functions-19"><a class="header" href="#functions-19">Functions</a></h2>
 <h3 id="addrewardtoken"><a class="header" href="#addrewardtoken">addRewardToken</a></h3>
@@ -1207,10 +1202,9 @@ Key responsibilities:</p>
 <pre><code class="language-solidity">function deposit(uint256 assets, address receiver, address referrer) external returns (uint256 shares);
 </code></pre>
 <h3 id="deposit-4"><a class="header" href="#deposit-4">deposit</a></h3>
-<pre><code class="language-solidity">function deposit(address account, uint256 assets) external returns (uint256 shares);
-</code></pre>
-<h3 id="deposit-5"><a class="header" href="#deposit-5">deposit</a></h3>
-<pre><code class="language-solidity">function deposit(address account, uint256 assets, address referrer) external returns (uint256 shares);
+<pre><code class="language-solidity">function deposit(address account, address receiver, uint256 assets, address referrer)
+    external
+    returns (uint256 shares);
 </code></pre>
 <h3 id="claim-6"><a class="header" href="#claim-6">claim</a></h3>
 <pre><code class="language-solidity">function claim(address[] calldata tokens, address receiver) external returns (uint256[] memory amounts);
@@ -1257,7 +1251,7 @@ Key responsibilities:</p>
 <pre><code class="language-solidity">function isRewardToken(address rewardToken) external view returns (bool);
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="irouter"><a class="header" href="#irouter">IRouter</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/interfaces/IRouter.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/interfaces/IRouter.sol">Git Source</a></p>
 <h2 id="functions-20"><a class="header" href="#functions-20">Functions</a></h2>
 <h3 id="execute"><a class="header" href="#execute">execute</a></h3>
 <pre><code class="language-solidity">function execute(bytes[] calldata data) external payable returns (bytes[] memory returnData);
@@ -1278,7 +1272,7 @@ Key responsibilities:</p>
 <pre><code class="language-solidity">function version() external view returns (string memory version);
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="iroutermodule"><a class="header" href="#iroutermodule">IRouterModule</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/interfaces/IRouterModule.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/interfaces/IRouterModule.sol">Git Source</a></p>
 <h2 id="functions-21"><a class="header" href="#functions-21">Functions</a></h2>
 <h3 id="name-6"><a class="header" href="#name-6">name</a></h3>
 <pre><code class="language-solidity">function name() external view returns (string memory name);
@@ -1287,13 +1281,13 @@ Key responsibilities:</p>
 <pre><code class="language-solidity">function version() external view returns (string memory version);
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="isidecar"><a class="header" href="#isidecar">ISidecar</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/interfaces/ISidecar.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/interfaces/ISidecar.sol">Git Source</a></p>
 <p>SPDX-License-Identifier: BUSL-1.1</p>
 <h2 id="functions-22"><a class="header" href="#functions-22">Functions</a></h2>
 <h3 id="balanceof-3"><a class="header" href="#balanceof-3">balanceOf</a></h3>
 <pre><code class="language-solidity">function balanceOf() external view returns (uint256);
 </code></pre>
-<h3 id="deposit-6"><a class="header" href="#deposit-6">deposit</a></h3>
+<h3 id="deposit-5"><a class="header" href="#deposit-5">deposit</a></h3>
 <pre><code class="language-solidity">function deposit(uint256 amount) external;
 </code></pre>
 <h3 id="withdraw-4"><a class="header" href="#withdraw-4">withdraw</a></h3>
@@ -1312,7 +1306,7 @@ Key responsibilities:</p>
 <pre><code class="language-solidity">function asset() external view returns (IERC20);
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="isidecarfactory"><a class="header" href="#isidecarfactory">ISidecarFactory</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/interfaces/ISidecarFactory.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/interfaces/ISidecarFactory.sol">Git Source</a></p>
 <h2 id="functions-23"><a class="header" href="#functions-23">Functions</a></h2>
 <h3 id="sidecar"><a class="header" href="#sidecar">sidecar</a></h3>
 <pre><code class="language-solidity">function sidecar(address gauge) external view returns (address);
@@ -1321,9 +1315,9 @@ Key responsibilities:</p>
 <pre><code class="language-solidity">function create(address token, bytes memory args) external returns (address);
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="istrategy"><a class="header" href="#istrategy">IStrategy</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/interfaces/IStrategy.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/interfaces/IStrategy.sol">Git Source</a></p>
 <h2 id="functions-24"><a class="header" href="#functions-24">Functions</a></h2>
-<h3 id="deposit-7"><a class="header" href="#deposit-7">deposit</a></h3>
+<h3 id="deposit-6"><a class="header" href="#deposit-6">deposit</a></h3>
 <pre><code class="language-solidity">function deposit(IAllocator.Allocation calldata allocation, HarvestPolicy policy)
     external
     returns (PendingRewards memory pendingRewards);
@@ -1362,7 +1356,7 @@ Key responsibilities:</p>
 <li><a href="src/libraries/ImmutableArgsParser.sol/library.ImmutableArgsParser.html">ImmutableArgsParser</a></li>
 </ul>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="immutableargsparser"><a class="header" href="#immutableargsparser">ImmutableArgsParser</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/libraries/ImmutableArgsParser.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/libraries/ImmutableArgsParser.sol">Git Source</a></p>
 <p>A library for reading immutable arguments from a clone.</p>
 <h2 id="functions-25"><a class="header" href="#functions-25">Functions</a></h2>
 <h3 id="readaddress"><a class="header" href="#readaddress">readAddress</a></h3>
@@ -1374,7 +1368,7 @@ Key responsibilities:</p>
 <pre><code class="language-solidity">function readUint256(address clone, uint256 offset) internal view returns (uint256 result);
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="accountant-2"><a class="header" href="#accountant-2">Accountant</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/Accountant.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/Accountant.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 ReentrancyGuardTransient, Ownable2Step, <a href="src/Accountant.sol//src/interfaces/IAccountant.sol/interface.IAccountant.html">IAccountant</a></p>
 <p>A comprehensive system for managing reward distribution and accounting across vaults and users.</p>
@@ -1964,7 +1958,7 @@ throws: NoFeeReceiver If the fee receiver is not set.</p>
 }
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="allocator-1"><a class="header" href="#allocator-1">Allocator</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/Allocator.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/Allocator.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="src/Allocator.sol//src/interfaces/IAllocator.sol/interface.IAllocator.html">IAllocator</a></p>
 <p><strong>Author:</strong>
@@ -2078,7 +2072,7 @@ gauge The address of the gauge contract (unused in this implementation)</p>
 <pre><code class="language-solidity">error GatewayZeroAddress();
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="factory"><a class="header" href="#factory">Factory</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/Factory.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/Factory.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="src/Factory.sol//src/ProtocolContext.sol/contract.ProtocolContext.html">ProtocolContext</a></p>
 <p>A base contract for implementing protocol-specific vault factories</p>
@@ -2314,7 +2308,7 @@ throws: InvalidGauge If the gauge is not valid or has no associated vault</p>
 <pre><code class="language-solidity">error AlreadyDeployed();
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="protocolcontext"><a class="header" href="#protocolcontext">ProtocolContext</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/ProtocolContext.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/ProtocolContext.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="src/ProtocolContext.sol//src/interfaces/IProtocolContext.sol/interface.IProtocolContext.html">IProtocolContext</a></p>
 <p><strong>Author:</strong>
@@ -2383,7 +2377,7 @@ based on whether LOCKER is the same as GATEWAY</em></p>
 <pre><code class="language-solidity">error InvalidProtocolId();
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="protocolcontroller"><a class="header" href="#protocolcontroller">ProtocolController</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/ProtocolController.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/ProtocolController.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="src/ProtocolController.sol//src/interfaces/IProtocolController.sol/interface.IProtocolController.html">IProtocolController</a>, Ownable2Step</p>
 <p><strong>Author:</strong>
@@ -2936,7 +2930,7 @@ reverts: OnlyOwner if the caller is not the owner</p>
 }
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="rewardreceiver-3"><a class="header" href="#rewardreceiver-3">RewardReceiver</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/RewardReceiver.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/RewardReceiver.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="src/RewardReceiver.sol//src/interfaces/IRewardReceiver.sol/interface.IRewardReceiver.html">IRewardReceiver</a></p>
 <p>A contract that receives rewards from gauges and forwards them to a reward vault.</p>
@@ -2997,7 +2991,7 @@ throws: InvalidToken If the token is not registered as a valid reward token in t
 <pre><code class="language-solidity">error NoRewards();
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="rewardvault-1"><a class="header" href="#rewardvault-1">RewardVault</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/RewardVault.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/RewardVault.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="src/RewardVault.sol//src/interfaces/IRewardVault.sol/interface.IRewardVault.html">IRewardVault</a>, IERC4626, ERC20</p>
 <p>An ERC4626-compatible vault that handles:</p>
@@ -3080,10 +3074,10 @@ reverts: ZeroAddress if the accountant or protocol controller address is the zer
 <tr><td><code>policy</code></td><td><code>IStrategy.HarvestPolicy</code></td><td>The harvest policy.</td></tr>
 </tbody></table>
 </div>
-<h3 id="deposit-8"><a class="header" href="#deposit-8">deposit</a></h3>
+<h3 id="deposit-7"><a class="header" href="#deposit-7">deposit</a></h3>
 <pre><code class="language-solidity">function deposit(uint256 assets, address receiver) external returns (uint256);
 </code></pre>
-<h3 id="deposit-9"><a class="header" href="#deposit-9">deposit</a></h3>
+<h3 id="deposit-8"><a class="header" href="#deposit-8">deposit</a></h3>
 <p>Deposits <code>assets</code> from <code>msg.sender</code> into the vault and mints shares to <code>receiver</code>.</p>
 <p><em>This function tracks the referrer address and handles deposit allocation through strategy and updates rewards.</em></p>
 <pre><code class="language-solidity">function deposit(uint256 assets, address receiver, address referrer) public returns (uint256);
@@ -3135,31 +3129,21 @@ the mint function is a wrapper of the deposit function.</em></p>
 <tr><td><code>&lt;none&gt;</code></td><td><code>uint256</code></td><td>_ The amount of shares minted.</td></tr>
 </tbody></table>
 </div>
-<h3 id="deposit-10"><a class="header" href="#deposit-10">deposit</a></h3>
-<p>Deposits <code>assets</code> from <code>account</code> into the vault and mints shares to <code>account</code>.</p>
-<p><em>Only callable by allowed addresses. <code>account</code> should have approved this contract to transfer <code>assets</code>.</em></p>
-<pre><code class="language-solidity">function deposit(address account, uint256 assets) external returns (uint256);
-</code></pre>
-<p><strong>Parameters</strong></p>
-<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>account</code></td><td><code>address</code></td><td>The address to deposit assets from and mint shares to.</td></tr>
-<tr><td><code>assets</code></td><td><code>uint256</code></td><td>The amount of assets to deposit.</td></tr>
-</tbody></table>
-</div>
-<p><strong>Returns</strong></p>
-<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>&lt;none&gt;</code></td><td><code>uint256</code></td><td>_ The amount of assets deposited.</td></tr>
-</tbody></table>
-</div>
-<h3 id="deposit-11"><a class="header" href="#deposit-11">deposit</a></h3>
+<h3 id="deposit-9"><a class="header" href="#deposit-9">deposit</a></h3>
 <p>Deposits <code>assets</code> from <code>account</code> into the vault and mints shares to <code>account</code>.</p>
 <p><em>Only callable by allowed addresses. <code>account</code> should have approved this contract to transfer <code>assets</code>.
 This function tracks the referrer address and handles deposit allocation through strategy and updates rewards.</em></p>
-<pre><code class="language-solidity">function deposit(address account, uint256 assets, address referrer) public returns (uint256);
+<p><strong>Note:</strong>
+reverts: ZeroAddress if the account or receiver address is the zero address.</p>
+<pre><code class="language-solidity">function deposit(address account, address receiver, uint256 assets, address referrer)
+    public
+    onlyAllowed
+    returns (uint256);
 </code></pre>
 <p><strong>Parameters</strong></p>
 <div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>account</code></td><td><code>address</code></td><td>The address to deposit assets from and mint shares to.</td></tr>
+<tr><td><code>receiver</code></td><td><code>address</code></td><td>The address to receive the minted shares.</td></tr>
 <tr><td><code>assets</code></td><td><code>uint256</code></td><td>The amount of assets to deposit.</td></tr>
 <tr><td><code>referrer</code></td><td><code>address</code></td><td>The address of the referrer. Can be the zero address.</td></tr>
 </tbody></table>
@@ -3169,44 +3153,8 @@ This function tracks the referrer address and handles deposit allocation through
 <tr><td><code>&lt;none&gt;</code></td><td><code>uint256</code></td><td>_ The amount of assets deposited.</td></tr>
 </tbody></table>
 </div>
-<h3 id="mint-2"><a class="header" href="#mint-2">mint</a></h3>
-<p>Mints exact <code>shares</code> to <code>account</code> by depositing <code>account</code>'s assets.</p>
-<p><em>Only callable by allowed addresses.</em></p>
-<p><strong>Note:</strong>
-reverts: OnlyAllowed if the caller is not allowed.</p>
-<pre><code class="language-solidity">function mint(address account, uint256 shares, address referrer) external returns (uint256);
-</code></pre>
-<p><strong>Parameters</strong></p>
-<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>account</code></td><td><code>address</code></td><td>The address to deposit assets from and mint shares to.</td></tr>
-<tr><td><code>shares</code></td><td><code>uint256</code></td><td>The amount of shares to mint.</td></tr>
-<tr><td><code>referrer</code></td><td><code>address</code></td><td></td></tr>
-</tbody></table>
-</div>
-<p><strong>Returns</strong></p>
-<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>&lt;none&gt;</code></td><td><code>uint256</code></td><td>_ The amount of shares minted.</td></tr>
-</tbody></table>
-</div>
-<h3 id="mint-3"><a class="header" href="#mint-3">mint</a></h3>
-<p>Mints exact <code>shares</code> to <code>account</code> by depositing <code>account</code>'s assets.</p>
-<p><em>Only callable by allowed addresses.</em></p>
-<p><strong>Note:</strong>
-reverts: OnlyAllowed if the caller is not allowed.</p>
-<pre><code class="language-solidity">function mint(address account, uint256 shares) external returns (uint256);
-</code></pre>
-<p><strong>Parameters</strong></p>
-<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>account</code></td><td><code>address</code></td><td>The address to deposit assets from and mint shares to.</td></tr>
-<tr><td><code>shares</code></td><td><code>uint256</code></td><td>The amount of shares to mint.</td></tr>
-</tbody></table>
-</div>
-<p><strong>Returns</strong></p>
-<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>&lt;none&gt;</code></td><td><code>uint256</code></td><td>_ The amount of shares minted.</td></tr>
-</tbody></table>
-</div>
 <h3 id="_deposit-2"><a class="header" href="#_deposit-2">_deposit</a></h3>
+<p>~ DEPOSIT - INTERNAL</p>
 <p>*Internal function to deposit assets into the vault.</p>
 <ol>
 <li>Update the reward state for the receiver.</li>
@@ -3615,7 +3563,7 @@ received is the same as the amount of shares redeemed.</em></p>
 <h3 id="maxdeposit"><a class="header" href="#maxdeposit">maxDeposit</a></h3>
 <p>Returns the maximum amount of assets that can be deposited.</p>
 <p><em>The parameter is not used and is included to satisfy the interface. Pass whatever you want to.</em></p>
-<pre><code class="language-solidity">function maxDeposit(address _account) public view returns (uint256);
+<pre><code class="language-solidity">function maxDeposit(address) public pure returns (uint256);
 </code></pre>
 <p><strong>Returns</strong></p>
 <div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
@@ -3626,7 +3574,7 @@ received is the same as the amount of shares redeemed.</em></p>
 <p>Returns the maximum amount of shares that can be minted.</p>
 <p><em>Due to the 1:1 relationship between assets and shares, the max mint
 is the same as the max deposit.</em></p>
-<pre><code class="language-solidity">function maxMint(address _account) external view returns (uint256);
+<pre><code class="language-solidity">function maxMint(address _account) external pure returns (uint256);
 </code></pre>
 <p><strong>Parameters</strong></p>
 <div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
@@ -3899,7 +3847,7 @@ reverts: CloneArgsNotFound if clone is incorrectly initialized</p>
 <p>Get addresses where funds are allocated to.
 Create an allocation struct to pass to the strategy.
 We want to withdraw 0, just to get the pending rewards.
-Withdraw 0, just to get the pending rewards.</p>
+Checkpoint to get the pending rewards.</p>
 <p>Mints new vault shares</p>
 <p><em>We pass the strategy as the receiver to avoid the zero address check on some tokens.</em></p>
 <p><em>Updates balances and processes pending rewards</em></p>
@@ -4048,7 +3996,7 @@ Withdraw 0, just to get the pending rewards.</p>
 }
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="router"><a class="header" href="#router">Router</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/Router.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/Router.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="src/Router.sol//src/interfaces/IRouter.sol/interface.IRouter.html">IRouter</a>, Ownable</p>
 <p>One single entry point for all Staking V2 instances.</p>
@@ -4113,7 +4061,7 @@ throws: OwnableUnauthorizedAccount if the caller is not the owner</p>
 <p>throws: IdentifierAlreadyUsed if the identifier is already set</p>
 </li>
 </ul>
-<pre><code class="language-solidity">function safeSetModule(uint8 identifier, address module) external onlyOwner;
+<pre><code class="language-solidity">function safeSetModule(uint8 identifier, address module) external;
 </code></pre>
 <p><strong>Parameters</strong></p>
 <div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
@@ -4210,6 +4158,9 @@ All calls are performed using <code>delegatecall</code>, so state changes affect
 </tbody></table>
 </div>
 <h2 id="errors-13"><a class="header" href="#errors-13">Errors</a></h2>
+<h3 id="emptymodulename"><a class="header" href="#emptymodulename">EmptyModuleName</a></h3>
+<pre><code class="language-solidity">error EmptyModuleName();
+</code></pre>
 <h3 id="identifieralreadyused"><a class="header" href="#identifieralreadyused">IdentifierAlreadyUsed</a></h3>
 <pre><code class="language-solidity">error IdentifierAlreadyUsed(uint8 identifier);
 </code></pre>
@@ -4217,7 +4168,7 @@ All calls are performed using <code>delegatecall</code>, so state changes affect
 <pre><code class="language-solidity">error ModuleNotSet(uint8 identifier);
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="sidecar-1"><a class="header" href="#sidecar-1">Sidecar</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/Sidecar.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/Sidecar.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="src/Sidecar.sol//src/interfaces/ISidecar.sol/interface.ISidecar.html">ISidecar</a></p>
 <p>A base contract for implementing protocol-specific sidecars</p>
@@ -4268,7 +4219,7 @@ throws: OnlyStrategy If the caller is not the strategy</p>
 throws: AlreadyInitialized If the sidecar is already initialized</p>
 <pre><code class="language-solidity">function initialize() external;
 </code></pre>
-<h3 id="deposit-12"><a class="header" href="#deposit-12">deposit</a></h3>
+<h3 id="deposit-10"><a class="header" href="#deposit-10">deposit</a></h3>
 <p>Deposits assets into the sidecar</p>
 <p><strong>Note:</strong>
 throws: OnlyStrategy If the caller is not the strategy</p>
@@ -4392,7 +4343,7 @@ throws: OnlyAccountant If the caller is not the accountant</p>
 <pre><code class="language-solidity">error InvalidProtocolId();
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="sidecarfactory"><a class="header" href="#sidecarfactory">SidecarFactory</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/SidecarFactory.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/SidecarFactory.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="src/SidecarFactory.sol//src/interfaces/ISidecarFactory.sol/interface.ISidecarFactory.html">ISidecarFactory</a></p>
 <p>Base factory contract for deploying protocol-specific sidecar instances</p>
@@ -4514,7 +4465,7 @@ throws: OnlyAccountant If the caller is not the accountant</p>
 <pre><code class="language-solidity">error SidecarAlreadyDeployed();
 </code></pre>
 <div style="break-before: page; page-break-before: always;"></div><h1 id="strategy-4"><a class="header" href="#strategy-4">Strategy</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/Strategy.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/Strategy.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="src/Strategy.sol//src/interfaces/IStrategy.sol/interface.IStrategy.html">IStrategy</a>, <a href="src/Strategy.sol//src/ProtocolContext.sol/contract.ProtocolContext.html">ProtocolContext</a></p>
 <p>A base contract for implementing protocol-specific strategies</p>
@@ -4573,7 +4524,7 @@ throws: OnlyAllowed If the caller is not allowed and the gauge is not shutdown</
 <tr><td><code>_gateway</code></td><td><code>address</code></td><td>The address of the gateway contract</td></tr>
 </tbody></table>
 </div>
-<h3 id="deposit-13"><a class="header" href="#deposit-13">deposit</a></h3>
+<h3 id="deposit-11"><a class="header" href="#deposit-11">deposit</a></h3>
 <p>Deposits assets according to the provided allocation</p>
 <p><em>Iterates through allocation targets and deposits to each one</em></p>
 <p><strong>Notes:</strong></p>
@@ -4635,9 +4586,7 @@ throws: OnlyAllowed If the caller is not allowed and the gauge is not shutdown</
 </div>
 <h3 id="harvest-4"><a class="header" href="#harvest-4">harvest</a></h3>
 <p>If the pool is shutdown, return the pending rewards.
-Use the shutdown function to withdraw the funds.
-When the receiver is not set, it means it's a transfer of the vault shares and we need to checkpoint by
-withdrawing 0.</p>
+Use the shutdown function to withdraw the funds.</p>
 <p>Harvests rewards from a gauge</p>
 <p><em>Called using delegatecall from the Accountant contract</em></p>
 <pre><code class="language-solidity">function harvest(address gauge, bytes memory extraData)

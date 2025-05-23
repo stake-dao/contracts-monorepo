@@ -180,7 +180,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="rewardvault"><a class="header" href="#rewardvault">RewardVault</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/26fbe6acf168fa065df3c90fe9efa6a7dbf4ec60/src/RewardVault.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/734cd8426286e63be1dfc998a7c496ee5ada22b0/src/RewardVault.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="/src/interfaces/IRewardVault.sol/interface.IRewardVault.html">IRewardVault</a>, IERC4626, ERC20</p>
 <p>An ERC4626-compatible vault that handles:</p>
@@ -320,29 +320,19 @@ the mint function is a wrapper of the deposit function.</em></p>
 </div>
 <h3 id="deposit-2"><a class="header" href="#deposit-2">deposit</a></h3>
 <p>Deposits <code>assets</code> from <code>account</code> into the vault and mints shares to <code>account</code>.</p>
-<p><em>Only callable by allowed addresses. <code>account</code> should have approved this contract to transfer <code>assets</code>.</em></p>
-<pre><code class="language-solidity">function deposit(address account, uint256 assets) external returns (uint256);
-</code></pre>
-<p><strong>Parameters</strong></p>
-<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>account</code></td><td><code>address</code></td><td>The address to deposit assets from and mint shares to.</td></tr>
-<tr><td><code>assets</code></td><td><code>uint256</code></td><td>The amount of assets to deposit.</td></tr>
-</tbody></table>
-</div>
-<p><strong>Returns</strong></p>
-<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>&lt;none&gt;</code></td><td><code>uint256</code></td><td>_ The amount of assets deposited.</td></tr>
-</tbody></table>
-</div>
-<h3 id="deposit-3"><a class="header" href="#deposit-3">deposit</a></h3>
-<p>Deposits <code>assets</code> from <code>account</code> into the vault and mints shares to <code>account</code>.</p>
 <p><em>Only callable by allowed addresses. <code>account</code> should have approved this contract to transfer <code>assets</code>.
 This function tracks the referrer address and handles deposit allocation through strategy and updates rewards.</em></p>
-<pre><code class="language-solidity">function deposit(address account, uint256 assets, address referrer) public returns (uint256);
+<p><strong>Note:</strong>
+reverts: ZeroAddress if the account or receiver address is the zero address.</p>
+<pre><code class="language-solidity">function deposit(address account, address receiver, uint256 assets, address referrer)
+    public
+    onlyAllowed
+    returns (uint256);
 </code></pre>
 <p><strong>Parameters</strong></p>
 <div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
 <tr><td><code>account</code></td><td><code>address</code></td><td>The address to deposit assets from and mint shares to.</td></tr>
+<tr><td><code>receiver</code></td><td><code>address</code></td><td>The address to receive the minted shares.</td></tr>
 <tr><td><code>assets</code></td><td><code>uint256</code></td><td>The amount of assets to deposit.</td></tr>
 <tr><td><code>referrer</code></td><td><code>address</code></td><td>The address of the referrer. Can be the zero address.</td></tr>
 </tbody></table>
@@ -352,44 +342,8 @@ This function tracks the referrer address and handles deposit allocation through
 <tr><td><code>&lt;none&gt;</code></td><td><code>uint256</code></td><td>_ The amount of assets deposited.</td></tr>
 </tbody></table>
 </div>
-<h3 id="mint-2"><a class="header" href="#mint-2">mint</a></h3>
-<p>Mints exact <code>shares</code> to <code>account</code> by depositing <code>account</code>'s assets.</p>
-<p><em>Only callable by allowed addresses.</em></p>
-<p><strong>Note:</strong>
-reverts: OnlyAllowed if the caller is not allowed.</p>
-<pre><code class="language-solidity">function mint(address account, uint256 shares, address referrer) external returns (uint256);
-</code></pre>
-<p><strong>Parameters</strong></p>
-<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>account</code></td><td><code>address</code></td><td>The address to deposit assets from and mint shares to.</td></tr>
-<tr><td><code>shares</code></td><td><code>uint256</code></td><td>The amount of shares to mint.</td></tr>
-<tr><td><code>referrer</code></td><td><code>address</code></td><td></td></tr>
-</tbody></table>
-</div>
-<p><strong>Returns</strong></p>
-<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>&lt;none&gt;</code></td><td><code>uint256</code></td><td>_ The amount of shares minted.</td></tr>
-</tbody></table>
-</div>
-<h3 id="mint-3"><a class="header" href="#mint-3">mint</a></h3>
-<p>Mints exact <code>shares</code> to <code>account</code> by depositing <code>account</code>'s assets.</p>
-<p><em>Only callable by allowed addresses.</em></p>
-<p><strong>Note:</strong>
-reverts: OnlyAllowed if the caller is not allowed.</p>
-<pre><code class="language-solidity">function mint(address account, uint256 shares) external returns (uint256);
-</code></pre>
-<p><strong>Parameters</strong></p>
-<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>account</code></td><td><code>address</code></td><td>The address to deposit assets from and mint shares to.</td></tr>
-<tr><td><code>shares</code></td><td><code>uint256</code></td><td>The amount of shares to mint.</td></tr>
-</tbody></table>
-</div>
-<p><strong>Returns</strong></p>
-<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
-<tr><td><code>&lt;none&gt;</code></td><td><code>uint256</code></td><td>_ The amount of shares minted.</td></tr>
-</tbody></table>
-</div>
 <h3 id="_deposit"><a class="header" href="#_deposit">_deposit</a></h3>
+<p>~ DEPOSIT - INTERNAL</p>
 <p>*Internal function to deposit assets into the vault.</p>
 <ol>
 <li>Update the reward state for the receiver.</li>
@@ -798,7 +752,7 @@ received is the same as the amount of shares redeemed.</em></p>
 <h3 id="maxdeposit"><a class="header" href="#maxdeposit">maxDeposit</a></h3>
 <p>Returns the maximum amount of assets that can be deposited.</p>
 <p><em>The parameter is not used and is included to satisfy the interface. Pass whatever you want to.</em></p>
-<pre><code class="language-solidity">function maxDeposit(address _account) public view returns (uint256);
+<pre><code class="language-solidity">function maxDeposit(address) public pure returns (uint256);
 </code></pre>
 <p><strong>Returns</strong></p>
 <div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
@@ -809,7 +763,7 @@ received is the same as the amount of shares redeemed.</em></p>
 <p>Returns the maximum amount of shares that can be minted.</p>
 <p><em>Due to the 1:1 relationship between assets and shares, the max mint
 is the same as the max deposit.</em></p>
-<pre><code class="language-solidity">function maxMint(address _account) external view returns (uint256);
+<pre><code class="language-solidity">function maxMint(address _account) external pure returns (uint256);
 </code></pre>
 <p><strong>Parameters</strong></p>
 <div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
@@ -1082,7 +1036,7 @@ reverts: CloneArgsNotFound if clone is incorrectly initialized</p>
 <p>Get addresses where funds are allocated to.
 Create an allocation struct to pass to the strategy.
 We want to withdraw 0, just to get the pending rewards.
-Withdraw 0, just to get the pending rewards.</p>
+Checkpoint to get the pending rewards.</p>
 <p>Mints new vault shares</p>
 <p><em>We pass the strategy as the receiver to avoid the zero address check on some tokens.</em></p>
 <p><em>Updates balances and processes pending rewards</em></p>
