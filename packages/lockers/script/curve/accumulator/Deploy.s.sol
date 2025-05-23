@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {DAO} from "address-book/src/DAOEthereum.sol";
 import {CurveLocker} from "address-book/src/CurveEthereum.sol";
+import {DAO} from "address-book/src/DAOEthereum.sol";
 import {DeployAccumulator} from "script/common/DeployAccumulator.sol";
 import {CurveAccumulator} from "src/mainnet/curve/Accumulator.sol";
 

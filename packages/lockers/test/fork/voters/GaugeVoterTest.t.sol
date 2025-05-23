@@ -1,15 +1,15 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.28;
 
-import {CurveVoter} from "src/voters/CurveVoter.sol";
-import {PendleVoter} from "src/voters/PendleVoter.sol";
-import {FXNVoter} from "src/voters/FXNVoter.sol";
-import {FraxVoter} from "src/voters/FraxVoter.sol";
-import {BalancerVoter} from "src/voters/BalancerVoter.sol";
 import {Test} from "forge-std/src/Test.sol";
-import {MockGateway} from "test/common/MockGateway.sol";
 import {ILocker} from "src/common/interfaces/ILocker.sol";
+import {BalancerVoter} from "src/voters/BalancerVoter.sol";
+import {CurveVoter} from "src/voters/CurveVoter.sol";
+import {FraxVoter} from "src/voters/FraxVoter.sol";
+import {FXNVoter} from "src/voters/FXNVoter.sol";
+import {PendleVoter} from "src/voters/PendleVoter.sol";
 import {VoterPermissionManager} from "src/voters/utils/VoterPermissionManager.sol";
+import {MockGateway} from "test/common/MockGateway.sol";
 
 struct VeBalance {
     uint128 bias;

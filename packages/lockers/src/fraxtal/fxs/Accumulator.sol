@@ -2,8 +2,8 @@
 pragma solidity 0.8.28;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {FraxProtocol} from "address-book/src/FraxFraxtal.sol";
 import {FraxLocker} from "address-book/src/FraxEthereum.sol";
+import {FraxProtocol} from "address-book/src/FraxFraxtal.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {IYieldDistributor} from "src/common/interfaces/IYieldDistributor.sol";

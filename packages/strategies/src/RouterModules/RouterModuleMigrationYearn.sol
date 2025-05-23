@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IRouterModule} from "src/interfaces/IRouterModule.sol";
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 contract RouterModuleMigrationYearn is IRouterModule {
     using SafeERC20 for IYearnVault;

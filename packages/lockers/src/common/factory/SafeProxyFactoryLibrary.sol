@@ -4,8 +4,8 @@ pragma solidity 0.8.28;
 import {Enum} from "@safe/contracts/common/Enum.sol";
 import {SafeProxyFactory} from "@safe/contracts/proxies/SafeProxyFactory.sol";
 import {Safe} from "@safe/contracts/Safe.sol";
-import {ILocker, ISafe} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
 import {Common} from "address-book/src/CommonEthereum.sol";
+import {ILocker, ISafe} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
 
 /// @title SafeProxyFactoryLibrary
 /// @notice This library is used to deploy a Safe proxy contract.

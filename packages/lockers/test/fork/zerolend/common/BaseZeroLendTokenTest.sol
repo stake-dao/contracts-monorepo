@@ -4,6 +4,8 @@ pragma solidity 0.8.28;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeProxyFactory} from "@safe/contracts/proxies/SafeProxyFactory.sol";
 import {Safe, Enum} from "@safe/contracts/Safe.sol";
+import {Common} from "address-book/src/CommonLinea.sol";
+import {ZeroLocker} from "address-book/src/ZeroLinea.sol";
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {IDepositor} from "src/common/interfaces/IDepositor.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
@@ -13,8 +15,6 @@ import {sdToken as SdToken} from "src/common/token/sdToken.sol";
 import {ZeroLendAccumulator} from "src/linea/zerolend/Accumulator.sol";
 import {Depositor} from "src/linea/zerolend/Depositor.sol";
 import {BaseZeroLendTest} from "test/fork/zerolend/common/BaseZeroLendTest.sol";
-import {Common} from "address-book/src/CommonLinea.sol";
-import {ZeroLocker} from "address-book/src/ZeroLinea.sol";
 
 // end to end tests for the ZeroLend integration
 abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {

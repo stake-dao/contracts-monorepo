@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
-import {SafeModule} from "src/common/utils/SafeModule.sol";
 import {IGaugeController} from "@interfaces/curve/IGaugeController.sol";
+import {SafeModule} from "src/common/utils/SafeModule.sol";
 import {VoterPermissionManager} from "src/voters/utils/VoterPermissionManager.sol";
 
 /// @title BaseVoter

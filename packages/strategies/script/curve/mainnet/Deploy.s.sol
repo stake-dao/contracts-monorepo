@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
+import {CurveProtocol} from "address-book/src/CurveEthereum.sol";
 import "forge-std/src/Script.sol";
 import {Base} from "script/Base.sol";
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
@@ -8,7 +9,6 @@ import {ConvexSidecarFactory} from "src/integrations/curve/ConvexSidecarFactory.
 import {CurveAllocator} from "src/integrations/curve/CurveAllocator.sol";
 import {CurveFactory} from "src/integrations/curve/CurveFactory.sol";
 import {CurveStrategy} from "src/integrations/curve/CurveStrategy.sol";
-import {CurveProtocol} from "address-book/src/CurveEthereum.sol";
 
 contract Deploy is Base {
     string public NETWORK = "mainnet";

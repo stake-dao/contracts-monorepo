@@ -1,6 +1,5 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
-
-import {console} from "forge-std/src/console.sol";
 
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {Accountant} from "src/Accountant.sol";

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
+import {IVoting} from "@interfaces/curve/IVoting.sol";
 import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
 import {FixedPointMathLib} from "solady/src/utils/FixedPointMathLib.sol";
-import {IVoting} from "@interfaces/curve/IVoting.sol";
 import {BaseVoter} from "src/voters/BaseVoter.sol";
 
 enum VoteType {

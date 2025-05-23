@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {IAccountant, Accountant} from "src/Accountant.sol";
+import {Accountant} from "src/Accountant.sol";
 import {IAllocator} from "src/interfaces/IAllocator.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";

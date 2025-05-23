@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.28;
 
-import {BaseTest} from "test/BaseTest.t.sol";
-import {SpectraVoter} from "src/voters/SpectraVoter.sol";
-import {ISpectraVoter} from "src/common/interfaces/ISpectraVoter.sol";
-import {DAO} from "address-book/src/DAOBase.sol";
-import {ILocker, ISafe} from "src/common/interfaces/spectra/stakedao/ILocker.sol";
 import {Enum} from "@safe/contracts/Safe.sol";
+import {DAO} from "address-book/src/DAOBase.sol";
 import {SpectraLocker} from "address-book/src/SpectraBase.sol";
+import {ISpectraVoter} from "src/common/interfaces/ISpectraVoter.sol";
+import {ILocker, ISafe} from "src/common/interfaces/spectra/stakedao/ILocker.sol";
+import {SpectraVoter} from "src/voters/SpectraVoter.sol";
 import {VoterPermissionManager} from "src/voters/utils/VoterPermissionManager.sol";
+import {BaseTest} from "test/BaseTest.t.sol";
 
 contract SpectraGaugeVoterTest is BaseTest {
     SpectraVoter internal spectraVoter;

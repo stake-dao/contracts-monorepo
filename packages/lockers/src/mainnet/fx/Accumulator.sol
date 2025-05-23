@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
+import {Common} from "address-book/src/CommonEthereum.sol";
+import {FXNProtocol} from "address-book/src/FXNEthereum.sol";
+import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {ILocker} from "src/common/interfaces/ILocker.sol";
-import {FXNProtocol} from "address-book/src/FXNEthereum.sol";
-import {Common} from "address-book/src/CommonEthereum.sol";
-import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 
 /// @notice A contract that accumulates FXN rewards and notifies them to the sdFXN gauge
 /// @author StakeDAO

@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import "src/RewardVault.sol";
+import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 import "test/unit/RewardVault/RewardVaultHarness.t.sol";
 import "./Base.t.sol";
-import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 
 /// @title RewardVaultTest
 /// @notice Base test contract specifically for RewardVault tests

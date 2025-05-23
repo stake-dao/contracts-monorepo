@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeProxyFactory} from "@safe/contracts/proxies/SafeProxyFactory.sol";
 import {Safe, Enum} from "@safe/contracts/Safe.sol";
+import {Common} from "address-book/src/CommonBase.sol";
 import {DAO} from "address-book/src/DAOBase.sol";
 import {SpectraProtocol} from "address-book/src/SpectraBase.sol";
 import {DeployAccumulator} from "script/common/DeployAccumulator.sol";
@@ -12,7 +13,6 @@ import {Depositor} from "src/base/spectra/Depositor.sol";
 import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
 import {ILocker, ISafe} from "src/common/interfaces/spectra/stakedao/ILocker.sol";
 import {sdToken as SdToken} from "src/common/token/sdToken.sol";
-import {Common} from "address-book/src/CommonBase.sol";
 
 contract Deploy is DeployAccumulator {
     address internal sdSpectra;

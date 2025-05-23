@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.28;
 
-import {Test} from "forge-std/src/Test.sol";
-import {SpectraVotingClaimer} from "src/voters/SpectraVotingClaimer.sol";
-import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import {ILocker, ISafe} from "src/common/interfaces/spectra/stakedao/ILocker.sol";
 import {Enum} from "@safe/contracts/Safe.sol";
 import {Common} from "address-book/src/CommonBase.sol";
 import {DAO} from "address-book/src/DAOBase.sol";
 import {SpectraLocker} from "address-book/src/SpectraBase.sol";
+import {Test} from "forge-std/src/Test.sol";
+import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import {ILocker, ISafe} from "src/common/interfaces/spectra/stakedao/ILocker.sol";
+import {SpectraVotingClaimer} from "src/voters/SpectraVotingClaimer.sol";
 
 contract SpectraVotingClaimerTest is Test {
     address public immutable WETH = Common.WETH;
     address public immutable GHO = Common.GHO;
 
-    SpectraVotingClaimer spectraVotingClaimer;
+    SpectraVotingClaimer internal spectraVotingClaimer;
 
     function _enableModule(address _locker, address _module) internal {
         vm.prank(DAO.GOVERNANCE);

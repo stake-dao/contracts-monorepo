@@ -22,7 +22,8 @@ contract ConverterTest is Test {
         sdToken = ERC20(SpectraLocker.SDTOKEN);
         sdTokenGauge = ERC20(SpectraLocker.GAUGE);
 
-        converter = new APWine2SpectraConverter(SpectraLocker.SDTOKEN, SpectraLocker.GAUGE, address(this), 8453, 0); // Mainnet, conversion rate is not necessary
+        // Mainnet, conversion rate is not necessary
+        converter = new APWine2SpectraConverter(SpectraLocker.SDTOKEN, SpectraLocker.GAUGE, address(this), 8453, 0);
 
         vm.prank(ISdToken(SpectraLocker.SDTOKEN).operator());
         ISdToken(SpectraLocker.SDTOKEN).setOperator(address(converter));

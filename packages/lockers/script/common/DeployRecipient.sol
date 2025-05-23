@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
+import {Common} from "address-book/src/CommonEthereum.sol";
+import {DAO} from "address-book/src/DAOEthereum.sol";
 import {Script} from "forge-std/src/Script.sol";
 import {ConvexLockerRecipient} from "src/common/fee/ConvexLockerRecipient.sol";
 import {StakeDaoLockerRecipient} from "src/common/fee/StakeDaoLockerRecipient.sol";
 import {VlCVXDelegatorsRecipient} from "src/common/fee/vlCVXDelegatorsRecipient.sol";
-import {Common} from "address-book/src/CommonEthereum.sol";
-import {DAO} from "address-book/src/DAOEthereum.sol";
 
 interface ImmutableCreate2Factory {
     function safeCreate2(bytes32, bytes memory) external;

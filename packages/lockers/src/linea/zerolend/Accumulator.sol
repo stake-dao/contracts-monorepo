@@ -3,12 +3,12 @@ pragma solidity 0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Enum} from "@safe/contracts/common/Enum.sol";
+import {Common} from "address-book/src/CommonLinea.sol";
+import {ZeroLocker} from "address-book/src/ZeroLinea.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
 import {ILocker} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
 import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
-import {Common} from "address-book/src/CommonLinea.sol";
-import {ZeroLocker} from "address-book/src/ZeroLinea.sol";
 
 /// @title StakeDAO ZERO Accumulator
 /// @notice A contract that accumulates ZERO rewards and notifies them to the sdZERO gauge

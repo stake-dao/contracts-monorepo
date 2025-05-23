@@ -4,6 +4,8 @@ pragma solidity 0.8.28;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {Enum} from "@safe/contracts/Safe.sol";
+import {DAO} from "address-book/src/DAOBase.sol";
+import {SpectraProtocol} from "address-book/src/SpectraBase.sol";
 import {Accumulator} from "src/base/spectra/Accumulator.sol";
 import {Depositor} from "src/base/spectra/Depositor.sol";
 import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
@@ -15,8 +17,6 @@ import {ILocker, ISafe} from "src/common/interfaces/spectra/stakedao/ILocker.sol
 import {sdToken as SdToken} from "src/common/token/sdToken.sol";
 import {SafeLibrary} from "test/common/SafeLibrary.sol";
 import {BaseSpectraTest} from "test/fork/spectra/common/BaseSpectraTest.sol";
-import {DAO} from "address-book/src/DAOBase.sol";
-import {SpectraProtocol} from "address-book/src/SpectraBase.sol";
 
 // Base Spectra Test including deployments and setup
 abstract contract BaseSpectraTokenTest is BaseSpectraTest {

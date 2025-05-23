@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import "forge-std/src/Test.sol";
-
 import {ILocker} from "@interfaces/stake-dao/ILocker.sol";
+import "forge-std/src/Test.sol";
 import {Accountant} from "src/Accountant.sol";
 import {Allocator} from "src/Allocator.sol";
 import {ProtocolController} from "src/ProtocolController.sol";

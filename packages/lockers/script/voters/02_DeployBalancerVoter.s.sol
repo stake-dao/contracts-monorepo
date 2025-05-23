@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
+import {DAO} from "address-book/src/DAOEthereum.sol";
 import {Script} from "forge-std/src/Script.sol";
 import {FraxVoter} from "src/voters/FraxVoter.sol";
-import {DAO} from "address-book/src/DAOEthereum.sol";
 
 contract DeployFraxVoter is Script {
     function run() public {

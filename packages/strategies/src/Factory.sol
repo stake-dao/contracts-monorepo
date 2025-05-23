@@ -2,8 +2,6 @@
 pragma solidity 0.8.28;
 
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-import {IAccountant} from "src/interfaces/IAccountant.sol";
-import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {ProtocolContext} from "src/ProtocolContext.sol";
 
 /// @title Factory - Abstract Base Factory Contract

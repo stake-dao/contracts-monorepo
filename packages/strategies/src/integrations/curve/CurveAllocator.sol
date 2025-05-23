@@ -2,12 +2,11 @@
 pragma solidity 0.8.28;
 
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-
+import {CurveProtocol} from "address-book/src/CurveEthereum.sol";
 import {Allocator} from "src/Allocator.sol";
+import {IBalanceProvider} from "src/interfaces/IBalanceProvider.sol";
 import {ISidecar} from "src/interfaces/ISidecar.sol";
 import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
-import {IBalanceProvider} from "src/interfaces/IBalanceProvider.sol";
-import {CurveProtocol} from "address-book/src/CurveEthereum.sol";
 
 /// @title CurveAllocator
 /// @notice Contract that calculates the optimal LP token allocation for Stake DAO Locker and Convex

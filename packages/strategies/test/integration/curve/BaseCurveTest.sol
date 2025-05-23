@@ -5,13 +5,13 @@ import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
 import {IStrategy} from "@interfaces/stake-dao/IStrategy.sol";
 import {Enum} from "@safe/contracts/common/Enum.sol";
+import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
 import {ConvexSidecarFactory, IBooster} from "src/integrations/curve/ConvexSidecarFactory.sol";
 import {CurveFactory} from "src/integrations/curve/CurveFactory.sol";
 import {CurveStrategy, IMinter} from "src/integrations/curve/CurveStrategy.sol";
 import {IBalanceProvider} from "src/interfaces/IBalanceProvider.sol";
 import {BaseForkTest} from "test/BaseFork.sol";
-import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
 
 abstract contract BaseCurveTest is BaseForkTest {
     ///////////////////////////////////////////////////////////////////////////

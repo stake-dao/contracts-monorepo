@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
-import {BaseVoter} from "src/voters/BaseVoter.sol";
 import {SpectraProtocol, SpectraLocker} from "address-book/src/SpectraBase.sol";
 import {ISpectraVoter} from "src/common/interfaces/ISpectraVoter.sol";
+import {BaseVoter} from "src/voters/BaseVoter.sol";
 
 contract SpectraVoter is BaseVoter {
     ////////////////////////////////////////////////////////////////

@@ -1,8 +1,9 @@
+// SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
 import {Accountant} from "src/Accountant.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
-import {AccountantBaseTest, Math, console} from "test/AccountantBaseTest.t.sol";
+import {AccountantBaseTest, Math} from "test/AccountantBaseTest.t.sol";
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 import {AccountantHarness} from "test/unit/Accountant/AccountantHarness.t.sol";
 

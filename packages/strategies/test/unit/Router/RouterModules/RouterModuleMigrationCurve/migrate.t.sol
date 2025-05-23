@@ -5,7 +5,6 @@ import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Address, Errors} from "@openzeppelin/contracts/utils/Address.sol";
-import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {RouterModuleMigrationCurve} from "src/RouterModules/RouterModuleMigrationCurve.sol";
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";

@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.28;
 
+import {IVoting, VoterState} from "@interfaces/curve/IVoting.sol";
 import {Test} from "forge-std/src/Test.sol";
-import {MockGateway} from "test/common/MockGateway.sol";
 import {ILocker} from "src/common/interfaces/ILocker.sol";
 import {CurveVoter} from "src/voters/CurveVoter.sol";
-import {IVoting, VoterState} from "@interfaces/curve/IVoting.sol";
 import {VoterPermissionManager} from "src/voters/utils/VoterPermissionManager.sol";
+import {MockGateway} from "test/common/MockGateway.sol";
 
 contract GovCurveVoterTest is Test {
     CurveVoter internal curveVoter;

@@ -2,9 +2,9 @@
 pragma solidity 0.8.28;
 
 import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
+import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IRouterModule} from "src/interfaces/IRouterModule.sol";
-import {IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 contract RouterModuleMigrationCurve is IRouterModule {
     using SafeERC20 for ILiquidityGauge;

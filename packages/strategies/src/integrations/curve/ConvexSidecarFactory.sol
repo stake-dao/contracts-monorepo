@@ -3,9 +3,9 @@ pragma solidity 0.8.28;
 
 import {IBooster} from "@interfaces/convex/IBooster.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import {CurveProtocol} from "address-book/src/CurveEthereum.sol";
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
 import {SidecarFactory} from "src/SidecarFactory.sol";
-import {CurveProtocol} from "address-book/src/CurveEthereum.sol";
 
 /// @title ConvexSidecarFactory
 /// @notice Factory contract for deploying ConvexSidecar instances
