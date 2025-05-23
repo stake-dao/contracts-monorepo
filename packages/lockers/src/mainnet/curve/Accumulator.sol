@@ -43,7 +43,7 @@ contract CurveAccumulator is DelegableAccumulator, SafeModule {
             CurveProtocol.CRV, // token
             CurveProtocol.VECRV, // veToken
             CurveProtocol.VE_BOOST, // veBoost
-            CurveProtocol.VE_BOOST_DELEGATION, // veBoostDelegation
+            CurveLocker.VE_BOOST_DELEGATION, // veBoostDelegation
             0 // multiplier
         )
         SafeModule(_gateway)

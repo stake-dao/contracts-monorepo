@@ -67,7 +67,7 @@ contract CurveAccumulator__constructor is AccumulatorTest {
     function test_SetsTheCorrectVeBoostDelegationContract() external view {
         // it sets the correct veBoost delegation contract
 
-        assertEq(CurveAccumulator(accumulator).veBoostDelegation(), CurveProtocol.VE_BOOST_DELEGATION);
+        assertEq(CurveAccumulator(accumulator).veBoostDelegation(), CurveLocker.VE_BOOST_DELEGATION);
     }
 
     function test_Sets0AsTheMultiplier() external view {

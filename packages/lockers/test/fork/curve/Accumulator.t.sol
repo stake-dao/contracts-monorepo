@@ -13,7 +13,7 @@ contract CurveAccumulatorTest is BaseAccumulatorTest {
     address public constant CONVEX_PROXY = CurveProtocol.CONVEX_PROXY;
 
     IVeBoost public veBoost = IVeBoost(CurveProtocol.VE_BOOST);
-    IVeBoostDelegation public veBoostDelegation = IVeBoostDelegation(CurveProtocol.VE_BOOST_DELEGATION);
+    IVeBoostDelegation public veBoostDelegation = IVeBoostDelegation(CurveLocker.VE_BOOST_DELEGATION);
 
     constructor()
         BaseAccumulatorTest(

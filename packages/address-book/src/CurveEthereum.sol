@@ -14,7 +14,6 @@ library CurveProtocol {
     address internal constant VOTING_APP = 0xE478de485ad2fe566d49342Cbd03E49ed7DB3356;
     address internal constant MINTER = 0xd061D61a4d941c39E5453435B6345Dc261C2fcE0;
     address internal constant VE_BOOST = 0xD37A6aa3d8460Bd2b6536d608103D880695A23CD;
-    address internal constant VE_BOOST_DELEGATION = 0xe1F9C8ebBC80A013cAf0940fdD1A8554d763b9cf;
 
     // Convex
     address internal constant CONVEX_PROXY = 0x989AEb4d175e16225E39E87d0D97A3360524AD80;
@@ -33,6 +32,7 @@ library CurveLocker {
 
     address internal constant STRATEGY = 0x69D61428d089C2F35Bf6a472F540D0F82D1EA2cd;
     address internal constant FACTORY = 0xDC9718E7704f10DB1aFaad737f8A04bcd14C20AA;
+    address internal constant VE_BOOST_DELEGATION = 0xe1F9C8ebBC80A013cAf0940fdD1A8554d763b9cf;
 }
 
 // Preprod version
