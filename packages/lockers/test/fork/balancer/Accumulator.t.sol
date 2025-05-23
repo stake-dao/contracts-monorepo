@@ -16,7 +16,7 @@ contract BalancerAccumulatorTest is BaseAccumulatorTest {
     IVeBoost public veBoost = IVeBoost(BalancerProtocol.VE_BOOST);
 
     /// @notice Ve Boost FXTLDelegation.
-    IVeBoostDelegation public veBoostDelegation = IVeBoostDelegation(BalancerProtocol.VE_BOOST_DELEGATION);
+    IVeBoostDelegation public veBoostDelegation = IVeBoostDelegation(BalancerLocker.VE_BOOST_DELEGATION);
 
     constructor()
         BaseAccumulatorTest(

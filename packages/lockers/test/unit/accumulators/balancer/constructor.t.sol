@@ -68,7 +68,7 @@ contract BalancerAccumulator__constructor is AccumulatorTest {
     function test_SetsTheCorrectVeBoostDelegationContract() external view {
         // it sets the correct veBoost delegation contract
 
-        assertEq(BalancerAccumulator(accumulator).veBoostDelegation(), BalancerProtocol.VE_BOOST_DELEGATION);
+        assertEq(BalancerAccumulator(accumulator).veBoostDelegation(), BalancerLocker.VE_BOOST_DELEGATION);
     }
 
     function test_Sets0AsTheMultiplier() external view {

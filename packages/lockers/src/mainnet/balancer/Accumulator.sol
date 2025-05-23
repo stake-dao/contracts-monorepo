@@ -47,7 +47,7 @@ contract BalancerAccumulator is DelegableAccumulator, SafeModule {
             BalancerProtocol.BAL, // token
             BalancerProtocol.VEBAL, // veToken
             BalancerProtocol.VE_BOOST, // veBoost
-            BalancerProtocol.VE_BOOST_DELEGATION, // veBoostDelegation
+            BalancerLocker.VE_BOOST_DELEGATION, // veBoostDelegation
             0 // multiplier
         )
         SafeModule(_gateway)
