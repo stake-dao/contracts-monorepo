@@ -12,6 +12,7 @@ clean:
 
 # Always keep Forge up to date
 install:
+	pipx install vyper==0.3.10
 	foundryup
 	rm -rf node_modules
 	pnpm i
