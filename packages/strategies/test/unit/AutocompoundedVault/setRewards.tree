@@ -1,0 +1,6 @@
+AutocompoundedVault__setRewards
+├── it reverts when called by unauthorized address
+├── it reverts when caller doesn't have enough balance
+├── it creates a new stream with given amount
+├── it creates a new stream with given and unvested amount
+└── it emit an event
