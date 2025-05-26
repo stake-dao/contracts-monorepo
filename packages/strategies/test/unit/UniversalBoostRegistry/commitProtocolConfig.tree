@@ -1,0 +1,28 @@
+commitProtocolConfig.t.sol
+├── when no queued config
+│   └── it reverts with NoQueuedConfig when no configuration is queued
+├── when delay period not passed
+│   └── it reverts with DelayPeriodNotPassed when delay period hasn't elapsed
+├── when committing protocol config
+│   ├── after delay period
+│   │   ├── it commits the configuration after delay period
+│   │   ├── it moves queued values to active values
+│   │   ├── it clears queued values
+│   │   └── it emits ProtocolConfigCommitted event
+│   ├── exactly at delay period
+│   │   └── it allows committing exactly when delay period ends
+│   ├── well after delay period
+│   │   └── it allows committing well after delay period
+│   ├── when called by anyone
+│   │   └── it allows any address to commit after delay period
+│   ├── when overwriting existing active
+│   │   └── it overwrites existing active configuration
+│   ├── with zero values
+│   │   └── it handles zero fee and zero address receiver
+│   ├── with maximum fee
+│   │   └── it handles maximum fee value
+│   ├── with multiple protocols
+│   │   └── it handles commits for multiple protocols independently
+│   ├── with fuzzed parameters
+│   │   └── it works with valid fuzzed parameters
+│   └── it does not affect boost rental status 

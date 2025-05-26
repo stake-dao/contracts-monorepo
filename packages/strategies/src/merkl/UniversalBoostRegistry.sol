@@ -7,7 +7,7 @@ import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step
 /// @notice A registry to keep track of the Boosts rented by the users, per protocol, to work with Merkl.
 /// @dev Merkl will use this registry to know which Boosts are rented by the users, per protocol, and allocate according rewards,
 ///      minus the protocol fees (if any), set by this contract.
-///      
+///
 ///      Key responsibilities:
 ///      - Tracks boost rental status for users across different protocols
 ///      - Manages protocol-specific fee configurations with time-delayed updates
@@ -18,7 +18,6 @@ import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step
 ///      1. Queue: Owner queues new protocol configurations
 ///      2. Commit: After delay period, configurations can be committed to take effect
 contract UniversalBoostRegistry is Ownable2Step {
-
     //////////////////////////////////////////////////////
     // --- STORAGE STRUCTURES
     //////////////////////////////////////////////////////
@@ -88,10 +87,7 @@ contract UniversalBoostRegistry is Ownable2Step {
     /// @param feeReceiver The queued fee receiver address.
     /// @param queuedTimestamp The timestamp when the configuration was queued.
     event NewProtocolConfigQueued(
-        bytes4 indexed protocolId, 
-        uint128 protocolFees, 
-        address feeReceiver, 
-        uint64 queuedTimestamp
+        bytes4 indexed protocolId, uint128 protocolFees, address feeReceiver, uint64 queuedTimestamp
     );
 
     /// @notice Event emitted when a protocol config is committed.
@@ -100,10 +96,7 @@ contract UniversalBoostRegistry is Ownable2Step {
     /// @param feeReceiver The committed fee receiver address.
     /// @param committedTimestamp The timestamp when the configuration was committed.
     event ProtocolConfigCommitted(
-        bytes4 indexed protocolId, 
-        uint128 protocolFees, 
-        address feeReceiver, 
-        uint64 committedTimestamp
+        bytes4 indexed protocolId, uint128 protocolFees, address feeReceiver, uint64 committedTimestamp
     );
 
     //////////////////////////////////////////////////////
@@ -138,7 +131,7 @@ contract UniversalBoostRegistry is Ownable2Step {
     function rentBoost(bytes4 protocolId) public {
         // Update the rental status for the caller and protocol
         isRentingBoost[msg.sender][protocolId] = true;
-        
+
         // Emit event for off-chain tracking and Merkl integration
         emit BoostRented(msg.sender, protocolId);
     }
@@ -150,7 +143,7 @@ contract UniversalBoostRegistry is Ownable2Step {
     function returnBoost(bytes4 protocolId) public {
         // Update the rental status for the caller and protocol
         isRentingBoost[msg.sender][protocolId] = false;
-        
+
         // Emit event for off-chain tracking and Merkl integration
         emit BoostReturned(msg.sender, protocolId);
     }
@@ -163,24 +156,19 @@ contract UniversalBoostRegistry is Ownable2Step {
     /// @dev Implements the first phase of the two-phase fee update mechanism.
     ///      Only the owner can queue new configurations. The configuration will not
     ///      take effect immediately - it must be committed after the delay period.
-    ///      Gas optimized by using a single storage mapping and packed struct.
     ///      Preserves active configuration values until commitment.
     /// @param protocolId The protocol ID for which to queue the new configuration.
     /// @param protocolFees The protocol fee percentage to queue (scaled by 1e18).
     /// @param feeReceiver The fee receiver address to queue.
     /// @custom:throws OwnableUnauthorizedAccount If caller is not the owner.
     /// @custom:throws FeeExceedsMaximum If the protocol fee exceeds the maximum allowed.
-    function queueNewProtocolConfig(
-        bytes4 protocolId, 
-        uint128 protocolFees, 
-        address feeReceiver
-    ) public onlyOwner {
+    function queueNewProtocolConfig(bytes4 protocolId, uint128 protocolFees, address feeReceiver) public onlyOwner {
         // Validate that the protocol fee doesn't exceed the maximum allowed
         require(protocolFees <= MAX_FEE_PERCENT, FeeExceedsMaximum());
-        
+
         // Get storage pointer to the configuration for gas efficiency
         ProtocolConfig storage config = protocolConfig[protocolId];
-        
+
         // Update only the queued configuration fields, preserving active values
         uint64 currentTime = uint64(block.timestamp);
         config.queuedProtocolFees = protocolFees;
@@ -195,7 +183,6 @@ contract UniversalBoostRegistry is Ownable2Step {
     /// @dev Implements the second phase of the two-phase fee update mechanism.
     ///      Can only be called after the delay period has passed since the configuration was queued.
     ///      This function can be called by anyone once the delay period has elapsed.
-    ///      Gas optimized by using direct storage manipulation and avoiding memory copies.
     ///      Moves queued values to active values and clears the queue.
     /// @param protocolId The protocol ID for which to commit the new configuration.
     /// @custom:throws DelayPeriodNotPassed If the delay period since queuing hasn't elapsed.
@@ -203,10 +190,10 @@ contract UniversalBoostRegistry is Ownable2Step {
     function commitProtocolConfig(bytes4 protocolId) public {
         // Get storage pointer to the configuration for gas efficiency
         ProtocolConfig storage config = protocolConfig[protocolId];
-        
+
         // Ensure there is a queued configuration to commit
         require(config.queuedTimestamp != 0, NoQueuedConfig());
-        
+
         // Ensure sufficient time has passed since the configuration was queued
         require(uint64(block.timestamp) - config.queuedTimestamp >= DELAY_PERIOD, DelayPeriodNotPassed());
 
@@ -215,7 +202,7 @@ contract UniversalBoostRegistry is Ownable2Step {
         config.protocolFees = config.queuedProtocolFees;
         config.feeReceiver = config.queuedFeeReceiver;
         config.lastUpdated = currentTime;
-        
+
         // Clear queued values to indicate no pending configuration
         config.queuedProtocolFees = 0;
         config.queuedFeeReceiver = address(0);

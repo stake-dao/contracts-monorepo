@@ -1,0 +1,7 @@
+constructor.t.sol
+├── when initializing the contract
+│   ├── it initializes the owner
+│   ├── it emits the OwnershipTransferred event
+│   ├── it initializes the constants correctly
+│   ├── it initializes with empty mappings
+│   └── it initializes view functions correctly 
