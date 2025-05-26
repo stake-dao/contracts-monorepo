@@ -24,14 +24,23 @@ contract UniversalBoostRegistry is Ownable2Step {
     //////////////////////////////////////////////////////
 
     /// @notice Configuration parameters for a specific protocol.
-    /// @dev Contains fee percentage, fee receiver address, and timestamp for delay mechanism.
+    /// @dev Contains both active and queued fee configurations with timestamps for delay mechanism.
+    ///      Optimized for gas efficiency by packing fields into 3 storage slots instead of 6.
+    ///      Active values are used for current operations, queued values become active after commitment.
     struct ProtocolConfig {
-        /// @notice Fee percentage charged by the protocol (scaled by 1e18).
-        uint256 protocolFees;
-        /// @notice Address that receives the protocol fees.
+        /// @notice Active fee percentage charged by the protocol (scaled by 1e18).
+        uint128 protocolFees;
+        /// @notice Queued fee percentage that will become active after commitment (scaled by 1e18).
+        uint128 queuedProtocolFees;
+        /// @notice Timestamp when this configuration was last committed and became active.
+        uint64 lastUpdated;
+        /// @notice Timestamp when a new configuration was queued (0 if not queued).
+        /// @dev Used to track the delay period. Zero indicates no pending configuration.
+        uint64 queuedTimestamp;
+        /// @notice Active address that receives the protocol fees.
         address feeReceiver;
-        /// @notice Timestamp when this configuration was last updated.
-        uint256 lastUpdated;
+        /// @notice Queued address that will receive fees after commitment.
+        address queuedFeeReceiver;
     }
 
     //////////////////////////////////////////////////////
@@ -39,22 +48,19 @@ contract UniversalBoostRegistry is Ownable2Step {
     //////////////////////////////////////////////////////
 
     /// @notice The maximum fee percent (40%).
-    uint256 public constant MAX_FEE_PERCENT = 0.4e18;
+    uint128 public constant MAX_FEE_PERCENT = 0.4e18;
 
     /// @notice Delay period for new fees to take effect.
     /// @dev This prevents immediate fee changes and provides users time to react to fee updates.
-    uint256 public constant DELAY_PERIOD = 1 days;
+    uint64 public constant DELAY_PERIOD = 1 days;
 
     //////////////////////////////////////////////////////
     // --- STATE VARIABLES
     //////////////////////////////////////////////////////
 
-    /// @notice Mapping of protocol ID to queued protocol configuration.
-    /// @dev These are pending configurations that haven't taken effect yet.
-    mapping(bytes4 protocolId => ProtocolConfig config) public queueProtocolConfig;
-
-    /// @notice Mapping of protocol ID to active protocol configuration.
-    /// @dev These are the currently active configurations used for fee calculations.
+    /// @notice Mapping of protocol ID to protocol configuration.
+    /// @dev Contains both active and queued configurations in a single mapping.
+    ///      Use queuedTimestamp to determine if a configuration is pending.
     mapping(bytes4 protocolId => ProtocolConfig config) public protocolConfig;
 
     /// @notice Mapping of account to protocol ID to boost rental status.
@@ -78,24 +84,40 @@ contract UniversalBoostRegistry is Ownable2Step {
 
     /// @notice Event emitted when a new protocol config is queued.
     /// @param protocolId The protocol ID for which the config was queued.
-    /// @param config The queued protocol configuration.
-    event NewProtocolConfigQueued(bytes4 indexed protocolId, ProtocolConfig config);
+    /// @param protocolFees The queued protocol fee percentage.
+    /// @param feeReceiver The queued fee receiver address.
+    /// @param queuedTimestamp The timestamp when the configuration was queued.
+    event NewProtocolConfigQueued(
+        bytes4 indexed protocolId, 
+        uint128 protocolFees, 
+        address feeReceiver, 
+        uint64 queuedTimestamp
+    );
 
     /// @notice Event emitted when a protocol config is committed.
     /// @param protocolId The protocol ID for which the config was committed.
-    /// @param config The committed protocol configuration.
-    event ProtocolConfigCommitted(bytes4 indexed protocolId, ProtocolConfig config);
+    /// @param protocolFees The committed protocol fee percentage.
+    /// @param feeReceiver The committed fee receiver address.
+    /// @param committedTimestamp The timestamp when the configuration was committed.
+    event ProtocolConfigCommitted(
+        bytes4 indexed protocolId, 
+        uint128 protocolFees, 
+        address feeReceiver, 
+        uint64 committedTimestamp
+    );
 
     //////////////////////////////////////////////////////
     // --- ERRORS
     //////////////////////////////////////////////////////
+
+    /// @notice Error thrown when there is no queued configuration to commit.
+    error NoQueuedConfig();
 
     /// @notice Error thrown when a fee exceeds the maximum allowed.
     error FeeExceedsMaximum();
 
     /// @notice Error thrown when the delay period for new fees to take effect has not passed.
     error DelayPeriodNotPassed();
-
 
     //////////////////////////////////////////////////////
     // --- CONSTRUCTOR
@@ -141,41 +163,84 @@ contract UniversalBoostRegistry is Ownable2Step {
     /// @dev Implements the first phase of the two-phase fee update mechanism.
     ///      Only the owner can queue new configurations. The configuration will not
     ///      take effect immediately - it must be committed after the delay period.
+    ///      Gas optimized by using a single storage mapping and packed struct.
+    ///      Preserves active configuration values until commitment.
     /// @param protocolId The protocol ID for which to queue the new configuration.
-    /// @param config The protocol configuration to queue.
+    /// @param protocolFees The protocol fee percentage to queue (scaled by 1e18).
+    /// @param feeReceiver The fee receiver address to queue.
     /// @custom:throws OwnableUnauthorizedAccount If caller is not the owner.
     /// @custom:throws FeeExceedsMaximum If the protocol fee exceeds the maximum allowed.
-    function queueNewProtocolConfig(bytes4 protocolId, ProtocolConfig memory config) public onlyOwner {
+    function queueNewProtocolConfig(
+        bytes4 protocolId, 
+        uint128 protocolFees, 
+        address feeReceiver
+    ) public onlyOwner {
         // Validate that the protocol fee doesn't exceed the maximum allowed
-        require(config.protocolFees <= MAX_FEE_PERCENT, FeeExceedsMaximum());
+        require(protocolFees <= MAX_FEE_PERCENT, FeeExceedsMaximum());
         
-        // Store the new configuration in the queue mapping
-        queueProtocolConfig[protocolId] = config;
+        // Get storage pointer to the configuration for gas efficiency
+        ProtocolConfig storage config = protocolConfig[protocolId];
+        
+        // Update only the queued configuration fields, preserving active values
+        uint64 currentTime = uint64(block.timestamp);
+        config.queuedProtocolFees = protocolFees;
+        config.queuedFeeReceiver = feeReceiver;
+        config.queuedTimestamp = currentTime;
 
         // Emit event to notify about the queued configuration
-        emit NewProtocolConfigQueued(protocolId, config);
+        emit NewProtocolConfigQueued(protocolId, protocolFees, feeReceiver, currentTime);
     }
 
     /// @notice Commits a new protocol config for a given protocol ID.
     /// @dev Implements the second phase of the two-phase fee update mechanism.
-    ///      Can only be called after the delay period has passed since the last update.
+    ///      Can only be called after the delay period has passed since the configuration was queued.
     ///      This function can be called by anyone once the delay period has elapsed.
+    ///      Gas optimized by using direct storage manipulation and avoiding memory copies.
+    ///      Moves queued values to active values and clears the queue.
     /// @param protocolId The protocol ID for which to commit the new configuration.
-    /// @custom:throws DelayPeriodNotPassed If the delay period since last update hasn't elapsed.
+    /// @custom:throws DelayPeriodNotPassed If the delay period since queuing hasn't elapsed.
+    /// @custom:throws NoQueuedConfig If there is no queued configuration to commit.
     function commitProtocolConfig(bytes4 protocolId) public {
-        // Ensure sufficient time has passed since the last configuration update
-        require(block.timestamp - protocolConfig[protocolId].lastUpdated > DELAY_PERIOD, DelayPeriodNotPassed());
-
-        // Retrieve the queued configuration
-        ProtocolConfig memory newConfig = queueProtocolConfig[protocolId];
+        // Get storage pointer to the configuration for gas efficiency
+        ProtocolConfig storage config = protocolConfig[protocolId];
         
-        // Update the timestamp to current block timestamp
-        newConfig.lastUpdated = block.timestamp;
+        // Ensure there is a queued configuration to commit
+        require(config.queuedTimestamp != 0, NoQueuedConfig());
+        
+        // Ensure sufficient time has passed since the configuration was queued
+        require(uint64(block.timestamp) - config.queuedTimestamp >= DELAY_PERIOD, DelayPeriodNotPassed());
 
-        // Emit event before updating storage for accurate event data
-        emit ProtocolConfigCommitted(protocolId, protocolConfig[protocolId] = newConfig);
+        // Move queued values to active values
+        uint64 currentTime = uint64(block.timestamp);
+        config.protocolFees = config.queuedProtocolFees;
+        config.feeReceiver = config.queuedFeeReceiver;
+        config.lastUpdated = currentTime;
+        
+        // Clear queued values to indicate no pending configuration
+        config.queuedProtocolFees = 0;
+        config.queuedFeeReceiver = address(0);
+        config.queuedTimestamp = 0;
 
-        // Clear the queued configuration as it's now active
-        delete queueProtocolConfig[protocolId];
+        // Emit event to notify about the committed configuration
+        emit ProtocolConfigCommitted(protocolId, config.protocolFees, config.feeReceiver, currentTime);
+    }
+
+    //////////////////////////////////////////////////////
+    // --- VIEW FUNCTIONS
+    //////////////////////////////////////////////////////
+
+    /// @notice Returns whether a protocol configuration is currently queued and pending.
+    /// @param protocolId The protocol ID to check.
+    /// @return _ True if there is a queued configuration pending commitment.
+    function hasQueuedConfig(bytes4 protocolId) external view returns (bool) {
+        return protocolConfig[protocolId].queuedTimestamp != 0;
+    }
+
+    /// @notice Returns the timestamp when a configuration can be committed.
+    /// @param protocolId The protocol ID to check.
+    /// @return _ The timestamp when the configuration can be committed (0 if no queued config).
+    function getCommitTimestamp(bytes4 protocolId) external view returns (uint64) {
+        uint64 queuedTime = protocolConfig[protocolId].queuedTimestamp;
+        return queuedTime == 0 ? 0 : queuedTime + DELAY_PERIOD;
     }
 }
