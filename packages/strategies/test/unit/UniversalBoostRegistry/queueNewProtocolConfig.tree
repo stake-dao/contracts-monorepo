@@ -1,0 +1,24 @@
+queueNewProtocolConfig.t.sol
+├── when caller is not owner
+│   └── it reverts with OwnableUnauthorizedAccount
+├── when protocol fee exceeds maximum
+│   └── it reverts with FeeExceedsMaximum
+├── when queueing new protocol config
+│   ├── with valid parameters
+│   │   ├── it updates the queued configuration
+│   │   ├── it preserves active configuration (if any)
+│   │   └── it emits NewProtocolConfigQueued event
+│   ├── when overwriting previous queue
+│   │   └── it overwrites a previously queued configuration
+│   ├── when preserving active config
+│   │   └── it preserves existing active configuration when queuing
+│   ├── with maximum fee
+│   │   └── it allows setting fee to maximum allowed value
+│   ├── with zero fee
+│   │   └── it allows setting fee to zero
+│   ├── with zero address fee receiver
+│   │   └── it allows setting fee receiver to zero address
+│   ├── with fuzzed parameters
+│   │   └── it works with valid fuzzed parameters
+│   ├── it does not affect configurations of other protocols
+│   └── it does not affect boost rental status 

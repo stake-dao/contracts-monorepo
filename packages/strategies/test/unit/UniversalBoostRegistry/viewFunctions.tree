@@ -1,0 +1,23 @@
+viewFunctions.t.sol
+├── when checking hasQueuedConfig
+│   ├── when no config queued
+│   │   └── it returns false when no configuration is queued
+│   ├── when config queued
+│   │   └── it returns true when configuration is queued
+│   ├── after commit
+│   │   └── it returns false after configuration is committed
+│   └── when new config queued
+│       └── it updates when new configuration overwrites previous queue
+├── when checking getCommitTimestamp
+│   ├── when no config queued
+│   │   └── it returns zero when no configuration is queued
+│   ├── when config queued
+│   │   └── it returns correct commit timestamp when configuration is queued
+│   ├── after commit
+│   │   └── it returns zero after configuration is committed
+│   └── when new config queued
+│       └── it updates when new configuration is queued
+├── with multiple protocols
+│   └── it handles multiple protocols independently
+└── with fuzzed protocol ID
+    └── it works with any protocol ID 

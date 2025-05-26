@@ -1,0 +1,21 @@
+returnBoost.t.sol
+├── when returning a boost
+│   ├── when currently renting
+│   │   ├── it updates the rental status to false
+│   │   └── it emits BoostReturned event
+│   ├── when not renting
+│   │   ├── it updates the rental status to false (idempotent)
+│   │   └── it emits BoostReturned event
+│   ├── when returning multiple times
+│   │   └── it allows multiple returns (idempotent)
+│   ├── when returning from multiple protocols
+│   │   └── it allows returning boosts for specific protocols independently
+│   ├── when multiple users return
+│   │   └── it allows users to return boosts independently
+│   ├── when cycling rent-return
+│   │   └── it allows rent-return cycles
+│   ├── with fuzzed protocol ID
+│   │   └── it works with any protocol ID
+│   ├── with fuzzed user address
+│   │   └── it works with any user address
+│   └── it does not affect protocol configurations or other users' rentals 

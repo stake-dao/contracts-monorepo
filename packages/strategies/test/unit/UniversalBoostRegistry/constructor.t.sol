@@ -1,0 +1,76 @@
+// SPDX-License-Identifier: UNLICENSED
+pragma solidity 0.8.28;
+
+import {Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {Test} from "forge-std/src/Test.sol";
+import {UniversalBoostRegistry} from "src/merkl/UniversalBoostRegistry.sol";
+
+contract UniversalBoostRegistry__Constructor is Test {
+    function test_InitializesOwner() external {
+        // it initializes the owner
+        // it emits the OwnershipTransferred event
+
+        address expectedOwner = address(this);
+
+        // we tell forge to expect the OwnershipTransferred event
+        vm.expectEmit(true, true, true, true);
+        emit Ownable.OwnershipTransferred(address(0), expectedOwner);
+
+        // we deploy the registry and assert the owner is the deployer
+        UniversalBoostRegistry registry = new UniversalBoostRegistry();
+        assertEq(registry.owner(), expectedOwner);
+    }
+
+    function test_InitializesConstants() external {
+        // it initializes the constants correctly
+
+        UniversalBoostRegistry registry = new UniversalBoostRegistry();
+
+        // Check MAX_FEE_PERCENT is set correctly (40%)
+        assertEq(registry.MAX_FEE_PERCENT(), 0.4e18);
+
+        // Check DELAY_PERIOD is set correctly (1 day)
+        assertEq(registry.DELAY_PERIOD(), 1 days);
+    }
+
+    function test_InitializesWithEmptyMappings() external {
+        // it initializes with empty mappings
+
+        UniversalBoostRegistry registry = new UniversalBoostRegistry();
+        bytes4 testProtocolId = bytes4(hex"12345678");
+        address testAccount = makeAddr("testAccount");
+
+        // Check protocolConfig mapping is empty
+        (
+            uint128 protocolFees,
+            uint128 queuedProtocolFees,
+            uint64 lastUpdated,
+            uint64 queuedTimestamp,
+            address feeReceiver,
+            address queuedFeeReceiver
+        ) = registry.protocolConfig(testProtocolId);
+
+        assertEq(protocolFees, 0);
+        assertEq(queuedProtocolFees, 0);
+        assertEq(lastUpdated, 0);
+        assertEq(queuedTimestamp, 0);
+        assertEq(feeReceiver, address(0));
+        assertEq(queuedFeeReceiver, address(0));
+
+        // Check isRentingBoost mapping is empty
+        assertFalse(registry.isRentingBoost(testAccount, testProtocolId));
+    }
+
+    function test_InitializesViewFunctions() external {
+        // it initializes view functions correctly
+
+        UniversalBoostRegistry registry = new UniversalBoostRegistry();
+        bytes4 testProtocolId = bytes4(hex"12345678");
+
+        // Check hasQueuedConfig returns false for new protocol
+        assertFalse(registry.hasQueuedConfig(testProtocolId));
+
+        // Check getCommitTimestamp returns 0 for new protocol
+        assertEq(registry.getCommitTimestamp(testProtocolId), 0);
+    }
+}

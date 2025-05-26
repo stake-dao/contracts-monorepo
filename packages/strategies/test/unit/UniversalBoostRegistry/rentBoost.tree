@@ -1,0 +1,17 @@
+rentBoost.t.sol
+├── when renting a boost
+│   ├── it updates the rental status to true
+│   ├── it emits BoostRented event
+│   ├── when already renting
+│   │   ├── it updates the rental status to true (idempotent)
+│   │   └── it emits BoostRented event
+│   ├── when renting multiple protocols
+│   │   └── it allows renting boosts for multiple protocols simultaneously
+│   ├── when multiple users rent same protocol
+│   │   └── it allows multiple users to rent boosts for the same protocol
+│   ├── with fuzzed protocol ID
+│   │   └── it works with any protocol ID
+│   │
+│   ├── with fuzzed user address
+│   │   └── it works with any user address
+│   └── it does not affect protocol configurations or other users' rentals 
