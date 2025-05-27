@@ -29,8 +29,8 @@ contract UniversalBoostRegistry__Constructor is Test {
         // Check MAX_FEE_PERCENT is set correctly (40%)
         assertEq(registry.MAX_FEE_PERCENT(), 0.4e18);
 
-        // Check DELAY_PERIOD is set correctly (1 day)
-        assertEq(registry.DELAY_PERIOD(), 1 days);
+        // Check delayPeriod is set correctly (1 day)
+        assertEq(registry.delayPeriod(), 1 days);
     }
 
     function test_InitializesWithEmptyMappings() external {

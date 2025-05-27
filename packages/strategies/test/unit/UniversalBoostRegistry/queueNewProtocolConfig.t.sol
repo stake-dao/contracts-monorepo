@@ -51,11 +51,11 @@ contract UniversalBoostRegistry__QueueNewProtocolConfig is Test {
         vm.startPrank(owner);
 
         uint128 protocolFees = 0.15e18;
-        uint64 beforeTimestamp = uint64(block.timestamp);
+        uint64 queueTimestamp = uint64(block.timestamp) + registry.delayPeriod();
 
         // Expect the NewProtocolConfigQueued event
         vm.expectEmit(true, false, false, true);
-        emit UniversalBoostRegistry.NewProtocolConfigQueued(PROTOCOL_ID, protocolFees, feeReceiver, beforeTimestamp);
+        emit UniversalBoostRegistry.NewProtocolConfigQueued(PROTOCOL_ID, protocolFees, feeReceiver, queueTimestamp);
 
         // Queue new configuration
         registry.queueNewProtocolConfig(PROTOCOL_ID, protocolFees, feeReceiver);
@@ -78,11 +78,11 @@ contract UniversalBoostRegistry__QueueNewProtocolConfig is Test {
         // Queued configuration should be set
         assertEq(queuedProtocolFees, protocolFees);
         assertEq(queuedFeeReceiver, feeReceiver);
-        assertEq(queuedTimestamp, beforeTimestamp);
+        assertEq(queuedTimestamp, queueTimestamp);
 
         // View functions should reflect the queued state
         assertTrue(registry.hasQueuedConfig(PROTOCOL_ID));
-        assertEq(registry.getCommitTimestamp(PROTOCOL_ID), beforeTimestamp + registry.DELAY_PERIOD());
+        assertEq(registry.getCommitTimestamp(PROTOCOL_ID), queueTimestamp);
 
         vm.stopPrank();
     }
@@ -103,7 +103,7 @@ contract UniversalBoostRegistry__QueueNewProtocolConfig is Test {
 
         // Advance time slightly
         skip(1 hours);
-        uint64 secondQueueTime = uint64(block.timestamp);
+        uint64 secondQueueTime = uint64(block.timestamp) + registry.delayPeriod();
 
         // Queue second configuration (should overwrite first)
         vm.expectEmit(true, false, false, true);
@@ -140,13 +140,13 @@ contract UniversalBoostRegistry__QueueNewProtocolConfig is Test {
         registry.queueNewProtocolConfig(PROTOCOL_ID, activeFee, activeReceiver);
 
         // Advance time past delay period and commit
-        skip(registry.DELAY_PERIOD() + 1);
+        skip(registry.delayPeriod() + 1);
         registry.commitProtocolConfig(PROTOCOL_ID);
 
         // Now queue a new configuration
         uint128 newFee = 0.25e18;
         address newReceiver = makeAddr("newReceiver");
-        uint64 newQueueTime = uint64(block.timestamp);
+        uint64 newQueueTime = uint64(block.timestamp) + registry.delayPeriod();
 
         registry.queueNewProtocolConfig(PROTOCOL_ID, newFee, newReceiver);
 
@@ -182,7 +182,7 @@ contract UniversalBoostRegistry__QueueNewProtocolConfig is Test {
 
         // Should succeed with maximum fee
         vm.expectEmit(true, false, false, true);
-        emit UniversalBoostRegistry.NewProtocolConfigQueued(PROTOCOL_ID, maxFee, feeReceiver, uint64(block.timestamp));
+        emit UniversalBoostRegistry.NewProtocolConfigQueued(PROTOCOL_ID, maxFee, feeReceiver, uint64(block.timestamp) + registry.delayPeriod());
 
         registry.queueNewProtocolConfig(PROTOCOL_ID, maxFee, feeReceiver);
 
@@ -202,7 +202,7 @@ contract UniversalBoostRegistry__QueueNewProtocolConfig is Test {
         uint128 zeroFee = 0;
 
         vm.expectEmit(true, false, false, true);
-        emit UniversalBoostRegistry.NewProtocolConfigQueued(PROTOCOL_ID, zeroFee, feeReceiver, uint64(block.timestamp));
+        emit UniversalBoostRegistry.NewProtocolConfigQueued(PROTOCOL_ID, zeroFee, feeReceiver, uint64(block.timestamp) + registry.delayPeriod());
 
         registry.queueNewProtocolConfig(PROTOCOL_ID, zeroFee, feeReceiver);
 
@@ -223,7 +223,7 @@ contract UniversalBoostRegistry__QueueNewProtocolConfig is Test {
         address zeroReceiver = address(0);
 
         vm.expectEmit(true, false, false, true);
-        emit UniversalBoostRegistry.NewProtocolConfigQueued(PROTOCOL_ID, fee, zeroReceiver, uint64(block.timestamp));
+        emit UniversalBoostRegistry.NewProtocolConfigQueued(PROTOCOL_ID, fee, zeroReceiver, uint64(block.timestamp) + registry.delayPeriod());
 
         registry.queueNewProtocolConfig(PROTOCOL_ID, fee, zeroReceiver);
 
@@ -246,7 +246,7 @@ contract UniversalBoostRegistry__QueueNewProtocolConfig is Test {
         vm.startPrank(owner);
 
         vm.expectEmit(true, false, false, true);
-        emit UniversalBoostRegistry.NewProtocolConfigQueued(protocolId, protocolFees, receiver, uint64(block.timestamp));
+        emit UniversalBoostRegistry.NewProtocolConfigQueued(protocolId, protocolFees, receiver, uint64(block.timestamp) + registry.delayPeriod());
 
         registry.queueNewProtocolConfig(protocolId, protocolFees, receiver);
 
@@ -256,7 +256,7 @@ contract UniversalBoostRegistry__QueueNewProtocolConfig is Test {
         assertEq(queuedFeeReceiver, receiver);
 
         assertTrue(registry.hasQueuedConfig(protocolId));
-        assertEq(registry.getCommitTimestamp(protocolId), uint64(block.timestamp) + registry.DELAY_PERIOD());
+        assertEq(registry.getCommitTimestamp(protocolId), uint64(block.timestamp) + registry.delayPeriod());
 
         vm.stopPrank();
     }
