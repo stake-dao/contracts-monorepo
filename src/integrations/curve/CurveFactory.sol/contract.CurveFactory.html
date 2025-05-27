@@ -180,7 +180,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="curvefactory"><a class="header" href="#curvefactory">CurveFactory</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/cf2774771419f19c473468a4afbc1800e4edd9f7/src/integrations/curve/CurveFactory.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/94e8affdb675fba76f4c8824feae24347dbb93f8/src/integrations/curve/CurveFactory.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="/src/Factory.sol/abstract.Factory.html">Factory</a></p>
 <h2 id="state-variables"><a class="header" href="#state-variables">State Variables</a></h2>
@@ -230,54 +230,26 @@
 </tbody></table>
 </div>
 <h3 id="_isvalidtoken"><a class="header" href="#_isvalidtoken">_isValidToken</a></h3>
-<ol>
-<li>Create the vault.</li>
-<li>Attach the sidecar.</li>
-<li>Emit the event.</li>
-</ol>
 <pre><code class="language-solidity">function _isValidToken(address _token) internal view virtual override returns (bool);
 </code></pre>
 <h3 id="_isvalidgauge"><a class="header" href="#_isvalidgauge">_isValidGauge</a></h3>
-<p>If the token is not valid, return false.
-We already add CVX to the vault by default.
-If the token is available as an inflation receiver, it's not valid.</p>
 <pre><code class="language-solidity">function _isValidGauge(address _gauge) internal view virtual override returns (bool);
 </code></pre>
 <h3 id="_isvaliddeployment"><a class="header" href="#_isvaliddeployment">_isValidDeployment</a></h3>
-<p>Check if the gauge is a valid candidate and available as an inflation receiver.
-This call always reverts if the gauge is not valid.
-Check if the gauge is not killed.
-Not all the pools, but most of them, have this function.
-If the gauge doesn't support the is_killed function, but is unofficially killed, it can be deployed.</p>
 <p>Check if the gauge is shutdown in the old strategy.</p>
 <p><em>If the gauge is shutdown, we can deploy a new strategy.</em></p>
 <pre><code class="language-solidity">function _isValidDeployment(address _gauge) internal view virtual override returns (bool);
 </code></pre>
 <h3 id="_getasset"><a class="header" href="#_getasset">_getAsset</a></h3>
-<p>We check if the gauge is deployed in the old strategy by checking if the reward distributor is not 0.
-We also check if the gauge is shutdown.</p>
 <pre><code class="language-solidity">function _getAsset(address _gauge) internal view virtual override returns (address);
 </code></pre>
 <h3 id="_setuprewardtokens"><a class="header" href="#_setuprewardtokens">_setupRewardTokens</a></h3>
 <pre><code class="language-solidity">function _setupRewardTokens(address _vault, address _gauge, address _rewardReceiver) internal virtual override;
 </code></pre>
 <h3 id="_setrewardreceiver"><a class="header" href="#_setrewardreceiver">_setRewardReceiver</a></h3>
-<p>Add CVX to the vault if it's not already there.
-Check if the gauge supports extra rewards.
-This function is not supported on all gauges, depending on when they were deployed.
-Loop through the extra reward tokens.
-8 is the maximum number of extra reward tokens supported by the gauges.
-Get the extra reward token address.
-If the reward data is not active, skip.
-If the address is 0, it means there are no more extra reward tokens.
-If the extra reward token is already in the vault, skip.
-Performs checks on the extra reward token.
-Checks like if the token is also an lp token that can be staked in the locker, these tokens are not supported.
-Then we add the extra reward token to the reward distributor through the strategy.</p>
 <pre><code class="language-solidity">function _setRewardReceiver(address _gauge, address _rewardReceiver) internal override;
 </code></pre>
 <h3 id="_initializevault"><a class="header" href="#_initializevault">_initializeVault</a></h3>
-<p>Set RewardReceiver as RewardReceiver on Gauge.</p>
 <pre><code class="language-solidity">function _initializeVault(address, address _asset, address _gauge) internal override;
 </code></pre>
 <h2 id="events"><a class="header" href="#events">Events</a></h2>
