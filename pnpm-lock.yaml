@@ -62,6 +62,15 @@ importers:
 
   packages/strategies:
     devDependencies:
+      '@layerzerolabs/lz-evm-protocol-v2':
+        specifier: ^3.0.99
+        version: 3.0.99(@openzeppelin/contracts-upgradeable@4.9.6)(@openzeppelin/contracts@5.2.0)(hardhat-deploy@0.10.6(@ethersproject/hardware-wallets@5.8.0)(hardhat@2.24.0))(solidity-bytes-utils@0.8.4)
+      '@layerzerolabs/oapp-evm':
+        specifier: ^0.3.2
+        version: 0.3.2(makdgu6dzffseigbqjv6jsaxjy)
+      '@layerzerolabs/oft-evm':
+        specifier: ^3.1.4
+        version: 3.1.4(mmibx7voyz6c3gw7u5jbccir5i)
       '@openzeppelin/contracts':
         specifier: 5.2.0
         version: 5.2.0
@@ -99,6 +108,10 @@ packages:
   '@aws-sdk/util-utf8-browser@3.259.0':
     resolution: {integrity: sha512-UvFa/vR+e19XookZF8RzFZBrw2EUkQWxiBW0yYQAhvk3C+QVGl0H3ouca8LDBlBfQKXwmW3huo/59H8rwb1wJw==}
 
+  '@axelar-network/axelar-gmp-sdk-solidity@5.10.0':
+    resolution: {integrity: sha512-s8SImALvYB+5AeiT3tbfWNBI2Mhqw1x91i/zM3DNpVUCnAR2HKtsB9T84KnUn/OJjOVgb4h0lv7q9smeYniRPw==}
+    engines: {node: '>=18'}
+
   '@babel/code-frame@7.27.1':
     resolution: {integrity: sha512-cjQ7ZlQ0Mv3b47hABuTevyTuYN4i+loJKGeV9flcCgIK37cCXRh+L1bd3iBHlynerhQ7BhCkn2BPbQUL+rGqFg==}
     engines: {node: '>=6.9.0'}
@@ -110,9 +123,25 @@ packages:
   '@bytecodealliance/preview2-shim@0.17.0':
     resolution: {integrity: sha512-JorcEwe4ud0x5BS/Ar2aQWOQoFzjq/7jcnxYXCvSMh0oRm0dQXzOA+hqLDBnOMks1LLBA7dmiLLsEBl09Yd6iQ==}
 
+  '@chainlink/contracts-ccip@0.7.6':
+    resolution: {integrity: sha512-yNbCBFpLs3R+ALymto9dQYKz3vatnjqYGu1pnMD0i2fHEMthiXe0+otaNCGNht6n8k7ruNaA0DNpz3F+2jHQXw==}
+
   '@colors/colors@1.5.0':
     resolution: {integrity: sha512-ooWCrlZP11i8GImSjTHYHLkvFDP48nS4+204nGb1RiX/WXYHmJA2III9/e2DWVabCESdW7hBAEzHRqUn9OUVvQ==}
     engines: {node: '>=0.1.90'}
+
+  '@eth-optimism/contracts@0.5.40':
+    resolution: {integrity: sha512-MrzV0nvsymfO/fursTB7m/KunkPsCndltVgfdHaT1Aj5Vi6R/doKIGGkOofHX+8B6VMZpuZosKCMQ5lQuqjt8w==}
+    peerDependencies:
+      ethers: ^5
+
+  '@eth-optimism/contracts@0.6.0':
+    resolution: {integrity: sha512-vQ04wfG9kMf1Fwy3FEMqH2QZbgS0gldKhcBeBUPfO8zu68L61VI97UDXmsMQXzTsEAxK8HnokW3/gosl4/NW3w==}
+    peerDependencies:
+      ethers: ^5
+
+  '@eth-optimism/core-utils@0.12.0':
+    resolution: {integrity: sha512-qW+7LZYCz7i8dRa7SRlUKIo1VBU8lvN0HeXCxJR+z+xtMzMQpPds20XJNCMclszxYQHkXY00fOT6GvFw9ZL6nw==}
 
   '@ethereumjs/rlp@5.0.2':
     resolution: {integrity: sha512-DziebCdg4JpGlEqEdGgXmjqcFoJi+JGulUXwEjsZGAscAQ7MyD/7LE/GVCP29vEQxKc7AAwjT3A2ywHp2xfoCA==}
@@ -220,8 +249,59 @@ packages:
     resolution: {integrity: sha512-vBZP4NlzfOlerQTnba4aqZoMhE/a9HY7HRqoOPaETQcSQuWEIyZMHGfVu6w9wGtGK5fED5qRs2DteVCjOH60sA==}
     engines: {node: '>=14'}
 
+  '@layerzerolabs/lz-evm-messagelib-v2@3.0.99':
+    resolution: {integrity: sha512-OQUydwZ99yEUmT/Ju406yOpoO4HMDJGXgOUX7OD2W7d9oOfXhijyk+j9525OIAKtOSopH+54UP9lpqyJrLYZkw==}
+    peerDependencies:
+      '@arbitrum/nitro-contracts': ^1.1.0
+      '@axelar-network/axelar-gmp-sdk-solidity': ^5.6.4
+      '@chainlink/contracts-ccip': ^0.7.6
+      '@eth-optimism/contracts': ^0.6.0
+      '@layerzerolabs/lz-evm-protocol-v2': ^3.0.99
+      '@layerzerolabs/lz-evm-v1-0.7': ^3.0.99
+      '@openzeppelin/contracts': ^4.8.1 || ^5.0.0
+      '@openzeppelin/contracts-upgradeable': ^4.8.1 || ^5.0.0
+      hardhat-deploy: ^0.12.4
+      solidity-bytes-utils: ^0.8.0
+    peerDependenciesMeta:
+      '@arbitrum/nitro-contracts':
+        optional: true
+
+  '@layerzerolabs/lz-evm-protocol-v2@3.0.99':
+    resolution: {integrity: sha512-+I71Wp6MQVfAP8YtJ89l+YOkVxra2fR6pFwtiXzhsi3VnZ9+nEGPqPW4IcPOuHEoOXrGr16OPSzsypqUk27/cw==}
+    peerDependencies:
+      '@openzeppelin/contracts': ^4.8.1 || ^5.0.0
+      '@openzeppelin/contracts-upgradeable': ^4.8.1 || ^5.0.0
+      hardhat-deploy: ^0.12.4
+      solidity-bytes-utils: ^0.8.0
+
   '@layerzerolabs/lz-evm-sdk-v1-0.7@1.5.16':
     resolution: {integrity: sha512-YYuEU1SsedZkjLxf9Ur2Pmqtud/EBoWemEJaNxT4VMnGMZ1s8g2ehxraGk4ucRBsHDlVFHm5GHjxcWpxdg5xBw==}
+
+  '@layerzerolabs/lz-evm-v1-0.7@3.0.99':
+    resolution: {integrity: sha512-SXSt7LH3YYh3x+lIQN0T/ti2vzK9CMPmn8So9SusdwMBhAPvcR/9yxsGI0NmWAeOkh6IvyCZw/4WxoLIKAYn8Q==}
+    peerDependencies:
+      '@openzeppelin/contracts': 3.4.2-solc-0.7 || ^3.4.2 || ^4.0.0 || ^5.0.0
+      '@openzeppelin/contracts-upgradeable': 3.4.2-solc-0.7 || ^3.4.2 || ^4.0.0 || ^5.0.0
+      hardhat-deploy: ^0.12.4
+
+  '@layerzerolabs/oapp-evm@0.3.2':
+    resolution: {integrity: sha512-QqazLEl9KEPsipU/3m5eFDhyse+sG4bO2FWUEf/Kuee4JW6P3iIBI9wg0QfalUqLj0HL0ChFHL3yRTZVqzxrww==}
+    peerDependencies:
+      '@layerzerolabs/lz-evm-messagelib-v2': ^3.0.75
+      '@layerzerolabs/lz-evm-protocol-v2': ^3.0.75
+      '@layerzerolabs/lz-evm-v1-0.7': ^3.0.75
+      '@openzeppelin/contracts': ^4.8.1 || ^5.0.0
+      '@openzeppelin/contracts-upgradeable': ^4.8.1 || ^5.0.0
+
+  '@layerzerolabs/oft-evm@3.1.4':
+    resolution: {integrity: sha512-jxuEXtzAv2x/ZErBtg6OI6rxq4KyMamPgy8+r3/AQ5uD4Ih2Sd51mBIebpzueJKqMk7MNdOauLfYRRK6tOFWXQ==}
+    peerDependencies:
+      '@layerzerolabs/lz-evm-messagelib-v2': ^3.0.75
+      '@layerzerolabs/lz-evm-protocol-v2': ^3.0.75
+      '@layerzerolabs/lz-evm-v1-0.7': ^3.0.75
+      '@layerzerolabs/oapp-evm': ^0.3.2
+      '@openzeppelin/contracts': ^4.8.1 || ^5.0.0
+      '@openzeppelin/contracts-upgradeable': ^4.8.1 || ^5.0.0
 
   '@layerzerolabs/solidity-examples@https://codeload.github.com/LayerZero-Labs/endpoint-v1-solidity-examples/tar.gz/cdc93994911829b1348f6ac18000000a43432ef1':
     resolution: {tarball: https://codeload.github.com/LayerZero-Labs/endpoint-v1-solidity-examples/tar.gz/cdc93994911829b1348f6ac18000000a43432ef1}
@@ -361,6 +441,9 @@ packages:
   '@openzeppelin/contracts-upgradeable@3.4.2-solc-0.7':
     resolution: {integrity: sha512-I5iKKS8U9L1XdSxsNAIBQekN0U9hTgdleoyntIdR7Jy3U/z/NZ/1oUM0v5HnUMrmn/bXLvYL94rBvaLF++Ndnw==}
 
+  '@openzeppelin/contracts-upgradeable@4.7.3':
+    resolution: {integrity: sha512-+wuegAMaLcZnLCJIvrVUDzA9z/Wp93f0Dla/4jJvIhijRrPabjQbZe6fWiECLaJyfn5ci9fqf9vTw3xpQOad2A==}
+
   '@openzeppelin/contracts-upgradeable@4.9.6':
     resolution: {integrity: sha512-m4iHazOsOCv1DgM7eD7GupTJ+NFVujRZt1wzddDPSVGpWdKq1SKkla5htKG7+IS4d2XOCtzkUNwRZ7Vq5aEUMA==}
 
@@ -369,6 +452,9 @@ packages:
 
   '@openzeppelin/contracts@3.4.2-solc-0.7':
     resolution: {integrity: sha512-W6QmqgkADuFcTLzHL8vVoNBtkwjvQRpYIAom7KiUNoLKghyx3FgH0GBjt8NRvigV1ZmMOBllvE1By1C+bi8WpA==}
+
+  '@openzeppelin/contracts@4.3.3':
+    resolution: {integrity: sha512-tDBopO1c98Yk7Cv/PZlHqrvtVjlgK5R4J6jxLwoO7qxK4xqOiZG+zSkIvGFpPZ0ikc3QOED3plgdqjgNTnBc7g==}
 
   '@openzeppelin/contracts@4.9.0':
     resolution: {integrity: sha512-DUP74AFGKlic2sQb/CmgrN2aUPMFGxRrmCTUxLHsiU2RzwWqVuMPZBxiAyvlff6Pea77uylAX6B5x9W6evEbhA==}
@@ -597,6 +683,9 @@ packages:
   asap@2.0.6:
     resolution: {integrity: sha512-BSHWgDSAiKs50o2Re8ppvp3seVHXSRM44cdSsT9FfNEUUZLOGWVCsiWaRPWM1Znn+mqZ1OfVZ3z3DWEzSp7hRA==}
 
+  assertion-error@1.1.0:
+    resolution: {integrity: sha512-jgsaNduz+ndvGyFt3uSuWqvy4lCnIJiovtouQN5JZHOKCS2QuhEdbcQHFhVksz2N2U9hXJo8odG7ETyWlEeuDw==}
+
   ast-parents@0.0.1:
     resolution: {integrity: sha512-XHusKxKz3zoYk1ic8Un640joHbFMhbqneyoZfoKnEGtf2ey9Uh/IdpcQplODdO/kENaMIWsD0nJm4+wX3UNLHA==}
 
@@ -688,6 +777,10 @@ packages:
   buffer@5.7.1:
     resolution: {integrity: sha512-EHcyIPBQ4BSGlvjB16k5KgAJ27CIsHY/2JBmCRReo48y9rQ3MaUzWX3KVlBa4U7MyX02HdVj0K7C3WaB3ju7FQ==}
 
+  bufio@1.2.3:
+    resolution: {integrity: sha512-5Tt66bRzYUSlVZatc0E92uDenreJ+DpTBmSAUwL4VSxJn3e6cUyYwx+PoqML0GRZatgA/VX8ybhxItF8InZgqA==}
+    engines: {node: '>=8.0.0'}
+
   bytes@3.1.2:
     resolution: {integrity: sha512-/Nf7TyzTx6S3yRJObOAV7956r8cr2+Oj8AC5dt8wSP3BQAoeX58NoHyCU8P8zGkNXStjTSi6fzO6F0pBdcYbEg==}
     engines: {node: '>= 0.8'}
@@ -727,6 +820,10 @@ packages:
     resolution: {integrity: sha512-DwGjNW9omn6EwP70aXsn7FQJx5kO12tX0bZkaTjzdVFM6/7nhA4t0EENocKGx6D2Bch9PE2KzCUf5SceBdeijg==}
     engines: {node: '>=12.19'}
 
+  chai@4.5.0:
+    resolution: {integrity: sha512-RITGBfijLkBddZvnn8jdqoTypxvqbOLYQkGGxXzeFjVHvudaPw0HNFD9x928/eUwYWd2dPCugVqspGALTZZQKw==}
+    engines: {node: '>=4'}
+
   chalk@2.4.2:
     resolution: {integrity: sha512-Mti+f9lpJNcwF4tWV8/OrTTtF1gZi+f8FqlyAdouralcFWFQWF2+NgCHShjkCb+IFBLq9buZwE1xckQU4peSuQ==}
     engines: {node: '>=4'}
@@ -737,6 +834,9 @@ packages:
 
   charenc@0.0.2:
     resolution: {integrity: sha512-yrLQ/yVUFXkzg7EDQsPieE/53+0RlaWTs+wBrvW36cyilJ2SaDWfl4Yj7MtLTXleV9uEKefbAGUPv2/iWSooRA==}
+
+  check-error@1.0.3:
+    resolution: {integrity: sha512-iKEoDYaRmd1mxM90a2OEfWhjsjPpYPuQ+lMYsoxB126+t8fw7ySEO48nmDg5COTjxDI65/Y2OWpeEHk3ZOe8zg==}
 
   chokidar@3.6.0:
     resolution: {integrity: sha512-7VT13fmjotKpGipCW9JEQAusEPE+Ei8nl6/g4FBAmIm0GOOLMua9NDDo/DWp0ZAxCr3cPq5ZpBqmPAQgDda2Pw==}
@@ -869,6 +969,10 @@ packages:
   decompress-response@6.0.0:
     resolution: {integrity: sha512-aW35yZM6Bb/4oJlZncMH2LCoZtJXTRxES17vE3hoRiowU2kWHaJKFkSBDnDR+cm9J+9QhXmREyIfv0pji9ejCQ==}
     engines: {node: '>=10'}
+
+  deep-eql@4.1.4:
+    resolution: {integrity: sha512-SUwdGfqdKOwxCPeVYjwSyRpJ7Z+fhpwIAtmCUdZIWZ/YP5R9WAsyuSgpLVDi9bjWoN2LXHNss/dk3urXtdQxGg==}
+    engines: {node: '>=6'}
 
   deep-extend@0.6.0:
     resolution: {integrity: sha512-LOHxIOaPYdHlJRtCQfDIVZtfw/ufM8+rVj649RIHzcm/vGwQRXFt6OPqIFWsm2XEMrNIEtWR64sY1LEKD2vAOA==}
@@ -1100,6 +1204,9 @@ packages:
   get-caller-file@2.0.5:
     resolution: {integrity: sha512-DyFP3BM/3YHTQOCUL/w0OZHR0lpKeGrxotcHWcqNEdnltqFwXVfhEBQ94eIo34AfQpo0rGki4cyIiftY06h2Fg==}
     engines: {node: 6.* || 8.* || >= 10.*}
+
+  get-func-name@2.0.2:
+    resolution: {integrity: sha512-8vXOvuE167CtIc3OyItco7N/dpRtBbYOsPsXCz7X/PMnlGjYjSGuZJgM1Y7mmew7BKf9BqvLX2tnOVy1BBUsxQ==}
 
   get-intrinsic@1.3.0:
     resolution: {integrity: sha512-9fSjSaos/fRIVIp+xSJlE6lfwhES7LNtKaCBIamHsjr2na1BiABJPo0mOjjz8GJDURarmCPGqaiVg5mfjb98CQ==}
@@ -1390,6 +1497,9 @@ packages:
     resolution: {integrity: sha512-lyuxPGr/Wfhrlem2CL/UcnUc1zcqKAImBDzukY7Y5F/yQiNdko6+fRLevlw1HgMySw7f611UIY408EtxRSoK3Q==}
     hasBin: true
 
+  loupe@2.3.7:
+    resolution: {integrity: sha512-zSMINGVYkdpYSOBmLi0D1Uo7JU9nVdQKrHxC8eYlV+9YKK9WePqAlL7lSlorG/U2Fw1w0hTBmaa/jrQ3UbPHtA==}
+
   lowercase-keys@3.0.0:
     resolution: {integrity: sha512-ozCC6gdQ+glXOQsveKD0YsDy8DSQFjDTz4zyzEHNV5+JP5D62LmfDZ6o1cycFx9ouG940M5dE8C8CTewdj2YWQ==}
     engines: {node: ^12.20.0 || ^14.13.1 || >=16.0.0}
@@ -1604,6 +1714,9 @@ packages:
   path-type@4.0.0:
     resolution: {integrity: sha512-gDKb8aZMDeD/tZWs9P6+q0J9Mwkdl6xMV8TjnGP3qJVJ06bdMgkbBlLU8IdfOsIsFz2BW1rNVT3XuNEl8zPAvw==}
     engines: {node: '>=8'}
+
+  pathval@1.1.1:
+    resolution: {integrity: sha512-Dp6zGqpTdETdR63lehJYPeIOqpiNBNtc7BpWSLrOje7UaIsE5aY92r/AunQA7rsXvet3lrJ3JnZX29UPTKXyKQ==}
 
   pbkdf2@3.1.2:
     resolution: {integrity: sha512-iuh7L6jA7JEGu2WxDwtQP1ddOpaJNC4KlDEFfdQajSGgGPNi4OyDc2R7QnbY2bR9QjBVGwgvTdNJZoE7RaxUMA==}
@@ -1853,6 +1966,9 @@ packages:
   solidity-ast@0.4.60:
     resolution: {integrity: sha512-UwhasmQ37ji1ul8cIp0XlrQ/+SVQhy09gGqJH4jnwdo2TgI6YIByzi0PI5QvIGcIdFOs1pbSmJW1pnWB7AVh2w==}
 
+  solidity-bytes-utils@0.8.4:
+    resolution: {integrity: sha512-/bjac5YR12i0plOKvGlhE51F5IWGP6rI8DJetCQlXcnwKWz/Hgf/vr+Qlk1BWz56xVcwVhmhCaDkTMnx5xvt0g==}
+
   source-map-support@0.5.21:
     resolution: {integrity: sha512-uBHU3L3czsIyYXKX88fdrGovxdSCoTGDRZ6SYXtSRxLZUzHg5P/66Ht6uoUlHu9EZod+inXhKo3qQgwXUT/y1w==}
 
@@ -1973,6 +2089,10 @@ packages:
 
   tunnel-agent@0.6.0:
     resolution: {integrity: sha512-McnNiV1l8RYeY8tBgEpuodCC1mLUdbSN+CYBL7kJsJNInOP8UjDDEwdk6Mw60vdLLrr5NHKZhMAOSrR2NZuQ+w==}
+
+  type-detect@4.1.0:
+    resolution: {integrity: sha512-Acylog8/luQ8L7il+geoSxhEkazvkslg7PSNKOX59mbB9cOveP5aq9h74Y7YU8yDpJwetzQQrfIwtf4Wp4LKcw==}
+    engines: {node: '>=4'}
 
   type-fest@0.20.2:
     resolution: {integrity: sha512-Ne+eE4r0/iWnpAxD852z3A+N0Bt5RN//NjJwRd2VFHEmrywxf5vsZlh4R6lixl6B+wz/8d+maTSAkN1FIkI3LQ==}
@@ -2122,6 +2242,8 @@ snapshots:
     dependencies:
       tslib: 2.8.1
 
+  '@axelar-network/axelar-gmp-sdk-solidity@5.10.0': {}
+
   '@babel/code-frame@7.27.1':
     dependencies:
       '@babel/helper-validator-identifier': 7.27.1
@@ -2132,8 +2254,61 @@ snapshots:
 
   '@bytecodealliance/preview2-shim@0.17.0': {}
 
+  '@chainlink/contracts-ccip@0.7.6(ethers@5.8.0)':
+    dependencies:
+      '@eth-optimism/contracts': 0.5.40(ethers@5.8.0)
+      '@openzeppelin/contracts': 4.3.3
+      '@openzeppelin/contracts-upgradeable-4.7.3': '@openzeppelin/contracts-upgradeable@4.7.3'
+      '@openzeppelin/contracts-v0.7': '@openzeppelin/contracts@3.4.2'
+    transitivePeerDependencies:
+      - bufferutil
+      - ethers
+      - utf-8-validate
+
   '@colors/colors@1.5.0':
     optional: true
+
+  '@eth-optimism/contracts@0.5.40(ethers@5.8.0)':
+    dependencies:
+      '@eth-optimism/core-utils': 0.12.0
+      '@ethersproject/abstract-provider': 5.8.0
+      '@ethersproject/abstract-signer': 5.8.0
+      ethers: 5.8.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  '@eth-optimism/contracts@0.6.0(ethers@5.8.0)':
+    dependencies:
+      '@eth-optimism/core-utils': 0.12.0
+      '@ethersproject/abstract-provider': 5.8.0
+      '@ethersproject/abstract-signer': 5.8.0
+      ethers: 5.8.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  '@eth-optimism/core-utils@0.12.0':
+    dependencies:
+      '@ethersproject/abi': 5.8.0
+      '@ethersproject/abstract-provider': 5.8.0
+      '@ethersproject/address': 5.8.0
+      '@ethersproject/bignumber': 5.8.0
+      '@ethersproject/bytes': 5.8.0
+      '@ethersproject/constants': 5.8.0
+      '@ethersproject/contracts': 5.8.0
+      '@ethersproject/hash': 5.8.0
+      '@ethersproject/keccak256': 5.8.0
+      '@ethersproject/properties': 5.8.0
+      '@ethersproject/providers': 5.8.0
+      '@ethersproject/rlp': 5.8.0
+      '@ethersproject/transactions': 5.8.0
+      '@ethersproject/web': 5.8.0
+      bufio: 1.2.3
+      chai: 4.5.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
 
   '@ethereumjs/rlp@5.0.2': {}
 
@@ -2411,10 +2586,56 @@ snapshots:
 
   '@fastify/busboy@2.1.1': {}
 
+  '@layerzerolabs/lz-evm-messagelib-v2@3.0.99(@axelar-network/axelar-gmp-sdk-solidity@5.10.0)(@chainlink/contracts-ccip@0.7.6(ethers@5.8.0))(@eth-optimism/contracts@0.6.0(ethers@5.8.0))(@layerzerolabs/lz-evm-protocol-v2@3.0.99(@openzeppelin/contracts-upgradeable@4.9.6)(@openzeppelin/contracts@5.2.0)(hardhat-deploy@0.10.6(@ethersproject/hardware-wallets@5.8.0)(hardhat@2.24.0))(solidity-bytes-utils@0.8.4))(@layerzerolabs/lz-evm-v1-0.7@3.0.99(@openzeppelin/contracts-upgradeable@4.9.6)(@openzeppelin/contracts@5.2.0)(hardhat-deploy@0.10.6(@ethersproject/hardware-wallets@5.8.0)(hardhat@2.24.0)))(@openzeppelin/contracts-upgradeable@4.9.6)(@openzeppelin/contracts@5.2.0)(hardhat-deploy@0.10.6(@ethersproject/hardware-wallets@5.8.0)(hardhat@2.24.0))(solidity-bytes-utils@0.8.4)':
+    dependencies:
+      '@axelar-network/axelar-gmp-sdk-solidity': 5.10.0
+      '@chainlink/contracts-ccip': 0.7.6(ethers@5.8.0)
+      '@eth-optimism/contracts': 0.6.0(ethers@5.8.0)
+      '@layerzerolabs/lz-evm-protocol-v2': 3.0.99(@openzeppelin/contracts-upgradeable@4.9.6)(@openzeppelin/contracts@5.2.0)(hardhat-deploy@0.10.6(@ethersproject/hardware-wallets@5.8.0)(hardhat@2.24.0))(solidity-bytes-utils@0.8.4)
+      '@layerzerolabs/lz-evm-v1-0.7': 3.0.99(@openzeppelin/contracts-upgradeable@4.9.6)(@openzeppelin/contracts@5.2.0)(hardhat-deploy@0.10.6(@ethersproject/hardware-wallets@5.8.0)(hardhat@2.24.0))
+      '@openzeppelin/contracts': 5.2.0
+      '@openzeppelin/contracts-upgradeable': 4.9.6
+      hardhat-deploy: 0.10.6(@ethersproject/hardware-wallets@5.8.0)(hardhat@2.24.0)
+      solidity-bytes-utils: 0.8.4
+
+  '@layerzerolabs/lz-evm-protocol-v2@3.0.99(@openzeppelin/contracts-upgradeable@4.9.6)(@openzeppelin/contracts@5.2.0)(hardhat-deploy@0.10.6(@ethersproject/hardware-wallets@5.8.0)(hardhat@2.24.0))(solidity-bytes-utils@0.8.4)':
+    dependencies:
+      '@openzeppelin/contracts': 5.2.0
+      '@openzeppelin/contracts-upgradeable': 4.9.6
+      hardhat-deploy: 0.10.6(@ethersproject/hardware-wallets@5.8.0)(hardhat@2.24.0)
+      solidity-bytes-utils: 0.8.4
+
   '@layerzerolabs/lz-evm-sdk-v1-0.7@1.5.16':
     dependencies:
       '@openzeppelin/contracts': 3.4.2-solc-0.7
       '@openzeppelin/contracts-upgradeable': 3.4.2-solc-0.7
+
+  '@layerzerolabs/lz-evm-v1-0.7@3.0.99(@openzeppelin/contracts-upgradeable@4.9.6)(@openzeppelin/contracts@5.2.0)(hardhat-deploy@0.10.6(@ethersproject/hardware-wallets@5.8.0)(hardhat@2.24.0))':
+    dependencies:
+      '@openzeppelin/contracts': 5.2.0
+      '@openzeppelin/contracts-upgradeable': 4.9.6
+      hardhat-deploy: 0.10.6(@ethersproject/hardware-wallets@5.8.0)(hardhat@2.24.0)
+
+  '@layerzerolabs/oapp-evm@0.3.2(makdgu6dzffseigbqjv6jsaxjy)':
+    dependencies:
+      '@layerzerolabs/lz-evm-messagelib-v2': 3.0.99(@axelar-network/axelar-gmp-sdk-solidity@5.10.0)(@chainlink/contracts-ccip@0.7.6(ethers@5.8.0))(@eth-optimism/contracts@0.6.0(ethers@5.8.0))(@layerzerolabs/lz-evm-protocol-v2@3.0.99(@openzeppelin/contracts-upgradeable@4.9.6)(@openzeppelin/contracts@5.2.0)(hardhat-deploy@0.10.6(@ethersproject/hardware-wallets@5.8.0)(hardhat@2.24.0))(solidity-bytes-utils@0.8.4))(@layerzerolabs/lz-evm-v1-0.7@3.0.99(@openzeppelin/contracts-upgradeable@4.9.6)(@openzeppelin/contracts@5.2.0)(hardhat-deploy@0.10.6(@ethersproject/hardware-wallets@5.8.0)(hardhat@2.24.0)))(@openzeppelin/contracts-upgradeable@4.9.6)(@openzeppelin/contracts@5.2.0)(hardhat-deploy@0.10.6(@ethersproject/hardware-wallets@5.8.0)(hardhat@2.24.0))(solidity-bytes-utils@0.8.4)
+      '@layerzerolabs/lz-evm-protocol-v2': 3.0.99(@openzeppelin/contracts-upgradeable@4.9.6)(@openzeppelin/contracts@5.2.0)(hardhat-deploy@0.10.6(@ethersproject/hardware-wallets@5.8.0)(hardhat@2.24.0))(solidity-bytes-utils@0.8.4)
+      '@layerzerolabs/lz-evm-v1-0.7': 3.0.99(@openzeppelin/contracts-upgradeable@4.9.6)(@openzeppelin/contracts@5.2.0)(hardhat-deploy@0.10.6(@ethersproject/hardware-wallets@5.8.0)(hardhat@2.24.0))
+      '@openzeppelin/contracts': 5.2.0
+      '@openzeppelin/contracts-upgradeable': 4.9.6
+      ethers: 5.8.0
+    transitivePeerDependencies:
+      - bufferutil
+      - utf-8-validate
+
+  '@layerzerolabs/oft-evm@3.1.4(mmibx7voyz6c3gw7u5jbccir5i)':
+    dependencies:
+      '@layerzerolabs/lz-evm-messagelib-v2': 3.0.99(@axelar-network/axelar-gmp-sdk-solidity@5.10.0)(@chainlink/contracts-ccip@0.7.6(ethers@5.8.0))(@eth-optimism/contracts@0.6.0(ethers@5.8.0))(@layerzerolabs/lz-evm-protocol-v2@3.0.99(@openzeppelin/contracts-upgradeable@4.9.6)(@openzeppelin/contracts@5.2.0)(hardhat-deploy@0.10.6(@ethersproject/hardware-wallets@5.8.0)(hardhat@2.24.0))(solidity-bytes-utils@0.8.4))(@layerzerolabs/lz-evm-v1-0.7@3.0.99(@openzeppelin/contracts-upgradeable@4.9.6)(@openzeppelin/contracts@5.2.0)(hardhat-deploy@0.10.6(@ethersproject/hardware-wallets@5.8.0)(hardhat@2.24.0)))(@openzeppelin/contracts-upgradeable@4.9.6)(@openzeppelin/contracts@5.2.0)(hardhat-deploy@0.10.6(@ethersproject/hardware-wallets@5.8.0)(hardhat@2.24.0))(solidity-bytes-utils@0.8.4)
+      '@layerzerolabs/lz-evm-protocol-v2': 3.0.99(@openzeppelin/contracts-upgradeable@4.9.6)(@openzeppelin/contracts@5.2.0)(hardhat-deploy@0.10.6(@ethersproject/hardware-wallets@5.8.0)(hardhat@2.24.0))(solidity-bytes-utils@0.8.4)
+      '@layerzerolabs/lz-evm-v1-0.7': 3.0.99(@openzeppelin/contracts-upgradeable@4.9.6)(@openzeppelin/contracts@5.2.0)(hardhat-deploy@0.10.6(@ethersproject/hardware-wallets@5.8.0)(hardhat@2.24.0))
+      '@layerzerolabs/oapp-evm': 0.3.2(makdgu6dzffseigbqjv6jsaxjy)
+      '@openzeppelin/contracts': 5.2.0
+      '@openzeppelin/contracts-upgradeable': 4.9.6
 
   '@layerzerolabs/solidity-examples@https://codeload.github.com/LayerZero-Labs/endpoint-v1-solidity-examples/tar.gz/cdc93994911829b1348f6ac18000000a43432ef1(@ethersproject/hardware-wallets@5.8.0)(@nomiclabs/hardhat-ethers@2.2.3(ethers@5.8.0)(hardhat@2.24.0))(@nomiclabs/hardhat-etherscan@3.1.8(hardhat@2.24.0))(ethers@5.8.0)':
     dependencies:
@@ -2606,11 +2827,15 @@ snapshots:
 
   '@openzeppelin/contracts-upgradeable@3.4.2-solc-0.7': {}
 
+  '@openzeppelin/contracts-upgradeable@4.7.3': {}
+
   '@openzeppelin/contracts-upgradeable@4.9.6': {}
 
   '@openzeppelin/contracts@3.4.2': {}
 
   '@openzeppelin/contracts@3.4.2-solc-0.7': {}
+
+  '@openzeppelin/contracts@4.3.3': {}
 
   '@openzeppelin/contracts@4.9.0': {}
 
@@ -2897,6 +3122,8 @@ snapshots:
 
   asap@2.0.6: {}
 
+  assertion-error@1.1.0: {}
+
   ast-parents@0.0.1: {}
 
   astral-regex@2.0.0: {}
@@ -3011,6 +3238,8 @@ snapshots:
       ieee754: 1.2.1
     optional: true
 
+  bufio@1.2.3: {}
+
   bytes@3.1.2: {}
 
   cacheable-lookup@7.0.0: {}
@@ -3049,6 +3278,16 @@ snapshots:
     dependencies:
       nofilter: 3.1.0
 
+  chai@4.5.0:
+    dependencies:
+      assertion-error: 1.1.0
+      check-error: 1.0.3
+      deep-eql: 4.1.4
+      get-func-name: 2.0.2
+      loupe: 2.3.7
+      pathval: 1.1.1
+      type-detect: 4.1.0
+
   chalk@2.4.2:
     dependencies:
       ansi-styles: 3.2.1
@@ -3061,6 +3300,10 @@ snapshots:
       supports-color: 7.2.0
 
   charenc@0.0.2: {}
+
+  check-error@1.0.3:
+    dependencies:
+      get-func-name: 2.0.2
 
   chokidar@3.6.0:
     dependencies:
@@ -3201,6 +3444,10 @@ snapshots:
   decompress-response@6.0.0:
     dependencies:
       mimic-response: 3.1.0
+
+  deep-eql@4.1.4:
+    dependencies:
+      type-detect: 4.1.0
 
   deep-extend@0.6.0: {}
 
@@ -3481,6 +3728,8 @@ snapshots:
     optional: true
 
   get-caller-file@2.0.5: {}
+
+  get-func-name@2.0.2: {}
 
   get-intrinsic@1.3.0:
     dependencies:
@@ -3846,6 +4095,10 @@ snapshots:
     dependencies:
       js-tokens: 4.0.0
 
+  loupe@2.3.7:
+    dependencies:
+      get-func-name: 2.0.2
+
   lowercase-keys@3.0.0: {}
 
   lru_map@0.3.3: {}
@@ -4054,6 +4307,8 @@ snapshots:
   path-parse@1.0.7: {}
 
   path-type@4.0.0: {}
+
+  pathval@1.1.1: {}
 
   pbkdf2@3.1.2:
     dependencies:
@@ -4361,6 +4616,8 @@ snapshots:
 
   solidity-ast@0.4.60: {}
 
+  solidity-bytes-utils@0.8.4: {}
+
   source-map-support@0.5.21:
     dependencies:
       buffer-from: 1.1.2
@@ -4507,6 +4764,8 @@ snapshots:
     dependencies:
       safe-buffer: 5.2.1
     optional: true
+
+  type-detect@4.1.0: {}
 
   type-fest@0.20.2: {}
 

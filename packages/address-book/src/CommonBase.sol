@@ -15,4 +15,7 @@ library Common {
     address internal constant SAFE_PROXY_FACTORY = CommonUniversal.SAFE_PROXY_FACTORY;
     address internal constant SAFE_SINGLETON = CommonUniversal.SAFE_SINGLETON;
     address internal constant SAFE_FALLBACK_HANDLER = CommonUniversal.SAFE_FALLBACK_HANDLER;
+
+    // LayerZero
+    address internal constant LAYERZERO_ENDPOINT = CommonUniversal.LAYERZERO_ENDPOINT;
 }
