@@ -49,13 +49,13 @@ contract UniversalBoostRegistry is Ownable2Step {
     /// @notice The maximum fee percent (40%).
     uint128 public constant MAX_FEE_PERCENT = 0.4e18;
 
-    /// @notice Delay period for new fees to take effect.
-    /// @dev This prevents immediate fee changes and provides users time to react to fee updates.
-    uint64 public constant DELAY_PERIOD = 1 days;
-
     //////////////////////////////////////////////////////
     // --- STATE VARIABLES
     //////////////////////////////////////////////////////
+
+    /// @notice Delay period for new fees to take effect.
+    /// @dev This prevents immediate fee changes and provides users time to react to fee updates.
+    uint64 public delayPeriod = 1 days;
 
     /// @notice Mapping of protocol ID to protocol configuration.
     /// @dev Contains both active and queued configurations in a single mapping.
@@ -98,6 +98,10 @@ contract UniversalBoostRegistry is Ownable2Step {
     event ProtocolConfigCommitted(
         bytes4 indexed protocolId, uint128 protocolFees, address feeReceiver, uint64 committedTimestamp
     );
+
+    /// @notice Event emitted when the delay period is set.
+    /// @param newDelayPeriod The new delay period.
+    event DelayPeriodSet(uint64 newDelayPeriod);
 
     //////////////////////////////////////////////////////
     // --- ERRORS
@@ -173,10 +177,18 @@ contract UniversalBoostRegistry is Ownable2Step {
         uint64 currentTime = uint64(block.timestamp);
         config.queuedProtocolFees = protocolFees;
         config.queuedFeeReceiver = feeReceiver;
-        config.queuedTimestamp = currentTime;
+        config.queuedTimestamp = currentTime + delayPeriod;
 
         // Emit event to notify about the queued configuration
-        emit NewProtocolConfigQueued(protocolId, protocolFees, feeReceiver, currentTime);
+        emit NewProtocolConfigQueued(protocolId, protocolFees, feeReceiver, currentTime + delayPeriod);
+    }
+
+    /// @notice Sets the current delay period.
+    /// @dev This function can only be called by the owner.
+    /// @param newDelayPeriod The new delay period.
+    function setCurrentDelayPeriod(uint64 newDelayPeriod) public onlyOwner {
+        delayPeriod = newDelayPeriod;
+        emit DelayPeriodSet(newDelayPeriod);
     }
 
     /// @notice Commits a new protocol config for a given protocol ID.
@@ -195,7 +207,7 @@ contract UniversalBoostRegistry is Ownable2Step {
         require(config.queuedTimestamp != 0, NoQueuedConfig());
 
         // Ensure sufficient time has passed since the configuration was queued
-        require(uint64(block.timestamp) - config.queuedTimestamp >= DELAY_PERIOD, DelayPeriodNotPassed());
+        require(uint64(block.timestamp) >= config.queuedTimestamp, DelayPeriodNotPassed());
 
         // Move queued values to active values
         uint64 currentTime = uint64(block.timestamp);
@@ -227,7 +239,6 @@ contract UniversalBoostRegistry is Ownable2Step {
     /// @param protocolId The protocol ID to check.
     /// @return _ The timestamp when the configuration can be committed (0 if no queued config).
     function getCommitTimestamp(bytes4 protocolId) external view returns (uint64) {
-        uint64 queuedTime = protocolConfig[protocolId].queuedTimestamp;
-        return queuedTime == 0 ? 0 : queuedTime + DELAY_PERIOD;
+        return protocolConfig[protocolId].queuedTimestamp;
     }
 }

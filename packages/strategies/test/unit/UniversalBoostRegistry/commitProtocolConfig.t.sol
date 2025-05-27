@@ -39,7 +39,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         registry.commitProtocolConfig(PROTOCOL_ID);
 
         // Try to commit just before delay period ends (should still fail)
-        skip(registry.DELAY_PERIOD() - 1);
+        skip(registry.delayPeriod() - 1);
         vm.expectRevert(abi.encodeWithSelector(UniversalBoostRegistry.DelayPeriodNotPassed.selector));
         registry.commitProtocolConfig(PROTOCOL_ID);
     }
@@ -60,7 +60,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         vm.stopPrank();
 
         // Advance time past delay period
-        vm.warp(block.timestamp + registry.DELAY_PERIOD());
+        vm.warp(block.timestamp + registry.delayPeriod());
         uint64 commitTime = uint64(block.timestamp);
 
         // Expect the ProtocolConfigCommitted event
@@ -108,7 +108,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         vm.stopPrank();
 
         // Advance time to exactly delay period
-        vm.warp(block.timestamp + registry.DELAY_PERIOD());
+        vm.warp(block.timestamp + registry.delayPeriod());
 
         // Should succeed
         registry.commitProtocolConfig(PROTOCOL_ID);
@@ -131,7 +131,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         vm.stopPrank();
 
         // Advance time well past delay period
-        vm.warp(block.timestamp + registry.DELAY_PERIOD() + 30 days);
+        vm.warp(block.timestamp + registry.delayPeriod() + 30 days);
 
         // Should still succeed
         registry.commitProtocolConfig(PROTOCOL_ID);
@@ -152,7 +152,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         vm.stopPrank();
 
         // Advance time past delay period
-        vm.warp(block.timestamp + registry.DELAY_PERIOD());
+        vm.warp(block.timestamp + registry.delayPeriod());
 
         // Non-owner should be able to commit
         vm.prank(nonOwner);
@@ -173,7 +173,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
 
         // Set up first active configuration
         registry.queueNewProtocolConfig(PROTOCOL_ID, firstFee, firstReceiver);
-        vm.warp(block.timestamp + registry.DELAY_PERIOD());
+        vm.warp(block.timestamp + registry.delayPeriod());
         registry.commitProtocolConfig(PROTOCOL_ID);
 
         // Queue and commit second configuration
@@ -181,7 +181,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         address secondReceiver = makeAddr("secondReceiver");
 
         registry.queueNewProtocolConfig(PROTOCOL_ID, secondFee, secondReceiver);
-        vm.warp(block.timestamp + registry.DELAY_PERIOD());
+        vm.warp(block.timestamp + registry.delayPeriod());
 
         vm.stopPrank();
 
@@ -226,7 +226,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         vm.stopPrank();
 
         // Advance time and commit
-        vm.warp(block.timestamp + registry.DELAY_PERIOD());
+        vm.warp(block.timestamp + registry.delayPeriod());
         registry.commitProtocolConfig(PROTOCOL_ID);
 
         // Check that zero values were committed correctly
@@ -262,7 +262,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         vm.stopPrank();
 
         // Advance time and commit
-        vm.warp(block.timestamp + registry.DELAY_PERIOD());
+        vm.warp(block.timestamp + registry.delayPeriod());
         registry.commitProtocolConfig(PROTOCOL_ID);
 
         // Check that maximum fee was committed correctly
@@ -290,7 +290,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         vm.stopPrank();
 
         // Advance time and commit first protocol only
-        vm.warp(block.timestamp + registry.DELAY_PERIOD());
+        vm.warp(block.timestamp + registry.delayPeriod());
         registry.commitProtocolConfig(protocolId1);
 
         // Check first protocol was committed
@@ -325,7 +325,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         // Queue and commit configuration
         vm.startPrank(owner);
         registry.queueNewProtocolConfig(PROTOCOL_ID, 0.15e18, feeReceiver);
-        vm.warp(block.timestamp + registry.DELAY_PERIOD());
+        vm.warp(block.timestamp + registry.delayPeriod());
         registry.commitProtocolConfig(PROTOCOL_ID);
         vm.stopPrank();
 
@@ -349,7 +349,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         vm.stopPrank();
 
         // Advance time and commit
-        vm.warp(block.timestamp + registry.DELAY_PERIOD());
+        vm.warp(block.timestamp + registry.delayPeriod());
         uint64 commitTime = uint64(block.timestamp);
 
         vm.expectEmit(true, false, false, true);

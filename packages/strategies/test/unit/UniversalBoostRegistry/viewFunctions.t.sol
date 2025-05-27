@@ -43,7 +43,7 @@ contract UniversalBoostRegistry__ViewFunctions is Test {
         vm.stopPrank();
 
         // Advance time and commit
-        vm.warp(block.timestamp + registry.DELAY_PERIOD());
+        vm.warp(block.timestamp + registry.delayPeriod());
         registry.commitProtocolConfig(PROTOCOL_ID);
 
         // Should return false after commit
@@ -80,7 +80,7 @@ contract UniversalBoostRegistry__ViewFunctions is Test {
         uint64 queueTime = uint64(block.timestamp);
         registry.queueNewProtocolConfig(PROTOCOL_ID, 0.15e18, feeReceiver);
 
-        uint64 expectedCommitTime = queueTime + registry.DELAY_PERIOD();
+        uint64 expectedCommitTime = queueTime + registry.delayPeriod();
         assertEq(registry.getCommitTimestamp(PROTOCOL_ID), expectedCommitTime);
 
         vm.stopPrank();
@@ -98,7 +98,7 @@ contract UniversalBoostRegistry__ViewFunctions is Test {
         vm.stopPrank();
 
         // Advance time and commit
-        vm.warp(block.timestamp + registry.DELAY_PERIOD());
+        vm.warp(block.timestamp + registry.delayPeriod());
         registry.commitProtocolConfig(PROTOCOL_ID);
 
         // Should return zero after commit
@@ -114,7 +114,7 @@ contract UniversalBoostRegistry__ViewFunctions is Test {
         uint64 firstQueueTime = uint64(block.timestamp);
         registry.queueNewProtocolConfig(PROTOCOL_ID, 0.1e18, feeReceiver);
 
-        uint64 firstExpectedCommit = firstQueueTime + registry.DELAY_PERIOD();
+        uint64 firstExpectedCommit = firstQueueTime + registry.delayPeriod();
         assertEq(registry.getCommitTimestamp(PROTOCOL_ID), firstExpectedCommit);
 
         // Advance time and queue second configuration
@@ -122,7 +122,7 @@ contract UniversalBoostRegistry__ViewFunctions is Test {
         uint64 secondQueueTime = uint64(block.timestamp);
         registry.queueNewProtocolConfig(PROTOCOL_ID, 0.2e18, feeReceiver);
 
-        uint64 secondExpectedCommit = secondQueueTime + registry.DELAY_PERIOD();
+        uint64 secondExpectedCommit = secondQueueTime + registry.delayPeriod();
         assertEq(registry.getCommitTimestamp(PROTOCOL_ID), secondExpectedCommit);
 
         vm.stopPrank();
@@ -149,13 +149,13 @@ contract UniversalBoostRegistry__ViewFunctions is Test {
         assertTrue(registry.hasQueuedConfig(protocolId2));
         assertFalse(registry.hasQueuedConfig(protocolId3));
 
-        uint64 expectedCommitTime = queueTime + registry.DELAY_PERIOD();
+        uint64 expectedCommitTime = queueTime + registry.delayPeriod();
         assertEq(registry.getCommitTimestamp(protocolId1), expectedCommitTime);
         assertEq(registry.getCommitTimestamp(protocolId2), expectedCommitTime);
         assertEq(registry.getCommitTimestamp(protocolId3), 0);
 
         // Commit first protocol only
-        vm.warp(block.timestamp + registry.DELAY_PERIOD());
+        vm.warp(block.timestamp + registry.delayPeriod());
         registry.commitProtocolConfig(protocolId1);
 
         // Check that only first protocol is affected
@@ -183,12 +183,12 @@ contract UniversalBoostRegistry__ViewFunctions is Test {
 
         // Should return correct values
         assertTrue(registry.hasQueuedConfig(protocolId));
-        assertEq(registry.getCommitTimestamp(protocolId), queueTime + registry.DELAY_PERIOD());
+        assertEq(registry.getCommitTimestamp(protocolId), queueTime + registry.delayPeriod());
 
         vm.stopPrank();
 
         // Commit configuration
-        vm.warp(block.timestamp + registry.DELAY_PERIOD());
+        vm.warp(block.timestamp + registry.delayPeriod());
         registry.commitProtocolConfig(protocolId);
 
         // Should return default values again
