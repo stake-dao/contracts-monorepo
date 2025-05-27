@@ -5,9 +5,11 @@ import {BaseTest} from "test/Base.t.sol";
 import {ProtocolController} from "src/ProtocolController.sol";
 import {MockERC20} from "forge-std/src/mocks/MockERC20.sol";
 import {YieldnestProtocol} from "address-book/src/YieldnestEthereum.sol";
+import {YieldnestAutocompoundedVault} from "src/integrations/yieldnest/YieldnestAutocompoundedVault.sol";
 
 contract AutocompoundedVaultTest is BaseTest {
     ProtocolController internal protocolController;
+    YieldnestAutocompoundedVault internal autocompoundedVault;
 
     function setUp() public virtual override {
         super.setUp();
@@ -20,6 +22,10 @@ contract AutocompoundedVaultTest is BaseTest {
         // Deploy the protocol controller
         protocolController = new ProtocolController();
         vm.label(address(protocolController), "ProtocolController");
+
+        // Deploy the Yieldnest Autocompounded Vault
+        autocompoundedVault = new YieldnestAutocompoundedVault(address(protocolController));
+        vm.label(address(autocompoundedVault), "YieldnestAutocompoundedVault");
     }
 
     function _cheat_mockAllowed(bool allowed) internal {

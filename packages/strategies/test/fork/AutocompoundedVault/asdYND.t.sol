@@ -3,12 +3,12 @@ pragma solidity 0.8.28;
 
 import {YieldnestProtocol} from "address-book/src/YieldnestEthereum.sol";
 import {Test} from "forge-std/src/Test.sol";
-import {AutocompoundedVault} from "src/integrations/yieldnest/AutocompoundedVault.sol";
+import {YieldnestAutocompoundedVault} from "src/integrations/yieldnest/YieldnestAutocompoundedVault.sol";
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 import {ProtocolController} from "src/ProtocolController.sol";
 
 contract asdYNDTest is Test {
-    AutocompoundedVault internal vault;
+    YieldnestAutocompoundedVault internal vault;
     address internal protocolController;
 
     // Accounts to test the vault with
@@ -23,7 +23,7 @@ contract asdYNDTest is Test {
         protocolController = address(new MockProtocolController());
 
         // Deploy the ERC4626 vault
-        vault = new AutocompoundedVault(protocolController);
+        vault = new YieldnestAutocompoundedVault(protocolController);
 
         // Labels important addresses
         vm.label(protocolController, "Protocol Controller");

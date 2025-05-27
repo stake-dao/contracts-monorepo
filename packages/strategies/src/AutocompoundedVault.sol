@@ -3,11 +3,10 @@ pragma solidity 0.8.28;
 
 import {ERC4626, ERC20} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {YieldnestProtocol} from "address-book/src/YieldnestEthereum.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
-/// @title Autocompounded Stake DAO YND Vault
-/// @notice This contract is a fully compliant ERC4626 streaming yield-bearing vault for sdYND tokens.
+/// @title Autocompounded Stake DAO Vault
+/// @notice This contract is a fully compliant ERC4626 streaming yield-bearing vault.
 ///         The rewards are streamed linearly over a fixed period and the vault is autocompounded.
 /// @dev Streaming Reward Policy:
 ///      - If a new stream is started before the previous one ends, any unvested rewards from the previous stream
@@ -20,10 +19,10 @@ import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 ///        prematurely can lead to accelerated vesting and may distort the intended reward schedule.
 ///      - This design is a trade-off for simplicity and to keep the reward calendar predictable and aligned.
 /// @dev Direct Transfer Handling:
-///      Any sdYND tokens sent directly to this contract (not via the setRewards function)
+///      Any tokens sent directly to this contract (not via the setRewards function)
 ///      will be considered immediately vested and available to users. This means that accidental or
 ///      intentional direct transfers will increase the value returned by totalAssets() and can be
-///      claimed by asdYND holders. This is an intentional design choice and should be considered
+///      claimed by holders. This is an intentional design choice and should be considered
 ///      when integrating with or interacting with this vault.
 /// @dev ERC4626 Virtual Shares/Assets Protection:
 ///      This contract inherits from OpenZeppelin's v5 ERC4626, which implements the "virtual shares/assets" protection mechanism.
@@ -39,10 +38,10 @@ contract AutocompoundedVault is ERC4626 {
     ///////////////////////////////////////////////////////////////
 
     /// @notice The protocol controller. This contract manages permissions for Stake DAO contracts.
-    IProtocolController public immutable protocolController;
+    IProtocolController public immutable PROTOCOL_CONTROLLER;
 
     /// @notice The streaming period
-    uint128 public constant STREAMING_PERIOD = 7 days;
+    uint128 public immutable STREAMING_PERIOD;
 
     ////////////////////////////////////////////////////////////////
     /// --- STATE
@@ -51,7 +50,7 @@ contract AutocompoundedVault is ERC4626 {
     /// @notice The struct holding the stream data
     /// @dev This struct takes 2 storage slots
     struct Stream {
-        uint256 amount; // The amount of sdYND tokens streamed over the period
+        uint256 amount; // The amount of asset tokens streamed over the period
         uint128 start; // The start timestamp of the stream
         uint128 end; // The end timestamp of the stream
     }
@@ -70,12 +69,20 @@ contract AutocompoundedVault is ERC4626 {
     event NewStreamRewards(address indexed caller, uint256 amount, uint128 start, uint128 end);
 
     /// @notice Initialize the asset and the shares token
-    /// @dev sdYND is the asset contract while asdYND is the shares token
-    constructor(address _protocolController)
-        ERC4626(IERC20(YieldnestProtocol.SDYND))
-        ERC20("Autocompounded Stake DAO YND", "asdYND")
-    {
-        protocolController = IProtocolController(_protocolController);
+    /// @param protocolController The address of the protocol controller
+    /// @param streamingPeriod The streaming period in seconds (e.g. 7 days)
+    /// @param asset The asset token the users will deposit to the vault (e.g. sdYND)
+    /// @param shareName The name of the shares token the users will receive
+    /// @param shareSymbol The symbol of the shares token the users will receive
+    constructor(
+        address protocolController,
+        uint128 streamingPeriod,
+        IERC20 asset,
+        string memory shareName,
+        string memory shareSymbol
+    ) ERC4626(asset) ERC20(shareName, shareSymbol) {
+        PROTOCOL_CONTROLLER = IProtocolController(protocolController);
+        STREAMING_PERIOD = streamingPeriod;
     }
 
     ////////////////////////////////////////////////////////////////
@@ -86,7 +93,7 @@ contract AutocompoundedVault is ERC4626 {
     ///         is requested to check if the caller is authorized to call this specific function for this contract.
     /// @param selector The selector of the function to check
     modifier authorized(bytes4 selector) {
-        require(protocolController.allowed(address(this), msg.sender, selector), NotAuthorized());
+        require(PROTOCOL_CONTROLLER.allowed(address(this), msg.sender, selector), NotAuthorized());
         _;
     }
 
@@ -103,7 +110,7 @@ contract AutocompoundedVault is ERC4626 {
     ///        The unvested portion is calculated linearly based on the remaining time in the stream
     /// @return The total amount of vested asset token that are available for share calculations.
     ///         This is the value used by the ERC4626 implementation for deposit/withdrawal calculations
-    function totalAssets() public view override returns (uint256) {
+    function totalAssets() public view virtual override returns (uint256) {
         uint256 balance = IERC20(asset()).balanceOf(address(this));
         Stream storage stream = currentStream;
         uint128 currentTimestamp = _timestamp();
@@ -123,11 +130,11 @@ contract AutocompoundedVault is ERC4626 {
     ///////////////////////////////////////////////////////////////
 
     /// @notice Streams new rewards to the contract
-    /// @param newAmount The amount of sdYND tokens to stream
+    /// @param newAmount The amount of asset tokens to stream
     /// @dev Starting a new stream will add the unvested portion of the previous stream to the new stream
     ///      and the new stream will be for `STREAMING_PERIOD`. See the comments in the contract description for more details.
     /// @custom:throws NotAuthorized when the caller is not authorized
-    function setRewards(uint256 newAmount) external authorized(this.setRewards.selector) {
+    function setRewards(uint256 newAmount) external virtual authorized(this.setRewards.selector) {
         Stream storage stream = currentStream;
         uint256 unvested;
         uint128 currentTimestamp = _timestamp();
@@ -149,14 +156,15 @@ contract AutocompoundedVault is ERC4626 {
     }
 
     /// @notice Returns the current stream data
-    /// @return amount The amount of sdYND tokens streamed over the streaming period
-    /// @return remainingToken The amount of sdYND tokens remaining to be streamed
+    /// @return amount The amount of asset tokens streamed over the streaming period
+    /// @return remainingToken The amount of asset tokens remaining to be streamed
     /// @return start The start timestamp of the stream
     /// @return end The end timestamp of the stream
     /// @return remainingTime The remaining time in the stream (in seconds)
     function getCurrentStream()
         external
         view
+        virtual
         returns (uint256 amount, uint256 remainingToken, uint128 start, uint128 end, uint128 remainingTime)
     {
         Stream storage stream = currentStream;

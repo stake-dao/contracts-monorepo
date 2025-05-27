@@ -1,19 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import {AutocompoundedVault} from "src/integrations/yieldnest/AutocompoundedVault.sol";
 import {AutocompoundedVaultTest} from "test/unit/AutocompoundedVault/utils/AutocompoundedVaultTest.t.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 
 contract AutocompoundedVault__getCurrentStream is AutocompoundedVaultTest {
-    AutocompoundedVault internal autocompoundedVault;
-
-    function setUp() public override {
-        super.setUp();
-
-        autocompoundedVault = new AutocompoundedVault(address(protocolController));
-    }
-
     function test_ReturnsNoRemainingTokenAndTimeIfNoStreamStarted() external view {
         // it returns no remaining token and time if no stream started
 
