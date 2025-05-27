@@ -16,6 +16,7 @@ library SpectraLocker {
     address internal constant LOCKER = 0xC0295F271c4fD531d436F55b0ceF4Cc316188046;
     address internal constant DEPOSITOR = 0x9A7B5505c91b1add06188C665B588D4CC5227F27;
     address internal constant GAUGE = 0xeFd0248D2C05075815e0c38f0Bd9C1645706DF3F;
+    address internal constant VOTER = 0xB407CA355112f8645f0fFaC4E15B7Cf1559850E7;
 }
 
 library SpectraVotemarket {}
