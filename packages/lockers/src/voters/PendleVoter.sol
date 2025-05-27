@@ -59,11 +59,11 @@ contract PendleVoter is BaseVoter {
 
     /// @notice Get the locker address
     /// @dev Must be implemented for the SafeModule contract
-    function _getLocker() internal view override returns (address) {
+    function _getLocker() internal pure override returns (address) {
         return LOCKER;
     }
 
-    function _getController() internal view override returns (address) {
+    function _getController() internal pure override returns (address) {
         return CONTROLLER;
     }
 }
