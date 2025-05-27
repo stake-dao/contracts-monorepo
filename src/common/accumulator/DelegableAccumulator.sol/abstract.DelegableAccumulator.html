@@ -180,7 +180,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="delegableaccumulator"><a class="header" href="#delegableaccumulator">DelegableAccumulator</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/177cca1d08ae279fc97f21fd81c8e561502e39e4/src/common/accumulator/DelegableAccumulator.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/94e8affdb675fba76f4c8824feae24347dbb93f8/src/common/accumulator/DelegableAccumulator.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="/src/common/accumulator/BaseAccumulator.sol/abstract.BaseAccumulator.html">BaseAccumulator</a></p>
 <p>This contract is an extension of the BaseAccumulator, designed to manage and distribute rewards
@@ -240,12 +240,7 @@ calculated delegation share, allowing for flexible reward strategies.</p>
 <pre><code class="language-solidity">function _shareWithDelegation() internal returns (uint256 delegationShare);
 </code></pre>
 <h3 id="setmultiplier"><a class="header" href="#setmultiplier">setMultiplier</a></h3>
-<p>Share the rewards with the delegation contract.
-Get the veToken balance of the locker.
-Calculate the percentage of token delegated to the VeBoost contract.
-Calculate the expected delegation share.
-Apply the multiplier.
---- SETTERS</p>
+<p>--- SETTERS</p>
 <p>Sets the multiplier</p>
 <pre><code class="language-solidity">function setMultiplier(uint256 _multiplier) external onlyGovernance;
 </code></pre>
