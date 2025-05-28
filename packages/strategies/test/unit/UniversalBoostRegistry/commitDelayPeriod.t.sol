@@ -6,7 +6,7 @@ import {UniversalBoostRegistry} from "src/merkl/UniversalBoostRegistry.sol";
 
 contract UniversalBoostRegistry__CommitDelayPeriod is Test {
     UniversalBoostRegistry internal registry;
-    
+
     address internal owner;
     address internal anyone = makeAddr("anyone");
 

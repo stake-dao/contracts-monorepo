@@ -6,7 +6,7 @@ import {UniversalBoostRegistry} from "src/merkl/UniversalBoostRegistry.sol";
 
 contract UniversalBoostRegistry__DelayPeriodBypassAttack is Test {
     UniversalBoostRegistry internal registry;
-    
+
     address internal owner;
     address internal feeReceiver = makeAddr("feeReceiver");
     bytes4 internal constant PROTOCOL_ID = bytes4(hex"12345678");
@@ -26,7 +26,7 @@ contract UniversalBoostRegistry__DelayPeriodBypassAttack is Test {
 
         // Attacker tries to reduce delay period
         registry.queueDelayPeriod(shorterDelay);
-        
+
         // Verify delay period is queued but not active yet
         assertEq(registry.delayPeriod(), originalDelay); // Still original delay
         assertEq(registry.queuedDelayPeriod(), shorterDelay);
@@ -94,7 +94,7 @@ contract UniversalBoostRegistry__DelayPeriodBypassAttack is Test {
 
         // Must wait full original delay
         vm.warp(expectedCommitTime);
-        
+
         // Now can commit both
         registry.commitDelayPeriod();
         registry.commitProtocolConfig(PROTOCOL_ID);

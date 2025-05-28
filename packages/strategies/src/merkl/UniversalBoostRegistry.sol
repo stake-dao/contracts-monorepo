@@ -89,17 +89,13 @@ contract UniversalBoostRegistry is Ownable2Step {
     /// @param protocolId The protocol ID for which the config was queued.
     /// @param protocolFees The queued protocol fee percentage.
     /// @param queuedTimestamp The timestamp when the configuration was queued.
-    event NewProtocolConfigQueued(
-        bytes4 indexed protocolId, uint128 protocolFees, uint64 queuedTimestamp
-    );
+    event NewProtocolConfigQueued(bytes4 indexed protocolId, uint128 protocolFees, uint64 queuedTimestamp);
 
     /// @notice Event emitted when a protocol config is committed.
     /// @param protocolId The protocol ID for which the config was committed.
     /// @param protocolFees The committed protocol fee percentage.
     /// @param committedTimestamp The timestamp when the configuration was committed.
-    event ProtocolConfigCommitted(
-        bytes4 indexed protocolId, uint128 protocolFees, uint64 committedTimestamp
-    );
+    event ProtocolConfigCommitted(bytes4 indexed protocolId, uint128 protocolFees, uint64 committedTimestamp);
 
     /// @notice Event emitted when a new delay period is queued.
     /// @param newDelayPeriod The new delay period.
@@ -209,7 +205,7 @@ contract UniversalBoostRegistry is Ownable2Step {
         uint64 currentTime = uint64(block.timestamp);
         queuedDelayPeriod = newDelayPeriod;
         delayPeriodQueuedTimestamp = currentTime + delayPeriod;
-        
+
         emit DelayPeriodQueued(newDelayPeriod, currentTime + delayPeriod);
     }
 
@@ -218,14 +214,14 @@ contract UniversalBoostRegistry is Ownable2Step {
     function commitDelayPeriod() public {
         require(delayPeriodQueuedTimestamp != 0, NoQueuedDelayPeriod());
         require(uint64(block.timestamp) >= delayPeriodQueuedTimestamp, DelayPeriodNotPassed());
-        
+
         uint64 currentTime = uint64(block.timestamp);
         delayPeriod = queuedDelayPeriod;
-        
+
         // Clear queued values
         queuedDelayPeriod = 0;
         delayPeriodQueuedTimestamp = 0;
-        
+
         emit DelayPeriodCommitted(delayPeriod, currentTime);
     }
 
