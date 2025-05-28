@@ -11,7 +11,7 @@ contract UniversalBoostRegistry__ReturnBoost is Test {
     address internal user = makeAddr("user");
 
     function setUp() public {
-        registry = new UniversalBoostRegistry();
+        registry = new UniversalBoostRegistry(makeAddr("initialOwner"));
     }
 
     function test_ReturnBoost_WhenCurrentlyRenting() external {

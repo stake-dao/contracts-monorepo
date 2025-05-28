@@ -13,7 +13,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
     address internal feeReceiver = makeAddr("feeReceiver");
 
     function setUp() public {
-        registry = new UniversalBoostRegistry();
+        registry = new UniversalBoostRegistry(makeAddr("initialOwner"));
         owner = registry.owner();
     }
 

@@ -10,21 +10,21 @@ contract UniversalBoostRegistry__Constructor is Test {
         // it initializes the owner
         // it emits the OwnershipTransferred event
 
-        address expectedOwner = address(this);
+        address expectedOwner = makeAddr("initialOwner");
 
         // we tell forge to expect the OwnershipTransferred event
         vm.expectEmit(true, true, true, true);
         emit Ownable.OwnershipTransferred(address(0), expectedOwner);
 
         // we deploy the registry and assert the owner is the deployer
-        UniversalBoostRegistry registry = new UniversalBoostRegistry();
+        UniversalBoostRegistry registry = new UniversalBoostRegistry(expectedOwner);
         assertEq(registry.owner(), expectedOwner);
     }
 
     function test_InitializesConstants() external {
         // it initializes the constants correctly
 
-        UniversalBoostRegistry registry = new UniversalBoostRegistry();
+        UniversalBoostRegistry registry = new UniversalBoostRegistry(makeAddr("initialOwner"));
 
         // Check MAX_FEE_PERCENT is set correctly (40%)
         assertEq(registry.MAX_FEE_PERCENT(), 0.4e18);
@@ -36,7 +36,7 @@ contract UniversalBoostRegistry__Constructor is Test {
     function test_InitializesWithEmptyMappings() external {
         // it initializes with empty mappings
 
-        UniversalBoostRegistry registry = new UniversalBoostRegistry();
+        UniversalBoostRegistry registry = new UniversalBoostRegistry(makeAddr("initialOwner"));
         bytes4 testProtocolId = bytes4(hex"12345678");
         address testAccount = makeAddr("testAccount");
 
@@ -64,7 +64,7 @@ contract UniversalBoostRegistry__Constructor is Test {
     function test_InitializesViewFunctions() external {
         // it initializes view functions correctly
 
-        UniversalBoostRegistry registry = new UniversalBoostRegistry();
+        UniversalBoostRegistry registry = new UniversalBoostRegistry(makeAddr("initialOwner"));
         bytes4 testProtocolId = bytes4(hex"12345678");
 
         // Check hasQueuedConfig returns false for new protocol
