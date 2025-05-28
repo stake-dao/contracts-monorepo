@@ -1,0 +1,10 @@
+.vscode/
+node_modules/
+.env
+.env.local
+cache/
+out/
+broadcast/
+.DS_Store
+temp/
+generated
