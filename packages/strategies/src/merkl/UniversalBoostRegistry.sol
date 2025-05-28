@@ -122,7 +122,7 @@ contract UniversalBoostRegistry is Ownable2Step {
 
     /// @notice Initializes the UniversalBoostRegistry contract.
     /// @dev Sets the deployer as the initial owner using Ownable2Step pattern.
-    constructor() Ownable(msg.sender) {}
+    constructor(address initialOwner) Ownable(initialOwner) {}
 
     //////////////////////////////////////////////////////
     // --- BOOST RENTAL OPERATIONS

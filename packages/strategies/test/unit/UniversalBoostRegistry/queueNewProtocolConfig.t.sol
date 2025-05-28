@@ -14,7 +14,7 @@ contract UniversalBoostRegistry__QueueNewProtocolConfig is Test {
     address internal feeReceiver = makeAddr("feeReceiver");
 
     function setUp() public {
-        registry = new UniversalBoostRegistry();
+        registry = new UniversalBoostRegistry(makeAddr("initialOwner"));
         owner = registry.owner();
     }
 
@@ -182,7 +182,9 @@ contract UniversalBoostRegistry__QueueNewProtocolConfig is Test {
 
         // Should succeed with maximum fee
         vm.expectEmit(true, false, false, true);
-        emit UniversalBoostRegistry.NewProtocolConfigQueued(PROTOCOL_ID, maxFee, feeReceiver, uint64(block.timestamp) + registry.delayPeriod());
+        emit UniversalBoostRegistry.NewProtocolConfigQueued(
+            PROTOCOL_ID, maxFee, feeReceiver, uint64(block.timestamp) + registry.delayPeriod()
+        );
 
         registry.queueNewProtocolConfig(PROTOCOL_ID, maxFee, feeReceiver);
 
@@ -202,7 +204,9 @@ contract UniversalBoostRegistry__QueueNewProtocolConfig is Test {
         uint128 zeroFee = 0;
 
         vm.expectEmit(true, false, false, true);
-        emit UniversalBoostRegistry.NewProtocolConfigQueued(PROTOCOL_ID, zeroFee, feeReceiver, uint64(block.timestamp) + registry.delayPeriod());
+        emit UniversalBoostRegistry.NewProtocolConfigQueued(
+            PROTOCOL_ID, zeroFee, feeReceiver, uint64(block.timestamp) + registry.delayPeriod()
+        );
 
         registry.queueNewProtocolConfig(PROTOCOL_ID, zeroFee, feeReceiver);
 
@@ -223,7 +227,9 @@ contract UniversalBoostRegistry__QueueNewProtocolConfig is Test {
         address zeroReceiver = address(0);
 
         vm.expectEmit(true, false, false, true);
-        emit UniversalBoostRegistry.NewProtocolConfigQueued(PROTOCOL_ID, fee, zeroReceiver, uint64(block.timestamp) + registry.delayPeriod());
+        emit UniversalBoostRegistry.NewProtocolConfigQueued(
+            PROTOCOL_ID, fee, zeroReceiver, uint64(block.timestamp) + registry.delayPeriod()
+        );
 
         registry.queueNewProtocolConfig(PROTOCOL_ID, fee, zeroReceiver);
 
@@ -246,7 +252,9 @@ contract UniversalBoostRegistry__QueueNewProtocolConfig is Test {
         vm.startPrank(owner);
 
         vm.expectEmit(true, false, false, true);
-        emit UniversalBoostRegistry.NewProtocolConfigQueued(protocolId, protocolFees, receiver, uint64(block.timestamp) + registry.delayPeriod());
+        emit UniversalBoostRegistry.NewProtocolConfigQueued(
+            protocolId, protocolFees, receiver, uint64(block.timestamp) + registry.delayPeriod()
+        );
 
         registry.queueNewProtocolConfig(protocolId, protocolFees, receiver);
 
