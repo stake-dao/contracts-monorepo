@@ -11,7 +11,4 @@ library CommonUniversal {
     address internal constant SAFE_SINGLETON = 0x41675C099F32341bf84BFc5382aF534df5C7461a;
     address internal constant SAFE_FALLBACK_HANDLER = 0xfd0732Dc9E303f09fCEf3a7388Ad10A83459Ec99;
 
-
-    /// UNIVERSAL BOOST REGISTRY
-    address internal constant UNIVERSAL_BOOST_REGISTRY = 0x83f912A59e4Ae6D567b11Fb8b1969c627FE92049;
 } 
