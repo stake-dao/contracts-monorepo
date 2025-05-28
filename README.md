@@ -12,10 +12,8 @@ The repository is organized into several key packages:
 - `interfaces/`: Shared interfaces of all the integrations of StakeDAO used across different packages
 - `lockers/`: Smart contracts for sdToken Wrapping mechanisms.
 - `strategies/`: Smart contracts for boosted strategies built on top of sdToken shared boosting.
-- `vyper/`: Vyper contract implementations
 
 ## TODO:
 
 - Delete Herdaddy, or Rename it Utility with the goal of having standalone contract useful for a purpose such as Merkle Distribution etc.
 - Clean Lockers with Standardized code accross integration (like Strategies)
-- Remove the vyper, now that Vyper is supported by Foundry, we can move it back to Lockers
