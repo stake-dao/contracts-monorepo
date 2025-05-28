@@ -172,8 +172,7 @@ contract UniversalBoostRegistry__RentBoost is Test {
             uint128 queuedProtocolFees,
             uint64 lastUpdated,
             uint64 queuedTimestamp,
-            address feeReceiver,
-            address queuedFeeReceiver
+            address feeReceiver
         ) = registry.protocolConfig(PROTOCOL_ID);
 
         assertEq(protocolFees, 0);
@@ -181,7 +180,6 @@ contract UniversalBoostRegistry__RentBoost is Test {
         assertEq(lastUpdated, 0);
         assertEq(queuedTimestamp, 0);
         assertEq(feeReceiver, address(0));
-        assertEq(queuedFeeReceiver, address(0));
 
         vm.stopPrank();
     }

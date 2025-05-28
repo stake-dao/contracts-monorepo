@@ -24,9 +24,8 @@ contract UniversalBoostRegistry__ViewFunctions is Test {
 
     function test_HasQueuedConfig_ReturnsTrueWhenConfigQueued() external {
         // it returns true when configuration is queued
-
         vm.prank(owner);
-        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.15e18, feeReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.15e18);
 
         assertTrue(registry.hasQueuedConfig(PROTOCOL_ID));
     }
@@ -34,13 +33,11 @@ contract UniversalBoostRegistry__ViewFunctions is Test {
     function test_HasQueuedConfig_ReturnsFalseAfterCommit() external {
         // it returns false after configuration is committed
 
-        vm.startPrank(owner);
-
         // Queue configuration
-        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.15e18, feeReceiver);
+        vm.prank(owner);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.15e18);
         assertTrue(registry.hasQueuedConfig(PROTOCOL_ID));
 
-        vm.stopPrank();
 
         // Advance time and commit
         vm.warp(block.timestamp + registry.delayPeriod());
@@ -56,11 +53,11 @@ contract UniversalBoostRegistry__ViewFunctions is Test {
         vm.startPrank(owner);
 
         // Queue first configuration
-        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.1e18, feeReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.1e18);
         assertTrue(registry.hasQueuedConfig(PROTOCOL_ID));
 
         // Queue second configuration (should overwrite)
-        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.2e18, feeReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.2e18);
         assertTrue(registry.hasQueuedConfig(PROTOCOL_ID));
 
         vm.stopPrank();
@@ -78,7 +75,7 @@ contract UniversalBoostRegistry__ViewFunctions is Test {
         vm.startPrank(owner);
 
         uint64 queueTime = uint64(block.timestamp);
-        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.15e18, feeReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.15e18);
 
         uint64 expectedCommitTime = queueTime + registry.delayPeriod();
         assertEq(registry.getCommitTimestamp(PROTOCOL_ID), expectedCommitTime);
@@ -92,7 +89,7 @@ contract UniversalBoostRegistry__ViewFunctions is Test {
         vm.startPrank(owner);
 
         // Queue configuration
-        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.15e18, feeReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.15e18);
         assertGt(registry.getCommitTimestamp(PROTOCOL_ID), 0);
 
         vm.stopPrank();
@@ -112,7 +109,7 @@ contract UniversalBoostRegistry__ViewFunctions is Test {
 
         // Queue first configuration
         uint64 firstQueueTime = uint64(block.timestamp);
-        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.1e18, feeReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.1e18);
 
         uint64 firstExpectedCommit = firstQueueTime + registry.delayPeriod();
         assertEq(registry.getCommitTimestamp(PROTOCOL_ID), firstExpectedCommit);
@@ -120,7 +117,7 @@ contract UniversalBoostRegistry__ViewFunctions is Test {
         // Advance time and queue second configuration
         vm.warp(block.timestamp + 1 hours);
         uint64 secondQueueTime = uint64(block.timestamp);
-        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.2e18, feeReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.2e18);
 
         uint64 secondExpectedCommit = secondQueueTime + registry.delayPeriod();
         assertEq(registry.getCommitTimestamp(PROTOCOL_ID), secondExpectedCommit);
@@ -139,8 +136,8 @@ contract UniversalBoostRegistry__ViewFunctions is Test {
 
         // Queue configurations for first two protocols only
         uint64 queueTime = uint64(block.timestamp);
-        registry.queueNewProtocolConfig(protocolId1, 0.1e18, feeReceiver);
-        registry.queueNewProtocolConfig(protocolId2, 0.2e18, feeReceiver);
+        registry.queueNewProtocolConfig(protocolId1, 0.1e18);
+        registry.queueNewProtocolConfig(protocolId2, 0.2e18);
 
         vm.stopPrank();
 
@@ -179,7 +176,7 @@ contract UniversalBoostRegistry__ViewFunctions is Test {
 
         // Queue configuration
         uint64 queueTime = uint64(block.timestamp);
-        registry.queueNewProtocolConfig(protocolId, 0.15e18, feeReceiver);
+        registry.queueNewProtocolConfig(protocolId, 0.15e18);
 
         // Should return correct values
         assertTrue(registry.hasQueuedConfig(protocolId));
@@ -289,7 +286,7 @@ contract UniversalBoostRegistry__ViewFunctions is Test {
 
         // Queue both protocol config and delay period
         uint64 queueTime = uint64(block.timestamp);
-        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.2e18, feeReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.2e18);
         registry.queueDelayPeriod(2 days);
 
         // Both should be queued

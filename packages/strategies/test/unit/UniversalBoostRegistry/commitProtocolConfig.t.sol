@@ -30,7 +30,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         vm.startPrank(owner);
 
         // Queue a configuration
-        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.15e18, feeReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.15e18);
 
         vm.stopPrank();
 
@@ -55,7 +55,8 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         uint128 protocolFees = 0.15e18;
 
         // Queue a configuration
-        registry.queueNewProtocolConfig(PROTOCOL_ID, protocolFees, feeReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, protocolFees);
+        registry.setFeeReceiver(PROTOCOL_ID, feeReceiver);
 
         vm.stopPrank();
 
@@ -65,7 +66,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
 
         // Expect the ProtocolConfigCommitted event
         vm.expectEmit(true, false, false, true);
-        emit UniversalBoostRegistry.ProtocolConfigCommitted(PROTOCOL_ID, protocolFees, feeReceiver, commitTime);
+        emit UniversalBoostRegistry.ProtocolConfigCommitted(PROTOCOL_ID, protocolFees, commitTime);
 
         // Commit the configuration
         registry.commitProtocolConfig(PROTOCOL_ID);
@@ -76,8 +77,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
             uint128 queuedProtocolFees,
             uint64 lastUpdated,
             uint64 queuedTimestamp,
-            address activeFeeReceiver,
-            address queuedFeeReceiver
+            address activeFeeReceiver
         ) = registry.protocolConfig(PROTOCOL_ID);
 
         // Active values should be the committed ones
@@ -87,7 +87,6 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
 
         // Queued values should be cleared
         assertEq(queuedProtocolFees, 0);
-        assertEq(queuedFeeReceiver, address(0));
         assertEq(queuedTimestamp, 0);
 
         // View functions should reflect the committed state
@@ -103,7 +102,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         uint128 protocolFees = 0.15e18;
 
         // Queue a configuration
-        registry.queueNewProtocolConfig(PROTOCOL_ID, protocolFees, feeReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, protocolFees);
 
         vm.stopPrank();
 
@@ -114,7 +113,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         registry.commitProtocolConfig(PROTOCOL_ID);
 
         // Check that configuration was committed
-        (uint128 activeProtocolFees,,,,,) = registry.protocolConfig(PROTOCOL_ID);
+        (uint128 activeProtocolFees,,,,) = registry.protocolConfig(PROTOCOL_ID);
         assertEq(activeProtocolFees, protocolFees);
     }
 
@@ -126,7 +125,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         uint128 protocolFees = 0.15e18;
 
         // Queue a configuration
-        registry.queueNewProtocolConfig(PROTOCOL_ID, protocolFees, feeReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, protocolFees);
 
         vm.stopPrank();
 
@@ -137,7 +136,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         registry.commitProtocolConfig(PROTOCOL_ID);
 
         // Check that configuration was committed
-        (uint128 activeProtocolFees,,,,,) = registry.protocolConfig(PROTOCOL_ID);
+        (uint128 activeProtocolFees,,,,) = registry.protocolConfig(PROTOCOL_ID);
         assertEq(activeProtocolFees, protocolFees);
     }
 
@@ -147,7 +146,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         vm.startPrank(owner);
 
         // Queue a configuration
-        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.15e18, feeReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.15e18);
 
         vm.stopPrank();
 
@@ -159,7 +158,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         registry.commitProtocolConfig(PROTOCOL_ID);
 
         // Check that configuration was committed
-        (uint128 activeProtocolFees,,,,,) = registry.protocolConfig(PROTOCOL_ID);
+        (uint128 activeProtocolFees,,,,) = registry.protocolConfig(PROTOCOL_ID);
         assertEq(activeProtocolFees, 0.15e18);
     }
 
@@ -172,15 +171,18 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         address firstReceiver = makeAddr("firstReceiver");
 
         // Set up first active configuration
-        registry.queueNewProtocolConfig(PROTOCOL_ID, firstFee, firstReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, firstFee);
+        registry.setFeeReceiver(PROTOCOL_ID, firstReceiver);
+
         vm.warp(block.timestamp + registry.delayPeriod());
         registry.commitProtocolConfig(PROTOCOL_ID);
 
         // Queue and commit second configuration
         uint128 secondFee = 0.25e18;
         address secondReceiver = makeAddr("secondReceiver");
+        registry.setFeeReceiver(PROTOCOL_ID, secondReceiver);
 
-        registry.queueNewProtocolConfig(PROTOCOL_ID, secondFee, secondReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, secondFee);
         vm.warp(block.timestamp + registry.delayPeriod());
 
         vm.stopPrank();
@@ -188,7 +190,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         uint64 secondCommitTime = uint64(block.timestamp);
 
         vm.expectEmit(true, false, false, true);
-        emit UniversalBoostRegistry.ProtocolConfigCommitted(PROTOCOL_ID, secondFee, secondReceiver, secondCommitTime);
+        emit UniversalBoostRegistry.ProtocolConfigCommitted(PROTOCOL_ID, secondFee, secondCommitTime);
 
         registry.commitProtocolConfig(PROTOCOL_ID);
 
@@ -198,8 +200,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
             uint128 queuedProtocolFees,
             uint64 lastUpdated,
             uint64 queuedTimestamp,
-            address activeFeeReceiver,
-            address queuedFeeReceiver
+            address activeFeeReceiver
         ) = registry.protocolConfig(PROTOCOL_ID);
 
         assertEq(activeProtocolFees, secondFee);
@@ -208,7 +209,6 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
 
         // Queued values should be cleared
         assertEq(queuedProtocolFees, 0);
-        assertEq(queuedFeeReceiver, address(0));
         assertEq(queuedTimestamp, 0);
     }
 
@@ -221,7 +221,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         address zeroReceiver = address(0);
 
         // Queue configuration with zero values
-        registry.queueNewProtocolConfig(PROTOCOL_ID, zeroFee, zeroReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, zeroFee);
 
         vm.stopPrank();
 
@@ -235,8 +235,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
             uint128 queuedProtocolFees,
             uint64 lastUpdated,
             uint64 queuedTimestamp,
-            address activeFeeReceiver,
-            address queuedFeeReceiver
+            address activeFeeReceiver
         ) = registry.protocolConfig(PROTOCOL_ID);
 
         assertEq(activeProtocolFees, zeroFee);
@@ -245,7 +244,6 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
 
         // Queued values should be cleared
         assertEq(queuedProtocolFees, 0);
-        assertEq(queuedFeeReceiver, address(0));
         assertEq(queuedTimestamp, 0);
     }
 
@@ -257,7 +255,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         uint128 maxFee = registry.MAX_FEE_PERCENT();
 
         // Queue configuration with maximum fee
-        registry.queueNewProtocolConfig(PROTOCOL_ID, maxFee, feeReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, maxFee);
 
         vm.stopPrank();
 
@@ -266,7 +264,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         registry.commitProtocolConfig(PROTOCOL_ID);
 
         // Check that maximum fee was committed correctly
-        (uint128 activeProtocolFees,,,,,) = registry.protocolConfig(PROTOCOL_ID);
+        (uint128 activeProtocolFees,,,,) = registry.protocolConfig(PROTOCOL_ID);
         assertEq(activeProtocolFees, maxFee);
     }
 
@@ -284,8 +282,8 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         vm.startPrank(owner);
 
         // Queue configurations for both protocols
-        registry.queueNewProtocolConfig(protocolId1, fee1, receiver1);
-        registry.queueNewProtocolConfig(protocolId2, fee2, receiver2);
+        registry.queueNewProtocolConfig(protocolId1, fee1);
+        registry.queueNewProtocolConfig(protocolId2, fee2);
 
         vm.stopPrank();
 
@@ -294,12 +292,12 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         registry.commitProtocolConfig(protocolId1);
 
         // Check first protocol was committed
-        (uint128 active1,,,,,) = registry.protocolConfig(protocolId1);
+        (uint128 active1,,,,) = registry.protocolConfig(protocolId1);
         assertEq(active1, fee1);
         assertFalse(registry.hasQueuedConfig(protocolId1));
 
         // Check second protocol still queued
-        (, uint128 queued2,,,,) = registry.protocolConfig(protocolId2);
+        (, uint128 queued2,,,) = registry.protocolConfig(protocolId2);
         assertEq(queued2, fee2);
         assertTrue(registry.hasQueuedConfig(protocolId2));
 
@@ -307,7 +305,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         registry.commitProtocolConfig(protocolId2);
 
         // Check second protocol was committed
-        (uint128 active2,,,,,) = registry.protocolConfig(protocolId2);
+        (uint128 active2,,,,) = registry.protocolConfig(protocolId2);
         assertEq(active2, fee2);
         assertFalse(registry.hasQueuedConfig(protocolId2));
     }
@@ -324,7 +322,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
 
         // Queue and commit configuration
         vm.startPrank(owner);
-        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.15e18, feeReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.15e18);
         vm.warp(block.timestamp + registry.delayPeriod());
         registry.commitProtocolConfig(PROTOCOL_ID);
         vm.stopPrank();
@@ -344,7 +342,8 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         vm.startPrank(owner);
 
         // Queue configuration
-        registry.queueNewProtocolConfig(protocolId, protocolFees, receiver);
+        registry.queueNewProtocolConfig(protocolId, protocolFees);
+        registry.setFeeReceiver(protocolId, receiver);
 
         vm.stopPrank();
 
@@ -353,7 +352,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
         uint64 commitTime = uint64(block.timestamp);
 
         vm.expectEmit(true, false, false, true);
-        emit UniversalBoostRegistry.ProtocolConfigCommitted(protocolId, protocolFees, receiver, commitTime);
+        emit UniversalBoostRegistry.ProtocolConfigCommitted(protocolId, protocolFees, commitTime);
 
         registry.commitProtocolConfig(protocolId);
 
@@ -363,8 +362,7 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
             uint128 queuedProtocolFees,
             uint64 lastUpdated,
             uint64 queuedTimestamp,
-            address activeFeeReceiver,
-            address queuedFeeReceiver
+            address activeFeeReceiver
         ) = registry.protocolConfig(protocolId);
 
         assertEq(activeProtocolFees, protocolFees);
@@ -373,7 +371,6 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
 
         // Queued values should be cleared
         assertEq(queuedProtocolFees, 0);
-        assertEq(queuedFeeReceiver, address(0));
         assertEq(queuedTimestamp, 0);
 
         assertFalse(registry.hasQueuedConfig(protocolId));

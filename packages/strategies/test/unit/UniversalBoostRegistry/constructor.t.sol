@@ -46,8 +46,7 @@ contract UniversalBoostRegistry__Constructor is Test {
             uint128 queuedProtocolFees,
             uint64 lastUpdated,
             uint64 queuedTimestamp,
-            address feeReceiver,
-            address queuedFeeReceiver
+            address feeReceiver
         ) = registry.protocolConfig(testProtocolId);
 
         assertEq(protocolFees, 0);
@@ -55,7 +54,6 @@ contract UniversalBoostRegistry__Constructor is Test {
         assertEq(lastUpdated, 0);
         assertEq(queuedTimestamp, 0);
         assertEq(feeReceiver, address(0));
-        assertEq(queuedFeeReceiver, address(0));
 
         // Check isRentingBoost mapping is empty
         assertFalse(registry.isRentingBoost(testAccount, testProtocolId));
