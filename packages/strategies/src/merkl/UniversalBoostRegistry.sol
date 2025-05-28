@@ -57,6 +57,12 @@ contract UniversalBoostRegistry is Ownable2Step {
     /// @dev This prevents immediate fee changes and provides users time to react to fee updates.
     uint64 public delayPeriod = 1 days;
 
+    /// @notice Queued delay period that will become active after commitment.
+    uint64 public queuedDelayPeriod;
+
+    /// @notice Timestamp when the queued delay period can be committed.
+    uint64 public delayPeriodQueuedTimestamp;
+
     /// @notice Mapping of protocol ID to protocol configuration.
     /// @dev Contains both active and queued configurations in a single mapping.
     ///      Use queuedTimestamp to determine if a configuration is pending.
@@ -99,9 +105,15 @@ contract UniversalBoostRegistry is Ownable2Step {
         bytes4 indexed protocolId, uint128 protocolFees, address feeReceiver, uint64 committedTimestamp
     );
 
-    /// @notice Event emitted when the delay period is set.
+    /// @notice Event emitted when a new delay period is queued.
     /// @param newDelayPeriod The new delay period.
-    event DelayPeriodSet(uint64 newDelayPeriod);
+    /// @param queuedTimestamp The timestamp when it can be committed.
+    event DelayPeriodQueued(uint64 newDelayPeriod, uint64 queuedTimestamp);
+
+    /// @notice Event emitted when the delay period is committed.
+    /// @param newDelayPeriod The new delay period.
+    /// @param committedTimestamp The timestamp when it was committed.
+    event DelayPeriodCommitted(uint64 newDelayPeriod, uint64 committedTimestamp);
 
     //////////////////////////////////////////////////////
     // --- ERRORS
@@ -115,6 +127,9 @@ contract UniversalBoostRegistry is Ownable2Step {
 
     /// @notice Error thrown when the delay period for new fees to take effect has not passed.
     error DelayPeriodNotPassed();
+
+    /// @notice Error thrown when there is no queued delay period to commit.
+    error NoQueuedDelayPeriod();
 
     //////////////////////////////////////////////////////
     // --- CONSTRUCTOR
@@ -183,12 +198,33 @@ contract UniversalBoostRegistry is Ownable2Step {
         emit NewProtocolConfigQueued(protocolId, protocolFees, feeReceiver, currentTime + delayPeriod);
     }
 
-    /// @notice Sets the current delay period.
-    /// @dev This function can only be called by the owner.
-    /// @param newDelayPeriod The new delay period.
-    function setCurrentDelayPeriod(uint64 newDelayPeriod) public onlyOwner {
-        delayPeriod = newDelayPeriod;
-        emit DelayPeriodSet(newDelayPeriod);
+    /// @notice Queues a new delay period.
+    /// @dev This function can only be called by the owner. The new delay period
+    ///      will only take effect after the current delay period has passed.
+    ///      This prevents bypassing the delay mechanism by reducing the delay period.
+    /// @param newDelayPeriod The new delay period to queue.
+    function queueDelayPeriod(uint64 newDelayPeriod) public onlyOwner {
+        uint64 currentTime = uint64(block.timestamp);
+        queuedDelayPeriod = newDelayPeriod;
+        delayPeriodQueuedTimestamp = currentTime + delayPeriod;
+        
+        emit DelayPeriodQueued(newDelayPeriod, currentTime + delayPeriod);
+    }
+
+    /// @notice Commits the queued delay period.
+    /// @dev Can be called by anyone once the delay period has passed.
+    function commitDelayPeriod() public {
+        require(delayPeriodQueuedTimestamp != 0, NoQueuedDelayPeriod());
+        require(uint64(block.timestamp) >= delayPeriodQueuedTimestamp, DelayPeriodNotPassed());
+        
+        uint64 currentTime = uint64(block.timestamp);
+        delayPeriod = queuedDelayPeriod;
+        
+        // Clear queued values
+        queuedDelayPeriod = 0;
+        delayPeriodQueuedTimestamp = 0;
+        
+        emit DelayPeriodCommitted(delayPeriod, currentTime);
     }
 
     /// @notice Commits a new protocol config for a given protocol ID.
@@ -240,5 +276,17 @@ contract UniversalBoostRegistry is Ownable2Step {
     /// @return _ The timestamp when the configuration can be committed (0 if no queued config).
     function getCommitTimestamp(bytes4 protocolId) external view returns (uint64) {
         return protocolConfig[protocolId].queuedTimestamp;
+    }
+
+    /// @notice Returns whether a delay period is currently queued and pending.
+    /// @return _ True if there is a queued delay period pending commitment.
+    function hasQueuedDelayPeriod() external view returns (bool) {
+        return delayPeriodQueuedTimestamp != 0;
+    }
+
+    /// @notice Returns the timestamp when the queued delay period can be committed.
+    /// @return _ The timestamp when the delay period can be committed (0 if no queued delay period).
+    function getDelayPeriodCommitTimestamp() external view returns (uint64) {
+        return delayPeriodQueuedTimestamp;
     }
 }

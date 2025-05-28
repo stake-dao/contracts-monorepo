@@ -195,4 +195,132 @@ contract UniversalBoostRegistry__ViewFunctions is Test {
         assertFalse(registry.hasQueuedConfig(protocolId));
         assertEq(registry.getCommitTimestamp(protocolId), 0);
     }
+
+    function test_HasQueuedDelayPeriod_ReturnsFalseInitially() external {
+        // it returns false when no delay period is queued initially
+
+        assertFalse(registry.hasQueuedDelayPeriod());
+    }
+
+    function test_HasQueuedDelayPeriod_ReturnsTrueWhenQueued() external {
+        // it returns true when delay period is queued
+
+        vm.prank(owner);
+        registry.queueDelayPeriod(2 days);
+
+        assertTrue(registry.hasQueuedDelayPeriod());
+    }
+
+    function test_HasQueuedDelayPeriod_ReturnsFalseAfterCommit() external {
+        // it returns false after delay period is committed
+
+        vm.prank(owner);
+        registry.queueDelayPeriod(2 days);
+        assertTrue(registry.hasQueuedDelayPeriod());
+
+        // Advance time and commit
+        vm.warp(block.timestamp + registry.delayPeriod());
+        registry.commitDelayPeriod();
+
+        assertFalse(registry.hasQueuedDelayPeriod());
+    }
+
+    function test_GetDelayPeriodCommitTimestamp_ReturnsZeroInitially() external {
+        // it returns zero when no delay period is queued initially
+
+        assertEq(registry.getDelayPeriodCommitTimestamp(), 0);
+    }
+
+    function test_GetDelayPeriodCommitTimestamp_ReturnsCorrectTimestamp() external {
+        // it returns correct timestamp when delay period is queued
+
+        uint64 queueTime = uint64(block.timestamp);
+        uint64 expectedCommitTime = queueTime + registry.delayPeriod();
+
+        vm.prank(owner);
+        registry.queueDelayPeriod(3 days);
+
+        assertEq(registry.getDelayPeriodCommitTimestamp(), expectedCommitTime);
+    }
+
+    function test_GetDelayPeriodCommitTimestamp_ReturnsZeroAfterCommit() external {
+        // it returns zero after delay period is committed
+
+        vm.prank(owner);
+        registry.queueDelayPeriod(2 days);
+        assertGt(registry.getDelayPeriodCommitTimestamp(), 0);
+
+        // Advance time and commit
+        vm.warp(block.timestamp + registry.delayPeriod());
+        registry.commitDelayPeriod();
+
+        assertEq(registry.getDelayPeriodCommitTimestamp(), 0);
+    }
+
+    function test_DelayPeriodViewFunctions_UpdateOnRequeue() external {
+        // it updates correctly when delay period is requeued
+
+        vm.startPrank(owner);
+
+        // Queue first delay period
+        uint64 firstQueueTime = uint64(block.timestamp);
+        registry.queueDelayPeriod(2 days);
+
+        uint64 firstExpectedCommit = firstQueueTime + registry.delayPeriod();
+        assertTrue(registry.hasQueuedDelayPeriod());
+        assertEq(registry.getDelayPeriodCommitTimestamp(), firstExpectedCommit);
+
+        // Advance time and queue second delay period
+        vm.warp(block.timestamp + 1 hours);
+        uint64 secondQueueTime = uint64(block.timestamp);
+        registry.queueDelayPeriod(3 days);
+
+        uint64 secondExpectedCommit = secondQueueTime + registry.delayPeriod();
+        assertTrue(registry.hasQueuedDelayPeriod());
+        assertEq(registry.getDelayPeriodCommitTimestamp(), secondExpectedCommit);
+
+        vm.stopPrank();
+    }
+
+    function test_ViewFunctions_IndependentOperation() external {
+        // it shows protocol configs and delay period operate independently
+
+        vm.startPrank(owner);
+
+        // Queue both protocol config and delay period
+        uint64 queueTime = uint64(block.timestamp);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.2e18, feeReceiver);
+        registry.queueDelayPeriod(2 days);
+
+        // Both should be queued
+        assertTrue(registry.hasQueuedConfig(PROTOCOL_ID));
+        assertTrue(registry.hasQueuedDelayPeriod());
+
+        uint64 expectedProtocolCommit = queueTime + registry.delayPeriod();
+        uint64 expectedDelayCommit = queueTime + registry.delayPeriod();
+
+        assertEq(registry.getCommitTimestamp(PROTOCOL_ID), expectedProtocolCommit);
+        assertEq(registry.getDelayPeriodCommitTimestamp(), expectedDelayCommit);
+
+        vm.stopPrank();
+
+        // Advance time and commit only protocol config
+        vm.warp(block.timestamp + registry.delayPeriod());
+        registry.commitProtocolConfig(PROTOCOL_ID);
+
+        // Protocol config should be cleared, delay period should remain
+        assertFalse(registry.hasQueuedConfig(PROTOCOL_ID));
+        assertTrue(registry.hasQueuedDelayPeriod());
+        assertEq(registry.getCommitTimestamp(PROTOCOL_ID), 0);
+        assertEq(registry.getDelayPeriodCommitTimestamp(), expectedDelayCommit);
+
+        // Now commit delay period
+        registry.commitDelayPeriod();
+
+        // Both should be cleared
+        assertFalse(registry.hasQueuedConfig(PROTOCOL_ID));
+        assertFalse(registry.hasQueuedDelayPeriod());
+        assertEq(registry.getCommitTimestamp(PROTOCOL_ID), 0);
+        assertEq(registry.getDelayPeriodCommitTimestamp(), 0);
+    }
 }
