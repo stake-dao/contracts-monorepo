@@ -131,7 +131,7 @@ contract UniversalBoostRegistry__QueueNewProtocolConfig is Test {
         uint128 activeFee = 0.1e18;
 
         registry.queueNewProtocolConfig(PROTOCOL_ID, activeFee);
-        
+
         // Set fee receiver separately
         registry.setFeeReceiver(PROTOCOL_ID, makeAddr("activeReceiver"));
 
@@ -209,10 +209,7 @@ contract UniversalBoostRegistry__QueueNewProtocolConfig is Test {
         vm.stopPrank();
     }
 
-
-    function test_QueueNewProtocolConfig_FuzzedParameters(bytes4 protocolId, uint128 protocolFees)
-        external
-    {
+    function test_QueueNewProtocolConfig_FuzzedParameters(bytes4 protocolId, uint128 protocolFees) external {
         // it works with valid fuzzed parameters
 
         // Bound the fee to valid range

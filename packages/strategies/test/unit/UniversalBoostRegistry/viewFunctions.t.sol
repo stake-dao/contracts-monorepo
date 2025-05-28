@@ -38,7 +38,6 @@ contract UniversalBoostRegistry__ViewFunctions is Test {
         registry.queueNewProtocolConfig(PROTOCOL_ID, 0.15e18);
         assertTrue(registry.hasQueuedConfig(PROTOCOL_ID));
 
-
         // Advance time and commit
         vm.warp(block.timestamp + registry.delayPeriod());
         registry.commitProtocolConfig(PROTOCOL_ID);

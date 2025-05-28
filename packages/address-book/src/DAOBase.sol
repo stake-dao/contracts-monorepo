@@ -9,5 +9,5 @@ library DAO {
     address internal constant ALL_MIGHT = 0x0000000a3Fc396B89e4c11841B39D9dff85a5D05;
 
     /// UNIVERSAL BOOST REGISTRY
-    address internal constant UNIVERSAL_BOOST_REGISTRY = 0x101E1B1fC8a1dB0dF3266669e5E34b7324c8565D;
+    address internal constant UNIVERSAL_BOOST_REGISTRY = 0x647405FB7BBc2D9A3e5Df70Df3a1D65fcD6bDd3B;
 }
