@@ -7,8 +7,7 @@ This repository contains the smart contracts and related packages for the Stake 
 The repository is organized into several key packages:
 
 - `address-book/`: Contains contract addresses for different networks
-- `autovoter/`: Implementation of automated voting mechanisms
-- `herdaddy/`: Tools and contracts for liquidity management
+- `shared/`: Tools and contracts for shared functionality
 - `interfaces/`: Shared interfaces of all the integrations of StakeDAO used across different packages
 - `lockers/`: Smart contracts for sdToken Wrapping mechanisms.
 - `strategies/`: Smart contracts for boosted strategies built on top of sdToken shared boosting.

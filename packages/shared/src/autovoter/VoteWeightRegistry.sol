@@ -2,7 +2,6 @@
 pragma solidity ^0.8.19;
 
 contract VoteWeightRegistry {
-
     struct Vote {
         address user;
         address[] gauges;
@@ -17,8 +16,14 @@ contract VoteWeightRegistry {
     // Index start to one
     mapping(string => uint256) public space_votes_index;
     mapping(address => mapping(string => uint256)) public user_vote_index;
-    
-    function set(string calldata space, address[] calldata _gauges, uint256[] calldata _chainIds, uint256[] calldata _weights, string[] calldata _metadatas) external {
+
+    function set(
+        string calldata space,
+        address[] calldata _gauges,
+        uint256[] calldata _chainIds,
+        uint256[] calldata _weights,
+        string[] calldata _metadatas
+    ) external {
         uint256 weightLength = _weights.length;
 
         require(_gauges.length == weightLength, "!Gauges length");
@@ -27,10 +32,10 @@ contract VoteWeightRegistry {
 
         uint256 sum = 0;
         uint256 i = 0;
-        
-        for(;i<weightLength;) {
+
+        for (; i < weightLength;) {
             sum += _weights[i];
-            
+
             unchecked {
                 ++i;
             }
@@ -39,7 +44,7 @@ contract VoteWeightRegistry {
         require(sum == 10000, "Wrong weight");
 
         uint256 userVoteIndex = user_vote_index[msg.sender][space];
-        if(userVoteIndex == 0) {
+        if (userVoteIndex == 0) {
             // New vote
             userVoteIndex = get_new_index(space);
         }
@@ -54,7 +59,7 @@ contract VoteWeightRegistry {
         });
     }
 
-    function get_new_index(string calldata space) internal returns(uint256) {
+    function get_new_index(string calldata space) internal returns (uint256) {
         // New vote
         uint256 currentIndex = space_votes_index[space];
         uint256 userVoteIndex = currentIndex + 1;
@@ -68,18 +73,17 @@ contract VoteWeightRegistry {
     function remove(string calldata space) public {
         uint256 index = user_vote_index[msg.sender][space];
         require(index > 0, "No vote");
-        
 
         votes[space][index].killed = true;
     }
 
     function removeAll(string[] calldata spaces) public {
-        for(uint256 i = 0; i < spaces.length; ++i) {
+        for (uint256 i = 0; i < spaces.length; ++i) {
             remove(spaces[i]);
         }
     }
 
-    function get(address user, string calldata space) external view returns(Vote memory) {
+    function get(address user, string calldata space) external view returns (Vote memory) {
         uint256 index = user_vote_index[user][space];
         return votes[space][index];
     }

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.19;
 
-import {IUniversalRewardsDistributor} from "src/interfaces/morpho/IUniversalRewardsDistributor.sol";
+import {IUniversalRewardsDistributor} from "src/distributors/IUniversalRewardsDistributor.sol";
 
 /// @title IUrdFactory
 /// @author Morpho Labs

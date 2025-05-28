@@ -1,14 +1,12 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.19;
 
-import {PendingRoot, IUniversalRewardsDistributor} from "src/interfaces/morpho/IUniversalRewardsDistributor.sol";
-
-import {ErrorsLib} from "src/utils/ErrorsLib.sol";
-
+import {PendingRoot, IUniversalRewardsDistributor} from "src/distributors/IUniversalRewardsDistributor.sol";
+import {ErrorsLib} from "src/distributors/ErrorsLib.sol";
 import {ERC20Mock} from "test/Mocks.sol";
 import {Multicallable} from "solady/src/utils/Multicallable.sol";
 import {UniversalRewardsDistributor} from "src/distributors/UniversalRewardDistributor.sol";
-import {EventsLib} from "src/utils/EventsLib.sol";
+import {EventsLib} from "src/distributors/EventsLib.sol";
 import {DAO} from "address-book/src/DAOEthereum.sol";
 import {Merkle} from "murky/Merkle.sol";
 import "forge-std/src/Test.sol";
@@ -54,7 +52,7 @@ contract UniversalRewardsDistributorTest is Test {
         token2.mint(address(distributionWithTimeLock), 1000 ether * 200);
     }
 
-    function test_GetInitCodeHash() public {
+    function test_GetInitCodeHash() public view {
         bytes32 initCodeHash = hashInitCode(
             type(UniversalRewardsDistributor).creationCode, abi.encode(msg.sender, 0, bytes32(0), bytes32(0))
         );

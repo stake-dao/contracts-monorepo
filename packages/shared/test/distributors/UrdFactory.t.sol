@@ -1,10 +1,9 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.19;
 
-import {IUniversalRewardsDistributor} from "src/interfaces/morpho/IUniversalRewardsDistributor.sol";
+import {IUniversalRewardsDistributor} from "src/distributors/IUniversalRewardsDistributor.sol";
 import {UniversalRewardsDistributor} from "src/distributors/UniversalRewardDistributor.sol";
-import {EventsLib} from "src/utils/EventsLib.sol";
-
+import {EventsLib} from "src/distributors/EventsLib.sol";
 import {UrdFactory} from "src/distributors/UrdFactory.sol";
 
 import "forge-std/src/Test.sol";

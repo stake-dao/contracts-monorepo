@@ -2,12 +2,10 @@
 pragma solidity ^0.8.19;
 
 import {
-    PendingRoot,
-    IUniversalRewardsDistributorStaticTyping
-} from "src/interfaces/morpho/IUniversalRewardsDistributor.sol";
-
-import {ErrorsLib} from "src/utils/ErrorsLib.sol";
-import {EventsLib} from "src/utils/EventsLib.sol";
+    PendingRoot, IUniversalRewardsDistributorStaticTyping
+} from "src/distributors/IUniversalRewardsDistributor.sol";
+import {ErrorsLib} from "src/distributors/ErrorsLib.sol";
+import {EventsLib} from "src/distributors/EventsLib.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Multicallable} from "solady/src/utils/Multicallable.sol";
 import {MerkleProof} from "@openzeppelin/contracts/utils/cryptography/MerkleProof.sol";

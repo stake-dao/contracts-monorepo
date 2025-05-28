@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
 pragma solidity ^0.8.19;
 
-import {IUrdFactory} from "src/interfaces/morpho/IUrdFactory.sol";
-import {IUniversalRewardsDistributor} from "src/interfaces/morpho/IUniversalRewardsDistributor.sol";
+import {IUrdFactory} from "src/distributors/IUrdFactory.sol";
+import {IUniversalRewardsDistributor} from "src/distributors/IUniversalRewardsDistributor.sol";
 
-import {EventsLib} from "src/utils/EventsLib.sol";
+import {EventsLib} from "src/distributors/EventsLib.sol";
 
 import {UniversalRewardsDistributor} from "src/distributors/UniversalRewardDistributor.sol";
 
