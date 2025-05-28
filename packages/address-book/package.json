@@ -1,4 +1,8 @@
 {
-    "name": "@stake-dao/address-book",
-    "version": "1.0.0"
-  }
+	"name": "@stake-dao/address-book",
+	"version": "1.0.0",
+	"scripts": {
+		"generate-json": "node scripts/generate-json-book.js",
+		"generate-md": "node scripts/generate-md-book.js"
+	}
+}
