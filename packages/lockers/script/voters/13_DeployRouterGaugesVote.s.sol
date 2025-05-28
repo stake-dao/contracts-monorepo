@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {DAO} from "address-book/src/DAOEthereum.sol";
+import {DAO} from "address-book/src/DaoEthereum.sol";
 import {Script} from "forge-std/src/Script.sol";
 import {GaugeVoteRouter} from "src/voters/utils/GaugeVoteRouter.sol";
 

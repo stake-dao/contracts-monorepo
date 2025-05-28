@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {DAO} from "address-book/src/DAOBase.sol";
+import {DAO} from "address-book/src/DaoBase.sol";
 import {SpectraLocker, SpectraProtocol} from "address-book/src/SpectraBase.sol";
 import {AllowanceManager} from "common/governance/AllowanceManager.sol";
 import {FixedPointMathLib} from "solady/src/utils/FixedPointMathLib.sol";

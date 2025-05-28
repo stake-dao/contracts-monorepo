@@ -5,7 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeProxyFactory} from "@safe/contracts/proxies/SafeProxyFactory.sol";
 import {Safe, Enum} from "@safe/contracts/Safe.sol";
 import {Common} from "address-book/src/CommonBase.sol";
-import {DAO} from "address-book/src/DAOBase.sol";
+import {DAO} from "address-book/src/DaoBase.sol";
 import {SpectraProtocol} from "address-book/src/SpectraBase.sol";
 import {DeployAccumulator} from "script/common/DeployAccumulator.sol";
 import {Accumulator} from "src/base/spectra/Accumulator.sol";

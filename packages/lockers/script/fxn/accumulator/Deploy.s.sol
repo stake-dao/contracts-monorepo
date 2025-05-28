@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {DAO} from "address-book/src/DAOEthereum.sol";
+import {DAO} from "address-book/src/DaoEthereum.sol";
 import {FXNLocker} from "address-book/src/FXNEthereum.sol";
 import {DeployAccumulator} from "script/common/DeployAccumulator.sol";
 import {FXNAccumulator} from "src/mainnet/fx/Accumulator.sol";

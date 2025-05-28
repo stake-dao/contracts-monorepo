@@ -7,9 +7,9 @@ import {ERC20Mock} from "test/Mocks.sol";
 import {Multicallable} from "solady/src/utils/Multicallable.sol";
 import {UniversalRewardsDistributor} from "src/distributors/UniversalRewardDistributor.sol";
 import {EventsLib} from "src/distributors/EventsLib.sol";
-import {DAO} from "address-book/src/DAOEthereum.sol";
 import {Merkle} from "murky/Merkle.sol";
-import "forge-std/src/Test.sol";
+import {Test} from "forge-std/src/Test.sol";
+import {console} from "forge-std/src/console.sol";
 
 contract UniversalRewardsDistributorTest is Test {
     uint256 internal constant MAX_RECEIVERS = 20;

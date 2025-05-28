@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import {Common} from "address-book/src/CommonEthereum.sol";
-import {DAO} from "address-book/src/DAOEthereum.sol";
+import {DAO} from "address-book/src/DaoEthereum.sol";
 import {Script} from "forge-std/src/Script.sol";
 import {ConvexLockerRecipient} from "src/common/fee/ConvexLockerRecipient.sol";
 import {StakeDaoLockerRecipient} from "src/common/fee/StakeDaoLockerRecipient.sol";

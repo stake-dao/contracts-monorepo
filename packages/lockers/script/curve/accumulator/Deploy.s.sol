@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import {CurveLocker} from "address-book/src/CurveEthereum.sol";
-import {DAO} from "address-book/src/DAOEthereum.sol";
+import {DAO} from "address-book/src/DaoEthereum.sol";
 import {DeployAccumulator} from "script/common/DeployAccumulator.sol";
 import {CurveAccumulator} from "src/mainnet/curve/Accumulator.sol";
 

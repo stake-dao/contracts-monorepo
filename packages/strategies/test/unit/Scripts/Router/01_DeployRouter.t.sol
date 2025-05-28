@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import {DAO} from "address-book/src/DAOEthereum.sol";
+import {DAO} from "address-book/src/DaoEthereum.sol";
 import {Test} from "forge-std/src/Test.sol";
 import {DeployRouter} from "script/Router/01_DeployRouter.s.sol";
 import {Router} from "src/Router.sol";

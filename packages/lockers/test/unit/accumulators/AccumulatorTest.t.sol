@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import {DAO} from "address-book/src/DAOEthereum.sol";
+import {DAO} from "address-book/src/DaoEthereum.sol";
 import {MockERC20} from "forge-std/src/mocks/MockERC20.sol";
 import {YearnAccumulator} from "src/mainnet/yearn/Accumulator.sol";
 import {BaseTest} from "test/BaseTest.t.sol";

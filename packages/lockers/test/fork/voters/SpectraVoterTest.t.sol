@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import {Enum} from "@safe/contracts/Safe.sol";
-import {DAO} from "address-book/src/DAOBase.sol";
+import {DAO} from "address-book/src/DaoBase.sol";
 import {SpectraLocker} from "address-book/src/SpectraBase.sol";
 import {ISpectraVoter} from "src/common/interfaces/ISpectraVoter.sol";
 import {ILocker, ISafe} from "src/common/interfaces/spectra/stakedao/ILocker.sol";

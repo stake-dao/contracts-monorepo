@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 import {Script} from "forge-std/src/Script.sol";
 import {console} from "forge-std/src/console.sol";
-import {DAO} from "address-book/src/DAOBase.sol";
+import {DAO} from "address-book/src/DaoBase.sol";
 import {CommonUniversal} from "address-book/src/CommonUniversal.sol";
 import {UniversalBoostRegistry} from "src/merkl/UniversalBoostRegistry.sol";
 

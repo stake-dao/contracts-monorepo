@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {Enum} from "@safe/contracts/Safe.sol";
-import {DAO} from "address-book/src/DAOBase.sol";
+import {DAO} from "address-book/src/DaoBase.sol";
 import {SpectraProtocol} from "address-book/src/SpectraBase.sol";
 import {Accumulator} from "src/base/spectra/Accumulator.sol";
 import {Depositor} from "src/base/spectra/Depositor.sol";
