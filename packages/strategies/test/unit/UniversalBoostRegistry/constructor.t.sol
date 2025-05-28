@@ -72,5 +72,21 @@ contract UniversalBoostRegistry__Constructor is Test {
 
         // Check getCommitTimestamp returns 0 for new protocol
         assertEq(registry.getCommitTimestamp(testProtocolId), 0);
+
+        // Check delay period view functions return default values
+        assertFalse(registry.hasQueuedDelayPeriod());
+        assertEq(registry.getDelayPeriodCommitTimestamp(), 0);
+    }
+
+    function test_InitializesDelayPeriodFields() external {
+        // it initializes delay period fields correctly
+
+        UniversalBoostRegistry registry = new UniversalBoostRegistry(makeAddr("initialOwner"));
+
+        // Check queued delay period fields are initialized to zero
+        assertEq(registry.queuedDelayPeriod(), 0);
+        assertEq(registry.delayPeriodQueuedTimestamp(), 0);
+        assertFalse(registry.hasQueuedDelayPeriod());
+        assertEq(registry.getDelayPeriodCommitTimestamp(), 0);
     }
 }
