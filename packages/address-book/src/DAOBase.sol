@@ -7,4 +7,7 @@ library DAO {
 
     // Automation
     address internal constant ALL_MIGHT = 0x0000000a3Fc396B89e4c11841B39D9dff85a5D05;
+
+    /// UNIVERSAL BOOST REGISTRY
+    address internal constant UNIVERSAL_BOOST_REGISTRY = 0x83f912A59e4Ae6D567b11Fb8b1969c627FE92049;
 }
