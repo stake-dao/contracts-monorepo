@@ -20,7 +20,7 @@ contract DeployUniversalBoostRegistry is Script {
     address public constant CREATE3_FACTORY = CommonUniversal.CREATE3_FACTORY;
 
     /// @notice Array of supported chains for deployment
-    string[] public deploymentChains = ["mainnet", "arbitrum", "optimism", "base"];
+    string[] public deploymentChains = ["mainnet", "arbitrum", "optimism", "base", "bnb"];
 
     /// @notice Salt for CREATE3 deployment
     /// @dev Following the pattern: STAKEDAO.STRATEGIES.V1.{contractName}.{seed}

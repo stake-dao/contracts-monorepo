@@ -35,7 +35,7 @@ contract UniversalBoostRegistry__DelayPeriodBypassAttack is Test {
         // Attacker tries to queue protocol config immediately
         // This should use the CURRENT delay period (originalDelay), not the queued one
         uint64 configQueueTime = uint64(block.timestamp);
-        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.3e18, feeReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.3e18);
 
         // Verify protocol config uses original delay period
         uint64 expectedProtocolCommitTime = configQueueTime + originalDelay;
@@ -79,7 +79,8 @@ contract UniversalBoostRegistry__DelayPeriodBypassAttack is Test {
 
         // Immediately queue protocol config
         uint64 configQueueTime = uint64(block.timestamp);
-        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.4e18, feeReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.4e18);
+        registry.setFeeReceiver(PROTOCOL_ID, feeReceiver);
 
         vm.stopPrank();
 
@@ -118,9 +119,12 @@ contract UniversalBoostRegistry__DelayPeriodBypassAttack is Test {
         bytes4 protocol3 = bytes4(hex"33333333");
 
         uint64 queueTime = uint64(block.timestamp);
-        registry.queueNewProtocolConfig(protocol1, 0.1e18, feeReceiver);
-        registry.queueNewProtocolConfig(protocol2, 0.2e18, feeReceiver);
-        registry.queueNewProtocolConfig(protocol3, 0.3e18, feeReceiver);
+        registry.queueNewProtocolConfig(protocol1, 0.1e18);
+        registry.setFeeReceiver(protocol1, feeReceiver);
+        registry.queueNewProtocolConfig(protocol2, 0.2e18);
+        registry.setFeeReceiver(protocol2, feeReceiver);
+        registry.queueNewProtocolConfig(protocol3, 0.3e18);
+        registry.setFeeReceiver(protocol3, feeReceiver);
 
         vm.stopPrank();
 
@@ -172,9 +176,11 @@ contract UniversalBoostRegistry__DelayPeriodBypassAttack is Test {
         assertFalse(registry.hasQueuedDelayPeriod());
 
         // Step 4: Queue protocol config - should use NEW delay period
-        vm.prank(owner);
+        vm.startPrank(owner);
         uint64 configQueueTime = uint64(block.timestamp);
-        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.25e18, feeReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.25e18);
+        registry.setFeeReceiver(PROTOCOL_ID, feeReceiver);
+        vm.stopPrank();
 
         // Should use new delay period
         uint64 expectedCommitTime = configQueueTime + newDelay;
@@ -185,7 +191,7 @@ contract UniversalBoostRegistry__DelayPeriodBypassAttack is Test {
         registry.commitProtocolConfig(PROTOCOL_ID);
 
         // Verify config was committed with new delay
-        (uint128 fees,,,,,) = registry.protocolConfig(PROTOCOL_ID);
+        (uint128 fees,,,,) = registry.protocolConfig(PROTOCOL_ID);
         assertEq(fees, 0.25e18);
     }
 
@@ -203,7 +209,8 @@ contract UniversalBoostRegistry__DelayPeriodBypassAttack is Test {
 
         // Queue protocol config
         uint64 configQueueTime = uint64(block.timestamp);
-        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.35e18, feeReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.35e18);
+        registry.setFeeReceiver(PROTOCOL_ID, feeReceiver);
 
         vm.stopPrank();
 
@@ -234,13 +241,15 @@ contract UniversalBoostRegistry__DelayPeriodBypassAttack is Test {
         // First attempt: queue short delay and config
         registry.queueDelayPeriod(1 hours);
         uint64 firstConfigTime = uint64(block.timestamp);
-        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.1e18, feeReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.1e18);
+        registry.setFeeReceiver(PROTOCOL_ID, feeReceiver);
 
         // Second attempt: queue even shorter delay and update config
         vm.warp(block.timestamp + 30 minutes);
         registry.queueDelayPeriod(30 minutes);
         uint64 secondConfigTime = uint64(block.timestamp);
-        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.2e18, feeReceiver);
+        registry.queueNewProtocolConfig(PROTOCOL_ID, 0.2e18);
+        registry.setFeeReceiver(PROTOCOL_ID, feeReceiver);
 
         vm.stopPrank();
 
@@ -259,7 +268,7 @@ contract UniversalBoostRegistry__DelayPeriodBypassAttack is Test {
         registry.commitProtocolConfig(PROTOCOL_ID);
 
         // Verify the second config was applied
-        (uint128 fees,,,,,) = registry.protocolConfig(PROTOCOL_ID);
+        (uint128 fees,,,,) = registry.protocolConfig(PROTOCOL_ID);
         assertEq(fees, 0.2e18);
         assertEq(registry.delayPeriod(), 30 minutes);
     }

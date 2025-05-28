@@ -38,8 +38,6 @@ contract UniversalBoostRegistry is Ownable2Step {
         uint64 queuedTimestamp;
         /// @notice Active address that receives the protocol fees.
         address feeReceiver;
-        /// @notice Queued address that will receive fees after commitment.
-        address queuedFeeReceiver;
     }
 
     //////////////////////////////////////////////////////
@@ -90,19 +88,17 @@ contract UniversalBoostRegistry is Ownable2Step {
     /// @notice Event emitted when a new protocol config is queued.
     /// @param protocolId The protocol ID for which the config was queued.
     /// @param protocolFees The queued protocol fee percentage.
-    /// @param feeReceiver The queued fee receiver address.
     /// @param queuedTimestamp The timestamp when the configuration was queued.
     event NewProtocolConfigQueued(
-        bytes4 indexed protocolId, uint128 protocolFees, address feeReceiver, uint64 queuedTimestamp
+        bytes4 indexed protocolId, uint128 protocolFees, uint64 queuedTimestamp
     );
 
     /// @notice Event emitted when a protocol config is committed.
     /// @param protocolId The protocol ID for which the config was committed.
     /// @param protocolFees The committed protocol fee percentage.
-    /// @param feeReceiver The committed fee receiver address.
     /// @param committedTimestamp The timestamp when the configuration was committed.
     event ProtocolConfigCommitted(
-        bytes4 indexed protocolId, uint128 protocolFees, address feeReceiver, uint64 committedTimestamp
+        bytes4 indexed protocolId, uint128 protocolFees, uint64 committedTimestamp
     );
 
     /// @notice Event emitted when a new delay period is queued.
@@ -178,10 +174,9 @@ contract UniversalBoostRegistry is Ownable2Step {
     ///      Preserves active configuration values until commitment.
     /// @param protocolId The protocol ID for which to queue the new configuration.
     /// @param protocolFees The protocol fee percentage to queue (scaled by 1e18).
-    /// @param feeReceiver The fee receiver address to queue.
     /// @custom:throws OwnableUnauthorizedAccount If caller is not the owner.
     /// @custom:throws FeeExceedsMaximum If the protocol fee exceeds the maximum allowed.
-    function queueNewProtocolConfig(bytes4 protocolId, uint128 protocolFees, address feeReceiver) public onlyOwner {
+    function queueNewProtocolConfig(bytes4 protocolId, uint128 protocolFees) public onlyOwner {
         // Validate that the protocol fee doesn't exceed the maximum allowed
         require(protocolFees <= MAX_FEE_PERCENT, FeeExceedsMaximum());
 
@@ -191,11 +186,18 @@ contract UniversalBoostRegistry is Ownable2Step {
         // Update only the queued configuration fields, preserving active values
         uint64 currentTime = uint64(block.timestamp);
         config.queuedProtocolFees = protocolFees;
-        config.queuedFeeReceiver = feeReceiver;
         config.queuedTimestamp = currentTime + delayPeriod;
 
         // Emit event to notify about the queued configuration
-        emit NewProtocolConfigQueued(protocolId, protocolFees, feeReceiver, currentTime + delayPeriod);
+        emit NewProtocolConfigQueued(protocolId, protocolFees, currentTime + delayPeriod);
+    }
+
+    /// @notice Set a new fee receiver for a given protocol.
+    /// @dev This function can only be called by the owner.
+    /// @param protocolId The protocol ID for which to set the new fee receiver.
+    /// @param feeReceiver The new fee receiver address.
+    function setFeeReceiver(bytes4 protocolId, address feeReceiver) public onlyOwner {
+        protocolConfig[protocolId].feeReceiver = feeReceiver;
     }
 
     /// @notice Queues a new delay period.
@@ -248,16 +250,14 @@ contract UniversalBoostRegistry is Ownable2Step {
         // Move queued values to active values
         uint64 currentTime = uint64(block.timestamp);
         config.protocolFees = config.queuedProtocolFees;
-        config.feeReceiver = config.queuedFeeReceiver;
         config.lastUpdated = currentTime;
 
         // Clear queued values to indicate no pending configuration
         config.queuedProtocolFees = 0;
-        config.queuedFeeReceiver = address(0);
         config.queuedTimestamp = 0;
 
         // Emit event to notify about the committed configuration
-        emit ProtocolConfigCommitted(protocolId, config.protocolFees, config.feeReceiver, currentTime);
+        emit ProtocolConfigCommitted(protocolId, config.protocolFees, currentTime);
     }
 
     //////////////////////////////////////////////////////
