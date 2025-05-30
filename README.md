@@ -14,5 +14,4 @@ The repository is organized into several key packages:
 
 ## TODO:
 
-- Delete Herdaddy, or Rename it Utility with the goal of having standalone contract useful for a purpose such as Merkle Distribution etc.
 - Clean Lockers with Standardized code accross integration (like Strategies)

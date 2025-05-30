@@ -10,7 +10,39 @@ importers:
 
   packages/address-book: {}
 
-  packages/herdaddy:
+  packages/interfaces: {}
+
+  packages/lockers:
+    devDependencies:
+      '@layerzerolabs/solidity-examples':
+        specifier: github:LayerZero-Labs/endpoint-v1-solidity-examples
+        version: https://codeload.github.com/LayerZero-Labs/endpoint-v1-solidity-examples/tar.gz/cdc93994911829b1348f6ac18000000a43432ef1(@ethersproject/hardware-wallets@5.8.0)(@nomiclabs/hardhat-ethers@2.2.3(ethers@5.8.0)(hardhat@2.24.0))(@nomiclabs/hardhat-etherscan@3.1.8(hardhat@2.24.0))(ethers@5.8.0)
+      '@openzeppelin/contracts':
+        specifier: 4.9.0
+        version: 4.9.0
+      '@safe-global/safe-smart-account':
+        specifier: github:safe-global/safe-smart-account#v1.4.1-3
+        version: '@safe-global/safe-contracts@https://codeload.github.com/safe-global/safe-smart-account/tar.gz/21dc82410445637820f600c7399a804ad55841d5'
+      '@solady':
+        specifier: github:Vectorized/solady#v0.0.288
+        version: solady@https://codeload.github.com/Vectorized/solady/tar.gz/aa7b67ae0a88fd9b17b7ccca1988d215177ecad0
+      '@stake-dao/address-book':
+        specifier: workspace:*
+        version: link:../address-book
+      '@stake-dao/interfaces':
+        specifier: workspace:*
+        version: link:../interfaces
+      forge-std:
+        specifier: github:foundry-rs/forge-std#v1.9.5
+        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/b93cf4bc34ff214c099dc970b153f85ade8c9f66
+      murky:
+        specifier: github:dmfxyz/murky
+        version: https://codeload.github.com/dmfxyz/murky/tar.gz/991e371eb1dfa9f86701869eb08ec4e98c3cc0b0
+      solhint:
+        specifier: ^5.0.5
+        version: 5.1.0
+
+  packages/shared:
     dependencies:
       '@openzeppelin/contracts':
         specifier: 4.9.0
@@ -26,69 +58,7 @@ importers:
         version: murky@https://codeload.github.com/dmfxyz/murky/tar.gz/991e371eb1dfa9f86701869eb08ec4e98c3cc0b0
       solady:
         specifier: github:vectorized/solady
-        version: https://codeload.github.com/vectorized/solady/tar.gz/d7469ddff36d90beac6587ddb5128337c14e7df6
-
-  packages/interfaces: {}
-
-  packages/lockers:
-    devDependencies:
-      '@layerzerolabs/solidity-examples':
-        specifier: github:LayerZero-Labs/endpoint-v1-solidity-examples
-        version: https://codeload.github.com/LayerZero-Labs/endpoint-v1-solidity-examples/tar.gz/cdc93994911829b1348f6ac18000000a43432ef1(@ethersproject/hardware-wallets@5.8.0)(@nomiclabs/hardhat-ethers@2.2.3)(@nomiclabs/hardhat-etherscan@3.1.8)(ethers@5.8.0)
-      '@openzeppelin/contracts':
-        specifier: 4.9.0
-        version: 4.9.0
-      '@safe-global/safe-smart-account':
-        specifier: github:safe-global/safe-smart-account#v1.4.1-3
-        version: '@safe-global/safe-contracts@https://codeload.github.com/safe-global/safe-smart-account/tar.gz/21dc82410445637820f600c7399a804ad55841d5'
-      '@solady':
-        specifier: github:Vectorized/solady#v0.0.288
-        version: solady@https://codeload.github.com/Vectorized/solady/tar.gz/aa7b67ae0a88fd9b17b7ccca1988d215177ecad0
-      '@stake-dao/address-book':
-        specifier: workspace:*
-        version: link:../address-book
-      '@stake-dao/herdaddy':
-        specifier: workspace:*
-        version: link:../herdaddy
-      '@stake-dao/interfaces':
-        specifier: workspace:*
-        version: link:../interfaces
-      '@stake-dao/vyper':
-        specifier: workspace:*
-        version: link:../vyper
-      forge-std:
-        specifier: github:foundry-rs/forge-std#v1.9.5
-        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/b93cf4bc34ff214c099dc970b153f85ade8c9f66
-      murky:
-        specifier: github:dmfxyz/murky
-        version: https://codeload.github.com/dmfxyz/murky/tar.gz/991e371eb1dfa9f86701869eb08ec4e98c3cc0b0
-      solhint:
-        specifier: ^5.0.5
-        version: 5.1.0
-
-  packages/safe-modules:
-    devDependencies:
-      '@layerzerolabs/solidity-examples':
-        specifier: github:LayerZero-Labs/endpoint-v1-solidity-examples
-        version: https://codeload.github.com/LayerZero-Labs/endpoint-v1-solidity-examples/tar.gz/cdc93994911829b1348f6ac18000000a43432ef1(@ethersproject/hardware-wallets@5.8.0)(@nomiclabs/hardhat-ethers@2.2.3)(@nomiclabs/hardhat-etherscan@3.1.8)(ethers@5.8.0)
-      '@openzeppelin/contracts':
-        specifier: 4.9.0
-        version: 4.9.0
-      '@stake-dao/address-book':
-        specifier: workspace:*
-        version: link:../address-book
-      '@stake-dao/herdaddy':
-        specifier: workspace:*
-        version: link:../herdaddy
-      '@stake-dao/vyper':
-        specifier: workspace:*
-        version: link:../vyper
-      forge-std:
-        specifier: github:foundry-rs/forge-std
-        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/f46d8301cf732f4f83846565aa475628265e51e0
-      solady:
-        specifier: github:vectorized/solady
-        version: https://codeload.github.com/vectorized/solady/tar.gz/d7469ddff36d90beac6587ddb5128337c14e7df6
+        version: https://codeload.github.com/vectorized/solady/tar.gz/b609a9c79ce541c2beca7a7d247665e7c93942a3
 
   packages/strategies:
     devDependencies:
@@ -113,27 +83,6 @@ importers:
       solhint:
         specifier: ^5.0.5
         version: 5.1.0
-
-  packages/vyper:
-    devDependencies:
-      '@layerzerolabs/solidity-examples':
-        specifier: github:LayerZero-Labs/endpoint-v1-solidity-examples
-        version: https://codeload.github.com/LayerZero-Labs/endpoint-v1-solidity-examples/tar.gz/cdc93994911829b1348f6ac18000000a43432ef1(@ethersproject/hardware-wallets@5.8.0)(@nomiclabs/hardhat-ethers@2.2.3)(@nomiclabs/hardhat-etherscan@3.1.8)(ethers@5.8.0)
-      '@openzeppelin/contracts':
-        specifier: 4.9.0
-        version: 4.9.0
-      '@stake-dao/address-book':
-        specifier: workspace:*
-        version: link:../address-book
-      '@stake-dao/interfaces':
-        specifier: workspace:*
-        version: link:../interfaces
-      forge-std:
-        specifier: github:foundry-rs/forge-std
-        version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/f46d8301cf732f4f83846565aa475628265e51e0
-      solady:
-        specifier: github:vectorized/solady
-        version: https://codeload.github.com/vectorized/solady/tar.gz/d7469ddff36d90beac6587ddb5128337c14e7df6
 
 packages:
 
@@ -276,7 +225,6 @@ packages:
 
   '@layerzerolabs/solidity-examples@https://codeload.github.com/LayerZero-Labs/endpoint-v1-solidity-examples/tar.gz/cdc93994911829b1348f6ac18000000a43432ef1':
     resolution: {tarball: https://codeload.github.com/LayerZero-Labs/endpoint-v1-solidity-examples/tar.gz/cdc93994911829b1348f6ac18000000a43432ef1}
-    name: '@layerzerolabs/solidity-examples'
     version: 1.1.1
 
   '@ledgerhq/cryptoassets@5.53.0':
@@ -467,7 +415,6 @@ packages:
 
   '@safe-global/safe-contracts@https://codeload.github.com/safe-global/safe-smart-account/tar.gz/21dc82410445637820f600c7399a804ad55841d5':
     resolution: {tarball: https://codeload.github.com/safe-global/safe-smart-account/tar.gz/21dc82410445637820f600c7399a804ad55841d5}
-    name: '@safe-global/safe-contracts'
     version: 1.4.1-3
 
   '@scure/base@1.1.9':
@@ -1100,12 +1047,10 @@ packages:
 
   forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/b93cf4bc34ff214c099dc970b153f85ade8c9f66:
     resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/b93cf4bc34ff214c099dc970b153f85ade8c9f66}
-    name: forge-std
     version: 1.9.5
 
   forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/f46d8301cf732f4f83846565aa475628265e51e0:
     resolution: {tarball: https://codeload.github.com/foundry-rs/forge-std/tar.gz/f46d8301cf732f4f83846565aa475628265e51e0}
-    name: forge-std
     version: 1.9.7
 
   form-data-encoder@2.1.4:
@@ -1528,7 +1473,6 @@ packages:
 
   murky@https://codeload.github.com/dmfxyz/murky/tar.gz/991e371eb1dfa9f86701869eb08ec4e98c3cc0b0:
     resolution: {tarball: https://codeload.github.com/dmfxyz/murky/tar.gz/991e371eb1dfa9f86701869eb08ec4e98c3cc0b0}
-    name: murky
     version: 0.1.0
 
   murmur-128@0.2.1:
@@ -1891,13 +1835,11 @@ packages:
 
   solady@https://codeload.github.com/Vectorized/solady/tar.gz/aa7b67ae0a88fd9b17b7ccca1988d215177ecad0:
     resolution: {tarball: https://codeload.github.com/Vectorized/solady/tar.gz/aa7b67ae0a88fd9b17b7ccca1988d215177ecad0}
-    name: solady
     version: 0.0.288
 
-  solady@https://codeload.github.com/vectorized/solady/tar.gz/d7469ddff36d90beac6587ddb5128337c14e7df6:
-    resolution: {tarball: https://codeload.github.com/vectorized/solady/tar.gz/d7469ddff36d90beac6587ddb5128337c14e7df6}
-    name: solady
-    version: 0.1.18
+  solady@https://codeload.github.com/vectorized/solady/tar.gz/b609a9c79ce541c2beca7a7d247665e7c93942a3:
+    resolution: {tarball: https://codeload.github.com/vectorized/solady/tar.gz/b609a9c79ce541c2beca7a7d247665e7c93942a3}
+    version: 0.1.19
 
   solc@0.8.26:
     resolution: {integrity: sha512-yiPQNVf5rBFHwN6SIf3TUUvVAFKcQqmSUFeq+fb6pNRCo0ZCgpYOZDi3BVoezCPIAcKrVYd/qXlBLUP9wVrZ9g==}
@@ -2474,14 +2416,13 @@ snapshots:
       '@openzeppelin/contracts': 3.4.2-solc-0.7
       '@openzeppelin/contracts-upgradeable': 3.4.2-solc-0.7
 
-  '@layerzerolabs/solidity-examples@https://codeload.github.com/LayerZero-Labs/endpoint-v1-solidity-examples/tar.gz/cdc93994911829b1348f6ac18000000a43432ef1(@ethersproject/hardware-wallets@5.8.0)(@nomiclabs/hardhat-ethers@2.2.3)(@nomiclabs/hardhat-etherscan@3.1.8)(ethers@5.8.0)':
-    id: '@layerzerolabs/solidity-examples@https://codeload.github.com/LayerZero-Labs/endpoint-v1-solidity-examples/tar.gz/cdc93994911829b1348f6ac18000000a43432ef1'
+  '@layerzerolabs/solidity-examples@https://codeload.github.com/LayerZero-Labs/endpoint-v1-solidity-examples/tar.gz/cdc93994911829b1348f6ac18000000a43432ef1(@ethersproject/hardware-wallets@5.8.0)(@nomiclabs/hardhat-ethers@2.2.3(ethers@5.8.0)(hardhat@2.24.0))(@nomiclabs/hardhat-etherscan@3.1.8(hardhat@2.24.0))(ethers@5.8.0)':
     dependencies:
       '@layerzerolabs/lz-evm-sdk-v1-0.7': 1.5.16
       '@openzeppelin-3/contracts': '@openzeppelin/contracts@3.4.2'
       '@openzeppelin/contracts': 4.9.0
       '@openzeppelin/contracts-upgradeable': 4.9.6
-      '@openzeppelin/hardhat-upgrades': 1.28.0(@nomiclabs/hardhat-ethers@2.2.3)(@nomiclabs/hardhat-etherscan@3.1.8)(ethers@5.8.0)(hardhat@2.24.0)
+      '@openzeppelin/hardhat-upgrades': 1.28.0(@nomiclabs/hardhat-ethers@2.2.3(ethers@5.8.0)(hardhat@2.24.0))(@nomiclabs/hardhat-etherscan@3.1.8(hardhat@2.24.0))(ethers@5.8.0)(hardhat@2.24.0)
       dotenv: 10.0.0
       erc721a: 4.3.0
       hardhat: 2.24.0
@@ -2521,7 +2462,7 @@ snapshots:
     dependencies:
       '@ledgerhq/cryptoassets': 5.53.0
       '@ledgerhq/errors': 5.50.0
-      '@ledgerhq/hw-transport': 5.26.0
+      '@ledgerhq/hw-transport': 5.51.1
       bignumber.js: 9.3.0
       rlp: 2.2.7
 
@@ -2538,7 +2479,7 @@ snapshots:
     dependencies:
       '@ledgerhq/devices': 5.51.1
       '@ledgerhq/errors': 5.50.0
-      '@ledgerhq/hw-transport': 5.26.0
+      '@ledgerhq/hw-transport': 5.51.1
       '@ledgerhq/hw-transport-node-hid-noevents': 5.51.1
       '@ledgerhq/logs': 5.50.0
       lodash: 4.17.21
@@ -2549,7 +2490,7 @@ snapshots:
   '@ledgerhq/hw-transport-u2f@5.26.0':
     dependencies:
       '@ledgerhq/errors': 5.50.0
-      '@ledgerhq/hw-transport': 5.26.0
+      '@ledgerhq/hw-transport': 5.51.1
       '@ledgerhq/logs': 5.50.0
       u2f-api: 0.2.7
 
@@ -2564,7 +2505,6 @@ snapshots:
       '@ledgerhq/devices': 5.51.1
       '@ledgerhq/errors': 5.50.0
       events: 3.3.0
-    optional: true
 
   '@ledgerhq/logs@5.50.0': {}
 
@@ -2687,7 +2627,7 @@ snapshots:
       - debug
       - encoding
 
-  '@openzeppelin/hardhat-upgrades@1.28.0(@nomiclabs/hardhat-ethers@2.2.3)(@nomiclabs/hardhat-etherscan@3.1.8)(ethers@5.8.0)(hardhat@2.24.0)':
+  '@openzeppelin/hardhat-upgrades@1.28.0(@nomiclabs/hardhat-ethers@2.2.3(ethers@5.8.0)(hardhat@2.24.0))(@nomiclabs/hardhat-etherscan@3.1.8(hardhat@2.24.0))(ethers@5.8.0)(hardhat@2.24.0)':
     dependencies:
       '@nomiclabs/hardhat-ethers': 2.2.3(ethers@5.8.0)(hardhat@2.24.0)
       '@nomiclabs/hardhat-etherscan': 3.1.8(hardhat@2.24.0)
@@ -3248,6 +3188,7 @@ snapshots:
   debug@4.4.1(supports-color@8.1.1):
     dependencies:
       ms: 2.1.3
+    optionalDependencies:
       supports-color: 8.1.1
 
   decamelize@4.0.0: {}
@@ -3455,7 +3396,7 @@ snapshots:
   fast-uri@3.0.6: {}
 
   fdir@6.4.4(picomatch@4.0.2):
-    dependencies:
+    optionalDependencies:
       picomatch: 4.0.2
 
   file-uri-to-path@1.0.0:
@@ -3477,7 +3418,7 @@ snapshots:
       imul: 1.0.1
 
   follow-redirects@1.15.9(debug@4.4.1):
-    dependencies:
+    optionalDependencies:
       debug: 4.4.1(supports-color@8.1.1)
 
   forge-std@https://codeload.github.com/foundry-rs/forge-std/tar.gz/b93cf4bc34ff214c099dc970b153f85ade8c9f66: {}
@@ -4379,7 +4320,7 @@ snapshots:
 
   solady@https://codeload.github.com/Vectorized/solady/tar.gz/aa7b67ae0a88fd9b17b7ccca1988d215177ecad0: {}
 
-  solady@https://codeload.github.com/vectorized/solady/tar.gz/d7469ddff36d90beac6587ddb5128337c14e7df6: {}
+  solady@https://codeload.github.com/vectorized/solady/tar.gz/b609a9c79ce541c2beca7a7d247665e7c93942a3: {}
 
   solc@0.8.26(debug@4.4.1):
     dependencies:
@@ -4617,7 +4558,7 @@ snapshots:
 
   wide-align@1.1.5:
     dependencies:
-      string-width: 1.0.2
+      string-width: 4.2.3
     optional: true
 
   widest-line@3.1.0:
