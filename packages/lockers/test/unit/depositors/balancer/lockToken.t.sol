@@ -2,8 +2,8 @@
 pragma solidity 0.8.28;
 
 import {BalancerLocker, BalancerProtocol} from "address-book/src/BalancerEthereum.sol";
-import {IVeToken} from "src/common/interfaces/IVeToken.sol";
-import {BalancerDepositor} from "src/mainnet/balancer/Depositor.sol";
+import {IVeToken} from "src/interfaces/IVeToken.sol";
+import {BalancerDepositor} from "src/integrations/balancer/Depositor.sol";
 import {BalancerDepositorHarness} from "test/unit/depositors/balancer/BalancerDepositorHarness.sol";
 import {DepositorTest} from "test/unit/depositors/DepositorTest.t.sol";
 

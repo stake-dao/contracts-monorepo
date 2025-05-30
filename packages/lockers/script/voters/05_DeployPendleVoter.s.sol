@@ -3,8 +3,8 @@ pragma solidity 0.8.28;
 
 import {DAO} from "address-book/src/DaoEthereum.sol";
 import {Script} from "forge-std/src/Script.sol";
-import {PendleVoter} from "src/voters/PendleVoter.sol";
-import {VoterPermissionManager} from "src/voters/utils/VoterPermissionManager.sol";
+import {PendleVoter} from "src/integrations/pendle/PendleVoter.sol";
+import {VoterPermissionManager} from "src/VoterPermissionManager.sol";
 
 contract DeployPendleVoter is Script {
     function run() public {

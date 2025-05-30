@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 import {YearnLocker, YearnProtocol} from "address-book/src/YearnEthereum.sol";
 import {MockERC20} from "forge-std/src/mocks/MockERC20.sol";
-import {YearnDepositor} from "src/mainnet/yearn/Depositor.sol";
+import {YearnDepositor} from "src/integrations/yearn/Depositor.sol";
 import {DepositorTest} from "test/unit/depositors/DepositorTest.t.sol";
 
 contract YearnDepositor__constructor is DepositorTest {

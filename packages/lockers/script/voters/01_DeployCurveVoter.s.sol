@@ -3,8 +3,8 @@ pragma solidity 0.8.28;
 
 import {DAO} from "address-book/src/DaoEthereum.sol";
 import {Script} from "forge-std/src/Script.sol";
-import {CurveVoter} from "src/voters/CurveVoter.sol";
-import {VoterPermissionManager} from "src/voters/utils/VoterPermissionManager.sol";
+import {CurveVoter} from "src/integrations/curve/CurveVoter.sol";
+import {VoterPermissionManager} from "src/VoterPermissionManager.sol";
 
 contract DeployCurveVoter is Script {
     function run() public {

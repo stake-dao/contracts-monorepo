@@ -5,10 +5,10 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
 import "forge-std/src/Test.sol";
 import "forge-std/src/Vm.sol";
-import {IDepositor} from "src/common/interfaces/IDepositor.sol";
-import {ISdZeroDepositor} from "src/common/interfaces/zerolend/stakedao/ISdZeroDepositor.sol";
-import {IZeroLocker} from "src/common/interfaces/zerolend/zerolend/IZeroLocker.sol";
-import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
+import {IDepositor} from "src/interfaces/IDepositor.sol";
+import {ISdZeroDepositor} from "src/interfaces/ISdZeroDepositor.sol";
+import {IZeroLocker} from "src/interfaces/IZeroLocker.sol";
+import {IZeroVp} from "src/interfaces/IZeroVp.sol";
 import {BaseZeroLendTokenTest} from "test/fork/zerolend/common/BaseZeroLendTokenTest.sol";
 
 // end to end tests for the ZeroLend integration

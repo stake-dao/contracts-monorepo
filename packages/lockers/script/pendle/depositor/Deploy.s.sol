@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 import {DAO} from "address-book/src/DaoEthereum.sol";
 import {PendleLocker} from "address-book/src/PendleEthereum.sol";
 import {DeployDepositor} from "script/common/DeployDepositor.sol";
-import {PendleDepositor} from "src/mainnet/pendle/Depositor.sol";
+import {PendleDepositor} from "src/integrations/pendle/Depositor.sol";
 
 contract Deploy is DeployDepositor {
     function run() public {

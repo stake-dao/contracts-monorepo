@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.28;
 
-import "address-book/src/DaoEthereum.sol";
+import {DAO} from "address-book/src/DaoEthereum.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
-import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
-import {IDepositor} from "src/common/interfaces/IDepositor.sol";
-import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
+import {AccumulatorBase} from "src/AccumulatorBase.sol";
+import {IDepositor} from "src/interfaces/IDepositor.sol";
+import {ILiquidityGauge} from "src/interfaces/ILiquidityGauge.sol";
 
 abstract contract CommonBase {
     address public locker;
@@ -17,7 +17,7 @@ abstract contract CommonBase {
 
     ILiquidityGauge public liquidityGauge;
 
-    BaseAccumulator public accumulator;
+    AccumulatorBase public accumulator;
 
     IDepositor public depositor;
 

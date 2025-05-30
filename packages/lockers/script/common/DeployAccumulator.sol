@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import "forge-std/src/Script.sol";
-import "src/common/accumulator/BaseAccumulator.sol";
+import "src/AccumulatorBase.sol";
 
 abstract contract DeployAccumulator is Script {
     address payable internal accumulator;
@@ -14,15 +14,15 @@ abstract contract DeployAccumulator is Script {
 
         accumulator = _deployAccumulator();
 
-        BaseAccumulator.Split[] memory splits = new BaseAccumulator.Split[](2);
-        splits[0] = BaseAccumulator.Split(address(treasury), 5e16);
-        splits[1] = BaseAccumulator.Split(address(liquidityFeeRecipient), 10e16);
+        AccumulatorBase.Split[] memory splits = new AccumulatorBase.Split[](2);
+        splits[0] = AccumulatorBase.Split(address(treasury), 5e16);
+        splits[1] = AccumulatorBase.Split(address(liquidityFeeRecipient), 10e16);
 
-        BaseAccumulator(accumulator).setFeeSplit(splits);
+        AccumulatorBase(accumulator).setFeeSplit(splits);
 
         _afterDeploy();
 
-        BaseAccumulator(accumulator).transferGovernance(governance);
+        AccumulatorBase(accumulator).transferGovernance(governance);
 
         vm.stopBroadcast();
     }

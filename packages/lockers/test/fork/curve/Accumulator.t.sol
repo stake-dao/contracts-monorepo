@@ -4,10 +4,10 @@ pragma solidity 0.8.28;
 import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
 import {IStrategy} from "common/interfaces/stake-dao/IStrategy.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
-import {IVeBoost} from "src/common/interfaces/IVeBoost.sol";
-import {IVeBoostDelegation} from "src/common/interfaces/IVeBoostDelegation.sol";
-import {CurveAccumulator} from "src/mainnet/curve/Accumulator.sol";
-import {BaseAccumulatorTest} from "test/fork/common/BaseAccumulatorTest.sol";
+import {IVeBoost} from "src/interfaces/IVeBoost.sol";
+import {IVeBoostDelegation} from "src/interfaces/IVeBoostDelegation.sol";
+import {CurveAccumulator} from "src/integrations/curve/Accumulator.sol";
+import {BaseAccumulatorTest} from "test/fork/BaseAccumulatorTest.sol";
 
 contract CurveAccumulatorTest is BaseAccumulatorTest {
     address public constant CONVEX_PROXY = CurveProtocol.CONVEX_PROXY;

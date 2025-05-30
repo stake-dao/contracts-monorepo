@@ -11,6 +11,6 @@ abstract contract BaseSpectraTest is CommonBase, Test {
     constructor() {}
 
     function _deployLiquidityGauge(address _sdToken) internal returns (address _liquidityGauge) {
-        _liquidityGauge = deployCode("vyper/LiquidityGaugeV4XChain.vy", abi.encode(_sdToken, address(this)));
+        _liquidityGauge = deployCode("GaugeLiquidityV4XChain.vy", abi.encode(_sdToken, address(this)));
     }
 }

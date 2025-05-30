@@ -4,11 +4,11 @@ pragma solidity 0.8.28;
 import {Common} from "address-book/src/CommonEthereum.sol";
 import {PendleLocker, PendleProtocol} from "address-book/src/PendleEthereum.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
-import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
-import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
-import {ILocker} from "src/common/interfaces/ILocker.sol";
-import {PendleAccumulator} from "src/mainnet/pendle/Accumulator.sol";
-import {BaseAccumulatorTest} from "test/fork/common/BaseAccumulatorTest.sol";
+import {AccumulatorBase} from "src/AccumulatorBase.sol";
+import {ILiquidityGauge} from "src/interfaces/ILiquidityGauge.sol";
+import {ILocker} from "src/interfaces/ILocker.sol";
+import {PendleAccumulator} from "src/integrations/pendle/Accumulator.sol";
+import {BaseAccumulatorTest} from "test/fork/BaseAccumulatorTest.sol";
 
 contract PendleAccumulatorTest is BaseAccumulatorTest {
     ERC20 public WETH = ERC20(Common.WETH);
@@ -93,7 +93,7 @@ contract PendleAccumulatorTest is BaseAccumulatorTest {
         uint256 remaining = WETH.balanceOf(address(accumulator));
         uint256 total = treasury + liquidityFee + gauge + claimer + remaining + voters;
 
-        BaseAccumulator.Split[] memory feeSplit = accumulator.getFeeSplit();
+        AccumulatorBase.Split[] memory feeSplit = accumulator.getFeeSplit();
         assertEq(total * accumulator.claimerFee() / 1e18, claimer);
 
         assertEq(total * feeSplit[0].fee / 1e18, treasury);

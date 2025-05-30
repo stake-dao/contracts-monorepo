@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import "forge-std/src/Script.sol";
-import "src/common/depositor/BaseDepositor.sol";
+import "src/DepositorBase.sol";
 
 abstract contract DeployDepositor is Script {
     address internal depositor;
@@ -14,7 +14,7 @@ abstract contract DeployDepositor is Script {
 
         _afterDeploy();
 
-        BaseDepositor(depositor).transferGovernance(governance);
+        DepositorBase(depositor).transferGovernance(governance);
 
         vm.stopBroadcast();
     }

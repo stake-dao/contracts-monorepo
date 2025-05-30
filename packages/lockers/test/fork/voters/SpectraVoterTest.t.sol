@@ -4,10 +4,10 @@ pragma solidity 0.8.28;
 import {Enum} from "@safe/contracts/Safe.sol";
 import {DAO} from "address-book/src/DaoBase.sol";
 import {SpectraLocker} from "address-book/src/SpectraBase.sol";
-import {ISpectraVoter} from "src/common/interfaces/ISpectraVoter.sol";
-import {ILocker, ISafe} from "src/common/interfaces/spectra/stakedao/ILocker.sol";
-import {SpectraVoter} from "src/voters/SpectraVoter.sol";
-import {VoterPermissionManager} from "src/voters/utils/VoterPermissionManager.sol";
+import {ISpectraVoter} from "src/interfaces/ISpectraVoter.sol";
+import {ISafeLocker, ISafe} from "src/interfaces/ISafeLocker.sol";
+import {SpectraVoter} from "src/integrations/spectra/SpectraVoter.sol";
+import {VoterPermissionManager} from "src/VoterPermissionManager.sol";
 import {BaseTest} from "test/BaseTest.t.sol";
 
 contract SpectraGaugeVoterTest is BaseTest {
@@ -21,7 +21,7 @@ contract SpectraGaugeVoterTest is BaseTest {
 
         // Enable the voter as a Safe module of the locker Safe Account, as this is the new version of the locker.
         _enableModule(spectraVoter.LOCKER(), address(spectraVoter));
-        assertEq(ILocker(spectraVoter.LOCKER()).isModuleEnabled(address(spectraVoter)), true);
+        assertEq(ISafeLocker(spectraVoter.LOCKER()).isModuleEnabled(address(spectraVoter)), true);
 
         // Allow this contract to call `SpectraVoter.voteGauges`
         vm.prank(spectraVoter.governance());
@@ -63,7 +63,7 @@ contract SpectraGaugeVoterTest is BaseTest {
     /// @notice Enable a module in the Gateway.
     function _enableModule(address _locker, address _module) internal {
         vm.prank(DAO.GOVERNANCE);
-        ILocker(_locker).execTransaction(
+        ISafeLocker(_locker).execTransaction(
             _locker,
             0,
             abi.encodeWithSelector(ISafe.enableModule.selector, _module),

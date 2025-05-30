@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
-import {CurveAccumulator} from "src/mainnet/curve/Accumulator.sol";
+import {CurveAccumulator} from "src/integrations/curve/Accumulator.sol";
 import {AccumulatorTest} from "test/unit/accumulators/AccumulatorTest.t.sol";
 
 contract CurveAccumulator__getters is AccumulatorTest {

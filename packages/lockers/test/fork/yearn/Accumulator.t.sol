@@ -2,8 +2,8 @@
 pragma solidity 0.8.28;
 
 import {YearnLocker, YearnProtocol} from "address-book/src/YearnEthereum.sol";
-import {YearnAccumulator} from "src/mainnet/yearn/Accumulator.sol";
-import {BaseAccumulatorTest} from "test/fork/common/BaseAccumulatorTest.sol";
+import {YearnAccumulator} from "src/integrations/yearn/Accumulator.sol";
+import {BaseAccumulatorTest} from "test/fork/BaseAccumulatorTest.sol";
 
 contract YearnAccumulatorTest is BaseAccumulatorTest {
     address internal constant DYFI = YearnProtocol.DYFI;

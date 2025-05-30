@@ -1,1 +1,0 @@
-Vyper contracts should continue to be maintained in the packages/vyper directory. This directory is only here because we were unable to import the vyper code from the packages/vyper directory with the `deployCode` utility.

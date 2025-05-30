@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 import {BalancerLocker, BalancerProtocol} from "address-book/src/BalancerEthereum.sol";
 import {Common} from "address-book/src/CommonEthereum.sol";
-import {BalancerAccumulator} from "src/mainnet/balancer/Accumulator.sol";
+import {BalancerAccumulator} from "src/integrations/balancer/Accumulator.sol";
 import {AccumulatorTest} from "test/unit/accumulators/AccumulatorTest.t.sol";
 
 contract BalancerAccumulator__getters is AccumulatorTest {

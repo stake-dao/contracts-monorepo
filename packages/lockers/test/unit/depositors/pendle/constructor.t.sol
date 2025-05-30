@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 import {PendleLocker, PendleProtocol} from "address-book/src/PendleEthereum.sol";
 import {MockERC20} from "forge-std/src/mocks/MockERC20.sol";
-import {PendleDepositor} from "src/mainnet/pendle/Depositor.sol";
+import {PendleDepositor} from "src/integrations/pendle/Depositor.sol";
 import {DepositorTest} from "test/unit/depositors/DepositorTest.t.sol";
 
 contract PendleDepositor__constructor is DepositorTest {

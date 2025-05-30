@@ -6,14 +6,14 @@ import {SafeProxyFactory} from "@safe/contracts/proxies/SafeProxyFactory.sol";
 import {Safe, Enum} from "@safe/contracts/Safe.sol";
 import {Common} from "address-book/src/CommonLinea.sol";
 import {ZeroLocker} from "address-book/src/ZeroLinea.sol";
-import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
-import {IDepositor} from "src/common/interfaces/IDepositor.sol";
-import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
-import {ISdToken} from "src/common/interfaces/ISdToken.sol";
-import {ILocker, ISafe} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
-import {sdToken as SdToken} from "src/common/token/sdToken.sol";
-import {ZeroLendAccumulator} from "src/linea/zerolend/Accumulator.sol";
-import {Depositor} from "src/linea/zerolend/Depositor.sol";
+import {AccumulatorBase} from "src/AccumulatorBase.sol";
+import {IDepositor} from "src/interfaces/IDepositor.sol";
+import {ILiquidityGauge} from "src/interfaces/ILiquidityGauge.sol";
+import {ISdToken} from "src/interfaces/ISdToken.sol";
+import {ISafeLocker, ISafe} from "src/interfaces/ISafeLocker.sol";
+import {sdToken as SdToken} from "src/SDToken.sol";
+import {ZeroLendAccumulator} from "src/integrations/zerolend/Accumulator.sol";
+import {Depositor} from "src/integrations/zerolend/Depositor.sol";
 import {BaseZeroLendTest} from "test/fork/zerolend/common/BaseZeroLendTest.sol";
 
 // end to end tests for the ZeroLend integration
@@ -48,7 +48,7 @@ abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
         sdToken = _deploySdZero();
         liquidityGauge = ILiquidityGauge(_deployLiquidityGauge(sdToken));
         locker = _deploySafeLocker();
-        accumulator = BaseAccumulator(payable(_deployAccumulator()));
+        accumulator = AccumulatorBase(payable(_deployAccumulator()));
         depositor = IDepositor(_deployDepositor());
 
         _getSomeZeroTokens(address(this));
@@ -94,7 +94,7 @@ abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
         _locker = address(safeProxyFactory.createProxyWithNonce(safeSingleton, initializer, _salt));
 
         vm.prank(GOVERNANCE);
-        ILocker(_locker).execTransaction(
+        ISafeLocker(_locker).execTransaction(
             address(zeroToken),
             0,
             abi.encodeWithSelector(IERC20.approve.selector, address(zeroLockerToken), type(uint256).max),
@@ -110,7 +110,7 @@ abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
 
     function _enableModule(address _module) internal {
         vm.prank(GOVERNANCE);
-        ILocker(locker).execTransaction(
+        ISafeLocker(locker).execTransaction(
             locker,
             0,
             abi.encodeWithSelector(ISafe.enableModule.selector, _module),
@@ -159,11 +159,11 @@ abstract contract BaseZeroLendTokenTest is BaseZeroLendTest {
         liquidityGauge.add_reward(address(zeroToken), address(accumulator));
         liquidityGauge.add_reward(address(WETH), address(accumulator));
 
-        BaseAccumulator.Split[] memory splits = new BaseAccumulator.Split[](2);
-        splits[0] = BaseAccumulator.Split(address(treasuryRecipient), 5e16);
-        splits[1] = BaseAccumulator.Split(address(liquidityFeeRecipient), 10e16);
+        AccumulatorBase.Split[] memory splits = new AccumulatorBase.Split[](2);
+        splits[0] = AccumulatorBase.Split(address(treasuryRecipient), 5e16);
+        splits[1] = AccumulatorBase.Split(address(liquidityFeeRecipient), 10e16);
 
         vm.prank(GOVERNANCE);
-        BaseAccumulator(accumulator).setFeeSplit(splits);
+        AccumulatorBase(accumulator).setFeeSplit(splits);
     }
 }

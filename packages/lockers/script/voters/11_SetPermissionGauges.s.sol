@@ -2,8 +2,8 @@
 pragma solidity 0.8.28;
 
 import {Script} from "forge-std/src/Script.sol";
-import {IVoter} from "src/common/interfaces/IVoter.sol";
-import {VoterPermissionManager} from "src/voters/utils/VoterPermissionManager.sol";
+import {IVoter} from "src/interfaces/IVoter.sol";
+import {VoterPermissionManager} from "src/VoterPermissionManager.sol";
 
 contract SetPermissionGauges is Script {
     function run() public {

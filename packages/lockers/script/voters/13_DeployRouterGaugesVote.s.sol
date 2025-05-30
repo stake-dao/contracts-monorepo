@@ -3,14 +3,14 @@ pragma solidity 0.8.28;
 
 import {DAO} from "address-book/src/DaoEthereum.sol";
 import {Script} from "forge-std/src/Script.sol";
-import {GaugeVoteRouter} from "src/voters/utils/GaugeVoteRouter.sol";
+import {VoteGaugeRouter} from "src/VoteGaugeRouter.sol";
 
 contract DeployGaugeVoteRouter is Script {
     function run() public {
         vm.startBroadcast();
 
-        // 1. Deploy the GaugeVoteRouter contract
-        new GaugeVoteRouter(DAO.GOVERNANCE);
+        // 1. Deploy the VoteGaugeRouter contract
+        new VoteGaugeRouter(DAO.GOVERNANCE);
 
         vm.stopBroadcast();
     }

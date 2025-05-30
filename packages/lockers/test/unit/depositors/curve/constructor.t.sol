@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
 import {MockERC20} from "forge-std/src/mocks/MockERC20.sol";
-import {CurveDepositor} from "src/mainnet/curve/Depositor.sol";
+import {CurveDepositor} from "src/integrations/curve/Depositor.sol";
 import {DepositorTest} from "test/unit/depositors/DepositorTest.t.sol";
 
 contract CurveDepositor__constructor is DepositorTest {

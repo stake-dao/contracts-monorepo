@@ -5,13 +5,13 @@ import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transpa
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {DAO} from "address-book/src/DaoEthereum.sol";
 import {Script} from "forge-std/src/Script.sol";
-import {SafeProxyFactoryLibrary} from "src/common/factory/SafeProxyFactoryLibrary.sol";
-import {PreLaunchLocker} from "src/common/locker/PreLaunchLocker.sol";
-import {sdToken as SdToken} from "src/common/token/sdToken.sol";
+import {SafeProxyFactoryLibrary} from "src/utils/SafeProxyFactoryLibrary.sol";
+import {LockerPreLaunch} from "src/LockerPreLaunch.sol";
+import {sdToken as SdToken} from "src/SDToken.sol";
 
 /// @title PreLaunchDeploy
 /// @notice This script is used to deploy the whole pre-launch protocol including:
-///         the Locker, the sdToken, the Gauge and the PreLaunchLocker contract.
+///         the Locker, the sdToken, the Gauge and the LockerPreLaunch contract.
 /// @dev How to use:
 ///      - Deploy using a Ledger signer: TOKEN=XXXX forge script PreLaunchDeploy --rpc-url https://XXXXX --ledger --broadcast
 ///      - Deploy locally on Anvil using one of the default accounts:
@@ -47,7 +47,7 @@ contract PreLaunchDeploy is Script {
         // TODO: We must deploy it once and store it in the address book.
         //       The implementation here is a slight variation of the original as this one
         //       allows null-address as distributor for the SDT token.
-        address gaugeImplementation = deployCode("vyper/LiquidityGaugeV4.vy");
+        address gaugeImplementation = deployCode("GaugeLiquidityV4.vy");
         bytes memory data = abi.encodeWithSelector(
             bytes4(keccak256("initialize(address,address,address,address,address,address)")),
             sdToken,
@@ -59,11 +59,11 @@ contract PreLaunchDeploy is Script {
         );
         gauge = address(new TransparentUpgradeableProxy(gaugeImplementation, DAO.PROXY_ADMIN, data));
 
-        // 5. deploy the PreLaunchLocker and transfer the governance to the DAO
-        preLaunchLocker = address(new PreLaunchLocker(token, sdToken, gauge, customForceCancelDelay));
-        PreLaunchLocker(preLaunchLocker).transferGovernance(DAO.GOVERNANCE);
+        // 5. deploy the LockerPreLaunch and transfer the governance to the DAO
+        preLaunchLocker = address(new LockerPreLaunch(token, sdToken, gauge, customForceCancelDelay));
+        LockerPreLaunch(preLaunchLocker).transferGovernance(DAO.GOVERNANCE);
 
-        // 6. set PreLaunchLocker as the sdToken operator
+        // 6. set LockerPreLaunch as the sdToken operator
         SdToken(sdToken).setOperator(address(preLaunchLocker));
 
         vm.stopBroadcast();

@@ -1,9 +1,9 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.28;
 
-import {IDepositor} from "src/common/interfaces/IDepositor.sol";
-import "src/mainnet/fx/Accumulator.sol";
-import "test/fork/common/BaseAccumulatorTest.sol";
+import {IDepositor} from "src/interfaces/IDepositor.sol";
+import "src/integrations/fx/Accumulator.sol";
+import "test/fork/BaseAccumulatorTest.sol";
 import {BaseZeroLendTokenTest} from "test/fork/zerolend/common/BaseZeroLendTokenTest.sol";
 
 contract ZLTokenAccumulator is BaseZeroLendTokenTest, BaseAccumulatorTest {
@@ -30,7 +30,7 @@ contract ZLTokenAccumulator is BaseZeroLendTokenTest, BaseAccumulatorTest {
         sdToken = _deploySdZero();
         liquidityGauge = ILiquidityGauge(_deployLiquidityGauge(sdToken));
         locker = _deploySafeLocker();
-        accumulator = BaseAccumulator(BaseZeroLendTokenTest._deployAccumulator());
+        accumulator = AccumulatorBase(BaseZeroLendTokenTest._deployAccumulator());
         depositor = IDepositor(_deployDepositor());
 
         _getSomeZeroTokens(address(this));

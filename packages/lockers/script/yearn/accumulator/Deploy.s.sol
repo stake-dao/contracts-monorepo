@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 import {DAO} from "address-book/src/DaoEthereum.sol";
 import {YearnLocker} from "address-book/src/YearnEthereum.sol";
 import {DeployAccumulator} from "script/common/DeployAccumulator.sol";
-import {YearnAccumulator} from "src/mainnet/yearn/Accumulator.sol";
+import {YearnAccumulator} from "src/integrations/yearn/Accumulator.sol";
 
 contract Deploy is DeployAccumulator {
     function run() public {

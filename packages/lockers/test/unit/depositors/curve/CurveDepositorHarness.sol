@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import {CurveDepositor} from "src/mainnet/curve/Depositor.sol";
+import {CurveDepositor} from "src/integrations/curve/Depositor.sol";
 
 contract CurveDepositorHarness is CurveDepositor {
     constructor(address _token, address _locker, address _minter, address _gauge, address _gateway)

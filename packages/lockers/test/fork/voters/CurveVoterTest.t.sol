@@ -3,9 +3,9 @@ pragma solidity 0.8.28;
 
 import {IVoting, VoterState} from "@interfaces/curve/IVoting.sol";
 import {Test} from "forge-std/src/Test.sol";
-import {ILocker} from "src/common/interfaces/ILocker.sol";
-import {CurveVoter} from "src/voters/CurveVoter.sol";
-import {VoterPermissionManager} from "src/voters/utils/VoterPermissionManager.sol";
+import {ILocker} from "src/interfaces/ILocker.sol";
+import {CurveVoter} from "src/integrations/curve/CurveVoter.sol";
+import {VoterPermissionManager} from "src/VoterPermissionManager.sol";
 import {MockGateway} from "test/common/MockGateway.sol";
 
 contract GovCurveVoterTest is Test {

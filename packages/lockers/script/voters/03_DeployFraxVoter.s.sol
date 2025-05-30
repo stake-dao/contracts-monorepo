@@ -3,8 +3,8 @@ pragma solidity 0.8.28;
 
 import {DAO} from "address-book/src/DaoEthereum.sol";
 import {Script} from "forge-std/src/Script.sol";
-import {FraxVoter} from "src/voters/FraxVoter.sol";
-import {VoterPermissionManager} from "src/voters/utils/VoterPermissionManager.sol";
+import {FraxVoter} from "src/integrations/frax/FraxVoter.sol";
+import {VoterPermissionManager} from "src/VoterPermissionManager.sol";
 
 contract DeployFraxVoter is Script {
     function run() public {

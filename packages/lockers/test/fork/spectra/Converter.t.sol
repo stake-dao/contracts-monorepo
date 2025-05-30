@@ -3,8 +3,8 @@ pragma solidity 0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "forge-std/src/Test.sol";
-import {APWine2SpectraConverter} from "src/base/spectra/APWine2SpectraConverter.sol";
-import {ISdSpectraDepositor} from "src/common/interfaces/spectra/stakedao/ISdSpectraDepositor.sol";
+import {APWine2SpectraConverter} from "src/integrations/spectra/APWine2SpectraConverter.sol";
+import {ISdSpectraDepositor} from "src/interfaces/ISdSpectraDepositor.sol";
 import {BaseSpectraTokenTest} from "test/fork/spectra/common/BaseSpectraTokenTest.sol";
 
 contract SpectraTest is BaseSpectraTokenTest {

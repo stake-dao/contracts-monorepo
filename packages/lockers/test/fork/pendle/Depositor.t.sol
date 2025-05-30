@@ -4,12 +4,12 @@ pragma solidity 0.8.28;
 import {PendleLocker, PendleProtocol} from "address-book/src/PendleEthereum.sol";
 import {Test} from "forge-std/src/Test.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import {IDepositor} from "src/common/interfaces/IDepositor.sol";
-import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
-import {ILocker} from "src/common/interfaces/ILocker.sol";
-import {ISdToken} from "src/common/interfaces/ISdToken.sol";
-import {IVePendle} from "src/common/interfaces/IVePendle.sol";
-import {PendleDepositor} from "src/mainnet/pendle/Depositor.sol";
+import {IDepositor} from "src/interfaces/IDepositor.sol";
+import {ILiquidityGauge} from "src/interfaces/ILiquidityGauge.sol";
+import {ILocker} from "src/interfaces/ILocker.sol";
+import {ISdToken} from "src/interfaces/ISdToken.sol";
+import {IVePendle} from "src/interfaces/IVePendle.sol";
+import {PendleDepositor} from "src/integrations/pendle/Depositor.sol";
 
 contract DepositorTest is Test {
     uint256 private constant MIN_LOCK_DURATION = 1 weeks;

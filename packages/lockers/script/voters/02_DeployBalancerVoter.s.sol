@@ -3,8 +3,8 @@ pragma solidity 0.8.28;
 
 import {DAO} from "address-book/src/DaoEthereum.sol";
 import {Script} from "forge-std/src/Script.sol";
-import {BalancerVoter} from "src/voters/BalancerVoter.sol";
-import {VoterPermissionManager} from "src/voters/utils/VoterPermissionManager.sol";
+import {BalancerVoter} from "src/integrations/balancer/BalancerVoter.sol";
+import {VoterPermissionManager} from "src/VoterPermissionManager.sol";
 
 contract DeployBalancerVoter is Script {
     function run() public {

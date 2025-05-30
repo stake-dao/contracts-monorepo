@@ -3,8 +3,8 @@ pragma solidity 0.8.28;
 
 import {DAO} from "address-book/src/DaoEthereum.sol";
 import {Script} from "forge-std/src/Script.sol";
-import {FXNVoter} from "src/voters/FXNVoter.sol";
-import {VoterPermissionManager} from "src/voters/utils/VoterPermissionManager.sol";
+import {FXNVoter} from "src/integrations/fxn/FXNVoter.sol";
+import {VoterPermissionManager} from "src/VoterPermissionManager.sol";
 
 contract DeployFXNVoter is Script {
     function run() public {

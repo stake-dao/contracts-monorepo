@@ -4,9 +4,9 @@ pragma solidity 0.8.28;
 import {SpectraLocker} from "address-book/src/SpectraEthereum.sol";
 import {Test} from "forge-std/src/Test.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
-import {APWine2SpectraConverter} from "src/base/spectra/APWine2SpectraConverter.sol";
-import {ILaPoste} from "src/common/interfaces/ILaPoste.sol";
-import {ISdToken} from "src/common/interfaces/ISdToken.sol";
+import {APWine2SpectraConverter} from "src/integrations/spectra/APWine2SpectraConverter.sol";
+import {ILaPoste} from "src/interfaces/ILaPoste.sol";
+import {ISdToken} from "src/interfaces/ISdToken.sol";
 
 contract ConverterTest is Test {
     ERC20 public sdToken;

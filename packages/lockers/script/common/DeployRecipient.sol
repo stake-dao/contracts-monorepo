@@ -4,9 +4,9 @@ pragma solidity 0.8.28;
 import {Common} from "address-book/src/CommonEthereum.sol";
 import {DAO} from "address-book/src/DaoEthereum.sol";
 import {Script} from "forge-std/src/Script.sol";
-import {ConvexLockerRecipient} from "src/common/fee/ConvexLockerRecipient.sol";
-import {StakeDaoLockerRecipient} from "src/common/fee/StakeDaoLockerRecipient.sol";
-import {VlCVXDelegatorsRecipient} from "src/common/fee/vlCVXDelegatorsRecipient.sol";
+import {ConvexLockerRecipient} from "script/utils/recipient/ConvexLockerRecipient.sol";
+import {StakeDaoLockerRecipient} from "script/utils/recipient/StakeDaoLockerRecipient.sol";
+import {VlCVXDelegatorsRecipient} from "script/utils/recipient/vlCVXDelegatorsRecipient.sol";
 
 interface ImmutableCreate2Factory {
     function safeCreate2(bytes32, bytes memory) external;

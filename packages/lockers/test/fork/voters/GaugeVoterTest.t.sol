@@ -2,13 +2,13 @@
 pragma solidity 0.8.28;
 
 import {Test} from "forge-std/src/Test.sol";
-import {ILocker} from "src/common/interfaces/ILocker.sol";
-import {BalancerVoter} from "src/voters/BalancerVoter.sol";
-import {CurveVoter} from "src/voters/CurveVoter.sol";
-import {FraxVoter} from "src/voters/FraxVoter.sol";
-import {FXNVoter} from "src/voters/FXNVoter.sol";
-import {PendleVoter} from "src/voters/PendleVoter.sol";
-import {VoterPermissionManager} from "src/voters/utils/VoterPermissionManager.sol";
+import {ILocker} from "src/interfaces/ILocker.sol";
+import {BalancerVoter} from "src/integrations/balancer/BalancerVoter.sol";
+import {CurveVoter} from "src/integrations/curve/CurveVoter.sol";
+import {FraxVoter} from "src/integrations/frax/FraxVoter.sol";
+import {FXNVoter} from "src/integrations/fxn/FXNVoter.sol";
+import {PendleVoter} from "src/integrations/pendle/PendleVoter.sol";
+import {VoterPermissionManager} from "src/VoterPermissionManager.sol";
 import {MockGateway} from "test/common/MockGateway.sol";
 
 struct VeBalance {

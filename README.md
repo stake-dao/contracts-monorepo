@@ -11,7 +11,3 @@ The repository is organized into several key packages:
 - `interfaces/`: Shared interfaces of all the integrations of StakeDAO used across different packages
 - `lockers/`: Smart contracts for sdToken Wrapping mechanisms.
 - `strategies/`: Smart contracts for boosted strategies built on top of sdToken shared boosting.
-
-## TODO:
-
-- Clean Lockers with Standardized code accross integration (like Strategies)

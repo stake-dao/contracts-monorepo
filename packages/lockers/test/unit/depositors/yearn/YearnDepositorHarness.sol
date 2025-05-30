@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import {YearnDepositor} from "src/mainnet/yearn/Depositor.sol";
+import {YearnDepositor} from "src/integrations/yearn/Depositor.sol";
 
 contract YearnDepositorHarness is YearnDepositor {
     constructor(address _token, address _locker, address _minter, address _gauge, address _gateway)

@@ -6,15 +6,15 @@ import {IERC721} from "@openzeppelin/contracts/token/ERC721/IERC721.sol";
 import {Enum} from "@safe/contracts/Safe.sol";
 import {DAO} from "address-book/src/DaoBase.sol";
 import {SpectraProtocol} from "address-book/src/SpectraBase.sol";
-import {Accumulator} from "src/base/spectra/Accumulator.sol";
-import {Depositor} from "src/base/spectra/Depositor.sol";
-import {BaseAccumulator} from "src/common/accumulator/BaseAccumulator.sol";
-import {IDepositor} from "src/common/interfaces/IDepositor.sol";
-import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
-import {ISdToken} from "src/common/interfaces/ISdToken.sol";
-import {ISpectraRewardsDistributor} from "src/common/interfaces/spectra/spectra/ISpectraRewardsDistributor.sol";
-import {ILocker, ISafe} from "src/common/interfaces/spectra/stakedao/ILocker.sol";
-import {sdToken as SdToken} from "src/common/token/sdToken.sol";
+import {Accumulator} from "src/integrations/spectra/Accumulator.sol";
+import {Depositor} from "src/integrations/spectra/Depositor.sol";
+import {AccumulatorBase} from "src/AccumulatorBase.sol";
+import {IDepositor} from "src/interfaces/IDepositor.sol";
+import {ILiquidityGauge} from "src/interfaces/ILiquidityGauge.sol";
+import {ISdToken} from "src/interfaces/ISdToken.sol";
+import {ISpectraRewardsDistributor} from "src/interfaces/ISpectraRewardsDistributor.sol";
+import {ISafeLocker, ISafe} from "src/interfaces/ISafeLocker.sol";
+import {sdToken as SdToken} from "src/SDToken.sol";
 import {SafeLibrary} from "test/common/SafeLibrary.sol";
 import {BaseSpectraTest} from "test/fork/spectra/common/BaseSpectraTest.sol";
 
@@ -41,7 +41,7 @@ abstract contract BaseSpectraTokenTest is BaseSpectraTest {
         liquidityGauge = ILiquidityGauge(_deployLiquidityGauge(sdToken));
         locker = _deploySafeLocker();
         depositor = IDepositor(_deployDepositor());
-        accumulator = BaseAccumulator(_deployAccumulator());
+        accumulator = AccumulatorBase(_deployAccumulator());
 
         _setupContractGovernance();
     }
@@ -58,7 +58,7 @@ abstract contract BaseSpectraTokenTest is BaseSpectraTest {
         _locker = address(SafeLibrary.deploySafe({_owners: owners, _threshold: 1, _saltNonce: salt}));
 
         vm.prank(GOVERNANCE);
-        ILocker(_locker).execTransaction(
+        ISafeLocker(_locker).execTransaction(
             address(spectraToken),
             0,
             abi.encodeWithSelector(IERC20.approve.selector, address(veSpectra), type(uint256).max),
@@ -74,7 +74,7 @@ abstract contract BaseSpectraTokenTest is BaseSpectraTest {
 
     function _enableModule(address _module) internal {
         vm.prank(GOVERNANCE);
-        ILocker(locker).execTransaction(
+        ISafeLocker(locker).execTransaction(
             locker,
             0,
             abi.encodeWithSelector(ISafe.enableModule.selector, _module),

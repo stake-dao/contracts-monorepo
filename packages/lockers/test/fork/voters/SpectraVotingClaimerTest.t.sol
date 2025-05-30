@@ -7,8 +7,8 @@ import {DAO} from "address-book/src/DaoBase.sol";
 import {SpectraLocker} from "address-book/src/SpectraBase.sol";
 import {Test} from "forge-std/src/Test.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import {ILocker, ISafe} from "src/common/interfaces/spectra/stakedao/ILocker.sol";
-import {SpectraVotingClaimer} from "src/voters/SpectraVotingClaimer.sol";
+import {ISafeLocker, ISafe} from "src/interfaces/ISafeLocker.sol";
+import {SpectraVotingClaimer} from "src/integrations/spectra/SpectraVotingClaimer.sol";
 
 contract SpectraVotingClaimerTest is Test {
     address public immutable WETH = Common.WETH;
@@ -18,7 +18,7 @@ contract SpectraVotingClaimerTest is Test {
 
     function _enableModule(address _locker, address _module) internal {
         vm.prank(DAO.GOVERNANCE);
-        ILocker(_locker).execTransaction(
+        ISafeLocker(_locker).execTransaction(
             _locker,
             0,
             abi.encodeWithSelector(ISafe.enableModule.selector, _module),
@@ -40,7 +40,7 @@ contract SpectraVotingClaimerTest is Test {
 
         // Enable the claimer as a Safe module of the locker Safe Account, as this is the new version of the locker.
         _enableModule(spectraVotingClaimer.LOCKER(), address(spectraVotingClaimer));
-        assertEq(ILocker(spectraVotingClaimer.LOCKER()).isModuleEnabled(address(spectraVotingClaimer)), true);
+        assertEq(ISafeLocker(spectraVotingClaimer.LOCKER()).isModuleEnabled(address(spectraVotingClaimer)), true);
 
         // Allow this test to call the claim function
         vm.prank(spectraVotingClaimer.governance());

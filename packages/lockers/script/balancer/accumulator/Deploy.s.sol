@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 import {BalancerLocker} from "address-book/src/BalancerEthereum.sol";
 import {DAO} from "address-book/src/DaoEthereum.sol";
 import {DeployAccumulator} from "script/common/DeployAccumulator.sol";
-import {BalancerAccumulator} from "src/mainnet/balancer/Accumulator.sol";
+import {BalancerAccumulator} from "src/integrations/balancer/Accumulator.sol";
 
 contract Deploy is DeployAccumulator {
     function run() public {

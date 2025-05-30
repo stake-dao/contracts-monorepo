@@ -8,11 +8,11 @@ import {Common} from "address-book/src/CommonBase.sol";
 import {DAO} from "address-book/src/DaoBase.sol";
 import {SpectraProtocol} from "address-book/src/SpectraBase.sol";
 import {DeployAccumulator} from "script/common/DeployAccumulator.sol";
-import {Accumulator} from "src/base/spectra/Accumulator.sol";
-import {Depositor} from "src/base/spectra/Depositor.sol";
-import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
-import {ILocker, ISafe} from "src/common/interfaces/spectra/stakedao/ILocker.sol";
-import {sdToken as SdToken} from "src/common/token/sdToken.sol";
+import {Accumulator} from "src/integrations/spectra/Accumulator.sol";
+import {Depositor} from "src/integrations/spectra/Depositor.sol";
+import {ILiquidityGauge} from "src/interfaces/ILiquidityGauge.sol";
+import {ISafeLocker, ISafe} from "src/interfaces/ISafeLocker.sol";
+import {sdToken as SdToken} from "src/SDToken.sol";
 
 contract Deploy is DeployAccumulator {
     address internal sdSpectra;
@@ -55,7 +55,7 @@ contract Deploy is DeployAccumulator {
         bytes memory initializer = _getSafeInitializationData(owners, threshold);
         _locker = address(safeProxyFactory.createProxyWithNonce(safeSingleton, initializer, salt));
 
-        ILocker(_locker).execTransaction(
+        ISafeLocker(_locker).execTransaction(
             SpectraProtocol.SPECTRA,
             0,
             abi.encodeWithSelector(IERC20.approve.selector, SpectraProtocol.VESPECTRA, type(uint256).max),
@@ -70,7 +70,7 @@ contract Deploy is DeployAccumulator {
     }
 
     function _safeEnableModule(address _module) internal {
-        ILocker(locker).execTransaction(
+        ISafeLocker(locker).execTransaction(
             locker,
             0,
             abi.encodeWithSelector(ISafe.enableModule.selector, _module),
@@ -85,7 +85,7 @@ contract Deploy is DeployAccumulator {
     }
 
     function _safeTransferSafeOwnershipToGovernance() internal {
-        ILocker(locker).execTransaction(
+        ISafeLocker(locker).execTransaction(
             locker,
             0,
             abi.encodeWithSelector(ISafe.addOwnerWithThreshold.selector, DAO.GOVERNANCE, 1),
@@ -98,7 +98,7 @@ contract Deploy is DeployAccumulator {
             abi.encodePacked(uint256(uint160(msg.sender)), uint8(0), uint256(1))
         );
 
-        ILocker(locker).execTransaction(
+        ISafeLocker(locker).execTransaction(
             locker,
             0,
             abi.encodeWithSelector(ISafe.removeOwner.selector, DAO.GOVERNANCE, msg.sender, 1),
@@ -120,7 +120,7 @@ contract Deploy is DeployAccumulator {
         sdSpectra = address((new SdToken("Stake DAO SPECTRA", "sdSPECTRA")));
 
         // Deploy gauge.
-        liquidityGauge = deployCode("vyper/LiquidityGaugeV4XChain.vy", abi.encode(sdSpectra, msg.sender));
+        liquidityGauge = deployCode("GaugeLiquidityV4XChain.vy", abi.encode(sdSpectra, msg.sender));
 
         // Deploy depositor.
         depositor = address(new Depositor(SpectraProtocol.SPECTRA, locker, sdSpectra, liquidityGauge));

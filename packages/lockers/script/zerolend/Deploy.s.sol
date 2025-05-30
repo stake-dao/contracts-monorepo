@@ -8,13 +8,13 @@ import {Common} from "address-book/src/CommonLinea.sol";
 import {DAO} from "address-book/src/DaoLinea.sol";
 import {ZeroLocker} from "address-book/src/ZeroLinea.sol";
 import {DeployAccumulator} from "script/common/DeployAccumulator.sol";
-import {IDepositor} from "src/common/interfaces/IDepositor.sol";
-import {ILiquidityGauge} from "src/common/interfaces/ILiquidityGauge.sol";
-import {ISdToken} from "src/common/interfaces/ISdToken.sol";
-import {ILocker, ISafe} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
-import {sdToken as SdToken} from "src/common/token/sdToken.sol";
-import {ZeroLendAccumulator} from "src/linea/zerolend/Accumulator.sol";
-import {Depositor} from "src/linea/zerolend/Depositor.sol";
+import {IDepositor} from "src/interfaces/IDepositor.sol";
+import {ILiquidityGauge} from "src/interfaces/ILiquidityGauge.sol";
+import {ISdToken} from "src/interfaces/ISdToken.sol";
+import {ISafeLocker, ISafe} from "src/interfaces/ISafeLocker.sol";
+import {sdToken as SdToken} from "src/SDToken.sol";
+import {ZeroLendAccumulator} from "src/integrations/zerolend/Accumulator.sol";
+import {Depositor} from "src/integrations/zerolend/Depositor.sol";
 
 contract Deploy is DeployAccumulator {
     address internal sdZero;
@@ -62,7 +62,7 @@ contract Deploy is DeployAccumulator {
 
         _locker = address(safeProxyFactory.createProxyWithNonce(safeSingleton, initializer, _salt));
 
-        ILocker(_locker).execTransaction(
+        ISafeLocker(_locker).execTransaction(
             address(zeroToken),
             0,
             abi.encodeWithSelector(IERC20.approve.selector, address(zeroLockerToken), type(uint256).max),
@@ -77,7 +77,7 @@ contract Deploy is DeployAccumulator {
     }
 
     function _safeEnableModule(address _module) internal {
-        ILocker(locker).execTransaction(
+        ISafeLocker(locker).execTransaction(
             locker,
             0,
             abi.encodeWithSelector(ISafe.enableModule.selector, _module),
@@ -92,9 +92,9 @@ contract Deploy is DeployAccumulator {
     }
 
     function _safeTransferSafeOwnershipToGovernance() internal {
-        ILocker(locker).getOwners();
+        ISafeLocker(locker).getOwners();
 
-        ILocker(locker).execTransaction(
+        ISafeLocker(locker).execTransaction(
             locker,
             0,
             abi.encodeWithSelector(ISafe.addOwnerWithThreshold.selector, DAO.GOVERNANCE, 1),
@@ -107,7 +107,7 @@ contract Deploy is DeployAccumulator {
             abi.encodePacked(uint256(uint160(msg.sender)), uint8(0), uint256(1))
         );
 
-        ILocker(locker).execTransaction(
+        ISafeLocker(locker).execTransaction(
             locker,
             0,
             abi.encodeWithSelector(ISafe.removeOwner.selector, DAO.GOVERNANCE, msg.sender, 1),
@@ -122,7 +122,7 @@ contract Deploy is DeployAccumulator {
     }
 
     function _safeApproveZeroLocker() internal {
-        ILocker(locker).execTransaction(
+        ISafeLocker(locker).execTransaction(
             zeroToken,
             0,
             abi.encodeWithSelector(IERC20.approve.selector, zeroLockerToken, type(uint256).max),
@@ -145,11 +145,7 @@ contract Deploy is DeployAccumulator {
         sdZero = address((new SdToken("Stake DAO ZeroLend", "sdZERO")));
 
         // Deploy gauge.
-        /// For some reason, the deployCode function is not working.
-        /// liquidityGauge = deployCode("vyper/LiquidityGaugeV4XChain.vy", abi.encode(sdZero, msg.sender));
-        bytes memory liquidityGaugeBytecode = vm.getCode("vyper/LiquidityGaugeV4XChain.vy");
-
-        liquidityGauge = address(deployBytecode(liquidityGaugeBytecode, abi.encode(sdZero, msg.sender)));
+        liquidityGauge = deployCode("GaugeLiquidityV4XChain.vy", abi.encode(sdZero, msg.sender));
 
         // Deploy depositor.
         depositor =

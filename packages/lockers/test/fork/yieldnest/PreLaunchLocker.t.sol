@@ -4,14 +4,14 @@ pragma solidity 0.8.28;
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {DAO} from "address-book/src/DaoEthereum.sol";
 import {YieldnestProtocol} from "address-book/src/YieldnestEthereum.sol";
-import {PreLaunchBaseDepositor} from "src/common/depositor/PreLaunchBaseDepositor.sol";
-import {ILiquidityGaugeV4} from "src/common/interfaces/ILiquidityGaugeV4.sol";
-import {ISdToken} from "src/common/interfaces/ISdToken.sol";
-import {PreLaunchLocker} from "src/common/locker/PreLaunchLocker.sol";
+import {DepositorPreLaunch} from "src/DepositorPreLaunch.sol";
+import {ILiquidityGaugeV4} from "src/interfaces/ILiquidityGaugeV4.sol";
+import {ISdToken} from "src/interfaces/ISdToken.sol";
+import {LockerPreLaunch} from "src/LockerPreLaunch.sol";
 import {BaseTest} from "test/BaseTest.t.sol";
 
 contract PreLaunchLockerTest is BaseTest {
-    PreLaunchLocker internal constant LOCKER = PreLaunchLocker(YieldnestProtocol.PRELAUNCH_LOCKER);
+    LockerPreLaunch internal constant LOCKER = LockerPreLaunch(YieldnestProtocol.PRELAUNCH_LOCKER);
     IERC20 internal constant YND = IERC20(YieldnestProtocol.YND);
     ISdToken internal constant SDYND = ISdToken(YieldnestProtocol.SDYND);
     ILiquidityGaugeV4 internal constant GAUGE = ILiquidityGaugeV4(YieldnestProtocol.GAUGE);
@@ -28,7 +28,7 @@ contract PreLaunchLockerTest is BaseTest {
         );
 
         // label the important addresses for the tests
-        vm.label(address(LOCKER), "PreLaunchLocker");
+        vm.label(address(LOCKER), "LockerPreLaunch");
         vm.label(address(YND), "YND");
         vm.label(address(SDYND), "SDYND");
         vm.label(address(DAO.GOVERNANCE), "GOVERNANCE");
@@ -63,7 +63,7 @@ contract PreLaunchLockerTest is BaseTest {
         vm.prank(LOCKER.governance());
         LOCKER.cancelLocker();
 
-        assertEq(uint256(LOCKER.state()), uint256(PreLaunchLocker.STATE.CANCELED));
+        assertEq(uint256(LOCKER.state()), uint256(LockerPreLaunch.STATE.CANCELED));
     }
 
     ////////////////////////////////////////////////////////////////
@@ -231,7 +231,7 @@ contract PreLaunchLockerTest is BaseTest {
         // fast forward the timestamp by the delay and expect the state to be CANCELED
         vm.warp(block.timestamp + LOCKER.FORCE_CANCEL_DELAY());
         LOCKER.forceCancelLocker();
-        assertEq(uint256(LOCKER.state()), uint256(PreLaunchLocker.STATE.CANCELED));
+        assertEq(uint256(LOCKER.state()), uint256(LockerPreLaunch.STATE.CANCELED));
     }
 
     ////////////////////////////////////////////////////////////////
@@ -259,7 +259,7 @@ contract PreLaunchLockerTest is BaseTest {
 
         // deploy the depositor
         depositor = address(
-            new PreLaunchBaseDepositor(
+            new DepositorPreLaunch(
                 address(YND), postPreLaunchLocker, address(SDYND), address(GAUGE), 1_000, address(LOCKER)
             )
         );
@@ -317,12 +317,12 @@ contract PreLaunchLockerTest is BaseTest {
         // it sets the state to ACTIVE
         deal(address(YND), address(LOCKER), 10);
 
-        assertEq(uint256(LOCKER.state()), uint256(PreLaunchLocker.STATE.IDLE));
+        assertEq(uint256(LOCKER.state()), uint256(LockerPreLaunch.STATE.IDLE));
 
         vm.prank(LOCKER.governance());
         LOCKER.lock(depositor);
 
-        assertEq(uint256(LOCKER.state()), uint256(PreLaunchLocker.STATE.ACTIVE));
+        assertEq(uint256(LOCKER.state()), uint256(LockerPreLaunch.STATE.ACTIVE));
     }
 
     ////////////////////////////////////////////////////////////////

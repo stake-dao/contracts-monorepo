@@ -5,12 +5,12 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Enum} from "@safe/contracts/Safe.sol";
 import "forge-std/src/Test.sol";
 import "forge-std/src/Vm.sol";
-import {IDepositor} from "src/common/interfaces/IDepositor.sol";
-import {ISdToken} from "src/common/interfaces/ISdToken.sol";
-import {ILocker} from "src/common/interfaces/zerolend/stakedao/ILocker.sol";
-import {ISdZeroDepositor} from "src/common/interfaces/zerolend/stakedao/ISdZeroDepositor.sol";
-import {ILockerToken} from "src/common/interfaces/zerolend/zerolend/ILockerToken.sol";
-import {IZeroVp} from "src/common/interfaces/zerolend/zerolend/IZeroVp.sol";
+import {IDepositor} from "src/interfaces/IDepositor.sol";
+import {ISdToken} from "src/interfaces/ISdToken.sol";
+import {ISafeLocker} from "src/interfaces/ISafeLocker.sol";
+import {ISdZeroDepositor} from "src/interfaces/ISdZeroDepositor.sol";
+import {ILockerToken} from "src/interfaces/ILockerToken.sol";
+import {IZeroVp} from "src/interfaces/IZeroVp.sol";
 import {BaseZeroLendTokenTest} from "test/fork/zerolend/common/BaseZeroLendTokenTest.sol";
 
 // end to end tests for the ZeroLend integration
@@ -224,7 +224,7 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
     function _safeReleaseTokens(uint256 _zeroLockedTokenId, address _receiver, bool _expectRevert) internal {
         vm.startPrank(GOVERNANCE);
 
-        ILocker(locker).execTransaction(
+        ISafeLocker(locker).execTransaction(
             address(veZero),
             0,
             abi.encodeWithSelector(IZeroVp.unstakeToken.selector, _zeroLockedTokenId),
@@ -241,7 +241,7 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
             vm.expectRevert("GS013");
         }
 
-        ILocker(locker).execTransaction(
+        ISafeLocker(locker).execTransaction(
             zeroLockerToken,
             0,
             abi.encodeWithSignature("withdraw(uint256)", _zeroLockedTokenId),
@@ -254,7 +254,7 @@ contract ZeroLendTest is BaseZeroLendTokenTest {
             abi.encodePacked(uint256(uint160(GOVERNANCE)), uint8(0), uint256(1))
         );
 
-        ILocker(locker).execTransaction(
+        ISafeLocker(locker).execTransaction(
             address(zeroToken),
             0,
             abi.encodeWithSelector(IERC20.transfer.selector, _receiver, IERC20(zeroToken).balanceOf(locker)),

@@ -6,7 +6,7 @@ import {DAO} from "address-book/src/DaoEthereum.sol";
 import {SpectraLocker as SpectraLockerBase} from "address-book/src/SpectraBase.sol";
 import {SpectraLocker} from "address-book/src/SpectraEthereum.sol";
 import {Script} from "forge-std/src/Script.sol";
-import {APWine2SpectraConverter} from "src/base/spectra/APWine2SpectraConverter.sol";
+import {APWine2SpectraConverter} from "src/integrations/spectra/APWine2SpectraConverter.sol";
 
 interface ICreate3Factory {
     function deployCreate3(bytes32 salt, bytes memory code) external returns (address);
