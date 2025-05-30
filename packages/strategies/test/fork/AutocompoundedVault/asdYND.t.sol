@@ -5,11 +5,10 @@ import {YieldnestProtocol} from "address-book/src/YieldnestEthereum.sol";
 import {Test} from "forge-std/src/Test.sol";
 import {YieldnestAutocompoundedVault} from "src/integrations/yieldnest/YieldnestAutocompoundedVault.sol";
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
-import {ProtocolController} from "src/ProtocolController.sol";
 
 contract asdYNDTest is Test {
     YieldnestAutocompoundedVault internal vault;
-    address internal protocolController;
+    address internal owner = makeAddr("owner");
 
     // Accounts to test the vault with
     address[2] internal holders =
@@ -19,16 +18,14 @@ contract asdYNDTest is Test {
     function setUp() external {
         vm.createSelectFork("mainnet", 22_567_990);
 
-        // Deploy a the protocol controller
-        protocolController = address(new MockProtocolController());
-
         // Deploy the ERC4626 vault
-        vault = new YieldnestAutocompoundedVault(protocolController);
+        vm.prank(owner);
+        vault = new YieldnestAutocompoundedVault();
 
         // Labels important addresses
-        vm.label(protocolController, "Protocol Controller");
         vm.label(YieldnestProtocol.SDYND, "sdYND");
         vm.label(address(vault), "AutocompoundedVault");
+        vm.label(owner, "owner");
     }
 
     function test_deposit() public {
@@ -61,33 +58,25 @@ contract asdYNDTest is Test {
         // 2. ensure the first account received the same amount he deposited to the vault
         assertEq(ERC20Mock(YieldnestProtocol.SDYND).balanceOf(holders[0]), balances[0]);
 
-        // 3. airdrop some sdYND to this contract
+        // 3. airdrop some sdYND to the owner
         uint256 rewards = 1e12;
-        deal(YieldnestProtocol.SDYND, address(this), rewards);
+        deal(YieldnestProtocol.SDYND, owner, rewards);
 
-        // 4. mock the protocol controller to allow this contract to set some rewards
-        vm.mockCall(protocolController, abi.encodeWithSelector(ProtocolController.allowed.selector), abi.encode(true));
-
-        // 5. set a new rewards stream for the vault
+        // 4. set a new rewards stream for the vault
+        vm.prank(owner);
         ERC20Mock(YieldnestProtocol.SDYND).approve(address(vault), rewards);
-        vm.prank(address(this));
+        vm.prank(owner);
         vault.setRewards(rewards);
 
-        // 6. jump after the rewards stream ends
+        // 5. jump after the rewards stream ends
         vm.warp(block.timestamp + vault.STREAMING_PERIOD());
 
-        // 7. withdraw all shares with the second account
+        // 6. withdraw all shares with the second account
         maxWithdraw = vault.maxWithdraw(holders[1]);
         vm.prank(holders[1]);
         vault.withdraw(maxWithdraw, holders[1], holders[1]);
 
-        // 8. ensure the second account received the initial balance + the full rewards (+/- 1% due to rounding)
+        // 7. ensure the second account received the initial balance + the full rewards (+/- 1% due to rounding)
         assertApproxEqAbs(ERC20Mock(YieldnestProtocol.SDYND).balanceOf(holders[1]), balances[1] + rewards, 1e16);
-    }
-}
-
-contract MockProtocolController {
-    function allowed(address, address, bytes4) external pure returns (bool) {
-        return false;
     }
 }

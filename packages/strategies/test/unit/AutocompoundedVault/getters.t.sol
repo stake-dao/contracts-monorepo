@@ -10,10 +10,10 @@ contract AutocompoundedVault__getters is AutocompoundedVaultTest {
         assertEq(autocompoundedVault.version(), "1.0.0");
     }
 
-    function test_ReturnsTheProtocolController() external view {
-        // it returns the protocol controller
+    function test_ReturnsTheOwner() external view {
+        // it returns the owner
 
-        assertEq(address(autocompoundedVault.PROTOCOL_CONTROLLER()), address(protocolController));
+        assertEq(autocompoundedVault.owner(), owner);
     }
 
     function test_ReturnsTheStreamingPeriod() external view {

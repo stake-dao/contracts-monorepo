@@ -9,16 +9,9 @@ import {AutocompoundedVault} from "src/AutocompoundedVault.sol";
 /// @notice This contract is a fully compliant ERC4626 streaming yield-bearing vault for sdYND tokens.
 ///         The rewards are streamed linearly over a fixed period and the vault is autocompounded.
 contract YieldnestAutocompoundedVault is AutocompoundedVault {
-    /// @notice Initialize the protocol controller, the streaming period, the asset and the shares token
+    /// @notice Initialize the the streaming period, the asset and the shares token
     /// @dev sdYND is the asset contract while asdYND is the shares token
-    /// @param _protocolController The address of the protocol controller
-    constructor(address _protocolController)
-        AutocompoundedVault(
-            _protocolController,
-            7 days,
-            IERC20(YieldnestProtocol.SDYND),
-            "Autocompounded Stake DAO YND",
-            "asdYND"
-        )
+    constructor()
+        AutocompoundedVault(7 days, IERC20(YieldnestProtocol.SDYND), "Autocompounded Stake DAO YND", "asdYND")
     {}
 }

@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 import {ERC4626, ERC20} from "@openzeppelin/contracts/token/ERC20/extensions/ERC4626.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IProtocolController} from "src/interfaces/IProtocolController.sol";
+import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 /// @title Autocompounded Stake DAO Vault
 /// @notice This contract is a fully compliant ERC4626 streaming yield-bearing vault.
@@ -32,13 +32,10 @@ import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 ///      This contract uses a decimal offset set to 0, which is the OpenZeppelin default.
 ///      With this configuration, the protection ensures that donation/inflation attacks are unprofitable.
 ///      Even with a decimal offset of 0, the attacker's loss is at least equal to the user's deposit, as documented by OpenZeppelin.
-contract AutocompoundedVault is ERC4626 {
+contract AutocompoundedVault is ERC4626, Ownable2Step {
     ////////////////////////////////////////////////////////////////
     /// --- CONSTANTS
     ///////////////////////////////////////////////////////////////
-
-    /// @notice The protocol controller. This contract manages permissions for Stake DAO contracts.
-    IProtocolController public immutable PROTOCOL_CONTROLLER;
 
     /// @notice The streaming period
     uint128 public immutable STREAMING_PERIOD;
@@ -62,39 +59,20 @@ contract AutocompoundedVault is ERC4626 {
     /// --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
-    /// @notice Error emitted when the caller is not authorized to call the function
-    error NotAuthorized();
-
     /// @notice Event emitted when a new stream is started
     event NewStreamRewards(address indexed caller, uint256 amount, uint128 start, uint128 end);
 
     /// @notice Initialize the asset and the shares token
-    /// @param protocolController The address of the protocol controller
     /// @param streamingPeriod The streaming period in seconds (e.g. 7 days)
     /// @param asset The asset token the users will deposit to the vault (e.g. sdYND)
     /// @param shareName The name of the shares token the users will receive
     /// @param shareSymbol The symbol of the shares token the users will receive
-    constructor(
-        address protocolController,
-        uint128 streamingPeriod,
-        IERC20 asset,
-        string memory shareName,
-        string memory shareSymbol
-    ) ERC4626(asset) ERC20(shareName, shareSymbol) {
-        PROTOCOL_CONTROLLER = IProtocolController(protocolController);
+    constructor(uint128 streamingPeriod, IERC20 asset, string memory shareName, string memory shareSymbol)
+        ERC4626(asset)
+        ERC20(shareName, shareSymbol)
+        Ownable(msg.sender)
+    {
         STREAMING_PERIOD = streamingPeriod;
-    }
-
-    ////////////////////////////////////////////////////////////////
-    /// --- MODIFIERS
-    ///////////////////////////////////////////////////////////////
-
-    /// @notice Modifier to check if the caller is authorized to call the function. The protocol controller
-    ///         is requested to check if the caller is authorized to call this specific function for this contract.
-    /// @param selector The selector of the function to check
-    modifier authorized(bytes4 selector) {
-        require(PROTOCOL_CONTROLLER.allowed(address(this), msg.sender, selector), NotAuthorized());
-        _;
     }
 
     ////////////////////////////////////////////////////////////////
@@ -133,8 +111,8 @@ contract AutocompoundedVault is ERC4626 {
     /// @param newAmount The amount of asset tokens to stream
     /// @dev Starting a new stream will add the unvested portion of the previous stream to the new stream
     ///      and the new stream will be for `STREAMING_PERIOD`. See the comments in the contract description for more details.
-    /// @custom:throws NotAuthorized when the caller is not authorized
-    function setRewards(uint256 newAmount) external virtual authorized(this.setRewards.selector) {
+    /// @custom:throws OwnableUnauthorizedAccount when the caller is not the owner
+    function setRewards(uint256 newAmount) external virtual onlyOwner {
         Stream storage stream = currentStream;
         uint256 unvested;
         uint128 currentTimestamp = _timestamp();
