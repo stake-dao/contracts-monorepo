@@ -86,6 +86,9 @@ importers:
       '@stake-dao/interfaces':
         specifier: workspace:*
         version: link:../interfaces
+      '@stake-dao/shared':
+        specifier: workspace:*
+        version: link:../shared
       forge-std:
         specifier: github:foundry-rs/forge-std#v1.9.5
         version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/b93cf4bc34ff214c099dc970b153f85ade8c9f66
