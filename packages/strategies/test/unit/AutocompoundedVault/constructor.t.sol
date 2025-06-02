@@ -22,4 +22,10 @@ contract AutocompoundedVault__constructor is AutocompoundedVaultTest {
 
         assertEq(autocompoundedVault.symbol(), "asdYND");
     }
+
+    function test_CorrectlySetsTheOwner() external view {
+        // it correctly sets the owner
+
+        assertEq(autocompoundedVault.owner(), owner);
+    }
 }

@@ -18,8 +18,7 @@ contract AutocompoundedVaultTest is BaseTest {
         vm.label(YieldnestProtocol.SDYND, "sdYND");
 
         // Deploy the Yieldnest Autocompounded Vault
-        vm.prank(owner);
-        autocompoundedVault = new YieldnestAutocompoundedVault();
+        autocompoundedVault = new YieldnestAutocompoundedVault(owner);
         vm.label(address(autocompoundedVault), "YieldnestAutocompoundedVault");
 
         // Label the owner

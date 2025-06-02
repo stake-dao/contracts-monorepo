@@ -19,8 +19,7 @@ contract asdYNDTest is Test {
         vm.createSelectFork("mainnet", 22_567_990);
 
         // Deploy the ERC4626 vault
-        vm.prank(owner);
-        vault = new YieldnestAutocompoundedVault();
+        vault = new YieldnestAutocompoundedVault(owner);
 
         // Labels important addresses
         vm.label(YieldnestProtocol.SDYND, "sdYND");
