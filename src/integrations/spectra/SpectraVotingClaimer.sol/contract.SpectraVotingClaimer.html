@@ -1,0 +1,427 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>SpectraVotingClaimer - Stake DAO Lockers</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../../../../favicon.svg">
+        <link rel="shortcut icon" href="../../../../favicon.png">
+        <link rel="stylesheet" href="../../../../css/variables.css">
+        <link rel="stylesheet" href="../../../../css/general.css">
+        <link rel="stylesheet" href="../../../../css/chrome.css">
+        <link rel="stylesheet" href="../../../../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../../../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../../../../highlight.css">
+        <link rel="stylesheet" href="../../../../tomorrow-night.css">
+        <link rel="stylesheet" href="../../../../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../../../../book.css">
+
+        <!-- MathJax -->
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../../../../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../../../../index.html">README</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/index.html"><strong aria-hidden="true">1.</strong> integrations</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../../src/integrations/balancer/index.html"><strong aria-hidden="true">1.1.</strong> balancer</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../../src/integrations/balancer/Accumulator.sol/contract.BalancerAccumulator.html"><strong aria-hidden="true">1.1.1.</strong> BalancerAccumulator</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/balancer/BalancerVoter.sol/contract.BalancerVoter.html"><strong aria-hidden="true">1.1.2.</strong> BalancerVoter</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/balancer/Depositor.sol/contract.BalancerDepositor.html"><strong aria-hidden="true">1.1.3.</strong> BalancerDepositor</a></li></ol></li><li class="chapter-item expanded "><a href="../../../../src/integrations/curve/index.html"><strong aria-hidden="true">1.2.</strong> curve</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../../src/integrations/curve/Accumulator.sol/contract.CurveAccumulator.html"><strong aria-hidden="true">1.2.1.</strong> CurveAccumulator</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/curve/CurveExchangeDepositor.sol/abstract.CurveExchangeDepositor.html"><strong aria-hidden="true">1.2.2.</strong> CurveExchangeDepositor</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/curve/CurveVoter.sol/enum.VoteType.html"><strong aria-hidden="true">1.2.3.</strong> VoteType</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/curve/CurveVoter.sol/struct.Vote.html"><strong aria-hidden="true">1.2.4.</strong> Vote</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/curve/CurveVoter.sol/contract.CurveVoter.html"><strong aria-hidden="true">1.2.5.</strong> CurveVoter</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/curve/Depositor.sol/contract.CurveDepositor.html"><strong aria-hidden="true">1.2.6.</strong> CurveDepositor</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/curve/VeCRVLocker.sol/abstract.VeCRVLocker.html"><strong aria-hidden="true">1.2.7.</strong> VeCRVLocker</a></li></ol></li><li class="chapter-item expanded "><a href="../../../../src/integrations/frax/index.html"><strong aria-hidden="true">1.3.</strong> frax</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../../src/integrations/frax/Accumulator.sol/contract.FraxAccumulator.html"><strong aria-hidden="true">1.3.1.</strong> FraxAccumulator</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/frax/Depositor.sol/contract.FraxDepositor.html"><strong aria-hidden="true">1.3.2.</strong> FraxDepositor</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/frax/FXTLDelegation.sol/contract.FXTLDelegation.html"><strong aria-hidden="true">1.3.3.</strong> FXTLDelegation</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/frax/FraxVoter.sol/contract.FraxVoter.html"><strong aria-hidden="true">1.3.4.</strong> FraxVoter</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/frax/Locker.sol/contract.Locker.html"><strong aria-hidden="true">1.3.5.</strong> Locker</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/frax/sdToken.sol/contract.sdToken.html"><strong aria-hidden="true">1.3.6.</strong> sdToken</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/frax/sdTokenOperator.sol/contract.sdTokenOperator.html"><strong aria-hidden="true">1.3.7.</strong> sdTokenOperator</a></li></ol></li><li class="chapter-item expanded "><a href="../../../../src/integrations/fx/index.html"><strong aria-hidden="true">1.4.</strong> fx</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../../src/integrations/fx/Accumulator.sol/contract.FXNAccumulator.html"><strong aria-hidden="true">1.4.1.</strong> FXNAccumulator</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/fx/Depositor.sol/contract.Depositor.html"><strong aria-hidden="true">1.4.2.</strong> Depositor</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/fx/Locker.sol/contract.Locker.html"><strong aria-hidden="true">1.4.3.</strong> Locker</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/fx/Voter.sol/contract.Voter.html"><strong aria-hidden="true">1.4.4.</strong> Voter</a></li></ol></li><li class="chapter-item expanded "><a href="../../../../src/integrations/fxn/index.html"><strong aria-hidden="true">1.5.</strong> fxn</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../../src/integrations/fxn/FXNVoter.sol/contract.FXNVoter.html"><strong aria-hidden="true">1.5.1.</strong> FXNVoter</a></li></ol></li><li class="chapter-item expanded "><a href="../../../../src/integrations/maverick/index.html"><strong aria-hidden="true">1.6.</strong> maverick</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../../src/integrations/maverick/Depositor.sol/contract.Depositor.html"><strong aria-hidden="true">1.6.1.</strong> Depositor</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/maverick/Locker.sol/contract.Locker.html"><strong aria-hidden="true">1.6.2.</strong> Locker</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/maverick/VeMAVLocker.sol/abstract.VeMAVLocker.html"><strong aria-hidden="true">1.6.3.</strong> VeMAVLocker</a></li></ol></li><li class="chapter-item expanded "><a href="../../../../src/integrations/pendle/index.html"><strong aria-hidden="true">1.7.</strong> pendle</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../../src/integrations/pendle/Accumulator.sol/contract.PendleAccumulator.html"><strong aria-hidden="true">1.7.1.</strong> PendleAccumulator</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/pendle/Accumulator.sol/interface.IWETH.html"><strong aria-hidden="true">1.7.2.</strong> IWETH</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/pendle/Depositor.sol/contract.PendleDepositor.html"><strong aria-hidden="true">1.7.3.</strong> PendleDepositor</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/pendle/PendleVoter.sol/contract.PendleVoter.html"><strong aria-hidden="true">1.7.4.</strong> PendleVoter</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/pendle/VotersRewardsRecipient.sol/contract.VotersRewardsRecipient.html"><strong aria-hidden="true">1.7.5.</strong> VotersRewardsRecipient</a></li></ol></li><li class="chapter-item expanded "><a href="../../../../src/integrations/spectra/index.html"><strong aria-hidden="true">1.8.</strong> spectra</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../../src/integrations/spectra/APWine2SpectraConverter.sol/contract.APWine2SpectraConverter.html"><strong aria-hidden="true">1.8.1.</strong> APWine2SpectraConverter</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/spectra/Accumulator.sol/contract.Accumulator.html"><strong aria-hidden="true">1.8.2.</strong> Accumulator</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/spectra/Depositor.sol/contract.Depositor.html"><strong aria-hidden="true">1.8.3.</strong> Depositor</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/spectra/SpectraVoter.sol/contract.SpectraVoter.html"><strong aria-hidden="true">1.8.4.</strong> SpectraVoter</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/spectra/SpectraVotingClaimer.sol/interface.ISpectraVotingReward.html"><strong aria-hidden="true">1.8.5.</strong> ISpectraVotingReward</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/spectra/SpectraVotingClaimer.sol/interface.ISpectraGovernance.html"><strong aria-hidden="true">1.8.6.</strong> ISpectraGovernance</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/spectra/SpectraVotingClaimer.sol/contract.SpectraVotingClaimer.html" class="active"><strong aria-hidden="true">1.8.7.</strong> SpectraVotingClaimer</a></li></ol></li><li class="chapter-item expanded "><a href="../../../../src/integrations/yearn/index.html"><strong aria-hidden="true">1.9.</strong> yearn</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../../src/integrations/yearn/Accumulator.sol/contract.YearnAccumulator.html"><strong aria-hidden="true">1.9.1.</strong> YearnAccumulator</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/yearn/Depositor.sol/contract.YearnDepositor.html"><strong aria-hidden="true">1.9.2.</strong> YearnDepositor</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/yearn/DepositorHelper.sol/contract.DepositorHelper.html"><strong aria-hidden="true">1.9.3.</strong> DepositorHelper</a></li></ol></li><li class="chapter-item expanded "><a href="../../../../src/integrations/zerolend/index.html"><strong aria-hidden="true">1.10.</strong> zerolend</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../../src/integrations/zerolend/Accumulator.sol/contract.ZeroLendAccumulator.html"><strong aria-hidden="true">1.10.1.</strong> ZeroLendAccumulator</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/zerolend/Depositor.sol/contract.Depositor.html"><strong aria-hidden="true">1.10.2.</strong> Depositor</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/index.html"><strong aria-hidden="true">2.</strong> interfaces</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../../src/interfaces/BalancerFeeDistributor.sol/interface.BalancerFeeDistributor.html"><strong aria-hidden="true">2.1.</strong> BalancerFeeDistributor</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IAccountant.sol/interface.IAccountant.html"><strong aria-hidden="true">2.2.</strong> IAccountant</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IAccumulator.sol/interface.IAccumulator.html"><strong aria-hidden="true">2.3.</strong> IAccumulator</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IAngleGaugeController.sol/interface.IAngleGaugeController.html"><strong aria-hidden="true">2.4.</strong> IAngleGaugeController</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IAngleGovernor.sol/interface.IAngleGovernor.html"><strong aria-hidden="true">2.5.</strong> IAngleGovernor</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ICakeDepositor.sol/interface.ICakeDepositor.html"><strong aria-hidden="true">2.6.</strong> ICakeDepositor</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ICakeGaugeController.sol/interface.ICakeGaugeController.html"><strong aria-hidden="true">2.7.</strong> ICakeGaugeController</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ICakeIFOV8.sol/interface.ICakeIFOV8.html"><strong aria-hidden="true">2.8.</strong> ICakeIFOV8</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ICakeLocker.sol/interface.ICakeLocker.html"><strong aria-hidden="true">2.9.</strong> ICakeLocker</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ICakeV3.sol/interface.ICakeV3.html"><strong aria-hidden="true">2.10.</strong> ICakeV3</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ICurveLocker.sol/interface.ICurveLocker.html"><strong aria-hidden="true">2.11.</strong> ICurveLocker</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ICurvePool.sol/interface.ICurvePool.html"><strong aria-hidden="true">2.12.</strong> ICurvePool</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ICurveStrategy.sol/interface.ICurveStrategy.html"><strong aria-hidden="true">2.13.</strong> ICurveStrategy</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ICurveZapper.sol/interface.ICurveZapper.html"><strong aria-hidden="true">2.14.</strong> ICurveZapper</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IDepositor.sol/interface.IDepositor.html"><strong aria-hidden="true">2.15.</strong> IDepositor</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IERC20.sol/interface.IERC20.html"><strong aria-hidden="true">2.16.</strong> IERC20</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IExecutor.sol/interface.IExecutor.html"><strong aria-hidden="true">2.17.</strong> IExecutor</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IFeeDistributor.sol/interface.IFeeDistributor.html"><strong aria-hidden="true">2.18.</strong> IFeeDistributor</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IFeeSplitter.sol/interface.IFeeSplitter.html"><strong aria-hidden="true">2.19.</strong> IFeeSplitter</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IFraxGaugeController.sol/interface.IFraxGaugeController.html"><strong aria-hidden="true">2.20.</strong> IFraxGaugeController</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IFraxSwapRouter.sol/interface.IFraxSwapRouter.html"><strong aria-hidden="true">2.21.</strong> IFraxSwapRouter</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IFraxYieldDistributor.sol/interface.IFraxYieldDistributor.html"><strong aria-hidden="true">2.22.</strong> IFraxYieldDistributor</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IFraxtalBridge.sol/interface.IFraxtalBridge.html"><strong aria-hidden="true">2.23.</strong> IFraxtalBridge</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IFraxtalDelegationRegistry.sol/interface.IFraxtalDelegationRegistry.html"><strong aria-hidden="true">2.24.</strong> IFraxtalDelegationRegistry</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IGaugeController.sol/interface.IGaugeController.html"><strong aria-hidden="true">2.25.</strong> IGaugeController</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ILaPoste.sol/interface.ILaPoste.html"><strong aria-hidden="true">2.26.</strong> ILaPoste</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ILiquidityGauge.sol/interface.ILiquidityGauge.html"><strong aria-hidden="true">2.27.</strong> ILiquidityGauge</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ILiquidityGaugeV4.sol/interface.ILiquidityGaugeV4.html"><strong aria-hidden="true">2.28.</strong> ILiquidityGaugeV4</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ILocker.sol/interface.ILocker.html"><strong aria-hidden="true">2.29.</strong> ILocker</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ILockerToken.sol/interface.ILockerToken.html"><strong aria-hidden="true">2.30.</strong> ILockerToken</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IOptimismMintableERC20.sol/interface.IOptimismMintableERC20.html"><strong aria-hidden="true">2.31.</strong> IOptimismMintableERC20</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IPendleFeeDistributor.sol/interface.IPendleFeeDistributor.html"><strong aria-hidden="true">2.32.</strong> IPendleFeeDistributor</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IPendleLocker.sol/interface.IPendleLocker.html"><strong aria-hidden="true">2.33.</strong> IPendleLocker</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IPreLaunchLocker.sol/interface.IPreLaunchLocker.html"><strong aria-hidden="true">2.34.</strong> IPreLaunchLocker</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IRevenueSharingPool.sol/interface.IRevenueSharingPool.html"><strong aria-hidden="true">2.35.</strong> IRevenueSharingPool</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IRevenueSharingPoolGateway.sol/interface.IRevenueSharingPoolGateway.html"><strong aria-hidden="true">2.36.</strong> IRevenueSharingPoolGateway</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IRewardPool.sol/interface.IRewardPool.html"><strong aria-hidden="true">2.37.</strong> IRewardPool</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IRewardReceiver.sol/interface.IRewardReceiver.html"><strong aria-hidden="true">2.38.</strong> IRewardReceiver</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ISDTDistributor.sol/interface.ISDTDistributor.html"><strong aria-hidden="true">2.39.</strong> ISDTDistributor</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ISafe.sol/interface.ISafe.html"><strong aria-hidden="true">2.40.</strong> ISafe</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ISafeLocker.sol/interface.ISafeLocker.html"><strong aria-hidden="true">2.41.</strong> ISafeLocker</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ISdFraxVault.sol/interface.ISdFraxVault.html"><strong aria-hidden="true">2.42.</strong> ISdFraxVault</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ISdSpectraDepositor.sol/interface.ISdSpectraDepositor.html"><strong aria-hidden="true">2.43.</strong> ISdSpectraDepositor</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ISdToken.sol/interface.ISdToken.html"><strong aria-hidden="true">2.44.</strong> ISdToken</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ISdTokenOperator.sol/interface.ISdTokenOperator.html"><strong aria-hidden="true">2.45.</strong> ISdTokenOperator</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ISdTokenV2.sol/interface.ISdTokenV2.html"><strong aria-hidden="true">2.46.</strong> ISdTokenV2</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ISdZeroDepositor.sol/interface.ISdZeroDepositor.html"><strong aria-hidden="true">2.47.</strong> ISdZeroDepositor</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ISmartWalletChecker.sol/interface.ISmartWalletChecker.html"><strong aria-hidden="true">2.48.</strong> ISmartWalletChecker</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ISpectraRewardsDistributor.sol/interface.ISpectraRewardsDistributor.html"><strong aria-hidden="true">2.49.</strong> ISpectraRewardsDistributor</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ISpectraVoter.sol/interface.ISpectraVoter.html"><strong aria-hidden="true">2.50.</strong> ISpectraVoter</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IStableMaster.sol/interface.IStableMaster.html"><strong aria-hidden="true">2.51.</strong> IStableMaster</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IStrategy.sol/interface.IStrategy.html"><strong aria-hidden="true">2.52.</strong> IStrategy</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ITokenMinter.sol/interface.ITokenMinter.html"><strong aria-hidden="true">2.53.</strong> ITokenMinter</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IUniswapRouter.sol/interface.IUniswapRouter.html"><strong aria-hidden="true">2.54.</strong> IUniswapRouter</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IVENFTSpectra.sol/interface.IVENFTSpectra.html"><strong aria-hidden="true">2.55.</strong> IVENFTSpectra</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IVeANGLE.sol/interface.IVeANGLE.html"><strong aria-hidden="true">2.56.</strong> IVeANGLE</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IVeApw.sol/interface.IVeApw.html"><strong aria-hidden="true">2.57.</strong> IVeApw</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IVeBoost.sol/interface.IVeBoost.html"><strong aria-hidden="true">2.58.</strong> IVeBoost</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IVeBoostDelegation.sol/interface.IVeBoostDelegation.html"><strong aria-hidden="true">2.59.</strong> IVeBoostDelegation</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IVeCRV.sol/interface.IVeCRV.html"><strong aria-hidden="true">2.60.</strong> IVeCRV</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IVeCake.sol/interface.IVeCake.html"><strong aria-hidden="true">2.61.</strong> IVeCake</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IVeFPIS.sol/interface.IVeFPIS.html"><strong aria-hidden="true">2.62.</strong> IVeFPIS</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IVeFXS.sol/interface.IveFXS.html"><strong aria-hidden="true">2.63.</strong> IveFXS</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IVePendle.sol/interface.IVePendle.html"><strong aria-hidden="true">2.64.</strong> IVePendle</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IVeToken.sol/interface.IVeToken.html"><strong aria-hidden="true">2.65.</strong> IVeToken</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IVeYFI.sol/interface.IVeYFI.html"><strong aria-hidden="true">2.66.</strong> IVeYFI</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IVestedFXS.sol/interface.IVestedFXS.html"><strong aria-hidden="true">2.67.</strong> IVestedFXS</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IVoter.sol/interface.IVoter.html"><strong aria-hidden="true">2.68.</strong> IVoter</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IVotingEscrowMav.sol/interface.IVotingEscrowMav.html"><strong aria-hidden="true">2.69.</strong> IVotingEscrowMav</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IYearnLocker.sol/interface.IYearnLocker.html"><strong aria-hidden="true">2.70.</strong> IYearnLocker</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IYearnStrategy.sol/interface.IYearnStrategy.html"><strong aria-hidden="true">2.71.</strong> IYearnStrategy</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IYearnVestingFactory.sol/interface.IYearnVestingFactory.html"><strong aria-hidden="true">2.72.</strong> IYearnVestingFactory</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IYieldDistributor.sol/interface.IYieldDistributor.html"><strong aria-hidden="true">2.73.</strong> IYieldDistributor</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IZeroLocker.sol/interface.IZeroLocker.html"><strong aria-hidden="true">2.74.</strong> IZeroLocker</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IZeroVp.sol/interface.IZeroVp.html"><strong aria-hidden="true">2.75.</strong> IZeroVp</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/VeToken.sol/interface.VeToken.html"><strong aria-hidden="true">2.76.</strong> VeToken</a></li></ol></li><li class="chapter-item expanded "><a href="../../../../src/utils/index.html"><strong aria-hidden="true">3.</strong> utils</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../../src/utils/Constants.sol/library.Constants.html"><strong aria-hidden="true">3.1.</strong> Constants</a></li><li class="chapter-item expanded "><a href="../../../../src/utils/Executor.sol/interface.IExecuteCompatible.html"><strong aria-hidden="true">3.2.</strong> IExecuteCompatible</a></li><li class="chapter-item expanded "><a href="../../../../src/utils/Executor.sol/contract.Executor.html"><strong aria-hidden="true">3.3.</strong> Executor</a></li><li class="chapter-item expanded "><a href="../../../../src/utils/SafeModule.sol/abstract.SafeModule.html"><strong aria-hidden="true">3.4.</strong> SafeModule</a></li><li class="chapter-item expanded "><a href="../../../../src/utils/SafeProxyFactoryLibrary.sol/library.SafeProxyFactoryLibrary.html"><strong aria-hidden="true">3.5.</strong> SafeProxyFactoryLibrary</a></li></ol></li><li class="chapter-item expanded "><a href="../../../../src/AccumulatorBase.sol/abstract.AccumulatorBase.html"><strong aria-hidden="true">4.</strong> AccumulatorBase</a></li><li class="chapter-item expanded "><a href="../../../../src/AccumulatorDelegable.sol/abstract.AccumulatorDelegable.html"><strong aria-hidden="true">5.</strong> AccumulatorDelegable</a></li><li class="chapter-item expanded "><a href="../../../../src/AccumulatorDripping.sol/abstract.AccumulatorDripping.html"><strong aria-hidden="true">6.</strong> AccumulatorDripping</a></li><li class="chapter-item expanded "><a href="../../../../src/Collector.sol/abstract.Collector.html"><strong aria-hidden="true">7.</strong> Collector</a></li><li class="chapter-item expanded "><a href="../../../../src/DepositorBase.sol/abstract.DepositorBase.html"><strong aria-hidden="true">8.</strong> DepositorBase</a></li><li class="chapter-item expanded "><a href="../../../../src/DepositorPreLaunch.sol/contract.DepositorPreLaunch.html"><strong aria-hidden="true">9.</strong> DepositorPreLaunch</a></li><li class="chapter-item expanded "><a href="../../../../src/LockerPreLaunch.sol/contract.LockerPreLaunch.html"><strong aria-hidden="true">10.</strong> LockerPreLaunch</a></li><li class="chapter-item expanded "><a href="../../../../src/Recipient.sol/abstract.Recipient.html"><strong aria-hidden="true">11.</strong> Recipient</a></li><li class="chapter-item expanded "><a href="../../../../src/Redeem.sol/contract.Redeem.html"><strong aria-hidden="true">12.</strong> Redeem</a></li><li class="chapter-item expanded "><a href="../../../../src/SDToken.sol/contract.sdToken.html"><strong aria-hidden="true">13.</strong> sdToken</a></li><li class="chapter-item expanded "><a href="../../../../src/VoteGaugeRouter.sol/contract.VoteGaugeRouter.html"><strong aria-hidden="true">14.</strong> VoteGaugeRouter</a></li><li class="chapter-item expanded "><a href="../../../../src/VoterBase.sol/abstract.VoterBase.html"><strong aria-hidden="true">15.</strong> VoterBase</a></li><li class="chapter-item expanded "><a href="../../../../src/VoterPermissionManager.sol/contract.VoterPermissionManager.html"><strong aria-hidden="true">16.</strong> VoterPermissionManager</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Stake DAO Lockers</h1>
+
+                    <div class="right-buttons">
+                        <a href="../../../../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/stake-dao/contracts-monorepo" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="spectravotingclaimer"><a class="header" href="#spectravotingclaimer">SpectraVotingClaimer</a></h1>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/d378240d6dc456a20631934340b6ba68d1b60e59/src/integrations/spectra/SpectraVotingClaimer.sol">Git Source</a></p>
+<p><strong>Inherits:</strong>
+AllowanceManager, <a href="/src/utils/SafeModule.sol/abstract.SafeModule.html">SafeModule</a></p>
+<p><strong>Author:</strong>
+StakeDAO</p>
+<p>This contract is used to claim all the rewards from the Spectra voting app</p>
+<p><strong>Note:</strong>
+contact: contact@stakedao.org</p>
+<h2 id="state-variables"><a class="header" href="#state-variables">State Variables</a></h2>
+<h3 id="spectra_voter"><a class="header" href="#spectra_voter">SPECTRA_VOTER</a></h3>
+<p>--- CONSTANTS</p>
+<pre><code class="language-solidity">address public immutable SPECTRA_VOTER = SpectraProtocol.VOTER;
+</code></pre>
+<h3 id="spectra_ve_nft"><a class="header" href="#spectra_ve_nft">SPECTRA_VE_NFT</a></h3>
+<pre><code class="language-solidity">address public immutable SPECTRA_VE_NFT = SpectraProtocol.VESPECTRA;
+</code></pre>
+<h3 id="spectra_governance"><a class="header" href="#spectra_governance">SPECTRA_GOVERNANCE</a></h3>
+<pre><code class="language-solidity">address public immutable SPECTRA_GOVERNANCE = SpectraProtocol.GOVERNANCE;
+</code></pre>
+<h3 id="locker"><a class="header" href="#locker">LOCKER</a></h3>
+<pre><code class="language-solidity">address public immutable LOCKER = SpectraLocker.LOCKER;
+</code></pre>
+<h3 id="sd_spectra_nft_id"><a class="header" href="#sd_spectra_nft_id">SD_SPECTRA_NFT_ID</a></h3>
+<p>The Stake DAO NFT ID which owns the voting power</p>
+<pre><code class="language-solidity">uint256 public immutable SD_SPECTRA_NFT_ID = 1263;
+</code></pre>
+<h3 id="fee"><a class="header" href="#fee">FEE</a></h3>
+<p>The fee which will be send to SD_TREASURY (10000 = 100%)</p>
+<p>Default is 15%</p>
+<pre><code class="language-solidity">uint256 public immutable FEE = 1_500;
+</code></pre>
+<h3 id="denominator"><a class="header" href="#denominator">DENOMINATOR</a></h3>
+<p>Denominator for fixed point math.</p>
+<pre><code class="language-solidity">uint256 public immutable DENOMINATOR = 10_000;
+</code></pre>
+<h3 id="sd_treasury"><a class="header" href="#sd_treasury">SD_TREASURY</a></h3>
+<p>Stake DAO Treasury</p>
+<pre><code class="language-solidity">address public immutable SD_TREASURY = DAO.TREASURY;
+</code></pre>
+<h3 id="recipient"><a class="header" href="#recipient">recipient</a></h3>
+<p>--- STATE</p>
+<p>Address which will receive our funds</p>
+<pre><code class="language-solidity">address public recipient;
+</code></pre>
+<h2 id="functions"><a class="header" href="#functions">Functions</a></h2>
+<h3 id="constructor"><a class="header" href="#constructor">constructor</a></h3>
+<pre><code class="language-solidity">constructor(address _recipient, address _gateway) AllowanceManager(msg.sender) SafeModule(_gateway);
+</code></pre>
+<h3 id="setrecipient"><a class="header" href="#setrecipient">setRecipient</a></h3>
+<p>--- PUBLIC FUNCTIONS</p>
+<p>Set a new recipient</p>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>
+<p>throws: ZERO_ADDRESS if the recipient is a zero address</p>
+</li>
+<li>
+<p>throws: NotAuthorized if the caller is not the governance or an allowed address</p>
+</li>
+</ul>
+<pre><code class="language-solidity">function setRecipient(address _newRecipient) external onlyGovernance;
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>_newRecipient</code></td><td><code>address</code></td><td>new recipient address</td></tr>
+</tbody></table>
+</div>
+<h3 id="canclaim"><a class="header" href="#canclaim">canClaim</a></h3>
+<p>Check if there is something to claim</p>
+<pre><code class="language-solidity">function canClaim() external view returns (bool);
+</code></pre>
+<h3 id="claim"><a class="header" href="#claim">claim</a></h3>
+<p>Claim pending Spectra voting rewards</p>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>
+<p>throws: ZERO_ADDRESS if the recipient is a zero address</p>
+</li>
+<li>
+<p>throws: NotAuthorized if the caller is not the governance or an allowed address</p>
+</li>
+</ul>
+<pre><code class="language-solidity">function claim() external onlyGovernance;
+</code></pre>
+<h3 id="_claimrewards"><a class="header" href="#_claimrewards">_claimRewards</a></h3>
+<p>--- INTERNAL FUNCTIONS</p>
+<p>Claim the claimable rewards (bribes or fees) for a given pool</p>
+<pre><code class="language-solidity">function _claimRewards(address votingRewardAddress, uint160 poolId) internal;
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>votingRewardAddress</code></td><td><code>address</code></td><td>Address of the voting reward contract</td></tr>
+<tr><td><code>poolId</code></td><td><code>uint160</code></td><td>Pool id to claim the rewards for</td></tr>
+</tbody></table>
+</div>
+<h3 id="_earnedamount"><a class="header" href="#_earnedamount">_earnedAmount</a></h3>
+<p>Get the earned amount for a given reward token</p>
+<pre><code class="language-solidity">function _earnedAmount(address _votingRewardAddress, address _rewardToken) internal view returns (uint256 earned);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>_votingRewardAddress</code></td><td><code>address</code></td><td>Address of the voting reward contract</td></tr>
+<tr><td><code>_rewardToken</code></td><td><code>address</code></td><td>Address of the reward token</td></tr>
+</tbody></table>
+</div>
+<h3 id="_claimanddistribute"><a class="header" href="#_claimanddistribute">_claimAndDistribute</a></h3>
+<p>Claim and distribute the claimable rewards for a given pool</p>
+<pre><code class="language-solidity">function _claimAndDistribute(uint256 earned, address rewardToken, uint160 poolId, address votingRewardAddress)
+    internal;
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>earned</code></td><td><code>uint256</code></td><td>Gross amount to claim</td></tr>
+<tr><td><code>rewardToken</code></td><td><code>address</code></td><td>Token address to claim</td></tr>
+<tr><td><code>poolId</code></td><td><code>uint160</code></td><td>Pool id to claim the rewards from</td></tr>
+<tr><td><code>votingRewardAddress</code></td><td><code>address</code></td><td>Address of the voting reward contract</td></tr>
+</tbody></table>
+</div>
+<h3 id="_gettokenrewards"><a class="header" href="#_gettokenrewards">_getTokenRewards</a></h3>
+<p>Get all the token rewards associated to a voting reward contract</p>
+<pre><code class="language-solidity">function _getTokenRewards(address votingRewardAddress) internal view returns (address[] memory);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>votingRewardAddress</code></td><td><code>address</code></td><td>Address to the voting reward</td></tr>
+</tbody></table>
+</div>
+<h3 id="_execute_claim"><a class="header" href="#_execute_claim">_execute_claim</a></h3>
+<p>Send a transaction to the safe to claim voting rewards</p>
+<p><em>Should be called only by the owner</em></p>
+<pre><code class="language-solidity">function _execute_claim(address votingRewardAddress, address reward) internal;
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>votingRewardAddress</code></td><td><code>address</code></td><td>Address to the voting reward where the claim will happened</td></tr>
+<tr><td><code>reward</code></td><td><code>address</code></td><td>Reward address to claim</td></tr>
+</tbody></table>
+</div>
+<h3 id="_execute_transfer"><a class="header" href="#_execute_transfer">_execute_transfer</a></h3>
+<p>Send some tokens to an address</p>
+<pre><code class="language-solidity">function _execute_transfer(address token, address to, uint256 amount) internal;
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>token</code></td><td><code>address</code></td><td>Token address to transfer</td></tr>
+<tr><td><code>to</code></td><td><code>address</code></td><td>Address to transfer the tokens to</td></tr>
+<tr><td><code>amount</code></td><td><code>uint256</code></td><td>Amount to transfer</td></tr>
+</tbody></table>
+</div>
+<h3 id="_getlocker"><a class="header" href="#_getlocker">_getLocker</a></h3>
+<p>Get the locker address</p>
+<p><em>Must be implemented for the SafeModule contract</em></p>
+<pre><code class="language-solidity">function _getLocker() internal view override returns (address);
+</code></pre>
+<h2 id="events"><a class="header" href="#events">Events</a></h2>
+<h3 id="claimed"><a class="header" href="#claimed">Claimed</a></h3>
+<p>Event emitted when a claim occured</p>
+<pre><code class="language-solidity">event Claimed(
+    address tokenAddress,
+    address poolAddress,
+    uint160 poolId,
+    uint256 chainId,
+    uint256 amount,
+    uint256 fees,
+    uint256 timestamp
+);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>tokenAddress</code></td><td><code>address</code></td><td>Address that was claimed.</td></tr>
+<tr><td><code>poolAddress</code></td><td><code>address</code></td><td>Address that we claimed to.</td></tr>
+<tr><td><code>poolId</code></td><td><code>uint160</code></td><td>Pool id that we claimed to.</td></tr>
+<tr><td><code>chainId</code></td><td><code>uint256</code></td><td>The pool chain id.</td></tr>
+<tr><td><code>amount</code></td><td><code>uint256</code></td><td>Amount claimed.</td></tr>
+<tr><td><code>fees</code></td><td><code>uint256</code></td><td></td></tr>
+<tr><td><code>timestamp</code></td><td><code>uint256</code></td><td>The claim timestamp</td></tr>
+</tbody></table>
+</div>
+<h2 id="errors"><a class="header" href="#errors">Errors</a></h2>
+<h3 id="zero_address"><a class="header" href="#zero_address">ZERO_ADDRESS</a></h3>
+<p>--- ERRORS &amp; EVENTS</p>
+<p>Error emitted when a zero address is pass</p>
+<pre><code class="language-solidity">error ZERO_ADDRESS();
+</code></pre>
+<h3 id="balance_claim"><a class="header" href="#balance_claim">BALANCE_CLAIM</a></h3>
+<p>Error emitted when a balance if wrong after a claim</p>
+<pre><code class="language-solidity">error BALANCE_CLAIM();
+</code></pre>
+<h3 id="balance_transfer"><a class="header" href="#balance_transfer">BALANCE_TRANSFER</a></h3>
+<p>Error emitted when a balance if wrong after a transfer</p>
+<pre><code class="language-solidity">error BALANCE_TRANSFER();
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../../../src/integrations/spectra/SpectraVotingClaimer.sol/interface.ISpectraGovernance.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../../../../src/integrations/yearn/index.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../../../src/integrations/spectra/SpectraVotingClaimer.sol/interface.ISpectraGovernance.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../../../../src/integrations/yearn/index.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../../../../elasticlunr.min.js"></script>
+        <script src="../../../../mark.min.js"></script>
+        <script src="../../../../searcher.js"></script>
+
+        <script src="../../../../clipboard.min.js"></script>
+        <script src="../../../../highlight.js"></script>
+        <script src="../../../../book.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../../../../solidity.min.js"></script>
+
+
+    </div>
+    </body>
+</html>
