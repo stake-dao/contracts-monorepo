@@ -28,9 +28,10 @@ import {Common} from "address-book/src/CommonEthereum.sol";
 contract YieldnestOFTAdapter is OFTAdapter {
     /// @notice Deploys the Yieldnest OFTAdapter for asdYND bridging.
     /// @param _token The address of the asdYND ERC20 token to be locked and bridged.
-    /// @param _owner The contract owner (admin for LayerZero configuration).
-    constructor(address _token, address _owner)
-        OFTAdapter(_token, Common.LAYERZERO_ENDPOINT, _owner)
-        Ownable(msg.sender)
+    /// @param _delegate The admin for LayerZero configuration.
+    /// @param _owner The owner of the contract
+    constructor(address _token, address _delegate, address _owner)
+        OFTAdapter(_token, Common.LAYERZERO_ENDPOINT, _delegate)
+        Ownable(_owner)
     {}
 }

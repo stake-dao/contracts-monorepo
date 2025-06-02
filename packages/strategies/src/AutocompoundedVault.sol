@@ -67,11 +67,14 @@ contract AutocompoundedVault is ERC4626, Ownable2Step {
     /// @param asset The asset token the users will deposit to the vault (e.g. sdYND)
     /// @param shareName The name of the shares token the users will receive
     /// @param shareSymbol The symbol of the shares token the users will receive
-    constructor(uint128 streamingPeriod, IERC20 asset, string memory shareName, string memory shareSymbol)
-        ERC4626(asset)
-        ERC20(shareName, shareSymbol)
-        Ownable(msg.sender)
-    {
+    /// @param owner The owner of the vault
+    constructor(
+        uint128 streamingPeriod,
+        IERC20 asset,
+        string memory shareName,
+        string memory shareSymbol,
+        address owner
+    ) ERC4626(asset) ERC20(shareName, shareSymbol) Ownable(owner) {
         STREAMING_PERIOD = streamingPeriod;
     }
 

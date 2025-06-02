@@ -27,9 +27,10 @@ import {Common} from "address-book/src/CommonBSC.sol";
 ///     https://docs.layerzero.network/v2/developers/evm/oft/quickstart
 contract YieldnestOFT is OFT {
     /// @notice Deploys the Yieldnest OFT for asdYND bridging on BSC.
-    /// @param _delegate The contract owner (admin for LayerZero configuration).
-    constructor(address _delegate)
+    /// @param _delegate The admin for LayerZero configuration.
+    /// @param _owner The owner of the contract
+    constructor(address _delegate, address _owner)
         OFT("Autocompounded Stake DAO YND", "asdYND", Common.LAYERZERO_ENDPOINT, _delegate)
-        Ownable(msg.sender)
+        Ownable(_owner)
     {}
 }

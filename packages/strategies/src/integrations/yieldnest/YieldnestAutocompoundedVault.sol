@@ -11,7 +11,8 @@ import {AutocompoundedVault} from "src/AutocompoundedVault.sol";
 contract YieldnestAutocompoundedVault is AutocompoundedVault {
     /// @notice Initialize the the streaming period, the asset and the shares token
     /// @dev sdYND is the asset contract while asdYND is the shares token
-    constructor()
-        AutocompoundedVault(7 days, IERC20(YieldnestProtocol.SDYND), "Autocompounded Stake DAO YND", "asdYND")
+    /// @param _owner The owner of the vault
+    constructor(address _owner)
+        AutocompoundedVault(7 days, IERC20(YieldnestProtocol.SDYND), "Autocompounded Stake DAO YND", "asdYND", _owner)
     {}
 }
