@@ -10,6 +10,7 @@ library DAO {
     address internal constant FEE_DISTRIBUTOR = 0x29f3dd38dB24d3935CF1bf841e6b2B461A3E5D92;
     address internal constant PROXY_ADMIN = 0xfE612c237A81527a86f2Cac1FD19939CF4F91B9B;
     address internal constant SMART_WALLET_CHECKER = 0x37E8386602d9EBEa2c56dd11d8E142290595f1b5;
+    address internal constant TIMELOCK = 0xD3cFc4E65a73BB6C482383EB38f5C3E1d1411616;
 
     /// Recipient
     address internal constant TREASURY = 0x9EBBb3d59d53D6aD3FA5464f36c2E84aBb7cf5c1;
