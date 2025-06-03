@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 import {Script} from "forge-std/src/Script.sol";
 import {YieldnestOFTAdapter} from "src/integrations/yieldnest/YieldnestOFTAdapter.sol";
 import {YieldnestOFT} from "src/integrations/yieldnest/YieldnestOFT.sol";
-import {DAO} from "address-book/src/DAOEthereum.sol";
+import {DAO} from "address-book/src/DaoEthereum.sol";
 import {LayerZeroEID} from "src/libraries/LayerZeroEID.sol";
 import {Create3} from "shared/src/create/Create3.sol";
 import {YieldnestAutocompoundedVault} from "src/integrations/yieldnest/YieldnestAutocompoundedVault.sol";
