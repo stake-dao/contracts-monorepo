@@ -9,6 +9,10 @@ library YieldnestProtocol {
     address internal constant GAUGE = 0x26aB50DC99F14405155013ea580Ea2b3dB1801c7;
 }
 
-library YieldnestLocker {}
+library YieldnestLocker {
+    address internal constant ASDYND = 0x3610A0f4a36513d27128e110dB999D6e1e6105D5;
+    // Omnichain Fungible Token Adapter using LayerZero
+    address internal constant ASDYND_OFT_ADAPTER = 0xe44Dc036a1726b89651C8b8A56d89D9466625652;
+}
 
 library YieldnestVotemarket {}
