@@ -1,19 +1,32 @@
-![banner](img/banner.jpg)
+# Stake DAO Address Book
 
-# <h1 align="center">Stake DAO Address Book</h1>
+```
+              ######
+      ####################
+    ############################
+  ##################################
+ ######################################
+#########################################
+######        ##########################
+ #####        #########################
+  #######   ###############   ## #######
+    #####  ############     #### ######
+          ###### #####     ##### ######
+         ######   #####    #####  #####
+        ######    #####    #####   #### Address Book
+```
 
-This package provides the canonical, up-to-date mapping of all protocol and product smart contract addresses used by Stake DAO and its ecosystem. It serves as the **source of truth** for addresses referenced by other smart contract packages, scripts, and off-chain integrations.
+[![Synchronization](https://github.com/stake-dao/contracts-monorepo/actions/workflows/book_synchronization.yml/badge.svg?branch=main)](https://github.com/stake-dao/contracts-monorepo/actions/workflows/book_synchronization.yml)
 
-## 📚 What is this package for?
+## Overview
 
-- **Centralized Address Management:**
-  All protocol, DAO, and product addresses are maintained in one place, ensuring consistency and reducing the risk of errors across the Stake DAO codebase.
-- **Automation:**
-  Scripts in this package generate machine- and human-readable address books for use in documentation, monitoring, and integrations.
-- **Reference:**
-  Other smart contract packages and off-chain tools should import addresses from here, not hardcode them elsewhere.
+The Stake DAO Address Book is the canonical, up-to-date mapping of all protocol and product smart contract addresses used by Stake DAO and its ecosystem. It serves as the **single source of truth** for addresses referenced by other smart contract packages, scripts, and off-chain integrations.
 
-## 📂 Where to find the address book library files
+- **Centralized Address Management:** All protocol, DAO, and product addresses are maintained in one place, ensuring consistency and reducing the risk of errors across the Stake DAO codebase.
+- **Automation:** The CI pipeline automatically exports the address book to both JSON and Markdown formats and uploads them to the [Stake DAO Offchain Registry](https://github.com/stake-dao/offchain-registry/tree/main/data/address-book) for use in documentation, monitoring, and integrations.
+- **Reference:** Other smart contract packages and off-chain tools should import addresses from here, not hardcode them elsewhere.
+
+## Where to find the address book library files
 
 - All Solidity address book libraries are located in [`src/`](./src/).
 - Each file corresponds to a protocol and network, and may contain multiple libraries for different products or sections (e.g., Protocol, Locker, Votemarket).
@@ -22,7 +35,15 @@ This package provides the canonical, up-to-date mapping of all protocol and prod
   - `SpectraBase.sol` — Spectra protocol addresses on Base
   - `DaoEthereum.sol` — DAO addresses on Ethereum
 
-## 🛠️ Scripts
+## CI Automation & Outputs
+
+- The CI pipeline automatically generates and uploads:
+  - **`address-book.json`** — Machine-readable, hierarchical address book for programmatic use.
+  - **`README.md`** — Human-friendly Markdown address book for documentation and review.
+- Both files are available in the [Stake DAO Offchain Registry](https://github.com/stake-dao/offchain-registry/tree/main/data/address-book).
+- **Do NOT run the scripts manually.** The output files are git-ignored and will be generated automatically by the CI pipeline on every relevant change.
+
+## Scripts
 
 The [`scripts/`](./scripts/) directory contains automation tools for generating address book outputs:
 
@@ -40,7 +61,7 @@ The [`scripts/`](./scripts/) directory contains automation tools for generating 
   - Adds explorer links for each address
   - Includes an auto-generated warning
 
-**Usage:**
+**Usage (for reference only):**
 Run the scripts sequentially from the package root:
 
 ```sh
@@ -48,17 +69,11 @@ pnpm run generate-json
 pnpm run generate-md
 ```
 
-## 📑 Output
-
-- **`generated/address-book.json`** — Machine-readable, hierarchical address book for programmatic use.
-- **`generated/README.md`** — Human-friendly Markdown address book for documentation and review.
-
-## 🧩 Contributing
+## Contributing
 
 To contribute to the address book, please follow these guidelines:
 
 - **Add new addresses** by creating or updating the appropriate file in `src/` following the conventions below.
-- **Do NOT run the scripts manually.** The output files are git-ignored and will be generated automatically by the CI pipeline on every relevant change.
 - **Review your Solidity changes locally.** Generated outputs will be uploaded and distributed by CI for documentation and integration purposes.
 
 ### ✅ DOs and ❌ DON'Ts
@@ -94,7 +109,7 @@ To contribute to the address book, please follow these guidelines:
   These files are for address constants only.
 - **Don't duplicate addresses across files unless necessary.**
 
-## ℹ️ Additional Notes
+## Additional Notes
 
 - **This package is the single source of truth for all Stake DAO addresses.**
   All other packages and integrations should reference addresses from here.
