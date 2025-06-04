@@ -38,6 +38,10 @@ import {YieldnestAutocompoundedVault} from "src/integrations/yieldnest/Yieldnest
  *      https://docs.layerzero.network/v2/developers/evm/oft/quickstart
  */
 contract DeployYieldnestOmniTokenScript is Script {
+    function addressToBytes32LeftPadded(address _address) internal pure returns (bytes32) {
+        return bytes32(uint256(uint160(_address)));
+    }
+
     /// @return yieldnestVault The deployed YieldnestAutocompoundedVault contract on the source chain (mainnet).
     /// @return yieldnestOFTAdapter The deployed YieldnestOFTAdapter contract on the source chain (mainnet).
     /// @return yieldnestOFT The deployed YieldnestOFT contract on the destination chain (bsc).
@@ -102,7 +106,7 @@ contract DeployYieldnestOmniTokenScript is Script {
 
         // Set the `YieldnestOFTAdapter` contract that will be deployed on the source chain as the first authorized peer
         //    The address of the contract must be encoded in bytes32 following the documentation
-        yieldnestOFT.setPeer(LayerZeroEID.MAINNET_EID, bytes32(bytes20(address(yieldnestOFTAdapterAddress))));
+        yieldnestOFT.setPeer(LayerZeroEID.MAINNET_EID, addressToBytes32LeftPadded(address(yieldnestOFTAdapterAddress)));
 
         // Transfer the ownership of the `YieldnestOFT` contract to the DAO governance address
         yieldnestOFT.transferOwnership(DAO.GOVERNANCE);
@@ -126,7 +130,7 @@ contract DeployYieldnestOmniTokenScript is Script {
 
         // Set the `YieldnestOFT` contract that has been deployed on the destination chain as the first authorized peer
         // The address of the contract must be encoded in bytes32 following the documentation
-        yieldnestOFTAdapter.setPeer(LayerZeroEID.BSC_EID, bytes32(bytes20(address(yieldnestOFT))));
+        yieldnestOFTAdapter.setPeer(LayerZeroEID.BSC_EID, addressToBytes32LeftPadded(address(yieldnestOFT)));
 
         // Transfer the ownership of the `YieldnestOFTAdapter` contract to the DAO governance address
         yieldnestOFTAdapter.transferOwnership(DAO.GOVERNANCE);
