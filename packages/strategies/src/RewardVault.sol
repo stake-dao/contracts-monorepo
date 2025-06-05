@@ -922,14 +922,14 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @dev Combines "StakeDAO", underlying asset name, and "Vault"
     /// @return Full vault name
     function name() public view override(ERC20, IERC20Metadata) returns (string memory) {
-        return string.concat("StakeDAO Fusion ", IERC20Metadata(asset()).name(), " Vault");
+        return string.concat("Stake DAO ", IERC20Metadata(asset()).name(), " Vault");
     }
 
     /// @notice Generates the vault's symbol
     /// @dev Combines "sd-", underlying asset symbol, and "-vault"
     /// @return Full vault symbol
     function symbol() public view override(ERC20, IERC20Metadata) returns (string memory) {
-        return string.concat("sd-fusion-", IERC20Metadata(asset()).symbol(), "-vault");
+        return string.concat("sd-", IERC20Metadata(asset()).symbol(), "-vault");
     }
 
     /// @notice Gets the vault's decimal places

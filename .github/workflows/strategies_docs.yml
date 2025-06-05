@@ -56,7 +56,7 @@ jobs:
       - name: Edit book.toml
         working-directory: packages/strategies
         run: |
-          sed -i 's/title = ""/title = "Stake DAO Fusion"/' ./docs/book.toml                         # Set the title of the book
+          sed -i 's/title = ""/title = "Stake DAO Staking v2"/' ./docs/book.toml                         # Set the title of the book
           sed -i 's/authors = \[\]/authors = \["Stake DAO"\]/' ./docs/book.toml                     # Set the author of the book
           sed -i '/\[book\]/a language = "en"' ./docs/book.toml                                     # Add language setting under [book]
           sed -i '/\[book\]/a multilingual = false' ./docs/book.toml                                # Add multilingual setting under [book]
