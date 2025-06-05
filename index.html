@@ -179,7 +179,130 @@
 
                 <div id="content" class="content">
                     <main>
-                        
+                        <h1 id="stake-dao-lockers-v4"><a class="header" href="#stake-dao-lockers-v4">Stake DAO Lockers v4</a></h1>
+<pre><code>              ######
+      ####################
+    ############################
+  ##################################
+ ######################################
+#########################################
+######        ##########################
+ #####        #########################
+  #######   ###############   ## #######
+    #####  ############     #### ######
+          ###### #####     ##### ######
+         ######   #####    #####  #####
+        ######    #####    #####   #### Lockers v4
+</code></pre>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/actions/workflows/lockers_unit-tests.yml"><img src="https://github.com/stake-dao/contracts-monorepo/actions/workflows/lockers_unit-tests.yml/badge.svg?branch=main" alt="Unit Tests" /></a>
+<a href="https://github.com/stake-dao/contracts-monorepo/actions/workflows/lockers_coverage.yml"><img src="https://github.com/stake-dao/contracts-monorepo/actions/workflows/lockers_coverage.yml/badge.svg?branch=main" alt="Coverage" /></a>
+<a href="https://github.com/stake-dao/contracts-monorepo/actions/workflows/lockers_docs.yml"><img src="https://github.com/stake-dao/contracts-monorepo/actions/workflows/lockers_docs.yml/badge.svg?branch=main" alt="Docs" /></a></p>
+<h2 id="overview"><a class="header" href="#overview">Overview</a></h2>
+<p>Stake DAO Lockers v4 are the latest evolution of Stake DAO's liquid locker infrastructure, unlocking the full power of governance tokens for users and protocols. With Lockers, users no longer have to choose between yield, governance, bribes, or liquidity; they get all benefits simultaneously. By integrating with the ve-tokenomics of leading DeFi protocols (Curve, Pendle, Yearn, Balancer, Spectra, FXS, Zero, and more), Stake DAO Lockers provide a permissionless, protocol-agnostic, and cross-chain solution for maximizing utility and flexibility. The protocol is fully governed by the Stake DAO community, ensuring decentralization and continuous improvement.</p>
+<ul>
+<li><strong>Product page:</strong> <a href="https://www.stakedao.org/lockers">https://www.stakedao.org/lockers</a></li>
+<li><strong>User documentation:</strong> <a href="https://docs.stakedao.org/liquidlockers">https://docs.stakedao.org/liquidlockers</a> [WIP 🚧]</li>
+</ul>
+<p>For a detailed analysis of all contracts, their responsibilities, and how the system works, please refer to the <a href="./documentation/SPEC.html">SPEC.md</a> file. It contains in-depth documentation of the protocol architecture, component interactions, and process flows.</p>
+<h2 id="key-features"><a class="header" href="#key-features">Key Features</a></h2>
+<ul>
+<li><strong>No trade-offs:</strong> Users receive yield, bribes, governance rights, and liquidity simultaneously—no need to compromise.</li>
+<li><strong>sdTOKENs:</strong> Liquid, tradable tokens representing locked assets. sdTOKENs can be staked, used for governance, or instantly exited via Curve Factory Pools.</li>
+<li><strong>Perpetual relocking:</strong> Underlying assets are perpetually relocked for maximum rewards, with no manual intervention required.</li>
+<li><strong>Exit liquidity:</strong> Users can exit their position at any time, ensuring flexibility and capital efficiency.</li>
+<li><strong>Boosted voting &amp; bribes:</strong> Integration with veSDT enables boosted voting power, and users can participate in bribe markets to monetize their governance rights.</li>
+<li><strong>veToken Integration:</strong> Seamless interaction with ve-tokenomics of major DeFi protocols.</li>
+<li><strong>Modular Architecture:</strong> Each integration (Curve, Pendle, etc.) has its own Locker, Accumulator, Depositor, Gauge, sd/ve-Token contracts.</li>
+<li><strong>SAFE-based Security:</strong> v4 lockers are deployed as Safe accounts, with authorized modules for maintainability and security.</li>
+<li><strong>Upgradeable &amp; Composable:</strong> Accumulators and depositors are Safe modules, enabling flexible upgrades and permission management.</li>
+<li><strong>Legacy Support:</strong> Existing pre-v4 lockers remain compatible via a gateway contract. The gateway is a Safe account.</li>
+<li><strong>Reward Optimization:</strong> Accumulators claim and distribute rewards efficiently, supporting both instant and time-dripped models.</li>
+<li><strong>Pre-Launch Support:</strong> Special contracts for secure sdToken minting prior to the full deployment of the protocol.</li>
+<li><strong>On-chain Voting:</strong> Dedicated contracts for protocol and gauge voting, supporting advanced governance workflows.</li>
+<li><strong>Permissionless &amp; DAO-governed:</strong> The entire system is fully on-chain, upgradable, and governed by the Stake DAO community.</li>
+<li><strong>Protocol-agnostic &amp; cross-chain:</strong> Designed to be easily extended to new protocols and chains, ensuring long-term scalability and composability.</li>
+</ul>
+<h2 id="architecture"><a class="header" href="#architecture">Architecture</a></h2>
+<p>Stake DAO Lockers v4 introduce a modular, protocol-agnostic architecture. Each protocol integration is found in <a href="./src/integrations/"><code>src/integrations/</code></a>, and includes:</p>
+<ul>
+<li><strong>Locker:</strong> Locks tokens and receives veTokens from the underlying protocol.</li>
+<li><strong>Accumulator:</strong> Claims and manages rewards for the locker.</li>
+<li><strong>Depositor:</strong> Handles deposits, locks tokens, and mints sdTokens.</li>
+<li><strong>Gauge:</strong> Curve-like gauge for Stake DAO governance and reward distribution.</li>
+<li><strong>sdToken/veToken:</strong> ERC20 contracts representing staked and voting power.</li>
+</ul>
+<blockquote>
+<p>For the up-to-date list of integrated protocols, see the <a href="./src/integrations/"><code>src/integrations/</code></a> directory.</p>
+</blockquote>
+<h3 id="safe-modules--gateway-pattern"><a class="header" href="#safe-modules--gateway-pattern">SAFE Modules &amp; Gateway Pattern</a></h3>
+<ul>
+<li><strong>Future Lockers:</strong> Deployed as Safe accounts. Accumulators and depositors are pre-authorized Safe modules, able to act on behalf of the Safe (locker) for secure, transparent, and permissioned operations.</li>
+<li><strong>Legacy Lockers:</strong> Remain as standard contracts. A gateway Safe contract is introduced between modules and the locker, acting as a middleman responsible for operating the locker.</li>
+<li><strong>Implementation:</strong> The gateway/locker logic is implemented in <a href="./src/utils/SafeModule.sol"><code>SafeModule.sol</code></a>, inherited by all accumulators and depositors.</li>
+</ul>
+<h2 id="utilities--variants"><a class="header" href="#utilities--variants">Utilities &amp; Variants</a></h2>
+<ul>
+<li><strong>AccumulatorDripping:</strong> Extension of the Accumulator for distributing ERC20 rewards over a fixed period (used by Pendle).</li>
+<li><strong>AccumulatorDelegable:</strong> Extension of the Accumulator for delegated reward distribution (used by Curve/Balancer).</li>
+<li><strong>LockerPreLaunch:</strong> Enables secure sdToken minting prior to the full deployment of the protocol (used by Yieldnest).</li>
+<li><strong>DepositorPreLaunch:</strong> Pre-launch variant of the depositor contract, replaced by the definitive version at protocol launch.</li>
+</ul>
+<h2 id="voting"><a class="header" href="#voting">Voting</a></h2>
+<p>This package also provides robust on-chain voting infrastructure for all integrated protocols:</p>
+<ul>
+<li><strong>VoteGaugeRouter:</strong> Unified entry point for voting on gauges across multiple protocols.</li>
+<li><strong>VoterBase &amp; VoterPermissionManager:</strong> Abstract and permission management contracts for voting logic.</li>
+<li><strong>Protocol-specific Voters:</strong> Each protocol has its own voter contract (e.g., <code>CurveVoter.sol</code>, <code>BalancerVoter.sol</code>, <code>PendleVoter.sol</code>) for on-chain and gauge voting.</li>
+</ul>
+<h2 id="documentation--resources"><a class="header" href="#documentation--resources">Documentation &amp; Resources</a></h2>
+<ul>
+<li><strong>User documentation:</strong> <a href="https://docs.stakedao.org/liquidlockers">https://docs.stakedao.org/liquidlockers</a></li>
+<li><strong>Deployed contracts:</strong> <a href="https://github.com/stake-dao/offchain-registry/">Stake DAO Offchain Registry</a></li>
+</ul>
+<h2 id="contributing"><a class="header" href="#contributing">Contributing</a></h2>
+<blockquote>
+<p><strong>Note:</strong> Before running or testing the project, you must create a <code>.env</code> file in the root of this package and populate it with the required keys from the <code>.env.example</code> file. This is necessary for local development and CI to work correctly.</p>
+</blockquote>
+<blockquote>
+<p><strong>Vyper Requirement:</strong> This project uses Solidity for its contracts. However, the gauge contracts inherit from Curve's implementation, which is written in Vyper. To compile all the contracts, you need <strong>Vyper 0.3.10</strong> installed locally. Please ensure you have this version before contributing. For installation instructions, refer to the <a href="https://docs.vyperlang.org/en/stable/installing-vyper.html">official Vyper documentation</a>.</p>
+</blockquote>
+<p>This package is a Foundry-based smart contract project and targets Solidity version <code>0.8.28</code>.</p>
+<h3 id="setup"><a class="header" href="#setup">Setup</a></h3>
+<p>To install all dependencies for this package, run the following command at the root of the repository:</p>
+<pre><code class="language-sh">pnpm install
+</code></pre>
+<h3 id="quality"><a class="header" href="#quality">Quality</a></h3>
+<p>We enforce consistent code style and quality using the following tools:</p>
+<ul>
+<li><strong>Formatting:</strong> <a href="https://book.getfoundry.sh/forge/formatting">Forge fmt</a> is used to automatically format Solidity code.</li>
+<li><strong>Linting:</strong> <a href="https://github.com/protofire/solhint">solhint</a> is used to lint Solidity code for style and best practices.</li>
+</ul>
+<p>To check code formatting and linting, run:</p>
+<pre><code class="language-sh">make lint
+</code></pre>
+<p>To automatically fix formatting and linting issues, run:</p>
+<pre><code class="language-sh">make lint-fix
+</code></pre>
+<p>Please ensure your code passes these checks before submitting a pull request.</p>
+<h3 id="testing"><a class="header" href="#testing">Testing</a></h3>
+<p>We use the <strong>Branching Tree Technique (BTT)</strong> to structure test specifications, which enhances clarity and coverage by modeling test cases as branching decision trees.</p>
+<h4 id="branching-tree-technique"><a class="header" href="#branching-tree-technique">Branching Tree Technique</a></h4>
+<p>Test specifications are written using BTT. For more information, see:</p>
+<ul>
+<li><a href="https://x.com/PaulRBerg/status/1682346315806539776">Paul R. Berg's Introduction to BTT</a></li>
+<li><a href="https://shubhchain.hashnode.dev/smart-contract-testing-made-easy">BTT Overview by Shubhchain</a></li>
+<li><a href="https://github.com/PaulRBerg/btt-examples">Example BTT Implementations</a></li>
+</ul>
+<h4 id="generating-tests-with-bulloak"><a class="header" href="#generating-tests-with-bulloak">Generating Tests with Bulloak</a></h4>
+<p>We recommend using <a href="https://github.com/alexfertel/bulloak">Bulloak</a> to generate test files from BTT specifications automatically.</p>
+<p>To scaffold test files from your branching tree specification, run:</p>
+<pre><code class="language-sh">bulloak scaffold -w &lt;file_name&gt;.tree -s 0.8.28
+</code></pre>
+<h2 id="license"><a class="header" href="#license">License</a></h2>
+<p>This package is licensed under the Business Source License (BSL). See the LICENSE file for details. The BSL expires on <strong>January 1, 2028</strong> or as set on-chain.</p>
+<h2 id="contact"><a class="header" href="#contact">Contact</a></h2>
+<p>For questions, support, or partnership inquiries, please contact: <a href="mailto:contact@stakedao.org">contact@stakedao.org</a></p>
+
                     </main>
 
                     <nav class="nav-wrapper" aria-label="Page navigation">
