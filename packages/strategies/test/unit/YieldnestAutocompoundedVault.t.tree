@@ -1,0 +1,20 @@
+Constructor
+├── it correctly sets the asset
+├── it correctly sets the name of the shares
+├── it correctly sets the symbol of the shares
+├── it correctly sets streaming period
+├── it correctly sets the manager
+├── it correctly sets the owner
+├── it correctly sets the gauge
+├── it correctly sets the manager as the rewards receiver
+└── it correcly sets the infinite approval on the gauge
+
+Manager
+└── it correctly sets the new manager as the rewards receiver
+
+RecoverLostAssets
+├── it reverts if the caller is not the manager
+├── it reverts if there is no asset to recover
+├── it reverts if the amount to recover is greater than the amount of asset
+├── it correctly recovers the asset
+└── it emits an event
