@@ -166,7 +166,7 @@ contract RecoverLostAssets is AutocompoundedVaultTest {
         asset.transfer(address(autocompoundedVault), airdrop);
 
         uint256 receiverBeforeBalance = asset.balanceOf(receiver);
-        uint256 vaultBeforeBalance = asset.balanceOf(address(autocompoundedVault));
+        asset.balanceOf(address(autocompoundedVault));
 
         vm.prank(manager);
         autocompoundedVault.recoverLostAssets(receiver, airdrop);

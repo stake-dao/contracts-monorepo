@@ -33,16 +33,10 @@ contract YieldnestAutocompoundedVault is AutocompoundedVault {
     ////////////////////////////////////////////////////////////////
     /// --- ERRORS / EVENTS
     ///////////////////////////////////////////////////////////////
-
-    /// @notice Error thrown when the gauge withdraw an incorrect amount of token
-    /// @param received The amount of token the function tried to withdraw from the gauge
-    /// @param expected The amount of token the function expected to withdraw from the gauge
-    error MigrationFailed(uint256 received, uint256 expected);
-
     /// @notice Emitted when a user migrates gauge tokens into the vault
     /// @param user The address that migrated the gauge tokens
     /// @param shares The amount of asdYND shares minted for the user
-    event GaugeTokenMigrated(address indexed user, uint256 shares);
+    event GaugeTokenMigrated(address indexed user, uint256 assets, uint256 shares);
 
     /// @notice Error thrown when the owner tries to recover sdYND that is not lost
     error NothingToRecover();
@@ -88,54 +82,43 @@ contract YieldnestAutocompoundedVault is AutocompoundedVault {
 
     /// @notice Allows migration of existing gauge tokens into the vault in exchange for asdYND shares.
     /// @dev This function is intended for migration scenarios. It:
-    ///      - Accepts gauge tokens from the user
-    ///      - Withdraws the underlying asset from the gauge
-    ///      - Stakes the asset into the gauge
-    ///      - Mint shares for the user
+    ///      - Transfer the caller's gauge tokens to the gauge contract
+    ///      - Mint shares for the caller
     ///
     ///     This function bypasses by design the `maxDeposit` check. Do not use this logic when overriding `maxDeposit`.
     ///     This function assumes that the gauge is always 1:1 with the asset token. Do not use this logic with non-1:1 gauges.
-    ///     The user will only receive shares for the vested portion of the withdrawn assets.
-    /// @return shares The amount of asdYND shares minted for the caller
-    /// @custom:throws MigrationFailed when the gauge withdraws an incorrect amount of token
+    ///     The caller receives shares proportional to the vested portion of the assets.
+    /// @return shares The amount of asdYND shares minted for the receiver
+    /// @custom:throws ERC20InvalidReceiver when the receiver is the zero address
     function depositFromGauge() external returns (uint256 shares) {
         return depositFromGauge(msg.sender);
     }
 
     /// @notice Allows migration of existing gauge tokens into the vault in exchange for asdYND shares.
     /// @dev This function is intended for migration scenarios. It:
-    ///      - Accepts gauge tokens from the user
-    ///      - Withdraws the underlying asset from the gauge
-    ///      - Stakes the asset into the gauge
-    ///      - Mint shares for the user
+    ///      - Transfer the caller's gauge tokens to the gauge contract
+    ///      - Mint shares for the given receiver
     ///
     ///     This function bypasses by design the `maxDeposit` check. Do not use this logic when overriding `maxDeposit`.
     ///     This function assumes that the gauge is always 1:1 with the asset token. Do not use this logic with non-1:1 gauges.
-    ///     The user will only receive shares for the vested portion of the withdrawn assets.
+    ///     The receiver receives shares proportional to the vested portion of the assets.
     /// @param receiver The address to receive the asdYND shares
     /// @return shares The amount of asdYND shares minted for the receiver
-    /// @custom:throws MigrationFailed when the gauge withdraws an incorrect amount of token
     /// @custom:throws ERC20InvalidReceiver when the receiver is the zero address
     function depositFromGauge(address receiver) public returns (uint256 shares) {
-        // Fetch the gauge balance of the caller and the current balance of sdYND in the vault (in case of sleeping sdYND)
-        uint256 balance = LIQUIDITY_GAUGE.balanceOf(msg.sender);
-        uint256 beforeAssets = IERC20(asset()).balanceOf(address(this));
+        // Fetch the gauge tokens balance of the caller
+        uint256 assets = LIQUIDITY_GAUGE.balanceOf(msg.sender);
+        shares = previewDeposit(assets);
 
-        // Withdraw the sdYND tokens held by the caller from the gauge in exchange of the gauge tokens
-        LIQUIDITY_GAUGE.transferFrom(msg.sender, address(this), balance);
-        LIQUIDITY_GAUGE.withdraw(balance, false);
+        // Transfer the gauge tokens from the caller to the vault contract
+        LIQUIDITY_GAUGE.transferFrom(msg.sender, address(this), assets);
 
-        // Ensure that only the expected number of sdYND has been withdrawn from the gauge.
-        uint256 afterAssets = IERC20(asset()).balanceOf(address(this));
-        require(afterAssets == beforeAssets + balance, MigrationFailed(afterAssets - beforeAssets, balance));
-
-        // Mint the asdYND shares for the receiver
-        shares = previewDeposit(balance);
+        // Mint the asdYND shares for the receiver (1:1 ratio with the gauge tokens)
         _mint(receiver, shares);
 
         // this event is required for the 4626-compatibility
-        emit Deposit(msg.sender, receiver, balance, shares);
-        emit GaugeTokenMigrated(receiver, shares);
+        emit Deposit(msg.sender, receiver, assets, shares);
+        emit GaugeTokenMigrated(receiver, assets, shares);
     }
 
     ////////////////////////////////////////////////////////////////

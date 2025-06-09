@@ -149,24 +149,30 @@ contract asdYNDTest is Test {
         assertNotEq(balance, 0);
         assertEq(asset.balanceOf(holder), 0);
         assertEq(vault.balanceOf(holder), 0);
+        uint256 vaultBeforeBalance = IERC20(gauge).balanceOf(address(vault));
 
-        // deposit using gauge token
+        // give approval to the vault to transfer the gauge tokens
         vm.prank(holder);
         IERC20(gauge).approve(address(vault), balance);
 
-        vm.expectEmit(true, true, true, true);
-        emit YieldnestAutocompoundedVault.GaugeTokenMigrated(holder, balance);
+        // get the expected amount of shares
+        uint256 shares = vault.previewDeposit(balance);
 
-        // deposit using gauge token
+        vm.expectEmit(true, true, true, true);
+        emit YieldnestAutocompoundedVault.GaugeTokenMigrated(holder, balance, shares);
+
+        // deposit the gauge tokens to the vault
         vm.prank(holder);
         vault.depositFromGauge();
 
-        // the gauge tokens are now in the vault
+        // the holder doesn't have any gauge tokens
         assertEq(IERC20(gauge).balanceOf(holder), 0);
-        // the assets are now in the gauge
+        // the holder doesn't have any asset (sdYND)
         assertEq(asset.balanceOf(holder), 0);
-        // the holder now has vault shares
+        // the holder now holds the expected amount of vault shares (asdYND)
         assertEq(vault.balanceOf(holder), balance);
+        // the vault now holds the expected amount of gauge tokens
+        assertEq(IERC20(gauge).balanceOf(address(vault)), vaultBeforeBalance + balance);
     }
 
     function test_migrationReceiver() external {
@@ -182,14 +188,14 @@ contract asdYNDTest is Test {
         assertEq(vault.balanceOf(holder), 0);
         assertEq(vault.balanceOf(receiver), 0);
 
-        // deposit using gauge token
+        // give approval to the vault to transfer the gauge tokens
         vm.prank(holder);
         IERC20(gauge).approve(address(vault), balance);
 
         vm.expectEmit(true, true, true, true);
         emit IERC4626.Deposit(holder, receiver, balance, balance);
 
-        // deposit using gauge token
+        // deposit the gauge tokens to the vault
         vm.prank(holder);
         vault.depositFromGauge(receiver);
 
