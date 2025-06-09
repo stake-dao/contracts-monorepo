@@ -135,3 +135,37 @@ abstract contract CurveFactoryTest is BaseCurveTest {
         (success,) = gauge.call(data);
     }
 }
+
+
+uint256 constant CONVEX_POOL_437_PID = 437;
+
+uint256 constant CONVEX_POOL_436_PID = 436;
+
+uint256 constant CONVEX_POOL_435_PID = 435;
+
+uint256 constant CONVEX_POOL_434_PID = 434;
+
+uint256 constant CONVEX_POOL_433_PID = 433;
+
+uint256 constant CONVEX_POOL_432_PID = 432;
+
+uint256 constant CONVEX_POOL_431_PID = 431;
+
+uint256 constant CONVEX_POOL_430_PID = 430;
+
+contract CONVEX_POOL_437_PID_Factory_Test is CurveFactoryTest(CONVEX_POOL_437_PID) {}
+
+contract CONVEX_POOL_436_PID_Factory_Test is CurveFactoryTest(CONVEX_POOL_436_PID) {}
+
+contract CONVEX_POOL_435_PID_Factory_Test is CurveFactoryTest(CONVEX_POOL_435_PID) {}
+
+contract CONVEX_POOL_434_PID_Factory_Test is CurveFactoryTest(CONVEX_POOL_434_PID) {}
+
+contract CONVEX_POOL_433_PID_Factory_Test is CurveFactoryTest(CONVEX_POOL_433_PID) {}
+
+contract CONVEX_POOL_432_PID_Factory_Test is CurveFactoryTest(CONVEX_POOL_432_PID) {}
+
+contract CONVEX_POOL_431_PID_Factory_Test is CurveFactoryTest(CONVEX_POOL_431_PID) {}
+
+contract CONVEX_POOL_430_PID_Factory_Test is CurveFactoryTest(CONVEX_POOL_430_PID) {}
+
