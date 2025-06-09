@@ -8,6 +8,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {YieldnestProtocol} from "address-book/src/YieldnestEthereum.sol";
 import {MockGauge} from "test/mocks/MockGauge.sol";
 import {AutocompoundedVault} from "src/AutocompoundedVault.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 
 ///////////////////////////////////////////////////////////////
 /// --- SETUP
@@ -131,10 +132,10 @@ contract Manager is AutocompoundedVaultTest {
 }
 
 contract RecoverLostAssets is AutocompoundedVaultTest {
-    function test_RevertsIfTheCallerIsNotTheManager() external {
-        // it reverts if the caller is not the manager
+    function test_RevertsIfTheCallerIsNotTheOwner() external {
+        // it reverts if the caller is not the owner
 
-        vm.expectRevert(abi.encodeWithSelector(AutocompoundedVault.InvalidManager.selector));
+        vm.expectRevert(abi.encodeWithSelector(Ownable.OwnableUnauthorizedAccount.selector, address(this)));
         autocompoundedVault.recoverLostAssets(makeAddr("receiver"), 100);
     }
 
@@ -142,7 +143,7 @@ contract RecoverLostAssets is AutocompoundedVaultTest {
         // it reverts if there is no asset to recover
 
         vm.expectRevert(abi.encodeWithSelector(YieldnestAutocompoundedVault.NothingToRecover.selector));
-        vm.prank(manager);
+        vm.prank(owner);
         autocompoundedVault.recoverLostAssets(makeAddr("receiver"), 100);
     }
 
@@ -153,7 +154,7 @@ contract RecoverLostAssets is AutocompoundedVaultTest {
         deal(address(asset), address(autocompoundedVault), airdrop);
 
         vm.expectRevert(abi.encodeWithSelector(YieldnestAutocompoundedVault.NotEnoughAssetToRecover.selector));
-        vm.prank(manager);
+        vm.prank(owner);
         autocompoundedVault.recoverLostAssets(makeAddr("receiver"), airdrop + 1);
     }
 
@@ -168,7 +169,7 @@ contract RecoverLostAssets is AutocompoundedVaultTest {
         uint256 receiverBeforeBalance = asset.balanceOf(receiver);
         asset.balanceOf(address(autocompoundedVault));
 
-        vm.prank(manager);
+        vm.prank(owner);
         autocompoundedVault.recoverLostAssets(receiver, airdrop);
 
         assertEq(asset.balanceOf(receiver) - receiverBeforeBalance, airdrop);
@@ -187,7 +188,7 @@ contract RecoverLostAssets is AutocompoundedVaultTest {
         vm.expectEmit(true, true, true, true);
         emit YieldnestAutocompoundedVault.LostAssetsRecovered(receiver, airdrop);
 
-        vm.prank(manager);
+        vm.prank(owner);
         autocompoundedVault.recoverLostAssets(receiver, airdrop);
     }
 }

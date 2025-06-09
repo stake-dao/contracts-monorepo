@@ -165,7 +165,7 @@ contract YieldnestAutocompoundedVault is AutocompoundedVault {
     ///         No sdYND should be lost in the vault unless made a mistake by sending sdYND directly to the vault.
     /// @param to The address to send the recovered tokens to
     /// @param amount The amount of sdYND to recover. Can be 0 to recover all the lost sdYND.
-    function recoverLostAssets(address to, uint256 amount) external onlyManager {
+    function recoverLostAssets(address to, uint256 amount) external onlyOwner {
         uint256 lost = IERC20(asset()).balanceOf(address(this));
         require(lost != 0, NothingToRecover());
 
