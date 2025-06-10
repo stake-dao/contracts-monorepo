@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
+import {console} from "forge-std/src/console.sol";
 import {BaseForkTest} from "test/BaseFork.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeLibrary} from "test/utils/SafeLibrary.sol";
 import {RewardVault} from "src/RewardVault.sol";
 import {RewardReceiver} from "src/RewardReceiver.sol";
 import {Accountant} from "src/Accountant.sol";
@@ -114,8 +116,8 @@ abstract contract BaseIntegrationTest is BaseForkTest {
     function _getPendingRewards(uint256 gaugeIndex) internal view virtual returns (uint256);
 
     /// @notice Sets up additional reward tokens.
-    /// @param gaugeIndex Index of the gauge.
-    function _setupAdditionalRewards(uint256 gaugeIndex) internal virtual;
+    /// @param gaugeAddress Address of the gauge.
+    function _setupAdditionalRewards(address gaugeAddress) internal virtual;
 
     /// @notice Returns the main reward token address.
     /// @return Main reward token.
@@ -137,26 +139,6 @@ abstract contract BaseIntegrationTest is BaseForkTest {
         for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
             accounts.push(makeAddr(string(abi.encodePacked("Account", i))));
         }
-
-        // Initialize protocol-specific components
-        _initializeProtocol();
-
-        // Perform common setup
-        _performCommonSetup();
-
-        // Deploy vaults for each gauge
-        require(gauges.length > 0, "No gauges set up");
-        for (uint256 i = 0; i < gauges.length; i++) {
-            (RewardVault vault, RewardReceiver receiver) = _deployVault(gauges[i]);
-            rewardVaults.push(vault);
-            rewardReceivers.push(receiver);
-
-            // Setup additional rewards if needed
-            _setupAdditionalRewards(i);
-        }
-
-        // Setup accounts with tokens and approvals
-        _setupAccountsWithTokens();
     }
 
     //////////////////////////////////////////////////////
@@ -185,28 +167,6 @@ abstract contract BaseIntegrationTest is BaseForkTest {
                 IERC20(depositToken).approve(address(rewardVaults[gaugeIdx]), amount);
             }
         }
-    }
-
-    //////////////////////////////////////////////////////
-    /// --- SAFE MODULE MANAGEMENT
-    //////////////////////////////////////////////////////
-
-    /// @notice Enables a module in the gateway Safe.
-    /// @param moduleAddress The module to enable.
-    function _enableModule(address moduleAddress) internal {
-        bytes memory signatures = abi.encodePacked(uint256(uint160(admin)), uint8(0), uint256(1));
-        gateway.execTransaction(
-            address(gateway),
-            0,
-            abi.encodeWithSelector(IModuleManager.enableModule.selector, moduleAddress),
-            Enum.Operation.Call,
-            0,
-            0,
-            0,
-            address(0),
-            payable(0),
-            signatures
-        );
     }
 
     //////////////////////////////////////////////////////
