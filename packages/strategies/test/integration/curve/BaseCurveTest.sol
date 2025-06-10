@@ -112,7 +112,7 @@ abstract contract BaseCurveTest is BaseForkTest {
         gauge = ILiquidityGauge(_gauge);
         totalSupply = IBalanceProvider(lpToken).totalSupply();
 
-        _setup(CRV, lpToken, LOCKER, PROTOCOL_ID, false);
+        _beforeSetup(CRV, LOCKER, PROTOCOL_ID, false);
 
         /// 1. Deploy the Curve Strategy contract.
         curveStrategy = new CurveStrategy(address(protocolController), LOCKER, address(gateway), MINTER);
@@ -204,38 +204,6 @@ abstract contract BaseCurveTest is BaseForkTest {
 
         gateway.execTransaction(
             address(locker), 0, transferExecute, Enum.Operation.Call, 0, 0, 0, address(0), payable(0), signatures
-        );
-    }
-
-    /// @notice Enable a module in the Gateway.
-    function _enableModule(address _module) internal {
-        gateway.execTransaction(
-            address(gateway),
-            0,
-            abi.encodeWithSelector(IModuleManager.enableModule.selector, _module),
-            Enum.Operation.Call,
-            0,
-            0,
-            0,
-            address(0),
-            payable(0),
-            signatures
-        );
-    }
-
-    //
-    function _disableModule(address _module) internal {
-        gateway.execTransaction(
-            address(gateway),
-            0,
-            abi.encodeWithSelector(IModuleManager.disableModule.selector, _module),
-            Enum.Operation.Call,
-            0,
-            0,
-            0,
-            address(0),
-            payable(0),
-            signatures
         );
     }
 

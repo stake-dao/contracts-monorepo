@@ -3,7 +3,6 @@ pragma solidity 0.8.28;
 
 import {Factory} from "src/Factory.sol";
 import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
-import {CurveProtocol} from "address-book/src/CurveArbitrum.sol";
 import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
 import {IChildLiquidityGaugeFactory} from "@interfaces/curve/IChildLiquidityGaugeFactory.sol";
@@ -14,8 +13,7 @@ contract CurveFactory is Factory {
     bytes4 private constant CURVE_PROTOCOL_ID = bytes4(keccak256("CURVE"));
 
     /// @notice Curve Gauge Controller.
-    IChildLiquidityGaugeFactory public constant CHILD_LIQUIDITY_GAUGE_FACTORY =
-        IChildLiquidityGaugeFactory(CurveProtocol.FACTORY);
+    IChildLiquidityGaugeFactory public immutable CHILD_LIQUIDITY_GAUGE_FACTORY;
 
     /// @notice Error thrown when the set reward receiver fails.
     error SetRewardReceiverFailed();
@@ -24,6 +22,7 @@ contract CurveFactory is Factory {
     event VaultDeployed(address gauge, address vault, address rewardReceiver, address sidecar);
 
     constructor(
+        address childLiquidityGaugeFactory,
         address protocolController,
         address vaultImplementation,
         address rewardReceiverImplementation,
@@ -31,7 +30,9 @@ contract CurveFactory is Factory {
         address gateway
     )
         Factory(protocolController, vaultImplementation, rewardReceiverImplementation, CURVE_PROTOCOL_ID, locker, gateway)
-    {}
+    {
+        CHILD_LIQUIDITY_GAUGE_FACTORY = IChildLiquidityGaugeFactory(childLiquidityGaugeFactory);
+    }
 
     function _isValidToken(address _token) internal view virtual override returns (bool) {
         /// If the token is not valid, return false.
