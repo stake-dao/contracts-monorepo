@@ -136,7 +136,6 @@ abstract contract CurveFactoryTest is BaseCurveTest {
     }
 }
 
-
 uint256 constant CONVEX_POOL_437_PID = 437;
 
 uint256 constant CONVEX_POOL_436_PID = 436;
@@ -168,4 +167,3 @@ contract CONVEX_POOL_432_PID_Factory_Test is CurveFactoryTest(CONVEX_POOL_432_PI
 contract CONVEX_POOL_431_PID_Factory_Test is CurveFactoryTest(CONVEX_POOL_431_PID) {}
 
 contract CONVEX_POOL_430_PID_Factory_Test is CurveFactoryTest(CONVEX_POOL_430_PID) {}
-

@@ -2,6 +2,7 @@
 pragma solidity 0.8.28;
 
 import {BaseIntegrationTest} from "test/integration/BaseIntegrationTest.sol";
+import {SafeLibrary} from "test/utils/SafeLibrary.sol";
 import {RewardVault} from "src/RewardVault.sol";
 import {RewardReceiver} from "src/RewardReceiver.sol";
 import {Allocator} from "src/Allocator.sol";
@@ -38,9 +39,7 @@ abstract contract CurveMainnetIntegration is BaseIntegrationTest {
     /// --- STATE VARIABLES
     //////////////////////////////////////////////////////
 
-    CurveStrategy public curveStrategy;
-    CurveFactory public curveFactory;
-    ConvexSidecarFactory public convexSidecarFactory;
+    address public convexSidecarFactory;
     mapping(address => ConvexSidecar) public gaugeToSidecar;
 
     uint256 public immutable convexPoolId1;
@@ -64,100 +63,81 @@ abstract contract CurveMainnetIntegration is BaseIntegrationTest {
         vm.createSelectFork("mainnet", 22_316_395);
 
         // Initialize core protocol
-        _setup(CRV, address(0), LOCKER, bytes4(keccak256("CURVE")), false);
+        _beforeSetup({
+            _rewardToken: CRV,
+            _locker: LOCKER,
+            _protocolId: bytes4(keccak256("CURVE")),
+            _harvestPolicy: false // True for Harvest, False for Checkpoint
+        });
 
         // Initialize accounts
         for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
             accounts.push(makeAddr(string(abi.encodePacked("Account", i))));
         }
 
-        // Initialize protocol components
-        _initializeProtocol();
+        // Deploy Curve strategy
+        strategy = address(new CurveStrategy(address(protocolController), LOCKER, address(gateway), MINTER));
 
-        // Deploy strategy and allocator
-        _performCommonSetup();
+        // Deploy sidecar implementation and factory
+        address sidecarImplementation = address(new ConvexSidecar(address(accountant), address(protocolController)));
+        convexSidecarFactory = address(new ConvexSidecarFactory(sidecarImplementation, address(protocolController)));
 
-        // Deploy Convex sidecar factory
-        _deployConvexSidecarFactory();
+        // Deploy Curve factory with Convex support
+        factory = address(
+            new CurveFactory(
+                address(protocolController),
+                address(rewardVaultImplementation),
+                address(rewardReceiverImplementation),
+                LOCKER,
+                address(gateway),
+                convexSidecarFactory
+            )
+        );
 
-        // Register factories and strategy as Safe modules
-        _enableModule(address(curveStrategy));
-        _enableModule(address(curveFactory));
-        _enableModule(address(convexSidecarFactory));
+        // Deploy and set allocator
+        allocator = new CurveAllocator(LOCKER, address(gateway), address(convexSidecarFactory));
 
-        // Allow strategy to mint CRV
-        _allowMint(address(curveStrategy));
+        _afterSetup();
+    }
+
+    function _afterSetup() internal override {
+        super._afterSetup();
+
+        /// Enable sidecar factory as registrar.
+        protocolController.setRegistrar(convexSidecarFactory, true);
+
+        /// Enable sidecar factory as module.
+        _enableModule(convexSidecarFactory);
+
+        /// Allow minting of the reward token.
+        _allowMint(strategy);
 
         // Setup gauges from Convex pool IDs
         _setupGaugesFromPids();
 
-        // Clear existing gauge balances
-        _clearLockerBalances();
-
         // Deploy vaults for each gauge
         for (uint256 i = 0; i < gauges.length; i++) {
-            (RewardVault vault, RewardReceiver receiver) = _deployVault(gauges[i]);
-            rewardVaults.push(vault);
-            rewardReceivers.push(receiver);
-            _setupAdditionalRewards(i);
+            _deployVault(gauges[i]);
+            _setupAdditionalRewards(gauges[i]);
         }
 
-        // Setup accounts with tokens
+        // Setup accounts with tokens (moved after vault deployment)
         _setupAccountsWithTokens();
+
+        // Clear existing gauge balances
+        _clearLockerBalances();
     }
 
     //////////////////////////////////////////////////////
     /// --- PROTOCOL IMPLEMENTATION
     //////////////////////////////////////////////////////
 
+    function _initializeProtocol() internal override {}
+
+    function _performCommonSetup() internal override {}
+
     function _getProtocolId() internal pure override returns (bytes4) {
         return bytes4(keccak256("CURVE"));
-    }
-
-    function _initializeProtocol() internal override {
-        // Deploy Curve strategy
-        curveStrategy = new CurveStrategy(address(protocolController), LOCKER, address(gateway), MINTER);
-
-        // Set implementations
-        address rewardVaultImpl = address(
-            new RewardVault(
-                _getProtocolId(), address(protocolController), address(accountant), IStrategy.HarvestPolicy.CHECKPOINT
-            )
-        );
-        address rewardReceiverImpl = address(new RewardReceiver());
-
-        // Store implementations for later use
-        vaultImplementation = rewardVaultImpl;
-        rewardReceiverImplementation = RewardReceiver(rewardReceiverImpl);
-    }
-
-    function _performCommonSetup() internal override {
-        // Set strategy
-        protocolController.setStrategy(_getProtocolId(), address(curveStrategy));
-    }
-
-    function _deployConvexSidecarFactory() internal {
-        // Deploy sidecar implementation and factory
-        ConvexSidecar sidecarImpl = new ConvexSidecar(address(accountant), address(protocolController));
-        convexSidecarFactory = new ConvexSidecarFactory(address(sidecarImpl), address(protocolController));
-
-        // Deploy Curve factory with Convex support
-        curveFactory = new CurveFactory(
-            address(protocolController),
-            vaultImplementation,
-            address(rewardReceiverImplementation),
-            LOCKER,
-            address(gateway),
-            address(convexSidecarFactory)
-        );
-
-        // Deploy and set allocator
-        allocator = new CurveAllocator(LOCKER, address(gateway), address(convexSidecarFactory));
-        protocolController.setAllocator(_getProtocolId(), address(allocator));
-
-        // Set factories as registrars
-        protocolController.setRegistrar(address(curveFactory), true);
-        protocolController.setRegistrar(address(convexSidecarFactory), true);
     }
 
     function _deployVault(address gaugeAddress)
@@ -167,14 +147,16 @@ abstract contract CurveMainnetIntegration is BaseIntegrationTest {
     {
         // Find Convex pool ID
         uint256 poolId = _findConvexPoolIdForGauge(gaugeAddress);
-        require(poolId != type(uint256).max, "Gauge not found in Convex");
 
         // Deploy with sidecar
-        (address vaultAddr, address receiverAddr, address sidecarAddr) = curveFactory.create(poolId);
+        (address vaultAddr, address receiverAddr, address sidecarAddr) = CurveFactory(factory).create(poolId);
 
         vault = RewardVault(vaultAddr);
         receiver = RewardReceiver(receiverAddr);
         gaugeToSidecar[gaugeAddress] = ConvexSidecar(sidecarAddr);
+
+        rewardVaults.push(vault);
+        rewardReceivers.push(receiver);
     }
 
     function _inflateRewards(uint256 gaugeIndex, uint256 amount) internal override returns (uint256) {
@@ -199,22 +181,20 @@ abstract contract CurveMainnetIntegration is BaseIntegrationTest {
         return 0;
     }
 
-    function _setupAdditionalRewards(uint256 gaugeIndex) internal override {
-        address gauge = gauges[gaugeIndex];
-
+    function _setupAdditionalRewards(address gaugeAddress) internal override {
         // Add WBTC as extra reward
         vm.prank(CURVE_ADMIN);
-        ILiquidityGauge(gauge).add_reward(WBTC, address(this));
+        ILiquidityGauge(gaugeAddress).add_reward(WBTC, address(this));
 
         // Mock reward data
         vm.mockCall(
-            gauge,
+            gaugeAddress,
             abi.encodeWithSelector(ILiquidityGauge.reward_data.selector),
             abi.encode(WBTC, address(this), block.timestamp + 1 days, 0, block.timestamp, 0)
         );
 
         // Sync rewards
-        curveFactory.syncRewardTokens(gauge);
+        CurveFactory(factory).syncRewardTokens(gaugeAddress);
     }
 
     function _getMainRewardToken() internal pure override returns (address) {
@@ -222,7 +202,7 @@ abstract contract CurveMainnetIntegration is BaseIntegrationTest {
     }
 
     function _getStrategyBalance(uint256 gaugeIndex) internal view override returns (uint256) {
-        return curveStrategy.balanceOf(gauges[gaugeIndex]);
+        return IStrategy(strategy).balanceOf(gauges[gaugeIndex]);
     }
 
     //////////////////////////////////////////////////////
@@ -294,10 +274,15 @@ abstract contract CurveMainnetIntegration is BaseIntegrationTest {
     }
 
     function _allowMint(address minterAddress) internal {
+        /// Build signatures
         bytes memory signatures = abi.encodePacked(uint256(uint160(admin)), uint8(0), uint256(1));
+
+        /// Build data
         bytes memory data = abi.encodeWithSignature("toggle_approve_mint(address)", minterAddress);
         data = abi.encodeWithSignature("execute(address,uint256,bytes)", MINTER, 0, data);
-        gateway.execTransaction(LOCKER, 0, data, Enum.Operation.Call, 0, 0, 0, address(0), payable(0), signatures);
+
+        /// Execute transaction
+        SafeLibrary.simpleExec({_safe: payable(gateway), _target: LOCKER, _data: data, _signatures: signatures});
     }
 
     function _findConvexPoolIdForGauge(address gauge) internal view returns (uint256) {
