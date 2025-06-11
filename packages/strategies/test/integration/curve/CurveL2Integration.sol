@@ -1,8 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
+import {SafeLibrary} from "test/utils/SafeLibrary.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {CurveFactory} from "src/integrations/curve/CurveFactory.sol";
+import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 import {CurveStrategy} from "src/integrations/curve/CurveStrategy.sol";
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
 import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
@@ -100,6 +102,26 @@ abstract contract CurveL2Integration is NewBaseIntegrationTest {
                 convexSidecarFactory: sidecarFactory
             })
         );
+
+        _clearLockerBalances();
+    }
+
+    function _clearLockerBalances() internal {
+        for (uint256 i = 0; i < gauges.length; i++) {
+            uint256 balance = ILiquidityGauge(gauges[i]).balanceOf(config.locker);
+            if (balance == 0) continue;
+
+            address lpToken = ILiquidityGauge(gauges[i]).lp_token();
+            bytes memory signatures = abi.encodePacked(uint256(uint160(admin)), uint8(0), uint256(1));
+
+            // Withdraw from gauge
+            bytes memory data = abi.encodeWithSignature("withdraw(uint256)", balance);
+            SafeLibrary.execOnLocker(payable(gateway), config.locker, gauges[i], data, signatures);
+
+            // Transfer to burn address
+            data = abi.encodeWithSignature("transfer(address,uint256)", burnAddress, balance);
+            SafeLibrary.execOnLocker(payable(gateway), config.locker, lpToken, data, signatures);
+        }
     }
 }
 

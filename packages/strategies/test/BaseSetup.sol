@@ -18,6 +18,7 @@ import {RewardVault, IERC20, IStrategy} from "src/RewardVault.sol";
 /// @notice Base test contract with common utilities and setup for all tests
 abstract contract BaseSetup is Test {
     address public immutable admin = address(this);
+    address public immutable burnAddress = makeAddr("Burn");
     address public immutable feeReceiver = makeAddr("Fee Receiver");
 
     bytes4 internal protocolId;

@@ -21,12 +21,19 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
     /// @notice Deployed reward receivers for each gauge.
     RewardReceiver[] public rewardReceivers;
 
+    /// @notice Mapping of reward vault to harvestable rewards.
+    mapping(address => uint256) public rewardVaultToHarvestableRewards;
+
     /// @notice Gauge address being tested.
     address[] public gauges;
 
+    constructor(address[] memory _gauges) {
+        gauges = _gauges;
+    }
+
     function test_complete_protocol_lifecycle(AccountPosition[] memory _accountPositions) public {
-        /// 0. Deploy the vaults.
-        (rewardVaults, rewardReceivers) = _deployVaults();
+        /// 0. Deploy the RewardVaults.
+        (rewardVaults, rewardReceivers) = deployRewardVaults();
 
         /// 1. Assert that the deployment is valid.
         assertDeploymentValid(rewardVaults, rewardReceivers);
@@ -34,18 +41,23 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
         RewardVault rewardVault;
         RewardReceiver rewardReceiver;
         AccountPosition memory accountPosition;
+
+        address gauge;
+
         for (uint256 i = 0; i < _accountPositions.length; i++) {
             accountPosition = _accountPositions[i];
 
-            /// 1. Validate the account position.
+            /// 2. Validate the account position.
             _validateAccountPositions(accountPosition);
 
+            gauge = gauges[accountPosition.gaugeIndex];
             rewardVault = rewardVaults[accountPosition.gaugeIndex];
             rewardReceiver = rewardReceivers[accountPosition.gaugeIndex];
 
-            /// 2. Deposit the amount into the vault.
-            deposit(rewardVault, accountPosition);
+            /// 3. Deposit the amount into the vault.
+            deposit(rewardVault, accountPosition.account, accountPosition.baseAmount);
 
+            /// 4. Assertions
             assertEq(
                 rewardVault.balanceOf(accountPosition.account),
                 accountPosition.baseAmount,
@@ -57,18 +69,51 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
                 accountPosition.baseAmount,
                 "Expected total supply to be greater than or equal to deposited amount"
             );
-        }
-    }
 
-    constructor(address[] memory _gauges) {
-        gauges = _gauges;
+            assertEq(
+                IStrategy(strategy).balanceOf(gauge),
+                rewardVault.totalSupply(),
+                "Expected strategy balance to be equal to total supply"
+            );
+
+            /// 5. Simulate rewards.
+            simulateRewards(rewardVault);
+
+            /// 6. Store the harvestable rewards for the vault for future assertions.
+            rewardVaultToHarvestableRewards[address(rewardVault)] = getHarvestableRewards(rewardVault);
+
+            /// 7. Skip 1 day.
+            skip(1 days);
+
+            // /// 8. Additional deposits.
+            // deposit(rewardVault, accountPosition.account, accountPosition.additionalAmount);
+
+            // /// 9. Assertions
+            // assertEq(
+            // rewardVault.balanceOf(accountPosition.account),
+            // accountPosition.baseAmount + accountPosition.additionalAmount,
+            // "Expected account balance to be equal to base amount plus additional amount"
+            // );
+
+            // assertGe(
+            // rewardVault.totalSupply(),
+            // accountPosition.baseAmount + accountPosition.additionalAmount,
+            // "Expected total supply to be greater than or equal to base amount plus additional amount"
+            // );
+
+            // assertEq(
+            // IStrategy(gauge).balanceOf(gauge),
+            // rewardVault.totalSupply(),
+            // "Expected strategy balance to be equal to total supply"
+            // );
+        }
     }
 
     //////////////////////////////////////////////////////
     /// --- OVERRIDABLE FUNCTIONS
     //////////////////////////////////////////////////////
 
-    function _deployVaults()
+    function deployRewardVaults()
         internal
         virtual
         returns (RewardVault[] memory vaults, RewardReceiver[] memory receivers)
@@ -88,23 +133,29 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
         }
     }
 
+    /// @notice Gets the harvestable rewards for the given vault.
+    function getHarvestableRewards(RewardVault vault) internal view returns (uint256) {}
+
+    /// @notice Simulates rewards for the given vault.
+    function simulateRewards(RewardVault vault) internal virtual {}
+
     //////////////////////////////////////////////////////
     /// --- TEST HELPERS
     //////////////////////////////////////////////////////
 
-    function deposit(RewardVault rewardVault, AccountPosition memory accountPosition) internal {
+    function deposit(RewardVault rewardVault, address account, uint256 amount) internal {
         /// 1. Get the asset address.
         address asset = rewardVault.asset();
 
         /// 2. Deal the amount to the account.
-        deal(asset, accountPosition.account, accountPosition.baseAmount);
+        deal(asset, account, amount);
 
         /// 3. Approve the asset to be spent by the vault.
-        vm.startPrank(accountPosition.account);
-        IERC20(asset).approve(address(rewardVault), accountPosition.baseAmount);
+        vm.startPrank(account);
+        IERC20(asset).approve(address(rewardVault), amount);
 
         /// 4. Deposit
-        rewardVault.deposit(accountPosition.baseAmount, accountPosition.account);
+        rewardVault.deposit(amount, account);
         vm.stopPrank();
     }
 
