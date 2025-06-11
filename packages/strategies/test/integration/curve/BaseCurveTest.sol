@@ -119,7 +119,9 @@ abstract contract BaseCurveTest is BaseSetup {
         curveStrategy = new CurveStrategy(address(protocolController), LOCKER, address(gateway), MINTER);
 
         /// 2. Deploy the Convex Sidecar contract.
-        convexSidecarImplementation = new ConvexSidecar(address(accountant), address(protocolController));
+        convexSidecarImplementation = new ConvexSidecar(
+            address(accountant), address(protocolController), CurveProtocol.CONVEX_TOKEN, CurveProtocol.CONVEX_BOOSTER
+        );
 
         /// 3. Deploy the Convex Sidecar Factory contract.
         convexSidecarFactory =
