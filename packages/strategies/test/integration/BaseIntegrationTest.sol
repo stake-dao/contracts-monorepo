@@ -1,8 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import {console} from "forge-std/src/console.sol";
-import {BaseSetup} from "test/BaseSetup.sol";
+import {BaseSetup, IStrategy} from "test/BaseSetup.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeLibrary} from "test/utils/SafeLibrary.sol";
 import {RewardVault} from "src/RewardVault.sol";
@@ -53,14 +52,8 @@ abstract contract BaseIntegrationTest is BaseSetup {
     /// @notice Deposit tokens for each gauge.
     address[] public depositTokens;
 
-    /// @notice Reward tokens supported by the protocol.
-    address[] public rewardTokens;
-
     /// @notice Gauge addresses being tested.
     address[] public gauges;
-
-    /// @notice Vault implementation address for cloning.
-    address public vaultImplementation;
 
     //////////////////////////////////////////////////////
     /// --- TEST PARAMETERS
@@ -90,10 +83,6 @@ abstract contract BaseIntegrationTest is BaseSetup {
     /// --- ABSTRACT METHODS
     //////////////////////////////////////////////////////
 
-    /// @notice Returns the protocol identifier.
-    /// @return Protocol ID.
-    function _getProtocolId() internal pure virtual returns (bytes4);
-
     /// @notice Deploys vault for a specific gauge.
     /// @param gaugeAddress Address of the gauge.
     /// @return vault Deployed reward vault.
@@ -120,22 +109,15 @@ abstract contract BaseIntegrationTest is BaseSetup {
     function _getMainRewardToken() internal view virtual returns (address);
 
     /// @notice Gets strategy balance for a gauge.
-    /// @param gaugeIndex Index of the gauge.
+    /// @param gaugeAddress Address of the gauge.
     /// @return Strategy balance.
-    function _getStrategyBalance(uint256 gaugeIndex) internal view virtual returns (uint256);
+    function _getStrategyBalance(address gaugeAddress) internal view returns (uint256) {
+        return IStrategy(strategy).balanceOf(gaugeAddress);
+    }
 
     //////////////////////////////////////////////////////
     /// --- SETUP
     //////////////////////////////////////////////////////
-
-    /// @notice Sets up the test environment.
-    /// @dev Initializes accounts, protocol components, and vaults.
-    function setUp() public virtual {
-        // Initialize test accounts
-        for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
-            accounts.push(makeAddr(string(abi.encodePacked("Account", i))));
-        }
-    }
 
     /// @notice Sets up test accounts with tokens and approvals.
     function _setupAccountsWithTokens() internal {
@@ -162,8 +144,6 @@ abstract contract BaseIntegrationTest is BaseSetup {
     /// @param _baseAmount2 Base amount for second gauge.
     /// @dev Main integration test exercising full deposit/withdraw/claim cycles.
     function test_deposit_withdraw_sequentially(uint256 _baseAmount, uint256 _baseAmount2) public virtual {
-        require(gauges.length >= 2, "Need at least 2 gauges");
-
         // Create base amounts array
         uint256[] memory _baseAmounts = new uint256[](gauges.length);
         _baseAmounts[0] = _baseAmount;
@@ -206,8 +186,6 @@ abstract contract BaseIntegrationTest is BaseSetup {
     /// @param _baseAmount2 Base amount for second gauge.
     /// @dev Regression test for issue #111.
     function test_netCredited_DecreasingRewards(uint256 _baseAmount, uint256 _baseAmount2) public virtual {
-        require(gauges.length >= 2, "Need at least 2 gauges");
-
         // Create base amounts array
         uint256[] memory _baseAmounts = new uint256[](gauges.length);
         _baseAmounts[0] = _baseAmount;
@@ -319,7 +297,7 @@ abstract contract BaseIntegrationTest is BaseSetup {
     /// @param params Test parameters.
     function _verifyInitialDeposits(TestParams memory params) internal view {
         for (uint256 i = 0; i < gauges.length; i++) {
-            uint256 strategyBalance = _getStrategyBalance(i);
+            uint256 strategyBalance = _getStrategyBalance(gauges[i]);
             uint256 expectedBalance = params.totalDeposited[i];
 
             assertEq(
@@ -408,7 +386,7 @@ abstract contract BaseIntegrationTest is BaseSetup {
     function _verifySecondDeposits(TestParams memory params) internal view {
         for (uint256 i = 0; i < gauges.length; i++) {
             assertEq(
-                _getStrategyBalance(i),
+                _getStrategyBalance(gauges[i]),
                 params.totalDeposited[i],
                 string(abi.encodePacked("Second deposit mismatch for gauge ", vm.toString(i)))
             );
@@ -495,7 +473,7 @@ abstract contract BaseIntegrationTest is BaseSetup {
     function _verifyPartialWithdrawals(TestParams memory params) internal view {
         for (uint256 i = 0; i < gauges.length; i++) {
             assertEq(
-                _getStrategyBalance(i),
+                _getStrategyBalance(gauges[i]),
                 params.totalDeposited[i] - params.totalWithdrawn[i],
                 string(abi.encodePacked("Balance after partial withdrawal mismatch for gauge ", vm.toString(i)))
             );
@@ -603,7 +581,7 @@ abstract contract BaseIntegrationTest is BaseSetup {
     function _verifyFinalState(TestParams memory) internal view {
         for (uint256 i = 0; i < gauges.length; i++) {
             assertEq(
-                _getStrategyBalance(i),
+                _getStrategyBalance(gauges[i]),
                 0,
                 string(abi.encodePacked("Strategy should be empty for gauge ", vm.toString(i)))
             );

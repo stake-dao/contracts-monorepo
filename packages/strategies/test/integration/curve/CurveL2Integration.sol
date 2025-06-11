@@ -3,44 +3,44 @@ pragma solidity 0.8.28;
 
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {CurveStrategy} from "src/integrations/curve/CurveStrategy.sol";
-import {BaseIntegrationTest} from "test/integration/BaseIntegrationTest.sol";
+import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
+import {NewBaseIntegrationTest} from "test/integration/NewBaseIntegrationTest.sol";
+import {OnlyBoostAllocator} from "src/integrations/curve/OnlyBoostAllocator.sol";
+import {ConvexSidecarFactory} from "src/integrations/curve/ConvexSidecarFactory.sol";
 
 /// @title CurveL2Integration - L2 Curve Integration Test
 /// @notice Integration test for Curve protocol on L2 with Convex.
-abstract contract CurveL2Integration is BaseIntegrationTest {
+abstract contract CurveL2Integration is NewBaseIntegrationTest {
     /// @notice The configuration for the test.
+
     struct Config {
         string chain;
         bytes4 protocolId;
         uint256 blockNumber;
-        address rewardToken;
-        address minter;
         address locker;
+        address rewardToken;
         IStrategy.HarvestPolicy harvestPolicy;
+        address minter;
+        address boostProvider;
+        /// Only Boost Config
         bool isOnlyBoost;
+        address cvx;
+        address convexBoostHolder;
+        address booster;
     }
 
     /// @notice The configuration for the test.
     Config public config;
 
-    /// @notice The Curve Strategy contract.
-    CurveStrategy public curveStrategy;
-
     constructor(Config memory _config) {
         config = _config;
     }
 
-    function setUp() public virtual override {
-        vm.createSelectFork(config.chain, config.blockNumber);
-
-        /// 1. Setup protocol
-        _beforeSetup({
-            _rewardToken: config.rewardToken,
-            _locker: config.locker,
-            _protocolId: config.protocolId,
-            _harvestPolicy: config.harvestPolicy
-        });
-
+    function setUp()
+        public
+        virtual
+        doSetup(config.chain, config.blockNumber, config.rewardToken, config.locker, config.protocolId, config.harvestPolicy)
+    {
         /// 2. Deploy the Curve Strategy contract.
         strategy = address(
             new CurveStrategy({
@@ -50,5 +50,36 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
                 _minter: config.minter
             })
         );
+
+        /// 3. Check if the strategy is only boost.
+        if (config.isOnlyBoost) {
+            /// 3a. Deploy the Convex Sidecar implementation.
+            sidecarImplementation = address(
+                new ConvexSidecar({
+                    _accountant: address(accountant),
+                    _protocolController: address(protocolController),
+                    _cvx: config.cvx,
+                    _booster: config.booster
+                })
+            );
+
+            /// 3b. Deploy the Convex Sidecar factory.
+            sidecarFactory = address(
+                new ConvexSidecarFactory({
+                    _implementation: address(sidecarImplementation),
+                    _protocolController: address(protocolController),
+                    _booster: config.booster
+                })
+            );
+
+            /// 3c. Deploy the OnlyBoostAllocator contract.
+            allocator = new OnlyBoostAllocator({
+                _locker: config.locker,
+                _gateway: address(gateway),
+                _convexSidecarFactory: sidecarFactory,
+                _boostProvider: config.boostProvider,
+                _convexBoostHolder: config.convexBoostHolder
+            });
+        }
     }
 }
