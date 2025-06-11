@@ -13,13 +13,13 @@ import {Safe, SafeLibrary} from "test/utils/SafeLibrary.sol";
 
 /// @title BaseTest
 /// @notice Base test contract with common utilities and setup for all tests
-abstract contract BaseForkTest is Test {
+abstract contract BaseSetup is Test {
     address public immutable admin = address(this);
     address public immutable feeReceiver = makeAddr("Fee Receiver");
 
     bytes4 internal protocolId;
-    bool internal harvested;
     address public rewardToken;
+    IStrategy.HarvestPolicy internal harvestPolicy;
 
     address public locker;
 
@@ -38,12 +38,17 @@ abstract contract BaseForkTest is Test {
                                       HELPERS
     //////////////////////////////////////////////////////////////////////////*/
 
-    function _beforeSetup(address _rewardToken, address _locker, bytes4 _protocolId, bool _harvestPolicy) internal {
+    function _beforeSetup(
+        address _rewardToken,
+        address _locker,
+        bytes4 _protocolId,
+        IStrategy.HarvestPolicy _harvestPolicy
+    ) internal {
         /// 0. Initialize variables.
         locker = _locker;
         protocolId = _protocolId;
         rewardToken = _rewardToken;
-        harvested = _harvestPolicy;
+        harvestPolicy = _harvestPolicy;
 
         /// 1. Deploy Protocol Controller.
         protocolController = new ProtocolController();
@@ -64,7 +69,7 @@ abstract contract BaseForkTest is Test {
             protocolId: protocolId,
             protocolController: address(protocolController),
             accountant: address(accountant),
-            policy: IStrategy.HarvestPolicy.CHECKPOINT
+            policy: harvestPolicy
         });
 
         /// 5. Deploy Reward Receiver Implementation.

@@ -13,20 +13,28 @@ import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
 contract CurveAllocator is Allocator {
     using Math for uint256;
 
-    /// @notice Address of the Convex Sidecar Factory contract
-    ISidecarFactory public immutable CONVEX_SIDECAR_FACTORY;
-
     /// @notice Address of the Curve Boost Delegation V3 contract
-    address public constant BOOST_DELEGATION_V3 = CurveProtocol.VE_BOOST;
+    address public immutable BOOST_DELEGATION_V3;
 
     /// @notice Address of the Convex Boost Holder contract
-    address public constant CONVEX_BOOST_HOLDER = CurveProtocol.CONVEX_PROXY;
+    address public immutable CONVEX_BOOST_HOLDER;
+
+    /// @notice Address of the Convex Sidecar Factory contract
+    ISidecarFactory public immutable CONVEX_SIDECAR_FACTORY;
 
     /// @notice Initializes the CurveAllocator contract
     /// @param _locker Address of the Stake DAO Liquidity Locker
     /// @param _gateway Address of the gateway contract
     /// @param _convexSidecarFactory Address of the Convex Sidecar Factory contract
-    constructor(address _locker, address _gateway, address _convexSidecarFactory) Allocator(_locker, _gateway) {
+    constructor(
+        address _locker,
+        address _gateway,
+        address _convexSidecarFactory,
+        address _boostDelegationV3,
+        address _convexBoostHolder
+    ) Allocator(_locker, _gateway) {
+        BOOST_DELEGATION_V3 = _boostDelegationV3;
+        CONVEX_BOOST_HOLDER = _convexBoostHolder;
         CONVEX_SIDECAR_FACTORY = ISidecarFactory(_convexSidecarFactory);
     }
 
