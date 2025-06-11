@@ -67,7 +67,7 @@ abstract contract CurveMainnetIntegration is BaseIntegrationTest {
             _rewardToken: CRV,
             _locker: LOCKER,
             _protocolId: bytes4(keccak256("CURVE")),
-            _harvestPolicy: false // True for Harvest, False for Checkpoint
+            _harvestPolicy: IStrategy.HarvestPolicy.CHECKPOINT
         });
 
         // Initialize accounts
@@ -95,7 +95,13 @@ abstract contract CurveMainnetIntegration is BaseIntegrationTest {
         );
 
         // Deploy and set allocator
-        allocator = new CurveAllocator(LOCKER, address(gateway), address(convexSidecarFactory));
+        allocator = new CurveAllocator({
+            _locker: LOCKER,
+            _gateway: address(gateway),
+            _convexSidecarFactory: address(convexSidecarFactory),
+            _boostDelegationV3: CurveProtocol.VE_BOOST,
+            _convexBoostHolder: CurveProtocol.CONVEX_PROXY
+        });
 
         _afterSetup();
     }
@@ -131,10 +137,6 @@ abstract contract CurveMainnetIntegration is BaseIntegrationTest {
     //////////////////////////////////////////////////////
     /// --- PROTOCOL IMPLEMENTATION
     //////////////////////////////////////////////////////
-
-    function _initializeProtocol() internal override {}
-
-    function _performCommonSetup() internal override {}
 
     function _getProtocolId() internal pure override returns (bytes4) {
         return bytes4(keccak256("CURVE"));

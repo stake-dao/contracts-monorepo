@@ -80,7 +80,13 @@ contract Deploy is Base {
         );
 
         /// 7. Deploy Allocator.
-        curveAllocator = new CurveAllocator(address(protocolController), locker, address(convexSidecarFactory));
+        curveAllocator = new CurveAllocator({
+            _locker: locker,
+            _gateway: address(gateway),
+            _convexSidecarFactory: address(convexSidecarFactory),
+            _boostDelegationV3: CurveProtocol.VE_BOOST,
+            _convexBoostHolder: CurveProtocol.CONVEX_PROXY
+        });
 
         /// 6. Setup the allocator in the protocol controller.
         protocolController.setAllocator(PROTOCOL_ID, address(curveAllocator));

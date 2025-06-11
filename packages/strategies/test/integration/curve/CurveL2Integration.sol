@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
+import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {CurveStrategy} from "src/integrations/curve/CurveStrategy.sol";
 import {BaseIntegrationTest} from "test/integration/BaseIntegrationTest.sol";
 
@@ -15,7 +16,7 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
         address rewardToken;
         address minter;
         address locker;
-        bool harvestPolicy;
+        IStrategy.HarvestPolicy harvestPolicy;
         bool isOnlyBoost;
     }
 
@@ -50,8 +51,4 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
             })
         );
     }
-
-    function _initializeProtocol() internal override {}
-
-    function _performCommonSetup() internal override {}
 }

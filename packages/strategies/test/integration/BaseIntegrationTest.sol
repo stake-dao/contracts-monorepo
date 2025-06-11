@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import {console} from "forge-std/src/console.sol";
-import {BaseForkTest} from "test/BaseFork.sol";
+import {BaseSetup} from "test/BaseSetup.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {SafeLibrary} from "test/utils/SafeLibrary.sol";
 import {RewardVault} from "src/RewardVault.sol";
@@ -22,7 +22,7 @@ import {Enum} from "@safe/contracts/common/Enum.sol";
 ///      - Multi-user and multi-gauge testing support.
 ///      - Comprehensive reward distribution validation.
 ///      - Protocol-agnostic test structure.
-abstract contract BaseIntegrationTest is BaseForkTest {
+abstract contract BaseIntegrationTest is BaseSetup {
     //////////////////////////////////////////////////////
     /// --- CONSTANTS
     //////////////////////////////////////////////////////
@@ -94,10 +94,6 @@ abstract contract BaseIntegrationTest is BaseForkTest {
     /// @return Protocol ID.
     function _getProtocolId() internal pure virtual returns (bytes4);
 
-    /// @notice Initializes protocol-specific components.
-    /// @dev Must set up gauges, tokens, and protocol contracts.
-    function _initializeProtocol() internal virtual;
-
     /// @notice Deploys vault for a specific gauge.
     /// @param gaugeAddress Address of the gauge.
     /// @return vault Deployed reward vault.
@@ -139,18 +135,6 @@ abstract contract BaseIntegrationTest is BaseForkTest {
         for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
             accounts.push(makeAddr(string(abi.encodePacked("Account", i))));
         }
-    }
-
-    //////////////////////////////////////////////////////
-    /// --- COMMON SETUP HELPERS
-    //////////////////////////////////////////////////////
-
-    /// @notice Performs common setup after protocol initialization.
-    /// @dev Deploys implementations, sets strategy/allocator, enables modules.
-    function _performCommonSetup() internal virtual {
-        // Empty by default - implementations should override this method
-        // to perform protocol-specific setup like deploying strategies,
-        // allocators, and setting up registrars
     }
 
     /// @notice Sets up test accounts with tokens and approvals.
