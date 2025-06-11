@@ -6,6 +6,8 @@ import "test/BaseSetup.sol";
 import {Factory} from "src/Factory.sol";
 
 abstract contract NewBaseIntegrationTest is BaseSetup {
+    using Math for uint256;
+
     uint256 public constant MAX_REWARDS = 100_000e18;
     uint256 public constant MAX_ACCOUNT_POSITIONS = 100;
 
@@ -24,8 +26,8 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
     /// @notice Deployed reward receivers for each gauge.
     RewardReceiver[] public rewardReceivers;
 
-    /// @notice Mapping of reward vault to harvestable rewards.
-    mapping(address => uint256) public rewardVaultToHarvestableRewards;
+    /// @notice Total harvestable rewards.
+    uint256 public totalHarvestableRewards;
 
     /// @notice Gauge address being tested.
     address[] public gauges;
@@ -50,14 +52,7 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
 
         address gauge;
 
-        /// Make sure we don't loop through the arrays if they are not the same length.
-        uint256 loopLength = _accountPositions.length < _rewards.length ? _accountPositions.length : _rewards.length;
-
-        for (uint256 i = 0; i < loopLength; i++) {
-            if (i >= _accountPositions.length || i >= _rewards.length) {
-                return;
-            }
-
+        for (uint256 i = 0; i < _accountPositions.length; i++) {
             accountPosition = _accountPositions[i];
 
             gauge = gauges[accountPosition.gaugeIndex];
@@ -90,7 +85,7 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
             simulateRewards(rewardVault, _rewards[i]);
 
             /// 7. Store the harvestable rewards for the vault for future assertions.
-            rewardVaultToHarvestableRewards[address(rewardVault)] += _rewards[i];
+            totalHarvestableRewards += _rewards[i];
 
             /// 8. Skip 1 day.
             skip(1 days);
@@ -126,16 +121,24 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
         /// 11. Assert that the harvester has no rewards before harvest.
         assertEq(_balanceOf(rewardToken, harvester), 0, "Expected harvester to have no rewards before harvest");
 
-        /// 11. Harvest the rewards.
+        /// 12. Assert that the protocol fees accrued are 0.
+        assertEq(accountant.protocolFeesAccrued(), 0, "Expected protocol fees accrued to be 0");
+
+        /// 13. Harvest the rewards.
         harvest();
 
-        /// 10. Assert that the accountant has no rewards before harvest.
-        // TODO: Implement this with correct amount.
-        assertGt(_balanceOf(rewardToken, address(accountant)), 0, "Expected accountant to have rewards before harvest");
+        uint256 expectedHarvesterBalance = totalHarvestableRewards.mulDiv(accountant.getHarvestFeePercent(), 1e18);
+        uint256 expectedProtocolFeesAccrued = totalHarvestableRewards.mulDiv(accountant.getProtocolFeePercent(), 1e18);
+        uint256 expectedAccountantBalance = totalHarvestableRewards - expectedHarvesterBalance;
 
-        /// 11. Assert that the harvester has no rewards before harvest.
-        // TODO: Implement this with correct amount.
-        assertGt(_balanceOf(rewardToken, harvester), 0, "Expected harvester to have rewards before harvest");
+        /// 14. Assert that the accountant has no rewards before harvest.
+        assertApproxEqRel(_balanceOf(rewardToken, address(accountant)), expectedAccountantBalance, 0.001e18, "Expected accountant to have rewards after harvest with a 0.1% error");
+
+        /// 15. Assert that the harvester has no rewards before harvest.
+        assertApproxEqRel(_balanceOf(rewardToken, harvester), expectedHarvesterBalance, 0.001e18, "Expected harvester to have rewards after harvest with a 0.1% error");
+
+        /// 16. Assert that the protocol fees accrued are greater than 0.
+        assertApproxEqRel(accountant.protocolFeesAccrued(), expectedProtocolFeesAccrued, 0.001e18, "Expected protocol fees accrued to be greater than 0 after harvest with a 0.1% error");
     }
 
     //////////////////////////////////////////////////////
@@ -217,10 +220,12 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
         internal
         returns (AccountPosition[] memory, uint256[] memory)
     {
-        uint256[] memory rewards = new uint256[](MAX_ACCOUNT_POSITIONS);
-        AccountPosition[] memory positions = new AccountPosition[](MAX_ACCOUNT_POSITIONS);
+        uint256 length = bound(uint256(keccak256(abi.encode("length"))), 1, MAX_ACCOUNT_POSITIONS);
 
-        for (uint256 i = 0; i < MAX_ACCOUNT_POSITIONS; i++) {
+        uint256[] memory rewards = new uint256[](length);
+        AccountPosition[] memory positions = new AccountPosition[](length);
+
+        for (uint256 i = 0; i < length; i++) {
             address gauge = gauges[i % gauges.length];
             uint256 maxAmount = IERC20(gauge).totalSupply() / 2;
 
