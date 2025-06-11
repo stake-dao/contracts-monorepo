@@ -17,6 +17,7 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
         address account;
         uint256 baseAmount;
         uint256 additionalAmount;
+        uint256 partialWithdrawAmount;
         uint256 gaugeIndex;
     }
 
@@ -29,6 +30,9 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
     /// @notice Total harvestable rewards.
     uint256 public totalHarvestableRewards;
 
+    /// @notice Mapping of account to claimed rewards.
+    mapping(address => uint256) public rewardVaultToHarvestableRewards;
+
     /// @notice Gauge address being tested.
     address[] public gauges;
 
@@ -37,8 +41,7 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
     }
 
     function test_complete_protocol_lifecycle() public {
-        (AccountPosition[] memory _accountPositions, uint256[] memory _rewards) =
-            _generateAccountPositionsAndRewards();
+        (AccountPosition[] memory _accountPositions, uint256[] memory _rewards) = _generateAccountPositionsAndRewards();
 
         /// 1. Deploy the RewardVaults.
         (rewardVaults, rewardReceivers) = deployRewardVaults();
@@ -66,19 +69,19 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
             assertEq(
                 rewardVault.balanceOf(accountPosition.account),
                 accountPosition.baseAmount,
-                "Expected account balance to be equal to deposited amount"
+                "1. Expected account balance to be equal to deposited amount"
             );
 
             assertGe(
                 rewardVault.totalSupply(),
                 accountPosition.baseAmount,
-                "Expected total supply to be greater than or equal to deposited amount"
+                "2. Expected total supply to be greater than or equal to deposited amount"
             );
 
             assertEq(
                 IStrategy(strategy).balanceOf(gauge),
                 rewardVault.totalSupply(),
-                "Expected strategy balance to be equal to total supply"
+                "3. Expected strategy balance to be equal to total supply"
             );
 
             /// 6. Simulate rewards.
@@ -86,6 +89,7 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
 
             /// 7. Store the harvestable rewards for the vault for future assertions.
             totalHarvestableRewards += _rewards[i];
+            rewardVaultToHarvestableRewards[address(rewardVault)] += _rewards[i];
 
             /// 8. Skip 1 day.
             skip(1 days);
@@ -97,32 +101,32 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
             assertEq(
                 rewardVault.balanceOf(accountPosition.account),
                 accountPosition.baseAmount + accountPosition.additionalAmount,
-                "Expected account balance to be equal to base amount plus additional amount"
+                "4. Expected account balance to be equal to base amount plus additional amount"
             );
 
             assertGe(
                 rewardVault.totalSupply(),
                 accountPosition.baseAmount + accountPosition.additionalAmount,
-                "Expected total supply to be greater than or equal to base amount plus additional amount"
+                "5. Expected total supply to be greater than or equal to base amount plus additional amount"
             );
 
             assertEq(
                 IStrategy(strategy).balanceOf(gauge),
                 rewardVault.totalSupply(),
-                "Expected strategy balance to be equal to total supply after additional deposits"
+                "6. Expected strategy balance to be equal to total supply after additional deposits"
             );
         }
 
         /// 10. Assert that the accountant has no rewards before harvest.
         assertEq(
-            _balanceOf(rewardToken, address(accountant)), 0, "Expected accountant to have no rewards before harvest"
+            _balanceOf(rewardToken, address(accountant)), 0, "7. Expected accountant to have no rewards before harvest"
         );
 
         /// 11. Assert that the harvester has no rewards before harvest.
-        assertEq(_balanceOf(rewardToken, harvester), 0, "Expected harvester to have no rewards before harvest");
+        assertEq(_balanceOf(rewardToken, harvester), 0, "8. Expected harvester to have no rewards before harvest");
 
         /// 12. Assert that the protocol fees accrued are 0.
-        assertEq(accountant.protocolFeesAccrued(), 0, "Expected protocol fees accrued to be 0");
+        assertEq(accountant.protocolFeesAccrued(), 0, "9. Expected protocol fees accrued to be 0");
 
         /// 13. Harvest the rewards.
         harvest();
@@ -131,14 +135,89 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
         uint256 expectedProtocolFeesAccrued = totalHarvestableRewards.mulDiv(accountant.getProtocolFeePercent(), 1e18);
         uint256 expectedAccountantBalance = totalHarvestableRewards - expectedHarvesterBalance;
 
-        /// 14. Assert that the accountant has no rewards before harvest.
-        assertApproxEqRel(_balanceOf(rewardToken, address(accountant)), expectedAccountantBalance, 0.001e18, "Expected accountant to have rewards after harvest with a 0.1% error");
+        /// 14. Assert that the accountant has the correct balance.
+        assertApproxEqRel(
+            _balanceOf(rewardToken, address(accountant)),
+            expectedAccountantBalance,
+            0.001e18,
+            "10. Expected accountant to have rewards after harvest with a 0.1% error"
+        );
 
-        /// 15. Assert that the harvester has no rewards before harvest.
-        assertApproxEqRel(_balanceOf(rewardToken, harvester), expectedHarvesterBalance, 0.001e18, "Expected harvester to have rewards after harvest with a 0.1% error");
+        /// 15. Assert that the harvester has the correct balance.
+        assertApproxEqRel(
+            _balanceOf(rewardToken, harvester),
+            expectedHarvesterBalance,
+            0.001e18,
+            "11. Expected harvester to have rewards after harvest with a 0.1% error"
+        );
 
-        /// 16. Assert that the protocol fees accrued are greater than 0.
-        assertApproxEqRel(accountant.protocolFeesAccrued(), expectedProtocolFeesAccrued, 0.001e18, "Expected protocol fees accrued to be greater than 0 after harvest with a 0.1% error");
+        /// 16. Assert that the protocol fees accrued are the correct amount.
+        assertApproxEqRel(
+            accountant.protocolFeesAccrued(),
+            expectedProtocolFeesAccrued,
+            0.001e18,
+            "12. Expected protocol fees accrued to be greater than 0 after harvest with a 0.1% error"
+        );
+
+        for (uint256 i = 0; i < _accountPositions.length; i++) {
+            accountPosition = _accountPositions[i];
+
+            gauge = gauges[accountPosition.gaugeIndex];
+            rewardVault = rewardVaults[accountPosition.gaugeIndex];
+            rewardReceiver = rewardReceivers[accountPosition.gaugeIndex];
+
+            assertEq(
+                _balanceOf(rewardToken, accountPosition.account),
+                0,
+                "Expected reward token balance to be 0 before claiming"
+            );
+            assertGt(
+                accountant.getPendingRewards(address(rewardVault), accountPosition.account),
+                0,
+                "Expected pending rewards to be greater than 0 before claiming"
+            );
+
+            /// 17. Claim the rewards.
+            claim(rewardVault, accountPosition.account);
+
+            assertGt(
+                _balanceOf(rewardToken, accountPosition.account),
+                0,
+                "13. Expected reward token balance to be greater than 0 after claiming"
+            );
+            assertEq(
+                accountant.getPendingRewards(address(rewardVault), accountPosition.account),
+                0,
+                "14. Expected pending rewards to be 0 after claiming"
+            );
+
+            uint256 totalSupply = rewardVault.totalSupply();
+
+            /// 18. Partial withdraw.
+            withdraw(rewardVault, accountPosition.account, accountPosition.partialWithdrawAmount);
+
+            assertGt(
+                rewardVault.balanceOf(accountPosition.account),
+                0,
+                "15. Expected reward vault balance to be greater than 0 after partial withdraw"
+            );
+
+            assertEq(
+                rewardVault.balanceOf(accountPosition.account),
+                accountPosition.baseAmount + accountPosition.additionalAmount - accountPosition.partialWithdrawAmount,
+                "16. Expected reward vault balance to be equal to base amount plus additional amount minus partial withdraw amount"
+            );
+            assertEq(
+                rewardVault.totalSupply(),
+                totalSupply - accountPosition.partialWithdrawAmount,
+                "17. Expected reward vault total supply to be equal to total supply minus partial withdraw amount"
+            );
+            assertEq(
+                IStrategy(strategy).balanceOf(gauge),
+                rewardVault.totalSupply(),
+                "18. Expected strategy balance to be equal to total supply after partial withdraw"
+            );
+        }
     }
 
     //////////////////////////////////////////////////////
@@ -193,9 +272,21 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
 
         vm.prank(harvester);
         accountant.harvest(gauges, harvestData, harvester);
+    }
 
-        // /// 2. Track the harvester rewards.
-        // uint256 harvesterRewards = _balanceOf(rewardToken, harvester);
+    function claim(RewardVault rewardVault, address account) internal {
+        address[] memory accountGauges = new address[](1);
+        accountGauges[0] = rewardVault.gauge();
+        bytes[] memory harvestData = new bytes[](1);
+        harvestData[0] = "";
+
+        vm.prank(account);
+        accountant.claim(accountGauges, harvestData);
+    }
+
+    function withdraw(RewardVault rewardVault, address account, uint256 amount) internal {
+        vm.prank(account);
+        rewardVault.withdraw(amount, account, account);
     }
 
     //////////////////////////////////////////////////////
@@ -216,10 +307,7 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
     /// --- FUZZING HELPERS
     //////////////////////////////////////////////////////
 
-    function _generateAccountPositionsAndRewards()
-        internal
-        returns (AccountPosition[] memory, uint256[] memory)
-    {
+    function _generateAccountPositionsAndRewards() internal returns (AccountPosition[] memory, uint256[] memory) {
         uint256 length = bound(uint256(keccak256(abi.encode("length"))), 1, MAX_ACCOUNT_POSITIONS);
 
         uint256[] memory rewards = new uint256[](length);
@@ -227,15 +315,18 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
 
         for (uint256 i = 0; i < length; i++) {
             address gauge = gauges[i % gauges.length];
-            uint256 maxAmount = IERC20(gauge).totalSupply() / 2;
+            uint256 maxAmount = IERC20(gauge).totalSupply();
 
             uint256 baseAmount = bound(uint256(keccak256(abi.encode("baseAmount", i))), 1e18, maxAmount);
             uint256 additionalAmount = bound(uint256(keccak256(abi.encode("additionalAmount", i))), 1e18, baseAmount);
+            uint256 partialWithdrawAmount =
+                bound(uint256(keccak256(abi.encode("partialWithdrawAmount", i))), 1e18, baseAmount);
 
             positions[i] = AccountPosition({
                 account: makeAddr(string(abi.encodePacked("Account", i))),
                 baseAmount: baseAmount,
                 additionalAmount: additionalAmount,
+                partialWithdrawAmount: partialWithdrawAmount,
                 gaugeIndex: i % gauges.length
             });
 
