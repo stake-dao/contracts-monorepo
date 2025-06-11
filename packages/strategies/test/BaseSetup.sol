@@ -57,6 +57,7 @@ abstract contract BaseSetup is Test {
         _beforeSetup(_rewardToken, _locker, _protocolId, _harvestPolicy);
         _;
         _afterSetup();
+        _labelContracts();
     }
 
     function _beforeSetup(
@@ -115,15 +116,6 @@ abstract contract BaseSetup is Test {
 
         /// 10. Deploy Allocator.
         allocator = new Allocator(locker, address(gateway));
-
-        /// 11. Label common contracts.
-        vm.label({account: address(locker), newLabel: "Locker"});
-        vm.label({account: address(gateway), newLabel: "Gateway"});
-        vm.label({account: address(strategy), newLabel: "Strategy"});
-        vm.label({account: address(allocator), newLabel: "Allocator"});
-        vm.label({account: address(accountant), newLabel: "Accountant"});
-        vm.label({account: address(rewardToken), newLabel: "Reward Token"});
-        vm.label({account: address(protocolController), newLabel: "Protocol Controller"});
     }
 
     function _afterSetup() internal virtual {
@@ -146,6 +138,16 @@ abstract contract BaseSetup is Test {
             /// Enable sidecar factory.
             _enableModule(address(sidecarFactory));
         }
+    }
+
+    function _labelContracts() internal {
+        vm.label({account: address(locker), newLabel: "Locker"});
+        vm.label({account: address(gateway), newLabel: "Gateway"});
+        vm.label({account: address(strategy), newLabel: "Strategy"});
+        vm.label({account: address(allocator), newLabel: "Allocator"});
+        vm.label({account: address(accountant), newLabel: "Accountant"});
+        vm.label({account: address(rewardToken), newLabel: "Reward Token"});
+        vm.label({account: address(protocolController), newLabel: "Protocol Controller"});
     }
 
     /*//////////////////////////////////////////////////////////////////////////
