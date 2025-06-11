@@ -81,7 +81,8 @@ abstract contract CurveMainnetIntegration is BaseIntegrationTest {
         // Deploy sidecar implementation and factory
         address sidecarImplementation =
             address(new ConvexSidecar(address(accountant), address(protocolController), CVX, CONVEX_BOOSTER));
-        convexSidecarFactory = address(new ConvexSidecarFactory(sidecarImplementation, address(protocolController)));
+        convexSidecarFactory =
+            address(new ConvexSidecarFactory(sidecarImplementation, address(protocolController), CONVEX_BOOSTER));
 
         // Deploy Curve factory with Convex support
         factory = address(

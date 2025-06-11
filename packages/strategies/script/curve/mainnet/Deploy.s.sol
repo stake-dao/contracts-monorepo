@@ -68,8 +68,9 @@ contract Deploy is Base {
         );
 
         /// 3. Deploy the Convex Sidecar Factory contract.
-        convexSidecarFactory =
-            new ConvexSidecarFactory(address(convexSidecarImplementation), address(protocolController));
+        convexSidecarFactory = new ConvexSidecarFactory(
+            address(convexSidecarImplementation), address(protocolController), CurveProtocol.CONVEX_BOOSTER
+        );
 
         /// 4. Deploy the factory.
         curveFactory = new CurveFactory(
