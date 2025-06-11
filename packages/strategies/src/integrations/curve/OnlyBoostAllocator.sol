@@ -8,9 +8,9 @@ import {IBalanceProvider} from "src/interfaces/IBalanceProvider.sol";
 import {ISidecar} from "src/interfaces/ISidecar.sol";
 import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
 
-/// @title CurveAllocator
+/// @title OnlyBoostAllocator
 /// @notice Contract that calculates the optimal LP token allocation for Stake DAO Locker and Convex
-contract CurveAllocator is Allocator {
+contract OnlyBoostAllocator is Allocator {
     using Math for uint256;
 
     /// @notice Address of the Curve Boost Delegation V3 contract
@@ -22,7 +22,7 @@ contract CurveAllocator is Allocator {
     /// @notice Address of the Convex Sidecar Factory contract
     ISidecarFactory public immutable CONVEX_SIDECAR_FACTORY;
 
-    /// @notice Initializes the CurveAllocator contract
+    /// @notice Initializes the OnlyBoostAllocator contract
     /// @param _locker Address of the Stake DAO Liquidity Locker
     /// @param _gateway Address of the gateway contract
     /// @param _convexSidecarFactory Address of the Convex Sidecar Factory contract

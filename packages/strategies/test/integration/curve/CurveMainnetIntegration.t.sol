@@ -6,7 +6,7 @@ import {SafeLibrary} from "test/utils/SafeLibrary.sol";
 import {RewardVault} from "src/RewardVault.sol";
 import {RewardReceiver} from "src/RewardReceiver.sol";
 import {Allocator} from "src/Allocator.sol";
-import {CurveAllocator} from "src/integrations/curve/CurveAllocator.sol";
+import {OnlyBoostAllocator} from "src/integrations/curve/OnlyBoostAllocator.sol";
 import {CurveFactory} from "src/integrations/curve/CurveFactory.sol";
 import {CurveStrategy, IMinter} from "src/integrations/curve/CurveStrategy.sol";
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
@@ -95,7 +95,7 @@ abstract contract CurveMainnetIntegration is BaseIntegrationTest {
         );
 
         // Deploy and set allocator
-        allocator = new CurveAllocator({
+        allocator = new OnlyBoostAllocator({
             _locker: LOCKER,
             _gateway: address(gateway),
             _convexSidecarFactory: address(convexSidecarFactory),

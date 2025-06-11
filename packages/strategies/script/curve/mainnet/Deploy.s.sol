@@ -6,7 +6,7 @@ import "forge-std/src/Script.sol";
 import {Base} from "script/Base.sol";
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
 import {ConvexSidecarFactory} from "src/integrations/curve/ConvexSidecarFactory.sol";
-import {CurveAllocator} from "src/integrations/curve/CurveAllocator.sol";
+import {OnlyBoostAllocator} from "src/integrations/curve/OnlyBoostAllocator.sol";
 import {CurveFactory} from "src/integrations/curve/CurveFactory.sol";
 import {CurveStrategy} from "src/integrations/curve/CurveStrategy.sol";
 
@@ -33,7 +33,7 @@ contract Deploy is Base {
     CurveStrategy public curveStrategy;
 
     /// @notice The Curve Allocator contract.
-    CurveAllocator public curveAllocator;
+    OnlyBoostAllocator public curveAllocator;
 
     /// @notice The Curve Factory contract.
     CurveFactory public curveFactory;
@@ -80,7 +80,7 @@ contract Deploy is Base {
         );
 
         /// 7. Deploy Allocator.
-        curveAllocator = new CurveAllocator({
+        curveAllocator = new OnlyBoostAllocator({
             _locker: locker,
             _gateway: address(gateway),
             _convexSidecarFactory: address(convexSidecarFactory),
