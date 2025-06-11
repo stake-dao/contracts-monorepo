@@ -33,7 +33,7 @@ abstract contract CurveL2Integration is NewBaseIntegrationTest {
     /// @notice The configuration for the test.
     Config public config;
 
-    constructor(Config memory _config) {
+    constructor(Config memory _config, address[] memory _gauges) NewBaseIntegrationTest(_gauges) {
         config = _config;
     }
 
@@ -103,6 +103,7 @@ abstract contract CurveL2Integration is NewBaseIntegrationTest {
     }
 }
 
+/// Test Contract  TODO: Remove this
 contract CurveL2IntegrationTest is CurveL2Integration {
     Config public _config = Config({
         chain: "mainnet",
@@ -119,5 +120,7 @@ contract CurveL2IntegrationTest is CurveL2Integration {
         booster: CurveProtocol.CONVEX_BOOSTER
     });
 
-    constructor() CurveL2Integration(_config) {}
+    address[] public _gauges = [0x05255C5BD33672b9FEA4129C13274D1E6193312d];
+
+    constructor() CurveL2Integration(_config, _gauges) {}
 }
