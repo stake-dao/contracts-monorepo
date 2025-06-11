@@ -63,7 +63,7 @@ The Allocator determines the optimal distribution of deposited funds across mult
 **Technical Implementation:**
 
 - Base implementation directs all funds to a single target (LOCKER)
-- Protocol-specific implementations (e.g., CurveAllocator) can override allocation logic
+- Protocol-specific implementations (e.g., OnlyBoostAllocator) can override allocation logic
 - Returns structured Allocation objects containing targets and amounts
 
 ### 2.4 Strategy
