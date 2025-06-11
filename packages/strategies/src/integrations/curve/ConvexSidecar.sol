@@ -134,9 +134,9 @@ contract ConvexSidecar is Sidecar {
             /// So we need to get the token from the wrapper.
             /// More: https://docs.convexfinance.com/convexfinanceintegration/baserewardpool
             tokens[i] = IBaseRewardPool(_token).rewardToken();
-            if (pid() >= 151) {
-                tokens[i] = IStashTokenWrapper(tokens[i]).token();
-            }
+            try IStashTokenWrapper(tokens[i]).token() returns (address _token) {
+                tokens[i] = _token;
+            } catch {}
 
             unchecked {
                 ++i;
