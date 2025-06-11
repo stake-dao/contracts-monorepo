@@ -2,15 +2,17 @@
 pragma solidity 0.8.28;
 
 import {SafeLibrary} from "test/utils/SafeLibrary.sol";
+import {IMinter} from "@interfaces/curve/IMinter.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {CurveFactory} from "src/integrations/curve/CurveFactory.sol";
 import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 import {CurveStrategy} from "src/integrations/curve/CurveStrategy.sol";
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
 import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
-import {NewBaseIntegrationTest} from "test/integration/NewBaseIntegrationTest.sol";
 import {OnlyBoostAllocator} from "src/integrations/curve/OnlyBoostAllocator.sol";
 import {ConvexSidecarFactory} from "src/integrations/curve/ConvexSidecarFactory.sol";
+
+import "test/integration/NewBaseIntegrationTest.sol";
 
 /// @title CurveL2Integration - L2 Curve Integration Test
 /// @notice Integration test for Curve protocol on L2 with Convex.
@@ -104,6 +106,7 @@ abstract contract CurveL2Integration is NewBaseIntegrationTest {
         );
 
         _clearLockerBalances();
+        _allowMint();
     }
 
     function _clearLockerBalances() internal {
@@ -122,6 +125,15 @@ abstract contract CurveL2Integration is NewBaseIntegrationTest {
             data = abi.encodeWithSignature("transfer(address,uint256)", burnAddress, balance);
             SafeLibrary.execOnLocker(payable(gateway), config.locker, lpToken, data, signatures);
         }
+    }
+
+    function _allowMint() internal {
+        /// Build signatures
+        bytes memory signatures = abi.encodePacked(uint256(uint160(admin)), uint8(0), uint256(1));
+        /// Build data
+        bytes memory data = abi.encodeWithSignature("toggle_approve_mint(address)", strategy);
+        /// Execute transaction
+        SafeLibrary.execOnLocker(payable(gateway), config.locker, config.minter, data, signatures);
     }
 }
 
@@ -145,4 +157,26 @@ contract CurveL2IntegrationTest is CurveL2Integration {
     address[] public _gauges = [0x05255C5BD33672b9FEA4129C13274D1E6193312d];
 
     constructor() CurveL2Integration(_config, _gauges) {}
+
+    function simulateRewards(RewardVault vault, uint256 amount) internal override {
+        address gauge = vault.gauge();
+
+        // Get the current integrate_fraction (might be mocked from previous calls)
+        uint256 currentIntegrateFraction;
+        try ILiquidityGauge(gauge).integrate_fraction(config.locker) returns (uint256 fraction) {
+            currentIntegrateFraction = fraction;
+        } catch {
+            // Fallback if mocked and reverts
+            currentIntegrateFraction = IMinter(config.minter).minted(config.locker, gauge);
+        }
+
+        // Add the new amount to existing state (incremental)
+        uint256 newIntegrateFraction = currentIntegrateFraction + amount;
+
+        vm.mockCall(
+            gauge,
+            abi.encodeWithSelector(ILiquidityGauge.integrate_fraction.selector, config.locker),
+            abi.encode(newIntegrateFraction)
+        );
+    }
 }

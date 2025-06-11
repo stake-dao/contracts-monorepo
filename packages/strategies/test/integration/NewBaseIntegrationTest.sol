@@ -6,6 +6,9 @@ import "test/BaseSetup.sol";
 import {Factory} from "src/Factory.sol";
 
 abstract contract NewBaseIntegrationTest is BaseSetup {
+    uint256 public constant MAX_REWARDS = 100_000e18;
+    uint256 public constant MAX_ACCOUNT_POSITIONS = 100;
+
     address public harvester = makeAddr("Harvester");
 
     struct AccountPosition {
@@ -31,11 +34,14 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
         gauges = _gauges;
     }
 
-    function test_complete_protocol_lifecycle(AccountPosition[] memory _accountPositions) public {
-        /// 0. Deploy the RewardVaults.
+    function test_complete_protocol_lifecycle() public {
+        (AccountPosition[] memory _accountPositions, uint256[] memory _rewards) =
+            _generateAccountPositionsAndRewards();
+
+        /// 1. Deploy the RewardVaults.
         (rewardVaults, rewardReceivers) = deployRewardVaults();
 
-        /// 1. Assert that the deployment is valid.
+        /// 2. Assert that the deployment is valid.
         assertDeploymentValid(rewardVaults, rewardReceivers);
 
         RewardVault rewardVault;
@@ -44,20 +50,24 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
 
         address gauge;
 
-        for (uint256 i = 0; i < _accountPositions.length; i++) {
-            accountPosition = _accountPositions[i];
+        /// Make sure we don't loop through the arrays if they are not the same length.
+        uint256 loopLength = _accountPositions.length < _rewards.length ? _accountPositions.length : _rewards.length;
 
-            /// 2. Validate the account position.
-            _validateAccountPositions(accountPosition);
+        for (uint256 i = 0; i < loopLength; i++) {
+            if (i >= _accountPositions.length || i >= _rewards.length) {
+                return;
+            }
+
+            accountPosition = _accountPositions[i];
 
             gauge = gauges[accountPosition.gaugeIndex];
             rewardVault = rewardVaults[accountPosition.gaugeIndex];
             rewardReceiver = rewardReceivers[accountPosition.gaugeIndex];
 
-            /// 3. Deposit the amount into the vault.
+            /// 4. Deposit the amount into the vault.
             deposit(rewardVault, accountPosition.account, accountPosition.baseAmount);
 
-            /// 4. Assertions
+            /// 5. Assertions
             assertEq(
                 rewardVault.balanceOf(accountPosition.account),
                 accountPosition.baseAmount,
@@ -76,37 +86,56 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
                 "Expected strategy balance to be equal to total supply"
             );
 
-            /// 5. Simulate rewards.
-            simulateRewards(rewardVault);
+            /// 6. Simulate rewards.
+            simulateRewards(rewardVault, _rewards[i]);
 
-            /// 6. Store the harvestable rewards for the vault for future assertions.
-            rewardVaultToHarvestableRewards[address(rewardVault)] = getHarvestableRewards(rewardVault);
+            /// 7. Store the harvestable rewards for the vault for future assertions.
+            rewardVaultToHarvestableRewards[address(rewardVault)] += _rewards[i];
 
-            /// 7. Skip 1 day.
+            /// 8. Skip 1 day.
             skip(1 days);
 
-            // /// 8. Additional deposits.
-            // deposit(rewardVault, accountPosition.account, accountPosition.additionalAmount);
+            /// 9. Additional deposits.
+            deposit(rewardVault, accountPosition.account, accountPosition.additionalAmount);
 
-            // /// 9. Assertions
-            // assertEq(
-            // rewardVault.balanceOf(accountPosition.account),
-            // accountPosition.baseAmount + accountPosition.additionalAmount,
-            // "Expected account balance to be equal to base amount plus additional amount"
-            // );
+            /// 10. Assertions
+            assertEq(
+                rewardVault.balanceOf(accountPosition.account),
+                accountPosition.baseAmount + accountPosition.additionalAmount,
+                "Expected account balance to be equal to base amount plus additional amount"
+            );
 
-            // assertGe(
-            // rewardVault.totalSupply(),
-            // accountPosition.baseAmount + accountPosition.additionalAmount,
-            // "Expected total supply to be greater than or equal to base amount plus additional amount"
-            // );
+            assertGe(
+                rewardVault.totalSupply(),
+                accountPosition.baseAmount + accountPosition.additionalAmount,
+                "Expected total supply to be greater than or equal to base amount plus additional amount"
+            );
 
-            // assertEq(
-            // IStrategy(gauge).balanceOf(gauge),
-            // rewardVault.totalSupply(),
-            // "Expected strategy balance to be equal to total supply"
-            // );
+            assertEq(
+                IStrategy(strategy).balanceOf(gauge),
+                rewardVault.totalSupply(),
+                "Expected strategy balance to be equal to total supply after additional deposits"
+            );
         }
+
+        /// 10. Assert that the accountant has no rewards before harvest.
+        assertEq(
+            _balanceOf(rewardToken, address(accountant)), 0, "Expected accountant to have no rewards before harvest"
+        );
+
+        /// 11. Assert that the harvester has no rewards before harvest.
+        assertEq(_balanceOf(rewardToken, harvester), 0, "Expected harvester to have no rewards before harvest");
+
+        /// 11. Harvest the rewards.
+        harvest();
+
+        /// 10. Assert that the accountant has no rewards before harvest.
+        // TODO: Implement this with correct amount.
+        assertGt(_balanceOf(rewardToken, address(accountant)), 0, "Expected accountant to have rewards before harvest");
+
+        /// 11. Assert that the harvester has no rewards before harvest.
+        // TODO: Implement this with correct amount.
+        assertGt(_balanceOf(rewardToken, harvester), 0, "Expected harvester to have rewards before harvest");
     }
 
     //////////////////////////////////////////////////////
@@ -133,11 +162,8 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
         }
     }
 
-    /// @notice Gets the harvestable rewards for the given vault.
-    function getHarvestableRewards(RewardVault vault) internal view returns (uint256) {}
-
     /// @notice Simulates rewards for the given vault.
-    function simulateRewards(RewardVault vault) internal virtual {}
+    function simulateRewards(RewardVault vault, uint256 amount) internal virtual {}
 
     //////////////////////////////////////////////////////
     /// --- TEST HELPERS
@@ -159,10 +185,21 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
         vm.stopPrank();
     }
 
+    function harvest() internal {
+        bytes[] memory harvestData = new bytes[](gauges.length);
+
+        vm.prank(harvester);
+        accountant.harvest(gauges, harvestData, harvester);
+
+        // /// 2. Track the harvester rewards.
+        // uint256 harvesterRewards = _balanceOf(rewardToken, harvester);
+    }
+
     //////////////////////////////////////////////////////
     /// --- VALIDATION HELPERS
     //////////////////////////////////////////////////////
 
+    /// TODO: Implement this.
     function assertDeploymentValid(RewardVault[] memory vaults, RewardReceiver[] memory receivers) internal pure {
         RewardVault vault;
         RewardReceiver receiver;
@@ -172,21 +209,34 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
         }
     }
 
-    function _validateAccountPositions(AccountPosition memory accountPosition) internal view {
-        /// Assert that the gauge index is within the bounds of the gauges array.
-        accountPosition.gaugeIndex = bound(accountPosition.gaugeIndex, 0, gauges.length - 1);
+    //////////////////////////////////////////////////////
+    /// --- FUZZING HELPERS
+    //////////////////////////////////////////////////////
 
-        /// Get the gauge address.
-        vm.assume(accountPosition.baseAmount > 1e18);
-        vm.assume(accountPosition.additionalAmount > 1e18);
+    function _generateAccountPositionsAndRewards()
+        internal
+        returns (AccountPosition[] memory, uint256[] memory)
+    {
+        uint256[] memory rewards = new uint256[](MAX_ACCOUNT_POSITIONS);
+        AccountPosition[] memory positions = new AccountPosition[](MAX_ACCOUNT_POSITIONS);
 
-        /// Get the max amount of base tokens that can be deposited into the gauge.
-        // Limit the max amount to 50% of the total supply to avoid overflows.
-        address gauge = gauges[accountPosition.gaugeIndex];
-        uint256 maxAmount = IERC20(gauge).totalSupply() / 2;
+        for (uint256 i = 0; i < MAX_ACCOUNT_POSITIONS; i++) {
+            address gauge = gauges[i % gauges.length];
+            uint256 maxAmount = IERC20(gauge).totalSupply() / 2;
 
-        vm.assume(accountPosition.baseAmount < maxAmount);
-        /// Just enough to have a non-zero additional amount.
-        vm.assume(accountPosition.additionalAmount < accountPosition.baseAmount);
+            uint256 baseAmount = bound(uint256(keccak256(abi.encode("baseAmount", i))), 1e18, maxAmount);
+            uint256 additionalAmount = bound(uint256(keccak256(abi.encode("additionalAmount", i))), 1e18, baseAmount);
+
+            positions[i] = AccountPosition({
+                account: makeAddr(string(abi.encodePacked("Account", i))),
+                baseAmount: baseAmount,
+                additionalAmount: additionalAmount,
+                gaugeIndex: i % gauges.length
+            });
+
+            rewards[i] = bound(uint256(keccak256(abi.encode("rewards", i))), 1e18, MAX_REWARDS);
+        }
+
+        return (positions, rewards);
     }
 }
