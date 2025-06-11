@@ -14,7 +14,7 @@ contract OnlyBoostAllocator is Allocator {
     using Math for uint256;
 
     /// @notice Address of the Curve Boost Delegation V3 contract
-    address public immutable BOOST_DELEGATION_V3;
+    address public immutable BOOST_PROVIDER;
 
     /// @notice Address of the Convex Boost Holder contract
     address public immutable CONVEX_BOOST_HOLDER;
@@ -33,7 +33,7 @@ contract OnlyBoostAllocator is Allocator {
         address _boostDelegationV3,
         address _convexBoostHolder
     ) Allocator(_locker, _gateway) {
-        BOOST_DELEGATION_V3 = _boostDelegationV3;
+        BOOST_PROVIDER = _boostDelegationV3;
         CONVEX_BOOST_HOLDER = _convexBoostHolder;
         CONVEX_SIDECAR_FACTORY = ISidecarFactory(_convexSidecarFactory);
     }
@@ -204,8 +204,8 @@ contract OnlyBoostAllocator is Allocator {
     /// @param totalBalance The total balance of the gauge.
     /// @return lockerAmt The optimal amount to allocate to the locker.
     function _computeLockerAllocation(uint256 totalBalance) private view returns (uint256 lockerAmt) {
-        uint256 veLocker = IBalanceProvider(BOOST_DELEGATION_V3).balanceOf(LOCKER);
-        uint256 veConvex = IBalanceProvider(BOOST_DELEGATION_V3).balanceOf(CONVEX_BOOST_HOLDER);
+        uint256 veLocker = IBalanceProvider(BOOST_PROVIDER).balanceOf(LOCKER);
+        uint256 veConvex = IBalanceProvider(BOOST_PROVIDER).balanceOf(CONVEX_BOOST_HOLDER);
         lockerAmt = totalBalance.mulDiv(veLocker, veLocker + veConvex);
     }
 }
