@@ -24,10 +24,10 @@ contract ConvexSidecar is Sidecar {
     //////////////////////////////////////////////////////
 
     /// @notice Convex Reward Token address.
-    IERC20 public constant CVX = IERC20(CurveProtocol.CONVEX_TOKEN);
+    IERC20 public immutable CVX;
 
     /// @notice Convex Booster address.
-    IBooster public constant BOOSTER = IBooster(CurveProtocol.CONVEX_BOOSTER);
+    IBooster public immutable BOOSTER;
 
     //////////////////////////////////////////////////////
     // --- ISIDECAR CLONE IMMUTABLES
@@ -60,9 +60,12 @@ contract ConvexSidecar is Sidecar {
     // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
-    constructor(address _accountant, address _protocolController)
+    constructor(address _accountant, address _protocolController, address _cvx, address _booster)
         Sidecar(CURVE_PROTOCOL_ID, _accountant, _protocolController)
-    {}
+    {
+        CVX = IERC20(_cvx);
+        BOOSTER = IBooster(_booster);
+    }
 
     //////////////////////////////////////////////////////
     // --- INITIALIZATION
@@ -130,12 +133,14 @@ contract ConvexSidecar is Sidecar {
             /// Get the address of the virtual balance pool.
             _token = baseRewardPool().extraRewards(i);
 
+            tokens[i] = IBaseRewardPool(_token).rewardToken();
+
             /// For PIDs greater than 150, the virtual balance pool also has a wrapper.
             /// So we need to get the token from the wrapper.
+            /// Try catch because pid 151 case is only on Mainnet, not on L2s.
             /// More: https://docs.convexfinance.com/convexfinanceintegration/baserewardpool
-            tokens[i] = IBaseRewardPool(_token).rewardToken();
-            try IStashTokenWrapper(tokens[i]).token() returns (address _token) {
-                tokens[i] = _token;
+            try IStashTokenWrapper(tokens[i]).token() returns (address _t) {
+                tokens[i] = _t;
             } catch {}
 
             unchecked {
