@@ -60,4 +60,31 @@ library SafeLibrary {
             signatures: _signatures
         });
     }
+
+    /// @notice Simple function to execute a transaction on a Safe.
+    /// @param _safe The address of the Safe.
+    /// @param _target The address of the target contract.
+    /// @param _data The data to execute on the target contract.
+    function execOnLocker(
+        address payable _safe,
+        address _locker,
+        address _target,
+        bytes memory _data,
+        bytes memory _signatures
+    ) internal returns (bool) {
+        _data = abi.encodeWithSignature("execute(address,uint256,bytes)", _target, 0, _data);
+
+        return Safe(_safe).execTransaction({
+            to: _locker,
+            value: 0,
+            data: _data,
+            operation: Enum.Operation.Call,
+            safeTxGas: 0,
+            baseGas: 0,
+            gasPrice: 0,
+            gasToken: address(0),
+            refundReceiver: payable(0),
+            signatures: _signatures
+        });
+    }
 }
