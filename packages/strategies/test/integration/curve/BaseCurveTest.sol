@@ -124,8 +124,9 @@ abstract contract BaseCurveTest is BaseSetup {
         );
 
         /// 3. Deploy the Convex Sidecar Factory contract.
-        convexSidecarFactory =
-            new ConvexSidecarFactory(address(convexSidecarImplementation), address(protocolController));
+        convexSidecarFactory = new ConvexSidecarFactory(
+            address(convexSidecarImplementation), address(protocolController), CurveProtocol.CONVEX_BOOSTER
+        );
 
         /// 2. Deploy the Curve Factory contract.
         curveFactory = new CurveFactory({

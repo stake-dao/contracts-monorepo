@@ -16,7 +16,7 @@ contract ConvexSidecarFactory is SidecarFactory {
     bytes4 private constant CURVE_PROTOCOL_ID = bytes4(keccak256("CURVE"));
 
     /// @notice Convex Booster contract address
-    IBooster public constant BOOSTER = IBooster(CurveProtocol.CONVEX_BOOSTER);
+    IBooster public immutable BOOSTER;
 
     /// @notice Error emitted when the pool is shutdown
     error PoolShutdown();
@@ -30,9 +30,12 @@ contract ConvexSidecarFactory is SidecarFactory {
     /// @notice Constructor
     /// @param _implementation Address of the sidecar implementation
     /// @param _protocolController Address of the protocol controller
-    constructor(address _implementation, address _protocolController)
+    /// @param _booster Address of the Convex Booster contract
+    constructor(address _implementation, address _protocolController, address _booster)
         SidecarFactory(CURVE_PROTOCOL_ID, _implementation, _protocolController)
-    {}
+    {
+        BOOSTER = IBooster(_booster);
+    }
 
     /// @notice Convenience function to create a sidecar with a uint256 pid parameter
     /// @param pid Pool ID in Convex
