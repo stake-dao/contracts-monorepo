@@ -7,7 +7,7 @@ import {ILocker} from "@interfaces/stake-dao/ILocker.sol";
 import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
 
 import {Allocator} from "src/Allocator.sol";
-import {Accountant} from "src/Accountant.sol";
+import {Accountant, Math} from "src/Accountant.sol";
 import {ProtocolController} from "src/ProtocolController.sol";
 
 import {RewardReceiver} from "src/RewardReceiver.sol";
