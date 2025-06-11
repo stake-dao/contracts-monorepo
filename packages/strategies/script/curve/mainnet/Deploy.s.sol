@@ -87,7 +87,7 @@ contract Deploy is Base {
             _locker: locker,
             _gateway: address(gateway),
             _convexSidecarFactory: address(convexSidecarFactory),
-            _boostDelegationV3: CurveProtocol.VE_BOOST,
+            _boostProvider: CurveProtocol.VE_BOOST,
             _convexBoostHolder: CurveProtocol.CONVEX_PROXY
         });
 

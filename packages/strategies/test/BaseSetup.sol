@@ -25,21 +25,38 @@ abstract contract BaseSetup is Test {
     IStrategy.HarvestPolicy internal harvestPolicy;
 
     address public locker;
-
     Safe public gateway;
+
     Allocator public allocator;
     Accountant public accountant;
     ProtocolController public protocolController;
 
-    address public factory;
     address public strategy;
 
+    address public factory;
     RewardVault public rewardVaultImplementation;
     RewardReceiver public rewardReceiverImplementation;
+
+    address public sidecarFactory;
+    address public sidecarImplementation;
 
     /*//////////////////////////////////////////////////////////////////////////
                                       HELPERS
     //////////////////////////////////////////////////////////////////////////*/
+
+    modifier doSetup(
+        string memory _chain,
+        uint256 _blockNumber,
+        address _rewardToken,
+        address _locker,
+        bytes4 _protocolId,
+        IStrategy.HarvestPolicy _harvestPolicy
+    ) {
+        vm.createSelectFork(_chain, _blockNumber);
+        _beforeSetup(_rewardToken, _locker, _protocolId, _harvestPolicy);
+        _;
+        _afterSetup();
+    }
 
     function _beforeSetup(
         address _rewardToken,
@@ -119,6 +136,15 @@ abstract contract BaseSetup is Test {
         /// 3. Enable modules in the gateway Safe.
         _enableModule(address(factory));
         _enableModule(address(strategy));
+
+        /// 4. If sidecar factory is set, enable it.
+        if (sidecarFactory != address(0)) {
+            /// Allow sidecar factory to be used as a registrar.
+            protocolController.setRegistrar(address(sidecarFactory), true);
+
+            /// Enable sidecar factory.
+            _enableModule(address(sidecarFactory));
+        }
     }
 
     /*//////////////////////////////////////////////////////////////////////////
@@ -153,11 +179,6 @@ abstract contract BaseSetup is Test {
             _data: abi.encodeWithSelector(IModuleManager.disableModule.selector, moduleAddress),
             _signatures: signatures
         });
-    }
-
-    /// @notice Utility function to ensure a fuzzed address has not been previously labeled
-    function _assumeUnlabeledAddress(address fuzzedAddress) internal view {
-        vm.assume(bytes10(bytes(vm.getLabel(fuzzedAddress))) == bytes10(bytes("unlabeled:")));
     }
 
     function _balanceOf(address token, address account) internal view returns (uint256) {

@@ -58,18 +58,11 @@ abstract contract CurveMainnetIntegration is BaseIntegrationTest {
     /// --- SETUP
     //////////////////////////////////////////////////////
 
-    function setUp() public virtual override {
-        // Fork mainnet
-        vm.createSelectFork("mainnet", 22_316_395);
-
-        // Initialize core protocol
-        _beforeSetup({
-            _rewardToken: CRV,
-            _locker: LOCKER,
-            _protocolId: bytes4(keccak256("CURVE")),
-            _harvestPolicy: IStrategy.HarvestPolicy.CHECKPOINT
-        });
-
+    function setUp()
+        public
+        virtual
+        doSetup("mainnet", 22_316_395, CRV, LOCKER, bytes4(keccak256("CURVE")), IStrategy.HarvestPolicy.CHECKPOINT)
+    {
         // Initialize accounts
         for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
             accounts.push(makeAddr(string(abi.encodePacked("Account", i))));
@@ -101,11 +94,9 @@ abstract contract CurveMainnetIntegration is BaseIntegrationTest {
             _locker: LOCKER,
             _gateway: address(gateway),
             _convexSidecarFactory: address(convexSidecarFactory),
-            _boostDelegationV3: CurveProtocol.VE_BOOST,
+            _boostProvider: CurveProtocol.VE_BOOST,
             _convexBoostHolder: CurveProtocol.CONVEX_PROXY
         });
-
-        _afterSetup();
     }
 
     function _afterSetup() internal override {
@@ -139,10 +130,6 @@ abstract contract CurveMainnetIntegration is BaseIntegrationTest {
     //////////////////////////////////////////////////////
     /// --- PROTOCOL IMPLEMENTATION
     //////////////////////////////////////////////////////
-
-    function _getProtocolId() internal pure override returns (bytes4) {
-        return bytes4(keccak256("CURVE"));
-    }
 
     function _deployVault(address gaugeAddress)
         internal
@@ -219,10 +206,6 @@ abstract contract CurveMainnetIntegration is BaseIntegrationTest {
         return CRV;
     }
 
-    function _getStrategyBalance(uint256 gaugeIndex) internal view override returns (uint256) {
-        return IStrategy(strategy).balanceOf(gauges[gaugeIndex]);
-    }
-
     //////////////////////////////////////////////////////
     /// --- CURVE SPECIFIC SETUP
     //////////////////////////////////////////////////////
@@ -241,11 +224,6 @@ abstract contract CurveMainnetIntegration is BaseIntegrationTest {
             // Setup gauge
             _setupGauge(gauge);
         }
-
-        // Setup reward tokens
-        rewardTokens.push(CRV);
-        rewardTokens.push(CVX);
-        rewardTokens.push(WBTC);
     }
 
     function _setupGauge(address gauge) internal {
