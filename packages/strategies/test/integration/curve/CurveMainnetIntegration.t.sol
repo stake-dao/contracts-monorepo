@@ -183,9 +183,23 @@ abstract contract CurveMainnetIntegration is BaseIntegrationTest {
         return 0;
     }
 
+    function _getAdmin(address gaugeAddress) internal view returns (address) {
+        try ILiquidityGauge(gaugeAddress).admin() returns (address admin) {
+            return admin;
+        } catch {
+            try ILiquidityGauge(gaugeAddress).factory() returns (address factory) {
+                return ILiquidityGauge(factory).admin();
+            } catch {
+                return CURVE_ADMIN;
+            }
+        }
+    }
+
     function _setupAdditionalRewards(address gaugeAddress) internal override {
         // Add WBTC as extra reward
-        vm.prank(CURVE_ADMIN);
+        address admin = _getAdmin(gaugeAddress);
+
+        vm.prank(admin);
         ILiquidityGauge(gaugeAddress).add_reward(WBTC, address(this));
 
         // Mock reward data
@@ -382,6 +396,8 @@ abstract contract CurveMainnetIntegration is BaseIntegrationTest {
 }
 
 // Concrete test instances
+contract CurveMainnet25Test is CurveMainnetIntegration(68, 40) {}
+
 contract CurveMainnet437Test is CurveMainnetIntegration(437, 436) {}
 
 contract CurveMainnet435Test is CurveMainnetIntegration(435, 434) {}
