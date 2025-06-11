@@ -30,10 +30,10 @@ contract OnlyBoostAllocator is Allocator {
         address _locker,
         address _gateway,
         address _convexSidecarFactory,
-        address _boostDelegationV3,
+        address _boostProvider,
         address _convexBoostHolder
     ) Allocator(_locker, _gateway) {
-        BOOST_PROVIDER = _boostDelegationV3;
+        BOOST_PROVIDER = _boostProvider;
         CONVEX_BOOST_HOLDER = _convexBoostHolder;
         CONVEX_SIDECAR_FACTORY = ISidecarFactory(_convexSidecarFactory);
     }
