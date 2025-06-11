@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
+import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {IStrategy as IStakeDaoStrategy} from "@interfaces/stake-dao/IStrategy.sol";
 import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
-import {IStrategy} from "@interfaces/stake-dao/IStrategy.sol";
 import {Enum} from "@safe/contracts/common/Enum.sol";
 import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
@@ -11,9 +12,9 @@ import {ConvexSidecarFactory, IBooster} from "src/integrations/curve/ConvexSidec
 import {CurveFactory} from "src/integrations/curve/CurveFactory.sol";
 import {CurveStrategy, IMinter} from "src/integrations/curve/CurveStrategy.sol";
 import {IBalanceProvider} from "src/interfaces/IBalanceProvider.sol";
-import {BaseForkTest} from "test/BaseFork.sol";
+import {BaseSetup} from "test/BaseSetup.sol";
 
-abstract contract BaseCurveTest is BaseForkTest {
+abstract contract BaseCurveTest is BaseSetup {
     ///////////////////////////////////////////////////////////////////////////
     //// - CONSTANTS
     ///////////////////////////////////////////////////////////////////////////
@@ -87,12 +88,12 @@ abstract contract BaseCurveTest is BaseForkTest {
     modifier whenGaugeIsNotShutdownOnOldStrategy() {
         vm.mockCall(
             address(OLD_STRATEGY),
-            abi.encodeWithSelector(IStrategy.isShutdown.selector, address(gauge)),
+            abi.encodeWithSelector(IStakeDaoStrategy.isShutdown.selector, address(gauge)),
             abi.encode(false)
         );
         vm.mockCall(
             address(OLD_STRATEGY),
-            abi.encodeWithSelector(IStrategy.rewardDistributors.selector, address(gauge)),
+            abi.encodeWithSelector(IStakeDaoStrategy.rewardDistributors.selector, address(gauge)),
             abi.encode(makeAddr("RewardDistributor"))
         );
         _;
@@ -112,7 +113,7 @@ abstract contract BaseCurveTest is BaseForkTest {
         gauge = ILiquidityGauge(_gauge);
         totalSupply = IBalanceProvider(lpToken).totalSupply();
 
-        _beforeSetup(CRV, LOCKER, PROTOCOL_ID, false);
+        _beforeSetup(CRV, LOCKER, PROTOCOL_ID, IStrategy.HarvestPolicy.CHECKPOINT);
 
         /// 1. Deploy the Curve Strategy contract.
         curveStrategy = new CurveStrategy(address(protocolController), LOCKER, address(gateway), MINTER);
@@ -166,7 +167,9 @@ abstract contract BaseCurveTest is BaseForkTest {
     function _setupGauge(address _gauge) internal {
         // Mark the gauge as shutdown in the old strategy
         vm.mockCall(
-            address(OLD_STRATEGY), abi.encodeWithSelector(IStrategy.isShutdown.selector, _gauge), abi.encode(true)
+            address(OLD_STRATEGY),
+            abi.encodeWithSelector(IStakeDaoStrategy.isShutdown.selector, _gauge),
+            abi.encode(true)
         );
 
         // Clear any existing balance in the gauge if needed
