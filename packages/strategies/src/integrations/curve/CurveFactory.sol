@@ -33,6 +33,9 @@ contract CurveFactory is Factory {
     /// @notice Error thrown when the set reward receiver fails.
     error SetRewardReceiverFailed();
 
+    /// @notice Error thrown when the convex sidecar factory is not set.
+    error ConvexSidecarFactoryNotSet();
+
     /// @notice Event emitted when a vault is deployed.
     event VaultDeployed(address gauge, address vault, address rewardReceiver, address sidecar);
 
@@ -52,6 +55,8 @@ contract CurveFactory is Factory {
     /// @notice Create a new vault.
     /// @param _pid Pool id.
     function create(uint256 _pid) external returns (address vault, address rewardReceiver, address sidecar) {
+        require(CONVEX_SIDECAR_FACTORY != address(0), ConvexSidecarFactoryNotSet());
+
         (,, address gauge,,,) = IBooster(BOOSTER).poolInfo(_pid);
 
         /// 1. Create the vault.

@@ -2,8 +2,10 @@
 pragma solidity 0.8.28;
 
 import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {CurveFactory} from "src/integrations/curve/CurveFactory.sol";
 import {CurveStrategy} from "src/integrations/curve/CurveStrategy.sol";
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
+import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
 import {NewBaseIntegrationTest} from "test/integration/NewBaseIntegrationTest.sol";
 import {OnlyBoostAllocator} from "src/integrations/curve/OnlyBoostAllocator.sol";
 import {ConvexSidecarFactory} from "src/integrations/curve/ConvexSidecarFactory.sol";
@@ -12,7 +14,6 @@ import {ConvexSidecarFactory} from "src/integrations/curve/ConvexSidecarFactory.
 /// @notice Integration test for Curve protocol on L2 with Convex.
 abstract contract CurveL2Integration is NewBaseIntegrationTest {
     /// @notice The configuration for the test.
-
     struct Config {
         string chain;
         bytes4 protocolId;
@@ -39,7 +40,14 @@ abstract contract CurveL2Integration is NewBaseIntegrationTest {
     function setUp()
         public
         virtual
-        doSetup(config.chain, config.blockNumber, config.rewardToken, config.locker, config.protocolId, config.harvestPolicy)
+        doSetup(
+            config.chain,
+            config.blockNumber,
+            config.rewardToken,
+            config.locker,
+            config.protocolId,
+            config.harvestPolicy
+        )
     {
         /// 2. Deploy the Curve Strategy contract.
         strategy = address(
@@ -81,5 +89,35 @@ abstract contract CurveL2Integration is NewBaseIntegrationTest {
                 _convexBoostHolder: config.convexBoostHolder
             });
         }
+
+        factory = address(
+            new CurveFactory({
+                protocolController: address(protocolController),
+                vaultImplementation: address(rewardVaultImplementation),
+                rewardReceiverImplementation: address(rewardReceiverImplementation),
+                locker: config.locker,
+                gateway: address(gateway),
+                convexSidecarFactory: sidecarFactory
+            })
+        );
     }
+}
+
+contract CurveL2IntegrationTest is CurveL2Integration {
+    Config public _config = Config({
+        chain: "mainnet",
+        blockNumber: 22_316_395,
+        rewardToken: CurveProtocol.CRV,
+        locker: CurveLocker.LOCKER,
+        protocolId: bytes4(keccak256("CURVE")),
+        harvestPolicy: IStrategy.HarvestPolicy.CHECKPOINT,
+        minter: CurveProtocol.MINTER,
+        boostProvider: CurveProtocol.VE_BOOST,
+        isOnlyBoost: true,
+        cvx: CurveProtocol.CONVEX_TOKEN,
+        convexBoostHolder: CurveProtocol.CONVEX_BOOSTER,
+        booster: CurveProtocol.CONVEX_BOOSTER
+    });
+
+    constructor() CurveL2Integration(_config) {}
 }
