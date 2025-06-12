@@ -19,6 +19,7 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
         uint256 additionalAmount;
         uint256 partialWithdrawAmount;
         uint256 gaugeIndex;
+        address transferReceiver;
     }
 
     /// @notice Deployed reward vaults for each gauge.
@@ -217,6 +218,109 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
                 rewardVault.totalSupply(),
                 "18. Expected strategy balance to be equal to total supply after partial withdraw"
             );
+
+            /// 19. Simulate additional rewards for share transfer test
+            simulateRewards(rewardVault, _rewards[i] / 2);
+        }
+
+        skip(1 days);
+
+        /// 20. Test share transfers
+        // This tests that:
+        // - Accrued rewards stay with the original account when shares are transferred
+        // - New rewards (if any) accrue to the transfer receiver after the transfer
+        // - Both accounts can claim their respective rewards
+        for (uint256 i = 0; i < _accountPositions.length; i++) {
+            accountPosition = _accountPositions[i];
+            rewardVault = rewardVaults[accountPosition.gaugeIndex];
+
+            uint256 remainingShares = rewardVault.balanceOf(accountPosition.account);
+            if (remainingShares > 0) {
+                // Transfer all remaining shares to transfer receiver
+                transferShares(rewardVault, accountPosition.account, accountPosition.transferReceiver, remainingShares);
+
+                assertEq(
+                    rewardVault.balanceOf(accountPosition.account),
+                    0,
+                    "19. Expected account to have 0 shares after transfer"
+                );
+                assertEq(
+                    rewardVault.balanceOf(accountPosition.transferReceiver),
+                    remainingShares,
+                    "20. Expected transfer receiver to have all transferred shares"
+                );
+            }
+        }
+
+        // Harvest after transfers
+        harvest();
+
+        /// 21. Verify rewards follow share ownership
+        for (uint256 i = 0; i < _accountPositions.length; i++) {
+            accountPosition = _accountPositions[i];
+            rewardVault = rewardVaults[accountPosition.gaugeIndex];
+
+            // Original accounts should still have their accrued rewards from before the transfer
+            uint256 originalAccountPendingRewards = accountant.getPendingRewards(address(rewardVault), accountPosition.account);
+            assertGt(
+                originalAccountPendingRewards,
+                0,
+                "21. Expected original account to still have pending rewards from before transfer"
+            );
+            
+            // Claim rewards as original account
+            claim(rewardVault, accountPosition.account);
+            assertGt(
+                _balanceOf(rewardToken, accountPosition.account),
+                0,
+                "22. Expected original account to have claimed their accrued rewards"
+            );
+
+            // Transfer receivers may or may not have pending rewards depending on if new rewards were generated
+            uint256 pendingRewards =
+                accountant.getPendingRewards(address(rewardVault), accountPosition.transferReceiver);
+            if (pendingRewards > 0) {
+                // Claim as transfer receiver if they have rewards
+                claim(rewardVault, accountPosition.transferReceiver);
+
+                assertGt(
+                    _balanceOf(rewardToken, accountPosition.transferReceiver),
+                    0,
+                    "23. Expected transfer receiver to have claimed rewards when available"
+                );
+            }
+
+            // Transfer shares back to original account
+            uint256 transferReceiverShares = rewardVault.balanceOf(accountPosition.transferReceiver);
+            if (transferReceiverShares > 0) {
+                transferShares(
+                    rewardVault, accountPosition.transferReceiver, accountPosition.account, transferReceiverShares
+                );
+            }
+
+            // Final withdrawal - withdraw all remaining shares
+            uint256 finalBalance = rewardVault.balanceOf(accountPosition.account);
+            if (finalBalance > 0) {
+                withdraw(rewardVault, accountPosition.account, finalBalance);
+
+                assertEq(
+                    rewardVault.balanceOf(accountPosition.account),
+                    0,
+                    "25. Expected account to have 0 shares after final withdrawal"
+                );
+            }
+        }
+
+        // Verify all vaults are empty
+        for (uint256 i = 0; i < rewardVaults.length; i++) {
+            assertEq(
+                rewardVaults[i].totalSupply(), 0, "26. Expected vault to have 0 total supply after all withdrawals"
+            );
+            assertEq(
+                IStrategy(strategy).balanceOf(gauges[i]),
+                0,
+                "27. Expected strategy to have 0 balance after all withdrawals"
+            );
         }
     }
 
@@ -289,6 +393,11 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
         rewardVault.withdraw(amount, account, account);
     }
 
+    function transferShares(RewardVault rewardVault, address from, address to, uint256 amount) internal {
+        vm.prank(from);
+        rewardVault.transfer(to, amount);
+    }
+
     //////////////////////////////////////////////////////
     /// --- VALIDATION HELPERS
     //////////////////////////////////////////////////////
@@ -327,7 +436,8 @@ abstract contract NewBaseIntegrationTest is BaseSetup {
                 baseAmount: baseAmount,
                 additionalAmount: additionalAmount,
                 partialWithdrawAmount: partialWithdrawAmount,
-                gaugeIndex: i % gauges.length
+                gaugeIndex: i % gauges.length,
+                transferReceiver: makeAddr(string(abi.encodePacked("TransferReceiver", i)))
             });
 
             rewards[i] = bound(uint256(keccak256(abi.encode("rewards", i))), 1e18, MAX_REWARDS);
