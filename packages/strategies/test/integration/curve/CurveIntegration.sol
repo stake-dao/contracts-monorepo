@@ -11,12 +11,13 @@ import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
 import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
 import {OnlyBoostAllocator} from "src/integrations/curve/OnlyBoostAllocator.sol";
 import {ConvexSidecarFactory} from "src/integrations/curve/ConvexSidecarFactory.sol";
+import {IBooster} from "@interfaces/convex/IBooster.sol";
 
-import "test/integration/NewBaseIntegrationTest.sol";
+import "test/integration/BaseIntegrationTest.sol";
 
-/// @title CurveL2Integration - L2 Curve Integration Test
+/// @title CurveIntegration - L2 Curve Integration Test
 /// @notice Integration test for Curve protocol on L2 with Convex.
-abstract contract CurveL2Integration is NewBaseIntegrationTest {
+abstract contract CurveIntegration is BaseIntegrationTest {
     /// @notice The configuration for the test.
     struct Config {
         string chain;
@@ -37,7 +38,7 @@ abstract contract CurveL2Integration is NewBaseIntegrationTest {
     /// @notice The configuration for the test.
     Config public config;
 
-    constructor(Config memory _config, address[] memory _gauges) NewBaseIntegrationTest(_gauges) {
+    constructor(Config memory _config) {
         config = _config;
     }
 
@@ -53,6 +54,9 @@ abstract contract CurveL2Integration is NewBaseIntegrationTest {
             config.harvestPolicy
         )
     {
+        /// 1. Get the gauges.
+        gauges = getGauges();
+
         /// 2. Deploy the Curve Strategy contract.
         strategy = address(
             new CurveStrategy({
@@ -137,8 +141,7 @@ abstract contract CurveL2Integration is NewBaseIntegrationTest {
     }
 }
 
-/// Test Contract  TODO: Remove this
-contract CurveL2IntegrationTest is CurveL2Integration {
+contract CurveIntegrationTest is CurveIntegration {
     Config public _config = Config({
         chain: "mainnet",
         blockNumber: 22_316_395,
@@ -154,9 +157,38 @@ contract CurveL2IntegrationTest is CurveL2Integration {
         booster: CurveProtocol.CONVEX_BOOSTER
     });
 
-    address[] public _gauges = [0x05255C5BD33672b9FEA4129C13274D1E6193312d];
+    // All pool IDs from the old tests
+    uint256[] public poolIds = [68, 40, 437, 436, 435, 434, 433];
 
-    constructor() CurveL2Integration(_config, _gauges) {}
+    constructor() CurveIntegration(_config) {}
+
+    function getGauges() internal override returns (address[] memory) {
+        // Get gauge addresses for all pool IDs
+        IBooster booster = IBooster(CurveProtocol.CONVEX_BOOSTER);
+        address[] memory gauges = new address[](poolIds.length);
+
+        for (uint256 i = 0; i < poolIds.length; i++) {
+            (,, address gauge,,,) = booster.poolInfo(poolIds[i]);
+
+            // Mark as shutdown in old strategy
+            vm.mockCall(
+                CurveLocker.STRATEGY,
+                abi.encodeWithSelector(bytes4(keccak256("isShutdown(address)")), gauge),
+                abi.encode(true)
+            );
+
+            // Mock reward distributor as zero
+            vm.mockCall(
+                CurveLocker.STRATEGY,
+                abi.encodeWithSelector(bytes4(keccak256("rewardDistributors(address)")), gauge),
+                abi.encode(address(0))
+            );
+
+            gauges[i] = gauge;
+        }
+
+        return gauges;
+    }
 
     function simulateRewards(RewardVault vault, uint256 amount) internal override {
         address gauge = vault.gauge();

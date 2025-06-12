@@ -1,43 +1,26 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import {BaseSetup, IStrategy} from "test/BaseSetup.sol";
-import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SafeLibrary} from "test/utils/SafeLibrary.sol";
-import {RewardVault} from "src/RewardVault.sol";
-import {RewardReceiver} from "src/RewardReceiver.sol";
-import {Accountant} from "src/Accountant.sol";
-import {ProtocolController} from "src/ProtocolController.sol";
-import {Strategy} from "src/Strategy.sol";
-import {Allocator} from "src/Allocator.sol";
-import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
-import {Enum} from "@safe/contracts/common/Enum.sol";
+import "test/BaseSetup.sol";
 
-/// @title BaseIntegrationTest - Protocol-Agnostic Integration Test Framework
-/// @notice Abstract base test contract that captures universal DeFi reward distribution invariants.
-/// @dev Provides a common testing framework for all protocol integrations.
-///      Key features:
-///      - Standardized deposit/withdraw/claim cycles.
-///      - Multi-user and multi-gauge testing support.
-///      - Comprehensive reward distribution validation.
-///      - Protocol-agnostic test structure.
+import {Factory} from "src/Factory.sol";
+
 abstract contract BaseIntegrationTest is BaseSetup {
-    //////////////////////////////////////////////////////
-    /// --- CONSTANTS
-    //////////////////////////////////////////////////////
+    using Math for uint256;
 
-    /// @notice Number of test accounts to simulate.
-    uint256 public constant NUM_ACCOUNTS = 3;
+    uint256 public constant MAX_REWARDS = 100_000e18;
+    uint256 public constant MAX_ACCOUNT_POSITIONS = 100;
 
-    //////////////////////////////////////////////////////
-    /// --- TEST INFRASTRUCTURE
-    //////////////////////////////////////////////////////
-
-    /// @notice Test accounts array.
-    address[] public accounts;
-
-    /// @notice Harvester address for reward collection.
     address public harvester = makeAddr("Harvester");
+
+    struct AccountPosition {
+        address account;
+        uint256 baseAmount;
+        uint256 additionalAmount;
+        uint256 partialWithdrawAmount;
+        uint256 gaugeIndex;
+        address transferReceiver;
+    }
 
     /// @notice Deployed reward vaults for each gauge.
     RewardVault[] public rewardVaults;
@@ -45,546 +28,425 @@ abstract contract BaseIntegrationTest is BaseSetup {
     /// @notice Deployed reward receivers for each gauge.
     RewardReceiver[] public rewardReceivers;
 
-    //////////////////////////////////////////////////////
-    /// --- PROTOCOL COMPONENTS
-    //////////////////////////////////////////////////////
+    /// @notice Total harvestable rewards.
+    uint256 public totalHarvestableRewards;
 
-    /// @notice Deposit tokens for each gauge.
-    address[] public depositTokens;
+    /// @notice Mapping of account to claimed rewards.
+    mapping(address => uint256) public rewardVaultToHarvestableRewards;
 
-    /// @notice Gauge addresses being tested.
+    /// @notice Gauge address being tested.
     address[] public gauges;
 
-    //////////////////////////////////////////////////////
-    /// --- TEST PARAMETERS
-    //////////////////////////////////////////////////////
-
-    /// @notice Test parameters structure to avoid stack depth issues.
-    struct TestParams {
-        uint256[] baseAmounts;
-        uint256[] totalDeposited;
-        uint256[][] depositAmounts;
-        uint256[][] remainingShares;
-        uint256[] totalExpectedRewards;
-        uint256[] totalClaimedRewards;
-        uint256[] totalWithdrawn;
-        uint256[] expectedRewards1;
-        uint256[] expectedRewards2;
-        uint256[] expectedRewards3;
-        uint256 harvestRewards;
-        uint256 accountantRewards;
-        uint256 harvestRewards2;
-        uint256 totalClaimedRewards2;
-        uint256 accountantRewards2;
-        address transferReceiver;
+    /// @notice Get the gauge addresses to test with
+    /// @dev This function should be implemented by each integration test to provide its specific gauge addresses
+    /// @return Array of gauge addresses to test with
+    function getGauges() internal virtual returns (address[] memory) {
+        revert("getGauges not implemented");
     }
 
-    //////////////////////////////////////////////////////
-    /// --- ABSTRACT METHODS
-    //////////////////////////////////////////////////////
+    function test_complete_protocol_lifecycle() public {
+        (AccountPosition[] memory _accountPositions, uint256[] memory _rewards) = _generateAccountPositionsAndRewards();
 
-    /// @notice Deploys vault for a specific gauge.
-    /// @param gaugeAddress Address of the gauge.
-    /// @return vault Deployed reward vault.
-    /// @return receiver Deployed reward receiver.
-    function _deployVault(address gaugeAddress) internal virtual returns (RewardVault vault, RewardReceiver receiver);
+        /// 1. Deploy the RewardVaults.
+        (rewardVaults, rewardReceivers) = deployRewardVaults();
 
-    /// @notice Inflates rewards for testing.
-    /// @param gaugeIndex Index of the gauge.
-    /// @param amount Amount to inflate.
-    /// @return Expected rewards.
-    function _inflateRewards(uint256 gaugeIndex, uint256 amount) internal virtual returns (uint256);
+        /// 2. Assert that the deployment is valid.
+        assertDeploymentValid(rewardVaults, rewardReceivers);
 
-    /// @notice Gets pending rewards from protocol.
-    /// @param gaugeIndex Index of the gauge.
-    /// @return Pending rewards amount.
-    function _getPendingRewards(uint256 gaugeIndex) internal view virtual returns (uint256);
+        RewardVault rewardVault;
+        RewardReceiver rewardReceiver;
+        AccountPosition memory accountPosition;
 
-    /// @notice Sets up additional reward tokens.
-    /// @param gaugeAddress Address of the gauge.
-    function _setupAdditionalRewards(address gaugeAddress) internal virtual;
+        address gauge;
 
-    /// @notice Returns the main reward token address.
-    /// @return Main reward token.
-    function _getMainRewardToken() internal view virtual returns (address);
+        for (uint256 i = 0; i < _accountPositions.length; i++) {
+            accountPosition = _accountPositions[i];
 
-    /// @notice Gets strategy balance for a gauge.
-    /// @param gaugeAddress Address of the gauge.
-    /// @return Strategy balance.
-    function _getStrategyBalance(address gaugeAddress) internal view returns (uint256) {
-        return IStrategy(strategy).balanceOf(gaugeAddress);
-    }
+            gauge = gauges[accountPosition.gaugeIndex];
+            rewardVault = rewardVaults[accountPosition.gaugeIndex];
+            rewardReceiver = rewardReceivers[accountPosition.gaugeIndex];
 
-    //////////////////////////////////////////////////////
-    /// --- SETUP
-    //////////////////////////////////////////////////////
+            /// 4. Deposit the amount into the vault.
+            deposit(rewardVault, accountPosition.account, accountPosition.baseAmount);
 
-    /// @notice Sets up test accounts with tokens and approvals.
-    function _setupAccountsWithTokens() internal {
-        for (uint256 gaugeIdx = 0; gaugeIdx < gauges.length; gaugeIdx++) {
-            address depositToken = depositTokens[gaugeIdx];
-            uint256 totalSupply = IERC20(depositToken).totalSupply();
+            /// 5. Assertions
+            assertEq(
+                rewardVault.balanceOf(accountPosition.account),
+                accountPosition.baseAmount,
+                "1. Expected account balance to be equal to deposited amount"
+            );
 
-            for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
-                uint256 amount = totalSupply / NUM_ACCOUNTS;
-                deal(depositToken, accounts[i], amount);
+            assertGe(
+                rewardVault.totalSupply(),
+                accountPosition.baseAmount,
+                "2. Expected total supply to be greater than or equal to deposited amount"
+            );
 
-                vm.prank(accounts[i]);
-                IERC20(depositToken).approve(address(rewardVaults[gaugeIdx]), amount);
-            }
-        }
-    }
+            assertEq(
+                IStrategy(strategy).balanceOf(gauge),
+                rewardVault.totalSupply(),
+                "3. Expected strategy balance to be equal to total supply"
+            );
 
-    //////////////////////////////////////////////////////
-    /// --- MAIN TEST FUNCTIONS
-    //////////////////////////////////////////////////////
+            /// 6. Simulate rewards.
+            simulateRewards(rewardVault, _rewards[i]);
 
-    /// @notice Tests sequential deposits and withdrawals with multiple users.
-    /// @param _baseAmount Base amount for first gauge.
-    /// @param _baseAmount2 Base amount for second gauge.
-    /// @dev Main integration test exercising full deposit/withdraw/claim cycles.
-    function test_deposit_withdraw_sequentially(uint256 _baseAmount, uint256 _baseAmount2) public virtual {
-        // Create base amounts array
-        uint256[] memory _baseAmounts = new uint256[](gauges.length);
-        _baseAmounts[0] = _baseAmount;
-        if (gauges.length > 1) _baseAmounts[1] = _baseAmount2;
+            /// 7. Store the harvestable rewards for the vault for future assertions.
+            totalHarvestableRewards += _rewards[i];
+            rewardVaultToHarvestableRewards[address(rewardVault)] += _rewards[i];
 
-        // Fill remaining with proportional amounts
-        for (uint256 i = 2; i < gauges.length; i++) {
-            _baseAmounts[i] = _baseAmount;
-        }
+            /// 8. Skip 1 day.
+            skip(1 days);
 
-        // Validate base amounts
-        for (uint256 i = 0; i < _baseAmounts.length; i++) {
-            vm.assume(_baseAmounts[i] > 1e18);
-            uint256 maxAmount = IERC20(depositTokens[i]).totalSupply() / NUM_ACCOUNTS / 10;
-            vm.assume(_baseAmounts[i] < maxAmount);
+            /// 9. Additional deposits.
+            deposit(rewardVault, accountPosition.account, accountPosition.additionalAmount);
+
+            /// 10. Assertions
+            assertEq(
+                rewardVault.balanceOf(accountPosition.account),
+                accountPosition.baseAmount + accountPosition.additionalAmount,
+                "4. Expected account balance to be equal to base amount plus additional amount"
+            );
+
+            assertGe(
+                rewardVault.totalSupply(),
+                accountPosition.baseAmount + accountPosition.additionalAmount,
+                "5. Expected total supply to be greater than or equal to base amount plus additional amount"
+            );
+
+            assertEq(
+                IStrategy(strategy).balanceOf(gauge),
+                rewardVault.totalSupply(),
+                "6. Expected strategy balance to be equal to total supply after additional deposits"
+            );
         }
 
-        // Initialize test parameters
-        TestParams memory params = _initializeTestParams(_baseAmounts);
-
-        // Execute test phases
-        _handleDeposits(params);
-        _verifyInitialDeposits(params);
-
-        _handleFirstRewards(params);
-        _handleAdditionalDeposits(params);
-        _verifySecondDeposits(params);
-
-        _handleFirstHarvestAndClaims(params);
-        _handlePartialWithdrawals(params);
-        _verifyPartialWithdrawals(params);
-
-        _handleSecondHarvestAndClaims(params);
-        _handleFinalWithdrawals(params);
-        _verifyFinalState(params);
-    }
-
-    /// @notice Tests integral increases with decreasing rewards.
-    /// @param _baseAmount Base amount for first gauge.
-    /// @param _baseAmount2 Base amount for second gauge.
-    /// @dev Regression test for issue #111.
-    function test_netCredited_DecreasingRewards(uint256 _baseAmount, uint256 _baseAmount2) public virtual {
-        // Create base amounts array
-        uint256[] memory _baseAmounts = new uint256[](gauges.length);
-        _baseAmounts[0] = _baseAmount;
-        if (gauges.length > 1) _baseAmounts[1] = _baseAmount2;
-
-        // Fill remaining with proportional amounts
-        for (uint256 i = 2; i < gauges.length; i++) {
-            _baseAmounts[i] = _baseAmount;
-        }
-
-        // Validate base amounts
-        for (uint256 i = 0; i < _baseAmounts.length; i++) {
-            vm.assume(_baseAmounts[i] > 1e18);
-            uint256 maxAmount = IERC20(depositTokens[i]).totalSupply() / NUM_ACCOUNTS / 10;
-            vm.assume(_baseAmounts[i] < maxAmount);
-        }
-
-        // Initialize and handle deposits
-        TestParams memory params = _initializeTestParams(_baseAmounts);
-        _handleDeposits(params);
-
-        // Test with first gauge
-        address vault = protocolController.vaults(gauges[0]);
-
-        // Get initial integral
-        uint256 integralBefore = accountant.getVaultIntegral(vault);
-
-        // Generate large rewards
-        uint256 largeReward = 1000e18;
-        _inflateRewards(0, largeReward);
-        skip(1 hours);
-
-        // Harvest large rewards
-        address[] memory gaugesToHarvest = new address[](1);
-        gaugesToHarvest[0] = gauges[0];
-        bytes[] memory harvestData = new bytes[](1);
-
-        vm.prank(harvester);
-        accountant.harvest(gaugesToHarvest, harvestData, harvester);
-
-        uint256 integralAfterFirst = accountant.getVaultIntegral(vault);
-        assertGt(integralAfterFirst, integralBefore, "Integral should increase after first harvest");
-
-        // Generate smaller rewards
-        uint256 smallReward = 30e18;
-        _inflateRewards(0, smallReward);
-        skip(1 hours);
-
-        uint256 integralBeforeSecond = accountant.getVaultIntegral(vault);
-
-        // Harvest smaller rewards
-        vm.prank(harvester);
-        accountant.harvest(gaugesToHarvest, harvestData, harvester);
-
-        uint256 integralAfterSecond = accountant.getVaultIntegral(vault);
-        assertGt(
-            integralAfterSecond, integralBeforeSecond, "Integral should still increase after harvesting smaller rewards"
+        /// 10. Assert that the accountant has no rewards before harvest.
+        assertEq(
+            _balanceOf(rewardToken, address(accountant)), 0, "7. Expected accountant to have no rewards before harvest"
         );
-    }
 
-    //////////////////////////////////////////////////////
-    /// --- TEST PHASE HANDLERS
-    //////////////////////////////////////////////////////
+        /// 11. Assert that the harvester has no rewards before harvest.
+        assertEq(_balanceOf(rewardToken, harvester), 0, "8. Expected harvester to have no rewards before harvest");
 
-    /// @notice Initializes test parameters.
-    /// @param _baseAmounts Base deposit amounts.
-    /// @return params Initialized test parameters.
-    function _initializeTestParams(uint256[] memory _baseAmounts) internal returns (TestParams memory) {
-        TestParams memory params;
-        params.transferReceiver = makeAddr("Transfer Receiver");
-        params.baseAmounts = _baseAmounts;
+        /// 12. Assert that the protocol fees accrued are 0.
+        assertEq(accountant.protocolFeesAccrued(), 0, "9. Expected protocol fees accrued to be 0");
 
-        // Initialize arrays
-        uint256 numGauges = gauges.length;
-        params.totalDeposited = new uint256[](numGauges);
-        params.depositAmounts = new uint256[][](numGauges);
-        params.remainingShares = new uint256[][](numGauges);
-        params.totalExpectedRewards = new uint256[](numGauges);
-        params.totalClaimedRewards = new uint256[](numGauges);
-        params.totalWithdrawn = new uint256[](numGauges);
-        params.expectedRewards1 = new uint256[](numGauges);
-        params.expectedRewards2 = new uint256[](numGauges);
-        params.expectedRewards3 = new uint256[](numGauges);
+        /// 13. Harvest the rewards.
+        harvest();
 
-        for (uint256 i = 0; i < numGauges; i++) {
-            params.depositAmounts[i] = new uint256[](NUM_ACCOUNTS);
-            params.remainingShares[i] = new uint256[](NUM_ACCOUNTS);
-        }
+        uint256 expectedHarvesterBalance = totalHarvestableRewards.mulDiv(accountant.getHarvestFeePercent(), 1e18);
+        uint256 expectedProtocolFeesAccrued = totalHarvestableRewards.mulDiv(accountant.getProtocolFeePercent(), 1e18);
+        uint256 expectedAccountantBalance = totalHarvestableRewards - expectedHarvesterBalance;
 
-        return params;
-    }
+        /// 14. Assert that the accountant has the correct balance.
+        assertApproxEqRel(
+            _balanceOf(rewardToken, address(accountant)),
+            expectedAccountantBalance,
+            0.001e18,
+            "10. Expected accountant to have rewards after harvest with a 0.1% error"
+        );
 
-    /// @notice Handles initial deposits.
-    /// @param params Test parameters.
-    function _handleDeposits(TestParams memory params) internal {
-        for (uint256 gaugeIdx = 0; gaugeIdx < gauges.length; gaugeIdx++) {
-            for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
-                uint256 accountAmount = params.baseAmounts[gaugeIdx] * (i + 1);
-                params.depositAmounts[gaugeIdx][i] = accountAmount;
-                params.totalDeposited[gaugeIdx] += accountAmount;
+        /// 15. Assert that the harvester has the correct balance.
+        assertApproxEqRel(
+            _balanceOf(rewardToken, harvester),
+            expectedHarvesterBalance,
+            0.001e18,
+            "11. Expected harvester to have rewards after harvest with a 0.1% error"
+        );
 
-                vm.prank(accounts[i]);
-                rewardVaults[gaugeIdx].deposit(accountAmount, accounts[i]);
-            }
-        }
-    }
+        /// 16. Assert that the protocol fees accrued are the correct amount.
+        assertApproxEqRel(
+            accountant.protocolFeesAccrued(),
+            expectedProtocolFeesAccrued,
+            0.001e18,
+            "12. Expected protocol fees accrued to be greater than 0 after harvest with a 0.1% error"
+        );
 
-    /// @notice Verifies initial deposits.
-    /// @param params Test parameters.
-    function _verifyInitialDeposits(TestParams memory params) internal view {
-        for (uint256 i = 0; i < gauges.length; i++) {
-            uint256 strategyBalance = _getStrategyBalance(gauges[i]);
-            uint256 expectedBalance = params.totalDeposited[i];
+        for (uint256 i = 0; i < _accountPositions.length; i++) {
+            accountPosition = _accountPositions[i];
+
+            gauge = gauges[accountPosition.gaugeIndex];
+            rewardVault = rewardVaults[accountPosition.gaugeIndex];
+            rewardReceiver = rewardReceivers[accountPosition.gaugeIndex];
 
             assertEq(
-                strategyBalance,
-                expectedBalance,
-                string(abi.encodePacked("Initial deposit mismatch for gauge ", vm.toString(i)))
-            );
-        }
-    }
-
-    /// @notice Handles first reward round.
-    /// @param params Test parameters.
-    function _handleFirstRewards(TestParams memory params) internal {
-        uint256[] memory rewardAmounts = _getFirstRewardAmounts();
-
-        for (uint256 i = 0; i < gauges.length; i++) {
-            params.expectedRewards1[i] = _inflateRewards(i, rewardAmounts[i]);
-        }
-
-        skip(1 hours);
-
-        // Check pending rewards
-        for (uint256 i = 0; i < gauges.length; i++) {
-            uint256 pendingRewards = _getPendingRewards(i);
-            params.totalExpectedRewards[i] += params.expectedRewards1[i] + pendingRewards;
-        }
-    }
-
-    /// @notice Returns first round reward amounts.
-    /// @return amounts Reward amounts array.
-    function _getFirstRewardAmounts() internal virtual returns (uint256[] memory) {
-        uint256[] memory amounts = new uint256[](gauges.length);
-        for (uint256 i = 0; i < gauges.length; i++) {
-            amounts[i] = 1000e18 * (i + 1);
-        }
-        return amounts;
-    }
-
-    /// @notice Handles additional deposits.
-    /// @param params Test parameters.
-    function _handleAdditionalDeposits(TestParams memory params) internal {
-        for (uint256 gaugeIdx = 0; gaugeIdx < gauges.length; gaugeIdx++) {
-            for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
-                uint256 accountAmount = params.baseAmounts[gaugeIdx] * (i + 1) / 2;
-                params.depositAmounts[gaugeIdx][i] += accountAmount;
-                params.totalDeposited[gaugeIdx] += accountAmount;
-
-                address depositToken = depositTokens[gaugeIdx];
-                deal(depositToken, accounts[i], accountAmount);
-
-                vm.prank(accounts[i]);
-                IERC20(depositToken).approve(address(rewardVaults[gaugeIdx]), accountAmount);
-
-                vm.prank(accounts[i]);
-                rewardVaults[gaugeIdx].deposit(accountAmount, accounts[i]);
-            }
-        }
-
-        // Second round of rewards
-        uint256[] memory rewardAmounts = _getSecondRewardAmounts();
-        for (uint256 i = 0; i < gauges.length; i++) {
-            params.expectedRewards2[i] = _inflateRewards(i, rewardAmounts[i]);
-        }
-
-        skip(1 hours);
-
-        // Update expected rewards
-        for (uint256 i = 0; i < gauges.length; i++) {
-            uint256 pendingRewards = _getPendingRewards(i);
-            params.totalExpectedRewards[i] = params.expectedRewards2[i] + pendingRewards;
-        }
-    }
-
-    /// @notice Returns second round reward amounts.
-    /// @return amounts Reward amounts array.
-    function _getSecondRewardAmounts() internal virtual returns (uint256[] memory) {
-        uint256[] memory amounts = new uint256[](gauges.length);
-        for (uint256 i = 0; i < gauges.length; i++) {
-            amounts[i] = 1200e18 * (i + 1);
-        }
-        return amounts;
-    }
-
-    /// @notice Verifies second deposits.
-    /// @param params Test parameters.
-    function _verifySecondDeposits(TestParams memory params) internal view {
-        for (uint256 i = 0; i < gauges.length; i++) {
-            assertEq(
-                _getStrategyBalance(gauges[i]),
-                params.totalDeposited[i],
-                string(abi.encodePacked("Second deposit mismatch for gauge ", vm.toString(i)))
-            );
-        }
-    }
-
-    /// @notice Handles first harvest and claims.
-    /// @param params Test parameters.
-    function _handleFirstHarvestAndClaims(TestParams memory params) internal {
-        // Harvest all gauges
-        bytes[] memory harvestData = new bytes[](gauges.length);
-
-        vm.prank(harvester);
-        accountant.harvest(gauges, harvestData, harvester);
-
-        // Track harvester rewards
-        params.harvestRewards = _balanceOf(_getMainRewardToken(), harvester);
-
-        // Clear harvest data for claims
-        harvestData = new bytes[](0);
-
-        // Each account claims
-        for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
-            uint256 beforeClaim = _balanceOf(_getMainRewardToken(), accounts[i]);
-
-            vm.prank(accounts[i]);
-            accountant.claim(gauges, harvestData);
-
-            uint256 afterClaim = _balanceOf(_getMainRewardToken(), accounts[i]);
-            uint256 claimed = afterClaim - beforeClaim;
-
-            for (uint256 j = 0; j < gauges.length; j++) {
-                params.totalClaimedRewards[j] += claimed / gauges.length;
-            }
-
-            assertGt(claimed, 0, "Account should receive rewards");
-        }
-
-        // Track accountant rewards
-        params.accountantRewards = _balanceOf(_getMainRewardToken(), address(accountant));
-
-        // Verify total distribution
-        uint256 totalExpected = 0;
-        for (uint256 i = 0; i < gauges.length; i++) {
-            totalExpected += params.totalExpectedRewards[i];
-        }
-
-        uint256 totalClaimed = 0;
-        for (uint256 i = 0; i < gauges.length; i++) {
-            totalClaimed += params.totalClaimedRewards[i];
-        }
-
-        uint256 actualTotal = params.harvestRewards + totalClaimed + params.accountantRewards;
-        assertApproxEqRel(actualTotal, totalExpected, 0.01e18, "Total rewards mismatch");
-    }
-
-    /// @notice Handles partial withdrawals.
-    /// @param params Test parameters.
-    function _handlePartialWithdrawals(TestParams memory params) internal {
-        for (uint256 gaugeIdx = 0; gaugeIdx < gauges.length; gaugeIdx++) {
-            for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
-                uint256 withdrawAmount = params.depositAmounts[gaugeIdx][i] / 2;
-                params.totalWithdrawn[gaugeIdx] += withdrawAmount;
-
-                uint256 beforeWithdraw = _balanceOf(depositTokens[gaugeIdx], accounts[i]);
-
-                vm.prank(accounts[i]);
-                rewardVaults[gaugeIdx].withdraw(withdrawAmount, accounts[i], accounts[i]);
-
-                uint256 afterWithdraw = _balanceOf(depositTokens[gaugeIdx], accounts[i]);
-                params.remainingShares[gaugeIdx][i] = rewardVaults[gaugeIdx].balanceOf(accounts[i]);
-
-                assertEq(
-                    afterWithdraw - beforeWithdraw,
-                    withdrawAmount,
-                    string(abi.encodePacked("Partial withdrawal mismatch for gauge ", vm.toString(gaugeIdx)))
-                );
-            }
-        }
-    }
-
-    /// @notice Verifies partial withdrawals.
-    /// @param params Test parameters.
-    function _verifyPartialWithdrawals(TestParams memory params) internal view {
-        for (uint256 i = 0; i < gauges.length; i++) {
-            assertEq(
-                _getStrategyBalance(gauges[i]),
-                params.totalDeposited[i] - params.totalWithdrawn[i],
-                string(abi.encodePacked("Balance after partial withdrawal mismatch for gauge ", vm.toString(i)))
-            );
-        }
-    }
-
-    /// @notice Handles second harvest and claims.
-    /// @param params Test parameters.
-    function _handleSecondHarvestAndClaims(TestParams memory params) internal {
-        // Third round of rewards
-        uint256[] memory rewardAmounts = _getThirdRewardAmounts();
-        for (uint256 i = 0; i < gauges.length; i++) {
-            params.expectedRewards3[i] = _inflateRewards(i, rewardAmounts[i]);
-        }
-
-        skip(1 hours);
-
-        // Transfer shares before harvest
-        for (uint256 gaugeIdx = 0; gaugeIdx < gauges.length; gaugeIdx++) {
-            for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
-                vm.prank(accounts[i]);
-                rewardVaults[gaugeIdx].transfer(params.transferReceiver, params.remainingShares[gaugeIdx][i]);
-            }
-        }
-
-        // Harvest
-        bytes[] memory harvestData = new bytes[](gauges.length);
-        vm.prank(harvester);
-        accountant.harvest(gauges, harvestData, harvester);
-
-        params.harvestRewards2 = _balanceOf(_getMainRewardToken(), harvester) - params.harvestRewards;
-
-        // Claims and transfer back
-        harvestData = new bytes[](0);
-        uint256 totalClaimed2 = 0;
-
-        for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
-            uint256 beforeClaim = _balanceOf(_getMainRewardToken(), accounts[i]);
-
-            vm.prank(accounts[i]);
-            accountant.claim(gauges, harvestData);
-
-            uint256 afterClaim = _balanceOf(_getMainRewardToken(), accounts[i]);
-            totalClaimed2 += afterClaim - beforeClaim;
-
-            // Transfer shares back
-            for (uint256 gaugeIdx = 0; gaugeIdx < gauges.length; gaugeIdx++) {
-                vm.prank(params.transferReceiver);
-                rewardVaults[gaugeIdx].transfer(accounts[i], params.remainingShares[gaugeIdx][i]);
-            }
-        }
-
-        params.totalClaimedRewards2 = totalClaimed2;
-        params.accountantRewards2 = _balanceOf(_getMainRewardToken(), address(accountant)) - params.accountantRewards;
-
-        // Verify second round distribution
-        uint256 totalNewRewards = 0;
-        for (uint256 i = 0; i < gauges.length; i++) {
-            totalNewRewards += params.expectedRewards3[i] + _getPendingRewards(i);
-        }
-
-        uint256 actualTotal2 = params.harvestRewards2 + params.totalClaimedRewards2 + params.accountantRewards2;
-        assertApproxEqRel(actualTotal2, totalNewRewards, 0.05e18, "Second round rewards mismatch");
-    }
-
-    /// @notice Returns third round reward amounts.
-    /// @return amounts Reward amounts array.
-    function _getThirdRewardAmounts() internal virtual returns (uint256[] memory) {
-        uint256[] memory amounts = new uint256[](gauges.length);
-        for (uint256 i = 0; i < gauges.length; i++) {
-            amounts[i] = 1500e18 * (i + 1);
-        }
-        return amounts;
-    }
-
-    /// @notice Handles final withdrawals.
-    /// @param params Test parameters.
-    function _handleFinalWithdrawals(TestParams memory params) internal virtual {
-        for (uint256 gaugeIdx = 0; gaugeIdx < gauges.length; gaugeIdx++) {
-            for (uint256 i = 0; i < NUM_ACCOUNTS; i++) {
-                uint256 remainingAmount = params.remainingShares[gaugeIdx][i];
-                uint256 beforeWithdraw = _balanceOf(depositTokens[gaugeIdx], accounts[i]);
-
-                vm.prank(accounts[i]);
-                rewardVaults[gaugeIdx].withdraw(remainingAmount, accounts[i], accounts[i]);
-
-                uint256 afterWithdraw = _balanceOf(depositTokens[gaugeIdx], accounts[i]);
-
-                assertEq(
-                    afterWithdraw - beforeWithdraw,
-                    remainingAmount,
-                    string(abi.encodePacked("Final withdrawal mismatch for gauge ", vm.toString(gaugeIdx)))
-                );
-
-                assertEq(
-                    afterWithdraw,
-                    params.depositAmounts[gaugeIdx][i],
-                    string(abi.encodePacked("Total returned != deposited for gauge ", vm.toString(gaugeIdx)))
-                );
-            }
-        }
-    }
-
-    /// @notice Verifies final state.
-    function _verifyFinalState(TestParams memory) internal view {
-        for (uint256 i = 0; i < gauges.length; i++) {
-            assertEq(
-                _getStrategyBalance(gauges[i]),
+                _balanceOf(rewardToken, accountPosition.account),
                 0,
-                string(abi.encodePacked("Strategy should be empty for gauge ", vm.toString(i)))
+                "Expected reward token balance to be 0 before claiming"
+            );
+            assertGt(
+                accountant.getPendingRewards(address(rewardVault), accountPosition.account),
+                0,
+                "Expected pending rewards to be greater than 0 before claiming"
+            );
+
+            /// 17. Claim the rewards.
+            claim(rewardVault, accountPosition.account);
+
+            assertGt(
+                _balanceOf(rewardToken, accountPosition.account),
+                0,
+                "13. Expected reward token balance to be greater than 0 after claiming"
+            );
+            assertEq(
+                accountant.getPendingRewards(address(rewardVault), accountPosition.account),
+                0,
+                "14. Expected pending rewards to be 0 after claiming"
+            );
+
+            uint256 totalSupply = rewardVault.totalSupply();
+
+            /// 18. Partial withdraw.
+            withdraw(rewardVault, accountPosition.account, accountPosition.partialWithdrawAmount);
+
+            assertGt(
+                rewardVault.balanceOf(accountPosition.account),
+                0,
+                "15. Expected reward vault balance to be greater than 0 after partial withdraw"
+            );
+
+            assertEq(
+                rewardVault.balanceOf(accountPosition.account),
+                accountPosition.baseAmount + accountPosition.additionalAmount - accountPosition.partialWithdrawAmount,
+                "16. Expected reward vault balance to be equal to base amount plus additional amount minus partial withdraw amount"
+            );
+            assertEq(
+                rewardVault.totalSupply(),
+                totalSupply - accountPosition.partialWithdrawAmount,
+                "17. Expected reward vault total supply to be equal to total supply minus partial withdraw amount"
+            );
+            assertEq(
+                IStrategy(strategy).balanceOf(gauge),
+                rewardVault.totalSupply(),
+                "18. Expected strategy balance to be equal to total supply after partial withdraw"
+            );
+
+            /// 19. Simulate additional rewards for share transfer test
+            simulateRewards(rewardVault, _rewards[i] / 2);
+        }
+
+        skip(1 days);
+
+        /// 20. Test share transfers
+        // This tests that:
+        // - Accrued rewards stay with the original account when shares are transferred
+        // - New rewards (if any) accrue to the transfer receiver after the transfer
+        // - Both accounts can claim their respective rewards
+        for (uint256 i = 0; i < _accountPositions.length; i++) {
+            accountPosition = _accountPositions[i];
+            rewardVault = rewardVaults[accountPosition.gaugeIndex];
+
+            uint256 remainingShares = rewardVault.balanceOf(accountPosition.account);
+            if (remainingShares > 0) {
+                // Transfer all remaining shares to transfer receiver
+                transferShares(rewardVault, accountPosition.account, accountPosition.transferReceiver, remainingShares);
+
+                assertEq(
+                    rewardVault.balanceOf(accountPosition.account),
+                    0,
+                    "19. Expected account to have 0 shares after transfer"
+                );
+                assertEq(
+                    rewardVault.balanceOf(accountPosition.transferReceiver),
+                    remainingShares,
+                    "20. Expected transfer receiver to have all transferred shares"
+                );
+            }
+        }
+
+        // Harvest after transfers
+        harvest();
+
+        /// 21. Verify rewards follow share ownership
+        for (uint256 i = 0; i < _accountPositions.length; i++) {
+            accountPosition = _accountPositions[i];
+            rewardVault = rewardVaults[accountPosition.gaugeIndex];
+
+            // Original accounts should still have their accrued rewards from before the transfer
+            uint256 originalAccountPendingRewards =
+                accountant.getPendingRewards(address(rewardVault), accountPosition.account);
+            assertGt(
+                originalAccountPendingRewards,
+                0,
+                "21. Expected original account to still have pending rewards from before transfer"
+            );
+
+            // Claim rewards as original account
+            claim(rewardVault, accountPosition.account);
+            assertGt(
+                _balanceOf(rewardToken, accountPosition.account),
+                0,
+                "22. Expected original account to have claimed their accrued rewards"
+            );
+
+            // Transfer receivers may or may not have pending rewards depending on if new rewards were generated
+            uint256 pendingRewards =
+                accountant.getPendingRewards(address(rewardVault), accountPosition.transferReceiver);
+            if (pendingRewards > 0) {
+                // Claim as transfer receiver if they have rewards
+                claim(rewardVault, accountPosition.transferReceiver);
+
+                assertGt(
+                    _balanceOf(rewardToken, accountPosition.transferReceiver),
+                    0,
+                    "23. Expected transfer receiver to have claimed rewards when available"
+                );
+            }
+
+            // Transfer shares back to original account
+            uint256 transferReceiverShares = rewardVault.balanceOf(accountPosition.transferReceiver);
+            if (transferReceiverShares > 0) {
+                transferShares(
+                    rewardVault, accountPosition.transferReceiver, accountPosition.account, transferReceiverShares
+                );
+            }
+
+            // Final withdrawal - withdraw all remaining shares
+            uint256 finalBalance = rewardVault.balanceOf(accountPosition.account);
+            if (finalBalance > 0) {
+                withdraw(rewardVault, accountPosition.account, finalBalance);
+
+                assertEq(
+                    rewardVault.balanceOf(accountPosition.account),
+                    0,
+                    "25. Expected account to have 0 shares after final withdrawal"
+                );
+            }
+        }
+
+        // Verify all vaults are empty
+        for (uint256 i = 0; i < rewardVaults.length; i++) {
+            assertEq(
+                rewardVaults[i].totalSupply(), 0, "26. Expected vault to have 0 total supply after all withdrawals"
+            );
+            assertEq(
+                IStrategy(strategy).balanceOf(gauges[i]),
+                0,
+                "27. Expected strategy to have 0 balance after all withdrawals"
             );
         }
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- OVERRIDABLE FUNCTIONS
+    //////////////////////////////////////////////////////
+
+    function deployRewardVaults()
+        internal
+        virtual
+        returns (RewardVault[] memory vaults, RewardReceiver[] memory receivers)
+    {
+        /// Deploy the vaults.
+        vaults = new RewardVault[](gauges.length);
+        receivers = new RewardReceiver[](gauges.length);
+
+        for (uint256 i = 0; i < gauges.length; i++) {
+            address gauge = gauges[i];
+
+            /// Deploy the vault and receiver.
+            (address vault, address receiver) = Factory(factory).createVault(gauge);
+
+            vaults[i] = RewardVault(vault);
+            receivers[i] = RewardReceiver(receiver);
+        }
+    }
+
+    /// @notice Simulates rewards for the given vault.
+    function simulateRewards(RewardVault vault, uint256 amount) internal virtual {}
+
+    //////////////////////////////////////////////////////
+    /// --- TEST HELPERS
+    //////////////////////////////////////////////////////
+
+    function deposit(RewardVault rewardVault, address account, uint256 amount) internal {
+        /// 1. Get the asset address.
+        address asset = rewardVault.asset();
+
+        /// 2. Deal the amount to the account.
+        deal(asset, account, amount);
+
+        /// 3. Approve the asset to be spent by the vault.
+        vm.startPrank(account);
+        IERC20(asset).approve(address(rewardVault), amount);
+
+        /// 4. Deposit
+        rewardVault.deposit(amount, account);
+        vm.stopPrank();
+    }
+
+    function harvest() internal {
+        bytes[] memory harvestData = new bytes[](gauges.length);
+
+        vm.prank(harvester);
+        accountant.harvest(gauges, harvestData, harvester);
+    }
+
+    function claim(RewardVault rewardVault, address account) internal {
+        address[] memory accountGauges = new address[](1);
+        accountGauges[0] = rewardVault.gauge();
+        bytes[] memory harvestData = new bytes[](1);
+        harvestData[0] = "";
+
+        vm.prank(account);
+        accountant.claim(accountGauges, harvestData);
+    }
+
+    function withdraw(RewardVault rewardVault, address account, uint256 amount) internal {
+        vm.prank(account);
+        rewardVault.withdraw(amount, account, account);
+    }
+
+    function transferShares(RewardVault rewardVault, address from, address to, uint256 amount) internal {
+        vm.prank(from);
+        rewardVault.transfer(to, amount);
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- VALIDATION HELPERS
+    //////////////////////////////////////////////////////
+
+    /// TODO: Implement this.
+    function assertDeploymentValid(RewardVault[] memory vaults, RewardReceiver[] memory receivers) internal pure {
+        RewardVault vault;
+        RewardReceiver receiver;
+        for (uint256 i = 0; i < vaults.length; i++) {
+            vault = vaults[i];
+            receiver = receivers[i];
+        }
+    }
+
+    //////////////////////////////////////////////////////
+    /// --- FUZZING HELPERS
+    //////////////////////////////////////////////////////
+
+    function _generateAccountPositionsAndRewards() internal returns (AccountPosition[] memory, uint256[] memory) {
+        uint256 length = bound(uint256(keccak256(abi.encode("length"))), 1, MAX_ACCOUNT_POSITIONS);
+
+        uint256[] memory rewards = new uint256[](length);
+        AccountPosition[] memory positions = new AccountPosition[](length);
+
+        for (uint256 i = 0; i < length; i++) {
+            address gauge = gauges[i % gauges.length];
+            uint256 maxAmount = IERC20(gauge).totalSupply();
+
+            uint256 baseAmount = bound(uint256(keccak256(abi.encode("baseAmount", i))), 1e18, maxAmount);
+            uint256 additionalAmount = bound(uint256(keccak256(abi.encode("additionalAmount", i))), 1e18, baseAmount);
+            uint256 partialWithdrawAmount =
+                bound(uint256(keccak256(abi.encode("partialWithdrawAmount", i))), 1e18, baseAmount);
+
+            positions[i] = AccountPosition({
+                account: makeAddr(string(abi.encodePacked("Account", i))),
+                baseAmount: baseAmount,
+                additionalAmount: additionalAmount,
+                partialWithdrawAmount: partialWithdrawAmount,
+                gaugeIndex: i % gauges.length,
+                transferReceiver: makeAddr(string(abi.encodePacked("TransferReceiver", i)))
+            });
+
+            rewards[i] = bound(uint256(keccak256(abi.encode("rewards", i))), 1e18, MAX_REWARDS);
+        }
+
+        return (positions, rewards);
     }
 }
