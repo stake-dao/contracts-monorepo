@@ -1,6 +1,15 @@
 /// SPDX-License-Identifier: GPL-3.0
 pragma solidity ^0.8.19;
 
+interface IL2Booster {
+
+    function poolInfo(uint256 pid)
+        external
+        view
+        returns (address lpToken, address gauge, address rewards, bool shutdown, address factory);
+
+}
+
 interface IBooster {
     function poolLength() external view returns (uint256);
 

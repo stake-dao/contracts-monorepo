@@ -2,9 +2,9 @@
 pragma solidity 0.8.28;
 
 import {Factory} from "src/Factory.sol";
-import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
+import {IL2LiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 import {IChildLiquidityGaugeFactory} from "@interfaces/curve/IChildLiquidityGaugeFactory.sol";
 
 contract CurveFactory is Factory {
@@ -50,13 +50,13 @@ contract CurveFactory is Factory {
         if (!CHILD_LIQUIDITY_GAUGE_FACTORY.is_valid_gauge(_gauge)) return false;
 
         /// Check if the gauge is not killed.
-        if (ILiquidityGauge(_gauge).is_killed()) return false;
+        if (IL2LiquidityGauge(_gauge).is_killed()) return false;
 
         return true;
     }
 
     function _getAsset(address _gauge) internal view virtual override returns (address) {
-        return ILiquidityGauge(_gauge).lp_token();
+        return IL2LiquidityGauge(_gauge).lp_token();
     }
 
     function _setupRewardTokens(address _vault, address _gauge, address _rewardReceiver) internal virtual override {
@@ -71,8 +71,8 @@ contract CurveFactory is Factory {
         /// 8 is the maximum number of extra reward tokens supported by the gauges.
         for (uint8 i = 0; i < 8; i++) {
             /// Get the extra reward token address.
-            address _extraRewardToken = ILiquidityGauge(_gauge).reward_tokens(i);
-            (,, uint256 periodFinish,,,) = ILiquidityGauge(_gauge).reward_data(_extraRewardToken);
+            address _extraRewardToken = IL2LiquidityGauge(_gauge).reward_tokens(i);
+            (, uint256 periodFinish,,,) = IL2LiquidityGauge(_gauge).reward_data(_extraRewardToken);
             /// If the reward data is not active, skip.
             if (periodFinish < block.timestamp) continue;
             /// If the address is 0, it means there are no more extra reward tokens.

@@ -3,6 +3,23 @@ pragma solidity ^0.8.0;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 
+interface IL2LiquidityGauge {
+    function reward_data(address arg0)
+        external
+        view
+        returns (
+            address distributor,
+            uint256 period_finish,
+            uint256 rate,
+            uint256 last_update,
+            uint256 integral
+        );
+
+    function reward_tokens(uint256 arg0) external view returns (address);
+    function is_killed() external view returns (bool);
+    function lp_token() external view returns (address);
+}
+
 interface ILiquidityGauge is IERC20 {
     event ApplyOwnership(address admin);
     event CommitOwnership(address admin);
