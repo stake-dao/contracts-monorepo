@@ -41,6 +41,8 @@ abstract contract BaseSetup is Test {
     address public sidecarFactory;
     address public sidecarImplementation;
 
+    address[] public owners;
+
     /*//////////////////////////////////////////////////////////////////////////
                                       HELPERS
     //////////////////////////////////////////////////////////////////////////*/
@@ -97,7 +99,7 @@ abstract contract BaseSetup is Test {
         /// 5. Deploy Reward Receiver Implementation.
         rewardReceiverImplementation = new RewardReceiver();
 
-        address[] memory owners = new address[](1);
+        owners = new address[](1);
         owners[0] = admin;
 
         /// 6. Deploy Gateway.

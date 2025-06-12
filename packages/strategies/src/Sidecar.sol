@@ -165,5 +165,5 @@ abstract contract Sidecar is ISidecar {
     /// @notice Returns the pending rewards of the sidecar
     /// @dev Must be implemented by derived sidecars to handle protocol-specific reward calculation
     /// @return The pending rewards of the sidecar
-    function getPendingRewards() public view virtual returns (uint256);
+    function getPendingRewards() public virtual returns (uint256);
 }

@@ -1,9 +1,10 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.28;
 
-import {IBooster} from "@interfaces/convex/IBooster.sol";
+import {IBooster, IL2Booster} from "@interfaces/convex/IBooster.sol";
+import {IChildLiquidityGaugeFactory} from "@interfaces/curve/IChildLiquidityGaugeFactory.sol";
 import {IGaugeController} from "@interfaces/curve/IGaugeController.sol";
-import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
+import {ILiquidityGauge, IL2LiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 import {IStrategy} from "@interfaces/stake-dao/IStrategy.sol";
 import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
 import {Factory} from "src/Factory.sol";
@@ -11,21 +12,24 @@ import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
 
 contract CurveFactory is Factory {
+    /// @notice Chain ID.
+    uint256 public immutable CHAIN_ID;
+
     /// @notice The bytes4 ID of the Curve protocol
     /// @dev Used to identify the Curve protocol in the registry
     bytes4 private constant CURVE_PROTOCOL_ID = bytes4(keccak256("CURVE"));
 
     /// @notice Curve Gauge Controller.
-    IGaugeController public constant GAUGE_CONTROLLER = IGaugeController(CurveProtocol.GAUGE_CONTROLLER);
+    address public immutable GAUGE_CONTROLLER;
 
     /// @notice CVX token address.
-    address public constant CVX = CurveProtocol.CONVEX_TOKEN;
+    address public immutable CVX;
 
     /// @notice Address of the old strategy.
-    address public constant OLD_STRATEGY = CurveLocker.STRATEGY;
+    address public immutable OLD_STRATEGY;
 
     /// @notice Convex Booster.
-    address public immutable BOOSTER = CurveProtocol.CONVEX_BOOSTER;
+    address public immutable BOOSTER;
 
     /// @notice Convex Minimal Proxy Factory for Only Boost.
     address public immutable CONVEX_SIDECAR_FACTORY;
@@ -40,6 +44,10 @@ contract CurveFactory is Factory {
     event VaultDeployed(address gauge, address vault, address rewardReceiver, address sidecar);
 
     constructor(
+        address gaugeController,
+        address cvx,
+        address oldStrategy,
+        address booster,
         address protocolController,
         address vaultImplementation,
         address rewardReceiverImplementation,
@@ -49,7 +57,12 @@ contract CurveFactory is Factory {
     )
         Factory(protocolController, vaultImplementation, rewardReceiverImplementation, CURVE_PROTOCOL_ID, locker, gateway)
     {
+        GAUGE_CONTROLLER = gaugeController;
+        CVX = cvx;
+        OLD_STRATEGY = oldStrategy;
+        BOOSTER = booster;
         CONVEX_SIDECAR_FACTORY = convexSidecarFactory;
+        CHAIN_ID = block.chainid;
     }
 
     /// @notice Create a new vault.
@@ -57,7 +70,12 @@ contract CurveFactory is Factory {
     function create(uint256 _pid) external returns (address vault, address rewardReceiver, address sidecar) {
         require(CONVEX_SIDECAR_FACTORY != address(0), ConvexSidecarFactoryNotSet());
 
-        (,, address gauge,,,) = IBooster(BOOSTER).poolInfo(_pid);
+        address gauge;
+        if (CHAIN_ID == 1) {
+            (,, gauge,,,) = IBooster(BOOSTER).poolInfo(_pid);
+        } else {
+            (, gauge,,,) = IL2Booster(BOOSTER).poolInfo(_pid);
+        }
 
         /// 1. Create the vault.
         (vault, rewardReceiver) = createVault(gauge);
@@ -77,10 +95,14 @@ contract CurveFactory is Factory {
         if (_token == CVX) return false;
 
         /// If the token is available as an inflation receiver, it's not valid.
-        try GAUGE_CONTROLLER.gauge_types(_token) {
-            return false;
-        } catch {
-            return true;
+        if (CHAIN_ID == 1) {
+            try IGaugeController(GAUGE_CONTROLLER).gauge_types(_token) {
+                return false;
+            } catch {
+                return true;
+            }
+        } else {
+            if (IChildLiquidityGaugeFactory(GAUGE_CONTROLLER).is_valid_gauge(_token)) return false;
         }
     }
 
@@ -88,10 +110,16 @@ contract CurveFactory is Factory {
         bool isValid;
         /// Check if the gauge is a valid candidate and available as an inflation receiver.
         /// This call always reverts if the gauge is not valid.
-        try GAUGE_CONTROLLER.gauge_types(_gauge) {
+
+        if (CHAIN_ID == 1) {
+            try IGaugeController(GAUGE_CONTROLLER).gauge_types(_gauge) {
+                isValid = true;
+            } catch {
+                return false;
+            }
+        } else {
+            if (!IChildLiquidityGaugeFactory(GAUGE_CONTROLLER).is_valid_gauge(_gauge)) return false;
             isValid = true;
-        } catch {
-            return false;
         }
 
         /// Check if the gauge is not killed.
@@ -107,6 +135,8 @@ contract CurveFactory is Factory {
     /// @notice Check if the gauge is shutdown in the old strategy.
     /// @dev If the gauge is shutdown, we can deploy a new strategy.
     function _isValidDeployment(address _gauge) internal view virtual override returns (bool) {
+        if (OLD_STRATEGY == address(0)) return true;
+
         /// We check if the gauge is deployed in the old strategy by checking if the reward distributor is not 0.
         /// We also check if the gauge is shutdown.
         return IStrategy(OLD_STRATEGY).rewardDistributors(_gauge) == address(0)
@@ -132,10 +162,17 @@ contract CurveFactory is Factory {
 
         /// Loop through the extra reward tokens.
         /// 8 is the maximum number of extra reward tokens supported by the gauges.
+        uint256 periodFinish;
+        address _extraRewardToken;
         for (uint8 i = 0; i < 8; i++) {
             /// Get the extra reward token address.
-            address _extraRewardToken = ILiquidityGauge(_gauge).reward_tokens(i);
-            (,, uint256 periodFinish,,,) = ILiquidityGauge(_gauge).reward_data(_extraRewardToken);
+            _extraRewardToken = ILiquidityGauge(_gauge).reward_tokens(i);
+            if (CHAIN_ID == 1) {
+                (,, periodFinish,,,) = ILiquidityGauge(_gauge).reward_data(_extraRewardToken);
+            } else {
+                (, periodFinish,,,) = IL2LiquidityGauge(_gauge).reward_data(_extraRewardToken);
+            }
+
             /// If the reward data is not active, skip.
             if (periodFinish < block.timestamp) continue;
             /// If the address is 0, it means there are no more extra reward tokens.

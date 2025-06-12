@@ -129,14 +129,18 @@ abstract contract BaseCurveTest is BaseSetup {
         );
 
         /// 2. Deploy the Curve Factory contract.
-        curveFactory = new CurveFactory({
-            protocolController: address(protocolController),
-            vaultImplementation: address(rewardVaultImplementation),
-            rewardReceiverImplementation: address(rewardReceiverImplementation),
-            locker: LOCKER,
-            gateway: address(gateway),
-            convexSidecarFactory: address(convexSidecarFactory)
-        });
+        curveFactory = new CurveFactory(
+            CurveProtocol.GAUGE_CONTROLLER,
+            CurveProtocol.CONVEX_TOKEN,
+            CurveLocker.STRATEGY,
+            CurveProtocol.CONVEX_BOOSTER,
+            address(protocolController),
+            address(rewardVaultImplementation),
+            address(rewardReceiverImplementation),
+            LOCKER,
+            address(gateway),
+            address(convexSidecarFactory)
+        );
 
         /// 3. Setup the strategy in the protocol controller.
         protocolController.setStrategy(PROTOCOL_ID, address(curveStrategy));
