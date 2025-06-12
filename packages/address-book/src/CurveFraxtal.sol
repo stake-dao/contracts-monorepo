@@ -6,4 +6,5 @@ library CurveProtocol {
     /// The factory is also the Minter.
     address internal constant FACTORY = 0xeF672bD94913CB6f1d2812a6e18c1fFdEd8eFf5c;
     address internal constant VECRV = 0xc73e8d8f7A68Fc9d67e989250484E57Ae03a5Da3;
+
 }
