@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.28;
 
-import {IBaseRewardPool} from "@interfaces/convex/IBaseRewardPool.sol";
-import {IBooster} from "@interfaces/convex/IBooster.sol";
+import {IBaseRewardPool, IBaseRewardPoolL2} from "@interfaces/convex/IBaseRewardPool.sol";
+import {IBooster, IL2Booster} from "@interfaces/convex/IBooster.sol";
 import {IStashTokenWrapper} from "@interfaces/convex/IStashTokenWrapper.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {CurveProtocol} from "address-book/src/CurveEthereum.sol";
@@ -19,6 +19,9 @@ contract ConvexSidecar is Sidecar {
     /// @dev Used to identify the Curve protocol in the registry
     bytes4 private constant CURVE_PROTOCOL_ID = bytes4(keccak256("CURVE"));
 
+    /// @notice Chain ID.
+    uint256 public immutable CHAIN_ID;
+
     //////////////////////////////////////////////////////
     // ---  IMPLEMENTATION CONSTANTS
     //////////////////////////////////////////////////////
@@ -27,7 +30,7 @@ contract ConvexSidecar is Sidecar {
     IERC20 public immutable CVX;
 
     /// @notice Convex Booster address.
-    IBooster public immutable BOOSTER;
+    address public immutable BOOSTER;
 
     //////////////////////////////////////////////////////
     // --- ISIDECAR CLONE IMMUTABLES
@@ -64,7 +67,8 @@ contract ConvexSidecar is Sidecar {
         Sidecar(CURVE_PROTOCOL_ID, _accountant, _protocolController)
     {
         CVX = IERC20(_cvx);
-        BOOSTER = IBooster(_booster);
+        CHAIN_ID = block.chainid;
+        BOOSTER = _booster;
     }
 
     //////////////////////////////////////////////////////
@@ -89,7 +93,11 @@ contract ConvexSidecar is Sidecar {
     /// Only callable by the strategy.
     function _deposit(uint256 amount) internal override {
         /// Deposit the LP token into Convex and stake it (true) to receive rewards.
-        BOOSTER.deposit(pid(), amount, true);
+        if (CHAIN_ID == 1) {
+            IBooster(BOOSTER).deposit(pid(), amount, true);
+        } else {
+            IL2Booster(BOOSTER).deposit(pid(), amount);
+        }
     }
 
     /// @notice Withdraw LP token from Convex.
@@ -106,10 +114,14 @@ contract ConvexSidecar is Sidecar {
     /// @notice Claim rewards from Convex.
     /// @return rewardTokenAmount Amount of reward token claimed.
     function _claim() internal override returns (uint256 rewardTokenAmount) {
-        /// Claim rewardToken.
-        baseRewardPool().getReward(address(this), false);
+        if (CHAIN_ID == 1) {
+            /// Claim rewardToken.
+            baseRewardPool().getReward(address(this), false);
 
-        rewardTokenAmount = REWARD_TOKEN.balanceOf(address(this));
+            rewardTokenAmount = REWARD_TOKEN.balanceOf(address(this));
+        } else {
+            IBaseRewardPoolL2(address(baseRewardPool())).getReward(address(this));
+        }
 
         /// Send the reward token to the accountant.
         REWARD_TOKEN.safeTransfer(ACCOUNTANT, rewardTokenAmount);
@@ -153,7 +165,7 @@ contract ConvexSidecar is Sidecar {
 
     /// @notice Get the amount of reward token earned by the strategy.
     /// @return The amount of reward token earned by the strategy.
-    function getPendingRewards() public view override returns (uint256) {
+    function getPendingRewards() public override returns (uint256) {
         return baseRewardPool().earned(address(this)) + REWARD_TOKEN.balanceOf(address(this));
     }
 

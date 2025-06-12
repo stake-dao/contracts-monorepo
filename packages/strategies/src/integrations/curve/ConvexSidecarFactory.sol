@@ -1,22 +1,24 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.28;
 
-import {IBooster} from "@interfaces/convex/IBooster.sol";
-import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
-import {CurveProtocol} from "address-book/src/CurveEthereum.sol";
-import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
 import {SidecarFactory} from "src/SidecarFactory.sol";
+import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
+import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
+import {IBooster, IL2Booster} from "@interfaces/convex/IBooster.sol";
 
 /// @title ConvexSidecarFactory
 /// @notice Factory contract for deploying ConvexSidecar instances
 /// @dev Creates deterministic minimal proxies for ConvexSidecar implementation
 contract ConvexSidecarFactory is SidecarFactory {
+    /// @notice Chain ID.
+    uint256 public immutable CHAIN_ID;
+
     /// @notice The bytes4 ID of the Convex protocol
     /// @dev Used to identify the Convex protocol in the registry
     bytes4 private constant CURVE_PROTOCOL_ID = bytes4(keccak256("CURVE"));
 
     /// @notice Convex Booster contract address
-    IBooster public immutable BOOSTER;
+    address public immutable BOOSTER;
 
     /// @notice Error emitted when the pool is shutdown
     error PoolShutdown();
@@ -34,7 +36,8 @@ contract ConvexSidecarFactory is SidecarFactory {
     constructor(address _implementation, address _protocolController, address _booster)
         SidecarFactory(CURVE_PROTOCOL_ID, _implementation, _protocolController)
     {
-        BOOSTER = IBooster(_booster);
+        BOOSTER = _booster;
+        CHAIN_ID = block.chainid;
     }
 
     /// @notice Convenience function to create a sidecar with a uint256 pid parameter
@@ -53,8 +56,16 @@ contract ConvexSidecarFactory is SidecarFactory {
 
         uint256 pid = abi.decode(args, (uint256));
 
-        // Get the pool info from Convex
-        (,, address curveGauge,,, bool isShutdown) = BOOSTER.poolInfo(pid);
+        address curveGauge;
+        bool isShutdown;
+
+        if (CHAIN_ID == 1) {
+            // Get the pool info from Convex
+            (,, curveGauge,,, isShutdown) = IBooster(BOOSTER).poolInfo(pid);
+        } else {
+            // Get the pool info from Convex
+            (, curveGauge,, isShutdown,) = IL2Booster(BOOSTER).poolInfo(pid);
+        }
 
         // Ensure the pool is not shutdown
         if (isShutdown) revert PoolShutdown();
@@ -71,7 +82,14 @@ contract ConvexSidecarFactory is SidecarFactory {
         uint256 pid = abi.decode(args, (uint256));
 
         // Get the LP token and base reward pool from Convex
-        (address lpToken,,, address baseRewardPool,,) = BOOSTER.poolInfo(pid);
+        address lpToken;
+        address baseRewardPool;
+
+        if (CHAIN_ID == 1) {
+            (lpToken,,, baseRewardPool,,) = IBooster(BOOSTER).poolInfo(pid);
+        } else {
+            (lpToken,, baseRewardPool,,) = IL2Booster(BOOSTER).poolInfo(pid);
+        }
 
         address rewardReceiver = PROTOCOL_CONTROLLER.rewardReceiver(gauge);
         require(rewardReceiver != address(0), VaultNotDeployed());

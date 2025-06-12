@@ -6,18 +6,24 @@ import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
 
 contract CurveMainnetIntegrationTest is CurveIntegration {
     Config public _config = Config({
-        chain: "mainnet",
-        blockNumber: 22_316_395,
-        rewardToken: CurveProtocol.CRV,
-        locker: CurveLocker.LOCKER,
-        protocolId: bytes4(keccak256("CURVE")),
-        harvestPolicy: IStrategy.HarvestPolicy.CHECKPOINT,
-        minter: CurveProtocol.MINTER,
-        boostProvider: CurveProtocol.VE_BOOST,
-        isOnlyBoost: true,
-        cvx: CurveProtocol.CONVEX_TOKEN,
-        convexBoostHolder: CurveProtocol.CONVEX_BOOSTER,
-        booster: CurveProtocol.CONVEX_BOOSTER
+        base: BaseConfig({
+            chain: "mainnet",
+            blockNumber: 22_316_395,
+            rewardToken: CurveProtocol.CRV,
+            locker: CurveLocker.LOCKER,
+            protocolId: bytes4(keccak256("CURVE")),
+            harvestPolicy: IStrategy.HarvestPolicy.CHECKPOINT,
+            minter: CurveProtocol.MINTER,
+            boostProvider: CurveProtocol.VE_BOOST,
+            gaugeController: CurveProtocol.GAUGE_CONTROLLER,
+            oldStrategy: CurveLocker.STRATEGY
+        }),
+        convex: ConvexConfig({
+            isOnlyBoost: true,
+            cvx: CurveProtocol.CONVEX_TOKEN,
+            convexBoostHolder: CurveProtocol.CONVEX_BOOSTER,
+            booster: CurveProtocol.CONVEX_BOOSTER
+        })
     });
 
     // All pool IDs from the old tests
@@ -58,11 +64,11 @@ contract CurveMainnetIntegrationTest is CurveIntegration {
 
         // Get the current integrate_fraction (might be mocked from previous calls)
         uint256 currentIntegrateFraction;
-        try ILiquidityGauge(gauge).integrate_fraction(config.locker) returns (uint256 fraction) {
+        try ILiquidityGauge(gauge).integrate_fraction(config.base.locker) returns (uint256 fraction) {
             currentIntegrateFraction = fraction;
         } catch {
             // Fallback if mocked and reverts
-            currentIntegrateFraction = IMinter(config.minter).minted(config.locker, gauge);
+            currentIntegrateFraction = IMinter(config.base.minter).minted(config.base.locker, gauge);
         }
 
         // Add the new amount to existing state (incremental)
@@ -70,7 +76,7 @@ contract CurveMainnetIntegrationTest is CurveIntegration {
 
         vm.mockCall(
             gauge,
-            abi.encodeWithSelector(ILiquidityGauge.integrate_fraction.selector, config.locker),
+            abi.encodeWithSelector(ILiquidityGauge.integrate_fraction.selector, config.base.locker),
             abi.encode(newIntegrateFraction)
         );
     }

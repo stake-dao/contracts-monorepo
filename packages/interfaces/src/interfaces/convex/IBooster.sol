@@ -8,6 +8,8 @@ interface IL2Booster {
         view
         returns (address lpToken, address gauge, address rewards, bool shutdown, address factory);
 
+    function deposit(uint256 _pid, uint256 _amount) external returns (bool);
+
 }
 
 interface IBooster {
@@ -17,6 +19,7 @@ interface IBooster {
         external
         view
         returns (address lpToken, address token, address gauge, address crvRewards, address stash, bool shutdown);
+
 
     function deposit(uint256 _pid, uint256 _amount, bool _stake) external returns (bool);
 

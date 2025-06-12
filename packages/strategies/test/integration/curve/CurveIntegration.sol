@@ -17,8 +17,8 @@ import "test/integration/BaseIntegrationTest.sol";
 /// @title CurveIntegration - L2 Curve Integration Test
 /// @notice Integration test for Curve protocol on L2 with Convex.
 abstract contract CurveIntegration is BaseIntegrationTest {
-    /// @notice The configuration for the test.
-    struct Config {
+    /// @notice Base configuration for the test.
+    struct BaseConfig {
         string chain;
         bytes4 protocolId;
         uint256 blockNumber;
@@ -27,11 +27,22 @@ abstract contract CurveIntegration is BaseIntegrationTest {
         IStrategy.HarvestPolicy harvestPolicy;
         address minter;
         address boostProvider;
-        /// Only Boost Config
+        address oldStrategy;
+        address gaugeController;
+    }
+
+    /// @notice Convex-specific configuration.
+    struct ConvexConfig {
         bool isOnlyBoost;
         address cvx;
         address convexBoostHolder;
         address booster;
+    }
+
+    /// @notice Combined configuration for the test.
+    struct Config {
+        BaseConfig base;
+        ConvexConfig convex;
     }
 
     /// @notice The configuration for the test.
@@ -45,12 +56,12 @@ abstract contract CurveIntegration is BaseIntegrationTest {
         public
         virtual
         doSetup(
-            config.chain,
-            config.blockNumber,
-            config.rewardToken,
-            config.locker,
-            config.protocolId,
-            config.harvestPolicy
+            config.base.chain,
+            config.base.blockNumber,
+            config.base.rewardToken,
+            config.base.locker,
+            config.base.protocolId,
+            config.base.harvestPolicy
         )
     {
         /// 1. Get the gauges.
@@ -60,21 +71,21 @@ abstract contract CurveIntegration is BaseIntegrationTest {
         strategy = address(
             new CurveStrategy({
                 _registry: address(protocolController),
-                _locker: config.locker,
+                _locker: config.base.locker,
                 _gateway: address(gateway),
-                _minter: config.minter
+                _minter: config.base.minter
             })
         );
 
         /// 3. Check if the strategy is only boost.
-        if (config.isOnlyBoost) {
+        if (config.convex.isOnlyBoost) {
             /// 3a. Deploy the Convex Sidecar implementation.
             sidecarImplementation = address(
                 new ConvexSidecar({
                     _accountant: address(accountant),
                     _protocolController: address(protocolController),
-                    _cvx: config.cvx,
-                    _booster: config.booster
+                    _cvx: config.convex.cvx,
+                    _booster: config.convex.booster
                 })
             );
 
@@ -83,29 +94,33 @@ abstract contract CurveIntegration is BaseIntegrationTest {
                 new ConvexSidecarFactory({
                     _implementation: address(sidecarImplementation),
                     _protocolController: address(protocolController),
-                    _booster: config.booster
+                    _booster: config.convex.booster
                 })
             );
 
             /// 3c. Deploy the OnlyBoostAllocator contract.
             allocator = new OnlyBoostAllocator({
-                _locker: config.locker,
+                _locker: config.base.locker,
                 _gateway: address(gateway),
                 _convexSidecarFactory: sidecarFactory,
-                _boostProvider: config.boostProvider,
-                _convexBoostHolder: config.convexBoostHolder
+                _boostProvider: config.base.boostProvider,
+                _convexBoostHolder: config.convex.convexBoostHolder
             });
         }
 
         factory = address(
-            new CurveFactory({
-                protocolController: address(protocolController),
-                vaultImplementation: address(rewardVaultImplementation),
-                rewardReceiverImplementation: address(rewardReceiverImplementation),
-                locker: config.locker,
-                gateway: address(gateway),
-                convexSidecarFactory: sidecarFactory
-            })
+            new CurveFactory(
+                config.base.gaugeController,
+                config.convex.cvx,
+                config.base.oldStrategy,
+                config.convex.booster,
+                address(protocolController),
+                address(rewardVaultImplementation),
+                address(rewardReceiverImplementation),
+                config.base.locker,
+                address(gateway),
+                sidecarFactory
+            )
         );
 
         _clearLockerBalances();
@@ -114,7 +129,7 @@ abstract contract CurveIntegration is BaseIntegrationTest {
 
     function _clearLockerBalances() internal {
         for (uint256 i = 0; i < gauges.length; i++) {
-            uint256 balance = ILiquidityGauge(gauges[i]).balanceOf(config.locker);
+            uint256 balance = ILiquidityGauge(gauges[i]).balanceOf(config.base.locker);
             if (balance == 0) continue;
 
             address lpToken = ILiquidityGauge(gauges[i]).lp_token();
@@ -122,22 +137,22 @@ abstract contract CurveIntegration is BaseIntegrationTest {
 
             // Withdraw from gauge
             bytes memory data = abi.encodeWithSignature("withdraw(uint256)", balance);
-            SafeLibrary.execOnLocker(payable(gateway), config.locker, gauges[i], data, signatures);
+            SafeLibrary.execOnLocker(payable(gateway), config.base.locker, gauges[i], data, signatures);
 
             // Transfer to burn address
             data = abi.encodeWithSignature("transfer(address,uint256)", burnAddress, balance);
-            SafeLibrary.execOnLocker(payable(gateway), config.locker, lpToken, data, signatures);
+            SafeLibrary.execOnLocker(payable(gateway), config.base.locker, lpToken, data, signatures);
         }
     }
 
     function _allowMint() internal {
-        if (keccak256(abi.encodePacked(config.chain)) != keccak256(abi.encodePacked("mainnet"))) return;
+        if (block.chainid != 1) return;
 
         /// Build signatures
         bytes memory signatures = abi.encodePacked(uint256(uint160(admin)), uint8(0), uint256(1));
         /// Build data
         bytes memory data = abi.encodeWithSignature("toggle_approve_mint(address)", strategy);
         /// Execute transaction
-        SafeLibrary.execOnLocker(payable(gateway), config.locker, config.minter, data, signatures);
+        SafeLibrary.execOnLocker(payable(gateway), config.base.locker, config.base.minter, data, signatures);
     }
 }
