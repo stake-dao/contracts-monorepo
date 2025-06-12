@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {CurveProtocol} from "address-book/src/CurveEthereum.sol";
+import {CurveProtocol, CurveLocker} from "address-book/src/CurveEthereum.sol";
 import "forge-std/src/Script.sol";
 import {Base} from "script/Base.sol";
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
@@ -74,6 +74,10 @@ contract Deploy is Base {
 
         /// 4. Deploy the factory.
         curveFactory = new CurveFactory(
+            CurveProtocol.GAUGE_CONTROLLER,
+            CurveProtocol.CONVEX_TOKEN,
+            CurveLocker.STRATEGY,
+            CurveProtocol.CONVEX_BOOSTER,
             address(protocolController),
             address(rewardVaultImplementation),
             address(rewardReceiverImplementation),
