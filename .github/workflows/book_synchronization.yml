@@ -30,19 +30,19 @@ jobs:
       - name: Checkout Registry Repository
         uses: actions/checkout@v4
         with:
-            repository: stake-dao/offchain-registry
-            path: registry
-            ssh-key: ${{ secrets.REGISTRY_DEPLOY_KEY }}
+          repository: stake-dao/offchain-registry
+          path: registry
+          ssh-key: ${{ secrets.REGISTRY_DEPLOY_KEY }}
 
       - name: Generate the files and push them to the offchain-registry repository
         run: |
-            node monorepo/packages/address-book/scripts/generate-json-book.js
-            cp monorepo/packages/address-book/generated/address-book.json registry/data/address-book/address-book.json
-            node monorepo/packages/address-book/scripts/generate-md-book.js
-            cp monorepo/packages/address-book/generated/README.md registry/data/address-book/README.md
-            cd registry
-            git config --local user.email "github-actions[bot]@users.noreply.github.com"
-            git config --local user.name "github-actions[bot]"
-            git add data/address-book
-            git commit -m "Sync the address book from the monorepo repository"
-            git push origin main
+          node monorepo/packages/address-book/scripts/generate-json-book.js
+          cp monorepo/packages/address-book/generated/address-book.json registry/data/address-book/address-book.json
+          node monorepo/packages/address-book/scripts/generate-md-book.js
+          cp monorepo/packages/address-book/generated/README.md registry/data/address-book/README.md
+          cd registry
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          git add data/address-book
+          git commit -m "Sync the address book from the monorepo repository"
+          git push origin main

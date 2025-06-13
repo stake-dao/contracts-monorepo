@@ -40,6 +40,7 @@ The monorepo is organized into several key packages. Each package has its own RE
 
 - [Node.js](https://nodejs.org/) (v22+ recommended)
 - [pnpm](https://pnpm.io/) (v9+ recommended)
+- [Yarn](https://yarnpkg.com/) (v3.6.4+ recommended)
 - [Foundry](https://book.getfoundry.sh/) (for Solidity development)
 - [Vyper 0.3.10](https://docs.vyperlang.org/en/stable/installing-vyper.html) (required for compiling some gauge contracts in the lockers package)
 
