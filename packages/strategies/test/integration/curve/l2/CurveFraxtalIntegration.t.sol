@@ -1,13 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import "test/integration/curve/CurveIntegration.sol";
-import {IL2Booster} from "@interfaces/convex/IBooster.sol";
+import "test/integration/curve/CurveL2Integration.sol";
+import {IL2Booster} from "@interfaces/convex/IL2Booster.sol";
 import {CurveProtocol} from "address-book/src/CurveFraxtal.sol";
 import {ConvexProtocol} from "address-book/src/ConvexFraxtal.sol";
 import {CurveFactory as L2CurveFactory} from "src/integrations/curve/L2/CurveFactory.sol";
 
-contract CurveFraxtalIntegrationTest is CurveIntegration {
+contract CurveFraxtalIntegrationTest is CurveL2Integration {
     Config public _config = Config({
         base: BaseConfig({
             chain: "frax",
@@ -32,7 +32,7 @@ contract CurveFraxtalIntegrationTest is CurveIntegration {
     // All pool IDs from the old tests
     uint256[] public poolIds = [9];
 
-    constructor() CurveIntegration(_config) {}
+    constructor() CurveL2Integration(_config) {}
 
     function deployRewardVaults()
         internal

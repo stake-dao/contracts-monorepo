@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.28;
 
-import {IBooster} from "@interfaces/convex/IBooster.sol";
-import {IBaseRewardPool} from "@interfaces/convex/IBaseRewardPool.sol";
+import {IL2Booster} from "@interfaces/convex/IL2Booster.sol";
+import {IL2BaseRewardPool} from "@interfaces/convex/IL2BaseRewardPool.sol";
 import {IStashTokenWrapper} from "@interfaces/convex/IStashTokenWrapper.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {CurveProtocol} from "address-book/src/CurveEthereum.sol";
@@ -47,8 +47,8 @@ contract ConvexSidecar is Sidecar {
     //////////////////////////////////////////////////////
 
     /// @notice Staking Convex LP contract address.
-    function baseRewardPool() public view returns (IBaseRewardPool _baseRewardPool) {
-        return IBaseRewardPool(address(this).readAddress(40));
+    function baseRewardPool() public view returns (IL2BaseRewardPool _baseRewardPool) {
+        return IL2BaseRewardPool(address(this).readAddress(40));
     }
 
     /// @notice Identifier of the pool on Convex.
@@ -88,8 +88,8 @@ contract ConvexSidecar is Sidecar {
     /// Not all fallbacks will be minimal proxies, so we need to keep the same function signature.
     /// Only callable by the strategy.
     function _deposit(uint256 amount) internal override {
-        /// Deposit the LP token into Convex and stake it (true) to receive rewards.
-        IBooster(BOOSTER).deposit(pid(), amount, true);
+        /// Deposit the LP token into Convex.
+        IL2Booster(BOOSTER).deposit(pid(), amount);
     }
 
     /// @notice Withdraw LP token from Convex.
@@ -97,7 +97,7 @@ contract ConvexSidecar is Sidecar {
     /// @param receiver Address to receive the LP token.
     function _withdraw(uint256 amount, address receiver) internal override {
         /// Withdraw from Convex gauge without claiming rewards (false).
-        baseRewardPool().withdrawAndUnwrap(amount, false);
+        baseRewardPool().withdraw(amount, true);
 
         /// Send the LP token to the receiver.
         asset().safeTransfer(receiver, amount);
@@ -107,11 +107,27 @@ contract ConvexSidecar is Sidecar {
     /// @return rewardTokenAmount Amount of reward token claimed.
     function _claim() internal override returns (uint256 rewardTokenAmount) {
         /// Claim rewardToken.
-        baseRewardPool().getReward(address(this), false);
+        baseRewardPool().getReward(address(this));
 
-        rewardTokenAmount = REWARD_TOKEN.balanceOf(address(this));
-        /// Send the reward token to the accountant.
-        REWARD_TOKEN.safeTransfer(ACCOUNTANT, rewardTokenAmount);
+        address[] memory rewardTokens = getRewardTokens();
+
+        for (uint256 i = 0; i < rewardTokens.length;) {
+            address rewardToken = rewardTokens[i];
+            uint256 _balance = IERC20(rewardToken).balanceOf(address(this));
+
+            if (_balance > 0) {
+                if (rewardToken == address(REWARD_TOKEN)) {
+                    IERC20(rewardToken).safeTransfer(ACCOUNTANT, _balance);
+                } else {
+                    /// Send the whole balance to the strategy.
+                    IERC20(rewardToken).safeTransfer(rewardReceiver(), _balance);
+                }
+
+                unchecked {
+                    ++i;
+                }
+            }
+        }
     }
 
     /// @notice Get the balance of the LP token on Convex held by this contract.
@@ -123,25 +139,12 @@ contract ConvexSidecar is Sidecar {
     /// @return Array of all extra reward tokens.
     function getRewardTokens() public view override returns (address[] memory) {
         // Check if there is extra rewards
-        uint256 extraRewardsLength = baseRewardPool().extraRewardsLength();
+        uint256 extraRewardsLength = baseRewardPool().rewardLength();
 
         address[] memory tokens = new address[](extraRewardsLength);
 
-        address _token;
         for (uint256 i; i < extraRewardsLength;) {
-            /// Get the address of the virtual balance pool.
-            _token = baseRewardPool().extraRewards(i);
-
-            tokens[i] = IBaseRewardPool(_token).rewardToken();
-
-            /// For PIDs greater than 150, the virtual balance pool also has a wrapper.
-            /// So we need to get the token from the wrapper.
-            /// Try catch because pid 151 case is only on Mainnet, not on L2s.
-            /// More: https://docs.convexfinance.com/convexfinanceintegration/baserewardpool
-            try IStashTokenWrapper(tokens[i]).token() returns (address _t) {
-                tokens[i] = _t;
-            } catch {}
-
+            tokens[i] = baseRewardPool().rewards(i).rewardToken;
             unchecked {
                 ++i;
             }
@@ -152,34 +155,7 @@ contract ConvexSidecar is Sidecar {
 
     /// @notice Get the amount of reward token earned by the strategy.
     /// @return The amount of reward token earned by the strategy.
-    function getPendingRewards() public view override returns (uint256) {
+    function getPendingRewards() public override returns (uint256) {
         return baseRewardPool().earned(address(this)) + REWARD_TOKEN.balanceOf(address(this));
-    }
-
-    //////////////////////////////////////////////////////
-    // --- EXTRA CONVEX OPERATIONS
-    //////////////////////////////////////////////////////
-
-    function claimExtraRewards() external {
-        address[] memory extraRewardTokens = getRewardTokens();
-
-        /// It'll claim rewardToken but we'll leave it here for clarity until the claim() function is called by the strategy.
-        baseRewardPool().getReward(address(this), true);
-
-        /// Send the reward token to the reward receiver.
-        CVX.safeTransfer(rewardReceiver(), CVX.balanceOf(address(this)));
-
-        /// Handle the extra reward tokens.
-        for (uint256 i = 0; i < extraRewardTokens.length;) {
-            uint256 _balance = IERC20(extraRewardTokens[i]).balanceOf(address(this));
-            if (_balance > 0) {
-                /// Send the whole balance to the strategy.
-                IERC20(extraRewardTokens[i]).safeTransfer(rewardReceiver(), _balance);
-            }
-
-            unchecked {
-                ++i;
-            }
-        }
     }
 }
