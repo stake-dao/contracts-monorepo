@@ -9,7 +9,7 @@ interface IL2BaseRewardPool {
         uint256 rewardRemaining;
     }
 
-    function getReward(address _account) external returns (bool);
+    function getReward(address _account) external;
     function withdraw(uint256 amount, bool claim) external returns (bool);
     function balanceOf(address _account) external view returns (uint256);
     function earned(address _account) external returns (uint256);

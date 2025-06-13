@@ -1,6 +1,8 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.28;
 
+import {console} from "forge-std/src/console.sol";
+
 import {IL2Booster} from "@interfaces/convex/IL2Booster.sol";
 import {IL2BaseRewardPool} from "@interfaces/convex/IL2BaseRewardPool.sol";
 import {IStashTokenWrapper} from "@interfaces/convex/IStashTokenWrapper.sol";
@@ -122,10 +124,10 @@ contract ConvexSidecar is Sidecar {
                     /// Send the whole balance to the strategy.
                     IERC20(rewardToken).safeTransfer(rewardReceiver(), _balance);
                 }
+            }
 
-                unchecked {
-                    ++i;
-                }
+            unchecked {
+                ++i;
             }
         }
     }
@@ -141,10 +143,13 @@ contract ConvexSidecar is Sidecar {
         // Check if there is extra rewards
         uint256 extraRewardsLength = baseRewardPool().rewardLength();
 
+        console.log("extraRewardsLength", extraRewardsLength);
+
         address[] memory tokens = new address[](extraRewardsLength);
 
         for (uint256 i; i < extraRewardsLength;) {
-            tokens[i] = baseRewardPool().rewards(i).rewardToken;
+            IL2BaseRewardPool.RewardType memory reward = baseRewardPool().rewards(i);
+            tokens[i] = reward.rewardToken;
             unchecked {
                 ++i;
             }

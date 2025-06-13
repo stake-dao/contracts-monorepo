@@ -120,7 +120,6 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
         );
 
         _clearLockerBalances();
-        _allowMint();
     }
 
     function _clearLockerBalances() internal {
@@ -139,14 +138,5 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
             data = abi.encodeWithSignature("transfer(address,uint256)", burnAddress, balance);
             SafeLibrary.execOnLocker(payable(gateway), config.base.locker, lpToken, data, signatures);
         }
-    }
-
-    function _allowMint() internal {
-        /// Build signatures
-        bytes memory signatures = abi.encodePacked(uint256(uint160(admin)), uint8(0), uint256(1));
-        /// Build data
-        bytes memory data = abi.encodeWithSignature("toggle_approve_mint(address)", strategy);
-        /// Execute transaction
-        SafeLibrary.execOnLocker(payable(gateway), config.base.locker, config.base.minter, data, signatures);
     }
 }
