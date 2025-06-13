@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import {SidecarFactory} from "src/SidecarFactory.sol";
-import {IBooster} from "@interfaces/convex/IBooster.sol";
+import {IL2Booster} from "@interfaces/convex/IL2Booster.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
 
@@ -53,7 +53,7 @@ contract ConvexSidecarFactory is SidecarFactory {
         uint256 pid = abi.decode(args, (uint256));
 
         // Get the pool info from Convex
-        (,, address curveGauge,,, bool isShutdown) = IBooster(BOOSTER).poolInfo(pid);
+        (, address curveGauge,, bool isShutdown,) = IL2Booster(BOOSTER).poolInfo(pid);
 
         // Ensure the pool is not shutdown
         if (isShutdown) revert PoolShutdown();
@@ -70,7 +70,7 @@ contract ConvexSidecarFactory is SidecarFactory {
         uint256 pid = abi.decode(args, (uint256));
 
         // Get the LP token and base reward pool from Convex
-        (address lpToken,,, address baseRewardPool,,) = IBooster(BOOSTER).poolInfo(pid);
+        (address lpToken,, address baseRewardPool,,) = IL2Booster(BOOSTER).poolInfo(pid);
 
         address rewardReceiver = PROTOCOL_CONTROLLER.rewardReceiver(gauge);
         require(rewardReceiver != address(0), VaultNotDeployed());
