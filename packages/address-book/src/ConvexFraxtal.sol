@@ -6,5 +6,3 @@ library ConvexProtocol {
     address internal constant BOOSTER = 0xd3327cb05a8E0095A543D582b5B3Ce3e19270389;
     address internal constant VOTER_PROXY = 0x989AEb4d175e16225E39E87d0D97A3360524AD80;
 }
-
-

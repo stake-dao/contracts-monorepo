@@ -4,19 +4,19 @@ pragma solidity 0.8.28;
 import {SafeLibrary} from "test/utils/SafeLibrary.sol";
 import {IMinter} from "@interfaces/curve/IMinter.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {CurveFactory} from "src/integrations/curve/CurveFactory.sol";
+import {CurveFactory} from "src/integrations/curve/L2/CurveFactory.sol";
 import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
-import {CurveStrategy} from "src/integrations/curve/CurveStrategy.sol";
-import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
+import {CurveStrategy} from "src/integrations/curve/L2/CurveStrategy.sol";
+import {ConvexSidecar} from "src/integrations/curve/L2/ConvexSidecar.sol";
 import {OnlyBoostAllocator} from "src/integrations/curve/OnlyBoostAllocator.sol";
-import {ConvexSidecarFactory} from "src/integrations/curve/ConvexSidecarFactory.sol";
-import {IBooster} from "@interfaces/convex/IBooster.sol";
+import {ConvexSidecarFactory} from "src/integrations/curve/L2/ConvexSidecarFactory.sol";
+import {IL2Booster} from "@interfaces/convex/IL2Booster.sol";
 
 import "test/integration/BaseIntegrationTest.sol";
 
 /// @title CurveIntegration - L2 Curve Integration Test
 /// @notice Integration test for Curve protocol on L2 with Convex.
-abstract contract CurveIntegration is BaseIntegrationTest {
+abstract contract CurveL2Integration is BaseIntegrationTest {
     /// @notice Base configuration for the test.
     struct BaseConfig {
         string chain;
@@ -72,8 +72,7 @@ abstract contract CurveIntegration is BaseIntegrationTest {
             new CurveStrategy({
                 _registry: address(protocolController),
                 _locker: config.base.locker,
-                _gateway: address(gateway),
-                _minter: config.base.minter
+                _gateway: address(gateway)
             })
         );
 
@@ -110,15 +109,12 @@ abstract contract CurveIntegration is BaseIntegrationTest {
 
         factory = address(
             new CurveFactory(
-                config.base.gaugeController,
-                config.convex.cvx,
-                config.base.oldStrategy,
-                config.convex.booster,
                 address(protocolController),
                 address(rewardVaultImplementation),
                 address(rewardReceiverImplementation),
                 config.base.locker,
                 address(gateway),
+                config.convex.booster,
                 sidecarFactory
             )
         );

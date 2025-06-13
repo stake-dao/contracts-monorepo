@@ -2,36 +2,67 @@
 pragma solidity 0.8.28;
 
 import {Factory} from "src/Factory.sol";
+import {IL2Booster} from "@interfaces/convex/IL2Booster.sol";
 import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
 import {IL2LiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
+import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {IChildLiquidityGaugeFactory} from "@interfaces/curve/IChildLiquidityGaugeFactory.sol";
 
-contract CurveFactory is Factory {
+contract CurveFactory is Factory, Ownable2Step {
     /// @notice The bytes4 ID of the Curve protocol
     /// @dev Used to identify the Curve protocol in the registry
     bytes4 private constant CURVE_PROTOCOL_ID = bytes4(keccak256("CURVE"));
 
-    /// @notice Curve Gauge Controller.
-    IChildLiquidityGaugeFactory public immutable CHILD_LIQUIDITY_GAUGE_FACTORY;
+    /// @notice Convex Booster.
+    address public immutable BOOSTER;
+
+    /// @notice Convex Minimal Proxy Factory for Only Boost.
+    address public immutable CONVEX_SIDECAR_FACTORY;
+
+    /// @notice The child liquidity gauge factories.
+    IChildLiquidityGaugeFactory[] public childLiquidityGaugeFactories;
 
     /// @notice Error thrown when the set reward receiver fails.
     error SetRewardReceiverFailed();
+
+    /// @notice Error thrown when the convex sidecar factory is not set.
+    error ConvexSidecarFactoryNotSet();
 
     /// @notice Event emitted when a vault is deployed.
     event VaultDeployed(address gauge, address vault, address rewardReceiver, address sidecar);
 
     constructor(
-        address childLiquidityGaugeFactory,
         address protocolController,
         address vaultImplementation,
         address rewardReceiverImplementation,
         address locker,
-        address gateway
+        address gateway,
+        address booster,
+        address convexSidecarFactory
     )
         Factory(protocolController, vaultImplementation, rewardReceiverImplementation, CURVE_PROTOCOL_ID, locker, gateway)
+        Ownable(msg.sender)
     {
-        CHILD_LIQUIDITY_GAUGE_FACTORY = IChildLiquidityGaugeFactory(childLiquidityGaugeFactory);
+        BOOSTER = booster;
+        CONVEX_SIDECAR_FACTORY = convexSidecarFactory;
+    }
+
+    /// @notice Create a new vault.
+    /// @param _pid Pool id.
+    function create(uint256 _pid) external returns (address vault, address rewardReceiver, address sidecar) {
+        require(CONVEX_SIDECAR_FACTORY != address(0), ConvexSidecarFactoryNotSet());
+
+        (, address gauge,,,) = IL2Booster(BOOSTER).poolInfo(_pid);
+
+        /// 1. Create the vault.
+        (vault, rewardReceiver) = createVault(gauge);
+
+        /// 2. Attach the sidecar.
+        sidecar = ISidecarFactory(CONVEX_SIDECAR_FACTORY).create(gauge, abi.encode(_pid));
+
+        /// 3. Emit the event.
+        emit VaultDeployed(gauge, vault, rewardReceiver, sidecar);
     }
 
     function _isValidToken(address _token) internal view virtual override returns (bool) {
@@ -39,7 +70,9 @@ contract CurveFactory is Factory {
         if (!super._isValidToken(_token)) return false;
 
         /// If the token is available as an inflation receiver, it's not valid.
-        if (CHILD_LIQUIDITY_GAUGE_FACTORY.is_valid_gauge(_token)) return false;
+        for (uint256 i = 0; i < childLiquidityGaugeFactories.length; i++) {
+            if (childLiquidityGaugeFactories[i].is_valid_gauge(_token)) return false;
+        }
 
         return true;
     }
@@ -47,7 +80,9 @@ contract CurveFactory is Factory {
     function _isValidGauge(address _gauge) internal view virtual override returns (bool) {
         /// Check if the gauge is a valid candidate and available as an inflation receiver.
         /// This call always reverts if the gauge is not valid.
-        if (!CHILD_LIQUIDITY_GAUGE_FACTORY.is_valid_gauge(_gauge)) return false;
+        for (uint256 i = 0; i < childLiquidityGaugeFactories.length; i++) {
+            if (!childLiquidityGaugeFactories[i].is_valid_gauge(_gauge)) return false;
+        }
 
         /// Check if the gauge is not killed.
         if (IL2LiquidityGauge(_gauge).is_killed()) return false;
@@ -101,5 +136,14 @@ contract CurveFactory is Factory {
 
         /// Execute the transaction.
         require(_executeTransaction(_asset, data), ApproveFailed());
+    }
+
+    /// @notice Set the child liquidity gauge factories.
+    /// @param _childLiquidityGaugeFactories The child liquidity gauge factories.
+    function setChildLiquidityGaugeFactories(IChildLiquidityGaugeFactory[] memory _childLiquidityGaugeFactories)
+        external
+        onlyOwner
+    {
+        childLiquidityGaugeFactories = _childLiquidityGaugeFactories;
     }
 }
