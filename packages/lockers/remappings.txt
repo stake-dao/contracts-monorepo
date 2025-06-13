@@ -9,3 +9,5 @@ solidity-examples/=node_modules/@layerzerolabs/endpoint-v1-solidity-examples/con
 murky=node_modules/murky/
 @interfaces=node_modules/@stake-dao/interfaces/src/interfaces
 shared=node_modules/@stake-dao/shared/
+@pendle/v2-sy=node_modules/@pendle/v2-sy/contracts/core
+@aladdin=node_modules/aladdin-v3-contracts/contracts/
