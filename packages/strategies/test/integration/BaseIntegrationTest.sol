@@ -355,6 +355,8 @@ abstract contract BaseIntegrationTest is BaseSetup {
     /// @notice Simulates rewards for the given vault.
     function simulateRewards(RewardVault vault, uint256 amount) internal virtual {}
 
+    function getHarvestableRewards(RewardVault vault) internal virtual returns (uint256) {}
+
     //////////////////////////////////////////////////////
     /// --- TEST HELPERS
     //////////////////////////////////////////////////////
