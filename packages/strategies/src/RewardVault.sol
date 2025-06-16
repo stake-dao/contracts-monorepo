@@ -14,16 +14,13 @@ import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {ImmutableArgsParser} from "src/libraries/ImmutableArgsParser.sol";
 
-/// @title RewardVault - A Stake DAO vault for managing deposits and rewards
-/// @notice An ERC4626-compatible vault that handles:
-///         1. Asset deposits and withdrawals with 1:1 share ratio
-///         2. Multiple reward token distributions with customizable periods
-///         3. Integration with Stake DAO's protocol controller and strategy system
-/// @dev Key features:
-///      - ERC4626 compliance for standardized vault operations
-///      - Reward distribution with configurable periods and rates
-///      - Integration with protocol controller for strategy management
-///      - Automated reward checkpointing on transfers
+/// @title RewardVault - User-facing ERC4626 vault for yield aggregation
+/// @notice Entry point for users to deposit LP tokens and earn rewards
+/// @dev Core responsibilities:
+///      - Manages extra reward tokens from gauges (e.g., LDO, BAL)
+///      - Main protocol rewards (CRV) are handled by Accountant
+///      - Routes deposits/withdrawals through Strategy and Allocator
+///      - Maintains ERC4626 compliance for composability
 contract RewardVault is IRewardVault, IERC4626, ERC20 {
     using Math for uint256;
     using SafeCast for uint256;
@@ -82,83 +79,67 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @notice Default duration for reward distribution periods
     uint32 public constant DEFAULT_REWARDS_DURATION = 7 days;
 
-    /// @notice A unique identifier for the protocol/strategy type
-    /// @dev Used by the protocol controller to route operations to the correct strategy implementation
+    /// @notice Protocol identifier (e.g., bytes4(keccak256("CURVE")))
     bytes4 public immutable PROTOCOL_ID;
 
-    /// @notice Reference to the Accountant contract for managing balances and rewards
-    /// @dev Handles all balance-related operations and reward calculations
+    /// @notice Accountant tracks user balances and main protocol rewards
     IAccountant public immutable ACCOUNTANT;
 
-    /// @notice Reference to the ProtocolController for protocol-wide coordination
-    /// @dev Controls strategy routing, permissions, and protocol-wide settings
+    /// @notice Central registry for strategies, allocators, and permissions
     IProtocolController public immutable PROTOCOL_CONTROLLER;
 
-    /// @notice The harvest policy. Whether to harvest rewards on deposit/withdraw.
+    /// @notice Determines reward claiming behavior during user actions
+    /// @dev HARVEST = claim on every action, CHECKPOINT = accumulate until manual harvest
     IStrategy.HarvestPolicy public immutable POLICY;
 
     ///////////////////////////////////////////////////////////////
     // --- STORAGE STRUCTURES
     ///////////////////////////////////////////////////////////////
 
-    /// @notice Stores all data related to a specific reward token's distribution
-    /// @dev Optimized to fit in exactly 2 storage slots (2 * 256 bits)
+    /// @notice Tracks distribution parameters for each extra reward token
+    /// @dev Packed into 2 storage slots for gas efficiency
     struct RewardData {
         // Slot 1
-        /// @notice Address authorized to deposit and manage rewards for this token
-        address rewardsDistributor;
-        /// @notice Timestamp of the last reward state update
-        uint32 lastUpdateTime;
-        /// @notice Timestamp when the current reward period ends
-        uint32 periodFinish;
+        address rewardsDistributor;     // Who can add rewards for this token
+        uint32 lastUpdateTime;          // Last time rewardPerTokenStored was updated
+        uint32 periodFinish;            // When current reward period ends
         // Slot 2
-        /// @notice Rate at which rewards are distributed (tokens per second)
-        uint128 rewardRate;
-        /// @notice Accumulated rewards per share, scaled by 1e18
-        /// @dev Used as a checkpoint for calculating user rewards
-        uint128 rewardPerTokenStored;
+        uint128 rewardRate;             // Tokens distributed per second
+        uint128 rewardPerTokenStored;   // Cumulative rewards per vault token (scaled by 1e18)
     }
 
-    /// @notice Stores reward accounting data for a specific user and reward token
-    /// @dev Optimized to fit in exactly 1 storage slot (256 bits)
+    /// @notice Tracks user's reward state for each reward token
+    /// @dev Packed into 1 storage slot
     struct AccountData {
-        /// @notice Last recorded rewards per share for this account
-        /// @dev Used to calculate new rewards since last checkpoint
-        uint128 rewardPerTokenPaid;
-        /// @notice Amount of rewards that can be claimed by this account
-        /// @dev Includes both claimed and pending rewards
-        uint128 claimable;
+        uint128 rewardPerTokenPaid;     // User's last synced rewardPerTokenStored
+        uint128 claimable;              // Rewards ready to claim
     }
 
     ///////////////////////////////////////////////////////////////
     // --- STATE VARIABLES
     ///////////////////////////////////////////////////////////////
 
-    /// @notice Array of all reward token addresses supported by this vault
+    /// @notice List of extra reward tokens this vault distributes
     address[] internal rewardTokens;
 
-    /// @notice Mapping of reward token address to its distribution data
-    /// @dev Stores all parameters and state for each reward token's distribution
+    /// @notice Distribution parameters for each reward token
     mapping(address rewardToken => RewardData rewardData) public rewardData;
 
-    /// @notice Double mapping for storing user reward data per token
-    /// @dev Maps user address => reward token => reward accounting data
+    /// @notice User reward accounting per token
     mapping(address account => mapping(address rewardToken => AccountData accountData)) public accountData;
 
     ///////////////////////////////////////////////////////////////
     // --- MODIFIERS
     ///////////////////////////////////////////////////////////////
 
-    /// @notice Modifier to check if the caller is allowed by the protocol controller to do a specific action
-    /// @custom:reverts OnlyAllowed if the caller is not allowed.
+    /// @notice Restricts functions to addresses with specific permissions
     modifier onlyAllowed() {
         require(PROTOCOL_CONTROLLER.allowed(address(this), msg.sender, msg.sig), OnlyAllowed());
 
         _;
     }
 
-    /// @notice Modifier to check if the caller is a registrar
-    /// @custom:reverts OnlyRegistrar if the caller is not a registrar
+    /// @notice Restricts functions to authorized vault deployers
     modifier onlyRegistrar() {
         require(PROTOCOL_CONTROLLER.isRegistrar(msg.sender), OnlyRegistrar());
 
@@ -192,19 +173,17 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         return deposit(assets, receiver, address(0));
     }
 
-    /// @notice Deposits `assets` from `msg.sender` into the vault and mints shares to `receiver`.
-    /// @dev This function tracks the referrer address and handles deposit allocation through strategy and updates rewards.
-    /// @param assets The amount of assets to deposit.
-    /// @param receiver The address to receive the minted shares. If the receiver is the zero address, the shares will be minted to the caller.
-    /// @param referrer The address of the referrer. Can be the zero address.
-    /// @return _ The amount of assets deposited.
+    /// @notice Deposits LP tokens and mints vault shares
+    /// @dev Allocator determines where to send the LP tokens (locker, sidecar, etc.)
+    /// @param assets Amount of LP tokens to deposit
+    /// @param receiver Address to receive vault shares (defaults to msg.sender if zero)
+    /// @param referrer Optional referrer for tracking (emitted in Accountant event)
+    /// @return _ Amount deposited (always equals assets due to 1:1 ratio)
     function deposit(uint256 assets, address receiver, address referrer) public returns (uint256) {
         if (receiver == address(0)) receiver = msg.sender;
 
         _deposit(msg.sender, receiver, assets, assets, referrer);
 
-        // return the amount of assets deposited. Thanks to the 1:1 relationship between assets and shares
-        // the amount of assets deposited is the same as the amount of shares minted
         return assets;
     }
 
@@ -273,15 +252,13 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @param shares The amount of shares to mint.
     /// @param referrer The address of the referrer. Can be the zero address.
     function _deposit(address account, address receiver, uint256 assets, uint256 shares, address referrer) internal {
-        // Update the reward state for the receiver
+        // Sync extra rewards before balance changes
         _checkpoint(receiver, address(0));
 
-        // Get the address of the allocator contract from the protocol controller
-        // then fetch the recommended deposit allocation from the allocator
+        // Ask allocator where to send the LP tokens (e.g., 70% locker, 30% Convex)
         IAllocator.Allocation memory allocation = allocator().getDepositAllocation(asset(), gauge(), assets);
 
-        // Get the address of the asset from the clone's immutable args then for each target recommended by
-        // the allocator, transfer the amount from the account to the target
+        // Transfer LP tokens directly to allocation targets (bypasses vault)
         IERC20 _asset = IERC20(asset());
         for (uint256 i; i < allocation.targets.length; i++) {
             if (allocation.amounts[i] == 0) continue;
@@ -289,11 +266,10 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
             SafeERC20.safeTransferFrom(_asset, account, allocation.targets[i], allocation.amounts[i]);
         }
 
-        // Get the address of the strategy contract from the protocol controller
-        // then process the deposit of the allocation
+        // Strategy deposits into gauge/sidecar and may harvest if HARVEST policy
         IStrategy.PendingRewards memory pendingRewards = strategy().deposit(allocation, POLICY);
 
-        // Mint the shares to the receiver
+        // Update Accountant balances and mint shares
         _mint(receiver, shares, pendingRewards, POLICY, referrer);
 
         emit Deposit(msg.sender, receiver, assets, shares);
@@ -303,13 +279,13 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     // --- EXTERNAL/PUBLIC USER-FACING - WITHDRAW & REDEEM
     ///////////////////////////////////////////////////////////////
 
-    /// @notice Withdraws `assets` from the vault to `receiver` by burning shares from `owner`.
-    /// @dev Checks allowances and calls strategy withdrawal logic.
-    /// @param assets The amount of assets to withdraw.
-    /// @param receiver The address to receive the assets. If the receiver is the zero address, the assets will be sent to the owner.
-    /// @param owner The address to burn shares from.
-    /// @return _ The amount of assets withdrawn.
-    /// @custom:reverts NotApproved if the caller is not allowed to withdraw at least the amount of assets given.
+    /// @notice Burns vault shares and returns LP tokens to receiver
+    /// @dev Strategy handles withdrawing from gauge and sending tokens to receiver
+    /// @param assets Amount of LP tokens to withdraw
+    /// @param receiver Address to receive LP tokens (defaults to msg.sender if zero)
+    /// @param owner Address whose shares will be burned
+    /// @return _ Amount withdrawn (always equals assets due to 1:1 ratio)
+    /// @custom:reverts NotApproved if caller lacks sufficient allowance
     function withdraw(uint256 assets, address receiver, address owner) public returns (uint256) {
         if (receiver == address(0)) receiver = msg.sender;
 
@@ -427,13 +403,12 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         return amounts;
     }
 
-    /// @notice Registers a new reward token with the vault
-    /// @dev Only callable by protocol registrars
-    /// @param rewardToken Address of the reward token to add
-    /// @param distributor Address authorized to manage rewards for this token
+    /// @notice Registers a new extra reward token for this vault
+    /// @dev Called by factory during vault deployment to setup gauge rewards
+    /// @param rewardToken Address of the extra reward token (e.g., LDO, BAL)
+    /// @param distributor Address that receives and distributes these rewards
     /// @custom:reverts OnlyRegistrar if caller is not a registrar
     /// @custom:reverts ZeroAddress if distributor is zero address
-    /// @custom:reverts MaxRewardTokensExceeded if MAX_REWARD_TOKEN_COUNT would be exceeded
     /// @custom:reverts RewardAlreadyExists if token is already registered
     function addRewardToken(address rewardToken, address distributor) external onlyRegistrar {
         require(distributor != address(0), ZeroAddress());
@@ -447,11 +422,11 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         emit RewardTokenAdded(rewardToken, distributor);
     }
 
-    /// @notice Deposits new rewards for distribution
-    /// @dev Calculates new reward rate and updates distribution schedule
-    /// @param rewardToken Address of the reward token being deposited
-    /// @param amount Amount of rewards to distribute
-    /// @custom:reverts UnauthorizedRewardsDistributor if caller is not the authorized distributor
+    /// @notice Deposits rewards for linear distribution over 7 days
+    /// @dev Automatically handles rollover of undistributed rewards
+    /// @param rewardToken Token to distribute (must be pre-registered)
+    /// @param amount Amount to distribute over the next period
+    /// @custom:reverts UnauthorizedRewardsDistributor if caller isn't the distributor
     function depositRewards(address rewardToken, uint128 amount) external {
         // Ensure all reward states are current
         _checkpoint(address(0), address(0));
@@ -483,8 +458,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         emit RewardsDeposited(rewardToken, amount, newRewardRate);
     }
 
-    /// @notice Updates reward state for a single account
-    /// @dev Wrapper around _checkpoint for single account updates
+    /// @notice Manually updates reward accounting for an account
     /// @param account Account to update rewards for
     function checkpoint(address account) external {
         _checkpoint(account, address(0));
@@ -494,10 +468,10 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     // --- INTERNAL REWARD UPDATES & HELPERS ~
     ///////////////////////////////////////////////////////////////
 
-    /// @notice Updates reward state for specified accounts
-    /// @dev Core function for maintaining reward distribution state
-    /// @param _from First account to update (can be address(0) to skip)
-    /// @param _to Second account to update (can be address(0) to skip)
+    /// @notice Syncs extra reward accounting for affected accounts
+    /// @dev Called before any balance change to ensure accurate reward distribution
+    /// @param _from Account losing balance (address(0) to skip)
+    /// @param _to Account gaining balance (address(0) to skip)
     function _checkpoint(address _from, address _to) internal {
         uint256 len = rewardTokens.length;
 
