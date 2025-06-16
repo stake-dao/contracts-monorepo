@@ -16,7 +16,7 @@ install:
 	pnpm i
 
 test:
-	@forge test --match-contract "CurveFraxtalIntegrationTest" --show-progress
+	@forge test
 
 test-unit:
 	@forge test --match-path "test/unit/**/*.t.sol"
