@@ -12,13 +12,14 @@ import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
 /// @title Accountant - Reward Distribution and Accounting System
-/// @notice A comprehensive system for managing reward distribution and accounting across vaults and users.
-/// @dev Implements a gas-optimized packed storage system for efficient reward tracking and distribution.
-///      Key responsibilities:
-///      - Tracks user balances and rewards across vaults.
-///      - Manages protocol fees and dynamic harvest fees.
-///      - Handles reward distribution and claiming.
-///      - Maintains integral calculations for reward accrual.
+/// @notice Central accounting system that tracks user balances and distributes rewards across all vaults
+/// @dev Uses integral-based accounting for gas-efficient reward distribution:
+///      - Rewards are tracked as integrals (cumulative reward per token)
+///      - User rewards = (current integral - last user integral) * user balance
+///      Two reward distribution policies:
+///      - HARVEST: Claims rewards from gauge on every user action (higher gas, immediate rewards)
+///      - CHECKPOINT: Accumulates rewards in gauge until manual harvest, but users can claim 
+///                   from the shared reward pool if tokens are available (cross-vault liquidity)
 contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     using Math for uint256;
     using Math for uint128;
@@ -29,22 +30,24 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     // --- STORAGE STRUCTURES
     //////////////////////////////////////////////////////
 
-    /// @notice Vault data structure.
+    /// @notice Tracks reward and supply data for each vault
+    /// @dev Packed struct to minimize storage costs (3 storage slots)
     struct VaultData {
-        uint256 integral;
-        uint128 supply;
-        uint128 feeSubjectAmount;
-        uint128 totalAmount;
-        uint128 netCredited;
-        uint128 reservedHarvestFee;
-        uint128 reservedProtocolFee;
+        uint256 integral;           // Cumulative reward per token (scaled by SCALING_FACTOR)
+        uint128 supply;             // Total supply of vault tokens
+        uint128 feeSubjectAmount;   // Amount of rewards subject to fees
+        uint128 totalAmount;        // Total reward amount including fee-exempt rewards
+        uint128 netCredited;        // Net rewards already credited to users (after fees)
+        uint128 reservedHarvestFee; // Harvest fees reserved but not yet paid out
+        uint128 reservedProtocolFee;// Protocol fees reserved but not yet accrued
     }
 
-    /// @notice Account data structure for a specific Vault
+    /// @notice Tracks individual user positions within a vault
+    /// @dev Integral tracking enables O(1) reward calculations
     struct AccountData {
-        uint128 balance;
-        uint256 integral;
-        uint256 pendingRewards;
+        uint128 balance;            // User's token balance in the vault
+        uint256 integral;           // Last integral value when user's rewards were updated
+        uint256 pendingRewards;     // Rewards earned but not yet claimed
     }
 
     /// @notice Struct that defines the fees parameters.
@@ -57,30 +60,31 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     // --- CONSTANTS & IMMUTABLES
     //////////////////////////////////////////////////////
 
-    /// @notice RAY scaling factor used for fixed-point arithmetic precision.
+    /// @notice Precision multiplier for integral calculations (1e27 for maximum precision)
+    /// @dev Higher precision prevents rounding errors in reward distribution
     uint128 public constant SCALING_FACTOR = 1e27;
 
-    /// @notice The maximum fee percent (40%).
+    /// @notice Maximum combined fee percentage to protect users (40%)
     uint128 public constant MAX_FEE_PERCENT = 0.4e18;
 
-    /// @notice The minimum amount of rewards to be added to the vault.
+    /// @notice Minimum rewards threshold to update integrals in CHECKPOINT mode
+    /// @dev Prevents precision loss from tiny reward amounts
     uint128 public constant MIN_MEANINGFUL_REWARDS = 1e18;
 
-    /// @notice The registry of addresses.
+    /// @notice Central registry for protocol components
     IProtocolController public immutable PROTOCOL_CONTROLLER;
 
-    /// @notice The reward token.
+    /// @notice The reward token distributed by this accountant (e.g., CRV)
     address public immutable REWARD_TOKEN;
 
-    /// @notice The protocol ID.
+    /// @notice Protocol identifier this accountant manages
     bytes4 public immutable PROTOCOL_ID;
 
-    /// @notice The default protocol fee.
-    /// @dev The validity of this value is not checked. It must always be valid
+    /// @notice Default protocol fee charged on rewards (15%)
     uint128 internal constant DEFAULT_PROTOCOL_FEE = 0.15e18;
 
-    /// @notice The default harvest fee.
-    /// @dev The validity of this value is not checked. It must always be valid
+    /// @notice Default harvest fee paid to harvesters (0.1%)
+    /// @dev Compensates for gas costs when calling harvest() function
     uint128 internal constant DEFAULT_HARVEST_FEE = 0.001e18;
 
     //////////////////////////////////////////////////////
@@ -202,6 +206,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     // --- MODIFIERS
     //////////////////////////////////////////////////////
 
+    /// @notice Restricts access to addresses with specific function permissions
+    /// @dev Used for harvest() and other privileged operations
     modifier onlyAllowed() {
         require(PROTOCOL_CONTROLLER.allowed(address(this), msg.sender, msg.sig), OnlyAllowed());
         _;
@@ -239,38 +245,19 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     // --- CHECKPOINT OPERATIONS
     //////////////////////////////////////////////////////
 
-    /// @notice Checkpoints the state of the vault on every account action.
-    /// @dev Handles four types of operations with complex reward and balance management:
-    ///      1. Minting (from == address(0)):
-    ///         - Creates new tokens by increasing supply
-    ///         - Updates receiver's rewards based on current integral if receiver exists
+    /// @notice Updates user balances and distributes rewards on every vault action
+    /// @dev Core accounting function called by vaults during transfers, mints, and burns
+    ///      
+    ///      Token Operations:
+    ///      - Mint (from = 0): Increases supply, updates receiver's reward integral
+    ///      - Burn (to = 0): Decreases supply, updates sender's reward integral  
+    ///      - Transfer: Updates both sender and receiver integrals
     ///
-    ///      2. Burning (to == address(0)):
-    ///         - Destroys tokens by decreasing supply
-    ///         - Updates sender's rewards based on current integral
-    ///
-    ///      3. Transfers:
-    ///         - Supply remains unchanged
-    ///         - Updates sender's rewards based on current integral and decreases balance
-    ///         - Updates receiver's rewards based on current integral and increases balance
-    ///
-    ///      4. Reward Distribution: Processes pending rewards if they exist and supply > 0
-    ///         Two possible policies:
-    ///         a) HARVEST policy [1]:
-    ///            - Charges only protocol fee on harvested rewards
-    ///            - Updates integral immediately
-    ///            - Protocol fees are accrued immediately
-    ///
-    ///         b) CHECKPOINT policy [0] (if newRewards >= MIN_MEANINGFUL_REWARDS):
-    ///            - Charges both protocol and harvest fees
-    ///            - Updates integral
-    ///            - Fees are reserved rather than immediately accrued
-    ///            - Updates vault's total amounts and credited rewards
-    ///
-    ///     The function follows this execution flow:
-    ///         1. First processes any pending rewards if they exist
-    ///         2. Then handles the token operation (mint/burn/transfer)
-    ///         3. Finally updates the vault's state
+    ///      Reward Distribution Policies:
+    ///      - HARVEST: Claims rewards on every action, only protocol fee charged
+    ///      - CHECKPOINT: Accumulates rewards until harvest(), both fees charged
+    ///        In CHECKPOINT, fees are reserved (not immediately accrued) to ensure
+    ///        the harvester receives proper compensation when they eventually harvest
     /// @param gauge The underlying gauge address of the vault.
     /// @param from The source address (address(0) for minting).
     /// @param to The destination address (address(0) for burning).
@@ -472,23 +459,22 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     // --- HARVEST OPERATIONS
     //////////////////////////////////////////////////////
 
-    /// @notice Harvests rewards from multiple gauges.
-    /// @param _gauges Array of gauges to harvest from.
-    /// @param _harvestData Array of harvest data for each gauge.
-    /// @param _receiver Address that will receive the harvester fee.
-    /// @custom:throws NoStrategy If the harvester is not set.
+    /// @notice Harvests rewards from multiple gauges and distributes them to vaults
+    /// @dev Called by harvesters to claim rewards from external protocols and update integrals
+    /// @param _gauges Array of gauges to harvest from
+    /// @param _harvestData Protocol-specific data for harvesting each gauge
+    /// @param _receiver Address that will receive the harvest fee as compensation
+    /// @custom:throws InvalidHarvestDataLength If array lengths don't match
     function harvest(address[] calldata _gauges, bytes[] calldata _harvestData, address _receiver) external {
         require(_gauges.length == _harvestData.length, InvalidHarvestDataLength());
         _harvest(_gauges, _harvestData, _receiver);
     }
 
-    /// @dev Internal implementation of batch harvesting.
-    /// @param _gauges Array of gauges to harvest from.
-    /// @param harvestData Harvest data for each gauge.
-    /// @param receiver Address that will receive the harvester fee.
-    /// @dev This implementation optimizes gas by:
-    ///      1. Batching all harvests before calling flush() only once at the end
-    ///      2. Collecting all rewards in a single transfer from the Strategy
+    /// @dev Batch harvests rewards and updates vault integrals
+    /// @dev Gas optimizations:
+    ///      1. Single strategy.flush() call at the end for all rewards
+    ///      2. One token transfer for all harvested rewards
+    ///      3. Defers rewards using transient storage during harvest
     function _harvest(address[] memory _gauges, bytes[] memory harvestData, address receiver) internal nonReentrant {
         // Cache strategy to avoid multiple SLOADs
         address strategy = PROTOCOL_CONTROLLER.strategy(PROTOCOL_ID);
@@ -616,19 +602,21 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     // --- CLAIM OPERATIONS
     //////////////////////////////////////////////////////
 
-    /// @notice Claims multiple vault rewards for yourself.
-    /// @param _gauges Array of gauges to claim rewards from.
-    /// @param harvestData Optional harvest data for each gauge. Empty bytes for gauges that don't need harvesting.
-    /// @custom:throws NoPendingRewards If there are no rewards to claim.
+    /// @notice Claims rewards from multiple vaults for the caller
+    /// @dev In CHECKPOINT mode, can claim if rewards are available in the contract
+    /// @param _gauges Array of gauges to claim rewards from
+    /// @param harvestData Optional: triggers harvest before claim if provided
+    /// @custom:throws NoPendingRewards If there are no rewards to claim
     function claim(address[] calldata _gauges, bytes[] calldata harvestData) external {
         claim(_gauges, harvestData, msg.sender);
     }
 
-    /// @notice Claims multiple vault rewards for yourself and sends them to a specific address.
-    /// @param _gauges Array of gauges to claim rewards from.
-    /// @param harvestData Optional harvest data for each gauge. Empty bytes for gauges that don't need harvesting.
-    /// @param receiver Address that will receive the claimed rewards.
-    /// @custom:throws NoPendingRewards If there are no rewards to claim.
+    /// @notice Claims rewards and sends to a specific receiver
+    /// @dev Optionally harvests first if harvestData is provided
+    /// @param _gauges Array of gauges to claim rewards from
+    /// @param harvestData Optional harvest data (empty array to skip harvest)
+    /// @param receiver Address that will receive the claimed rewards
+    /// @custom:throws NoPendingRewards If there are no rewards to claim
     function claim(address[] calldata _gauges, bytes[] calldata harvestData, address receiver) public {
         require(harvestData.length == 0 || harvestData.length == _gauges.length, InvalidHarvestDataLength());
 
