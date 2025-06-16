@@ -13,7 +13,8 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     // --- STORAGE STRUCTURES
     //////////////////////////////////////////////////////
 
-    /// @notice Struct to store protocol components
+    /// @notice Stores the core components for each protocol integration
+    /// @dev Each protocol (Curve, Balancer, etc.) has its own set of components
     struct ProtocolComponents {
         address strategy;
         address allocator;
@@ -22,7 +23,8 @@ contract ProtocolController is IProtocolController, Ownable2Step {
         bool isShutdown;
     }
 
-    /// @notice Struct to store gauge-related information
+    /// @notice Links a gauge to its associated vault and protocol
+    /// @dev A gauge is the external yield source (e.g., Curve gauge) that the vault interacts with
     struct Gauge {
         address vault;
         address asset;
@@ -35,22 +37,29 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     //////////////////////////////////////////////////////
     // --- STATE VARIABLES
     //////////////////////////////////////////////////////
-    /// @notice Mapping of gauge address to Gauge struct
+
+    /// @notice Maps each gauge address to its configuration
+    /// @dev This is the primary registry that links external gauges to our vault system
     mapping(address => Gauge) public gauge;
 
-    /// @notice Mapping of registrar addresses to their permission status (1 = allowed, 0 = not allowed)
+    /// @notice Authorized addresses that can register new vaults and set allocation targets
+    /// @dev Typically factory contracts that need to create new vaults programmatically
     mapping(address => bool) public registrar;
 
-    /// @notice Mapping of addresses that can set permissions
+    /// @notice Addresses authorized to manage granular function-level permissions
+    /// @dev Enables delegation of permission management without giving full ownership
     mapping(address => bool) public permissionSetters;
 
-    /// @notice Mapping of protocol ID to its components
+    /// @notice Core components for each protocol, indexed by protocol ID
+    /// @dev Protocol ID is typically keccak256("PROTOCOL_NAME") truncated to bytes4
     mapping(bytes4 => ProtocolComponents) internal _protocolComponents;
 
-    /// @notice Mapping of gauge address to its valid allocation targets
+    /// @notice Whitelisted allocation targets for each gauge
+    /// @dev Strategies can only allocate funds to these pre-approved destinations (e.g., locker, sidecars)
     mapping(address => mapping(address => bool)) internal _isValidAllocationTargets;
 
-    /// @notice Mapping of contract to caller to function selector to permission
+    /// @notice Granular permission system: contract -> caller -> function -> allowed
+    /// @dev Enables fine-grained access control for specific function calls
     mapping(address => mapping(address => mapping(bytes4 => bool))) internal _permissions;
 
     //////////////////////////////////////////////////////
@@ -135,21 +144,23 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     // --- MODIFIERS
     //////////////////////////////////////////////////////
 
-    /// @notice Modifier to restrict function access to registrars or owner
-    /// @custom:reverts OnlyRegistrar if the caller is not a registrar
+    /// @notice Ensures only authorized registrars or owner can register vaults
+    /// @dev Used by factory contracts during vault deployment
     modifier onlyRegistrar() {
         require(registrar[msg.sender] || msg.sender == owner(), OnlyRegistrar());
         _;
     }
 
+    /// @notice Ensures only the protocol's strategy can call gauge-specific functions
+    /// @dev Prevents unauthorized contracts from marking gauges as withdrawn
     modifier onlyStrategy(address _gauge) {
         address _strategy = _protocolComponents[gauge[_gauge].protocolId].strategy;
         require(msg.sender == _strategy, OnlyStrategy());
         _;
     }
 
-    /// @notice Modifier to restrict function access to permission setters or owner
-    /// @custom:reverts NotPermissionSetter if the caller is not a permission setter
+    /// @notice Ensures only authorized permission setters can modify permissions
+    /// @dev Allows delegation of permission management without full ownership
     modifier onlyPermissionSetter() {
         require(permissionSetters[msg.sender] || msg.sender == owner(), NotPermissionSetter());
         _;
@@ -228,9 +239,11 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     }
 
     /// @notice Sets a protocol accountant
+    /// @dev Accountant is immutable once set to prevent reward accounting disruption
     /// @param protocolId The protocol identifier
     /// @param _accountant The accountant address
     /// @custom:reverts ZeroAddress if the accountant address is zero
+    /// @custom:reverts AccountantAlreadySet if accountant was previously set
     function setAccountant(bytes4 protocolId, address _accountant) external onlyOwner {
         require(_accountant != address(0), ZeroAddress());
         require(_protocolComponents[protocolId].accountant == address(0), AccountantAlreadySet());
@@ -254,13 +267,13 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     //////////////////////////////////////////////////////
 
     /// @notice Registers a vault for a gauge
-    /// @dev Can only be called by the owner or by the authorized registrar contracts
-    /// @param _gauge The gauge address
-    /// @param _vault The vault address
-    /// @param _asset The asset address
-    /// @param _rewardReceiver The reward receiver address
+    /// @dev Creates the association between an external gauge and our vault system
+    /// @param _gauge The gauge address (external protocol's staking contract)
+    /// @param _vault The vault address (our ERC4626 vault)
+    /// @param _asset The asset address (LP token that users deposit)
+    /// @param _rewardReceiver The reward receiver address (receives extra rewards from gauge)
     /// @param _protocolId The protocol identifier for the gauge
-    /// @custom:reverts ZeroAddress if the gauge, vault, asset, or reward receiver address is zero
+    /// @custom:reverts ZeroAddress if any address parameter is zero
     function registerVault(address _gauge, address _vault, address _asset, address _rewardReceiver, bytes4 _protocolId)
         external
         onlyRegistrar
@@ -270,7 +283,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
             ZeroAddress()
         );
 
-        // Optimized storage writing
+        // Single SSTORE operation for gas efficiency
         Gauge storage g = gauge[_gauge];
         g.vault = _vault;
         g.asset = _asset;
@@ -280,29 +293,32 @@ contract ProtocolController is IProtocolController, Ownable2Step {
         emit VaultRegistered(_gauge, _vault, _asset, _rewardReceiver, _protocolId);
     }
 
-    /// @notice Sets a valid allocation target for a gauge
+    /// @notice Whitelists an allocation target for a gauge
+    /// @dev Strategies can only send funds to whitelisted targets for security
     /// @param _gauge The gauge address
-    /// @param _target The target address
-    /// @custom:reverts OnlyRegistrar if the caller is not a registrar
+    /// @param _target The target address (e.g., locker or sidecar contract)
+    /// @custom:reverts InvalidAllocationTarget if target is already whitelisted
     function setValidAllocationTarget(address _gauge, address _target) external onlyRegistrar {
         require(!_isValidAllocationTargets[_gauge][_target], InvalidAllocationTarget());
 
         _isValidAllocationTargets[_gauge][_target] = true;
     }
 
-    /// @notice Removes a valid allocation target for a gauge
+    /// @notice Removes an allocation target from the whitelist
+    /// @dev Used when a target is no longer needed or trusted
     /// @param _gauge The gauge address
-    /// @param _target The target address
-    /// @custom:reverts OnlyRegistrar if the caller is not a registrar
+    /// @param _target The target address to remove
+    /// @custom:reverts InvalidAllocationTarget if target is not currently whitelisted
     function removeValidAllocationTarget(address _gauge, address _target) external onlyRegistrar {
         require(_isValidAllocationTargets[_gauge][_target], InvalidAllocationTarget());
 
         _isValidAllocationTargets[_gauge][_target] = false;
     }
 
-    /// @notice Shuts down a gauge
+    /// @notice Emergency shutdown for a specific gauge
+    /// @dev Prevents new deposits while allowing withdrawals for user fund recovery
     /// @param _gauge The gauge address to shut down
-    /// @custom:reverts OnlyOwner if the caller is not the owner
+    /// @custom:reverts GaugeAlreadyShutdown if gauge was previously shutdown
     function shutdown(address _gauge) external onlyOwner {
         Gauge storage g = gauge[_gauge];
         require(!g.isShutdown, GaugeAlreadyShutdown());
@@ -312,17 +328,19 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     }
 
     /// @notice Marks a gauge as fully withdrawn
+    /// @dev Called by strategy when all funds have been recovered from the gauge
     /// @param _gauge The gauge address
-    /// @custom:reverts OnlyStrategy if the caller is not the strategy
+    /// @custom:reverts GaugeAlreadyFullyWithdrawn if already marked
     function markGaugeAsFullyWithdrawn(address _gauge) external onlyStrategy(_gauge) {
         require(!gauge[_gauge].isFullyWithdrawn, GaugeAlreadyFullyWithdrawn());
 
         gauge[_gauge].isFullyWithdrawn = true;
     }
 
-    /// @notice Shuts down a protocol
+    /// @notice Emergency shutdown for an entire protocol
+    /// @dev Affects all gauges using this protocol - more severe than gauge shutdown
     /// @param protocolId The protocol identifier
-    /// @custom:reverts OnlyOwner if the caller is not the owner
+    /// @custom:reverts ProtocolAlreadyShutdown if protocol was previously shutdown
     function shutdownProtocol(bytes4 protocolId) external onlyOwner {
         require(!_protocolComponents[protocolId].isShutdown, ProtocolAlreadyShutdown());
 
@@ -407,6 +425,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     }
 
     /// @notice Checks if a gauge is shutdown
+    /// @dev Returns true if either the gauge itself or its protocol is shutdown
     /// @param _gauge The gauge address
     /// @return _ Whether the gauge is shutdown
     function isShutdown(address _gauge) external view returns (bool) {
