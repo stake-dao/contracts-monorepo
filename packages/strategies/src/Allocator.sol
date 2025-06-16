@@ -5,41 +5,37 @@ import {IAllocator} from "src/interfaces/IAllocator.sol";
 
 /// @title Allocator
 /// @author Stake DAO
-/// @notice Handles optimal distribution of deposited funds across multiple yield strategies
-/// @dev This is a base contract that implements the IAllocator interface. It provides a simple
-/// allocation strategy that directs all funds to a single gateway. More complex allocation
-/// strategies can be implemented by inheriting from this contract and overriding the allocation
-/// functions.
+/// @notice Determines where to deploy capital for optimal yield
+/// @dev Base implementation sends everything to locker. Protocol-specific allocators
+///      (e.g., OnlyBoostAllocator) override to split between locker and sidecars
+///      based on yield optimization strategies
 contract Allocator is IAllocator {
-    /// @notice The address of the locker contract
-    /// @dev This is the contract that holds tokens for staking.
+    /// @notice The locker that holds and stakes protocol tokens (e.g., veCRV holder)
     address public immutable LOCKER;
 
-    /// @notice The address of the gateway contract
-    /// @dev This is the contract that handles the actual deposit/withdrawal operations.
+    /// @notice Safe multisig that executes transactions (same as locker on L2s)
     address public immutable GATEWAY;
 
     /// @notice Error thrown when the gateway is zero address
     error GatewayZeroAddress();
 
-    /// @notice Initializes the Allocator contract
-    /// @param _locker The address of the locker contract (can be address(0) for L2s)
-    /// @param _gateway The address of the gateway contract
-    /// @dev If _locker is address(0), LOCKER will be set to the same address as GATEWAY
+    /// @notice Initializes the allocator with locker and gateway addresses
+    /// @param _locker Protocol's token holder (pass 0 for L2s where gateway holds tokens)
+    /// @param _gateway Safe multisig that executes transactions
     constructor(address _locker, address _gateway) {
         require(_gateway != address(0), GatewayZeroAddress());
 
         GATEWAY = _gateway;
-        /// In some cases (L2s), the locker is the same as the gateway.
+        // L2 optimization: gateway acts as both executor and token holder
         LOCKER = _locker == address(0) ? _gateway : _locker;
     }
 
-    /// @notice Determines how funds should be allocated during a deposit
-    /// @param asset The address of the asset contract
-    /// @param gauge The address of the gauge contract
-    /// @param amount The amount of tokens to deposit
-    /// @return Allocation struct containing the allocation details
-    /// @dev In this base implementation, all funds are directed to the LOCKER
+    /// @notice Calculates where to send deposited LP tokens
+    /// @dev Base: 100% to locker. Override for complex strategies (e.g., split with Convex)
+    /// @param asset LP token being deposited
+    /// @param gauge Target gauge for staking
+    /// @param amount Total amount to allocate
+    /// @return Allocation with single target (locker) and full amount
     function getDepositAllocation(address asset, address gauge, uint256 amount)
         public
         view
@@ -55,11 +51,12 @@ contract Allocator is IAllocator {
         return Allocation({asset: asset, gauge: gauge, targets: targets, amounts: amounts});
     }
 
-    /// @notice Determines how funds should be allocated during a withdrawal
-    /// @param gauge The address of the gauge contract
-    /// @param amount The amount of tokens to withdraw
-    /// @return Allocation struct containing the allocation details
-    /// @dev In this base implementation, all funds are withdrawn from the LOCKER
+    /// @notice Calculates where to pull LP tokens from during withdrawal
+    /// @dev Base: 100% from locker. Override to handle multiple sources
+    /// @param asset LP token being withdrawn
+    /// @param gauge Source gauge
+    /// @param amount Total amount to withdraw
+    /// @return Allocation with single source (locker) and full amount
     function getWithdrawalAllocation(address asset, address gauge, uint256 amount)
         public
         view
@@ -75,11 +72,12 @@ contract Allocator is IAllocator {
         return Allocation({asset: asset, gauge: gauge, targets: targets, amounts: amounts});
     }
 
-    /// @notice Determines how funds should be allocated during a rebalance
-    /// @param gauge The address of the gauge contract
-    /// @param amount The amount of tokens to rebalance
-    /// @return Allocation struct containing the allocation details
-    /// @dev In this base implementation, rebalancing uses the same allocation as deposits
+    /// @notice Calculates optimal distribution when rebalancing positions
+    /// @dev Base: same as deposit. Override to implement rebalancing logic
+    /// @param asset LP token to rebalance
+    /// @param gauge Target gauge
+    /// @param amount Total amount to redistribute
+    /// @return Allocation with rebalancing targets and amounts
     function getRebalancedAllocation(address asset, address gauge, uint256 amount)
         public
         view
@@ -89,10 +87,10 @@ contract Allocator is IAllocator {
         return getDepositAllocation(asset, gauge, amount);
     }
 
-    /// @notice Returns the list of target addresses for a specific gauge
-    /// gauge The address of the gauge contract (unused in this implementation)
-    /// @return An array containing the target addresses
-    /// @dev In this base implementation, the only target is the LOCKER
+    /// @notice Lists all possible allocation targets for a gauge
+    /// @dev Base: only locker. Override to include sidecars
+    /// @param gauge The gauge to get targets for (unused in base)
+    /// @return targets Array of addresses that can receive allocations
     function getAllocationTargets(address /*gauge*/ ) public view virtual returns (address[] memory) {
         address[] memory targets = new address[](1);
         targets[0] = LOCKER;
