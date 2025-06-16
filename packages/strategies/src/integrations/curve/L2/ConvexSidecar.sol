@@ -1,8 +1,6 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.28;
 
-import {console} from "forge-std/src/console.sol";
-
 import {IL2Booster} from "@interfaces/convex/IL2Booster.sol";
 import {IL2BaseRewardPool} from "@interfaces/convex/IL2BaseRewardPool.sol";
 import {IStashTokenWrapper} from "@interfaces/convex/IStashTokenWrapper.sol";
@@ -142,8 +140,6 @@ contract ConvexSidecar is Sidecar {
     function getRewardTokens() public view override returns (address[] memory) {
         // Check if there is extra rewards
         uint256 extraRewardsLength = baseRewardPool().rewardLength();
-
-        console.log("extraRewardsLength", extraRewardsLength);
 
         address[] memory tokens = new address[](extraRewardsLength);
 
