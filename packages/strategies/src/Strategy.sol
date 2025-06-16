@@ -11,20 +11,19 @@ import {ProtocolContext} from "src/ProtocolContext.sol";
 import {IStrategy, IAllocator} from "src/interfaces/IStrategy.sol";
 import {IBalanceProvider} from "src/interfaces/IBalanceProvider.sol";
 
-/// @title Strategy - Abstract Base Strategy Contract
-/// @notice A base contract for implementing protocol-specific strategies
-/// @dev Provides core functionality for depositing, withdrawing, and managing assets across different protocols
-///      Key responsibilities:
-///      - Handles deposits and withdrawals through protocol-specific implementations
-///      - Manages gauge allocations across different targets
-///      - Tracks and reports pending rewards
-///      - Provides emergency shutdown functionality
+/// @title Strategy - Protocol-agnostic yield strategy orchestrator
+/// @notice Manages deposits/withdrawals across multiple yield sources (locker + sidecars)
+/// @dev Abstract base that protocol-specific strategies inherit from. Key features:
+///      - Routes funds between locker and sidecars based on allocator decisions
+///      - Handles reward harvesting with transient storage for gas optimization
+///      - Emergency shutdown transfers all funds back to vault
+///      - Rebalancing redistributes funds when allocations change
 abstract contract Strategy is IStrategy, ProtocolContext {
     using SafeCast for uint256;
     using SafeERC20 for IERC20;
     using TransientSlot for *;
 
-    /// @dev Slot for the flush amount in transient storage
+    /// @dev Transient storage slot for batching reward transfers during harvest
     bytes32 internal constant FLUSH_AMOUNT_SLOT = keccak256("strategy.flushAmount");
 
     //////////////////////////////////////////////////////
@@ -74,24 +73,20 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     // --- MODIFIERS
     //////////////////////////////////////////////////////
 
-    /// @notice Ensures the caller is the vault registered for the gauge
-    /// @param gauge The gauge to check vault authorization for
-    /// @custom:throws OnlyVault If the caller is not the registered vault for the gauge
+    /// @notice Restricts functions to the vault associated with the gauge
     modifier onlyVault(address gauge) {
         require(PROTOCOL_CONTROLLER.vaults(gauge) == msg.sender, OnlyVault());
         _;
     }
 
-    /// @notice Ensures the caller is the accountant for the strategy
-    /// @custom:throws OnlyAccountant If the caller is not the accountant for the strategy
+    /// @notice Restricts harvest flush operations to the accountant
     modifier onlyAccountant() {
         require(ACCOUNTANT == msg.sender, OnlyAccountant());
         _;
     }
 
-    /// @notice Ensures the caller is allowed to perform the action or the gauge is shutdown
-    /// @param gauge The gauge to check permissions for
-    /// @custom:throws OnlyAllowed If the caller is not allowed and the gauge is not shutdown
+    /// @notice Allows authorized addresses OR anyone if gauge is shutdown
+    /// @dev Enables permissionless emergency withdrawals during shutdowns
     modifier onlyAllowed(address gauge) {
         require(
             PROTOCOL_CONTROLLER.allowed(address(this), msg.sender, msg.sig) || PROTOCOL_CONTROLLER.isShutdown(gauge),
@@ -117,22 +112,21 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     // --- EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////
 
-    /// @notice Deposits assets according to the provided allocation
-    /// @dev Iterates through allocation targets and deposits to each one
-    /// @param allocation The allocation data specifying where and how much to deposit
-    /// @param policy The harvest policy to use
-    /// @return pendingRewards Any pending rewards generated during the deposit
-    /// @custom:throws OnlyVault If the caller is not the registered vault for the gauge
-    /// @custom:throws GaugeShutdown If the pool is shutdown
+    /// @notice Deposits LP tokens into gauge/sidecars according to allocator's distribution
+    /// @dev Called by vault after transferring LP tokens to targets
+    /// @param allocation Contains targets and amounts for deposit
+    /// @param policy Whether to harvest rewards during deposit
+    /// @return pendingRewards Rewards claimed if HARVEST policy
+    /// @custom:throws GaugeShutdown Prevents deposits to shutdown gauges
     function deposit(IAllocator.Allocation calldata allocation, HarvestPolicy policy)
         external
         override
         onlyVault(allocation.gauge)
         returns (PendingRewards memory pendingRewards)
     {
-        /// If the pool is shutdown, prefer to call shutdown instead.
         require(!PROTOCOL_CONTROLLER.isShutdown(allocation.gauge), GaugeShutdown());
 
+        // Execute deposits on each target (locker or sidecar)
         for (uint256 i; i < allocation.targets.length; i++) {
             if (allocation.amounts[i] > 0) {
                 if (allocation.targets[i] == LOCKER) {
@@ -146,14 +140,12 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         pendingRewards = _harvestOrCheckpoint(allocation.gauge, policy);
     }
 
-    /// @notice Withdraws assets according to the provided allocation
-    /// @dev Iterates through allocation targets and withdraws from each one
-    /// @param allocation The allocation data specifying where and how much to withdraw
-    /// @param policy The harvest policy to use
-    /// @param receiver The address to receive the withdrawn assets
-    /// @return pendingRewards Any pending rewards generated during the withdrawal
-    /// @custom:throws OnlyVault If the caller is not the registered vault for the gauge
-    /// @custom:throws GaugeShutdown If the pool is shutdown
+    /// @notice Withdraws LP tokens from gauge/sidecars and sends to receiver
+    /// @dev Skips withdrawal if gauge is shutdown (requires shutdown() instead)
+    /// @param allocation Contains targets and amounts for withdrawal
+    /// @param policy Whether to harvest rewards during withdrawal
+    /// @param receiver Address to receive the LP tokens
+    /// @return pendingRewards Rewards claimed if HARVEST policy
     function withdraw(IAllocator.Allocation calldata allocation, IStrategy.HarvestPolicy policy, address receiver)
         external
         override
@@ -162,10 +154,10 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     {
         address gauge = allocation.gauge;
 
-        /// If the pool is shutdown, return the pending rewards.
-        /// Use the shutdown function to withdraw the funds.
+        // For shutdown gauges, only sync rewards without withdrawing
         if (PROTOCOL_CONTROLLER.isShutdown(gauge)) return _harvestOrCheckpoint(gauge, policy);
 
+        // Execute withdrawals from each target
         for (uint256 i; i < allocation.targets.length; i++) {
             if (allocation.amounts[i] > 0) {
                 if (allocation.targets[i] == LOCKER) {
@@ -179,11 +171,11 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         return _harvestOrCheckpoint(gauge, policy);
     }
 
-    /// @notice Harvests rewards from a gauge
-    /// @param gauge The gauge address to harvest from
-    /// @param extraData Additional data needed for harvesting (protocol-specific)
-    /// @return pendingRewards The pending rewards after harvesting
-    /// @dev Called using delegatecall from the Accountant contract
+    /// @notice Claims rewards from gauge and sidecars (accountant batch harvest)
+    /// @dev Uses transient storage to defer reward transfers for gas efficiency
+    /// @param gauge The gauge to harvest rewards from
+    /// @param extraData Protocol-specific data for claiming
+    /// @return pendingRewards Total rewards claimed from all sources
     function harvest(address gauge, bytes memory extraData)
         external
         override
@@ -193,76 +185,59 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         return _harvest(gauge, extraData, true);
     }
 
-    /// @notice Flushes the reward token to the locker
-    /// @dev Only allowed to be called by the accountant during harvest operation
+    /// @notice Transfers accumulated rewards to accountant after batch harvest
+    /// @dev Called once after harvesting multiple gauges to save gas
     function flush() public onlyAccountant {
-        // Get flush amount from transient storage.
         uint256 flushAmount = _getFlushAmount();
         if (flushAmount == 0) return;
 
-        // Transfer the flush amount to the accountant.
         _transferToAccountant(flushAmount);
-
-        // Reset the flush amount in transient storage.
         _setFlushAmount(0);
     }
 
-    /// @notice Shuts down the strategy by withdrawing all the assets and sending them to the vault
-    /// @param gauge The gauge to shut down
-    /// @dev Only allowed to be called by permissioned addresses, or anyone if the gauge/system is shutdown
-    /// @custom:throws OnlyAllowed If the caller is not allowed and the gauge is not shutdown
+    /// @notice Emergency withdrawal of all funds back to vault
+    /// @dev Anyone can call if gauge is shutdown, ensuring user fund recovery
+    /// @param gauge The gauge to withdraw all funds from
+    /// @custom:throws AlreadyShutdown If already fully withdrawn
     function shutdown(address gauge) public onlyAllowed(gauge) {
         require(!PROTOCOL_CONTROLLER.isFullyWithdrawn(gauge), AlreadyShutdown());
 
-        /// 1. Get the vault managing the gauge.
         address vault = PROTOCOL_CONTROLLER.vaults(gauge);
-
-        /// 2. Get the asset.
         address asset = IERC4626(vault).asset();
-
-        /// 3. Get the allocation targets for the gauge.
         address[] memory targets = _getAllocationTargets(gauge);
 
-        /// 4. Withdraw all the assets and send them to the vault.
+        // Withdraw everything from locker and sidecars to vault
         _withdrawFromAllTargets(asset, gauge, targets, vault);
 
-        /// 5. Mark the gauge as fully withdrawn.
+        // Prevent double withdrawal
         PROTOCOL_CONTROLLER.markGaugeAsFullyWithdrawn(gauge);
 
-        /// 6. Emit the shutdown event.
         emit Shutdown(gauge);
     }
 
-    /// @notice Rebalances the strategy
+    /// @notice Redistributes funds between targets when allocations change
+    /// @dev Withdraws all funds to strategy then re-deposits per new allocation
     /// @param gauge The gauge to rebalance
+    /// @custom:throws RebalanceNotNeeded If only one target (nothing to rebalance)
     function rebalance(address gauge) external {
-        /// If the gauge is shutdown, return.
         require(!PROTOCOL_CONTROLLER.isShutdown(gauge), GaugeShutdown());
 
-        /// 1. Get the allocator.
         address allocator = PROTOCOL_CONTROLLER.allocator(PROTOCOL_ID);
-
-        /// 2. Get the asset.
         IERC20 asset = IERC20(PROTOCOL_CONTROLLER.asset(gauge));
-
-        /// 3. Snapshot the current balance.
         uint256 currentBalance = balanceOf(gauge);
-
-        /// 4. Get the allocation targets for the gauge.
         address[] memory targets = _getAllocationTargets(gauge);
 
-        /// 5. Withdraw all assets from all targets to this contract
+        // Withdraw everything to this contract
         _withdrawFromAllTargets(address(asset), gauge, targets, address(this));
 
-        /// 6. Get the allocation amounts for the gauge.
+        // Get new allocation from allocator
         IAllocator.Allocation memory allocation =
             IAllocator(allocator).getRebalancedAllocation(address(asset), gauge, currentBalance);
 
-        /// 7. Ensure the allocation has more than one target.
         uint256 allocationLength = allocation.targets.length;
         require(allocationLength > 1, RebalanceNotNeeded());
 
-        /// 8. Deposit the amounts into the gauge with new allocations
+        // Re-deposit according to new allocation
         for (uint256 i; i < allocationLength; i++) {
             address target = allocation.targets[i];
             uint256 amount = allocation.amounts[i];
@@ -278,13 +253,13 @@ abstract contract Strategy is IStrategy, ProtocolContext {
             }
         }
 
-        /// 8. Emit the rebalance event.
         emit Rebalance(gauge, allocation.targets, allocation.amounts);
     }
 
-    /// @notice Returns the balance of the strategy
-    /// @param gauge The gauge to get the balance of
-    /// @return balance The balance of the strategy
+    /// @notice Total LP tokens managed across all targets for a gauge
+    /// @dev Sums balances from locker and all sidecars
+    /// @param gauge The gauge to check balance for
+    /// @return balance Combined LP token balance
     function balanceOf(address gauge) public view virtual returns (uint256 balance) {
         address[] memory targets = _getAllocationTargets(gauge);
 
@@ -339,11 +314,12 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         }
     }
 
-    /// @notice Handles the harvest operation
+    /// @notice Claims rewards from locker and all sidecars
+    /// @dev Locker rewards are fee-subject, sidecar rewards may not be
     /// @param gauge The gauge to harvest from
-    /// @param extraData Additional data needed for harvesting
-    /// @param deferRewards Whether to store rewards for later flush (true) or transfer immediately (false)
-    /// @return pendingRewards The pending rewards after harvesting
+    /// @param extraData Protocol-specific harvest parameters
+    /// @param deferRewards If true, accumulate in transient storage for batch transfer
+    /// @return pendingRewards Total and fee-subject reward amounts
     function _harvest(address gauge, bytes memory extraData, bool deferRewards)
         internal
         returns (IStrategy.PendingRewards memory pendingRewards)
@@ -360,11 +336,11 @@ abstract contract Strategy is IStrategy, ProtocolContext {
                 pendingRewards.feeSubjectAmount = pendingRewardsAmount.toUint128();
 
                 if (deferRewards) {
-                    // Update flush amount in transient storage
+                    // Batch transfers: accumulate in transient storage
                     uint256 currentFlushAmount = _getFlushAmount();
                     _setFlushAmount(currentFlushAmount + pendingRewardsAmount);
                 } else {
-                    // Transfer the pending rewards to the accountant directly
+                    // Direct transfer for HARVEST policy
                     _transferToAccountant(pendingRewardsAmount);
                 }
             } else {
