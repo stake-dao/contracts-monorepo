@@ -7,9 +7,13 @@ import {ISidecar} from "src/interfaces/ISidecar.sol";
 import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
-/// @title Sidecar - Abstract Base Sidecar Contract
-/// @notice A base contract for implementing protocol-specific sidecars
-/// @dev Provides core functionality for depositing, withdrawing, and managing assets across different protocols
+/// @title Sidecar - Alternative yield source manager alongside main locker
+/// @notice Base contract for protocol-specific yield sources that complement the main locker strategy
+/// @dev Design rationale:
+///      - Enables yield diversification beyond the main protocol locker (e.g., Convex alongside veCRV)
+///      - Protocol-agnostic base allows extension for any yield source
+///      - Managed by Strategy for unified deposit/withdraw/harvest operations
+///      - Rewards flow through Accountant for consistent distribution
 abstract contract Sidecar is ISidecar {
     using SafeERC20 for IERC20;
 
@@ -17,53 +21,47 @@ abstract contract Sidecar is ISidecar {
     // --- IMMUTABLES
     //////////////////////////////////////////////////////
 
-    /// @notice The protocol identifier
+    /// @notice Protocol identifier matching the Strategy that manages this sidecar
     bytes4 public immutable PROTOCOL_ID;
 
-    /// @notice The accountant contract address
+    /// @notice Accountant that receives and distributes rewards from this sidecar
     address public immutable ACCOUNTANT;
 
-    /// @notice The reward token address
+    /// @notice Main protocol reward token claimed by this sidecar (e.g., CRV)
     IERC20 public immutable REWARD_TOKEN;
 
-    /// @notice The protocol controller contract
+    /// @notice Registry used to verify the authorized strategy for this protocol
     IProtocolController public immutable PROTOCOL_CONTROLLER;
 
     //////////////////////////////////////////////////////
     // --- STORAGE
     //////////////////////////////////////////////////////
 
-    /// @notice Whether the sidecar has been initialized
+    /// @notice Prevents double initialization in factory deployment pattern
     bool private _initialized;
 
     //////////////////////////////////////////////////////
     // --- ERRORS
     //////////////////////////////////////////////////////
 
-    /// @notice Error thrown when an address is zero
     error ZeroAddress();
 
-    /// @notice Error thrown when the caller is not the strategy
     error OnlyStrategy();
 
-    /// @notice Error thrown when the caller is not the accountant
     error OnlyAccountant();
 
-    /// @notice Error thrown when the sidecar is already initialized
     error AlreadyInitialized();
 
-    /// @notice Error thrown when the sidecar is not initialized
     error NotInitialized();
 
-    /// @notice Error thrown when a protocol ID is zero
     error InvalidProtocolId();
 
     //////////////////////////////////////////////////////
     // --- MODIFIERS
     //////////////////////////////////////////////////////
 
-    /// @notice Ensures the caller is the strategy
-    /// @custom:throws OnlyStrategy If the caller is not the strategy
+    /// @notice Restricts access to the authorized strategy for this protocol
+    /// @dev Prevents unauthorized manipulation of user funds
     modifier onlyStrategy() {
         require(PROTOCOL_CONTROLLER.strategy(PROTOCOL_ID) == msg.sender, OnlyStrategy());
         _;
@@ -73,10 +71,11 @@ abstract contract Sidecar is ISidecar {
     // --- CONSTRUCTOR
     //////////////////////////////////////////////////////
 
-    /// @notice Initializes the sidecar with protocol ID, accountant, and protocol controller
-    /// @param _protocolId The identifier for the protocol this sidecar interacts with
-    /// @param _accountant The address of the accountant contract
-    /// @param _protocolController The address of the protocol controller
+    /// @notice Sets up immutable protocol connections
+    /// @dev Called by factory during deployment. Reward token fetched from accountant
+    /// @param _protocolId Protocol identifier for strategy verification
+    /// @param _accountant Where to send claimed rewards for distribution
+    /// @param _protocolController Registry for strategy lookup and validation
     constructor(bytes4 _protocolId, address _accountant, address _protocolController) {
         require(_protocolId != bytes4(0), InvalidProtocolId());
         require(_accountant != address(0) && _protocolController != address(0), ZeroAddress());
@@ -93,32 +92,33 @@ abstract contract Sidecar is ISidecar {
     // --- EXTERNAL FUNCTIONS
     //////////////////////////////////////////////////////
 
-    /// @notice Initializes the sidecar
-    /// @dev Can only be called once
-    /// @custom:throws AlreadyInitialized If the sidecar is already initialized
+    /// @notice One-time setup for protocol-specific configuration
+    /// @dev Factory pattern: minimal proxy clones need post-deployment init
+    ///      Base constructor sets _initialized=true, clones must call this
     function initialize() external {
         if (_initialized) revert AlreadyInitialized();
         _initialized = true;
         _initialize();
     }
 
-    /// @notice Deposits assets into the sidecar
-    /// @param amount The amount to deposit
-    /// @custom:throws OnlyStrategy If the caller is not the strategy
+    /// @notice Stakes LP tokens into the protocol-specific yield source
+    /// @dev Strategy transfers tokens here first, then calls deposit
+    /// @param amount LP tokens to stake (must already be transferred)
     function deposit(uint256 amount) external onlyStrategy {
         _deposit(amount);
     }
 
-    /// @notice Withdraws assets from the sidecar
-    /// @param amount The amount to withdraw
-    /// @param receiver The address to receive the withdrawn assets
-    /// @custom:throws OnlyStrategy If the caller is not the strategy
+    /// @notice Unstakes LP tokens and sends directly to receiver
+    /// @dev Used during user withdrawals and emergency shutdowns
+    /// @param amount LP tokens to unstake from yield source
+    /// @param receiver Where to send the unstaked tokens (vault or user)
     function withdraw(uint256 amount, address receiver) external onlyStrategy {
         _withdraw(amount, receiver);
     }
 
-    /// @notice Claims pending rewards from the sidecar
-    /// @custom:throws OnlyAccountant If the caller is not the accountant
+    /// @notice Harvests rewards and transfers to accountant
+    /// @dev Part of Strategy's harvest flow. Returns amount for accounting
+    /// @return Amount of reward tokens sent to accountant
     function claim() external onlyStrategy returns (uint256) {
         return _claim();
     }
@@ -127,44 +127,41 @@ abstract contract Sidecar is ISidecar {
     // --- IMMUTABLES
     //////////////////////////////////////////////////////
 
-    /// @notice Returns the asset of the sidecar
-    /// @return The asset of the sidecar
+    /// @notice LP token this sidecar manages (e.g., CRV/ETH LP)
+    /// @dev Must match the asset used by the associated Strategy
     function asset() public view virtual returns (IERC20);
 
-    /// @notice Returns the reward receiver of the sidecar
-    /// @return The reward receiver of the sidecar
+    /// @notice Where extra rewards (not main protocol rewards) should be sent
+    /// @dev Typically the RewardVault for the gauge this sidecar supports
     function rewardReceiver() public view virtual returns (address);
 
     //////////////////////////////////////////////////////
     // --- INTERNAL VIRTUAL FUNCTIONS
     //////////////////////////////////////////////////////
 
-    /// @notice Initializes the sidecar
-    /// @dev Must be implemented by derived sidecars to handle protocol-specific initialization
+    /// @dev Protocol-specific setup (approvals, staking contracts, etc.)
     function _initialize() internal virtual;
 
-    /// @notice Deposits assets into the sidecar
-    /// @dev Must be implemented by derived sidecars to handle protocol-specific deposits
-    /// @param amount The amount to deposit
+    /// @dev Stakes tokens in protocol-specific way (e.g., Convex deposit)
+    /// @param amount Tokens to stake (already transferred to this contract)
     function _deposit(uint256 amount) internal virtual;
 
-    /// @notice Claims pending rewards from the sidecar
-    /// @dev Must be implemented by derived sidecars to handle protocol-specific claims
+    /// @dev Claims all available rewards and transfers to accountant
+    /// @return Total rewards claimed and transferred
     function _claim() internal virtual returns (uint256);
 
-    /// @notice Withdraws assets from the sidecar
-    /// @dev Must be implemented by derived sidecars to handle protocol-specific withdrawals
-    /// @param amount The amount to withdraw
-    /// @param receiver The address to receive the withdrawn assets
+    /// @dev Unstakes from protocol and sends tokens to receiver
+    /// @param amount Tokens to unstake
+    /// @param receiver Destination for unstaked tokens
     function _withdraw(uint256 amount, address receiver) internal virtual;
 
-    /// @notice Returns the balance of the sidecar
-    /// @dev Must be implemented by derived sidecars to handle protocol-specific balance calculation
-    /// @return The balance of the sidecar
+    /// @notice Total LP tokens staked in this sidecar
+    /// @dev Used by Strategy to calculate total assets across all sources
+    /// @return Current staked balance
     function balanceOf() public view virtual returns (uint256);
 
-    /// @notice Returns the pending rewards of the sidecar
-    /// @dev Must be implemented by derived sidecars to handle protocol-specific reward calculation
-    /// @return The pending rewards of the sidecar
+    /// @notice Unclaimed rewards available for harvest
+    /// @dev May perform view-only simulation or on-chain checkpoint
+    /// @return Claimable reward token amount
     function getPendingRewards() public virtual returns (uint256);
 }
