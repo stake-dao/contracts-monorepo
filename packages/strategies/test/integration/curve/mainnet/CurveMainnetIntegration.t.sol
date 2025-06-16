@@ -31,6 +31,26 @@ contract CurveMainnetIntegrationTest is CurveIntegration {
 
     constructor() CurveIntegration(_config) {}
 
+    function deployRewardVaults()
+        internal
+        override
+        returns (RewardVault[] memory vaults, RewardReceiver[] memory receivers)
+    {
+        /// Deploy the vaults.
+        vaults = new RewardVault[](gauges.length);
+        receivers = new RewardReceiver[](gauges.length);
+
+        for (uint256 i = 0; i < poolIds.length; i++) {
+            uint256 poolId = poolIds[i];
+
+            /// Deploy the vault and receiver.
+            (address vault, address receiver,) = CurveFactory(factory).create(poolId);
+
+            vaults[i] = RewardVault(vault);
+            receivers[i] = RewardReceiver(receiver);
+        }
+    }
+
     function getGauges() internal override returns (address[] memory) {
         // Get gauge addresses for all pool IDs
         IBooster booster = IBooster(CurveProtocol.CONVEX_BOOSTER);
