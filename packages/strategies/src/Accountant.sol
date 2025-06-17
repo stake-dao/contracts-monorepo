@@ -469,7 +469,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         return accounts[vault][account].pendingRewards;
     }
 
-
     //////////////////////////////////////////////////////
     // --- HARVEST OPERATIONS
     //////////////////////////////////////////////////////

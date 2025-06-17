@@ -1,0 +1,147 @@
+// SPDX-License-Identifier: AGPL-3.0-only
+pragma solidity 0.8.28;
+
+import "forge-std/src/Script.sol";
+
+import {Allocator} from "src/Allocator.sol";
+import {Safe, SafeLibrary} from "test/utils/SafeLibrary.sol";
+import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
+
+import {Accountant} from "src/Accountant.sol";
+import {RewardReceiver} from "src/RewardReceiver.sol";
+import {RewardVault, IStrategy} from "src/RewardVault.sol";
+import {ProtocolController} from "src/ProtocolController.sol";
+
+abstract contract BaseDeploy is Script {
+    address public admin;
+    address public feeReceiver;
+    address public deployer;
+
+    bytes4 internal protocolId;
+    address public rewardToken;
+    IStrategy.HarvestPolicy internal harvestPolicy;
+
+    address public locker;
+    Safe public gateway;
+
+    Allocator public allocator;
+    Accountant public accountant;
+    ProtocolController public protocolController;
+
+    address public strategy;
+
+    address public factory;
+    RewardVault public rewardVaultImplementation;
+    RewardReceiver public rewardReceiverImplementation;
+
+    address public sidecarFactory;
+    address public sidecarImplementation;
+
+    address[] public owners;
+
+    modifier doSetup(
+        string memory _chain,
+        address _rewardToken,
+        address _locker,
+        bytes4 _protocolId,
+        IStrategy.HarvestPolicy _harvestPolicy
+    ) {
+        vm.createSelectFork(_chain);
+        vm.startBroadcast(admin);
+        _beforeSetup(_rewardToken, _locker, _protocolId, _harvestPolicy);
+        _;
+        _afterSetup();
+        vm.stopBroadcast();
+    }
+
+    function _beforeSetup(
+        address _rewardToken,
+        address _locker,
+        bytes4 _protocolId,
+        IStrategy.HarvestPolicy _harvestPolicy
+    ) internal {
+        /// 0. Initialize variables.
+        locker = _locker;
+        protocolId = _protocolId;
+        rewardToken = _rewardToken;
+        harvestPolicy = _harvestPolicy;
+
+        /// 1. Deploy Protocol Controller.
+        protocolController = new ProtocolController();
+
+        /// 2. Set fee receiver.
+        protocolController.setFeeReceiver(protocolId, feeReceiver);
+
+        /// 3. Deploy Accountant.
+        accountant = new Accountant({
+            _owner: admin,
+            _registry: address(protocolController),
+            _rewardToken: address(rewardToken),
+            _protocolId: protocolId
+        });
+
+        /// 4. Deploy Reward Vault Implementation.
+        rewardVaultImplementation = new RewardVault({
+            protocolId: protocolId,
+            protocolController: address(protocolController),
+            accountant: address(accountant),
+            policy: harvestPolicy
+        });
+
+        /// 5. Deploy Reward Receiver Implementation.
+        rewardReceiverImplementation = new RewardReceiver();
+
+        owners = new address[](1);
+        owners[0] = admin;
+
+        /// 6. Deploy Gateway.
+        gateway = _deployGateway();
+
+        /// 7. Setup contracts in protocol controller.
+        protocolController.setAccountant(protocolId, address(accountant));
+
+        /// 8. Deploy Allocator.
+        allocator = new Allocator(locker, address(gateway));
+    }
+
+    function _afterSetup() internal virtual {
+        /// 1. Set strategy in protocol controller.
+        protocolController.setStrategy(protocolId, strategy);
+        protocolController.setAllocator(protocolId, address(allocator));
+
+        /// 2. Set factory as registrar.
+        protocolController.setRegistrar(address(factory), true);
+
+        /// 3. Enable modules in the gateway Safe.
+        _enableModule(address(factory));
+        _enableModule(address(strategy));
+
+        /// 4. If sidecar factory is set, enable it.
+        if (sidecarFactory != address(0)) {
+            /// Allow sidecar factory to be used as a registrar.
+            protocolController.setRegistrar(address(sidecarFactory), true);
+
+            /// Enable sidecar factory.
+            _enableModule(address(sidecarFactory));
+        }
+    }
+
+    /// @notice Enables a module in the gateway Safe.
+    /// @param moduleAddress The module to enable.
+    function _enableModule(address moduleAddress) internal {
+        /// Build signatures
+        bytes memory signatures = abi.encodePacked(uint256(uint160(admin)), uint8(0), uint256(1));
+
+        // Execute transaction
+        SafeLibrary.simpleExec({
+            _safe: payable(gateway),
+            _target: address(gateway),
+            _data: abi.encodeWithSelector(IModuleManager.enableModule.selector, moduleAddress),
+            _signatures: signatures
+        });
+    }
+
+    function _deployGateway() internal virtual returns (Safe) {
+        return SafeLibrary.deploySafe({_owners: owners, _threshold: 1, _saltNonce: uint256(uint32(protocolId))});
+    }
+}
