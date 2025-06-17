@@ -78,7 +78,7 @@ contract ConvexSidecarFactory is SidecarFactory {
         // Encode the immutable arguments for the clone
         bytes memory data = abi.encodePacked(lpToken, rewardReceiver, baseRewardPool, pid);
 
-        // Create a deterministic salt based on the token and gauge
+        // Create a deterministic salt based on the arguments
         bytes32 salt = keccak256(data);
 
         // Clone the implementation contract
