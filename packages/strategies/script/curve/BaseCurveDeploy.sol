@@ -54,53 +54,74 @@ abstract contract BaseCurveDeploy is BaseDeploy {
     {
         /// 2. Deploy the Curve Strategy contract.
         strategy = address(
-            new CurveStrategy({
-                _registry: address(protocolController),
-                _locker: config.base.locker,
-                _gateway: address(gateway)
-            })
+            _deployWithCreate3(
+                type(CurveStrategy).name,
+                abi.encodePacked(
+                    type(CurveStrategy).creationCode,
+                    abi.encode(address(protocolController), config.base.locker, address(gateway))
+                )
+            )
         );
 
         /// 3. Check if the strategy is only boost.
         if (config.convex.isOnlyBoost) {
             /// 3a. Deploy the Convex Sidecar implementation.
             sidecarImplementation = address(
-                new ConvexSidecar({
-                    _accountant: address(accountant),
-                    _protocolController: address(protocolController),
-                    _cvx: config.convex.cvx,
-                    _booster: config.convex.booster
-                })
+                _deployWithCreate3(
+                    type(ConvexSidecar).name,
+                    abi.encodePacked(
+                        type(ConvexSidecar).creationCode,
+                        abi.encode(
+                            address(accountant), address(protocolController), config.convex.cvx, config.convex.booster
+                        )
+                    )
+                )
             );
 
             /// 3b. Deploy the Convex Sidecar factory.
             sidecarFactory = address(
-                new ConvexSidecarFactory({
-                    _implementation: address(sidecarImplementation),
-                    _protocolController: address(protocolController),
-                    _booster: config.convex.booster
-                })
+                _deployWithCreate3(
+                    type(ConvexSidecarFactory).name,
+                    abi.encodePacked(
+                        type(ConvexSidecarFactory).creationCode,
+                        abi.encode(address(sidecarImplementation), address(protocolController), config.convex.booster)
+                    )
+                )
             );
 
             /// 3c. Deploy the OnlyBoostAllocator contract.
-            allocator = new OnlyBoostAllocator({
-                _locker: config.base.locker,
-                _gateway: address(gateway),
-                _convexSidecarFactory: sidecarFactory,
-                _boostProvider: config.base.boostProvider,
-                _convexBoostHolder: config.convex.convexBoostHolder
-            });
+            allocator = OnlyBoostAllocator(
+                _deployWithCreate3(
+                    type(OnlyBoostAllocator).name,
+                    abi.encodePacked(
+                        type(OnlyBoostAllocator).creationCode,
+                        abi.encode(
+                            config.base.locker,
+                            address(gateway),
+                            sidecarFactory,
+                            config.base.boostProvider,
+                            config.convex.convexBoostHolder
+                        )
+                    )
+                )
+            );
         }
 
         factory = address(
-            new CurveFactory(
-                address(protocolController),
-                address(rewardVaultImplementation),
-                address(rewardReceiverImplementation),
-                config.base.locker,
-                address(gateway),
-                config.convex.booster,
-                sidecarFactory
+            _deployWithCreate3(
+                type(CurveFactory).name,
+                abi.encodePacked(
+                    type(CurveFactory).creationCode,
+                    abi.encode(
+                        address(protocolController),
+                        address(rewardVaultImplementation),
+                        address(rewardReceiverImplementation),
+                        config.base.locker,
+                        address(gateway),
+                        config.convex.booster,
+                        sidecarFactory
+                    )
+                )
             )
         );
     }

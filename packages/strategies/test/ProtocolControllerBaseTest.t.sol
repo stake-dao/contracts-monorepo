@@ -19,7 +19,9 @@ abstract contract ProtocolControllerBaseTest is BaseTest {
 
     function _deployProtocolControllerHarness() internal returns (ProtocolControllerHarness) {
         _deployHarnessCode(
-            "out/ProtocolControllerHarness.t.sol/ProtocolControllerHarness.json", abi.encode(address(this)), address(protocolController)
+            "out/ProtocolControllerHarness.t.sol/ProtocolControllerHarness.json",
+            abi.encode(address(this)),
+            address(protocolController)
         );
 
         return ProtocolControllerHarness(address(protocolController));
