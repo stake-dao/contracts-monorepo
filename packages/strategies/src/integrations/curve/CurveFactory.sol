@@ -164,7 +164,7 @@ contract CurveFactory is Factory {
     }
 
     function _setRewardReceiver(address _gauge, address _rewardReceiver) internal override {
-        /// Set RewardReceiver as RewardReceiver on Gauge.
+        /// Set _rewardReceiver as the reward receiver on the gauge.
         bytes memory data = abi.encodeWithSignature("set_rewards_receiver(address)", _rewardReceiver);
         require(_executeTransaction(_gauge, data), SetRewardReceiverFailed());
     }
