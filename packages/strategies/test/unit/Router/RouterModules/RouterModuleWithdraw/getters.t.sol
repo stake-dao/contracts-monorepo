@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import {Test} from "forge-std/src/Test.sol";
-import {RouterModuleWithdraw} from "src/RouterModules/RouterModuleWithdraw.sol";
+import {RouterModuleWithdraw} from "src/router/RouterModuleWithdraw.sol";
 
 contract RouterModuleWithdraw__getters is Test {
     RouterModuleWithdraw internal module;

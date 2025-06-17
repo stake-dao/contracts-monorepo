@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import {Test} from "forge-std/src/Test.sol";
-import {RouterModuleDeposit} from "src/RouterModules/RouterModuleDeposit.sol";
+import {RouterModuleDeposit} from "src/router/RouterModuleDeposit.sol";
 
 contract RouterModuleDeposit__getters is Test {
     RouterModuleDeposit internal module;

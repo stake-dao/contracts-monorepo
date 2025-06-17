@@ -4,8 +4,8 @@ pragma solidity 0.8.28;
 import {Test} from "forge-std/src/Test.sol";
 import {DeployAndSetMigrationStakeDaoModule} from "script/Router/06_DeployAndSetMigrationStakeDaoModule.s.sol";
 import {Router} from "src/Router.sol";
-import {RouterIdentifierMapping} from "src/RouterModules/RouterIdentifierMapping.sol";
-import {RouterModuleMigrationStakeDAOV1} from "src/RouterModules/RouterModuleMigrationStakeDAOV1.sol";
+import {RouterIdentifierMapping} from "src/router/RouterIdentifierMapping.sol";
+import {RouterModuleMigrationStakeDAOV1} from "src/router/RouterModuleMigrationStakeDAOV1.sol";
 
 contract Router__SetupRouterMigrationStakeDaoModuleScript is Test, DeployAndSetMigrationStakeDaoModule {
     function test_RouterMigrationStakeDaoModuleIsCorrectlyDeployed(bytes32 salt) external {

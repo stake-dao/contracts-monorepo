@@ -96,11 +96,11 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
 
     /// @notice Supply of vaults.
     /// @dev Vault address -> VaultData.
-    mapping(address vault => VaultData vaultData) internal vaults;
+    mapping(address vault => VaultData vaultData) public vaults;
 
     /// @notice Balances of accounts per vault.
     /// @dev Vault address -> Account address -> AccountData.
-    mapping(address vault => mapping(address account => AccountData accountData)) internal accounts;
+    mapping(address vault => mapping(address account => AccountData accountData)) public accounts;
 
     //////////////////////////////////////////////////////
     // --- ERRORS
@@ -454,6 +454,13 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         return accounts[vault][account].balance;
     }
 
+    /// @notice Returns the pending rewards for a vault.
+    /// @param vault The vault address to query.
+    /// @return The pending rewards for the vault.
+    function getPendingRewards(address vault) external view returns (uint128) {
+        return vaults[vault].totalAmount;
+    }
+
     /// @notice Returns the pending rewards for an account in a vault.
     /// @param vault The vault address to query.
     /// @param account The account address to check.
@@ -462,19 +469,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         return accounts[vault][account].pendingRewards;
     }
 
-    /// @notice Returns the pending rewards for a vault.
-    /// @param vault The vault address to query.
-    /// @return The pending rewards for the vault.
-    function getPendingRewards(address vault) external view returns (uint128) {
-        return vaults[vault].totalAmount;
-    }
-
-    /// @notice Returns the integral for a vault.
-    /// @param vault The vault address to query.
-    /// @return The integral for the vault.
-    function getVaultIntegral(address vault) external view returns (uint256) {
-        return vaults[vault].integral;
-    }
 
     //////////////////////////////////////////////////////
     // --- HARVEST OPERATIONS

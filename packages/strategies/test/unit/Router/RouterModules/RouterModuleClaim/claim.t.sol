@@ -8,7 +8,7 @@ import {StdCheats} from "forge-std/src/StdCheats.sol";
 import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {RewardVault} from "src/RewardVault.sol";
-import {RouterModuleClaim} from "src/RouterModules/RouterModuleClaim.sol";
+import {RouterModuleClaim} from "src/router/RouterModuleClaim.sol";
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 import {RewardVaultHarness} from "test/RewardVaultBaseTest.sol";
 import {RouterModulesTest} from "test/unit/Router/RouterModules/RouterModulesTest.t.sol";

@@ -3,13 +3,13 @@ pragma solidity 0.8.28;
 
 import {Script} from "forge-std/src/Script.sol";
 import {Router} from "src/Router.sol";
-import {RouterIdentifierMapping} from "src/RouterModules/RouterIdentifierMapping.sol";
-import {RouterModuleClaim} from "src/RouterModules/RouterModuleClaim.sol";
-import {RouterModuleDeposit} from "src/RouterModules/RouterModuleDeposit.sol";
-import {RouterModuleMigrationCurve} from "src/RouterModules/RouterModuleMigrationCurve.sol";
-import {RouterModuleMigrationStakeDAOV1} from "src/RouterModules/RouterModuleMigrationStakeDAOV1.sol";
-import {RouterModuleMigrationYearn} from "src/RouterModules/RouterModuleMigrationYearn.sol";
-import {RouterModuleWithdraw} from "src/RouterModules/RouterModuleWithdraw.sol";
+import {RouterIdentifierMapping} from "src/router/RouterIdentifierMapping.sol";
+import {RouterModuleClaim} from "src/router/RouterModuleClaim.sol";
+import {RouterModuleDeposit} from "src/router/RouterModuleDeposit.sol";
+import {RouterModuleMigrationCurve} from "src/router/RouterModuleMigrationCurve.sol";
+import {RouterModuleMigrationStakeDAOV1} from "src/router/RouterModuleMigrationStakeDAOV1.sol";
+import {RouterModuleMigrationYearn} from "src/router/RouterModuleMigrationYearn.sol";
+import {RouterModuleWithdraw} from "src/router/RouterModuleWithdraw.sol";
 
 contract SetRouterModules is Script {
     function _run(address router) internal {

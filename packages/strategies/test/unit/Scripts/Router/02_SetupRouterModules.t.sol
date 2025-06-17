@@ -4,10 +4,10 @@ pragma solidity 0.8.28;
 import {Test} from "forge-std/src/Test.sol";
 import {SetRouterModules} from "script/Router/02_SetupRouterModules.s.sol";
 import {Router} from "src/Router.sol";
-import {RouterIdentifierMapping} from "src/RouterModules/RouterIdentifierMapping.sol";
-import {RouterModuleClaim} from "src/RouterModules/RouterModuleClaim.sol";
-import {RouterModuleDeposit} from "src/RouterModules/RouterModuleDeposit.sol";
-import {RouterModuleWithdraw} from "src/RouterModules/RouterModuleWithdraw.sol";
+import {RouterIdentifierMapping} from "src/router/RouterIdentifierMapping.sol";
+import {RouterModuleClaim} from "src/router/RouterModuleClaim.sol";
+import {RouterModuleDeposit} from "src/router/RouterModuleDeposit.sol";
+import {RouterModuleWithdraw} from "src/router/RouterModuleWithdraw.sol";
 
 contract Router__DeployRouterModulesScript is Test, SetRouterModules {
     function test_RouterModulesAreCorrectlyDeployed(bytes32 salt) external {

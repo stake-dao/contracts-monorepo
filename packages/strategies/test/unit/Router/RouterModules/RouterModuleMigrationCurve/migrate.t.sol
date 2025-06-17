@@ -6,7 +6,7 @@ import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Address, Errors} from "@openzeppelin/contracts/utils/Address.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {RouterModuleMigrationCurve} from "src/RouterModules/RouterModuleMigrationCurve.sol";
+import {RouterModuleMigrationCurve} from "src/router/RouterModuleMigrationCurve.sol";
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 import {RewardVaultHarness} from "test/RewardVaultBaseTest.sol";
 import {RouterModulesTest} from "test/unit/Router/RouterModules/RouterModulesTest.t.sol";

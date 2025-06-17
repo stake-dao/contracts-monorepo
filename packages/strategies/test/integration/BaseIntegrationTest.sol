@@ -182,17 +182,13 @@ abstract contract BaseIntegrationTest is BaseSetup {
             // we need to check what actually happened rather than predict it
             uint256 actualProtocolFees = accountant.protocolFeesAccrued();
             uint256 actualAccountantBalance = _balanceOf(rewardToken, address(accountant));
-            
+
             /// Assert that protocol fees were accrued
-            assertGt(
-                actualProtocolFees,
-                0,
-                "10. Expected protocol fees to be accrued during HARVEST mode checkpoints"
-            );
-            
+            assertGt(actualProtocolFees, 0, "10. Expected protocol fees to be accrued during HARVEST mode checkpoints");
+
             /// No harvester fees in HARVEST mode
             assertEq(_balanceOf(rewardToken, harvester), 0, "11. Expected no harvester rewards in HARVEST mode");
-            
+
             /// In HARVEST mode, verify the accounting is correct
             /// The actual rewards might be higher due to:
             /// 1. Sidecar rewards (Convex) that are not tracked in our simulation
@@ -268,7 +264,7 @@ abstract contract BaseIntegrationTest is BaseSetup {
             /// 19. Simulate additional rewards for share transfer test
             uint256 additionalRewards = _rewards[i] / 2;
             simulateRewards(rewardVault, additionalRewards);
-            
+
             // Track additional rewards for both modes
             totalHarvestableRewards += additionalRewards;
             rewardVaultToHarvestableRewards[address(rewardVault)] += additionalRewards;
@@ -318,7 +314,7 @@ abstract contract BaseIntegrationTest is BaseSetup {
             // Original accounts should still have their accrued rewards from before the transfer
             uint256 originalAccountPendingRewards =
                 accountant.getPendingRewards(address(rewardVault), accountPosition.account);
-            
+
             if (originalAccountPendingRewards > 0) {
                 // Claim rewards as original account
                 claim(rewardVault, accountPosition.account);

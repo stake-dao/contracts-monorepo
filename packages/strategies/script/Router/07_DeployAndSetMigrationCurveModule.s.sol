@@ -3,8 +3,8 @@ pragma solidity 0.8.28;
 
 import {Script} from "forge-std/src/Script.sol";
 import {Router} from "src/Router.sol";
-import {RouterIdentifierMapping} from "src/RouterModules/RouterIdentifierMapping.sol";
-import {RouterModuleMigrationCurve} from "src/RouterModules/RouterModuleMigrationCurve.sol";
+import {RouterIdentifierMapping} from "src/router/RouterIdentifierMapping.sol";
+import {RouterModuleMigrationCurve} from "src/router/RouterModuleMigrationCurve.sol";
 
 contract DeployAndSetMigrationCurveModule is Script {
     function _run(address router) internal {
