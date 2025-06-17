@@ -11,7 +11,7 @@ contract ProtocolController__constructor is BaseTest {
         vm.assume(caller != address(0));
 
         vm.prank(caller);
-        ProtocolController controler = new ProtocolController();
+        ProtocolController controler = new ProtocolController(caller);
         assertEq(controler.owner(), caller);
     }
 }

@@ -14,12 +14,12 @@ abstract contract ProtocolControllerBaseTest is BaseTest {
         super.setUp();
 
         // Initialize ProtocolController
-        protocolController = new ProtocolController();
+        protocolController = new ProtocolController(address(this));
     }
 
     function _deployProtocolControllerHarness() internal returns (ProtocolControllerHarness) {
         _deployHarnessCode(
-            "out/ProtocolControllerHarness.t.sol/ProtocolControllerHarness.json", address(protocolController)
+            "out/ProtocolControllerHarness.t.sol/ProtocolControllerHarness.json", abi.encode(address(this)), address(protocolController)
         );
 
         return ProtocolControllerHarness(address(protocolController));

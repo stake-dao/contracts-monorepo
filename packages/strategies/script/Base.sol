@@ -34,7 +34,7 @@ abstract contract Base is Script {
         deployer = _deployer;
 
         /// 1. Deploy Protocol Controller.
-        protocolController = new ProtocolController();
+        protocolController = new ProtocolController(deployer);
 
         /// 2. Deploy Accountant.
         accountant = new Accountant({

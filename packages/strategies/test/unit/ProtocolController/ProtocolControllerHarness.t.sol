@@ -5,6 +5,8 @@ import {ProtocolController} from "src/ProtocolController.sol";
 
 // Exposes the useful internal functions of the Accountant contract for testing purposes
 contract ProtocolControllerHarness is ProtocolController, Test {
+    constructor(address _owner) ProtocolController(_owner) {}
+
     function _exposed_permissions(address _contract, address _caller, bytes4 _selector) external view returns (bool) {
         return _permissions[_contract][_caller][_selector];
     }

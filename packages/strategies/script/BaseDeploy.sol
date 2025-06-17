@@ -11,6 +11,7 @@ import {Accountant} from "src/Accountant.sol";
 import {RewardReceiver} from "src/RewardReceiver.sol";
 import {RewardVault, IStrategy} from "src/RewardVault.sol";
 import {ProtocolController} from "src/ProtocolController.sol";
+import {Create3} from "shared/src/create/Create3.sol";
 
 abstract contract BaseDeploy is Script {
     address public admin;
@@ -39,6 +40,9 @@ abstract contract BaseDeploy is Script {
 
     address[] public owners;
 
+    /// @notice Base salt prefix for all CREATE3 deployments
+    string internal constant BASE_SALT = "STAKEDAO.STRATEGIES";
+
     modifier doSetup(
         string memory _chain,
         address _rewardToken,
@@ -66,30 +70,40 @@ abstract contract BaseDeploy is Script {
         rewardToken = _rewardToken;
         harvestPolicy = _harvestPolicy;
 
-        /// 1. Deploy Protocol Controller.
-        protocolController = new ProtocolController();
+        /// 1. Deploy Protocol Controller using CREATE3.
+        protocolController = ProtocolController(
+            _deployWithCreate3(type(ProtocolController).name, abi.encodePacked(type(ProtocolController).creationCode))
+        );
 
         /// 2. Set fee receiver.
         protocolController.setFeeReceiver(protocolId, feeReceiver);
 
-        /// 3. Deploy Accountant.
-        accountant = new Accountant({
-            _owner: admin,
-            _registry: address(protocolController),
-            _rewardToken: address(rewardToken),
-            _protocolId: protocolId
-        });
+        /// 3. Deploy Accountant using CREATE3.
+        accountant = Accountant(
+            _deployWithCreate3(
+                type(Accountant).name,
+                abi.encodePacked(
+                    type(Accountant).creationCode,
+                    abi.encode(admin, address(protocolController), address(rewardToken), protocolId)
+                )
+            )
+        );
 
-        /// 4. Deploy Reward Vault Implementation.
-        rewardVaultImplementation = new RewardVault({
-            protocolId: protocolId,
-            protocolController: address(protocolController),
-            accountant: address(accountant),
-            policy: harvestPolicy
-        });
+        /// 4. Deploy Reward Vault Implementation using CREATE3.
+        rewardVaultImplementation = RewardVault(
+            _deployWithCreate3(
+                type(RewardVault).name,
+                abi.encodePacked(
+                    type(RewardVault).creationCode,
+                    abi.encode(protocolId, address(protocolController), address(accountant), harvestPolicy)
+                )
+            )
+        );
 
-        /// 5. Deploy Reward Receiver Implementation.
-        rewardReceiverImplementation = new RewardReceiver();
+        /// 5. Deploy Reward Receiver Implementation using CREATE3.
+        rewardReceiverImplementation = RewardReceiver(
+            _deployWithCreate3(type(RewardReceiver).name, abi.encodePacked(type(RewardReceiver).creationCode))
+        );
 
         owners = new address[](1);
         owners[0] = admin;
@@ -100,8 +114,13 @@ abstract contract BaseDeploy is Script {
         /// 7. Setup contracts in protocol controller.
         protocolController.setAccountant(protocolId, address(accountant));
 
-        /// 8. Deploy Allocator.
-        allocator = new Allocator(locker, address(gateway));
+        /// 8. Deploy Allocator using CREATE3.
+        allocator = Allocator(
+            _deployWithCreate3(
+                type(Allocator).name,
+                abi.encodePacked(type(Allocator).creationCode, abi.encode(locker, address(gateway)))
+            )
+        );
     }
 
     function _afterSetup() internal virtual {
@@ -143,5 +162,32 @@ abstract contract BaseDeploy is Script {
 
     function _deployGateway() internal virtual returns (Safe) {
         return SafeLibrary.deploySafe({_owners: owners, _threshold: 1, _saltNonce: uint256(uint32(protocolId))});
+    }
+
+    /// @notice Generates a deterministic salt for CREATE3 deployments
+    /// @param contractType The type of contract being deployed (e.g., "STRATEGY", "CONTROLLER")
+    /// @return The generated salt
+    function _getSalt(string memory contractType) internal view returns (bytes32) {
+        return keccak256(abi.encodePacked(BASE_SALT, ".", protocolId, ".", contractType, ".V1"));
+    }
+
+    /// @notice Deploy a contract using CREATE3 for deterministic cross-chain addresses
+    /// @param contractType The type of contract being deployed (e.g., "STRATEGY", "FACTORY", "SIDECAR")
+    /// @param bytecode The creation bytecode including constructor arguments
+    /// @return deployed The deployed contract address
+    function _deployWithCreate3(string memory contractType, bytes memory bytecode)
+        internal
+        returns (address deployed)
+    {
+        bytes32 salt = _getSalt(contractType);
+        deployed = Create3.deployCreate3(salt, bytecode);
+    }
+
+    /// @notice Computes the address where a contract will be deployed with CREATE3
+    /// @param contractType The type of contract
+    /// @return The computed address
+    function computeCreate3Address(string memory contractType) public view returns (address) {
+        bytes32 salt = _getSalt(contractType);
+        return Create3.computeCreate3Address(salt);
     }
 }
