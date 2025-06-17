@@ -64,7 +64,7 @@ contract CurveFraxtalIntegrationTest is CurveL2Integration {
         CurveFactory(factory).setChildLiquidityGaugeFactories(childLiquidityGaugeFactories);
     }
 
-    function getGauges() internal override returns (address[] memory) {
+    function getGauges() internal view override returns (address[] memory) {
         // Get gauge addresses for all pool IDs
         IL2Booster booster = IL2Booster(ConvexProtocol.BOOSTER);
         address[] memory gauges = new address[](poolIds.length);
