@@ -75,7 +75,7 @@ abstract contract BaseSetup is Test {
         harvestPolicy = _harvestPolicy;
 
         /// 1. Deploy Protocol Controller.
-        protocolController = new ProtocolController();
+        protocolController = new ProtocolController(admin);
 
         /// 2. Set fee receiver.
         protocolController.setFeeReceiver(protocolId, feeReceiver);

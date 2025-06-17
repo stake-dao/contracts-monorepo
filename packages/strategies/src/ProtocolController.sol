@@ -172,7 +172,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
 
     /// @notice Constructor for the ProtocolController
     /// @dev Initializes the owner of the contract
-    constructor() Ownable(msg.sender) {}
+    constructor(address _owner) Ownable(_owner) {}
 
     //////////////////////////////////////////////////////
     //////////////////////////////////////////////////////
