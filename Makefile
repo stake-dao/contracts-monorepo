@@ -49,10 +49,15 @@ test-%:
 		exit 1; \
 	fi
 
+
 lint:
 	@forge fmt --check && npx solhint "{script,src,test}/**/*.sol"
 
 lint-fix:
 	@forge fmt && npx solhint --fix "{script,src,test}/**/*.sol" --fix --noPrompt --disc
+
+# TODO: Remove this once we have a proper simulation framework.
+simulate:
+	@forge script script/curve/DeployFraxtal.s.sol -vvvv
 
 .PHONY: test test-unit test-integration lint lint-fix verify-last

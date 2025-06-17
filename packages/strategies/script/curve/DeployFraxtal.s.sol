@@ -26,7 +26,10 @@ contract DeployFraxtal is BaseCurveDeploy {
         })
     });
 
-    constructor() BaseCurveDeploy(_config) {}
+    constructor() BaseCurveDeploy(_config) {
+        admin = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
+        feeReceiver = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
+    }
 
     function run() public override {
         super.run();
