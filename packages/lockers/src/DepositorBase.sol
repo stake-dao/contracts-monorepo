@@ -7,13 +7,14 @@ import "src/interfaces/ILiquidityGauge.sol";
 import "src/interfaces/ILocker.sol";
 import "src/interfaces/ISdToken.sol";
 import "src/interfaces/ITokenMinter.sol";
+import {IDepositorBase} from "src/interfaces/IDepositorBase.sol";
 
 /// @title DepositorBase
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return
 /// @dev Adapted for veCRV like Locker.
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-abstract contract DepositorBase {
+abstract contract DepositorBase is IDepositorBase {
     ///////////////////////////////////////////////////////////////
     /// --- STATE VARIABLES & CONSTANTS
     ///////////////////////////////////////////////////////////////
