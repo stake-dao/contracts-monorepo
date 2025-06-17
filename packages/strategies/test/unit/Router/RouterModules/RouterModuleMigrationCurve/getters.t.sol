@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import {Test} from "forge-std/src/Test.sol";
-import {RouterModuleMigrationCurve} from "src/RouterModules/RouterModuleMigrationCurve.sol";
+import {RouterModuleMigrationCurve} from "src/router/RouterModuleMigrationCurve.sol";
 
 contract RouterModuleMigrationCurve__getters is Test {
     RouterModuleMigrationCurve internal module;

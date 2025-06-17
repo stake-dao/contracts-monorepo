@@ -8,7 +8,7 @@ import {Address, Errors} from "@openzeppelin/contracts/utils/Address.sol";
 import {Address, Errors} from "@openzeppelin/contracts/utils/Address.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {RouterModuleMigrationYearn} from "src/RouterModules/RouterModuleMigrationYearn.sol";
+import {RouterModuleMigrationYearn} from "src/router/RouterModuleMigrationYearn.sol";
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 import {RewardVaultHarness} from "test/RewardVaultBaseTest.sol";
 import {RouterModulesTest} from "test/unit/Router/RouterModules/RouterModulesTest.t.sol";

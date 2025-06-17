@@ -3,8 +3,8 @@ pragma solidity 0.8.28;
 
 import {Script} from "forge-std/src/Script.sol";
 import {Router} from "src/Router.sol";
-import {RouterIdentifierMapping} from "src/RouterModules/RouterIdentifierMapping.sol";
-import {RouterModuleMigrationStakeDAOV1} from "src/RouterModules/RouterModuleMigrationStakeDAOV1.sol";
+import {RouterIdentifierMapping} from "src/router/RouterIdentifierMapping.sol";
+import {RouterModuleMigrationStakeDAOV1} from "src/router/RouterModuleMigrationStakeDAOV1.sol";
 
 contract DeployAndSetMigrationStakeDaoModule is Script {
     function _run(address router) internal {

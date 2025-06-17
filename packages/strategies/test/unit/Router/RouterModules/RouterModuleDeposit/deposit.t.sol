@@ -7,7 +7,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Address, Errors} from "@openzeppelin/contracts/utils/Address.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {RouterModuleDeposit} from "src/RouterModules/RouterModuleDeposit.sol";
+import {RouterModuleDeposit} from "src/router/RouterModuleDeposit.sol";
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 import {RewardVaultHarness} from "test/RewardVaultBaseTest.sol";
 import {RouterModulesTest} from "test/unit/Router/RouterModules/RouterModulesTest.t.sol";
