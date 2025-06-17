@@ -29,6 +29,9 @@ contract CurveFactory is Factory, Ownable2Step {
     /// @notice Error thrown when the convex sidecar factory is not set.
     error ConvexSidecarFactoryNotSet();
 
+    /// @notice Error thrown when the child liquidity gauge factories are not set.
+    error ChildLiquidityGaugeFactoriesNotSet();
+
     /// @notice Event emitted when a vault is deployed.
     event VaultDeployed(address gauge, address vault, address rewardReceiver, address sidecar);
 
@@ -68,6 +71,7 @@ contract CurveFactory is Factory, Ownable2Step {
     function _isValidToken(address _token) internal view virtual override returns (bool) {
         /// If the token is not valid, return false.
         if (!super._isValidToken(_token)) return false;
+        require(childLiquidityGaugeFactories.length > 0, ChildLiquidityGaugeFactoriesNotSet());
 
         /// If the token is available as an inflation receiver, it's not valid.
         for (uint256 i = 0; i < childLiquidityGaugeFactories.length; i++) {
@@ -78,6 +82,7 @@ contract CurveFactory is Factory, Ownable2Step {
     }
 
     function _isValidGauge(address _gauge) internal view virtual override returns (bool) {
+        require(childLiquidityGaugeFactories.length > 0, ChildLiquidityGaugeFactoriesNotSet());
         /// Check if the gauge is a valid candidate and available as an inflation receiver.
         /// This call always reverts if the gauge is not valid.
         for (uint256 i = 0; i < childLiquidityGaugeFactories.length; i++) {
