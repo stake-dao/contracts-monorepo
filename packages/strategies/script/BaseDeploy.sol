@@ -70,15 +70,18 @@ abstract contract BaseDeploy is Script {
         rewardToken = _rewardToken;
         harvestPolicy = _harvestPolicy;
 
-        /// 1. Deploy Protocol Controller using CREATE3.
+        /// 1. Deploy Protocol Controller.
         protocolController = ProtocolController(
-            _deployWithCreate3(type(ProtocolController).name, abi.encodePacked(type(ProtocolController).creationCode))
+            _deployWithCreate3(
+                type(ProtocolController).name,
+                abi.encodePacked(type(ProtocolController).creationCode, abi.encode(admin))
+            )
         );
 
         /// 2. Set fee receiver.
         protocolController.setFeeReceiver(protocolId, feeReceiver);
 
-        /// 3. Deploy Accountant using CREATE3.
+        /// 3. Deploy Accountant.
         accountant = Accountant(
             _deployWithCreate3(
                 type(Accountant).name,
@@ -89,7 +92,7 @@ abstract contract BaseDeploy is Script {
             )
         );
 
-        /// 4. Deploy Reward Vault Implementation using CREATE3.
+        /// 4. Deploy Reward Vault Implementation.
         rewardVaultImplementation = RewardVault(
             _deployWithCreate3(
                 type(RewardVault).name,
@@ -100,7 +103,7 @@ abstract contract BaseDeploy is Script {
             )
         );
 
-        /// 5. Deploy Reward Receiver Implementation using CREATE3.
+        /// 5. Deploy Reward Receiver Implementation.
         rewardReceiverImplementation = RewardReceiver(
             _deployWithCreate3(type(RewardReceiver).name, abi.encodePacked(type(RewardReceiver).creationCode))
         );
@@ -114,7 +117,7 @@ abstract contract BaseDeploy is Script {
         /// 7. Setup contracts in protocol controller.
         protocolController.setAccountant(protocolId, address(accountant));
 
-        /// 8. Deploy Allocator using CREATE3.
+        /// 8. Deploy Allocator.
         allocator = Allocator(
             _deployWithCreate3(
                 type(Allocator).name,
