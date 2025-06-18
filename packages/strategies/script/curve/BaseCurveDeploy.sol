@@ -11,6 +11,7 @@ import {ConvexSidecarFactory} from "src/integrations/curve/L2/ConvexSidecarFacto
 import "script/BaseDeploy.sol";
 
 /// @title BaseCurveDeploy - Base deployment script for Curve protocol on L2 with Convex.
+/// @dev TODO: Make it chain agnostic.
 abstract contract BaseCurveDeploy is BaseDeploy {
     bytes4 internal constant PROTOCOL_ID = bytes4(keccak256("CURVE"));
 
@@ -113,6 +114,7 @@ abstract contract BaseCurveDeploy is BaseDeploy {
                 abi.encodePacked(
                     type(CurveFactory).creationCode,
                     abi.encode(
+                        admin,
                         address(protocolController),
                         address(rewardVaultImplementation),
                         address(rewardReceiverImplementation),
@@ -126,7 +128,7 @@ abstract contract BaseCurveDeploy is BaseDeploy {
         );
 
         /// 4. Set the harvest fee to 0 for non-mainnet chains.
-        if (keccak256(abi.encodePacked(config.base.chain)) != keccak256(abi.encodePacked("mainnet"))) {
+        if (block.chainid != 1) {
             accountant.setHarvestFeePercent(0);
         }
     }

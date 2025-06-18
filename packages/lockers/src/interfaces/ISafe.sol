@@ -94,5 +94,7 @@ interface ISafe {
      */
     function removeOwner(address prevOwner, address owner, uint256 _threshold) external;
 
+    function swapOwner(address prevOwner, address owner, address newOwner) external;
+
     function isModuleEnabled(address module) external view returns (bool);
 }

@@ -36,6 +36,7 @@ contract CurveFactory is Factory, Ownable2Step {
     event VaultDeployed(address gauge, address vault, address rewardReceiver, address sidecar);
 
     constructor(
+        address admin,
         address protocolController,
         address vaultImplementation,
         address rewardReceiverImplementation,
@@ -45,7 +46,7 @@ contract CurveFactory is Factory, Ownable2Step {
         address convexSidecarFactory
     )
         Factory(protocolController, vaultImplementation, rewardReceiverImplementation, CURVE_PROTOCOL_ID, locker, gateway)
-        Ownable(msg.sender)
+        Ownable(admin)
     {
         BOOSTER = booster;
         CONVEX_SIDECAR_FACTORY = convexSidecarFactory;

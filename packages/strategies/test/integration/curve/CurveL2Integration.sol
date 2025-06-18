@@ -109,6 +109,7 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
 
         factory = address(
             new CurveFactory(
+                admin,
                 address(protocolController),
                 address(rewardVaultImplementation),
                 address(rewardReceiverImplementation),
