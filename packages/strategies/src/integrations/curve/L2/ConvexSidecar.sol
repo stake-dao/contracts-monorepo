@@ -96,7 +96,7 @@ contract ConvexSidecar is Sidecar {
     /// @param amount Amount of LP token to withdraw.
     /// @param receiver Address to receive the LP token.
     function _withdraw(uint256 amount, address receiver) internal override {
-        /// Withdraw from Convex gauge without claiming rewards (false).
+        /// Withdraw from Convex gauge with claiming rewards (true).
         baseRewardPool().withdraw(amount, true);
 
         /// Send the LP token to the receiver.
