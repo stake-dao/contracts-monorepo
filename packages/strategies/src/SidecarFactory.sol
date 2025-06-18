@@ -15,9 +15,6 @@ abstract contract SidecarFactory is ISidecarFactory {
     /// @notice The protocol controller address
     IProtocolController public immutable PROTOCOL_CONTROLLER;
 
-    /// @notice The strategy address
-    address public immutable STRATEGY;
-
     /// @notice The accountant address
     address public immutable ACCOUNTANT;
 
@@ -65,7 +62,6 @@ abstract contract SidecarFactory is ISidecarFactory {
 
         ACCOUNTANT = PROTOCOL_CONTROLLER.accountant(PROTOCOL_ID);
         REWARD_TOKEN = IAccountant(ACCOUNTANT).REWARD_TOKEN();
-        STRATEGY = PROTOCOL_CONTROLLER.strategy(PROTOCOL_ID);
     }
 
     /// @notice Create a new sidecar for a gauge
