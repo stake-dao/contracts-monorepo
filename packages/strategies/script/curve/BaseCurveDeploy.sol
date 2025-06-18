@@ -2,16 +2,21 @@
 pragma solidity 0.8.28;
 
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {CurveFactory} from "src/integrations/curve/L2/CurveFactory.sol";
-import {CurveStrategy} from "src/integrations/curve/L2/CurveStrategy.sol";
-import {ConvexSidecar} from "src/integrations/curve/L2/ConvexSidecar.sol";
 import {OnlyBoostAllocator} from "src/integrations/curve/OnlyBoostAllocator.sol";
-import {ConvexSidecarFactory} from "src/integrations/curve/L2/ConvexSidecarFactory.sol";
+
+import {CurveFactory as L2CurveFactory} from "src/integrations/curve/L2/CurveFactory.sol";
+import {CurveStrategy as L2CurveStrategy} from "src/integrations/curve/L2/CurveStrategy.sol";
+import {ConvexSidecar as L2ConvexSidecar} from "src/integrations/curve/L2/ConvexSidecar.sol";
+import {ConvexSidecarFactory as L2ConvexSidecarFactory} from "src/integrations/curve/L2/ConvexSidecarFactory.sol";
+
+import {CurveFactory} from "src/integrations/curve/CurveFactory.sol";
+import {CurveStrategy} from "src/integrations/curve/CurveStrategy.sol";
+import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
+import {ConvexSidecarFactory} from "src/integrations/curve/ConvexSidecarFactory.sol";
 
 import "script/BaseDeploy.sol";
 
-/// @title BaseCurveDeploy - Base deployment script for Curve protocol on L2 with Convex.
-/// @dev TODO: Make it chain agnostic.
+/// @title BaseCurveDeploy - Base deployment script for Curve protocol on any chain with Convex.
 abstract contract BaseCurveDeploy is BaseDeploy {
     bytes4 internal constant PROTOCOL_ID = bytes4(keccak256("CURVE"));
 
@@ -53,12 +58,14 @@ abstract contract BaseCurveDeploy is BaseDeploy {
         virtual
         doSetup(config.base.chain, config.base.rewardToken, config.base.locker, PROTOCOL_ID, config.base.harvestPolicy)
     {
+        bool isL2 = block.chainid != 1;
+
         /// 2. Deploy the Curve Strategy contract.
         strategy = address(
             _deployWithCreate3(
-                type(CurveStrategy).name,
+                isL2 ? type(L2CurveStrategy).name : type(CurveStrategy).name,
                 abi.encodePacked(
-                    type(CurveStrategy).creationCode,
+                    isL2 ? type(L2CurveStrategy).creationCode : type(CurveStrategy).creationCode,
                     abi.encode(address(protocolController), config.base.locker, address(gateway))
                 )
             )
@@ -69,9 +76,9 @@ abstract contract BaseCurveDeploy is BaseDeploy {
             /// 3a. Deploy the Convex Sidecar implementation.
             sidecarImplementation = address(
                 _deployWithCreate3(
-                    type(ConvexSidecar).name,
+                    isL2 ? type(L2ConvexSidecar).name : type(ConvexSidecar).name,
                     abi.encodePacked(
-                        type(ConvexSidecar).creationCode,
+                        isL2 ? type(L2ConvexSidecar).creationCode : type(ConvexSidecar).creationCode,
                         abi.encode(
                             address(accountant), address(protocolController), config.convex.cvx, config.convex.booster
                         )
@@ -82,9 +89,9 @@ abstract contract BaseCurveDeploy is BaseDeploy {
             /// 3b. Deploy the Convex Sidecar factory.
             sidecarFactory = address(
                 _deployWithCreate3(
-                    type(ConvexSidecarFactory).name,
+                    isL2 ? type(L2ConvexSidecarFactory).name : type(ConvexSidecarFactory).name,
                     abi.encodePacked(
-                        type(ConvexSidecarFactory).creationCode,
+                        isL2 ? type(L2ConvexSidecarFactory).creationCode : type(ConvexSidecarFactory).creationCode,
                         abi.encode(address(sidecarImplementation), address(protocolController), config.convex.booster)
                     )
                 )
@@ -108,27 +115,37 @@ abstract contract BaseCurveDeploy is BaseDeploy {
             );
         }
 
+        bytes memory factoryParams = isL2
+            ? abi.encode(
+                admin,
+                address(protocolController),
+                address(rewardVaultImplementation),
+                address(rewardReceiverImplementation),
+                config.base.locker,
+                address(gateway),
+                config.convex.booster,
+                sidecarFactory
+            )
+            : abi.encode(
+                address(protocolController),
+                address(rewardVaultImplementation),
+                address(rewardReceiverImplementation),
+                config.base.locker,
+                address(gateway),
+                config.convex.booster,
+                sidecarFactory
+            );
+
         factory = address(
             _deployWithCreate3(
-                type(CurveFactory).name,
+                isL2 ? type(L2CurveFactory).name : type(CurveFactory).name,
                 abi.encodePacked(
-                    type(CurveFactory).creationCode,
-                    abi.encode(
-                        admin,
-                        address(protocolController),
-                        address(rewardVaultImplementation),
-                        address(rewardReceiverImplementation),
-                        config.base.locker,
-                        address(gateway),
-                        config.convex.booster,
-                        sidecarFactory
-                    )
+                    isL2 ? type(L2CurveFactory).creationCode : type(CurveFactory).creationCode, factoryParams
                 )
             )
         );
 
-        /// 4. Set the harvest fee to 0 for non-mainnet chains.
-        if (block.chainid != 1) {
+        if (isL2) {
             accountant.setHarvestFeePercent(0);
         }
     }
