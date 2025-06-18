@@ -894,6 +894,8 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
             policy: policy,
             referrer: referrer
         });
+
+        emit Transfer(address(0), to, amount);
     }
 
     /// @notice Burns vault shares
@@ -916,6 +918,8 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
             pendingRewards: pendingRewards,
             policy: policy
         });
+
+        emit Transfer(from, address(0), amount);
     }
 
     /// @notice Generates the vault's name
