@@ -5,6 +5,9 @@ library CommonUniversal {
     /// DEPLOYER
     address internal constant DEPLOYER_1 = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
 
+    /// GOVERNANCE
+    address internal constant GOVERNANCE = 0xB0552b6860CE5C0202976Db056b5e3Cc4f9CC765;
+
     // FACTORY
     address internal constant CREATE2_FACTORY = 0x0000000000FFe8B47B3e2130213B802212439497;
     address internal constant CREATE3_FACTORY = 0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed;

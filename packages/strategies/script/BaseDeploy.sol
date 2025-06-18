@@ -5,7 +5,10 @@ import "forge-std/src/Script.sol";
 
 import {Allocator} from "src/Allocator.sol";
 import {Safe, SafeLibrary} from "test/utils/SafeLibrary.sol";
+import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+import {OwnerManager} from "@safe-global/safe-smart-account/contracts/base/OwnerManager.sol";
 import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
+import {CommonUniversal} from "address-book/src/CommonUniversal.sol";
 
 import {Accountant} from "src/Accountant.sol";
 import {RewardReceiver} from "src/RewardReceiver.sol";
@@ -146,6 +149,52 @@ abstract contract BaseDeploy is Script {
             /// Enable sidecar factory.
             _enableModule(address(sidecarFactory));
         }
+
+        /// 5. Transfer ownership of all contracts to GATEWAY and GATEWAY to GOVERNANCE.
+        /// 5.a Transfer Accountant to GATEWAY.
+        accountant.transferOwnership(address(gateway));
+
+        /// 5.b Transfer Protocol Controller to GATEWAY.
+        protocolController.transferOwnership(address(gateway));
+
+        /// Build signatures
+        bytes memory signatures = abi.encodePacked(uint256(uint160(admin)), uint8(0), uint256(1));
+
+        SafeLibrary.simpleExec({
+            _safe: payable(gateway),
+            _target: address(accountant),
+            _data: abi.encodeWithSelector(Ownable2Step.acceptOwnership.selector),
+            _signatures: signatures
+        });
+
+        SafeLibrary.simpleExec({
+            _safe: payable(gateway),
+            _target: address(protocolController),
+            _data: abi.encodeWithSelector(Ownable2Step.acceptOwnership.selector),
+            _signatures: signatures
+        });
+
+        /// If not mainnet, transfer ownership of the factory to GOVERNANCE.
+        if (block.chainid != 1) {
+            /// Transfer ownership of the factory to GATEWAY.
+            Ownable2Step(factory).transferOwnership(address(gateway));
+
+            /// Accept ownership of the factory.
+            SafeLibrary.simpleExec({
+                _safe: payable(gateway),
+                _target: address(factory),
+                _data: abi.encodeWithSelector(Ownable2Step.acceptOwnership.selector),
+                _signatures: signatures
+            });
+        }
+
+        /// Transfer ownership of all the contracts to GOVERNANCE.
+        SafeLibrary.simpleExec({
+            _safe: payable(gateway),
+            _target: address(gateway),
+            _data: abi.encodeWithSelector(OwnerManager.swapOwner.selector, address(1), admin, CommonUniversal.GOVERNANCE),
+            _signatures: signatures
+        });
     }
 
     /// @notice Enables a module in the gateway Safe.
