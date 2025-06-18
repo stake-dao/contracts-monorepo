@@ -12,7 +12,7 @@ import "script/curve/BaseCurveDeploy.sol";
 contract DeployFraxtal is BaseCurveDeploy {
     Config public _config = Config({
         base: BaseConfig({
-            chain: "base-sepolia",
+            chain: "sepolia",
             rewardToken: CurveProtocol.CRV,
             locker: address(0),
             harvestPolicy: IStrategy.HarvestPolicy.HARVEST,
