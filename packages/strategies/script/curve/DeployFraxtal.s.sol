@@ -9,7 +9,7 @@ import "script/curve/BaseCurveDeploy.sol";
 contract DeployFraxtal is BaseCurveDeploy {
     Config public _config = Config({
         base: BaseConfig({
-            chain: "frax",
+            chain: "sepolia",
             rewardToken: CurveProtocol.CRV,
             locker: address(0),
             harvestPolicy: IStrategy.HarvestPolicy.HARVEST,
@@ -33,5 +33,9 @@ contract DeployFraxtal is BaseCurveDeploy {
 
     function run() public override {
         super.run();
+    }
+
+    function _deployGateway() internal override returns (Safe) {
+        return Safe(payable(0x52f541764E6e90eeBc5c21Ff570De0e2D63766B6));
     }
 }
