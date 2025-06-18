@@ -1,8 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
+import {DAO} from "address-book/src/DaoEthereum.sol";
+import {CurveLocker} from "address-book/src/CurveEthereum.sol";
 import {CurveProtocol} from "address-book/src/CurveFraxtal.sol";
 import {ConvexProtocol} from "address-book/src/ConvexFraxtal.sol";
+import {CommonUniversal} from "address-book/src/CommonUniversal.sol";
 
 import "script/curve/BaseCurveDeploy.sol";
 
@@ -27,8 +30,8 @@ contract DeployFraxtal is BaseCurveDeploy {
     });
 
     constructor() BaseCurveDeploy(_config) {
-        admin = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
-        feeReceiver = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
+        admin = CommonUniversal.DEPLOYER_1;
+        feeReceiver = DAO.L2_SAFE_TREASURY;
     }
 
     function run() public override {
@@ -36,6 +39,6 @@ contract DeployFraxtal is BaseCurveDeploy {
     }
 
     function _deployGateway() internal override returns (Safe) {
-        return Safe(payable(0x52f541764E6e90eeBc5c21Ff570De0e2D63766B6));
+        return Safe(payable(CurveLocker.LOCKER));
     }
 }

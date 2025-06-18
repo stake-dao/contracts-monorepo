@@ -2,7 +2,10 @@
 pragma solidity >=0.8.0;
 
 library CommonUniversal {
-    // DEPLOYER
+    /// DEPLOYER
+    address internal constant DEPLOYER_1 = 0x000755Fbe4A24d7478bfcFC1E561AfCE82d1ff62;
+
+    // FACTORY
     address internal constant CREATE2_FACTORY = 0x0000000000FFe8B47B3e2130213B802212439497;
     address internal constant CREATE3_FACTORY = 0xba5Ed099633D3B313e4D5F7bdc1305d3c28ba5Ed;
 
