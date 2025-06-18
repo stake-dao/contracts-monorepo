@@ -3,7 +3,9 @@ src = "src"
 out = "out"
 libs = ["node_modules"]
 solc = "0.8.28"
-verbosity = 3
+
+optimizer = true
+optimizers_runs = 200
 
 [fuzz]
 runs = 50
@@ -18,8 +20,6 @@ dictionary_weight = 80
 include_storage = true
 include_push_bytes = true
 
-verbosity = 4
-optimizers_runs = 200
 
 [etherscan]
 bnb = { key = "${BNBSCAN_KEY}", chain = 56 }

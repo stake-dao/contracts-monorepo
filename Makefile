@@ -57,7 +57,7 @@ lint-fix:
 	@forge fmt && npx solhint --fix "{script,src,test}/**/*.sol" --fix --noPrompt --disc
 
 # TODO: Remove this once we have a proper simulation framework.
-simulate:
-	@forge script script/curve/DeployFraxtal.s.sol -vvvv
+run:
+	@forge script script/curve/DeployFraxtal.s.sol -vvvv # --broadcast --private-key ${PRIVATE_KEY}
 
 .PHONY: test test-unit test-integration lint lint-fix verify-last
