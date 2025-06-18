@@ -15,12 +15,6 @@ abstract contract SidecarFactory is ISidecarFactory {
     /// @notice The protocol controller address
     IProtocolController public immutable PROTOCOL_CONTROLLER;
 
-    /// @notice The accountant address
-    address public immutable ACCOUNTANT;
-
-    /// @notice The reward token address
-    address public immutable REWARD_TOKEN;
-
     /// @notice The implementation address
     address public immutable IMPLEMENTATION;
 
@@ -59,9 +53,6 @@ abstract contract SidecarFactory is ISidecarFactory {
         IMPLEMENTATION = _implementation;
         PROTOCOL_ID = _protocolId;
         PROTOCOL_CONTROLLER = IProtocolController(_protocolController);
-
-        ACCOUNTANT = PROTOCOL_CONTROLLER.accountant(PROTOCOL_ID);
-        REWARD_TOKEN = IAccountant(ACCOUNTANT).REWARD_TOKEN();
     }
 
     /// @notice Create a new sidecar for a gauge
