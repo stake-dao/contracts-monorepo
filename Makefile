@@ -58,6 +58,11 @@ lint-fix:
 
 # TODO: Remove this once we have a proper simulation framework.
 run:
-	@forge script script/curve/DeployFraxtal.s.sol -vvvv # --broadcast --private-key ${PRIVATE_KEY} --non-interactive
+	@forge script script/curve/DeployFraxtal.s.sol -vvvv --broadcast --private-key ${PRIVATE_KEY} --non-interactive
 
-.PHONY: test test-unit test-integration lint lint-fix verify-last
+# TODO: Add the verification for the Fraxtal deployment.
+verify:
+	@npx catapulta-verify --broadcastPath "broadcast/DeployFraxtal.s.sol/11155111/run-latest.json" --rpcUrl 'https://small-greatest-model.ethereum-sepolia.quiknode.pro/${QUICKNODE_KEY}' --explorerUrl 'https://api-sepolia.etherscan.io/api' --etherscanApiKey ${ETHERSCAN_KEY}
+
+
+.PHONY: test test-unit test-integration lint lint-fix verify
