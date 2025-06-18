@@ -124,5 +124,10 @@ abstract contract BaseCurveDeploy is BaseDeploy {
                 )
             )
         );
+
+        /// 4. Set the harvest fee to 0 for non-mainnet chains.
+        if (keccak256(abi.encodePacked(config.base.chain)) != keccak256(abi.encodePacked("mainnet"))) {
+            accountant.setHarvestFeePercent(0);
+        }
     }
 }
