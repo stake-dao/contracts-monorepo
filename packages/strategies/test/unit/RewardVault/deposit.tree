@@ -22,4 +22,5 @@ RewardVault__deposit
 ├── it reverts if the deposit to the strategy reverts
 ├── it reverts if one of the ERC20 transfer reverts
 ├── it emits the deposit event
+├── it emits the transfer event
 └── it returns the amount of assets deposited

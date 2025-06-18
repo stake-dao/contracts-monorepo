@@ -763,6 +763,35 @@ contract RewardVault__deposit is RewardVaultBaseTest {
         deposit_mint_wrapper(OWNER_BALANCE, receiver, address(0));
     }
 
+    function test_EmitsTheTransferEvent(address caller, address receiver)
+        external
+        _cheat_replaceRewardVaultWithRewardVaultHarness
+    {
+        // it emits a transfer event
+
+        _assumeUnlabeledAddress(caller);
+        _assumeUnlabeledAddress(receiver);
+        vm.assume(caller != address(0));
+        vm.assume(receiver != address(0));
+        vm.label({account: caller, newLabel: "caller"});
+        vm.label({account: receiver, newLabel: "receiver"});
+
+        // set the owner balance and approve half the balance
+        uint256 OWNER_BALANCE = 1e18;
+        deal(asset, caller, OWNER_BALANCE);
+        vm.prank(caller);
+        IERC20(asset).approve(address(cloneRewardVault), OWNER_BALANCE);
+
+        // mock the dependencies of the withdraw function
+        _mock_test_dependencies(OWNER_BALANCE, Allocation.MIXED);
+
+        // make the caller deposit the rewards. It should succeed because the allowance is enough
+        vm.prank(caller);
+        vm.expectEmit(true, true, true, true);
+        emit IERC20.Transfer(address(0), receiver, OWNER_BALANCE);
+        deposit_mint_wrapper(OWNER_BALANCE, receiver, address(0));
+    }
+
     function test_ReturnsTheAmountOfAssetsDeposited(address caller, address receiver)
         external
         _cheat_replaceRewardVaultWithRewardVaultHarness

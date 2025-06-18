@@ -360,7 +360,7 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
         assertEq(IERC20(asset).balanceOf(address(cloneRewardVault)), OWNER_BALANCE);
     }
 
-    function test_EmitsTheEvent(address _owner, address caller, address receiver)
+    function test_EmitsTheWithdrawEvent(address _owner, address caller, address receiver)
         external
         _cheat_replaceRewardVaultWithRewardVaultHarness
     {
@@ -394,6 +394,43 @@ contract RewardVault__withdraw is RewardVaultBaseTest {
         vm.prank(caller);
         vm.expectEmit(true, true, true, true);
         emit IERC4626.Withdraw(caller, receiver, _owner, OWNER_BALANCE, OWNER_BALANCE);
+        withdraw_redeem_wrapper(OWNER_BALANCE, receiver, _owner);
+    }
+
+    function test_EmitsTheTransferEvent(address _owner, address caller, address receiver)
+        external
+        _cheat_replaceRewardVaultWithRewardVaultHarness
+    {
+        // it emits a withdraw event
+
+        _assumeUnlabeledAddress(_owner);
+        _assumeUnlabeledAddress(caller);
+        _assumeUnlabeledAddress(receiver);
+        vm.assume(_owner != address(0));
+        vm.assume(caller != address(0));
+        vm.assume(receiver != address(0));
+        vm.assume(caller != _owner);
+        vm.label({account: caller, newLabel: "caller"});
+        vm.label({account: _owner, newLabel: "owner"});
+        vm.label({account: receiver, newLabel: "receiver"});
+
+        uint256 OWNER_BALANCE = 1e18;
+
+        // set the owner balance and approve half the balance
+        deal(asset, _owner, OWNER_BALANCE);
+        vm.prank(_owner);
+        cloneRewardVault.approve(caller, OWNER_BALANCE);
+
+        // mock the dependencies of the withdraw function
+        _mock_test_dependencies();
+
+        // we airdrop enought assets to the reward vault to cover the withdrawal
+        deal(address(asset), address(cloneRewardVault), OWNER_BALANCE);
+
+        // make the caller withdraw the rewards. It should succeed because the allowance is enough
+        vm.prank(caller);
+        vm.expectEmit(true, true, true, true);
+        emit IERC20.Transfer(_owner, address(0), OWNER_BALANCE);
         withdraw_redeem_wrapper(OWNER_BALANCE, receiver, _owner);
     }
 
