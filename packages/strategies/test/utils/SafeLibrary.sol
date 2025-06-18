@@ -1,9 +1,9 @@
 /// SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.28;
 
-import {SafeProxyFactory} from "@safe/contracts/proxies/SafeProxyFactory.sol";
 import {Safe, Enum} from "@safe/contracts/Safe.sol";
 import {Common} from "address-book/src/CommonEthereum.sol";
+import {SafeProxyFactory, SafeProxy} from "@safe/contracts/proxies/SafeProxyFactory.sol";
 
 library SafeLibrary {
     /// @notice Safe proxy factory address. Same address on all chains.
@@ -86,5 +86,19 @@ library SafeLibrary {
             refundReceiver: payable(0),
             signatures: _signatures
         });
+    }
+
+    function getInitializer(address[] memory _owners, uint256 _threshold) internal pure returns (bytes memory) {
+        return abi.encodeWithSelector(
+            Safe.setup.selector,
+            _owners, // Owners.
+            _threshold, // Threshold. How many owners to confirm a transaction.
+            address(0), // Optional Safe account if already deployed.
+            abi.encodePacked(), // Optional data.
+            address(FALLBACK_HANDLER), // Fallback handler.
+            address(0), // Optional payment token.
+            0, // Optional payment token amount.
+            address(0) // Optional payment receiver.
+        );
     }
 }
