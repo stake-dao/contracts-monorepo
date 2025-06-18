@@ -58,6 +58,6 @@ lint-fix:
 
 # TODO: Remove this once we have a proper simulation framework.
 run:
-	@forge script script/curve/DeployFraxtal.s.sol -vvvv # --broadcast --private-key ${PRIVATE_KEY}
+	@forge script script/curve/GetLocker.s.sol -vvvv # --broadcast --private-key ${PRIVATE_KEY} --non-interactive
 
 .PHONY: test test-unit test-integration lint lint-fix verify-last
