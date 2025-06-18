@@ -16,7 +16,6 @@ import {CurveStrategy} from "src/integrations/curve/CurveStrategy.sol";
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
 import {ConvexSidecarFactory} from "src/integrations/curve/ConvexSidecarFactory.sol";
 
-
 /// @title BaseCurveDeploy - Base deployment script for Curve protocol on any chain with Convex.
 abstract contract BaseCurveDeploy is BaseDeploy {
     bytes4 internal constant PROTOCOL_ID = bytes4(keccak256("CURVE"));
