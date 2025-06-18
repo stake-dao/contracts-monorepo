@@ -12,26 +12,39 @@ library SafeLibrary {
     /// @notice Safe singleton address. Same address on all chains.
     address public constant SAFE_SINGLETON = Common.SAFE_SINGLETON;
 
+    /// @notice Safe L2 singleton address. Same address on all chains.
+    address public constant SAFE_L2_SINGLETON = Common.SAFE_L2_SINGLETON;
+
     /// @notice Fallback handler address. Same address on all chains.
     address public constant FALLBACK_HANDLER = Common.SAFE_FALLBACK_HANDLER;
 
     function deploySafe(address[] memory _owners, uint256 _threshold, uint256 _saltNonce) internal returns (Safe) {
-        bytes memory initializer = abi.encodeWithSelector(
-            Safe.setup.selector,
-            _owners, // Owners.
-            _threshold, // Threshold. How many owners to confirm a transaction.
-            address(0), // Optional Safe account if already deployed.
-            abi.encodePacked(), // Optional data.
-            address(FALLBACK_HANDLER), // Fallback handler.
-            address(0), // Optional payment token.
-            0, // Optional payment token amount.
-            address(0) // Optional payment receiver.
-        );
+        /// Get the initializer for the Safe.
+        bytes memory initializer = getInitializer(_owners, _threshold);
 
         return Safe(
             payable(
                 SAFE_PROXY_FACTORY.createProxyWithNonce({
                     _singleton: SAFE_SINGLETON,
+                    initializer: initializer,
+                    saltNonce: _saltNonce
+                })
+            )
+        );
+    }
+
+    /// @notice Deploy a Safe on L2.
+    /// @param _owners The owners of the Safe.
+    /// @param _threshold The threshold of the Safe.
+    /// @param _saltNonce The salt nonce for the Safe.
+    function deploySafeL2(address[] memory _owners, uint256 _threshold, uint256 _saltNonce) internal returns (Safe) {
+        /// Get the initializer for the Safe.
+        bytes memory initializer = getInitializer(_owners, _threshold);
+
+        return Safe(
+            payable(
+                SAFE_PROXY_FACTORY.createProxyWithNonce({
+                    _singleton: SAFE_L2_SINGLETON,
                     initializer: initializer,
                     saltNonce: _saltNonce
                 })

@@ -32,7 +32,7 @@ contract GetLocker is Script {
         console.log("Target nonce:", NONCE_TARGET);
         console.log("Expected locker address:", address(CurveLocker.LOCKER));
 
-        vm.createSelectFork("frax");
+        vm.createSelectFork("base");
         vm.startBroadcast(DEPLOYER);
 
         // Prepare owners array
@@ -75,10 +75,8 @@ contract GetLocker is Script {
         bytes memory initializer = SafeLibrary.getInitializer(owners, 1);
 
         // Deploy Safe proxy using CREATE
-        bytes memory deploymentData = abi.encodePacked(
-            type(SafeProxy).creationCode,
-            uint256(uint160(SafeLibrary.SAFE_SINGLETON))
-        );
+        bytes memory deploymentData =
+            abi.encodePacked(type(SafeProxy).creationCode, uint256(uint160(SafeLibrary.SAFE_L2_SINGLETON)));
 
         assembly {
             proxy := create(0x0, add(0x20, deploymentData), mload(deploymentData))
@@ -92,9 +90,7 @@ contract GetLocker is Script {
         // Initialize the Safe proxy
         if (initializer.length > 0) {
             assembly {
-                if eq(call(gas(), proxy, 0, add(initializer, 0x20), mload(initializer), 0, 0), 0) {
-                    revert(0, 0)
-                }
+                if eq(call(gas(), proxy, 0, add(initializer, 0x20), mload(initializer), 0, 0), 0) { revert(0, 0) }
             }
         }
     }
