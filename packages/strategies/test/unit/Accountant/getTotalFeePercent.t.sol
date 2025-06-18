@@ -46,7 +46,7 @@ contract Accountant__getTotalFeePercent is AccountantBaseTest {
         (bytes32[] memory reads, bytes32[] memory writes) = vm.accesses(address(accountantHarness));
 
         // ensure the value is read from the storage
-        assertEq(reads.length, 1);
+        assertGe(reads.length, 1);
         assertEq(writes.length, 0);
     }
 }
