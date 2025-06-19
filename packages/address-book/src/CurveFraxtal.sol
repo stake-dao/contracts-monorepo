@@ -17,12 +17,12 @@ library CurveStrategy {
 
     address internal constant STRATEGY = 0x341190ee097fCE6C6f0f81575c9842d98627257d;
 
-    address internal constant CONVEX_SIDECAR = 0xcAf1eE88407EC0940e7bc4Fe5917ab5f2E91f8a3;
+    address internal constant CONVEX_SIDECAR_IMPLEMENTATION = 0xcAf1eE88407EC0940e7bc4Fe5917ab5f2E91f8a3;
     address internal constant CONVEX_SIDECAR_FACTORY = 0xb8368DD16E0A29ba8936856887003Be9bF31d3A4;
 
     address internal constant FACTORY = 0xbBA6a1ab4D927fC978AD92073487173a3a27bCEB;
-    address internal constant ALLOCATOR = 0xe8CCF44a276DCD9CD3ccE05483EFf1bb26637Cfc;
+    address internal constant ALLOCATOR = 0x3018f7115212b27da28773A03578137D21039B3C;
 
-    address internal constant REWARD_VAULT = 0xB8B83008a2Aca8D5F5feeae2c3e764DE0290c286;
-    address internal constant REWARD_RECEIVER = 0x182137f70A3639A07EC385DeC750d60B70bb3fbE;
+    address internal constant REWARD_VAULT_IMPLEMENTATION = 0xB8B83008a2Aca8D5F5feeae2c3e764DE0290c286;
+    address internal constant REWARD_RECEIVER_IMPLEMENTATION = 0x182137f70A3639A07EC385DeC750d60B70bb3fbE;
 }
