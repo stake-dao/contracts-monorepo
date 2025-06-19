@@ -6,7 +6,7 @@ import {IStrategy as IStakeDaoStrategy} from "@interfaces/stake-dao/IStrategy.so
 import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
 import {Enum} from "@safe/contracts/common/Enum.sol";
-import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
+import {CurveLocker, CurveProtocol} from "@address-book/src/CurveEthereum.sol";
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
 import {ConvexSidecarFactory, IBooster} from "src/integrations/curve/ConvexSidecarFactory.sol";
 import {CurveFactory} from "src/integrations/curve/CurveFactory.sol";

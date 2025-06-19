@@ -8,7 +8,7 @@ import {Safe, SafeLibrary} from "test/utils/SafeLibrary.sol";
 import {Ownable2Step} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {OwnerManager} from "@safe-global/safe-smart-account/contracts/base/OwnerManager.sol";
 import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
-import {CommonUniversal} from "address-book/src/CommonUniversal.sol";
+import {CommonUniversal} from "@address-book/src/CommonUniversal.sol";
 
 import {Accountant} from "src/Accountant.sol";
 import {RewardReceiver} from "src/RewardReceiver.sol";

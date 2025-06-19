@@ -1,13 +1,20 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
+/// Interfaces
 import {IBooster} from "@interfaces/convex/IBooster.sol";
 import {IBaseRewardPool} from "@interfaces/convex/IBaseRewardPool.sol";
 import {IStashTokenWrapper} from "@interfaces/convex/IStashTokenWrapper.sol";
+
+/// Address Book
+import {CurveProtocol} from "@address-book/src/CurveEthereum.sol";
+
+/// OpenZeppelin
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {CurveProtocol} from "address-book/src/CurveEthereum.sol";
-import {ImmutableArgsParser} from "src/libraries/ImmutableArgsParser.sol";
+
+/// Project Contracts
 import {Sidecar} from "src/Sidecar.sol";
+import {ImmutableArgsParser} from "src/libraries/ImmutableArgsParser.sol";
 
 /// @notice Sidecar for Convex.
 /// @dev For each PID, a minimal proxy is deployed using this contract as implementation.

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {CurveProtocol, CurveLocker} from "address-book/src/CurveEthereum.sol";
+import {CurveProtocol, CurveLocker} from "@address-book/src/CurveEthereum.sol";
 import "forge-std/src/Script.sol";
 import {Base} from "script/Base.sol";
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";

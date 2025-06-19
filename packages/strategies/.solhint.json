@@ -8,7 +8,7 @@
 		"payable-fallback": "warn",
 		"code-complexity": ["warn", 8],
 		"imports-order": "warn",
-		"imports-on-top": "warn",
+		"imports-on-top": "off",
 		"visibility-modifier-order": "warn",
 		"avoid-sha3": "warn",
 		"avoid-tx-origin": "warn",

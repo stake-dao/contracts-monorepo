@@ -3,8 +3,9 @@ pragma solidity 0.8.28;
 
 import {Script} from "forge-std/src/Script.sol";
 import {console} from "forge-std/src/console.sol";
-import {CurveLocker} from "address-book/src/CurveEthereum.sol";
-import {Safe, SafeLibrary, SafeProxy} from "test/utils/SafeLibrary.sol";
+import {CurveLocker} from "@address-book/src/CurveEthereum.sol";
+import {Safe, SafeLibrary} from "test/utils/SafeLibrary.sol";
+import {SafeProxy} from "@safe/contracts/proxies/SafeProxy.sol";
 
 /// @title GetLocker
 /// @notice Deployment script for creating the Curve Locker Safe at a deterministic address

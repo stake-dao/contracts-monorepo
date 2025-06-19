@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 import {BaseTest} from "test/Base.t.sol";
 import {MockERC20} from "forge-std/src/mocks/MockERC20.sol";
-import {YieldnestProtocol} from "address-book/src/YieldnestEthereum.sol";
+import {YieldnestProtocol} from "@address-book/src/YieldnestEthereum.sol";
 import {YieldnestAutocompoundedVault} from "src/integrations/yieldnest/YieldnestAutocompoundedVault.sol";
 
 contract AutocompoundedVaultTest is BaseTest {

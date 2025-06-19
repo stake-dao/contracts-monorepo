@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.28;
 
-import {YieldnestProtocol} from "address-book/src/YieldnestEthereum.sol";
+import {YieldnestProtocol} from "@address-book/src/YieldnestEthereum.sol";
 import {Test} from "forge-std/src/Test.sol";
 import {YieldnestAutocompoundedVault} from "src/integrations/yieldnest/YieldnestAutocompoundedVault.sol";
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
