@@ -5,7 +5,7 @@ import {IL2Booster} from "@interfaces/convex/IL2Booster.sol";
 import {IL2BaseRewardPool} from "@interfaces/convex/IL2BaseRewardPool.sol";
 import {IStashTokenWrapper} from "@interfaces/convex/IStashTokenWrapper.sol";
 import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {CurveProtocol} from "address-book/src/CurveEthereum.sol";
+import {CurveProtocol} from "@address-book/src/CurveEthereum.sol";
 import {ImmutableArgsParser} from "src/libraries/ImmutableArgsParser.sol";
 import {Sidecar} from "src/Sidecar.sol";
 

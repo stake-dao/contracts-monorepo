@@ -93,7 +93,7 @@ importers:
         specifier: github:foundry-rs/forge-std#v1.9.5
         version: https://codeload.github.com/foundry-rs/forge-std/tar.gz/b93cf4bc34ff214c099dc970b153f85ade8c9f66
       solhint:
-        specifier: ^5.0.5
+        specifier: ^5.1.0
         version: 5.1.0
 
 packages:

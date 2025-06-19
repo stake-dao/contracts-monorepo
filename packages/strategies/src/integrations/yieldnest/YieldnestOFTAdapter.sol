@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 import {OFTAdapter} from "layerzerolabs/oft-evm/contracts/OFTAdapter.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {Common} from "address-book/src/CommonEthereum.sol";
+import {Common} from "@address-book/src/CommonEthereum.sol";
 
 /// @title asdYND Yieldnest OFTAdapter
 /// @notice This contract enables bridging of asdYND tokens from Ethereum mainnet to BSC using LayerZero V2.

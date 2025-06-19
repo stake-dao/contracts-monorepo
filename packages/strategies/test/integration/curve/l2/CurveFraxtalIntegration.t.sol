@@ -3,8 +3,8 @@ pragma solidity ^0.8.27;
 
 import "test/integration/curve/CurveL2Integration.sol";
 import {IL2Booster} from "@interfaces/convex/IL2Booster.sol";
-import {CurveProtocol} from "address-book/src/CurveFraxtal.sol";
-import {ConvexProtocol} from "address-book/src/ConvexFraxtal.sol";
+import {CurveProtocol} from "@address-book/src/CurveFraxtal.sol";
+import {ConvexProtocol} from "@address-book/src/ConvexFraxtal.sol";
 import {IChildLiquidityGaugeFactory} from "@interfaces/curve/IChildLiquidityGaugeFactory.sol";
 import {CurveFactory as L2CurveFactory} from "src/integrations/curve/L2/CurveFactory.sol";
 

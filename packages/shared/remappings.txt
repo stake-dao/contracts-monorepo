@@ -1,8 +1,7 @@
 solady=node_modules/solady/
 solmate=node_modules/solmate/
 forge-std=node_modules/forge-std/
-address-book=node_modules/@stake-dao/address-book/
-openzeppelin-contracts=node_modules/@openzeppelin/contracts
+@address-book=node_modules/@stake-dao/address-book/
 @openzeppelin/contracts=node_modules/@openzeppelin/contracts
 solidity-examples/=node_modules/@layerzerolabs/solidity-examples/contracts/
 murky/=node_modules/murky.git/src/

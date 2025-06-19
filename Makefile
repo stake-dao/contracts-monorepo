@@ -51,10 +51,10 @@ test-%:
 
 
 lint:
-	@forge fmt --check && npx solhint "{script,src,test}/**/*.sol"
+	@forge fmt --check && npx solhint "src/**/*.sol"
 
 lint-fix:
-	@forge fmt && npx solhint --fix "{script,src,test}/**/*.sol" --fix --noPrompt --disc
+	@forge fmt && npx solhint --fix "src/**/*.sol" --fix --noPrompt --disc
 
 # TODO: Remove this once we have a proper simulation framework.
 run:

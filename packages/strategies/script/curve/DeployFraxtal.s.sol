@@ -1,11 +1,11 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.27;
 
-import {DAO} from "address-book/src/DaoEthereum.sol";
-import {CurveLocker} from "address-book/src/CurveEthereum.sol";
-import {CurveProtocol} from "address-book/src/CurveFraxtal.sol";
-import {ConvexProtocol} from "address-book/src/ConvexFraxtal.sol";
-import {CommonUniversal} from "address-book/src/CommonUniversal.sol";
+import {DAO} from "@address-book/src/DaoEthereum.sol";
+import {CurveLocker} from "@address-book/src/CurveEthereum.sol";
+import {CurveProtocol} from "@address-book/src/CurveFraxtal.sol";
+import {ConvexProtocol} from "@address-book/src/ConvexFraxtal.sol";
+import {CommonUniversal} from "@address-book/src/CommonUniversal.sol";
 
 import "script/curve/BaseCurveDeploy.sol";
 

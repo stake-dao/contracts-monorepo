@@ -5,7 +5,7 @@ import {IBooster} from "@interfaces/convex/IBooster.sol";
 import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 import {IGaugeController} from "@interfaces/curve/IGaugeController.sol";
 import {IStrategy} from "@interfaces/stake-dao/IStrategy.sol";
-import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
+import {CurveLocker, CurveProtocol} from "@address-book/src/CurveEthereum.sol";
 import {Factory} from "src/Factory.sol";
 import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";

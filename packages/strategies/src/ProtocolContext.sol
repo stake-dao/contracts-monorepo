@@ -2,15 +2,15 @@
 pragma solidity 0.8.28;
 
 import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
+
 import {IAccountant} from "src/interfaces/IAccountant.sol";
-import {IProtocolContext} from "src/interfaces/IProtocolContext.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
 /// @title ProtocolContext
 /// @author Stake DAO
 /// @notice Base contract providing shared protocol configuration and transaction execution
 /// @dev Inherited by Strategy and other protocol-specific contracts to ensure consistent configuration
-contract ProtocolContext is IProtocolContext {
+contract ProtocolContext {
     //////////////////////////////////////////////////////
     // --- IMMUTABLES
     //////////////////////////////////////////////////////

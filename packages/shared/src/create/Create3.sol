@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {CommonUniversal} from "address-book/src/CommonUniversal.sol";
+import {CommonUniversal} from "@address-book/src/CommonUniversal.sol";
 import {ICreateX} from "src/create/ICreateX.sol";
 
 /// @title Create3 Library

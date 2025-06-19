@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
-import {IAccountant} from "src/interfaces/IAccountant.sol";
-import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
+import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
 /// @title SidecarFactory
 /// @notice Base factory contract for deploying protocol-specific sidecar instances
@@ -50,8 +49,8 @@ abstract contract SidecarFactory is ISidecarFactory {
         require(_implementation != address(0) && _protocolController != address(0), ZeroAddress());
         require(_protocolId != bytes4(0), InvalidProtocolId());
 
-        IMPLEMENTATION = _implementation;
         PROTOCOL_ID = _protocolId;
+        IMPLEMENTATION = _implementation;
         PROTOCOL_CONTROLLER = IProtocolController(_protocolController);
     }
 

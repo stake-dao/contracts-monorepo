@@ -2,7 +2,7 @@
 pragma solidity ^0.8.27;
 
 import "test/integration/curve/CurveIntegration.sol";
-import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
+import {CurveLocker, CurveProtocol} from "@address-book/src/CurveEthereum.sol";
 
 contract CurveMainnetIntegrationTest is CurveIntegration {
     Config public _config = Config({

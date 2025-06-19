@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {YieldnestProtocol} from "address-book/src/YieldnestEthereum.sol";
+import {YieldnestProtocol} from "@address-book/src/YieldnestEthereum.sol";
 import {AutocompoundedVault} from "src/AutocompoundedVault.sol";
 
 /// @title Autocompounded Stake DAO YND Vault

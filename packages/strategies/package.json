@@ -12,6 +12,6 @@
 		"@stake-dao/interfaces": "workspace:*",
 		"@stake-dao/shared": "workspace:*",
 		"forge-std": "github:foundry-rs/forge-std#v1.9.5",
-		"solhint": "^5.0.5"
+		"solhint": "^5.1.0"
 	}
 }
