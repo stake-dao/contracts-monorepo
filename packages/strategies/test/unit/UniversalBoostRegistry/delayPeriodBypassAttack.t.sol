@@ -240,7 +240,6 @@ contract UniversalBoostRegistry__DelayPeriodBypassAttack is Test {
 
         // First attempt: queue short delay and config
         registry.queueDelayPeriod(1 hours);
-        uint64 firstConfigTime = uint64(block.timestamp);
         registry.queueNewProtocolConfig(PROTOCOL_ID, 0.1e18);
         registry.setFeeReceiver(PROTOCOL_ID, feeReceiver);
 

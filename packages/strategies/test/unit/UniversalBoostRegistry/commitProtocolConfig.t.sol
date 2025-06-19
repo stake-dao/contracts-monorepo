@@ -276,8 +276,6 @@ contract UniversalBoostRegistry__CommitProtocolConfig is Test {
 
         uint128 fee1 = 0.1e18;
         uint128 fee2 = 0.2e18;
-        address receiver1 = makeAddr("receiver1");
-        address receiver2 = makeAddr("receiver2");
 
         vm.startPrank(owner);
 
