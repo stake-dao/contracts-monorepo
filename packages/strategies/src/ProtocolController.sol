@@ -169,7 +169,6 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     constructor(address _owner) Ownable(_owner) {}
 
     //////////////////////////////////////////////////////
-    //////////////////////////////////////////////////////
     // --- PERMISSION MANAGEMENT
     //////////////////////////////////////////////////////
 
@@ -383,14 +382,14 @@ contract ProtocolController is IProtocolController, Ownable2Step {
 
     /// @notice Returns the vault address for a gauge
     /// @param _gauge The gauge address
-    /// @return _The vault address
+    /// @return _ The vault address
     function vaults(address _gauge) external view returns (address) {
         return gauge[_gauge].vault;
     }
 
     /// @notice Returns the reward receiver address for a gauge
     /// @param _gauge The gauge address
-    /// @return _The reward receiver address
+    /// @return _ The reward receiver address
     function rewardReceiver(address _gauge) external view returns (address) {
         return gauge[_gauge].rewardReceiver;
     }
@@ -425,6 +424,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     function isShutdown(address _gauge) external view returns (bool) {
         Gauge storage $gauge = gauge[_gauge];
 
+        // Check gauge first (more likely), then protocol
         return $gauge.isShutdown || _protocolComponents[$gauge.protocolId].isShutdown;
     }
 

@@ -84,6 +84,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     uint128 internal constant DEFAULT_PROTOCOL_FEE = 0.15e18;
 
     /// @notice Default harvest fee paid to harvesters (0.1%)
+    /// @dev Expressed as 0.001 in decimal form (0.001 * 100% = 0.1%)
     /// @dev Compensates for gas costs when calling harvest() function
     uint128 internal constant DEFAULT_HARVEST_FEE = 0.001e18;
 
@@ -292,6 +293,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
             if (policy == IStrategy.HarvestPolicy.HARVEST && newRewards > 0) {
                 // Calculate total fees in one operation
                 // We charge only protocol fee on the harvested rewards.
+                // @dev This prevents over-extraction by ensuring fees are calculated only on new rewards
                 if (newFeeSubjectAmount > 0) {
                     totalFees = newFeeSubjectAmount.mulDiv(getProtocolFeePercent(), 1e18).toUint128();
                     // Update protocol fees accrued.
@@ -497,6 +499,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
             IStrategy.PendingRewards memory pendingRewards = IStrategy(strategy).harvest(gauge, harvestData[i]);
 
             // 2. Under‑delivery guard (totals must cover soft credits)
+            // @dev Critical security check: ensures strategy cannot under-report rewards
+            // @dev Prevents loss of user funds by validating reward amounts match expectations
             require(
                 pendingRewards.totalAmount >= _vault.totalAmount
                     && pendingRewards.feeSubjectAmount >= _vault.feeSubjectAmount,

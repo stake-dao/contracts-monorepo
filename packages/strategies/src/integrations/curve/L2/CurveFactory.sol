@@ -69,31 +69,40 @@ contract CurveFactory is Factory, Ownable2Step {
         emit VaultDeployed(gauge, vault, rewardReceiver, sidecar);
     }
 
-    function _isValidToken(address _token) internal view virtual override returns (bool) {
+    function _isValidToken(address _token) internal view virtual override returns (bool isValid) {
         /// If the token is not valid, return false.
         if (!super._isValidToken(_token)) return false;
         require(childLiquidityGaugeFactories.length > 0, ChildLiquidityGaugeFactoriesNotSet());
 
         /// If the token is available as an inflation receiver, it's not valid.
         for (uint256 i = 0; i < childLiquidityGaugeFactories.length; i++) {
-            if (childLiquidityGaugeFactories[i].is_valid_gauge(_token)) return false;
+            if (childLiquidityGaugeFactories[i].is_valid_gauge(_token)) {
+                isValid = false;
+                break;
+            }
         }
 
-        return true;
+        return isValid;
     }
 
-    function _isValidGauge(address _gauge) internal view virtual override returns (bool) {
+    function _isValidGauge(address _gauge) internal view virtual override returns (bool isValid) {
         require(childLiquidityGaugeFactories.length > 0, ChildLiquidityGaugeFactoriesNotSet());
         /// Check if the gauge is a valid candidate and available as an inflation receiver.
         /// This call always reverts if the gauge is not valid.
         for (uint256 i = 0; i < childLiquidityGaugeFactories.length; i++) {
-            if (!childLiquidityGaugeFactories[i].is_valid_gauge(_gauge)) return false;
+
+            if (childLiquidityGaugeFactories[i].is_valid_gauge(_gauge)) {
+                isValid = true;
+                break;
+            }
         }
 
         /// Check if the gauge is not killed.
-        if (IL2LiquidityGauge(_gauge).is_killed()) return false;
+        if (IL2LiquidityGauge(_gauge).is_killed()) {
+            isValid = false;
+        }
 
-        return true;
+        return isValid;
     }
 
     function _getAsset(address _gauge) internal view virtual override returns (address) {

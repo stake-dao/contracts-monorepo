@@ -27,6 +27,7 @@ contract Allocator is IAllocator {
 
         GATEWAY = _gateway;
         // L2 optimization: gateway acts as both executor and token holder
+        // @dev Security: ensures LOCKER is never zero, critical for fund routing
         LOCKER = _locker == address(0) ? _gateway : _locker;
     }
 

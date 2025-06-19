@@ -252,7 +252,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @param shares The amount of shares to mint.
     /// @param referrer The address of the referrer. Can be the zero address.
     function _deposit(address account, address receiver, uint256 assets, uint256 shares, address referrer) internal {
-        // Sync extra rewards before balance changes
+        // 1. Update extra reward state before balance changes
         _checkpoint(receiver, address(0));
 
         // Ask allocator where to send the LP tokens (e.g., 70% locker, 30% Convex)
@@ -331,7 +331,8 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         // Burn the shares by calling the endpoint function of the accountant contract
         _burn(owner, shares, pendingRewards, POLICY);
 
-        /// @dev If the gauge is shutdown, funds will sit here.
+        /// @dev If the gauge is shutdown, funds will sit here pending recovery
+        /// @dev Recovery mechanism: users can withdraw directly from vault
         if (PROTOCOL_CONTROLLER.isShutdown(gauge())) {
             // Transfer the assets to the receiver. The 1:1 relationship between assets and shares is maintained.
             SafeERC20.safeTransfer(IERC20(asset()), receiver, shares);
@@ -836,7 +837,7 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         });
 
         /// Checkpoint to get the pending rewards.
-        /// @dev We pass the strategy as the receiver to avoid the zero address check on some tokens.
+        /// @dev Strategy address used as receiver to avoid zero address validation in some tokens
         IStrategy.PendingRewards memory pendingRewards = strategy().withdraw(allocation, POLICY, address(strategy()));
 
         // 2. Update Balances via Accountant
