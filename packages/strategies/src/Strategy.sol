@@ -24,6 +24,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     using TransientSlot for *;
 
     /// @dev Transient storage slot for batching reward transfers during harvest
+    /// @dev Gas optimization: reduces multiple ERC20 transfers to single batch transfer
     bytes32 internal constant FLUSH_AMOUNT_SLOT = keccak256("strategy.flushAmount");
 
     //////////////////////////////////////////////////////
@@ -155,6 +156,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         address gauge = allocation.gauge;
 
         // For shutdown gauges, only sync rewards without withdrawing
+        // @dev Prevents loss of user funds by ensuring no withdrawals after shutdown
         if (PROTOCOL_CONTROLLER.isShutdown(gauge)) return _harvestOrCheckpoint(gauge, policy);
 
         // Execute withdrawals from each target
@@ -318,7 +320,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @dev Locker rewards are fee-subject, sidecar rewards may not be
     /// @param gauge The gauge to harvest from
     /// @param extraData Protocol-specific harvest parameters
-    /// @param deferRewards If true, accumulate in transient storage for batch transfer
+    /// @param deferRewards If true, accumulate in transient storage for batch transfer (gas optimization)
     /// @return pendingRewards Total and fee-subject reward amounts
     function _harvest(address gauge, bytes memory extraData, bool deferRewards)
         internal

@@ -58,7 +58,7 @@ lint-fix:
 
 # TODO: Remove this once we have a proper simulation framework.
 run:
-	@forge script script/curve/DeployFraxtal.s.sol -vvvv --broadcast --private-key ${PRIVATE_KEY} --non-interactive
+	@forge script script/curve/DeployFraxtal.s.sol -vvvv # --broadcast --private-key ${PRIVATE_KEY} --non-interactive
 
 # TODO: Add the verification for the Fraxtal deployment.
 verify:

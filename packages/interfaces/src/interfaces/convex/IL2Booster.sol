@@ -2,6 +2,7 @@
 pragma solidity ^0.8.19;
 
 interface IL2Booster {
+    function poolLength() external view returns (uint256);
 
     function poolInfo(uint256 pid)
         external
