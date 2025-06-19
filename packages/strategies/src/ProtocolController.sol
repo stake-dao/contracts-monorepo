@@ -68,15 +68,9 @@ contract ProtocolController is IProtocolController, Ownable2Step {
 
     /// @notice Event emitted when a protocol component is set
     /// @param protocolId The protocol identifier
-    /// @param COMPONENT_ID The component identifier ("Strategy", "Allocator", "Harvester", "Accountant", "FeeReceiver")
+    /// @param componentId The component identifier ("Strategy", "Allocator", "Accountant", "FeeReceiver")
     /// @param component The component address
-    event ProtocolComponentSet(bytes4 indexed protocolId, string indexed COMPONENT_ID, address indexed component);
-
-    string internal constant COMPONENT_ID_ACCOUNTANT = "Accountant";
-    string internal constant COMPONENT_ID_FEE_RECEIVER = "FeeReceiver";
-    string internal constant COMPONENT_ID_HARVESTER = "Harvester";
-    string internal constant COMPONENT_ID_ALLOCATOR = "Allocator";
-    string internal constant COMPONENT_ID_STRATEGY = "Strategy";
+    event ProtocolComponentSet(bytes4 indexed protocolId, string indexed componentId, address indexed component);
 
     /// @notice Event emitted when a vault is registered
     /// @param gauge The gauge address
@@ -225,7 +219,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     function setStrategy(bytes4 protocolId, address _strategy) external onlyOwner {
         require(_strategy != address(0), ZeroAddress());
         _protocolComponents[protocolId].strategy = _strategy;
-        emit ProtocolComponentSet(protocolId, COMPONENT_ID_STRATEGY, _strategy);
+        emit ProtocolComponentSet(protocolId, "Strategy", _strategy);
     }
 
     /// @notice Sets a protocol allocator
@@ -235,7 +229,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     function setAllocator(bytes4 protocolId, address _allocator) external onlyOwner {
         require(_allocator != address(0), ZeroAddress());
         _protocolComponents[protocolId].allocator = _allocator;
-        emit ProtocolComponentSet(protocolId, COMPONENT_ID_ALLOCATOR, _allocator);
+        emit ProtocolComponentSet(protocolId, "Allocator", _allocator);
     }
 
     /// @notice Sets a protocol accountant
@@ -249,7 +243,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
         require(_protocolComponents[protocolId].accountant == address(0), AccountantAlreadySet());
 
         _protocolComponents[protocolId].accountant = _accountant;
-        emit ProtocolComponentSet(protocolId, COMPONENT_ID_ACCOUNTANT, _accountant);
+        emit ProtocolComponentSet(protocolId, "Accountant", _accountant);
     }
 
     /// @notice Sets a protocol fee receiver
@@ -259,7 +253,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     function setFeeReceiver(bytes4 protocolId, address _feeReceiver) external onlyOwner {
         require(_feeReceiver != address(0), ZeroAddress());
         _protocolComponents[protocolId].feeReceiver = _feeReceiver;
-        emit ProtocolComponentSet(protocolId, COMPONENT_ID_FEE_RECEIVER, _feeReceiver);
+        emit ProtocolComponentSet(protocolId, "FeeReceiver", _feeReceiver);
     }
 
     //////////////////////////////////////////////////////
