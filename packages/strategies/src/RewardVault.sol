@@ -100,19 +100,19 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @dev Packed into 2 storage slots for gas efficiency
     struct RewardData {
         // Slot 1
-        address rewardsDistributor;     // Who can add rewards for this token
-        uint32 lastUpdateTime;          // Last time rewardPerTokenStored was updated
-        uint32 periodFinish;            // When current reward period ends
+        address rewardsDistributor; // Who can add rewards for this token
+        uint32 lastUpdateTime; // Last time rewardPerTokenStored was updated
+        uint32 periodFinish; // When current reward period ends
         // Slot 2
-        uint128 rewardRate;             // Tokens distributed per second
-        uint128 rewardPerTokenStored;   // Cumulative rewards per vault token (scaled by 1e18)
+        uint128 rewardRate; // Tokens distributed per second
+        uint128 rewardPerTokenStored; // Cumulative rewards per vault token (scaled by 1e18)
     }
 
     /// @notice Tracks user's reward state for each reward token
     /// @dev Packed into 1 storage slot
     struct AccountData {
-        uint128 rewardPerTokenPaid;     // User's last synced rewardPerTokenStored
-        uint128 claimable;              // Rewards ready to claim
+        uint128 rewardPerTokenPaid; // User's last synced rewardPerTokenStored
+        uint128 claimable; // Rewards ready to claim
     }
 
     ///////////////////////////////////////////////////////////////

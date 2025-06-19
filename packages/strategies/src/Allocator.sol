@@ -89,7 +89,6 @@ contract Allocator is IAllocator {
 
     /// @notice Lists all possible allocation targets for a gauge
     /// @dev Base: only locker. Override to include sidecars
-    /// @param gauge The gauge to get targets for (unused in base)
     /// @return targets Array of addresses that can receive allocations
     function getAllocationTargets(address /*gauge*/ ) public view virtual returns (address[] memory) {
         address[] memory targets = new address[](1);

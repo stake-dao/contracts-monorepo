@@ -18,7 +18,7 @@ import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 ///      - User rewards = (current integral - last user integral) * user balance
 ///      Two reward distribution policies:
 ///      - HARVEST: Claims rewards from gauge on every user action (higher gas, immediate rewards)
-///      - CHECKPOINT: Accumulates rewards in gauge until manual harvest, but users can claim 
+///      - CHECKPOINT: Accumulates rewards in gauge until manual harvest, but users can claim
 ///                   from the shared reward pool if tokens are available (cross-vault liquidity)
 contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     using Math for uint256;
@@ -33,21 +33,21 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @notice Tracks reward and supply data for each vault
     /// @dev Packed struct to minimize storage costs (3 storage slots)
     struct VaultData {
-        uint256 integral;           // Cumulative reward per token (scaled by SCALING_FACTOR)
-        uint128 supply;             // Total supply of vault tokens
-        uint128 feeSubjectAmount;   // Amount of rewards subject to fees
-        uint128 totalAmount;        // Total reward amount including fee-exempt rewards
-        uint128 netCredited;        // Net rewards already credited to users (after fees)
+        uint256 integral; // Cumulative reward per token (scaled by SCALING_FACTOR)
+        uint128 supply; // Total supply of vault tokens
+        uint128 feeSubjectAmount; // Amount of rewards subject to fees
+        uint128 totalAmount; // Total reward amount including fee-exempt rewards
+        uint128 netCredited; // Net rewards already credited to users (after fees)
         uint128 reservedHarvestFee; // Harvest fees reserved but not yet paid out
-        uint128 reservedProtocolFee;// Protocol fees reserved but not yet accrued
+        uint128 reservedProtocolFee; // Protocol fees reserved but not yet accrued
     }
 
     /// @notice Tracks individual user positions within a vault
     /// @dev Integral tracking enables O(1) reward calculations
     struct AccountData {
-        uint128 balance;            // User's token balance in the vault
-        uint256 integral;           // Last integral value when user's rewards were updated
-        uint256 pendingRewards;     // Rewards earned but not yet claimed
+        uint128 balance; // User's token balance in the vault
+        uint256 integral; // Last integral value when user's rewards were updated
+        uint256 pendingRewards; // Rewards earned but not yet claimed
     }
 
     /// @notice Struct that defines the fees parameters.
@@ -247,10 +247,10 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
 
     /// @notice Updates user balances and distributes rewards on every vault action
     /// @dev Core accounting function called by vaults during transfers, mints, and burns
-    ///      
+    ///
     ///      Token Operations:
     ///      - Mint (from = 0): Increases supply, updates receiver's reward integral
-    ///      - Burn (to = 0): Decreases supply, updates sender's reward integral  
+    ///      - Burn (to = 0): Decreases supply, updates sender's reward integral
     ///      - Transfer: Updates both sender and receiver integrals
     ///
     ///      Reward Distribution Policies:
