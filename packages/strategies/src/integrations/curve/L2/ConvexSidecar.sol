@@ -117,6 +117,7 @@ contract ConvexSidecar is Sidecar {
 
             if (_balance > 0) {
                 if (rewardToken == address(REWARD_TOKEN)) {
+                    rewardTokenAmount += _balance;
                     IERC20(rewardToken).safeTransfer(ACCOUNTANT, _balance);
                 } else {
                     /// Send the whole balance to the strategy.

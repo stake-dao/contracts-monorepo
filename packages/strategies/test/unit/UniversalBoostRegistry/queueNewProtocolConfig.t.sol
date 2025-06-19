@@ -108,13 +108,7 @@ contract UniversalBoostRegistry__QueueNewProtocolConfig is Test {
         registry.queueNewProtocolConfig(PROTOCOL_ID, secondFee);
 
         // Check that second configuration overwrote first
-        (
-            uint128 activeProtocolFees,
-            uint128 queuedProtocolFees,
-            uint64 lastUpdated,
-            uint64 queuedTimestamp,
-            address activeFeeReceiver
-        ) = registry.protocolConfig(PROTOCOL_ID);
+        (, uint128 queuedProtocolFees,, uint64 queuedTimestamp,) = registry.protocolConfig(PROTOCOL_ID);
 
         assertEq(queuedProtocolFees, secondFee);
         assertEq(queuedTimestamp, secondQueueTime);

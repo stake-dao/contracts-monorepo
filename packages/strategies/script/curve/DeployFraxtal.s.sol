@@ -38,7 +38,7 @@ contract DeployFraxtal is BaseCurveDeploy {
         super.run();
     }
 
-    function _deployGateway() internal override returns (Safe) {
+    function _deployGateway() internal pure override returns (Safe) {
         return Safe(payable(CurveLocker.LOCKER));
     }
 }

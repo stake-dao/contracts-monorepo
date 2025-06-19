@@ -16,7 +16,7 @@ contract UniversalBoostRegistry__ViewFunctions is Test {
         owner = registry.owner();
     }
 
-    function test_HasQueuedConfig_ReturnsFalseWhenNoConfig() external {
+    function test_HasQueuedConfig_ReturnsFalseWhenNoConfig() external view {
         // it returns false when no configuration is queued
 
         assertFalse(registry.hasQueuedConfig(PROTOCOL_ID));
@@ -62,7 +62,7 @@ contract UniversalBoostRegistry__ViewFunctions is Test {
         vm.stopPrank();
     }
 
-    function test_GetCommitTimestamp_ReturnsZeroWhenNoConfig() external {
+    function test_GetCommitTimestamp_ReturnsZeroWhenNoConfig() external view {
         // it returns zero when no configuration is queued
 
         assertEq(registry.getCommitTimestamp(PROTOCOL_ID), 0);
@@ -192,7 +192,7 @@ contract UniversalBoostRegistry__ViewFunctions is Test {
         assertEq(registry.getCommitTimestamp(protocolId), 0);
     }
 
-    function test_HasQueuedDelayPeriod_ReturnsFalseInitially() external {
+    function test_HasQueuedDelayPeriod_ReturnsFalseInitially() external view {
         // it returns false when no delay period is queued initially
 
         assertFalse(registry.hasQueuedDelayPeriod());
@@ -221,7 +221,7 @@ contract UniversalBoostRegistry__ViewFunctions is Test {
         assertFalse(registry.hasQueuedDelayPeriod());
     }
 
-    function test_GetDelayPeriodCommitTimestamp_ReturnsZeroInitially() external {
+    function test_GetDelayPeriodCommitTimestamp_ReturnsZeroInitially() external view {
         // it returns zero when no delay period is queued initially
 
         assertEq(registry.getDelayPeriodCommitTimestamp(), 0);
