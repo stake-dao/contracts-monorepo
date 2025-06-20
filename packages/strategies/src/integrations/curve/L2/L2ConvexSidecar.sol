@@ -11,7 +11,7 @@ import {Sidecar} from "src/Sidecar.sol";
 
 /// @notice Sidecar for Convex.
 /// @dev For each PID, a minimal proxy is deployed using this contract as implementation.
-contract ConvexSidecar is Sidecar {
+contract L2ConvexSidecar is Sidecar {
     using SafeERC20 for IERC20;
     using ImmutableArgsParser for address;
 
@@ -158,6 +158,21 @@ contract ConvexSidecar is Sidecar {
     /// @notice Get the amount of reward token earned by the strategy.
     /// @return The amount of reward token earned by the strategy.
     function getPendingRewards() public override returns (uint256) {
-        return baseRewardPool().earned(address(this)) + REWARD_TOKEN.balanceOf(address(this));
+        IL2BaseRewardPool.EarnedData[] memory earned = baseRewardPool().earned(address(this));
+
+        uint256 totalRewards = 0;
+
+        for (uint256 i; i < earned.length;) {
+            if (earned[i].rewardToken == address(REWARD_TOKEN)) {
+                totalRewards += earned[i].earnedAmount;
+                break;
+            }
+
+            unchecked {
+                ++i;
+            }
+        }
+
+        return totalRewards + REWARD_TOKEN.balanceOf(address(this));
     }
 }

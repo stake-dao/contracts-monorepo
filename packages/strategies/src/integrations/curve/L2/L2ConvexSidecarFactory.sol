@@ -9,7 +9,7 @@ import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
 /// @title ConvexSidecarFactory
 /// @notice Factory contract for deploying ConvexSidecar instances
 /// @dev Creates deterministic minimal proxies for ConvexSidecar implementation
-contract ConvexSidecarFactory is SidecarFactory {
+contract L2ConvexSidecarFactory is SidecarFactory {
     /// @notice The bytes4 ID of the Convex protocol
     /// @dev Used to identify the Convex protocol in the registry
     bytes4 private constant CURVE_PROTOCOL_ID = bytes4(keccak256("CURVE"));

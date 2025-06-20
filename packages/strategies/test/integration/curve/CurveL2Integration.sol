@@ -7,9 +7,9 @@ import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {CurveFactory} from "src/integrations/curve/L2/CurveFactory.sol";
 import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 import {CurveStrategy} from "src/integrations/curve/L2/CurveStrategy.sol";
-import {ConvexSidecar} from "src/integrations/curve/L2/ConvexSidecar.sol";
+import {L2ConvexSidecar} from "src/integrations/curve/L2/L2ConvexSidecar.sol";
 import {OnlyBoostAllocator} from "src/integrations/curve/OnlyBoostAllocator.sol";
-import {ConvexSidecarFactory} from "src/integrations/curve/L2/ConvexSidecarFactory.sol";
+import {L2ConvexSidecarFactory} from "src/integrations/curve/L2/L2ConvexSidecarFactory.sol";
 import {IL2Booster} from "@interfaces/convex/IL2Booster.sol";
 
 import "test/integration/BaseIntegrationTest.sol";
@@ -80,7 +80,7 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
         if (config.convex.isOnlyBoost) {
             /// 3a. Deploy the Convex Sidecar implementation.
             sidecarImplementation = address(
-                new ConvexSidecar({
+                new L2ConvexSidecar({
                     _accountant: address(accountant),
                     _protocolController: address(protocolController),
                     _cvx: config.convex.cvx,
@@ -90,7 +90,7 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
 
             /// 3b. Deploy the Convex Sidecar factory.
             sidecarFactory = address(
-                new ConvexSidecarFactory({
+                new L2ConvexSidecarFactory({
                     _implementation: address(sidecarImplementation),
                     _protocolController: address(protocolController),
                     _booster: config.convex.booster

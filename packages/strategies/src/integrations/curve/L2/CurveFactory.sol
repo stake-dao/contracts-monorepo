@@ -90,7 +90,6 @@ contract CurveFactory is Factory, Ownable2Step {
         /// Check if the gauge is a valid candidate and available as an inflation receiver.
         /// This call always reverts if the gauge is not valid.
         for (uint256 i = 0; i < childLiquidityGaugeFactories.length; i++) {
-
             if (childLiquidityGaugeFactories[i].is_valid_gauge(_gauge)) {
                 isValid = true;
                 break;

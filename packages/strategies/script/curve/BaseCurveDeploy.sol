@@ -8,8 +8,8 @@ import {OnlyBoostAllocator} from "src/integrations/curve/OnlyBoostAllocator.sol"
 
 import {CurveFactory as L2CurveFactory} from "src/integrations/curve/L2/CurveFactory.sol";
 import {CurveStrategy as L2CurveStrategy} from "src/integrations/curve/L2/CurveStrategy.sol";
-import {ConvexSidecar as L2ConvexSidecar} from "src/integrations/curve/L2/ConvexSidecar.sol";
-import {ConvexSidecarFactory as L2ConvexSidecarFactory} from "src/integrations/curve/L2/ConvexSidecarFactory.sol";
+import {L2ConvexSidecar} from "src/integrations/curve/L2/L2ConvexSidecar.sol";
+import {L2ConvexSidecarFactory} from "src/integrations/curve/L2/L2ConvexSidecarFactory.sol";
 
 import {CurveFactory} from "src/integrations/curve/CurveFactory.sol";
 import {CurveStrategy} from "src/integrations/curve/CurveStrategy.sol";
