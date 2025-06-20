@@ -9,8 +9,13 @@ import {Strategy} from "src/Strategy.sol";
 abstract contract BaseIntegrationTest is BaseSetup {
     using Math for uint256;
 
-    uint256 public constant MAX_REWARDS = 100_000e18;
-    uint256 public constant MAX_ACCOUNT_POSITIONS = 100;
+    function MAX_ACCOUNT_POSITIONS() public virtual returns (uint256) {
+        return 100;
+    }
+
+    function MAX_REWARDS() public virtual returns (uint256) {
+        return 100_000e18;
+    }
 
     address public harvester = makeAddr("Harvester");
 
@@ -698,7 +703,8 @@ abstract contract BaseIntegrationTest is BaseSetup {
     //////////////////////////////////////////////////////
 
     function _generateAccountPositionsAndRewards() internal returns (AccountPosition[] memory, uint256[] memory) {
-        uint256 length = bound(uint256(keccak256(abi.encode("length"))), 1, MAX_ACCOUNT_POSITIONS);
+        uint256 length = bound(uint256(keccak256(abi.encode("length"))), 1, MAX_ACCOUNT_POSITIONS());
+
         uint256[] memory rewards = new uint256[](length);
         AccountPosition[] memory positions = new AccountPosition[](length);
 
@@ -720,7 +726,7 @@ abstract contract BaseIntegrationTest is BaseSetup {
                 transferReceiver: makeAddr(string(abi.encodePacked("TransferReceiver", i)))
             });
 
-            rewards[i] = bound(uint256(keccak256(abi.encode("rewards", i))), 1e18, MAX_REWARDS);
+            rewards[i] = bound(uint256(keccak256(abi.encode("rewards", i))), 1e18, MAX_REWARDS());
         }
 
         return (positions, rewards);

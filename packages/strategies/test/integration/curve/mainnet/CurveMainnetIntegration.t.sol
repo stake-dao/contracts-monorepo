@@ -37,8 +37,20 @@ contract CurveMainnetIntegrationTest is CurveIntegration {
         })
     });
 
+    function poolIds() public view virtual returns (uint256[] memory) {
+        uint256[] memory _poolIds = new uint256[](7);
+        _poolIds[0] = 68;
+        _poolIds[1] = 40;
+        _poolIds[2] = 437;
+        _poolIds[3] = 436;
+        _poolIds[4] = 435;
+        _poolIds[5] = 434;
+        _poolIds[6] = 433;
+        return _poolIds;
+    }
+
     // All pool IDs from the old tests
-    uint256[] public poolIds = [68, 40, 437, 436, 435, 434, 433];
+    // uint256[] public poolIds = [68, 40, 437, 436, 435, 434, 433];
 
     // Mapping to store extra reward tokens for each gauge
     mapping(address => address[]) public gaugeExtraTokens;
@@ -59,8 +71,9 @@ contract CurveMainnetIntegrationTest is CurveIntegration {
         vaults = new RewardVault[](gauges.length);
         receivers = new RewardReceiver[](gauges.length);
 
-        for (uint256 i = 0; i < poolIds.length; i++) {
-            uint256 poolId = poolIds[i];
+        uint256[] memory _poolIds = poolIds();
+        for (uint256 i = 0; i < _poolIds.length; i++) {
+            uint256 poolId = _poolIds[i];
 
             /// Deploy the vault and receiver.
             (address vault, address receiver,) = CurveFactory(factory).create(poolId);
@@ -73,10 +86,11 @@ contract CurveMainnetIntegrationTest is CurveIntegration {
     function getGauges() internal override returns (address[] memory) {
         // Get gauge addresses for all pool IDs
         IBooster booster = IBooster(CurveProtocol.CONVEX_BOOSTER);
-        address[] memory gauges = new address[](poolIds.length);
+        uint256[] memory _poolIds = poolIds();
+        address[] memory gauges = new address[](_poolIds.length);
 
-        for (uint256 i = 0; i < poolIds.length; i++) {
-            (,, address gauge,,,) = booster.poolInfo(poolIds[i]);
+        for (uint256 i = 0; i < _poolIds.length; i++) {
+            (,, address gauge,,,) = booster.poolInfo(_poolIds[i]);
 
             // Mark as shutdown in old strategy
             vm.mockCall(
