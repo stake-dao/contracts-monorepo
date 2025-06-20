@@ -21,4 +21,10 @@ library Common {
 
     // LayerZero
     address internal constant LAYERZERO_ENDPOINT = CommonUniversal.LAYERZERO_ENDPOINT;
+
+    // Morpho
+    address internal constant MORPHO_BLUE = 0xBBBBBbbBBb9cC5e90e3b3Af64bdAF62C37EEFFCb;
+    address internal constant MORPHO_ADAPTIVE_CURVE_IRM = 0x870aC11D48B15DB9a138Cf899d20F13F79Ba00BC;
+    address internal constant MORPHO_CHAINLINK_ORACLE_FACTORY = 0x3A7bB36Ee3f3eE32A60e9f2b33c1e5f2E83ad766;
+    address internal constant MORPHO_META_MORPHO_FACTORY = 0x1897A8997241C1cD4bD0698647e4EB7213535c24;
 }

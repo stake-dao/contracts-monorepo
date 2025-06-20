@@ -148,7 +148,7 @@ abstract contract BaseSetup is Test {
         vm.label({account: address(strategy), newLabel: "Strategy"});
         vm.label({account: address(allocator), newLabel: "Allocator"});
         vm.label({account: address(accountant), newLabel: "Accountant"});
-        vm.label({account: address(rewardToken), newLabel: "Reward Token"});
+        vm.label({account: address(rewardToken), newLabel: "RewardToken"});
         vm.label({account: address(protocolController), newLabel: "Protocol Controller"});
     }
 
