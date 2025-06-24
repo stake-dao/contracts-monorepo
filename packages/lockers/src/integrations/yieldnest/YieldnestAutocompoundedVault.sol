@@ -5,6 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {YieldnestLocker} from "@address-book/src/YieldnestEthereum.sol";
 import {AutocompoundedVault} from "src/AutocompoundedVault.sol";
 import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
+import {SafeModule} from "shared/src/safe/SafeModule.sol";
 
 /// @title Yieldnest Autocompounded Vault
 /// @notice
@@ -22,13 +23,19 @@ import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 ///     users.
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-contract YieldnestAutocompoundedVault is AutocompoundedVault {
+contract YieldnestAutocompoundedVault is AutocompoundedVault, SafeModule {
     ////////////////////////////////////////////////////////////////
     /// --- CONSTANTS
     ///////////////////////////////////////////////////////////////
 
     /// @notice The liquidity gauge where the assets are staked on deposit
     ILiquidityGauge public immutable LIQUIDITY_GAUGE;
+
+    /// @notice The locker contract where the assets are staked
+    address public immutable LOCKER;
+
+    /// @notice The amount of staked assets
+    uint256 public staked;
 
     ////////////////////////////////////////////////////////////////
     /// --- ERRORS / EVENTS
@@ -60,7 +67,8 @@ contract YieldnestAutocompoundedVault is AutocompoundedVault {
     /// @param _owner The owner of the vault and the rewards receiver of the gauge
     /// @param _gauge The liquidity gauge where the assets will be deposited
     /// @param _manager The manager of the vault, responsible of managing the stream of rewards
-    constructor(address _owner, address _gauge, address _manager)
+    /// @param _gateway The gateway contract address
+    constructor(address _owner, address _gauge, address _manager, address _gateway, address _locker)
         AutocompoundedVault(
             7 days,
             IERC20(YieldnestProtocol.SDYND),
@@ -69,11 +77,10 @@ contract YieldnestAutocompoundedVault is AutocompoundedVault {
             _owner,
             _manager
         )
+        SafeModule(_gateway)
     {
         LIQUIDITY_GAUGE = ILiquidityGauge(_gauge);
-        ILiquidityGauge(_gauge).set_rewards_receiver(_manager);
-
-        IERC20(asset()).approve(_gauge, type(uint256).max);
+        LOCKER = _locker;
     }
 
     ////////////////////////////////////////////////////////////////
@@ -110,11 +117,14 @@ contract YieldnestAutocompoundedVault is AutocompoundedVault {
         uint256 assets = LIQUIDITY_GAUGE.balanceOf(msg.sender);
         shares = previewDeposit(assets);
 
-        // Transfer the gauge tokens from the caller to the vault contract
-        LIQUIDITY_GAUGE.transferFrom(msg.sender, address(this), assets);
+        // Transfer the gauge tokens from the caller to the locker contract
+        LIQUIDITY_GAUGE.transferFrom(msg.sender, _getLocker(), assets);
 
         // Mint the asdYND shares for the receiver (1:1 ratio with the gauge tokens)
         _mint(receiver, shares);
+
+        // Increase the internal accounting of the staked assets
+        staked += assets;
 
         // this event is required for the 4626-compatibility
         emit Deposit(msg.sender, receiver, assets, shares);
@@ -126,34 +136,43 @@ contract YieldnestAutocompoundedVault is AutocompoundedVault {
     ///////////////////////////////////////////////////////////////
 
     /// @notice Stake the deposit assets to the gauge
-    /// @dev The gauge has infinite approval for the asset token
+    /// @dev The internal accounting
     function _stake(uint256 assets) internal override {
-        LIQUIDITY_GAUGE.deposit(assets, address(this), false);
+        // Transfer the assets from this contract to the locker contract
+        IERC20(asset()).transfer(_getLocker(), assets);
+
+        // Deposit the assets in the gauge via the locker
+        bytes memory data = abi.encodeWithSignature("deposit(uint256)", assets);
+        _executeTransaction(address(LIQUIDITY_GAUGE), data);
+
+        // Increase the internal accounting of the staked assets
+        staked += assets;
     }
 
     /// @notice Unstake the assets from the gauge before the withdrawal
     function _unstake(uint256 assets) internal override {
-        LIQUIDITY_GAUGE.withdraw(assets, false);
+        // Decrease the internal accounting of the staked assets
+        staked -= assets;
+
+        // Withdraw the assets from the gauge via the locker
+        bytes memory data = abi.encodeWithSignature("withdraw(uint256,bool)", assets, false);
+        _executeTransaction(address(LIQUIDITY_GAUGE), data);
+
+        // Transfer the assets from the locker contract to this contract
+        data = abi.encodeWithSignature("transfer(address,uint256)", address(this), assets);
+        _executeTransaction(asset(), data);
     }
 
     /// @notice Get the current staked balance of this contract
     /// @return The staked balance of this contract
     function _getStakedBalance() internal view override returns (uint256) {
-        return LIQUIDITY_GAUGE.balanceOf(address(this));
+        return staked;
     }
 
-    /// @notice Claims the vault's rewards in the gauge for the manager
-    /// @dev The manager is the approved rewards receiver of this contract
-    function claimStakingRewards() external override {
-        LIQUIDITY_GAUGE.claim_rewards();
-    }
-
-    /// @notice Set the given address as the manager of the vault and the rewards receiver of the gauge
-    /// @param newManager The new manager
-    function _setManager(address newManager) internal override {
-        super._setManager(newManager);
-        // @dev: the gauge is not set before the constructor function is finished, that's why we need this check
-        if (address(LIQUIDITY_GAUGE) != address(0)) LIQUIDITY_GAUGE.set_rewards_receiver(newManager);
+    /// @notice Claim the staking rewards from the gauge
+    /// @dev This function is virtual to allow overriding for the YieldnestVotemarket contract
+    function claimStakingRewards() external pure override {
+        revert("CLAIM THE REWARDS FROM THE LOCKER DIRECTLY");
     }
 
     ////////////////////////////////////////////////////////////////
@@ -176,10 +195,16 @@ contract YieldnestAutocompoundedVault is AutocompoundedVault {
         emit LostAssetsRecovered(to, recover);
     }
 
+    /// @notice Get the locker contract address
+    /// @return The locker contract address
+    function _getLocker() internal view override returns (address) {
+        return LOCKER;
+    }
+
     /// @notice Get the version of the contract
     /// @custom:previous-version 0x3610A0f4a36513d27128e110dB999D6e1e6105D5
     function version() external pure override returns (string memory) {
-        return "2.0.0";
+        return "2.1.0";
     }
 >>>>>>> effd608d (feat(strategy): yield for asd vault)
 }

@@ -1,7 +1,6 @@
 forge-std=node_modules/forge-std/
 shared=node_modules/@stake-dao/shared/
 layerzerolabs/oft-evm=node_modules/@layerzerolabs/oft-evm/
-
 @safe=node_modules/@safe-global/safe-smart-account
 @openzeppelin/contracts=node_modules/@openzeppelin/contracts
 @interfaces=node_modules/@stake-dao/interfaces/src/interfaces

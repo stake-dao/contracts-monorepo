@@ -5,7 +5,7 @@ import {Test} from "forge-std/src/Test.sol";
 import {MockERC20} from "forge-std/src/mocks/MockERC20.sol";
 import {YieldnestAutocompoundedVault} from "src/integrations/yieldnest/YieldnestAutocompoundedVault.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {YieldnestProtocol} from "address-book/src/YieldnestEthereum.sol";
+import {YieldnestProtocol} from "@address-book/src/YieldnestEthereum.sol";
 import {MockGauge} from "test/mocks/MockGauge.sol";
 import {AutocompoundedVault} from "src/AutocompoundedVault.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
