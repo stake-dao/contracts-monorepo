@@ -75,7 +75,7 @@ contract YieldNestDepositor is DepositorBase, SafeModule {
         uint256 currentEpoch = block.timestamp / 1 weeks * 1 weeks;
 
         /// If the last epoch is greater than the current epoch, or the current epoch is less than 6 days, return
-        if (lastEpoch >= currentEpoch && block.timestamp < currentEpoch + 6 days) return;
+        if (tokenIds.length > 0 && (lastEpoch >= currentEpoch || block.timestamp < currentEpoch + 6.5 days)) return;
 
         /// Check if there's any tokens to lock by comparing the total supply and the balance of the locker
         _amount += IERC20Metadata(minter).totalSupply() - getLockedBalance();
