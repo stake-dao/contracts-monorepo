@@ -6,7 +6,7 @@ import {YearnLocker, YearnProtocol} from "@address-book/src/YearnEthereum.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {AccumulatorBase} from "src/AccumulatorBase.sol";
 import {IFeeDistributor} from "src/interfaces/IFeeDistributor.sol";
-import {SafeModule} from "src/utils/SafeModule.sol";
+import {SafeModule} from "@shared/safe/SafeModule.sol";
 
 /// @title YearnAccumulator
 /// @notice This contract is used to claim all the rewards the locker has received

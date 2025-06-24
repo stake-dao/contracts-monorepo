@@ -8,4 +8,8 @@ openzeppelin-contracts=node_modules/@openzeppelin/contracts
 solidity-examples/=node_modules/@layerzerolabs/endpoint-v1-solidity-examples/contracts/
 murky=node_modules/murky/
 @interfaces=node_modules/@stake-dao/interfaces/src/interfaces
+<<<<<<< HEAD
 shared=node_modules/@stake-dao/shared/
+=======
+@shared=node_modules/@stake-dao/shared/src/
+>>>>>>> 0af10a66 (refacto(lockers): move safe module to shared)

@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import {IGaugeController} from "@interfaces/curve/IGaugeController.sol";
-import {SafeModule} from "src/utils/SafeModule.sol";
+import {SafeModule} from "@shared/safe/SafeModule.sol";
 import {VoterPermissionManager} from "src/VoterPermissionManager.sol";
 
 /// @title VoterBase

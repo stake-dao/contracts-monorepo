@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 import {CurveProtocol} from "@address-book/src/CurveEthereum.sol";
 import {DepositorBase} from "src/DepositorBase.sol";
 import {IVeToken} from "src/interfaces/IVeToken.sol";
-import {SafeModule} from "src/utils/SafeModule.sol";
+import {SafeModule} from "@shared/safe/SafeModule.sol";
 
 /// @title CurveDepositor
 /// @notice Contract that accepts tokens and locks them in the Locker, minting sdToken in return

@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 import {YearnProtocol} from "@address-book/src/YearnEthereum.sol";
 import {DepositorBase} from "src/DepositorBase.sol";
 import {IVeYFI} from "src/interfaces/IVeYFI.sol";
-import {SafeModule} from "src/utils/SafeModule.sol";
+import {SafeModule} from "@shared/safe/SafeModule.sol";
 
 /// @title Stake DAO Yearn Depositor
 /// @notice Contract responsible for managing YFI token deposits, locking them in the Locker,

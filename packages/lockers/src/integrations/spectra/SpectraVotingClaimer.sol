@@ -7,7 +7,7 @@ import {SpectraLocker, SpectraProtocol} from "@address-book/src/SpectraBase.sol"
 import {AllowanceManager} from "common/governance/AllowanceManager.sol";
 import {FixedPointMathLib} from "solady/src/utils/FixedPointMathLib.sol";
 import {ISpectraVoter} from "src/interfaces/ISpectraVoter.sol";
-import {SafeModule} from "src/utils/SafeModule.sol";
+import {SafeModule} from "@shared/safe/SafeModule.sol";
 
 interface ISpectraVotingReward {
     function earned(address ve, address token, uint256 tokenId) external view returns (uint256);

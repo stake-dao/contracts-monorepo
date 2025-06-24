@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 import {BalancerProtocol} from "@address-book/src/BalancerEthereum.sol";
 import {DepositorBase} from "src/DepositorBase.sol";
 import {IVeToken} from "src/interfaces/IVeToken.sol";
-import {SafeModule} from "src/utils/SafeModule.sol";
+import {SafeModule} from "@shared/safe/SafeModule.sol";
 
 /// @title Contract that accepts tokens and locks them
 /// @author StakeDAO

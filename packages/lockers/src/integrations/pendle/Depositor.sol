@@ -5,7 +5,7 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {PendleProtocol} from "@address-book/src/PendleEthereum.sol";
 import {DepositorBase} from "src/DepositorBase.sol";
 import {IVePendle} from "src/interfaces/IVePendle.sol";
-import {SafeModule} from "src/utils/SafeModule.sol";
+import {SafeModule} from "@shared/safe/SafeModule.sol";
 
 /// @title Stake DAO Pendle Depositor
 /// @notice Contract responsible for managing PENDLE token deposits, locking them in the Locker,
