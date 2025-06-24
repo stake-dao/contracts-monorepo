@@ -97,4 +97,10 @@ interface ISafe {
     function swapOwner(address prevOwner, address owner, address newOwner) external;
 
     function isModuleEnabled(address module) external view returns (bool);
+
+    /**
+     * @notice Sets the fallback handler for the Safe.
+     * @param fallbackHandler The address of the fallback handler.
+     */
+    function setFallbackHandler(address fallbackHandler) external;
 }
