@@ -180,7 +180,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="lockerprelaunch"><a class="header" href="#lockerprelaunch">LockerPreLaunch</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/e0e82c61a31386ea3c4a079a13dd3aee77414958/src/LockerPreLaunch.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/1d22c57fe6521a55eaf8ec7166f24e4eb4a7c8fc/src/LockerPreLaunch.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="/src/interfaces/IPreLaunchLocker.sol/interface.IPreLaunchLocker.html">IPreLaunchLocker</a></p>
 <p>A contract that enables secure token locking before full protocol deployment. The LockerPreLaunch
@@ -193,7 +193,8 @@ Key Features:</p>
 <li>Pre-Launch Locking: Enables token locking mechanism before the full protocol deployment</li>
 <li>Immediate sdToken Minting: Mints sdTokens to users immediately upon deposit with 1:1 ratio</li>
 <li>Direct Gauge Integration: Optional direct staking of sdTokens into gauge upon deposit</li>
-<li>Safety Net: Includes a refund mechanism if the project launch is canceled
+<li>Safety Net: Includes a refund mechanism if the project launch is canceled</li>
+<li>Force Cancel Timer: The force-cancel timer now starts on the first deposit, not at deployment. This ensures the force-cancel window is meaningful for users and not wasted during the pre-launch phase.
 State Machine:</li>
 <li>IDLE: Initial state where:
 • Users can deposit tokens via deposit() with optional immediate gauge staking
@@ -322,6 +323,7 @@ slot: 1 (packed with <code>depositor</code>)</p>
 <h3 id="deposit"><a class="header" href="#deposit">deposit</a></h3>
 <p>--- DEPOSIT</p>
 <p>Deposit tokens for a given receiver.</p>
+<p><em>The force-cancel timer is started on the first deposit</em></p>
 <p><strong>Notes:</strong></p>
 <ul>
 <li>
@@ -352,6 +354,11 @@ reverts: REQUIRED_PARAM if the given amount is zero.</p>
 <tr><td><code>stake</code></td><td><code>bool</code></td><td>Whether to stake the tokens in the gauge.</td></tr>
 </tbody></table>
 </div>
+<h3 id="_starttimer"><a class="header" href="#_starttimer">_startTimer</a></h3>
+<p>Internal function to start the force-cancel timer.</p>
+<p><em>This function is called when the first deposit is made.</em></p>
+<pre><code class="language-solidity">function _startTimer() internal;
+</code></pre>
 <h3 id="lock"><a class="header" href="#lock">lock</a></h3>
 <p>--- LOCK</p>
 <p>Set the depositor and lock the tokens in the given depositor contract.</p>
@@ -485,6 +492,12 @@ reverts: ONLY_GOVERNANCE if the caller is not the stored governance address.</p>
 <tr><td><code>_state</code></td><td><code>STATE</code></td><td>The new state of the locker.</td></tr>
 </tbody></table>
 </div>
+<h3 id="identifier"><a class="header" href="#identifier">identifier</a></h3>
+<pre><code class="language-solidity">function identifier() external pure returns (string memory);
+</code></pre>
+<h3 id="version"><a class="header" href="#version">version</a></h3>
+<pre><code class="language-solidity">function version() external pure returns (string memory);
+</code></pre>
 <h2 id="events"><a class="header" href="#events">Events</a></h2>
 <h3 id="governanceupdated"><a class="header" href="#governanceupdated">GovernanceUpdated</a></h3>
 <p>--- EVENTS &amp; ERRORS</p>
@@ -506,9 +519,9 @@ reverts: ONLY_GOVERNANCE if the caller is not the stored governance address.</p>
 <tr><td><code>newState</code></td><td><code>STATE</code></td><td>The new state of the locker.</td></tr>
 </tbody></table>
 </div>
-<h3 id="tokensstaked"><a class="header" href="#tokensstaked">TokensStaked</a></h3>
+<h3 id="tokenstaked"><a class="header" href="#tokenstaked">TokenStaked</a></h3>
 <p>Event emitted each time a user stakes their sdTokens.</p>
-<pre><code class="language-solidity">event TokensStaked(address indexed caller, address indexed receiver, address indexed gauge, uint256 amount);
+<pre><code class="language-solidity">event TokenStaked(address indexed caller, address indexed receiver, address indexed gauge, uint256 amount);
 </code></pre>
 <p><strong>Parameters</strong></p>
 <div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
@@ -516,6 +529,15 @@ reverts: ONLY_GOVERNANCE if the caller is not the stored governance address.</p>
 <tr><td><code>receiver</code></td><td><code>address</code></td><td>The address who received the gauge token.</td></tr>
 <tr><td><code>gauge</code></td><td><code>address</code></td><td>The gauge that the sdTokens were staked to.</td></tr>
 <tr><td><code>amount</code></td><td><code>uint256</code></td><td>The amount of sdTokens staked.</td></tr>
+</tbody></table>
+</div>
+<h3 id="timerstarted"><a class="header" href="#timerstarted">TimerStarted</a></h3>
+<p>Event emitted once when the force-cancel timer is started (on first deposit).</p>
+<pre><code class="language-solidity">event TimerStarted(uint256 timestamp);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>timestamp</code></td><td><code>uint256</code></td><td>The timestamp when the timer was started.</td></tr>
 </tbody></table>
 </div>
 <h2 id="errors"><a class="header" href="#errors">Errors</a></h2>
