@@ -142,8 +142,6 @@ abstract contract DepositorBase {
 
         MAX_LOCK_DURATION = _maxLockDuration;
 
-        // set the state of the contract to ACTIVE
-        _setState(STATE.ACTIVE);
 
         /// Approve sdToken to gauge.
         SafeTransferLib.safeApprove(minter, gauge, type(uint256).max);
