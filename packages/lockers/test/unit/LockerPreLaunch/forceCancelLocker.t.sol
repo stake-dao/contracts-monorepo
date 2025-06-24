@@ -31,6 +31,12 @@ contract PreLaunchLocker__forceCancelLocker is PreLaunchLockerTest {
     function test_SetsTheStateToCANCELED() external {
         // it sets the state to CANCELED
 
+        // first deposit to trigger the update of timestamp
+        uint256 amount = 1e22;
+        deal(address(token), address(this), amount);
+        token.approve(address(locker), amount);
+        locker.deposit(amount, false);
+
         // fast forward the timestamp by the delay and expect the state to be CANCELED
         vm.warp(block.timestamp + locker.FORCE_CANCEL_DELAY());
         locker.forceCancelLocker();

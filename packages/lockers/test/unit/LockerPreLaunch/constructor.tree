@@ -6,10 +6,10 @@ PreLaunchLocker__constructor
 ├── it sets the token to the given address
 ├── it sets the sdToken to the given address
 ├── it sets the gauge to the given address
-├── it sets the timestamp to the current timestamp
 ├── it sets the state to IDLE
 ├── it sets the governance to the caller
 ├── it sets the default value given no custom force cancel delay
 ├── it sets the custom force cancel delay if provided
+├── it doesn't set the timestamp
 ├── it emits the StateUpdate event
 └── it emits the GovernanceUpdated event

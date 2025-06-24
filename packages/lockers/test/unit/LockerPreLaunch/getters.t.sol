@@ -38,7 +38,7 @@ contract PreLaunchLocker__getters is PreLaunchLockerTest {
     function test_ExposesTheTimestamp() external view {
         // it exposes the timestamp
 
-        assertNotEq(locker.timestamp(), 0);
+        assertEq(locker.timestamp(), 0);
     }
 
     function skip_test_ExposesTheDepositor(address depositor)

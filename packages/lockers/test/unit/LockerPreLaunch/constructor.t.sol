@@ -72,15 +72,6 @@ contract PreLaunchLocker__constructor is PreLaunchLockerTest {
         assertEq(address(locker.gauge()), _gauge);
     }
 
-    function test_SetsTheTimestampToTheCurrentTimestamp(uint96 timestamp) external {
-        // it sets the timestamp to the current timestamp
-
-        vm.warp(timestamp);
-
-        LockerPreLaunch locker = new LockerPreLaunch(makeAddr("token"), address(sdToken), address(gauge), 0);
-        assertEq(locker.timestamp(), timestamp);
-    }
-
     function test_SetsTheStateToIDLE() external {
         // it sets the state to IDLE
 
@@ -114,6 +105,10 @@ contract PreLaunchLocker__constructor is PreLaunchLockerTest {
         LockerPreLaunch locker =
             new LockerPreLaunch(makeAddr("token"), address(sdToken), address(gauge), customForceCancelDelay);
         assertEq(locker.FORCE_CANCEL_DELAY(), customForceCancelDelay);
+    }
+
+    function test_DoesntSetTheTimestamp() external {
+        assertEq(locker.timestamp(), 0);
     }
 
     function test_EmitsTheStateUpdateEvent() external {
