@@ -15,3 +15,5 @@ PreLaunchLocker__deposit
 │   └── it emits the TokensStaked event
 └── given a receiver when the stake is false
 │   └── it mints sdTokens to the receiver
+├── it sets the timestamp on first deposit
+└── it doesn't modify the timestamp on future deposits

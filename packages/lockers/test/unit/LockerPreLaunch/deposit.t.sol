@@ -85,7 +85,7 @@ contract PreLaunchLocker__deposit is PreLaunchLockerTest {
     function test_GivenTheStakeIsTrue(address caller, uint256 amount) external {
         // 1. it mints sdTokens to the locker
         // 2. it stakes the sdTokens in the gauge for the caller
-        // 3. it emits the TokensStaked event
+        // 3. it emits the TokenStaked event
 
         vm.assume(caller != address(0));
         _assumeUnlabeledAddress(caller);
@@ -98,7 +98,7 @@ contract PreLaunchLocker__deposit is PreLaunchLockerTest {
 
         // 3. expect the event to be emitted
         vm.expectEmit();
-        emit TokensStaked(caller, caller, address(gauge), amount);
+        emit LockerPreLaunch.TokenStaked(caller, caller, address(gauge), amount);
 
         // expect the internal calls to be made
         vm.expectCall(address(sdToken), abi.encodeWithSelector(ISdToken.mint.selector, address(locker), amount), 1);
@@ -160,7 +160,7 @@ contract PreLaunchLocker__deposit is PreLaunchLockerTest {
 
     function test_GivenAReceiverWhenTheStakeIsTrue(address caller, uint256 amount, address receiver) external {
         // 1. it stakes the sdTokens in the gauge for the receiver
-        // 2. it emits the TokensStaked event
+        // 2. it emits the TokenStaked event
 
         vm.assume(caller != address(0));
         vm.assume(receiver != address(0));
@@ -176,7 +176,7 @@ contract PreLaunchLocker__deposit is PreLaunchLockerTest {
 
         // 3. expect the event to be emitted
         vm.expectEmit();
-        emit TokensStaked(caller, receiver, address(gauge), amount);
+        emit LockerPreLaunch.TokenStaked(caller, receiver, address(gauge), amount);
 
         // expect the internal calls to be made
         vm.expectCall(address(sdToken), abi.encodeWithSelector(ISdToken.mint.selector, address(locker), amount), 1);
@@ -241,10 +241,43 @@ contract PreLaunchLocker__deposit is PreLaunchLockerTest {
         assertEq(gauge.balanceOf(address(receiver)), 0);
     }
 
-    /// @notice Event emitted each time a user stakes their sdTokens.
-    /// @param caller The address who called the function.
-    /// @param receiver The address who received the gauge token.
-    /// @param gauge The gauge that the sdTokens were staked to.
-    /// @param amount The amount of sdTokens staked.
-    event TokensStaked(address indexed caller, address indexed receiver, address indexed gauge, uint256 amount);
+    function test_SetsTheTimestampOnFirstDeposit() public {
+        assertEq(locker.timestamp(), 0);
+
+        uint256 amount = 1e20;
+
+        // mint the token to the caller and approve the locker to spend the token
+        deal(address(token), address(this), amount);
+        token.approve(address(locker), amount);
+
+        // expect the event to be emitted
+        vm.expectEmit();
+        emit LockerPreLaunch.TimerStarted(block.timestamp);
+
+        // deposit the tokens
+        locker.deposit(amount, false, address(this));
+
+        assertEq(locker.timestamp(), block.timestamp);
+    }
+
+    function test_DoesntModifyTheTimestampOnFutureDeposits() external {
+        test_SetsTheTimestampOnFirstDeposit();
+        uint256 storedTimestamp = locker.timestamp();
+
+        for (uint256 i; i < 5; i++) {
+            // warp to a future timestamp and derive a new caller
+            vm.warp(block.timestamp + i * 60 * 60 * 24);
+            address caller = address(uint160(100 + i));
+
+            // mint the token to the caller and approve the locker to spend the token
+            deal(address(token), caller, 1e20);
+            vm.prank(caller);
+            token.approve(address(locker), 1e20);
+
+            // deposit the tokens and check the timestamp didn't change
+            vm.prank(caller);
+            locker.deposit(1e20, false);
+            assertEq(locker.timestamp(), storedTimestamp);
+        }
+    }
 }

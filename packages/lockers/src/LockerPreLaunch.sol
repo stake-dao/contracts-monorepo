@@ -22,6 +22,7 @@ import {ISdToken} from "src/interfaces/ISdToken.sol";
  * - Immediate sdToken Minting: Mints sdTokens to users immediately upon deposit with 1:1 ratio
  * - Direct Gauge Integration: Optional direct staking of sdTokens into gauge upon deposit
  * - Safety Net: Includes a refund mechanism if the project launch is canceled
+ * - Force Cancel Timer: The force-cancel timer now starts on the first deposit, not at deployment. This ensures the force-cancel window is meaningful for users and not wasted during the pre-launch phase.
  *
  * State Machine:
  * - IDLE: Initial state where:
@@ -126,7 +127,11 @@ contract LockerPreLaunch is IPreLaunchLocker {
     /// @param receiver The address who received the gauge token.
     /// @param gauge The gauge that the sdTokens were staked to.
     /// @param amount The amount of sdTokens staked.
-    event TokensStaked(address indexed caller, address indexed receiver, address indexed gauge, uint256 amount);
+    event TokenStaked(address indexed caller, address indexed receiver, address indexed gauge, uint256 amount);
+
+    /// @notice Event emitted once when the force-cancel timer is started (on first deposit).
+    /// @param timestamp The timestamp when the timer was started.
+    event TimerStarted(uint256 timestamp);
 
     /// @notice Error thrown when a required parameter is set to the zero address.
     error REQUIRED_PARAM();
@@ -186,9 +191,6 @@ contract LockerPreLaunch is IPreLaunchLocker {
         sdToken = ISdToken(_sdToken);
         gauge = ILiquidityGaugeV4(_gauge);
 
-        // start the timer before the locker can be force canceled
-        timestamp = uint96(block.timestamp);
-
         // set the custom force cancel delay if provided
         FORCE_CANCEL_DELAY = _customForceCancelDelay != 0 ? _customForceCancelDelay : DEFAULT_FORCE_CANCEL_DELAY;
 
@@ -207,6 +209,7 @@ contract LockerPreLaunch is IPreLaunchLocker {
     /// @param amount Amount of tokens to deposit.
     /// @param stake Whether to stake the tokens in the gauge.
     /// @param receiver The address to receive the sdToken or the gauge token.
+    /// @dev The force-cancel timer is started on the first deposit
     /// @custom:reverts REQUIRED_PARAM if the given amount is zero.
     /// @custom:reverts CANNOT_DEPOSIT_ACTIVE_OR_CANCELED_LOCKER if the locker is already associated with a depositor.
     function deposit(uint256 amount, bool stake, address receiver) public {
@@ -218,10 +221,12 @@ contract LockerPreLaunch is IPreLaunchLocker {
         // 1. transfer the tokens from the sender to the contract. Reverts if not enough tokens are approved.
         SafeTransferLib.safeTransferFrom(token, msg.sender, address(this), amount);
 
-        ISdToken storedSdToken = sdToken;
+        // 2. start the timer on first deposit
+        if (timestamp == 0) _startTimer();
 
+        ISdToken storedSdToken = sdToken;
         if (stake == true) {
-            //  2.a. Either mint the sdTokens to this contract and stake them in the gauge for the caller
+            //  3.a. Either mint the sdTokens to this contract and stake them in the gauge for the caller
             ILiquidityGaugeV4 storedGauge = gauge;
 
             storedSdToken.mint(address(this), amount);
@@ -229,9 +234,9 @@ contract LockerPreLaunch is IPreLaunchLocker {
 
             storedGauge.deposit(amount, receiver, false);
 
-            emit TokensStaked(msg.sender, receiver, address(storedGauge), amount);
+            emit TokenStaked(msg.sender, receiver, address(storedGauge), amount);
         } else {
-            // 2.b. or mint the sdTokens directly to the caller (ratio 1:1 between token<>sdToken)
+            // 3.b. or mint the sdTokens directly to the caller (ratio 1:1 between token<>sdToken)
             sdToken.mint(receiver, amount);
         }
     }
@@ -242,6 +247,13 @@ contract LockerPreLaunch is IPreLaunchLocker {
     /// @custom:reverts REQUIRED_PARAM if the given amount is zero.
     function deposit(uint256 amount, bool stake) external {
         deposit(amount, stake, msg.sender);
+    }
+
+    /// @notice Internal function to start the force-cancel timer.
+    /// @dev This function is called when the first deposit is made.
+    function _startTimer() internal {
+        timestamp = uint96(block.timestamp);
+        emit TimerStarted(timestamp);
     }
 
     ////////////////////////////////////////////////////////////////
@@ -364,7 +376,7 @@ contract LockerPreLaunch is IPreLaunchLocker {
         if (state != STATE.IDLE) revert CANNOT_FORCE_CANCEL_ACTIVE_OR_CANCELED_LOCKER();
 
         // check if the timestamp is older than the force cancel delay
-        if ((block.timestamp - timestamp) < FORCE_CANCEL_DELAY) {
+        if (timestamp == 0 || (block.timestamp - timestamp) < FORCE_CANCEL_DELAY) {
             revert CANNOT_FORCE_CANCEL_RECENTLY_CREATED_LOCKER();
         }
 
@@ -408,5 +420,13 @@ contract LockerPreLaunch is IPreLaunchLocker {
     function _setState(STATE _state) internal {
         state = _state;
         emit LockerStateUpdated(_state);
+    }
+
+    function identifier() external pure returns (string memory) {
+        return type(LockerPreLaunch).name;
+    }
+
+    function version() external pure returns (string memory) {
+        return "2.0.0";
     }
 }
