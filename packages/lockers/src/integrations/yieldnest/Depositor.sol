@@ -33,6 +33,9 @@ contract YieldNestDepositor is DepositorBase, SafeModule {
     /// @notice The last interval that the tokens were locked in the YieldNest
     uint256 lastInterval;
 
+    /// @notice The delay between the last interval and the next interval where the tokens can be locked
+    uint256 public preCheckpointWindow = 12 hours;
+
     /// @notice Error thrown when the tokens are already locked
     error TokensAlreadyLocked();
 
@@ -82,7 +85,7 @@ contract YieldNestDepositor is DepositorBase, SafeModule {
             /// Skip if already locked for this checkpoint
           if (lastInterval == nextInterval) return;
           /// Only proceed if we're within 12 hours of checkpoint
-          if (block.timestamp < nextInterval - 12 hours) return;
+          if (block.timestamp < nextInterval - preCheckpointWindow) return;
       }
 
         /// Check if there's any tokens to lock by comparing the total supply and the balance of the locker
@@ -130,5 +133,11 @@ contract YieldNestDepositor is DepositorBase, SafeModule {
 
     function name() external view virtual override returns (string memory) {
         return type(YieldNestDepositor).name;
+    }
+
+    /// @notice Sets the pre-checkpoint window
+    /// @param _preCheckpointWindow The new pre-checkpoint window
+    function setPreCheckpointWindow(uint256 _preCheckpointWindow) external onlyGovernance {
+        preCheckpointWindow = _preCheckpointWindow;
     }
 }
