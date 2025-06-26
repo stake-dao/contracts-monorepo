@@ -49,6 +49,7 @@ abstract contract DepositorBase {
     address public futureGovernance;
 
     enum STATE {
+        UNINITIALIZED, // default state at construction
         ACTIVE,
         CANCELED
     }
