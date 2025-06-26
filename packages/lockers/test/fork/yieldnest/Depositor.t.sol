@@ -11,11 +11,11 @@ import {YieldnestProtocol} from "address-book/src/YieldnestEthereum.sol";
 
 import {ISafe} from "src/interfaces/ISafe.sol";
 import {IPreLaunchLocker} from "src/interfaces/IPreLaunchLocker.sol";
-import {YieldNestDepositor, IYieldNest} from "src/integrations/yieldnest/Depositor.sol";
+import {YieldnestDepositor, IYieldNest} from "src/integrations/yieldnest/Depositor.sol";
 
 
 contract YieldNestDepositorTest is BaseTest {
-    YieldNestDepositor public depositor;
+    YieldnestDepositor public depositor;
 
     address internal constant LOCKER = YieldnestProtocol.LOCKER;
     address internal constant SDYND = YieldnestProtocol.SDYND;
@@ -31,7 +31,7 @@ contract YieldNestDepositorTest is BaseTest {
     function setUp() public {
         vm.createSelectFork(vm.rpcUrl("mainnet"));
 
-        depositor = new YieldNestDepositor({
+        depositor = new YieldnestDepositor({
             _token: YND,
             _locker: LOCKER,
             _minter: SDYND,
@@ -44,8 +44,6 @@ contract YieldNestDepositorTest is BaseTest {
 
         vm.prank(LOCKER);
         ISafe(LOCKER).setFallbackHandler(CommonUniversal.SAFE_FALLBACK_HANDLER);
-
-        skip(2 days);
     }
 
     function test_setDepositorInPrelaunchLocker() public {

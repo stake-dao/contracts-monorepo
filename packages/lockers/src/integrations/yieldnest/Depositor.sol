@@ -13,7 +13,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 ///         and minting sdYND tokens in return.
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-contract YieldNestDepositor is DepositorBase, SafeModule {
+contract YieldnestDepositor is DepositorBase, SafeModule {
     ///////////////////////////////////////////////////////////////
     /// --- CONSTANTS
     ///////////////////////////////////////////////////////////////
@@ -132,7 +132,7 @@ contract YieldNestDepositor is DepositorBase, SafeModule {
     }
 
     function name() external view virtual override returns (string memory) {
-        return type(YieldNestDepositor).name;
+        return type(YieldnestDepositor).name;
     }
 
     /// @notice Sets the pre-checkpoint window
