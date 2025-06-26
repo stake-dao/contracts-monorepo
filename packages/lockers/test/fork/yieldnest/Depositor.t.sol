@@ -1,9 +1,8 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import {console} from "forge-std/src/console.sol";
+import "test/BaseTest.t.sol";
 
-import {BaseTest} from "test/BaseTest.t.sol";
 import {DAO} from "address-book/src/DaoEthereum.sol";
 import {CommonUniversal} from "address-book/src/CommonUniversal.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
@@ -49,7 +48,7 @@ contract YieldNestDepositorTest is BaseTest {
         skip(2 days);
     }
 
-    function test_set_prelaunch() public {
+    function test_setDepositorInPrelaunchLocker() public {
         uint256 interval = IYieldNest(CLOCK).epochNextCheckpointTs();
 
         /// Warp to 1 hour before the next checkpoint
@@ -88,7 +87,10 @@ contract YieldNestDepositorTest is BaseTest {
         assertEq(IERC20(SDYND).balanceOf(address(user)), 1000e18);
         assertEq(IERC20(YND).balanceOf(address(LOCKER)), 1000e18);
 
-        skip(1 weeks + 6.6 days);
+        uint256 nextInterval = IYieldNest(CLOCK).epochNextCheckpointTs() + 1 weeks;
+        uint256 preCheckpointWindow = depositor.preCheckpointWindow();
+
+        vm.warp(nextInterval - preCheckpointWindow);
 
         deal(YND, address(user), 1000e18);
 
@@ -108,9 +110,17 @@ contract YieldNestDepositorTest is BaseTest {
         lockedBalance = IYieldNest(ESCROW).locked(tokenId);
 
         assertEq(lockedBalance.amount, 2000e18);
-        assertEq(lockedBalance.start, block.timestamp / 1 weeks * 1 weeks + 1 weeks);
+        assertEq(lockedBalance.start, nextInterval);
     }
 
+    function test_setPreCheckpointWindow() public {
+        uint256 preCheckpointWindow = depositor.preCheckpointWindow();
+        assertEq(preCheckpointWindow, 12 hours);
+
+        depositor.setPreCheckpointWindow(1 hours);
+
+        assertEq(depositor.preCheckpointWindow(), 1 hours);
+    }
 
     function getTokenLocked(uint256 tokenId) public view returns (uint256) {
         IYieldNest.LockedBalance memory lockedBalance = IYieldNest(ESCROW).locked(tokenId);
