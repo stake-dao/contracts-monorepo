@@ -4,6 +4,7 @@ pragma solidity >=0.8.0;
 library YieldnestProtocol {
     address internal constant YND = 0x7159cc276D7d17Ab4b3bEb19959E1F39368a45Ba;
     address internal constant ESCROW = 0xD666B56EE7786Cc918fDdcEade542d013de0E4F1;
+    address internal constant CLOCK = 0xA52965bb24021bA649f3c23b74A8Fb064BE07950;
     address internal constant VEYND = 0x23d2923e15f5cce8a131CB37F0c7BCC5caD15639;
 
     address internal constant SDYND = 0x0a885027D84155387B9Bd47485B0fdec10C6B4EC;

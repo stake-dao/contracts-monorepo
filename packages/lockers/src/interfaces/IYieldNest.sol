@@ -11,4 +11,9 @@ interface IYieldNest {
     function createLock(uint256 amount) external returns (uint256 tokenId);
     function votingPowerForAccount(address account) external view returns (uint256);
     function lastLockId() external view returns (uint256);
+
+    /// CLOCK
+    function checkpointInterval() external view returns(uint256);
+    function epochNextCheckpointIn() external view returns (uint256);
+    function epochNextCheckpointTs() external view returns (uint256);
 }

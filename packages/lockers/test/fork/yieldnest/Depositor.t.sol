@@ -50,7 +50,10 @@ contract YieldNestDepositorTest is BaseTest {
     }
 
     function test_set_prelaunch() public {
-        vm.warp((block.timestamp / 1 weeks + 1) * 1 weeks);
+        uint256 interval = IYieldNest(CLOCK).epochNextCheckpointTs();
+
+        /// Warp to 1 hour before the next checkpoint
+        vm.warp(interval - 1 hours);
 
         /// Snapshot the balance of the PRELAUNCH contract
         uint256 balance = IERC20(YND).balanceOf(address(PRELAUNCH));
@@ -85,7 +88,7 @@ contract YieldNestDepositorTest is BaseTest {
         assertEq(IERC20(SDYND).balanceOf(address(user)), 1000e18);
         assertEq(IERC20(YND).balanceOf(address(LOCKER)), 1000e18);
 
-        skip(1 weeks + 6.5 days);
+        skip(1 weeks + 6.6 days);
 
         deal(YND, address(user), 1000e18);
 
