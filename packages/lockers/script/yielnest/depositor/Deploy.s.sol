@@ -14,9 +14,13 @@ contract Deploy is DeployDepositor {
 
     function _deployDepositor() internal override returns (address) {
         return address(
-            new YieldnestDepositor(
-                YieldnestProtocol.YND, YieldnestProtocol.LOCKER, YieldnestProtocol.SDYND, YieldnestProtocol.GAUGE, YieldnestProtocol.PRELAUNCH_LOCKER
-            )
+            new YieldnestDepositor({
+                _token: YieldnestProtocol.YND,
+                _locker: YieldnestLocker.LOCKER,
+                _minter: YieldnestLocker.SDYND,
+                _gauge: YieldnestLocker.GAUGE,
+                _gateway: YieldnestLocker.PRELAUNCH_LOCKER
+            })
         );
     }
 

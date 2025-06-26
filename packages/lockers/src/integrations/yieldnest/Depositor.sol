@@ -5,7 +5,7 @@ import "src/DepositorBase.sol";
 
 import {SafeModule} from "src/utils/SafeModule.sol";
 import {IYieldNest} from "src/interfaces/IYieldNest.sol";
-import {YieldnestProtocol} from "address-book/src/YieldnestEthereum.sol";
+import {YieldnestProtocol, YieldnestLocker} from "address-book/src/YieldnestEthereum.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 
 /// @title Stake DAO YieldNest Depositor
@@ -25,7 +25,7 @@ contract YieldnestDepositor is DepositorBase, SafeModule {
     address public constant CLOCK = YieldnestProtocol.CLOCK;
 
     /// @notice The YieldNest prelaunch locker contract to deposit the tokens.
-    address public constant PRELAUNCH_LOCKER = YieldnestProtocol.PRELAUNCH_LOCKER;
+    address public constant PRELAUNCH_LOCKER = YieldnestLocker.PRELAUNCH_LOCKER;
 
     /// @notice Array of token IDs for the tokens locked in the YieldNest
     uint256[] public tokenIds;
@@ -86,10 +86,10 @@ contract YieldnestDepositor is DepositorBase, SafeModule {
 
         if (tokenIds.length > 0) {
             /// Skip if already locked for this checkpoint
-          if (lastInterval == nextInterval) return;
-          /// Only proceed if we're within 12 hours of checkpoint
-          if (block.timestamp < nextInterval - preCheckpointWindow) return;
-      }
+            if (lastInterval == nextInterval) return;
+            /// Only proceed if we're within 12 hours of checkpoint
+            if (block.timestamp < nextInterval - preCheckpointWindow) return;
+        }
 
         /// Check if there's any tokens to lock by comparing the total supply and the balance of the locker
         _amount += IERC20Metadata(minter).totalSupply() - getLockedBalance();
