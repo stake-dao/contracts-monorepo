@@ -21,14 +21,17 @@ contract YieldNestDepositor is DepositorBase, SafeModule {
     /// @notice The YieldNest escrow contract to deposit the tokens.
     address public constant ESCROW = YieldnestProtocol.ESCROW;
 
+    /// @notice The YieldNest clock contract to get the next checkpoint timestamp.
+    address public constant CLOCK = YieldnestProtocol.CLOCK;
+
     /// @notice The YieldNest prelaunch locker contract to deposit the tokens.
     address public constant PRELAUNCH_LOCKER = YieldnestProtocol.PRELAUNCH_LOCKER;
 
     /// @notice Array of token IDs for the tokens locked in the YieldNest
     uint256[] public tokenIds;
 
-    /// @notice The last epoch that the tokens were locked in the YieldNest
-    uint256 lastEpoch;
+    /// @notice The last interval that the tokens were locked in the YieldNest
+    uint256 lastInterval;
 
     /// @notice Error thrown when the tokens are already locked
     error TokensAlreadyLocked();
@@ -72,10 +75,15 @@ contract YieldNestDepositor is DepositorBase, SafeModule {
     /// @notice Locks the tokens held by the contract
     /// @dev The contract must have tokens to lock
     function _lockToken(uint256 _amount) internal override {
-        uint256 currentEpoch = block.timestamp / 1 weeks * 1 weeks;
+        /// Get the next checkpoint timestamp
+        uint256 nextInterval = IYieldNest(CLOCK).epochNextCheckpointTs();
 
-        /// If the last epoch is greater than the current epoch, or the current epoch is less than 6 days, return
-        if (tokenIds.length > 0 && (lastEpoch >= currentEpoch || block.timestamp < currentEpoch + 6.5 days)) return;
+        if (tokenIds.length > 0) {
+            /// Skip if already locked for this checkpoint
+          if (lastInterval == nextInterval) return;
+          /// Only proceed if we're within 12 hours of checkpoint
+          if (block.timestamp < nextInterval - 12 hours) return;
+      }
 
         /// Check if there's any tokens to lock by comparing the total supply and the balance of the locker
         _amount += IERC20Metadata(minter).totalSupply() - getLockedBalance();
@@ -89,8 +97,8 @@ contract YieldNestDepositor is DepositorBase, SafeModule {
         /// Add the token ID to the array
         tokenIds.push(lastLockId + 1);
 
-        /// Update the last epoch
-        lastEpoch = currentEpoch;
+        /// Update the last interval
+        lastInterval = nextInterval;
     }
 
     function _getLocker() internal view override returns (address) {
