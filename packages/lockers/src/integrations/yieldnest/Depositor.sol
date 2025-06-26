@@ -54,7 +54,10 @@ contract YieldnestDepositor is DepositorBase, SafeModule {
     constructor(address _token, address _locker, address _minter, address _gauge, address _gateway)
         DepositorBase(_token, _locker, _minter, _gauge, 0)
         SafeModule(_gateway)
-    {}
+    {
+        /// Set the state of the contract to CANCELED
+        _setState(STATE.CANCELED);
+    }
 
     /// Override the createLock function to prevent reverting.
     function createLock(uint256 _amount) external override {
@@ -71,7 +74,7 @@ contract YieldnestDepositor is DepositorBase, SafeModule {
         /// @dev The amount is not used here because the sdTokens are already minted.
         _lockToken(0);
 
-        /// 4. Set the state of the contract to ACTIVE
+        /// Set the state of the contract to ACTIVE
         _setState(STATE.ACTIVE);
     }
 
