@@ -43,10 +43,10 @@ contract YieldnestDepositor is DepositorBase, SafeModule {
     error OnlyPrelaunchLocker();
 
     /// @notice Initializes the Depositor contract with required dependencies
-    /// @param _token Address of the YFI token
-    /// @param _locker Address of the Stake DAO Yearn Locker contract
-    /// @param _minter Address of the sdYFI minter contract
-    /// @param _gauge Address of the sdYFI-gauge contract
+    /// @param _token Address of the YND token
+    /// @param _locker Address of the Stake DAO YieldNest Locker contract
+    /// @param _minter Address of the sdYND minter contract
+    /// @param _gauge Address of the sdYND-gauge contract
     /// @param _gateway Address of the gateway contract
     /// @dev If `locker` and `gateway` are the same, internal calls will be done directly on the target from the gateway.
     ///      Otherwise, the gateway will pass the execution to the `locker` to call the target contracts.
