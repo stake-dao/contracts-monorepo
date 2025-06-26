@@ -6,21 +6,19 @@ import "test/BaseTest.t.sol";
 import {DAO} from "address-book/src/DaoEthereum.sol";
 import {CommonUniversal} from "address-book/src/CommonUniversal.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {YieldnestProtocol} from "address-book/src/YieldnestEthereum.sol";
-
+import {YieldnestProtocol, YieldnestLocker} from "address-book/src/YieldnestEthereum.sol";
 
 import {ISafe} from "src/interfaces/ISafe.sol";
 import {IPreLaunchLocker} from "src/interfaces/IPreLaunchLocker.sol";
 import {YieldnestDepositor, IYieldNest} from "src/integrations/yieldnest/Depositor.sol";
 
-
 contract YieldNestDepositorTest is BaseTest {
     YieldnestDepositor public depositor;
 
-    address internal constant LOCKER = YieldnestProtocol.LOCKER;
-    address internal constant SDYND = YieldnestProtocol.SDYND;
-    address internal constant SDYND_GAUGE = YieldnestProtocol.GAUGE;
-    address internal constant PRELAUNCH = YieldnestProtocol.PRELAUNCH_LOCKER;
+    address internal constant LOCKER = YieldnestLocker.LOCKER;
+    address internal constant SDYND = YieldnestLocker.SDYND;
+    address internal constant SDYND_GAUGE = YieldnestLocker.GAUGE;
+    address internal constant PRELAUNCH = YieldnestLocker.PRELAUNCH_LOCKER;
 
     address internal constant YND = YieldnestProtocol.YND;
     address internal constant VEYND = YieldnestProtocol.VEYND;

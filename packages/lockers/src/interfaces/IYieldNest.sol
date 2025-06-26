@@ -13,7 +13,7 @@ interface IYieldNest {
     function lastLockId() external view returns (uint256);
 
     /// CLOCK
-    function checkpointInterval() external view returns(uint256);
+    function checkpointInterval() external view returns (uint256);
     function epochNextCheckpointIn() external view returns (uint256);
     function epochNextCheckpointTs() external view returns (uint256);
 }

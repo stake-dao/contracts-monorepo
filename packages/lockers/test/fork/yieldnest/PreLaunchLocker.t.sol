@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {DAO} from "address-book/src/DaoEthereum.sol";
-import {YieldnestProtocol} from "address-book/src/YieldnestEthereum.sol";
+import {YieldnestProtocol, YieldnestLocker} from "address-book/src/YieldnestEthereum.sol";
 import {DepositorPreLaunch} from "src/DepositorPreLaunch.sol";
 import {ILiquidityGaugeV4} from "src/interfaces/ILiquidityGaugeV4.sol";
 import {ISdToken} from "src/interfaces/ISdToken.sol";
@@ -11,10 +11,10 @@ import {LockerPreLaunch} from "src/LockerPreLaunch.sol";
 import {BaseTest} from "test/BaseTest.t.sol";
 
 contract PreLaunchLockerTest is BaseTest {
-    LockerPreLaunch internal constant LOCKER = LockerPreLaunch(YieldnestProtocol.PRELAUNCH_LOCKER);
+    LockerPreLaunch internal constant LOCKER = LockerPreLaunch(YieldnestLocker.PRELAUNCH_LOCKER);
     IERC20 internal constant YND = IERC20(YieldnestProtocol.YND);
-    ISdToken internal constant SDYND = ISdToken(YieldnestProtocol.SDYND);
-    ILiquidityGaugeV4 internal constant GAUGE = ILiquidityGaugeV4(YieldnestProtocol.GAUGE);
+    ISdToken internal constant SDYND = ISdToken(YieldnestLocker.SDYND);
+    ILiquidityGaugeV4 internal constant GAUGE = ILiquidityGaugeV4(YieldnestLocker.GAUGE);
 
     address internal postPreLaunchLocker;
     address internal depositor;
