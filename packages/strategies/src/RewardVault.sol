@@ -73,10 +73,10 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     error RewardAlreadyExists();
 
     /// @notice Thrown when an operation is attempted when the vault is not shutdown
-    error OperationsNotShutdown();
+    error MustUnshutdownFirst();
 
     /// @notice Thrown when an operation is attempted when the vault is not fully withdrawn
-    error OperationsNotFullyWithdrawn();
+    error MustFullyWithdrawnFirst();
 
     /// @notice Thrown when an unauthorized address attempts to distribute rewards
     error UnauthorizedRewardsDistributor();
@@ -359,9 +359,9 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @custom:reverts OnlyAllowed if caller is not authorized
     function resumeOperations() external onlyAllowed {
         /// Must been marked not shutdown in the protocol controller
-        require(!PROTOCOL_CONTROLLER.isShutdown(gauge()), OperationsNotShutdown());
+        require(!PROTOCOL_CONTROLLER.isShutdown(gauge()), MustUnshutdownFirst());
         /// Must been marked not fully withdrawn in the protocol controller
-        require(!PROTOCOL_CONTROLLER.isFullyWithdrawn(gauge()), OperationsNotFullyWithdrawn());
+        require(!PROTOCOL_CONTROLLER.isFullyWithdrawn(gauge()), MustFullyWithdrawnFirst());
 
         IERC20 _asset = IERC20(asset());
         uint256 assets = _asset.balanceOf(address(this));
