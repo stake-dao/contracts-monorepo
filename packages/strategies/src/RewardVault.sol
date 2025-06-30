@@ -41,6 +41,9 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @param rewardRate The calculated rate at which rewards will be distributed (tokens/second)
     event RewardsDeposited(address indexed rewardToken, uint256 amount, uint128 rewardRate);
 
+    /// @notice Emitted when the vault resumes operations
+    event OperationsResumed();
+
     ///////////////////////////////////////////////////////////////
     // --- ERRORS
     ///////////////////////////////////////////////////////////////
@@ -68,6 +71,12 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
 
     /// @notice Thrown when attempting to add a reward token that's already registered
     error RewardAlreadyExists();
+
+    /// @notice Thrown when an operation is attempted when the vault is not shutdown
+    error OperationsNotShutdown();
+
+    /// @notice Thrown when an operation is attempted when the vault is not fully withdrawn
+    error OperationsNotFullyWithdrawn();
 
     /// @notice Thrown when an unauthorized address attempts to distribute rewards
     error UnauthorizedRewardsDistributor();
@@ -339,6 +348,38 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         }
 
         emit Withdraw(msg.sender, receiver, owner, assets, shares);
+    }
+
+    ///////////////////////////////////////////////////////////////
+    // --- EMERGENCY -
+    ///////////////////////////////////////////////////////////////
+
+    /// @notice Resumes operations of the vault
+    /// @dev Only callable by allowed addresses
+    /// @custom:reverts OnlyAllowed if caller is not authorized
+    function resumeOperations() external onlyAllowed {
+        /// Must been marked not shutdown in the protocol controller
+        require(!PROTOCOL_CONTROLLER.isShutdown(gauge()), OperationsNotShutdown());
+        /// Must been marked not fully withdrawn in the protocol controller
+        require(!PROTOCOL_CONTROLLER.isFullyWithdrawn(gauge()), OperationsNotFullyWithdrawn());
+
+        IERC20 _asset = IERC20(asset());
+        uint256 assets = _asset.balanceOf(address(this));
+
+        // Ask allocator where to send the LP tokens (e.g., 70% locker, 30% Convex)
+        IAllocator.Allocation memory allocation = allocator().getDepositAllocation(asset(), gauge(), assets);
+
+        // Transfer LP tokens directly to allocation targets (bypasses vault)
+        for (uint256 i; i < allocation.targets.length; i++) {
+            if (allocation.amounts[i] == 0) continue;
+            require(PROTOCOL_CONTROLLER.isValidAllocationTarget(gauge(), allocation.targets[i]), TargetNotApproved());
+            SafeERC20.safeTransfer(_asset, allocation.targets[i], allocation.amounts[i]);
+        }
+
+        // Strategy deposits into gauge/sidecar and may harvest if HARVEST policy
+        strategy().deposit(allocation, POLICY);
+
+        emit OperationsResumed();
     }
 
     ///////////////////////////////////////////////////////////////
