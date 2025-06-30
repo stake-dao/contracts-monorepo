@@ -86,6 +86,10 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @param gauge The gauge address
     event GaugeShutdown(address indexed gauge);
 
+    /// @notice Event emitted when a gauge is unshut down
+    /// @param gauge The gauge address
+    event GaugeUnshutdown(address indexed gauge);
+
     /// @notice Event emitted when a protocol is shutdown
     /// @param protocolId The protocol identifier
     event ProtocolShutdown(bytes4 indexed protocolId);
@@ -121,6 +125,12 @@ contract ProtocolController is IProtocolController, Ownable2Step {
 
     /// @notice Thrown when an unauthorized address tries to set permissions
     error NotPermissionSetter();
+
+    /// @notice Thrown when a gauge is not shutdown
+    error GaugeNotShutdown();
+
+    /// @notice Thrown when a gauge is not fully withdrawn
+    error GaugeNotFullyWithdrawn();
 
     /// @notice Thrown when a gauge is already shutdown
     error GaugeAlreadyShutdown();
@@ -318,6 +328,20 @@ contract ProtocolController is IProtocolController, Ownable2Step {
 
         gauge[_gauge].isShutdown = true;
         emit GaugeShutdown(_gauge);
+    }
+
+    /// @notice Unshuts down a gauge
+    /// @dev Allows a previously shutdown gauge to resume operations
+    /// @param _gauge The gauge address to unshut down
+    /// @custom:reverts GaugeNotShutdown if gauge was not previously shutdown
+    function unshutdown(address _gauge) external onlyOwner {
+        require(gauge[_gauge].isShutdown, GaugeNotShutdown());
+        require(!gauge[_gauge].isFullyWithdrawn, GaugeNotFullyWithdrawn());
+
+        gauge[_gauge].isShutdown = false;
+        gauge[_gauge].isFullyWithdrawn = false;
+
+        emit GaugeUnshutdown(_gauge);
     }
 
     /// @notice Marks a gauge as fully withdrawn
