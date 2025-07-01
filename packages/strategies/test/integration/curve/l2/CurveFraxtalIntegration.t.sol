@@ -4,7 +4,6 @@ pragma solidity ^0.8.27;
 import "test/integration/curve/CurveL2Integration.sol";
 import {IL2Booster} from "@interfaces/convex/IL2Booster.sol";
 import {CurveProtocol} from "@address-book/src/CurveFraxtal.sol";
-import {ConvexProtocol} from "@address-book/src/ConvexFraxtal.sol";
 import {IChildLiquidityGaugeFactory} from "@interfaces/curve/IChildLiquidityGaugeFactory.sol";
 import {CurveFactory as L2CurveFactory} from "src/integrations/curve/L2/CurveFactory.sol";
 
@@ -24,9 +23,9 @@ contract CurveFraxtalIntegrationTest is CurveL2Integration {
         }),
         convex: ConvexConfig({
             isOnlyBoost: true,
-            cvx: ConvexProtocol.CVX,
-            convexBoostHolder: ConvexProtocol.VOTER_PROXY,
-            booster: ConvexProtocol.BOOSTER
+            cvx: CurveProtocol.CONVEX_TOKEN,
+            convexBoostHolder: CurveProtocol.CONVEX_PROXY,
+            booster: CurveProtocol.CONVEX_BOOSTER
         })
     });
 
@@ -66,7 +65,7 @@ contract CurveFraxtalIntegrationTest is CurveL2Integration {
 
     function getGauges() internal view override returns (address[] memory) {
         // Get gauge addresses for all pool IDs
-        IL2Booster booster = IL2Booster(ConvexProtocol.BOOSTER);
+        IL2Booster booster = IL2Booster(CurveProtocol.CONVEX_BOOSTER);
         address[] memory gauges = new address[](poolIds.length);
 
         for (uint256 i = 0; i < poolIds.length; i++) {

@@ -6,6 +6,10 @@ library CurveProtocol {
     /// The factory is also the Minter.
     address internal constant FACTORY = 0xeF672bD94913CB6f1d2812a6e18c1fFdEd8eFf5c;
     address internal constant VECRV = 0xc73e8d8f7A68Fc9d67e989250484E57Ae03a5Da3;
+
+    address internal constant CONVEX_TOKEN = 0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B;
+    address internal constant CONVEX_BOOSTER = 0xd3327cb05a8E0095A543D582b5B3Ce3e19270389;
+    address internal constant CONVEX_PROXY = 0x989AEb4d175e16225E39E87d0D97A3360524AD80;
 }
 
 

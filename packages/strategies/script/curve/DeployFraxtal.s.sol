@@ -5,7 +5,6 @@ import {DAO} from "@address-book/src/DaoEthereum.sol";
 import {IL2Booster} from "@interfaces/convex/IL2Booster.sol";
 import {CurveLocker} from "@address-book/src/CurveEthereum.sol";
 import {CurveProtocol} from "@address-book/src/CurveFraxtal.sol";
-import {ConvexProtocol} from "@address-book/src/ConvexFraxtal.sol";
 import {CommonUniversal} from "@address-book/src/CommonUniversal.sol";
 
 import {IChildLiquidityGaugeFactory} from "@interfaces/curve/IChildLiquidityGaugeFactory.sol";
@@ -27,9 +26,9 @@ contract DeployFraxtal is BaseCurveDeploy {
         }),
         convex: ConvexConfig({
             isOnlyBoost: true,
-            cvx: ConvexProtocol.CVX,
-            convexBoostHolder: ConvexProtocol.VOTER_PROXY,
-            booster: ConvexProtocol.BOOSTER
+            cvx: CurveProtocol.CONVEX_TOKEN,
+            convexBoostHolder: CurveProtocol.CONVEX_PROXY,
+            booster: CurveProtocol.CONVEX_BOOSTER
         })
     });
 
@@ -50,7 +49,7 @@ contract DeployFraxtal is BaseCurveDeploy {
         L2CurveFactory(factory).setChildLiquidityGaugeFactories(factories);
         super._afterSetup();
 
-        IL2Booster booster = IL2Booster(ConvexProtocol.BOOSTER);
+        IL2Booster booster = IL2Booster(CurveProtocol.CONVEX_BOOSTER);
         uint256 size = booster.poolLength();
 
         for (uint256 i = 0; i < size; i++) {
