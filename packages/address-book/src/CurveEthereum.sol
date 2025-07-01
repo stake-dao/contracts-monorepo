@@ -36,25 +36,6 @@ library CurveLocker {
     address internal constant VE_BOOST_DELEGATION = 0xe1F9C8ebBC80A013cAf0940fdD1A8554d763b9cf;
 }
 
-// Preprod version
-library CurveStrategy {
-    address internal constant ACCOUNTANT = 0x4813Ee3665D746264B035E49bDf81AD9c3904A3A;
-    address internal constant PROTOCOL_CONTROLLER = 0xC8beDF267fa6D4bE6d7C2146122936535130dd2B;
-    address internal constant LOCKER = 0x0000000000000000000000000000000000000000;
-    address internal constant GATEWAY = 0x9e75df8ee120c7342b634EE3c5A47015b399E321;
-
-    address internal constant STRATEGY = 0x0D40dB4f5eCe56FEe57fDef3Bf796AB943349C98;
-
-    address internal constant CONVEX_SIDECAR = 0x7fC725De09C05312D89066b3d14ffb4D87A38853;
-    address internal constant CONVEX_SIDECAR_FACTORY = 0x3D88bF4Ad8c119AD6Da3Ae44e1825AcDa85a377D;
-
-    address internal constant FACTORY = 0xF4CF447ef5f3668304eBeB3B5a4397c3dae1F31A;
-    address internal constant ALLOCATOR = 0xe8CCF44a276DCD9CD3ccE05483EFf1bb26637Cfc;
-
-    address internal constant REWARD_VAULT = 0x81E57d40a7D7900719C47963A76C2763C78b2af2;
-    address internal constant REWARD_RECEIVER = 0x2a6e4F61c3CF575e1561A45613B58b46C506b4Ad;
-}
-
 library CurveVotemarket {
     address internal constant PLATFORM = 0x0000000895cB182E6f983eb4D8b4E0Aa0B31Ae4c;
 }

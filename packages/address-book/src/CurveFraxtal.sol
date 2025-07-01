@@ -12,11 +12,14 @@ library CurveProtocol {
     address internal constant CONVEX_PROXY = 0x989AEb4d175e16225E39E87d0D97A3360524AD80;
 }
 
+library CurveLocker {
+    address internal constant LOCKER = 0x52f541764E6e90eeBc5c21Ff570De0e2D63766B6;
+}
+
 
 library CurveStrategy {
     address internal constant ACCOUNTANT = 0xa7d6dd95A06d95b65edf32B94ED46996E151c06f;
     address internal constant PROTOCOL_CONTROLLER = 0x4D4c2C4777625e97be1985682fAE5A53f5C44A80;
-    address internal constant LOCKER = 0x52f541764E6e90eeBc5c21Ff570De0e2D63766B6;
     address internal constant GATEWAY = 0x52f541764E6e90eeBc5c21Ff570De0e2D63766B6;
 
     address internal constant STRATEGY = 0x341190ee097fCE6C6f0f81575c9842d98627257d;
