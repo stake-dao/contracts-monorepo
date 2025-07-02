@@ -33,7 +33,7 @@ contract asdYNDTest is Test {
 
             // uint256 balance = ERC20Mock(YieldnestLocker.SDYND).balanceOf(holders[i]);
             vm.prank(holders[i]);
-            ERC20(YieldnestProtocol.SDYND).approve(address(vault), balances[i]);
+            ERC20(YieldnestLocker.SDYND).approve(address(vault), balances[i]);
 
             // Deposit the tokens into the vault
             vm.prank(holders[i]);
@@ -42,7 +42,7 @@ contract asdYNDTest is Test {
             // Assert that the shares received are equal to the deposit amount
             assertEq(sharesReceived, balances[i]);
             assertEq(vault.balanceOf(holders[i]), balances[i]);
-            assertEq(ERC20(YieldnestProtocol.SDYND).balanceOf(holders[i]), 0);
+            assertEq(ERC20(YieldnestLocker.SDYND).balanceOf(holders[i]), 0);
         }
     }
 
@@ -55,7 +55,7 @@ contract asdYNDTest is Test {
         vault.withdraw(maxWithdraw, holders[0], holders[0]);
 
         // 2. ensure the first account received the same amount he deposited to the vault
-        assertEq(ERC20(YieldnestProtocol.SDYND).balanceOf(holders[0]), balances[0]);
+        assertEq(ERC20(YieldnestLocker.SDYND).balanceOf(holders[0]), balances[0]);
 
         // 3. airdrop some sdYND to the owner
         uint256 rewards = 1e12;
@@ -63,7 +63,7 @@ contract asdYNDTest is Test {
 
         // 4. set a new rewards stream for the vault
         vm.prank(owner);
-        ERC20(YieldnestProtocol.SDYND).approve(address(vault), rewards);
+        ERC20(YieldnestLocker.SDYND).approve(address(vault), rewards);
         vm.prank(owner);
         vault.setRewards(rewards);
 
@@ -76,6 +76,6 @@ contract asdYNDTest is Test {
         vault.withdraw(maxWithdraw, holders[1], holders[1]);
 
         // 7. ensure the second account received the initial balance + the full rewards (+/- 1% due to rounding)
-        assertApproxEqAbs(ERC20(YieldnestProtocol.SDYND).balanceOf(holders[1]), balances[1] + rewards, 1e16);
+        assertApproxEqAbs(ERC20(YieldnestLocker.SDYND).balanceOf(holders[1]), balances[1] + rewards, 1e16);
     }
 }
