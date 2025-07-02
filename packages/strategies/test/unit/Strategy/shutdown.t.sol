@@ -17,7 +17,7 @@ contract Strategy__shutdown is StrategyBaseTest {
         assertFalse(registry.isShutdown(gauge));
 
         vm.prank(notAllowed);
-        vm.expectRevert(abi.encodeWithSelector(Strategy.OnlyAllowed.selector));
+        vm.expectRevert(abi.encodeWithSelector(Strategy.OnlyProtocolController.selector));
         strategy.shutdown(gauge);
     }
 
@@ -25,68 +25,19 @@ contract Strategy__shutdown is StrategyBaseTest {
         /// Cheat the locker balance to avoid reverting on shutdown.
         stakingToken.mint(address(locker), 100);
 
-        address allowedCaller = makeAddr("allowedCaller");
-
-        vm.mockCall(
-            address(registry),
-            abi.encodeWithSelector(
-                IProtocolController.allowed.selector, address(strategy), allowedCaller, Strategy.shutdown.selector
-            ),
-            abi.encode(true)
-        );
 
         vm.mockCall(address(vault), abi.encodeWithSelector(IERC4626.asset.selector), abi.encode(address(stakingToken)));
 
-        /// Caller is allowed.
-        assertTrue(registry.allowed(address(strategy), allowedCaller, Strategy.shutdown.selector));
 
         /// Gauge is not shutdown.
         assertFalse(registry.isShutdown(gauge));
 
-        vm.prank(allowedCaller);
+        vm.prank(address(registry));
         strategy.shutdown(gauge);
     }
 
     event Shutdown(address indexed gauge);
 
-    function test_shutownWithCallerNotAllowedAndGaugeShutdown() public {
-        /// Cheat the locker balance to avoid reverting on shutdown.
-        stakingToken.mint(address(locker), 100);
-
-        address notAllowedCaller = makeAddr("notAllowedCaller");
-
-        /// Caller is not allowed.
-        vm.mockCall(
-            address(registry),
-            abi.encodeWithSelector(
-                IProtocolController.allowed.selector, address(strategy), notAllowedCaller, Strategy.shutdown.selector
-            ),
-            abi.encode(false)
-        );
-
-        vm.mockCall(address(vault), abi.encodeWithSelector(IERC4626.asset.selector), abi.encode(address(stakingToken)));
-
-        /// But gauge is shutdown.
-        vm.mockCall(
-            address(registry), abi.encodeWithSelector(IProtocolController.isShutdown.selector, gauge), abi.encode(true)
-        );
-
-        vm.expectEmit();
-        emit Shutdown(gauge);
-
-        /// So the function become permissionless.
-        vm.prank(notAllowedCaller);
-        strategy.shutdown(gauge);
-    }
-
-    function test_RevertAlreadyShutdown() public {
-        vm.mockCall(
-            address(registry), abi.encodeWithSelector(IProtocolController.isShutdown.selector, gauge), abi.encode(true)
-        );
-
-        vm.expectRevert(abi.encodeWithSelector(Strategy.AlreadyShutdown.selector));
-        strategy.shutdown(gauge);
-    }
 
     function test_Shutdown() public {
         /// Cheat the sidecar balances
@@ -98,22 +49,11 @@ contract Strategy__shutdown is StrategyBaseTest {
         strategy.deposit(allocation, IStrategy.HarvestPolicy.CHECKPOINT);
         assertEq(strategy.balanceOf(gauge), 600);
 
-        address allowedCaller = makeAddr("allowedCaller");
 
-        /// Caller is not allowed.
-        vm.mockCall(
-            address(registry),
-            abi.encodeWithSelector(
-                IProtocolController.allowed.selector, address(strategy), allowedCaller, Strategy.shutdown.selector
-            ),
-            abi.encode(true)
-        );
 
         vm.mockCall(address(vault), abi.encodeWithSelector(IERC4626.asset.selector), abi.encode(address(stakingToken)));
 
-        assertTrue(registry.allowed(address(strategy), allowedCaller, Strategy.shutdown.selector));
-
-        vm.prank(allowedCaller);
+        vm.prank(address(registry));
         strategy.shutdown(gauge);
 
         assertEq(strategy.balanceOf(gauge), 0);
