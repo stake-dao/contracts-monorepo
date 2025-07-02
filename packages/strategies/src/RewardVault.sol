@@ -60,6 +60,9 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @notice Thrown when a function is called by an address that isn't a registrar
     error OnlyRegistrar();
 
+    /// @notice Thrown when a function is called by an address that isn't the protocol controller
+    error OnlyProtocolController();
+
     /// @notice Thrown when a protocol ID is zero
     error InvalidProtocolId();
 
@@ -140,6 +143,13 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     ///////////////////////////////////////////////////////////////
     // --- MODIFIERS
     ///////////////////////////////////////////////////////////////
+
+    /// @notice Restricts functions to the protocol controller
+    modifier onlyProtocolController() {
+        require(msg.sender == address(PROTOCOL_CONTROLLER), OnlyProtocolController());
+
+        _;
+    }
 
     /// @notice Restricts functions to addresses with specific permissions
     modifier onlyAllowed() {
@@ -354,15 +364,10 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     // --- EMERGENCY -
     ///////////////////////////////////////////////////////////////
 
-    /// @notice Resumes operations of the vault
-    /// @dev Only callable by allowed addresses
-    /// @custom:reverts OnlyAllowed if caller is not authorized
-    function resumeOperations() external onlyAllowed {
-        /// Must been marked not shutdown in the protocol controller
-        require(!PROTOCOL_CONTROLLER.isShutdown(gauge()), MustUnshutdownFirst());
-        /// Must been marked not fully withdrawn in the protocol controller
-        require(!PROTOCOL_CONTROLLER.isFullyWithdrawn(gauge()), MustFullyWithdrawnFirst());
-
+    /// @notice Resumes the vault operations
+    /// @dev Only callable by the protocol controller
+    /// @custom:reverts OnlyProtocolController if caller is not the protocol controller
+    function resumeVault() external onlyProtocolController {
         IERC20 _asset = IERC20(asset());
         uint256 assets = _asset.balanceOf(address(this));
 

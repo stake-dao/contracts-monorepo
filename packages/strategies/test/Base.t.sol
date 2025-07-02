@@ -9,6 +9,7 @@ import {MockAllocator} from "test/mocks/MockAllocator.sol";
 import {MockGateway} from "test/mocks/MockGateway.sol";
 import {MockLocker} from "test/mocks/MockLocker.sol";
 import {MockRegistry} from "test/mocks/MockRegistry.sol";
+import {MockStrategy} from "test/mocks/MockStrategy.sol";
 
 /// @title BaseTest
 /// @notice Base test contract with common utilities and setup for all tests

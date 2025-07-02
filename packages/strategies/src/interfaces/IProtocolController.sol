@@ -14,6 +14,8 @@ interface IProtocolController {
     function allocator(bytes4 protocolId) external view returns (address);
     function accountant(bytes4 protocolId) external view returns (address);
     function feeReceiver(bytes4 protocolId) external view returns (address);
+
+    function isPaused(bytes4) external view returns (bool);
     function isShutdown(address) external view returns (bool);
     function isFullyWithdrawn(address) external view returns (bool);
 

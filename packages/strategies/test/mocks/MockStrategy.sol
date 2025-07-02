@@ -68,6 +68,8 @@ contract MockStrategy is IStrategy {
         FLUSH_AMOUNT_SLOT.asUint256().tstore(0);
     }
 
+    function shutdown(address) external override {}
+
     function balanceOf(address) external pure returns (uint256) {
         return 0;
     }

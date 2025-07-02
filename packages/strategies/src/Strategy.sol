@@ -64,6 +64,9 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @notice Error thrown when the transfer to the accountant fails
     error TransferToAccountantFailed();
 
+    /// @notice Error thrown when deposits are attempted while protocol is paused
+    error DepositsPaused();
+
     /// @notice Event emitted when the strategy is shutdown
     event Shutdown(address indexed gauge);
 
@@ -119,6 +122,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @param policy Whether to harvest rewards during deposit
     /// @return pendingRewards Rewards claimed if HARVEST policy
     /// @custom:throws GaugeShutdown Prevents deposits to shutdown gauges
+    /// @custom:throws DepositsPaused Prevents deposits when protocol is paused
     function deposit(IAllocator.Allocation calldata allocation, HarvestPolicy policy)
         external
         override
@@ -126,6 +130,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         returns (PendingRewards memory pendingRewards)
     {
         require(!PROTOCOL_CONTROLLER.isShutdown(allocation.gauge), GaugeShutdown());
+        require(!PROTOCOL_CONTROLLER.isPaused(PROTOCOL_ID), DepositsPaused());
 
         // Execute deposits on each target (locker or sidecar)
         for (uint256 i; i < allocation.targets.length; i++) {
@@ -221,8 +226,10 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @dev Withdraws all funds to strategy then re-deposits per new allocation
     /// @param gauge The gauge to rebalance
     /// @custom:throws RebalanceNotNeeded If only one target (nothing to rebalance)
+    /// @custom:throws DepositsPaused Prevents rebalancing when protocol is paused
     function rebalance(address gauge) external {
         require(!PROTOCOL_CONTROLLER.isShutdown(gauge), GaugeShutdown());
+        require(!PROTOCOL_CONTROLLER.isPaused(PROTOCOL_ID), DepositsPaused());
 
         address allocator = PROTOCOL_CONTROLLER.allocator(PROTOCOL_ID);
         IERC20 asset = IERC20(PROTOCOL_CONTROLLER.asset(gauge));
