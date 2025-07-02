@@ -95,20 +95,13 @@ contract ProtocolController__registerVault is ProtocolControllerBaseTest {
         protocolController.registerVault(gauge, vault, asset, rewardReceiver, protocolId);
 
         // check the state of the gauge is correct
-        (
-            address $vault,
-            address $asset,
-            address $rewardReceiver,
-            bytes4 $protocolId,
-            bool $isShutdown,
-            bool $isFullyWithdrawn
-        ) = protocolController.gauge(gauge);
+        (address $vault, address $asset, address $rewardReceiver, bytes4 $protocolId, bool $isShutdown) =
+            protocolController.gauge(gauge);
         assertEq($vault, vault);
         assertEq($asset, asset);
         assertEq($rewardReceiver, rewardReceiver);
         assertEq($protocolId, protocolId);
         assertEq($isShutdown, false);
-        assertEq($isFullyWithdrawn, false);
     }
 
     function test_EmitsAVaultRegisteredEvent(

@@ -84,12 +84,6 @@ contract Strategy__shutdown is StrategyBaseTest {
             address(registry), abi.encodeWithSelector(IProtocolController.isShutdown.selector, gauge), abi.encode(true)
         );
 
-        vm.mockCall(
-            address(registry),
-            abi.encodeWithSelector(IProtocolController.isFullyWithdrawn.selector, gauge),
-            abi.encode(true)
-        );
-
         vm.expectRevert(abi.encodeWithSelector(Strategy.AlreadyShutdown.selector));
         strategy.shutdown(gauge);
     }
