@@ -2,7 +2,7 @@
 pragma solidity ^0.8.22;
 
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
-import {OFT} from "layerzerolabs/oft-evm/contracts/OFT.sol";
+import {OFT} from "@layerzerolabs/oft-evm/contracts/OFT.sol";
 import {Common} from "@address-book/src/CommonBSC.sol";
 
 /// @title asdYND Yieldnest OFT (BSC)

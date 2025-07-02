@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.28;
 
-import {BalancerLocker, BalancerProtocol} from "address-book/src/BalancerEthereum.sol";
-import {Common} from "address-book/src/CommonEthereum.sol";
+import {BalancerLocker, BalancerProtocol} from "@address-book/src/BalancerEthereum.sol";
+import {Common} from "@address-book/src/CommonEthereum.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {ILocker} from "src/interfaces/ILocker.sol";
 import {IVeBoost} from "src/interfaces/IVeBoost.sol";

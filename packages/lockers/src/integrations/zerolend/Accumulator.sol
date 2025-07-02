@@ -3,8 +3,8 @@ pragma solidity 0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Enum} from "@safe/contracts/common/Enum.sol";
-import {Common} from "address-book/src/CommonLinea.sol";
-import {ZeroLocker} from "address-book/src/ZeroLinea.sol";
+import {Common} from "@address-book/src/CommonLinea.sol";
+import {ZeroLocker} from "@address-book/src/ZeroLinea.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {AccumulatorBase} from "src/AccumulatorBase.sol";
 import {ISafeLocker} from "src/interfaces/ISafeLocker.sol";

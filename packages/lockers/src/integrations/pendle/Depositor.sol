@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {PendleProtocol} from "address-book/src/PendleEthereum.sol";
+import {PendleProtocol} from "@address-book/src/PendleEthereum.sol";
 import {DepositorBase} from "src/DepositorBase.sol";
 import {IVePendle} from "src/interfaces/IVePendle.sol";
 import {SafeModule} from "src/utils/SafeModule.sol";

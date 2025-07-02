@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import {PendleLocker, PendleProtocol} from "address-book/src/PendleEthereum.sol";
+import {PendleLocker, PendleProtocol} from "@address-book/src/PendleEthereum.sol";
 import {IVePendle} from "src/interfaces/IVePendle.sol";
 import {PendleDepositor} from "src/integrations/pendle/Depositor.sol";
 import {DepositorTest} from "test/unit/depositors/DepositorTest.t.sol";

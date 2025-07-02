@@ -50,7 +50,7 @@ contract Locker is VeCRVLocker, FXTLDelegation {
         // constrain the locker to create at most one lock
         if (IVestedFXS(veToken).nextId(address(this)) != 0) revert LockAlreadyCreated();
 
-        IERC20(token).safeApprove(veToken, type(uint256).max);
+        IERC20(token).forceApprove(veToken, type(uint256).max);
         IVestedFXS(veToken).createLock(address(this), _value, uint128(_unlockTime));
 
         emit LockCreated(_value, _unlockTime);

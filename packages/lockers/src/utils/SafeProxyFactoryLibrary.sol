@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 import {Enum} from "@safe/contracts/common/Enum.sol";
 import {SafeProxyFactory} from "@safe/contracts/proxies/SafeProxyFactory.sol";
 import {Safe} from "@safe/contracts/Safe.sol";
-import {Common} from "address-book/src/CommonEthereum.sol";
+import {Common} from "@address-book/src/CommonEthereum.sol";
 import {ISafeLocker, ISafe} from "src/interfaces/ISafeLocker.sol";
 
 /// @title SafeProxyFactoryLibrary

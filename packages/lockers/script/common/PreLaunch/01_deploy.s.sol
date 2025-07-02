@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {DAO} from "address-book/src/DaoEthereum.sol";
+import {DAO} from "@address-book/src/DaoEthereum.sol";
 import {Script} from "forge-std/src/Script.sol";
 import {SafeProxyFactoryLibrary} from "src/utils/SafeProxyFactoryLibrary.sol";
 import {LockerPreLaunch} from "src/LockerPreLaunch.sol";

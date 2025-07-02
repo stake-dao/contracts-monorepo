@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {BalancerLocker} from "address-book/src/BalancerEthereum.sol";
-import {DAO} from "address-book/src/DaoEthereum.sol";
+import {BalancerLocker} from "@address-book/src/BalancerEthereum.sol";
+import {DAO} from "@address-book/src/DaoEthereum.sol";
 import {DeployAccumulator} from "script/common/DeployAccumulator.sol";
 import {BalancerAccumulator} from "src/integrations/balancer/Accumulator.sol";
 

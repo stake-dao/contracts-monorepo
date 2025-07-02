@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {PendleLocker, PendleProtocol} from "address-book/src/PendleEthereum.sol";
+import {PendleLocker, PendleProtocol} from "@address-book/src/PendleEthereum.sol";
 import {Test} from "forge-std/src/Test.sol";
 import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
 import {IDepositor} from "src/interfaces/IDepositor.sol";
