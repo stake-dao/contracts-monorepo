@@ -3,10 +3,10 @@ pragma solidity 0.8.28;
 
 import "test/BaseTest.t.sol";
 
-import {DAO} from "address-book/src/DaoEthereum.sol";
-import {CommonUniversal} from "address-book/src/CommonUniversal.sol";
+import {DAO} from "@address-book/src/DaoEthereum.sol";
+import {CommonUniversal} from "@address-book/src/CommonUniversal.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {YieldnestProtocol, YieldnestLocker} from "address-book/src/YieldnestEthereum.sol";
+import {YieldnestProtocol, YieldnestLocker} from "@address-book/src/YieldnestEthereum.sol";
 
 import {ISafe} from "src/interfaces/ISafe.sol";
 import {IPreLaunchLocker} from "src/interfaces/IPreLaunchLocker.sol";
