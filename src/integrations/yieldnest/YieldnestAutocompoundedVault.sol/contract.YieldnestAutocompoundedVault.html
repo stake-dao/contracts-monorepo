@@ -180,7 +180,7 @@
                 <div id="content" class="content">
                     <main>
                         <h1 id="yieldnestautocompoundedvault"><a class="header" href="#yieldnestautocompoundedvault">YieldnestAutocompoundedVault</a></h1>
-<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/7e123942252f3e3e62e96a6a6dd01ef27f904b00/src/integrations/yieldnest/YieldnestAutocompoundedVault.sol">Git Source</a></p>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/dec115e86cd16e1cf9f6f0b68838f95d31c353b1/src/integrations/yieldnest/YieldnestAutocompoundedVault.sol">Git Source</a></p>
 <p><strong>Inherits:</strong>
 <a href="/src/AutocompoundedVault.sol/contract.AutocompoundedVault.html">AutocompoundedVault</a></p>
 <p>This contract is a fully compliant ERC4626 streaming yield-bearing vault for sdYND tokens.
@@ -190,7 +190,7 @@ The rewards are streamed linearly over a fixed period and the vault is autocompo
 <p>Initialize the the streaming period, the asset and the shares token</p>
 <p><em>sdYND is the asset contract while asdYND is the shares token</em></p>
 <pre><code class="language-solidity">constructor(address _owner)
-    AutocompoundedVault(7 days, IERC20(YieldnestProtocol.SDYND), &quot;Autocompounded Stake DAO YND&quot;, &quot;asdYND&quot;, _owner);
+    AutocompoundedVault(7 days, IERC20(YieldnestLocker.SDYND), &quot;Autocompounded Stake DAO YND&quot;, &quot;asdYND&quot;, _owner);
 </code></pre>
 <p><strong>Parameters</strong></p>
 <div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
