@@ -26,8 +26,7 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
                 strategy: strategy,
                 allocator: address(0),
                 accountant: address(0),
-                feeReceiver: address(0),
-                isShutdown: false
+                feeReceiver: address(0)
             })
         );
 
@@ -45,8 +44,7 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
                 strategy: address(0),
                 allocator: allocator,
                 accountant: address(0),
-                feeReceiver: address(0),
-                isShutdown: false
+                feeReceiver: address(0)
             })
         );
 
@@ -64,8 +62,7 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
                 strategy: address(0),
                 allocator: address(0),
                 accountant: accountant,
-                feeReceiver: address(0),
-                isShutdown: false
+                feeReceiver: address(0)
             })
         );
 
@@ -83,8 +80,7 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
                 strategy: address(0),
                 allocator: address(0),
                 accountant: address(0),
-                feeReceiver: feeReceiver,
-                isShutdown: false
+                feeReceiver: feeReceiver
             })
         );
 
@@ -103,25 +99,6 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
         assertEq(protocolController.isRegistrar(registrar), true);
     }
 
-    function test_ReturnsTheProtocolShutdownStatusForAProtocol(bool isShutdown) external {
-        // it returns the protocol shutdown status for a protocol
-
-        vm.assume(isShutdown != protocolController.isShutdownProtocol(PROTOCOL_ID));
-
-        protocolControllerHarness._cheat_override_protocol_components(
-            PROTOCOL_ID,
-            ProtocolController.ProtocolComponents({
-                strategy: address(0),
-                allocator: address(0),
-                accountant: address(0),
-                feeReceiver: address(0),
-                isShutdown: isShutdown
-            })
-        );
-
-        assertEq(protocolController.isShutdownProtocol(PROTOCOL_ID), isShutdown);
-    }
-
     function test_ReturnsTheVaultAddressForAGauge(address gauge, address vault) external {
         // it returns the vault address for a gauge
 
@@ -135,8 +112,7 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
                 asset: address(0),
                 rewardReceiver: address(0),
                 protocolId: bytes4(0),
-                isShutdown: false,
-                isFullyWithdrawn: false
+                isShutdown: false
             })
         );
 
@@ -156,8 +132,7 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
                 asset: address(0),
                 rewardReceiver: rewardReceiver,
                 protocolId: bytes4(0),
-                isShutdown: false,
-                isFullyWithdrawn: false
+                isShutdown: false
             })
         );
 
@@ -177,8 +152,7 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
                 asset: asset,
                 rewardReceiver: address(0),
                 protocolId: bytes4(0),
-                isShutdown: false,
-                isFullyWithdrawn: false
+                isShutdown: false
             })
         );
 
@@ -207,23 +181,6 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
         assertEq(protocolControllerHarness.allowed(contractAddress, caller, selector), true);
     }
 
-    function test_ChecksIfAGaugeIsShutdown(bool isShutdown) external {
-        // it checks if a gauge is shutdown
-
-        protocolControllerHarness._cheat_override_protocol_components(
-            PROTOCOL_ID,
-            ProtocolController.ProtocolComponents({
-                strategy: address(0),
-                allocator: address(0),
-                accountant: address(0),
-                feeReceiver: address(0),
-                isShutdown: isShutdown
-            })
-        );
-
-        assertEq(protocolController.isShutdownProtocol(PROTOCOL_ID), isShutdown);
-    }
-
     function test_ReturnsTheGaugeShutdownStatusForAGauge(address gauge) external {
         // it returns the gauge shutdown status for a gauge
 
@@ -236,8 +193,7 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
                 strategy: address(0),
                 allocator: address(0),
                 accountant: address(0),
-                feeReceiver: address(0),
-                isShutdown: true
+                feeReceiver: address(0)
             })
         );
         protocolControllerHarness._cheat_override_gauge(
@@ -247,8 +203,7 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
                 asset: address(0),
                 rewardReceiver: address(0),
                 protocolId: PROTOCOL_ID,
-                isShutdown: false,
-                isFullyWithdrawn: false
+                isShutdown: false
             })
         );
         assertEq(protocolControllerHarness.isShutdown(gauge), true);
@@ -261,8 +216,7 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
                 asset: address(0),
                 rewardReceiver: address(0),
                 protocolId: PROTOCOL_ID,
-                isShutdown: true,
-                isFullyWithdrawn: false
+                isShutdown: true
             })
         );
         assertEq(protocolControllerHarness.isShutdown(gauge), true);
@@ -274,8 +228,7 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
                 strategy: address(0),
                 allocator: address(0),
                 accountant: address(0),
-                feeReceiver: address(0),
-                isShutdown: false
+                feeReceiver: address(0)
             })
         );
         assertEq(protocolControllerHarness.isShutdown(gauge), true);
@@ -288,8 +241,7 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
                 asset: address(0),
                 rewardReceiver: address(0),
                 protocolId: PROTOCOL_ID,
-                isShutdown: false,
-                isFullyWithdrawn: false
+                isShutdown: false
             })
         );
         assertEq(protocolControllerHarness.isShutdown(gauge), false);

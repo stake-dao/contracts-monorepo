@@ -37,6 +37,9 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @notice Error thrown when the caller is not the accountant for the strategy
     error OnlyAccountant();
 
+    /// @notice Error thrown when the caller is not the protocol controller
+    error OnlyProtocolController();
+
     /// @notice Error thrown when the caller is not allowed to perform the action
     error OnlyAllowed();
 
@@ -80,6 +83,12 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @notice Restricts functions to the vault associated with the gauge
     modifier onlyVault(address gauge) {
         require(PROTOCOL_CONTROLLER.vaults(gauge) == msg.sender, OnlyVault());
+        _;
+    }
+
+    /// @notice Restricts functions to the protocol controller
+    modifier onlyProtocolController() {
+        require(PROTOCOL_CONTROLLER.isShutdown(msg.sender), OnlyProtocolController());
         _;
     }
 
@@ -206,18 +215,13 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @dev Anyone can call if gauge is shutdown, ensuring user fund recovery
     /// @param gauge The gauge to withdraw all funds from
     /// @custom:throws AlreadyShutdown If already fully withdrawn
-    function shutdown(address gauge) public onlyAllowed(gauge) {
-        require(!PROTOCOL_CONTROLLER.isFullyWithdrawn(gauge), AlreadyShutdown());
-
+    function shutdown(address gauge) public onlyProtocolController {
         address vault = PROTOCOL_CONTROLLER.vaults(gauge);
         address asset = IERC4626(vault).asset();
         address[] memory targets = _getAllocationTargets(gauge);
 
         // Withdraw everything from locker and sidecars to vault
         _withdrawFromAllTargets(asset, gauge, targets, vault);
-
-        // Prevent double withdrawal
-        PROTOCOL_CONTROLLER.markGaugeAsFullyWithdrawn(gauge);
 
         emit Shutdown(gauge);
     }

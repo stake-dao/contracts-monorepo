@@ -23,7 +23,6 @@ contract ProtocolController is IProtocolController, Ownable2Step {
         address allocator;
         address accountant;
         address feeReceiver;
-        bool isShutdown;
     }
 
     /// @notice Links a gauge to its associated vault and protocol
@@ -34,7 +33,6 @@ contract ProtocolController is IProtocolController, Ownable2Step {
         address rewardReceiver;
         bytes4 protocolId;
         bool isShutdown;
-        bool isFullyWithdrawn;
     }
 
     //////////////////////////////////////////////////////
@@ -357,38 +355,15 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @custom:reverts GaugeNotShutdown if gauge was not previously shutdown
     function unshutdown(address _gauge) external onlyOwner {
         require(gauge[_gauge].isShutdown, GaugeNotShutdown());
-        require(!gauge[_gauge].isFullyWithdrawn, GaugeNotFullyWithdrawn());
 
         address _vault = gauge[_gauge].vault;
 
         gauge[_gauge].isShutdown = false;
-        gauge[_gauge].isFullyWithdrawn = false;
 
         // Resume the vault operations
         IRewardVault(_vault).resumeVault();
 
         emit GaugeUnshutdown(_gauge);
-    }
-
-    /// @notice Marks a gauge as fully withdrawn
-    /// @dev Called by strategy when all funds have been recovered from the gauge
-    /// @param _gauge The gauge address
-    /// @custom:reverts GaugeAlreadyFullyWithdrawn if already marked
-    function markGaugeAsFullyWithdrawn(address _gauge) external onlyStrategy(_gauge) {
-        require(!gauge[_gauge].isFullyWithdrawn, GaugeAlreadyFullyWithdrawn());
-
-        gauge[_gauge].isFullyWithdrawn = true;
-    }
-
-    /// @notice Emergency shutdown for an entire protocol
-    /// @dev Affects all gauges using this protocol - more severe than gauge shutdown
-    /// @param protocolId The protocol identifier
-    /// @custom:reverts ProtocolAlreadyShutdown if protocol was previously shutdown
-    function shutdownProtocol(bytes4 protocolId) external onlyOwner {
-        require(!_protocolComponents[protocolId].isShutdown, ProtocolAlreadyShutdown());
-
-        _protocolComponents[protocolId].isShutdown = true;
-        emit ProtocolShutdown(protocolId);
     }
 
     /// @notice Pauses deposits for a specific protocol
@@ -475,29 +450,12 @@ contract ProtocolController is IProtocolController, Ownable2Step {
         return _permissions[_contract][_caller][_selector] || _caller == owner();
     }
 
-    /// @notice Checks if a protocol is shutdown
-    /// @param protocolId The protocol identifier
-    /// @return _ Whether the protocol is shutdown
-    function isShutdownProtocol(bytes4 protocolId) external view returns (bool) {
-        return _protocolComponents[protocolId].isShutdown;
-    }
-
     /// @notice Checks if a gauge is shutdown
     /// @dev Returns true if either the gauge itself or its protocol is shutdown
     /// @param _gauge The gauge address
     /// @return _ Whether the gauge is shutdown
     function isShutdown(address _gauge) external view returns (bool) {
-        Gauge storage $gauge = gauge[_gauge];
-
-        // Check gauge first (more likely), then protocol
-        return $gauge.isShutdown || _protocolComponents[$gauge.protocolId].isShutdown;
-    }
-
-    /// @notice Checks if a gauge is fully withdrawn
-    /// @param _gauge The gauge address
-    /// @return _ Whether the gauge is fully withdrawn
-    function isFullyWithdrawn(address _gauge) external view returns (bool) {
-        return gauge[_gauge].isFullyWithdrawn;
+        return gauge[_gauge].isShutdown;
     }
 
     /// @notice Checks if a target is a valid allocation target for a gauge

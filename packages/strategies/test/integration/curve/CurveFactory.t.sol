@@ -67,21 +67,14 @@ abstract contract CurveFactoryTest is BaseCurveTest {
         assertEq(allowance, type(uint256).max);
 
         /// 4. Check that the vault is registered in the protocol controller.
-        (
-            address _vault,
-            address _asset,
-            address _rewardReceiver,
-            bytes4 _protocolId,
-            bool _isShutdown,
-            bool _isFullyWithdrawn
-        ) = protocolController.gauge(address(gauge));
+        (address _vault, address _asset, address _rewardReceiver, bytes4 _protocolId, bool _isShutdown) =
+            protocolController.gauge(address(gauge));
 
         assertEq(_vault, vault);
         assertEq(_asset, address(lpToken));
         assertEq(_rewardReceiver, rewardReceiver);
         assertEq(_protocolId, bytes4(keccak256("CURVE")));
         assertEq(_isShutdown, false);
-        assertEq(_isFullyWithdrawn, false);
 
         if (_checkExtraRewards(address(gauge))) {
             address gaugeRewardReceiver = ILiquidityGauge(address(gauge)).rewards_receiver(LOCKER);
