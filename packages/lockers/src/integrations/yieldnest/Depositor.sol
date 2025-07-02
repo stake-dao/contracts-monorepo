@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 import "src/DepositorBase.sol";
 
-import {SafeModule} from "src/utils/SafeModule.sol";
+import {SafeModule} from "@shared/safe/SafeModule.sol";
 import {IYieldNest} from "src/interfaces/IYieldNest.sol";
 import {YieldnestProtocol, YieldnestLocker} from "@address-book/src/YieldnestEthereum.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";

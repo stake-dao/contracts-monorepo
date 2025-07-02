@@ -58,12 +58,6 @@ contract YieldnestAutocompoundedVault is AutocompoundedVault, SafeModule {
 
     /// @notice Initialize the the streaming period, the asset and the shares token
     /// @dev sdYND is the asset contract while asdYND is the shares token
-<<<<<<< HEAD
-    /// @param _owner The owner of the vault
-    constructor(address _owner)
-        AutocompoundedVault(7 days, IERC20(YieldnestLocker.SDYND), "Autocompounded Stake DAO YND", "asdYND", _owner)
-    {}
-=======
     /// @param _owner The owner of the vault and the rewards receiver of the gauge
     /// @param _gauge The liquidity gauge where the assets will be deposited
     /// @param _manager The manager of the vault, responsible of managing the stream of rewards
@@ -71,7 +65,7 @@ contract YieldnestAutocompoundedVault is AutocompoundedVault, SafeModule {
     constructor(address _owner, address _gauge, address _manager, address _gateway, address _locker)
         AutocompoundedVault(
             7 days,
-            IERC20(YieldnestProtocol.SDYND),
+            IERC20(YieldnestLocker.SDYND),
             "Autocompounded Stake DAO YND",
             "asdYND",
             _owner,
@@ -206,5 +200,4 @@ contract YieldnestAutocompoundedVault is AutocompoundedVault, SafeModule {
     function version() external pure override returns (string memory) {
         return "2.1.0";
     }
->>>>>>> effd608d (feat(strategy): yield for asd vault)
 }
