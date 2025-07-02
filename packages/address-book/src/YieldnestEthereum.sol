@@ -6,9 +6,6 @@ library YieldnestProtocol {
     address internal constant ESCROW = 0xD666B56EE7786Cc918fDdcEade542d013de0E4F1;
     address internal constant CLOCK = 0xA52965bb24021bA649f3c23b74A8Fb064BE07950;
     address internal constant VEYND = 0x23d2923e15f5cce8a131CB37F0c7BCC5caD15639;
-
-
-
 }
 
 library YieldnestLocker {
