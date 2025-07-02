@@ -75,12 +75,6 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @notice Thrown when attempting to add a reward token that's already registered
     error RewardAlreadyExists();
 
-    /// @notice Thrown when an operation is attempted when the vault is not shutdown
-    error MustUnshutdownFirst();
-
-    /// @notice Thrown when an operation is attempted when the vault is not fully withdrawn
-    error MustFullyWithdrawnFirst();
-
     /// @notice Thrown when an unauthorized address attempts to distribute rewards
     error UnauthorizedRewardsDistributor();
 
