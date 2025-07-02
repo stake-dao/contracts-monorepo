@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {DAO} from "@address-book/src/DaoEthereum.sol";
-import {YieldnestProtocol} from "@address-book/src/YieldnestEthereum.sol";
+import {YieldnestProtocol, YieldnestLocker} from "@address-book/src/YieldnestEthereum.sol";
 import {DepositorPreLaunch} from "src/DepositorPreLaunch.sol";
 import {ILiquidityGaugeV4} from "src/interfaces/ILiquidityGaugeV4.sol";
 import {ISdToken} from "src/interfaces/ISdToken.sol";
