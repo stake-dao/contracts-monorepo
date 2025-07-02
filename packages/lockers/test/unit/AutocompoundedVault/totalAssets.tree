@@ -1,3 +1,0 @@
-AutocompoundedVault__totalAssets
-├── it returns the real balance when there is no stream
-└── it returns the real balance minus the unvested portion when there is a stream

@@ -5,3 +5,4 @@ forge-std=node_modules/forge-std/
 @openzeppelin/contracts=node_modules/@openzeppelin/contracts
 solidity-examples/=node_modules/@layerzerolabs/solidity-examples/contracts/
 murky/=node_modules/murky.git/src/
+@safe=node_modules/@safe-global/safe-contracts

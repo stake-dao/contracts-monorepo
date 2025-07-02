@@ -2,10 +2,13 @@
 	"name": "@stake-dao/shared",
 	"version": "1.0.0",
 	"dependencies": {
-		"forge-std": "github:foundry-rs/forge-std",
-		"murky.git": "github:dmfxyz/murky",
 		"@openzeppelin/contracts": "4.9.0",
 		"@stake-dao/address-book": "workspace:*",
+		"forge-std": "github:foundry-rs/forge-std",
+		"murky.git": "github:dmfxyz/murky",
 		"solady": "github:vectorized/solady"
+	},
+	"devDependencies": {
+		"@safe-global/safe-contracts": "github:safe-global/safe-smart-account#v1.4.1-3"
 	}
 }

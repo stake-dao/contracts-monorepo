@@ -14,7 +14,7 @@ import {Accountant} from "src/Accountant.sol";
 import {RewardReceiver} from "src/RewardReceiver.sol";
 import {RewardVault, IStrategy} from "src/RewardVault.sol";
 import {ProtocolController} from "src/ProtocolController.sol";
-import {Create3} from "shared/src/create/Create3.sol";
+import {Create3} from "@shared/create/Create3.sol";
 
 abstract contract BaseDeploy is Script {
     address public admin;

@@ -1,5 +1,0 @@
-AutocompoundedVault__getters
-├── it correctly sets the asset
-├── it correctly sets the name of the shares
-├── it correctly sets the symbol of the shares
-└── it correctly sets the owner

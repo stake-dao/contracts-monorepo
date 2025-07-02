@@ -7,7 +7,7 @@ import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {DepositorBase} from "src/DepositorBase.sol";
 import {ISdTokenOperator} from "src/interfaces/ISdTokenOperator.sol";
 import {IVestedFXS} from "src/interfaces/IVestedFXS.sol";
-import {SafeModule} from "src/utils/SafeModule.sol";
+import {SafeModule} from "@shared/safe/SafeModule.sol";
 import {FXTLDelegation} from "src/integrations/frax/FXTLDelegation.sol";
 
 /// @title DepositorBase

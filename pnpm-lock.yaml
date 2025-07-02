@@ -71,6 +71,10 @@ importers:
       solady:
         specifier: github:vectorized/solady
         version: https://codeload.github.com/vectorized/solady/tar.gz/b609a9c79ce541c2beca7a7d247665e7c93942a3
+    devDependencies:
+      '@safe-global/safe-contracts':
+        specifier: github:safe-global/safe-smart-account#v1.4.1-3
+        version: https://codeload.github.com/safe-global/safe-smart-account/tar.gz/21dc82410445637820f600c7399a804ad55841d5
 
   packages/strategies:
     devDependencies:

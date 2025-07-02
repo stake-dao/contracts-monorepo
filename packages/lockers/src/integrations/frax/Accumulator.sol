@@ -7,7 +7,7 @@ import {FraxProtocol} from "@address-book/src/FraxFraxtal.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {AccumulatorBase} from "src/AccumulatorBase.sol";
 import {IYieldDistributor} from "src/interfaces/IYieldDistributor.sol";
-import {SafeModule} from "src/utils/SafeModule.sol";
+import {SafeModule} from "@shared/safe/SafeModule.sol";
 import {FXTLDelegation} from "src/integrations/frax/FXTLDelegation.sol";
 
 /// @title A contract that accumulates FXS rewards and notifies them to the LGV4

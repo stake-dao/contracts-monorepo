@@ -8,7 +8,7 @@ import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {AccumulatorDelegable} from "src/AccumulatorDelegable.sol";
 import {IFeeDistributor} from "src/interfaces/IFeeDistributor.sol";
 import {ILiquidityGauge} from "src/interfaces/ILiquidityGauge.sol";
-import {SafeModule} from "src/utils/SafeModule.sol";
+import {SafeModule} from "@shared/safe/SafeModule.sol";
 
 /// @author CurveAccumulator
 /// @notice This contract is used to claim all the rewards the locker has received

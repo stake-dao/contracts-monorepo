@@ -6,7 +6,7 @@ import {YieldnestOFTAdapter} from "src/integrations/yieldnest/YieldnestOFTAdapte
 import {YieldnestOFT} from "src/integrations/yieldnest/YieldnestOFT.sol";
 import {DAO} from "@address-book/src/DaoEthereum.sol";
 import {LayerZeroEID} from "src/libraries/LayerZeroEID.sol";
-import {Create3} from "shared/src/create/Create3.sol";
+import {Create3} from "@shared/create/Create3.sol";
 import {YieldnestAutocompoundedVault} from "src/integrations/yieldnest/YieldnestAutocompoundedVault.sol";
 
 /**

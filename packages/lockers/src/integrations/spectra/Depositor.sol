@@ -9,7 +9,7 @@ import {DepositorBase} from "src/DepositorBase.sol";
 import {ISpectraRewardsDistributor} from "src/interfaces/ISpectraRewardsDistributor.sol";
 import {ISpectraVoter} from "src/interfaces/ISpectraVoter.sol";
 import {IVENFTSpectra} from "src/interfaces/IVENFTSpectra.sol";
-import {SafeModule} from "src/utils/SafeModule.sol";
+import {SafeModule} from "@shared/safe/SafeModule.sol";
 
 /// @title Stake DAO Spectra Depositor
 /// @notice Contract responsible for managing SPECTRA token deposits, locking them in the Locker,

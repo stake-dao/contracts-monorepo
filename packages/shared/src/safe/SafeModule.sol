@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import {Enum} from "@safe/contracts/Safe.sol";
-import {ISafe} from "src/interfaces/ISafeLocker.sol";
+import {ISafe} from "src/safe/ISafe.sol";
 
 /// @title Stake DAO Safe Module
 /// @notice Defining logic to call execute as a Safe module on the locker
