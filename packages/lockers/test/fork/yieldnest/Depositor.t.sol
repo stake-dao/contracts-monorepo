@@ -27,7 +27,7 @@ contract YieldNestDepositorTest is BaseTest {
     address internal constant CLOCK = 0xA52965bb24021bA649f3c23b74A8Fb064BE07950;
 
     function setUp() public {
-        vm.createSelectFork(vm.rpcUrl("mainnet"));
+        vm.createSelectFork(vm.rpcUrl("mainnet"), 22_788_146);
 
         depositor = new YieldnestDepositor({
             _token: YND,

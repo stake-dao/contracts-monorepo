@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: GPL-3.0
 pragma solidity 0.8.28;
 
-import {YieldnestProtocol} from "@address-book/src/YieldnestEthereum.sol";
+import {YieldnestLocker} from "@address-book/src/YieldnestEthereum.sol";
 import {Test} from "forge-std/src/Test.sol";
 import {YieldnestAutocompoundedVault} from "src/integrations/yieldnest/YieldnestAutocompoundedVault.sol";
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
@@ -22,7 +22,7 @@ contract asdYNDTest is Test {
         vault = new YieldnestAutocompoundedVault(owner);
 
         // Labels important addresses
-        vm.label(YieldnestProtocol.SDYND, "sdYND");
+        vm.label(YieldnestLocker.SDYND, "sdYND");
         vm.label(address(vault), "AutocompoundedVault");
         vm.label(owner, "owner");
     }
@@ -31,9 +31,9 @@ contract asdYNDTest is Test {
         for (uint256 i; i < holders.length; i++) {
             // Approve the vault to spend the tokens
 
-            // uint256 balance = ERC20Mock(YieldnestProtocol.SDYND).balanceOf(holders[i]);
+            // uint256 balance = ERC20Mock(YieldnestLocker.SDYND).balanceOf(holders[i]);
             vm.prank(holders[i]);
-            ERC20Mock(YieldnestProtocol.SDYND).approve(address(vault), balances[i]);
+            ERC20Mock(YieldnestLocker.SDYND).approve(address(vault), balances[i]);
 
             // Deposit the tokens into the vault
             vm.prank(holders[i]);
@@ -42,7 +42,7 @@ contract asdYNDTest is Test {
             // Assert that the shares received are equal to the deposit amount
             assertEq(sharesReceived, balances[i]);
             assertEq(vault.balanceOf(holders[i]), balances[i]);
-            assertEq(ERC20Mock(YieldnestProtocol.SDYND).balanceOf(holders[i]), 0);
+            assertEq(ERC20Mock(YieldnestLocker.SDYND).balanceOf(holders[i]), 0);
         }
     }
 
@@ -55,15 +55,15 @@ contract asdYNDTest is Test {
         vault.withdraw(maxWithdraw, holders[0], holders[0]);
 
         // 2. ensure the first account received the same amount he deposited to the vault
-        assertEq(ERC20Mock(YieldnestProtocol.SDYND).balanceOf(holders[0]), balances[0]);
+        assertEq(ERC20Mock(YieldnestLocker.SDYND).balanceOf(holders[0]), balances[0]);
 
         // 3. airdrop some sdYND to the owner
         uint256 rewards = 1e12;
-        deal(YieldnestProtocol.SDYND, owner, rewards);
+        deal(YieldnestLocker.SDYND, owner, rewards);
 
         // 4. set a new rewards stream for the vault
         vm.prank(owner);
-        ERC20Mock(YieldnestProtocol.SDYND).approve(address(vault), rewards);
+        ERC20Mock(YieldnestLocker.SDYND).approve(address(vault), rewards);
         vm.prank(owner);
         vault.setRewards(rewards);
 
@@ -76,6 +76,6 @@ contract asdYNDTest is Test {
         vault.withdraw(maxWithdraw, holders[1], holders[1]);
 
         // 7. ensure the second account received the initial balance + the full rewards (+/- 1% due to rounding)
-        assertApproxEqAbs(ERC20Mock(YieldnestProtocol.SDYND).balanceOf(holders[1]), balances[1] + rewards, 1e16);
+        assertApproxEqAbs(ERC20Mock(YieldnestLocker.SDYND).balanceOf(holders[1]), balances[1] + rewards, 1e16);
     }
 }

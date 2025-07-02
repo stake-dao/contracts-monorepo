@@ -2,13 +2,13 @@
 pragma solidity 0.8.28;
 
 import {AutocompoundedVaultTest} from "test/unit/AutocompoundedVault/utils/AutocompoundedVaultTest.t.sol";
-import {YieldnestProtocol} from "@address-book/src/YieldnestEthereum.sol";
+import {YieldnestLocker} from "@address-book/src/YieldnestEthereum.sol";
 
 contract AutocompoundedVault__constructor is AutocompoundedVaultTest {
     function test_CorrectlySetsTheAsset() external view {
         // it correctly sets the asset
 
-        assertEq(autocompoundedVault.asset(), YieldnestProtocol.SDYND);
+        assertEq(autocompoundedVault.asset(), YieldnestLocker.SDYND);
     }
 
     function test_CorrectlySetsTheNameOfTheShares() external view {
