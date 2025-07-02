@@ -2,6 +2,9 @@
 pragma solidity 0.8.28;
 
 import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
+
+import {IStrategy} from "src/interfaces/IStrategy.sol";
+import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
 /// @title ProtocolController
@@ -62,6 +65,10 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @dev Enables fine-grained access control for specific function calls
     mapping(address => mapping(address => mapping(bytes4 => bool))) internal _permissions;
 
+    /// @notice Per-protocol deposit pause state
+    /// @dev When true for a protocol, deposits are paused but withdrawals remain functional
+    mapping(bytes4 => bool) public isPaused;
+
     //////////////////////////////////////////////////////
     // --- ERRORS & EVENTS
     //////////////////////////////////////////////////////
@@ -110,6 +117,14 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @param setter The permission setter address
     /// @param allowed Whether the permission setter is allowed to set permissions
     event PermissionSetterSet(address indexed setter, bool allowed);
+
+    /// @notice Event emitted when deposits are paused for a protocol
+    /// @param protocolId The protocol identifier
+    event Paused(bytes4 indexed protocolId);
+
+    /// @notice Event emitted when deposits are unpaused for a protocol
+    /// @param protocolId The protocol identifier
+    event Unpaused(bytes4 indexed protocolId);
 
     /// @notice Thrown when a non-strategy calls a strategy-only function
     error OnlyStrategy();
@@ -327,6 +342,12 @@ contract ProtocolController is IProtocolController, Ownable2Step {
         require(!g.isShutdown, GaugeAlreadyShutdown());
 
         gauge[_gauge].isShutdown = true;
+
+        address _strategy = _protocolComponents[g.protocolId].strategy;
+
+        // Shutdown the gauge and withdraw all funds.
+        IStrategy(_strategy).shutdown(_gauge);
+
         emit GaugeShutdown(_gauge);
     }
 
@@ -338,8 +359,13 @@ contract ProtocolController is IProtocolController, Ownable2Step {
         require(gauge[_gauge].isShutdown, GaugeNotShutdown());
         require(!gauge[_gauge].isFullyWithdrawn, GaugeNotFullyWithdrawn());
 
+        address _vault = gauge[_gauge].vault;
+
         gauge[_gauge].isShutdown = false;
         gauge[_gauge].isFullyWithdrawn = false;
+
+        // Resume the vault operations
+        IRewardVault(_vault).resumeVault();
 
         emit GaugeUnshutdown(_gauge);
     }
@@ -363,6 +389,21 @@ contract ProtocolController is IProtocolController, Ownable2Step {
 
         _protocolComponents[protocolId].isShutdown = true;
         emit ProtocolShutdown(protocolId);
+    }
+
+    /// @notice Pauses deposits for a specific protocol
+    /// @dev Withdrawals remain functional during pause
+    /// @param protocolId The protocol identifier to pause
+    function pause(bytes4 protocolId) external onlyOwner {
+        isPaused[protocolId] = true;
+        emit Paused(protocolId);
+    }
+
+    /// @notice Unpauses deposits for a specific protocol
+    /// @param protocolId The protocol identifier to unpause
+    function unpause(bytes4 protocolId) external onlyOwner {
+        isPaused[protocolId] = false;
+        emit Unpaused(protocolId);
     }
 
     //////////////////////////////////////////////////////

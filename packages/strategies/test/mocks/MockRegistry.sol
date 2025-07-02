@@ -52,6 +52,10 @@ contract MockRegistry is IProtocolController {
 
     function shutdown(address) external {}
 
+    function isPaused(bytes4) external pure returns (bool) {
+        return false;
+    }
+
     function isShutdown(address) external pure returns (bool) {
         return false;
     }
