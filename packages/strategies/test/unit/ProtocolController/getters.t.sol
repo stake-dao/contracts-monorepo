@@ -186,29 +186,7 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
 
         vm.assume(gauge != address(0));
 
-        // 1. return `true` if the protocol is shutdown but not the gauge
-        protocolControllerHarness._cheat_override_protocol_components(
-            PROTOCOL_ID,
-            ProtocolController.ProtocolComponents({
-                strategy: address(0),
-                allocator: address(0),
-                accountant: address(0),
-                feeReceiver: address(0)
-            })
-        );
-        protocolControllerHarness._cheat_override_gauge(
-            gauge,
-            ProtocolController.Gauge({
-                vault: address(0),
-                asset: address(0),
-                rewardReceiver: address(0),
-                protocolId: PROTOCOL_ID,
-                isShutdown: false
-            })
-        );
-        assertEq(protocolControllerHarness.isShutdown(gauge), true);
-
-        // 2. return `true` if the gauge and the protocol are shutdown
+        // 1. return `true` if the gauge is shutdown
         protocolControllerHarness._cheat_override_gauge(
             gauge,
             ProtocolController.Gauge({

@@ -88,7 +88,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
 
     /// @notice Restricts functions to the protocol controller
     modifier onlyProtocolController() {
-        require(PROTOCOL_CONTROLLER.isShutdown(msg.sender), OnlyProtocolController());
+        require(msg.sender == address(PROTOCOL_CONTROLLER), OnlyProtocolController());
         _;
     }
 
