@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
+import {CurveLocker, CurveProtocol} from "@address-book/src/CurveEthereum.sol";
 import {IVeToken} from "src/interfaces/IVeToken.sol";
 import {CurveDepositor} from "src/integrations/curve/Depositor.sol";
 import {CurveDepositorHarness} from "test/unit/depositors/curve/CurveDepositorHarness.sol";

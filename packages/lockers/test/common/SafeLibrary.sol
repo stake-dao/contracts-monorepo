@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 import {SafeProxyFactory} from "@safe/contracts/proxies/SafeProxyFactory.sol";
 import {Safe, Enum} from "@safe/contracts/Safe.sol";
-import {Common} from "address-book/src/CommonEthereum.sol";
+import {Common} from "@address-book/src/CommonEthereum.sol";
 
 library SafeLibrary {
     /// @notice Safe proxy factory address. Same address on all chains.

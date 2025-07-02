@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {SpectraLocker} from "address-book/src/SpectraEthereum.sol";
+import {SpectraLocker} from "@address-book/src/SpectraEthereum.sol";
 import {Test} from "forge-std/src/Test.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {APWine2SpectraConverter} from "src/integrations/spectra/APWine2SpectraConverter.sol";

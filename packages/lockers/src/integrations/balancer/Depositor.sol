@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
-import {BalancerProtocol} from "address-book/src/BalancerEthereum.sol";
+import {BalancerProtocol} from "@address-book/src/BalancerEthereum.sol";
 import {DepositorBase} from "src/DepositorBase.sol";
 import {IVeToken} from "src/interfaces/IVeToken.sol";
 import {SafeModule} from "src/utils/SafeModule.sol";

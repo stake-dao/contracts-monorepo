@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
-import {BalancerLocker, BalancerProtocol} from "address-book/src/BalancerEthereum.sol";
+import {BalancerLocker, BalancerProtocol} from "@address-book/src/BalancerEthereum.sol";
 import {VoterBase} from "src/VoterBase.sol";
 
 /// @title BalancerVoter

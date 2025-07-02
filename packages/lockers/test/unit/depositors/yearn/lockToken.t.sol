@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity 0.8.28;
 
-import {YearnLocker, YearnProtocol} from "address-book/src/YearnEthereum.sol";
+import {YearnLocker, YearnProtocol} from "@address-book/src/YearnEthereum.sol";
 import {IVeYFI} from "src/interfaces/IVeYFI.sol";
 import {YearnDepositor} from "src/integrations/yearn/Depositor.sol";
 import {DepositorTest} from "test/unit/depositors/DepositorTest.t.sol";

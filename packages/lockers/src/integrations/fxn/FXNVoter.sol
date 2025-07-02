@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
-import {FXNLocker, FXNProtocol} from "address-book/src/FXNEthereum.sol";
+import {FXNLocker, FXNProtocol} from "@address-book/src/FXNEthereum.sol";
 import {VoterBase} from "src/VoterBase.sol";
 
 /// @title FXNVoter

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
-import {SpectraProtocol} from "address-book/src/SpectraBase.sol";
+import {SpectraProtocol} from "@address-book/src/SpectraBase.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {AccumulatorBase} from "src/AccumulatorBase.sol";
 import {ISpectraRewardsDistributor} from "src/interfaces/ISpectraRewardsDistributor.sol";

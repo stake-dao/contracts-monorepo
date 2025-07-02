@@ -2,8 +2,8 @@
 pragma solidity 0.8.28;
 
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
-import {BalancerLocker, BalancerProtocol} from "address-book/src/BalancerEthereum.sol";
-import {Common} from "address-book/src/CommonEthereum.sol";
+import {BalancerLocker, BalancerProtocol} from "@address-book/src/BalancerEthereum.sol";
+import {Common} from "@address-book/src/CommonEthereum.sol";
 import {IFeeReceiver} from "common/interfaces/IFeeReceiver.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {AccumulatorDelegable} from "src/AccumulatorDelegable.sol";

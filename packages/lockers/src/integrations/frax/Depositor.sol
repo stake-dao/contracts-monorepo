@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
-import {FraxProtocol} from "address-book/src/FraxFraxtal.sol";
+import {FraxProtocol} from "@address-book/src/FraxFraxtal.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {DepositorBase} from "src/DepositorBase.sol";
 import {ISdTokenOperator} from "src/interfaces/ISdTokenOperator.sol";

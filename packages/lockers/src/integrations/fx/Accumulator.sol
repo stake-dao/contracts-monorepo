@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
-import {Common} from "address-book/src/CommonEthereum.sol";
-import {FXNProtocol} from "address-book/src/FXNEthereum.sol";
+import {Common} from "@address-book/src/CommonEthereum.sol";
+import {FXNProtocol} from "@address-book/src/FXNEthereum.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {AccumulatorBase} from "src/AccumulatorBase.sol";
 import {ILocker} from "src/interfaces/ILocker.sol";

@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
-import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
-import {SafeERC20} from "openzeppelin-contracts/token/ERC20/utils/SafeERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
+import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {IFeeDistributor} from "src/interfaces/IFeeDistributor.sol";
 import {IVeToken} from "src/interfaces/IVeToken.sol";
 
@@ -111,7 +111,7 @@ abstract contract VeCRVLocker {
     /// @param _value Amount of tokens to lock
     /// @param _unlockTime Duration of the lock
     function createLock(uint256 _value, uint256 _unlockTime) external virtual onlyGovernanceOrDepositor {
-        IERC20(token).safeApprove(veToken, type(uint256).max);
+        IERC20(token).forceApprove(veToken, type(uint256).max);
         IVeToken(veToken).create_lock(_value, _unlockTime);
 
         emit LockCreated(_value, _unlockTime);
