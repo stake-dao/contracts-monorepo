@@ -103,7 +103,7 @@ abstract contract VeMAVLocker {
         uint256 _locks = IVotingEscrowMav(veToken).lockupCount(address(this));
         if (_locks > 0) revert LOCK_ALREADY_EXISTS();
 
-        IERC20(token).safeApprove(veToken, type(uint256).max);
+        IERC20(token).forceApprove(veToken, type(uint256).max);
         IVotingEscrowMav(veToken).stake(_value, _duration, address(this));
 
         emit LockCreated(_value, _duration);

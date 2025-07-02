@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
-import {SpectraProtocol} from "address-book/src/SpectraBase.sol";
+import {SpectraProtocol} from "@address-book/src/SpectraBase.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {ITokenMinter, ILiquidityGauge} from "src/DepositorBase.sol";
 import {DepositorBase} from "src/DepositorBase.sol";

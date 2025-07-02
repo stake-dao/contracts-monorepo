@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.28;
 
-import {Common} from "address-book/src/CommonEthereum.sol";
-import {PendleLocker, PendleProtocol} from "address-book/src/PendleEthereum.sol";
+import {Common} from "@address-book/src/CommonEthereum.sol";
+import {PendleLocker, PendleProtocol} from "@address-book/src/PendleEthereum.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {AccumulatorBase} from "src/AccumulatorBase.sol";
 import {ILiquidityGauge} from "src/interfaces/ILiquidityGauge.sol";

@@ -3,7 +3,7 @@ pragma solidity ^0.8.19;
 
 import "forge-std/src/Test.sol";
 import "forge-std/src/Script.sol";
-import {Common} from "address-book/src/CommonPolygon.sol";
+import {Common} from "@address-book/src/CommonPolygon.sol";
 import {UniversalRewardsDistributor} from "src/distributors/UniversalRewardDistributor.sol";
 
 interface ImmutableCreate2Factory {

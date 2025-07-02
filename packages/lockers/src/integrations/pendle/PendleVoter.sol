@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
-import {PendleLocker} from "address-book/src/PendleEthereum.sol";
+import {PendleLocker} from "@address-book/src/PendleEthereum.sol";
 import {VoterBase} from "src/VoterBase.sol";
 
 /// @title PendleVoter

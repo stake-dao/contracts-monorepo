@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.28;
 
-import {CurveLocker, CurveProtocol} from "address-book/src/CurveEthereum.sol";
+import {CurveLocker, CurveProtocol} from "@address-book/src/CurveEthereum.sol";
 import {IStrategy} from "common/interfaces/stake-dao/IStrategy.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {IVeBoost} from "src/interfaces/IVeBoost.sol";

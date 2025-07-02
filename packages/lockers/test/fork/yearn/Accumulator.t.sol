@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.28;
 
-import {YearnLocker, YearnProtocol} from "address-book/src/YearnEthereum.sol";
+import {YearnLocker, YearnProtocol} from "@address-book/src/YearnEthereum.sol";
 import {YearnAccumulator} from "src/integrations/yearn/Accumulator.sol";
 import {BaseAccumulatorTest} from "test/fork/BaseAccumulatorTest.sol";
 

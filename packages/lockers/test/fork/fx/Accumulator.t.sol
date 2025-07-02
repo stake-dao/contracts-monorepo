@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: Unlicense
 pragma solidity 0.8.28;
 
-import {Common} from "address-book/src/CommonEthereum.sol";
-import {FXNLocker, FXNProtocol} from "address-book/src/FXNEthereum.sol";
+import {Common} from "@address-book/src/CommonEthereum.sol";
+import {FXNLocker, FXNProtocol} from "@address-book/src/FXNEthereum.sol";
 import {ILocker} from "src/interfaces/ILocker.sol";
 import {FXNAccumulator} from "src/integrations/fx/Accumulator.sol";
 import {BaseAccumulatorTest} from "test/fork/BaseAccumulatorTest.sol";

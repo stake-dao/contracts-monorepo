@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {DAO} from "address-book/src/DaoEthereum.sol";
-import {PendleLocker} from "address-book/src/PendleEthereum.sol";
+import {DAO} from "@address-book/src/DaoEthereum.sol";
+import {PendleLocker} from "@address-book/src/PendleEthereum.sol";
 import {DeployAccumulator} from "script/common/DeployAccumulator.sol";
 import {PendleAccumulator} from "src/integrations/pendle/Accumulator.sol";
 

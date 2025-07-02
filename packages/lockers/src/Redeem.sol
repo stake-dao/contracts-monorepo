@@ -7,7 +7,7 @@ pragma solidity 0.8.28;
 
 // External Libraries
 import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
-import {ReentrancyGuard} from "@openzeppelin/contracts/security/ReentrancyGuard.sol";
+import {ReentrancyGuard} from "@openzeppelin/contracts/utils/ReentrancyGuard.sol";
 import {SafeERC20, IERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ILiquidityGauge} from "src/interfaces/ILiquidityGauge.sol";
@@ -92,14 +92,12 @@ contract Redeem is Ownable2Step, ReentrancyGuard {
         uint256 _conversionRate,
         uint256 _redeemCooldownDuration,
         address _owner
-    ) Ownable() {
+    ) Ownable(_owner) {
         token = _token;
         sdToken = _sdToken;
         sdTokenGauge = _sdTokenGauge;
         conversionRateWad = _conversionRate;
         reedeemCooldownDuration = _redeemCooldownDuration;
-
-        _transferOwnership(_owner);
     }
 
     //////////////////////////////////////////////////////

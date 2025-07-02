@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {Common} from "address-book/src/CommonEthereum.sol";
-import {DAO} from "address-book/src/DaoEthereum.sol";
-import {SpectraLocker as SpectraLockerBase} from "address-book/src/SpectraBase.sol";
-import {SpectraLocker} from "address-book/src/SpectraEthereum.sol";
+import {Common} from "@address-book/src/CommonEthereum.sol";
+import {DAO} from "@address-book/src/DaoEthereum.sol";
+import {SpectraLocker as SpectraLockerBase} from "@address-book/src/SpectraBase.sol";
+import {SpectraLocker} from "@address-book/src/SpectraEthereum.sol";
 import {Script} from "forge-std/src/Script.sol";
 import {APWine2SpectraConverter} from "src/integrations/spectra/APWine2SpectraConverter.sol";
 

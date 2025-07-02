@@ -1,7 +1,7 @@
 /// SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
-import {OFTAdapter} from "layerzerolabs/oft-evm/contracts/OFTAdapter.sol";
+import {OFTAdapter} from "@layerzerolabs/oft-evm/contracts/OFTAdapter.sol";
 import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {Common} from "@address-book/src/CommonEthereum.sol";
 

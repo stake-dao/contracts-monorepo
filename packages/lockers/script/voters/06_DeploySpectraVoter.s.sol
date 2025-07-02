@@ -1,10 +1,10 @@
 // SPDX-License-Identifier: AGPL-3.0-only
 pragma solidity 0.8.28;
 
-import {DAO} from "address-book/src/DaoEthereum.sol";
+import {DAO} from "@address-book/src/DaoEthereum.sol";
 import {Script} from "forge-std/src/Script.sol";
 import {SpectraVoter} from "src/integrations/spectra/SpectraVoter.sol";
-import {SpectraLocker} from "address-book/src/SpectraBase.sol";
+import {SpectraLocker} from "@address-book/src/SpectraBase.sol";
 import {VoterPermissionManager} from "src/VoterPermissionManager.sol";
 
 /// @title DeploySpectraVoter
