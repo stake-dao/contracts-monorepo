@@ -1,6 +1,0 @@
-AutocompoundedVault__getters
-├── it returns the version of the contract
-├── it returns the protocol controller
-├── it returns the streaming period
-├── it returns the correct name of the shares
-└── it returns the correct symbol of the shares

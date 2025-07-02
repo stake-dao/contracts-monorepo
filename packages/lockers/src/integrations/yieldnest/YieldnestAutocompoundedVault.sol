@@ -5,7 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {YieldnestLocker} from "@address-book/src/YieldnestEthereum.sol";
 import {AutocompoundedVault} from "src/AutocompoundedVault.sol";
 import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
-import {SafeModule} from "shared/src/safe/SafeModule.sol";
+import {SafeModule} from "@shared/safe/SafeModule.sol";
 
 /// @title Yieldnest Autocompounded Vault
 /// @notice

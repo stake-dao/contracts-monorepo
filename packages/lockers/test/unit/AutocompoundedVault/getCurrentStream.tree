@@ -1,4 +1,0 @@
-AutocompoundedVault__getCurrentStream
-├── it returns no remaining token and time if no stream started
-├── it returns no remaining token and time if the stream finished
-└── it returns calculated values if the stream is ongoing
