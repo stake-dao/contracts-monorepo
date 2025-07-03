@@ -25,9 +25,7 @@ contract Strategy__shutdown is StrategyBaseTest {
         /// Cheat the locker balance to avoid reverting on shutdown.
         stakingToken.mint(address(locker), 100);
 
-
         vm.mockCall(address(vault), abi.encodeWithSelector(IERC4626.asset.selector), abi.encode(address(stakingToken)));
-
 
         /// Gauge is not shutdown.
         assertFalse(registry.isShutdown(gauge));
@@ -38,7 +36,6 @@ contract Strategy__shutdown is StrategyBaseTest {
 
     event Shutdown(address indexed gauge);
 
-
     function test_Shutdown() public {
         /// Cheat the sidecar balances
         stakingToken.mint(address(locker), 100);
@@ -48,8 +45,6 @@ contract Strategy__shutdown is StrategyBaseTest {
         vm.prank(vault);
         strategy.deposit(allocation, IStrategy.HarvestPolicy.CHECKPOINT);
         assertEq(strategy.balanceOf(gauge), 600);
-
-
 
         vm.mockCall(address(vault), abi.encodeWithSelector(IERC4626.asset.selector), abi.encode(address(stakingToken)));
 
