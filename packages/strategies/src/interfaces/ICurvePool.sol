@@ -8,3 +8,8 @@ interface ICurveStableSwapPool {
     function get_virtual_price() external view returns (uint256);
     function name() external view returns (string memory);
 }
+
+interface ICurveCryptoSwapPool {
+    function lp_price() external view returns (uint256);
+    function name() external view returns (string memory);
+}
