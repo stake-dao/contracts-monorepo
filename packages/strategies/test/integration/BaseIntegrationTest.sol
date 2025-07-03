@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 import "test/BaseSetup.sol";
 
 import {Factory} from "src/Factory.sol";
+import {Strategy} from "src/Strategy.sol";
 
 abstract contract BaseIntegrationTest is BaseSetup {
     using Math for uint256;
@@ -272,7 +273,48 @@ abstract contract BaseIntegrationTest is BaseSetup {
 
         skip(1 days);
 
-        /// 20. Test share transfers
+        /// 20. Test emergency shutdown and unshutdown for first gauge
+        if (gauges.length > 0) {
+            address testGauge = gauges[0];
+            RewardVault testVault = rewardVaults[0];
+            uint256 totalSupplyBeforeShutdown = testVault.totalSupply();
+            
+            // Only test if vault has deposits
+            if (totalSupplyBeforeShutdown > 0) {
+                // Shutdown the gauge
+                vm.prank(owners[0]);
+                protocolController.shutdown(testGauge);
+                
+                // Verify shutdown state
+                assertTrue(protocolController.isShutdown(testGauge), "Gauge should be shutdown");
+                assertEq(IStrategy(strategy).balanceOf(testGauge), 0, "Strategy balance should be 0 after shutdown");
+                assertEq(IERC20(testVault.asset()).balanceOf(address(testVault)), totalSupplyBeforeShutdown, "Vault should hold all assets");
+                
+                // Try to deposit (should fail)
+                address testUser = makeAddr("shutdownTestUser");
+                deal(testVault.asset(), testUser, 100e18);
+                vm.startPrank(testUser);
+                IERC20(testVault.asset()).approve(address(testVault), 100e18);
+                vm.expectRevert(Strategy.GaugeShutdown.selector);
+                testVault.deposit(100e18, testUser);
+                vm.stopPrank();
+                
+                // Unshutdown the gauge
+                vm.prank(owners[0]);
+                protocolController.unshutdown(testGauge);
+                
+                // Verify unshutdown state
+                assertFalse(protocolController.isShutdown(testGauge), "Gauge should not be shutdown");
+                assertEq(IStrategy(strategy).balanceOf(testGauge), totalSupplyBeforeShutdown, "Strategy balance should be restored");
+                assertEq(IERC20(testVault.asset()).balanceOf(address(testVault)), 0, "Vault should have 0 balance after unshutdown");
+                
+                // Verify deposits work again
+                deposit(testVault, testUser, 100e18);
+                withdraw(testVault, testUser, 100e18); // Clean up test deposit
+            }
+        }
+
+        /// 21. Test share transfers
         // This tests that:
         // - Accrued rewards stay with the original account when shares are transferred
         // - New rewards (if any) accrue to the transfer receiver after the transfer

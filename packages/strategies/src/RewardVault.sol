@@ -265,9 +265,47 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @param shares The amount of shares to mint.
     /// @param referrer The address of the referrer. Can be the zero address.
     function _deposit(address account, address receiver, uint256 assets, uint256 shares, address referrer) internal {
-        // 1. Update extra reward state before balance changes
-        _checkpoint(receiver, address(0));
+        _deposit(account, receiver, assets, shares, referrer, false);
+    }
 
+    /// @dev Internal function to deposit assets into the vault with transfer mode option.
+    /// @param account The address of the account to deposit assets from.
+    /// @param receiver The address to receive the minted shares.
+    /// @param assets The amount of assets to deposit.
+    /// @param shares The amount of shares to mint.
+    /// @param referrer The address of the referrer. Can be the zero address.
+    /// @param useTransfer True to use safeTransfer (for resumeVault), false for safeTransferFrom
+    function _deposit(
+        address account,
+        address receiver,
+        uint256 assets,
+        uint256 shares,
+        address referrer,
+        bool useTransfer
+    ) internal {
+        // 1. Update extra reward state before balance changes
+        if (receiver != address(0)) {
+            _checkpoint(receiver, address(0));
+        }
+
+        // Allocate funds to targets and deposit through strategy
+        IStrategy.PendingRewards memory pendingRewards = _allocateFunds(account, assets, useTransfer);
+
+        // Update Accountant balances and mint shares
+        _mint(receiver, shares, pendingRewards, POLICY, referrer);
+
+        emit Deposit(msg.sender, receiver, assets, shares);
+    }
+
+    /// @dev Allocates funds to targets and deposits through strategy
+    /// @param from Source of assets (user address or address(this) for resumeVault)
+    /// @param assets Amount to allocate
+    /// @param useTransfer True to use safeTransfer (resumeVault), false for safeTransferFrom (deposits)
+    /// @return pendingRewards Rewards harvested during deposit
+    function _allocateFunds(address from, uint256 assets, bool useTransfer)
+        internal
+        returns (IStrategy.PendingRewards memory pendingRewards)
+    {
         // Ask allocator where to send the LP tokens (e.g., 70% locker, 30% Convex)
         IAllocator.Allocation memory allocation = allocator().getDepositAllocation(asset(), gauge(), assets);
 
@@ -276,16 +314,16 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
         for (uint256 i; i < allocation.targets.length; i++) {
             if (allocation.amounts[i] == 0) continue;
             require(PROTOCOL_CONTROLLER.isValidAllocationTarget(gauge(), allocation.targets[i]), TargetNotApproved());
-            SafeERC20.safeTransferFrom(_asset, account, allocation.targets[i], allocation.amounts[i]);
+
+            if (useTransfer) {
+                SafeERC20.safeTransfer(_asset, allocation.targets[i], allocation.amounts[i]);
+            } else {
+                SafeERC20.safeTransferFrom(_asset, from, allocation.targets[i], allocation.amounts[i]);
+            }
         }
 
         // Strategy deposits into gauge/sidecar and may harvest if HARVEST policy
-        IStrategy.PendingRewards memory pendingRewards = strategy().deposit(allocation, POLICY);
-
-        // Update Accountant balances and mint shares
-        _mint(receiver, shares, pendingRewards, POLICY, referrer);
-
-        emit Deposit(msg.sender, receiver, assets, shares);
+        return strategy().deposit(allocation, POLICY);
     }
 
     ///////////////////////////////////////////////////////////////
@@ -362,21 +400,24 @@ contract RewardVault is IRewardVault, IERC4626, ERC20 {
     /// @dev Only callable by the protocol controller
     /// @custom:reverts OnlyProtocolController if caller is not the protocol controller
     function resumeVault() external onlyProtocolController {
-        IERC20 _asset = IERC20(asset());
-        uint256 assets = _asset.balanceOf(address(this));
+        uint256 assets = _safeTotalSupply();
 
-        // Ask allocator where to send the LP tokens (e.g., 70% locker, 30% Convex)
-        IAllocator.Allocation memory allocation = allocator().getDepositAllocation(asset(), gauge(), assets);
-
-        // Transfer LP tokens directly to allocation targets (bypasses vault)
-        for (uint256 i; i < allocation.targets.length; i++) {
-            if (allocation.amounts[i] == 0) continue;
-            require(PROTOCOL_CONTROLLER.isValidAllocationTarget(gauge(), allocation.targets[i]), TargetNotApproved());
-            SafeERC20.safeTransfer(_asset, allocation.targets[i], allocation.amounts[i]);
+        // If there are no assets in the vault, we don't need to do anything
+        if (assets == 0) {
+            emit OperationsResumed();
+            return;
         }
 
-        // Strategy deposits into gauge/sidecar and may harvest if HARVEST policy
-        strategy().deposit(allocation, POLICY);
+        // Use internal deposit function with vault as both source and receiver
+        // No new shares are minted (amount = 0) since we're just re-depositing existing assets
+        _deposit({
+            account: address(0),
+            receiver: address(0),
+            assets: assets,
+            shares: 0,
+            referrer: address(0),
+            useTransfer: true
+        });
 
         emit OperationsResumed();
     }
