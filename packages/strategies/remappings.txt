@@ -6,3 +6,4 @@ layerzerolabs/oft-evm=node_modules/@layerzerolabs/oft-evm/
 @openzeppelin/contracts=node_modules/@openzeppelin/contracts
 @interfaces=node_modules/@stake-dao/interfaces/src/interfaces
 @address-book=node_modules/@stake-dao/address-book/
+@morpho=node_modules/@morpho-org/morpho-blue/src
