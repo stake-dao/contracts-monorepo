@@ -8,3 +8,5 @@ broadcast/
 .DS_Store
 temp/
 **/*.local.*
+*.local.*
+.cursor/

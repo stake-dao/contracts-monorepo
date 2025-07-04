@@ -7,9 +7,11 @@ interface ICurveStableSwapPool {
     ///      The value is always denominated in the pool's "unit of account" (e.g., USD for a DAI/USDC/USDT pool).
     function get_virtual_price() external view returns (uint256);
     function name() external view returns (string memory);
+    function decimals() external view returns (uint8);
 }
 
 interface ICurveCryptoSwapPool {
     function lp_price() external view returns (uint256);
     function name() external view returns (string memory);
+    function decimals() external view returns (uint8);
 }
