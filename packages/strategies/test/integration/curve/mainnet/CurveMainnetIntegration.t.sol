@@ -3,8 +3,17 @@ pragma solidity ^0.8.27;
 
 import "test/integration/curve/CurveIntegration.sol";
 import {CurveLocker, CurveProtocol} from "@address-book/src/CurveEthereum.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
+import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
+import {ConvexSidecarFactory} from "src/integrations/curve/ConvexSidecarFactory.sol";
+import {OnlyBoostAllocator} from "src/integrations/curve/OnlyBoostAllocator.sol";
+import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
+import {IMinter} from "@interfaces/curve/IMinter.sol";
+import {IBaseRewardPool} from "@interfaces/convex/IBaseRewardPool.sol";
 
 contract CurveMainnetIntegrationTest is CurveIntegration {
+    using Math for uint256;
+    
     Config public _config = Config({
         base: BaseConfig({
             chain: "mainnet",
@@ -21,7 +30,7 @@ contract CurveMainnetIntegrationTest is CurveIntegration {
         convex: ConvexConfig({
             isOnlyBoost: true,
             cvx: CurveProtocol.CONVEX_TOKEN,
-            convexBoostHolder: CurveProtocol.CONVEX_BOOSTER,
+            convexBoostHolder: CurveProtocol.CONVEX_PROXY,
             booster: CurveProtocol.CONVEX_BOOSTER
         })
     });
@@ -81,19 +90,28 @@ contract CurveMainnetIntegrationTest is CurveIntegration {
 
     function simulateRewards(RewardVault vault, uint256 amount) internal override {
         address gauge = vault.gauge();
-
-        // Get the current integrate_fraction (might be mocked from previous calls)
+        
+        // Simply simulate all rewards on the locker
+        // The actual distribution will happen based on the allocator's logic
+        simulateLockerRewards(gauge, amount);
+    }
+    
+    function simulateLockerRewards(address gauge, uint256 amount) internal {
+        // Get current integrate_fraction (might be 0 or previously mocked)
         uint256 currentIntegrateFraction;
         try ILiquidityGauge(gauge).integrate_fraction(config.base.locker) returns (uint256 fraction) {
             currentIntegrateFraction = fraction;
         } catch {
-            // Fallback if mocked and reverts
-            currentIntegrateFraction = IMinter(config.base.minter).minted(config.base.locker, gauge);
+            // If not mocked yet, start from current minted amount
+            try IMinter(config.base.minter).minted(config.base.locker, gauge) returns (uint256 minted) {
+                currentIntegrateFraction = minted;
+            } catch {
+                currentIntegrateFraction = 0;
+            }
         }
-
-        // Add the new amount to existing state (incremental)
+        
         uint256 newIntegrateFraction = currentIntegrateFraction + amount;
-
+        
         vm.mockCall(
             gauge,
             abi.encodeWithSelector(ILiquidityGauge.integrate_fraction.selector, config.base.locker),
