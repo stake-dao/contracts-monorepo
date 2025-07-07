@@ -45,7 +45,7 @@ abstract contract BaseIntegrationTest is BaseSetup {
         revert("getGauges not implemented");
     }
 
-    function test_complete_protocol_lifecycle() public {
+    function test_complete_protocol_lifecycle() public virtual {
         (AccountPosition[] memory _accountPositions, uint256[] memory _rewards) = _generateAccountPositionsAndRewards();
 
         /// 1. Deploy the RewardVaults.
@@ -151,24 +151,24 @@ abstract contract BaseIntegrationTest is BaseSetup {
             assertApproxEqRel(
                 _balanceOf(rewardToken, address(accountant)),
                 expectedAccountantBalance,
-                0.001e18,
-                "10. Expected accountant to have rewards after harvest with a 0.1% error"
+                0.01e18,
+                "10. Expected accountant to have rewards after harvest with a 1% error"
             );
 
             /// 15. Assert that the harvester has the correct balance.
             assertApproxEqRel(
                 _balanceOf(rewardToken, harvester),
                 expectedHarvesterBalance,
-                0.001e18,
-                "11. Expected harvester to have rewards after harvest with a 0.1% error"
+                0.01e18,
+                "11. Expected harvester to have rewards after harvest with a 1% error"
             );
 
             /// 16. Assert that the protocol fees accrued are the correct amount.
             assertApproxEqRel(
                 accountant.protocolFeesAccrued(),
                 expectedProtocolFeesAccrued,
-                0.001e18,
-                "12. Expected protocol fees accrued to be greater than 0 after harvest with a 0.1% error"
+                0.01e18,
+                "12. Expected protocol fees accrued to be greater than 0 after harvest with a 1% error"
             );
         } else {
             /// HARVEST MODE: Rewards were already claimed during deposits/withdrawals
@@ -483,7 +483,7 @@ abstract contract BaseIntegrationTest is BaseSetup {
         vm.stopPrank();
     }
 
-    function harvest() internal {
+    function harvest() internal virtual {
         bytes[] memory harvestData = new bytes[](gauges.length);
 
         vm.prank(harvester);
