@@ -220,7 +220,7 @@ abstract contract BaseDeploy is Script {
     /// @param contractType The type of contract being deployed (e.g., "STRATEGY", "CONTROLLER")
     /// @return The generated salt
     function _getSalt(string memory contractType) internal view returns (bytes32) {
-        return keccak256(abi.encodePacked(BASE_SALT, ".", protocolId, ".", contractType, ".V1"));
+        return keccak256(abi.encodePacked(BASE_SALT, ".", protocolId, ".", contractType, ".V1.0.0"));
     }
 
     /// @notice Deploy a contract using CREATE3 for deterministic cross-chain addresses
