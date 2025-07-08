@@ -37,6 +37,8 @@ on:
 
 jobs:
   compare_gas:
+    # temporarily disabled until the gas report is fixed
+    if: false
     runs-on: ubuntu-latest
 
     permissions:
