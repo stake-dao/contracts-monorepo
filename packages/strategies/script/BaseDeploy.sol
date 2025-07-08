@@ -130,6 +130,9 @@ abstract contract BaseDeploy is Script {
     }
 
     function _afterSetup() internal virtual {
+        /// 0. Disable all modules if any.
+        _disableAllModules();
+
         /// 1. Set strategy in protocol controller.
         protocolController.setStrategy(protocolId, strategy);
         protocolController.setAllocator(protocolId, address(allocator));
@@ -210,6 +213,58 @@ abstract contract BaseDeploy is Script {
             _data: abi.encodeWithSelector(IModuleManager.enableModule.selector, moduleAddress),
             _signatures: signatures
         });
+    }
+
+    /// @notice Disables a module in the gateway Safe.
+    /// @param prevModule The module that points to the module to be disabled in the linked list.
+    /// @param moduleToDisable The module to disable.
+    function _disableModule(address prevModule, address moduleToDisable) internal {
+        /// Build signatures
+        bytes memory signatures = abi.encodePacked(uint256(uint160(admin)), uint8(0), uint256(1));
+
+        // Execute transaction
+        SafeLibrary.simpleExec({
+            _safe: payable(gateway),
+            _target: address(gateway),
+            _data: abi.encodeWithSelector(IModuleManager.disableModule.selector, prevModule, moduleToDisable),
+            _signatures: signatures
+        });
+    }
+
+    /// @notice Gets the list of enabled modules in the gateway Safe.
+    /// @param start The start of the page. Use 0x1 to start from the beginning.
+    /// @param pageSize The maximum number of modules to return.
+    /// @return modules Array of module addresses.
+    /// @return next The start of the next page.
+    function _getModules(address start, uint256 pageSize)
+        internal
+        view
+        returns (address[] memory modules, address next)
+    {
+        return IModuleManager(address(gateway)).getModulesPaginated(start, pageSize);
+    }
+
+    /// @notice Disables all modules in the gateway Safe.
+    /// @notice Disables all modules in the gateway Safe.
+    function _disableAllModules() internal {
+        // Get all modules at once
+        (address[] memory modules,) = _getModules(address(0x1), 100);
+
+        // Process each module
+        for (uint256 i = 0; i < modules.length; i++) {
+            // For each module, we need to find what points to it
+            // Since we're disabling in order, the previous module in our list
+            // might already be disabled, so we always use sentinel (0x1)
+            // as the previous when disabling the first remaining module
+
+            // Get current modules to find the actual first one
+            (address[] memory currentModules,) = _getModules(address(0x1), 10);
+
+            if (currentModules.length > 0) {
+                // Always disable the first module with sentinel as previous
+                _disableModule(address(0x1), currentModules[0]);
+            }
+        }
     }
 
     function _deployGateway() internal virtual returns (Safe) {

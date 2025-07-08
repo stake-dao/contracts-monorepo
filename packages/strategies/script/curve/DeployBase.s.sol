@@ -56,7 +56,7 @@ contract DeployBase is BaseCurveDeploy {
         super._afterSetup();
 
         for (uint256 i = 0; i < gauges.length; i++) {
-            (address vault, address receiver) = CurveFactory(factory).createVault(gauges[i]);
+            CurveFactory(factory).createVault(gauges[i]);
         }
     }
 
