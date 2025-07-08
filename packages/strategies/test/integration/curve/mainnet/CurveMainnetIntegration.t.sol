@@ -4,38 +4,36 @@ pragma solidity ^0.8.27;
 import "test/integration/curve/CurveIntegration.sol";
 import {CurveLocker, CurveProtocol} from "@address-book/src/CurveEthereum.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
-import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
-import {ConvexSidecarFactory} from "src/integrations/curve/ConvexSidecarFactory.sol";
-import {OnlyBoostAllocator} from "src/integrations/curve/OnlyBoostAllocator.sol";
 import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 import {IMinter} from "@interfaces/curve/IMinter.sol";
-import {IBaseRewardPool} from "@interfaces/convex/IBaseRewardPool.sol";
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 import {SafeLibrary} from "test/utils/SafeLibrary.sol";
 
 contract CurveMainnetIntegrationTest is CurveIntegration {
     using Math for uint256;
 
-    Config public _config = Config({
-        base: BaseConfig({
-            chain: "mainnet",
-            blockNumber: 22_316_395,
-            rewardToken: CurveProtocol.CRV,
-            locker: CurveLocker.LOCKER,
-            protocolId: bytes4(keccak256("CURVE")),
-            harvestPolicy: IStrategy.HarvestPolicy.CHECKPOINT,
-            minter: CurveProtocol.MINTER,
-            boostProvider: CurveProtocol.VE_BOOST,
-            gaugeController: CurveProtocol.GAUGE_CONTROLLER,
-            oldStrategy: CurveLocker.STRATEGY
-        }),
-        convex: ConvexConfig({
-            isOnlyBoost: true,
-            cvx: CurveProtocol.CONVEX_TOKEN,
-            convexBoostHolder: CurveProtocol.CONVEX_PROXY,
-            booster: CurveProtocol.CONVEX_BOOSTER
-        })
-    });
+    function getConfig() internal view virtual returns (Config memory) {
+        return Config({
+            base: BaseConfig({
+                chain: "mainnet",
+                blockNumber: 22_311_339,
+                rewardToken: CurveProtocol.CRV,
+                locker: CurveLocker.LOCKER,
+                protocolId: bytes4(keccak256("CURVE")),
+                harvestPolicy: IStrategy.HarvestPolicy.CHECKPOINT,
+                minter: CurveProtocol.MINTER,
+                boostProvider: CurveProtocol.VE_BOOST,
+                gaugeController: CurveProtocol.GAUGE_CONTROLLER,
+                oldStrategy: CurveLocker.STRATEGY
+            }),
+            convex: ConvexConfig({
+                isOnlyBoost: true,
+                cvx: CurveProtocol.CONVEX_TOKEN,
+                convexBoostHolder: CurveProtocol.CONVEX_BOOSTER,
+                booster: CurveProtocol.CONVEX_BOOSTER
+            })
+        });
+    }
 
     function poolIds() public view virtual returns (uint256[] memory) {
         uint256[] memory _poolIds = new uint256[](7);
@@ -55,7 +53,16 @@ contract CurveMainnetIntegrationTest is CurveIntegration {
     // Mapping to store extra reward tokens for each gauge
     mapping(address => address[]) public gaugeExtraTokens;
 
-    constructor() CurveIntegration(_config) {}
+    constructor() CurveIntegration(getConfig()) {
+        vm.label(CurveProtocol.CRV, "CRV");
+        vm.label(CurveLocker.LOCKER, "Locker");
+        vm.label(CurveProtocol.MINTER, "Minter");
+        vm.label(CurveProtocol.VE_BOOST, "VE Boost");
+        vm.label(CurveProtocol.GAUGE_CONTROLLER, "Gauge Controller");
+        vm.label(CurveLocker.STRATEGY, "Strategy");
+        vm.label(CurveProtocol.CONVEX_TOKEN, "CVX");
+        vm.label(CurveProtocol.CONVEX_BOOSTER, "Booster");
+    }
 
     function deployRewardVaults()
         internal
