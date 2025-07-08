@@ -24,14 +24,14 @@ include_push_bytes = true
 
 [etherscan]
 bnb = { key = "${BNBSCAN_KEY}", chain = 56 }
-frax = { key = "${FRAXSCAN_KEY}" }
-base = { key = "${BASESCAN_KEY}" }
-mainnet = { key = "${ETHERSCAN_KEY}" }
-arbitrum = { key = "${ARBISCAN_KEY}" }
-optimism = { key = "${OPTIMISTICSCAN_KEY}" }
-zksync = { key = "${ZKSYNCSCAN_KEY}" }
-polygon = { key = "${POLYGONSCAN_KEY}" }
-polygonzkevm = { key = "${POLYGONZKSCAN_KEY}" }
+frax = { key = "${FRAXSCAN_KEY}", chain = 252 }
+base = { key = "${BASESCAN_KEY}", chain = 8453 }
+mainnet = { key = "${ETHERSCAN_KEY}", chain = 1 }
+arbitrum = { key = "${ARBISCAN_KEY}", chain = 42161 }
+optimism = { key = "${OPTIMISTICSCAN_KEY}", chain = 10 }
+zksync = { key = "${ZKSYNCSCAN_KEY}", chain = 324 }
+polygon = { key = "${POLYGONSCAN_KEY}", chain = 137 }
+polygonzkevm = { key = "${POLYGONZKSCAN_KEY}", chain = 1101 }
 
 
 [rpc_endpoints]
