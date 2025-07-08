@@ -83,9 +83,6 @@ importers:
       '@layerzerolabs/oft-evm':
         specifier: ^3.1.4
         version: 3.1.4(j2hp4pc5s7ea6kphdpiamykf4y)
-      '@morpho-org/morpho-blue':
-        specifier: github:morpho-org/morpho-blue#v1.0.0
-        version: https://codeload.github.com/morpho-org/morpho-blue/tar.gz/55d2d99304fb3fb930c688462ae2ccabb1d533ad
       '@openzeppelin/contracts':
         specifier: 5.2.0
         version: 5.2.0
@@ -358,10 +355,6 @@ packages:
 
   '@ledgerhq/logs@5.50.0':
     resolution: {integrity: sha512-swKHYCOZUGyVt4ge0u8a7AwNcA//h4nx5wIi0sruGye1IJ5Cva0GyK9L2/WdX+kWVTKp92ZiEo1df31lrWGPgA==}
-
-  '@morpho-org/morpho-blue@https://codeload.github.com/morpho-org/morpho-blue/tar.gz/55d2d99304fb3fb930c688462ae2ccabb1d533ad':
-    resolution: {tarball: https://codeload.github.com/morpho-org/morpho-blue/tar.gz/55d2d99304fb3fb930c688462ae2ccabb1d533ad}
-    version: 0.1.0
 
   '@noble/curves@1.2.0':
     resolution: {integrity: sha512-oYclrNgRaM9SsBUBVbb8M6DTV7ZHRTKugureoYEncY5c65HOmRzvSiTE3y5CYaPYJA/GVkrhXEoF0M3Ya9PMnw==}
@@ -1137,12 +1130,6 @@ packages:
   ethereumjs-util@7.1.5:
     resolution: {integrity: sha512-SDl5kKrQAudFBUe5OJM9Ac6WmMyYmXX/6sTmLZ3ffG2eY6ZIGBes3pEDxNN6V72WyOw4CPD5RomKdsa8DAAwLg==}
     engines: {node: '>=10.0.0'}
-
-  ethers-maths@4.3.0:
-    resolution: {integrity: sha512-Eod2zfJ6w1KWRhBGvB9PqB0VtCh9hWUwhjjsn7nqbfdV8Px98nVZ56Cyxcr2nEzwRcO/YzI7X05c8uOlsEZn1Q==}
-    engines: {node: '>=12.0'}
-    peerDependencies:
-      ethers: ^6.0.0
 
   ethers@5.8.0:
     resolution: {integrity: sha512-DUq+7fHrCg1aPDFCHx6UIPb3nmt2XMpM7Y/g2gLhsl3lIBqeAfOJIl1qEvRf2uq3BiKxmh6Fh5pfp2ieyek7Kg==}
@@ -2857,15 +2844,6 @@ snapshots:
 
   '@ledgerhq/logs@5.50.0': {}
 
-  '@morpho-org/morpho-blue@https://codeload.github.com/morpho-org/morpho-blue/tar.gz/55d2d99304fb3fb930c688462ae2ccabb1d533ad':
-    dependencies:
-      ethers: 6.15.0
-      ethers-maths: 4.3.0(ethers@6.15.0)
-      lodash: 4.17.21
-    transitivePeerDependencies:
-      - bufferutil
-      - utf-8-validate
-
   '@noble/curves@1.2.0':
     dependencies:
       '@noble/hashes': 1.3.2
@@ -3758,10 +3736,6 @@ snapshots:
       create-hash: 1.2.0
       ethereum-cryptography: 0.1.3
       rlp: 2.2.7
-
-  ethers-maths@4.3.0(ethers@6.15.0):
-    dependencies:
-      ethers: 6.15.0
 
   ethers@5.8.0:
     dependencies:
