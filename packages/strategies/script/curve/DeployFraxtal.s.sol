@@ -47,13 +47,14 @@ contract DeployFraxtal is BaseCurveDeploy {
         factories[1] = IChildLiquidityGaugeFactory(0x0B8D6B6CeFC7Aa1C2852442e518443B1b22e1C52);
 
         L2CurveFactory(factory).setChildLiquidityGaugeFactories(factories);
+
         super._afterSetup();
 
         IL2Booster booster = IL2Booster(CurveProtocol.CONVEX_BOOSTER);
         uint256 size = booster.poolLength();
 
         for (uint256 i = 0; i < size; i++) {
-            (address vault, address receiver,) = CurveFactory(factory).create(i);
+            CurveFactory(factory).create(i);
         }
     }
 
