@@ -13,7 +13,7 @@ import {IBaseRewardPool} from "@interfaces/convex/IBaseRewardPool.sol";
 
 contract CurveMainnetIntegrationTest is CurveIntegration {
     using Math for uint256;
-    
+
     Config public _config = Config({
         base: BaseConfig({
             chain: "mainnet",
@@ -90,12 +90,12 @@ contract CurveMainnetIntegrationTest is CurveIntegration {
 
     function simulateRewards(RewardVault vault, uint256 amount) internal override {
         address gauge = vault.gauge();
-        
+
         // Simply simulate all rewards on the locker
         // The actual distribution will happen based on the allocator's logic
         simulateLockerRewards(gauge, amount);
     }
-    
+
     function simulateLockerRewards(address gauge, uint256 amount) internal {
         // Get current integrate_fraction (might be 0 or previously mocked)
         uint256 currentIntegrateFraction;
@@ -109,9 +109,9 @@ contract CurveMainnetIntegrationTest is CurveIntegration {
                 currentIntegrateFraction = 0;
             }
         }
-        
+
         uint256 newIntegrateFraction = currentIntegrateFraction + amount;
-        
+
         vm.mockCall(
             gauge,
             abi.encodeWithSelector(ILiquidityGauge.integrate_fraction.selector, config.base.locker),

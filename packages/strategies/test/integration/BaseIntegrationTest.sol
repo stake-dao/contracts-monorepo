@@ -278,18 +278,29 @@ abstract contract BaseIntegrationTest is BaseSetup {
             address testGauge = gauges[i];
             RewardVault testVault = rewardVaults[i];
             uint256 totalSupplyBeforeShutdown = testVault.totalSupply();
-            
+
             // Only test if vault has deposits
             if (totalSupplyBeforeShutdown > 0) {
                 // Shutdown the gauge
                 vm.prank(owners[0]);
                 protocolController.shutdown(testGauge);
-                
+
                 // Verify shutdown state
-                assertTrue(protocolController.isShutdown(testGauge), string.concat("Gauge ", vm.toString(i), " should be shutdown"));
-                assertEq(IStrategy(strategy).balanceOf(testGauge), 0, string.concat("Strategy balance ", vm.toString(i), " should be 0 after shutdown"));
-                assertEq(IERC20(testVault.asset()).balanceOf(address(testVault)), totalSupplyBeforeShutdown, string.concat("Vault ", vm.toString(i), " should hold all assets"));
-                
+                assertTrue(
+                    protocolController.isShutdown(testGauge),
+                    string.concat("Gauge ", vm.toString(i), " should be shutdown")
+                );
+                assertEq(
+                    IStrategy(strategy).balanceOf(testGauge),
+                    0,
+                    string.concat("Strategy balance ", vm.toString(i), " should be 0 after shutdown")
+                );
+                assertEq(
+                    IERC20(testVault.asset()).balanceOf(address(testVault)),
+                    totalSupplyBeforeShutdown,
+                    string.concat("Vault ", vm.toString(i), " should hold all assets")
+                );
+
                 // Try to deposit (should fail)
                 address testUser = makeAddr(string.concat("shutdownTestUser", vm.toString(i)));
                 deal(testVault.asset(), testUser, 100e18);
@@ -298,7 +309,7 @@ abstract contract BaseIntegrationTest is BaseSetup {
                 vm.expectRevert(Strategy.GaugeShutdown.selector);
                 testVault.deposit(100e18, testUser);
                 vm.stopPrank();
-                
+
                 // Test withdrawal during shutdown (should work)
                 if (_accountPositions.length > i) {
                     AccountPosition memory pos = _accountPositions[i];
@@ -308,25 +319,36 @@ abstract contract BaseIntegrationTest is BaseSetup {
                         uint256 assetsBefore = IERC20(testVault.asset()).balanceOf(pos.account);
                         withdraw(testVault, pos.account, withdrawAmount);
                         assertEq(
-                            IERC20(testVault.asset()).balanceOf(pos.account), 
-                            assetsBefore + withdrawAmount, 
+                            IERC20(testVault.asset()).balanceOf(pos.account),
+                            assetsBefore + withdrawAmount,
                             string.concat("User should receive assets during shutdown for gauge ", vm.toString(i))
                         );
                     }
                 }
-                
+
                 // Unshutdown the gauge
                 vm.prank(owners[0]);
                 protocolController.unshutdown(testGauge);
-                
+
                 // Verify unshutdown state
-                assertFalse(protocolController.isShutdown(testGauge), string.concat("Gauge ", vm.toString(i), " should not be shutdown"));
-                
+                assertFalse(
+                    protocolController.isShutdown(testGauge),
+                    string.concat("Gauge ", vm.toString(i), " should not be shutdown")
+                );
+
                 // Get updated total supply after withdrawals
                 uint256 currentTotalSupply = testVault.totalSupply();
-                assertEq(IStrategy(strategy).balanceOf(testGauge), currentTotalSupply, string.concat("Strategy balance ", vm.toString(i), " should match current total supply"));
-                assertEq(IERC20(testVault.asset()).balanceOf(address(testVault)), 0, string.concat("Vault ", vm.toString(i), " should have 0 balance after unshutdown"));
-                
+                assertEq(
+                    IStrategy(strategy).balanceOf(testGauge),
+                    currentTotalSupply,
+                    string.concat("Strategy balance ", vm.toString(i), " should match current total supply")
+                );
+                assertEq(
+                    IERC20(testVault.asset()).balanceOf(address(testVault)),
+                    0,
+                    string.concat("Vault ", vm.toString(i), " should have 0 balance after unshutdown")
+                );
+
                 // Verify deposits work again
                 deposit(testVault, testUser, 100e18);
                 withdraw(testVault, testUser, 100e18); // Clean up test deposit

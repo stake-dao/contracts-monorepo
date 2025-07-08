@@ -160,7 +160,7 @@ contract OnlyBoostAllocator is Allocator {
         // 3. For rebalancing, we still want to match the optimal balance based on Convex holdings
         // This ensures we maintain the boost-maximizing ratio
         uint256 optimalLockerBalance = getOptimalLockerBalance(gauge);
-        
+
         // Cap the locker amount to the total balance available
         alloc.amounts[1] = Math.min(optimalLockerBalance, totalBalance);
         alloc.amounts[0] = totalBalance - alloc.amounts[1];
