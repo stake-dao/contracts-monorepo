@@ -10,7 +10,7 @@ import {MorphoCurveCryptoswapOracle} from "src/integrations/morpho/MorphoCurveCr
 import {MorphoStrategyWrapper} from "src/integrations/morpho/MorphoStrategyWrapper.sol";
 import {IMorphoStrategyWrapper} from "src/interfaces/IMorphoStrategyWrapper.sol";
 import {IMorphoOracle} from "src/interfaces/IMorphoOracle.sol";
-import {IMorpho, MarketParams} from "@morpho/interfaces/IMorpho.sol";
+import {IMorpho, MarketParams} from "shared/src/morpho/IMorpho.sol";
 import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
