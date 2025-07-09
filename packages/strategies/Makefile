@@ -25,7 +25,7 @@ deploy-%:
 	if [ "$$network" = "fraxtal" ]; then rpc_network="frax"; fi; \
 	if [ -f "$$script_path" ]; then \
 		echo "Deploying to $$network..."; \
-		forge script $$script_path:Deploy$$capitalized_network --rpc-url $$rpc_network --broadcast --verify; \
+		forge script $$script_path:Deploy$$capitalized_network --rpc-url $$rpc_network --broadcast --verify --private-key ${PRIVATE_KEY}; \
 	else \
 		echo "Deployment script not found: $$script_path"; \
 		echo "Available networks: mainnet, base, fraxtal"; \
