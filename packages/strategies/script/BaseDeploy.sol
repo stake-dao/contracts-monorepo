@@ -192,12 +192,12 @@ abstract contract BaseDeploy is Script {
         }
 
         /// Transfer ownership of all the contracts to GOVERNANCE.
-        SafeLibrary.simpleExec({
-            _safe: payable(gateway),
-            _target: address(gateway),
-            _data: abi.encodeWithSelector(OwnerManager.swapOwner.selector, address(1), admin, CommonUniversal.GOVERNANCE),
-            _signatures: signatures
-        });
+        // SafeLibrary.simpleExec({
+            // _safe: payable(gateway),
+            // _target: address(gateway),
+            // _data: abi.encodeWithSelector(OwnerManager.swapOwner.selector, address(1), admin, CommonUniversal.GOVERNANCE),
+            // _signatures: signatures
+        // });
     }
 
     /// @notice Enables a module in the gateway Safe.
