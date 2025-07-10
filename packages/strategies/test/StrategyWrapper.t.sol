@@ -50,7 +50,7 @@ contract StrategyWrapperIntegrationTest is CurveMainnetIntegrationTest {
         morpho = new MorphoMock();
 
         // Deploy the Morpho Strategy Wrapper and store the reward vault
-        wrapper = new RestrictedStrategyWrapper(rewardVault, address(morpho));
+        wrapper = new RestrictedStrategyWrapper(rewardVault, address(morpho), address(this));
         vm.label(address(wrapper), "MorphoWrapper");
 
         // Add an extra reward token to the reward vault

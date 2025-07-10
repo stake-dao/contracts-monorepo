@@ -93,9 +93,10 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
     error InvalidTokens();
 
     /// @param rewardVault The reward vault contract
-    /// @custom:reverts ZeroAddress if the reward vault or _admin address is the zero address
-    constructor(IRewardVault rewardVault) ERC20("", "") Ownable(msg.sender) {
-        require(address(rewardVault) != address(0), ZeroAddress());
+    /// @param _owner The owner of the contract
+    /// @custom:reverts ZeroAddress if the reward vault or _owner address are the zero address
+    constructor(IRewardVault rewardVault, address _owner) ERC20("", "") Ownable(_owner) {
+        require(address(rewardVault) != address(0) && _owner != address(0), ZeroAddress());
 
         IAccountant accountant = rewardVault.ACCOUNTANT();
 
@@ -363,7 +364,6 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
     function _getGlobalIntegral() internal view returns (uint256 integral) {
         integral = ACCOUNTANT.vaults(address(REWARD_VAULT)).integral;
     }
-
 
     ///////////////////////////////////////////////////////////////
     // --- GETTERS

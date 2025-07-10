@@ -3,61 +3,56 @@ pragma solidity 0.8.28;
 
 import {Script} from "forge-std/src/Script.sol";
 import {console} from "forge-std/src/console.sol";
-import {MorphoMarketFactory} from "src/integrations/morpho/MorphoMarketFactory.sol";
-import {Common} from "@address-book/src/CommonEthereum.sol";
+import {CurveLendingMarketFactory} from "src/integrations/curve/lending/CurveLendingMarketFactory.sol";
 import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {MarketParams, Id} from "shared/src/morpho/IMorpho.sol";
 import {IOracle} from "src/interfaces/IOracle.sol";
 import {IStrategyWrapper} from "src/interfaces/IStrategyWrapper.sol";
-import {IChainlinkFeed} from "src/interfaces/IChainlinkFeed.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {ICurvePool} from "src/interfaces/ICurvePool.sol";
-import {MarketParamsLib} from "shared/src/morpho/MarketParamsLib.sol";
+import {ILendingFactory} from "src/interfaces/ILendingFactory.sol";
+import {IChainlinkFeed} from "src/interfaces/IChainlinkFeed.sol";
 
-contract DeployMorphoStableMarketScript is Script {
-    function run() external returns (Id) {
-        address factory = vm.envAddress("MORPHO_MARKET_FACTORY");
+contract DeployCurveCryptoMarketScript is Script {
+    function run() external returns (bytes memory) {
+        address factory = vm.envAddress("CURVE_LENDING_MARKET_FACTORY");
         address rewardVault = vm.envAddress("REWARD_VAULT");
-        address irm = vm.envOr("IRM", Common.MORPHO_ADAPTIVE_CURVE_IRM);
+        address irm = vm.envAddress("IRM");
         uint256 lltv = vm.envUint("LLTV");
         address loanAsset = vm.envAddress("LOAN_ASSET");
         address loanAssetFeed = vm.envAddress("LOAN_ASSET_FEED");
         uint256 loanAssetFeedHeartbeat = vm.envUint("LOAN_ASSET_FEED_HEARTBEAT");
-        address baseFeed = vm.envOr("BASE_FEED", address(0));
-        uint256 baseFeedHeartbeat = vm.envOr("BASE_FEED_HEARTBEAT", uint256(0));
+        address[] memory token0ToUsdFeeds = vm.envAddress("TOKEN_TO_USD_FEEDS", ",");
+        uint256[] memory token0ToUsdHeartbeats = vm.envUint("TOKEN_TO_USD_FEEDS_HEARTBEAT", ",");
+        address lendingFactory = vm.envAddress("LENDING_FACTORY");
 
-        require(factory.code.length > 0, "MorphoMarketFactory not deployed");
+        require(factory.code.length > 0, "CurveLendingMarketFactory not deployed");
         require(rewardVault.code.length > 0, "RewardVault not deployed");
-        require(MorphoMarketFactory(factory).MORPHO_BLUE().isIrmEnabled(irm), "Invalid IRM");
-        require(MorphoMarketFactory(factory).MORPHO_BLUE().isLltvEnabled(lltv), "Invalid LLTV");
         require(loanAsset != address(0), "Invalid loan asset");
-        require(loanAssetFeed.code.length > 0, "Invalid Loan Asset Feed");
-        require(loanAssetFeedHeartbeat > 0, "Invalid Loan Asset Heartbeat");
-        if (baseFeed != address(0)) {
-            require(baseFeed.code.length > 0, "Invalid Base Feed");
-            require(baseFeedHeartbeat > 0, "Invalid Base Feed Heartbeat");
+        require(token0ToUsdFeeds.length == token0ToUsdHeartbeats.length, "Invalid Feeds/Heartbeats length");
+        for (uint256 i; i < token0ToUsdFeeds.length; i++) {
+            if (token0ToUsdFeeds[i] != address(0) && token0ToUsdHeartbeats[i] == 0) revert("Invalid hearbeats");
         }
-        require(
-            MorphoMarketFactory(factory).MORPHO_BLUE().isAuthorized(msg.sender, factory),
-            "Invalid Authorization. You must authorize the factory to manage your positions"
-        );
+        require(lendingFactory.code.length > 0, "LendingFactory not deployed");
 
-        MorphoMarketFactory.MorphoMarketParams memory marketParams =
-            MorphoMarketFactory.MorphoMarketParams({loanAsset: loanAsset, irm: irm, lltv: lltv});
+        CurveLendingMarketFactory.MarketParams memory marketParams =
+            CurveLendingMarketFactory.MarketParams({irm: irm, lltv: lltv});
 
-        MorphoMarketFactory.StableswapOracleParams memory oracleParams = MorphoMarketFactory.StableswapOracleParams({
+        CurveLendingMarketFactory.CryptoswapOracleParams memory oracleParams = CurveLendingMarketFactory
+            .CryptoswapOracleParams({
+            loanAsset: loanAsset,
             loanAssetFeed: loanAssetFeed,
             loanAssetFeedHeartbeat: loanAssetFeedHeartbeat,
-            baseFeed: baseFeed,
-            baseFeedHeartbeat: baseFeedHeartbeat
+            token0ToUsdFeeds: token0ToUsdFeeds,
+            token0ToUsdHeartbeats: token0ToUsdHeartbeats
         });
 
         _validationPrompt(IRewardVault(rewardVault), marketParams, oracleParams);
+
         vm.startBroadcast();
-
-        (MarketParams memory morphoMarketParams, IOracle oracle, IStrategyWrapper wrapper) =
-            MorphoMarketFactory(factory).createStableswapMarket(IRewardVault(rewardVault), oracleParams, marketParams);
-
+        (IStrategyWrapper wrapper, IOracle oracle, bytes memory data) = CurveLendingMarketFactory(factory).deploy(
+            IRewardVault(rewardVault), oracleParams, marketParams, ILendingFactory(lendingFactory)
+        );
         vm.stopBroadcast();
 
         _confirmationPrompt(loanAsset, oracle, wrapper);
@@ -65,9 +60,10 @@ contract DeployMorphoStableMarketScript is Script {
         console.log("The market is deployed. You can now start borrowing from it.");
         console.log("Oracle: %s", address(oracle));
         console.log("Wrapper: %s", address(wrapper));
+        console.log("Market ID: %s", vm.toString(abi.decode(data, (bytes32))));
         console.log("--------------------------------");
 
-        return MarketParamsLib.id(morphoMarketParams);
+        return data;
     }
 
     function _confirmationPrompt(address loanAsset, IOracle oracle, IStrategyWrapper wrapper) internal {
@@ -86,15 +82,15 @@ contract DeployMorphoStableMarketScript is Script {
 
     function _validationPrompt(
         IRewardVault rewardVault,
-        MorphoMarketFactory.MorphoMarketParams memory marketParams,
-        MorphoMarketFactory.StableswapOracleParams memory oracleParams
+        CurveLendingMarketFactory.MarketParams memory marketParams,
+        CurveLendingMarketFactory.CryptoswapOracleParams memory oracleParams
     ) internal {
         console.log("--------------------------------");
-        console.log("You are about to deploy a Morpho Stable Market.");
+        console.log("You are about to deploy a Morpho Crypto Market.");
         console.log("Here's the parameters of the market you are about to deploy:");
         console.log("- Reward Vault that will be wrapped: %s [%s]", address(rewardVault), rewardVault.name());
         console.log("- Curve Pool: %s [%s]", rewardVault.asset(), IERC20Metadata(rewardVault.asset()).name());
-        console.log("- Loan Asset: %s [%s]", marketParams.loanAsset, IERC20Metadata(marketParams.loanAsset).name());
+        console.log("- Loan Asset: %s [%s]", oracleParams.loanAsset, IERC20Metadata(oracleParams.loanAsset).name());
         console.log("- IRM: %s", marketParams.irm);
         console.log("- LLTV: %s", marketParams.lltv);
         console.log("--------------------------------");
@@ -106,8 +102,8 @@ contract DeployMorphoStableMarketScript is Script {
         console.log("--------------------------------");
         console.log("The conversion from the LP token to the loan asset will follow this path:");
         string memory paths = "";
-        if (oracleParams.baseFeed != address(0)) {
-            paths = string.concat(IChainlinkFeed(oracleParams.baseFeed).description(), " -> ");
+        for (uint256 i; i < oracleParams.token0ToUsdFeeds.length; i++) {
+            paths = string.concat(paths, IChainlinkFeed(oracleParams.token0ToUsdFeeds[i]).description(), " -> ");
         }
         paths = string.concat(IChainlinkFeed(oracleParams.loanAssetFeed).description());
         console.log("Path: %s (last feed is reverted on purpose)", paths);

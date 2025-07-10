@@ -64,6 +64,9 @@ contract CurveStableswapOracle is IOracle {
     // --- IMMUTABLES
     ///////////////////////////////////////////////////////////////
 
+    /// @notice Base exponent for the oracle price.
+    uint256 public constant ORACLE_BASE_EXPONENT = 36;
+
     /// @notice Address of the Curve StableSwap pool.
     ICurveStableSwapPool public immutable CURVE_POOL;
 
@@ -89,7 +92,7 @@ contract CurveStableswapOracle is IOracle {
     /// @notice Maximum seconds between two updates of the base peg feed.
     uint256 public immutable BASE_FEED_HEARTBEAT;
 
-    /// @notice Pre-computed factor that scales the oracle output to 1e36.
+    /// @notice Pre-computed factor that scales the oracle output to `ORACLE_BASE_EXPONENT`.
     uint256 public immutable SCALE_FACTOR;
 
     ///////////////////////////////////////////////////////////////
@@ -177,8 +180,8 @@ contract CurveStableswapOracle is IOracle {
         // ---------------------------------------------------------------------
         SCALE_FACTOR = 10
             ** (
-                36 + LOAN_ASSET.decimals() + LOAN_ASSET_FEED_DECIMALS - IERC20Metadata(_collateralToken).decimals()
-                    - BASE_FEED_DECIMALS
+                ORACLE_BASE_EXPONENT + LOAN_ASSET.decimals() + LOAN_ASSET_FEED_DECIMALS
+                    - IERC20Metadata(_collateralToken).decimals() - BASE_FEED_DECIMALS
             );
     }
 

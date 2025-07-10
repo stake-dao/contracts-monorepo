@@ -3,8 +3,11 @@ pragma solidity 0.8.28;
 
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
+import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 
 interface IStrategyWrapper is IERC20, IERC20Metadata {
+    function REWARD_VAULT() external view returns (IRewardVault);
+
     // Deposit RewardVault shares
     function depositShares() external;
     function depositShares(uint256 amount) external;
