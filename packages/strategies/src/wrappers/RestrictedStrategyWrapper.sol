@@ -23,9 +23,10 @@ contract RestrictedStrategyWrapper is StrategyWrapper {
     error OnlyAdmin();
 
     /// @param rewardVault The reward vault contract
-    /// @param _admin The address of the admin
+    /// @param _admin The admin of the contract
+    /// @param _owner The owner of the contract
     /// @custom:reverts ZeroAddress if the reward vault or _admin address is the zero address
-    constructor(IRewardVault rewardVault, address _admin) StrategyWrapper(rewardVault) {
+    constructor(IRewardVault rewardVault, address _admin, address _owner) StrategyWrapper(rewardVault, _owner) {
         require(_admin != address(0), ZeroAddress());
 
         admin = _admin;

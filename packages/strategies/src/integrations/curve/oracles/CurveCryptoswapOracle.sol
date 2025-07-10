@@ -57,6 +57,9 @@ contract CurveCryptoswapOracle is IOracle {
     // --- IMMUTABLES & STORAGE
     ///////////////////////////////////////////////////////////////
 
+    /// @notice Scale factor for the oracle price.
+    uint256 public constant ORACLE_BASE_EXPONENT = 36;
+
     // Crypto-swap pool (including TwoCrypto-NG pool)
     ICurveCryptoSwapPool public immutable CURVE_POOL;
 
@@ -74,14 +77,14 @@ contract CurveCryptoswapOracle is IOracle {
     // SCALE FACTOR
     // ---------------------------------------------------------------------
     // Lending protocols such as Morpho Blue require oracle prices to be scaled
-    // by 1e36 and adjusted for the difference in token decimals between the
-    // loan asset (debt unit) and the collateral asset (wrapped Curve LP token).
+    // by `ORACLE_BASE_EXPONENT` and adjusted for the difference in token decimals between
+    // the loan asset (debt unit) and the collateral asset (wrapped Curve LP token).
     //
     // The raw price we compute below (named `basePrice`) returns the value
     // of **1 LP token** expressed in **1 unit of the loan asset** with
     // 18 decimals of precision (WAD). To rescale it to the format expected
     // by the lending protocol we must multiply by:
-    //   10^(36 + loanDecimals − collateralDecimals)
+    //   10^(`ORACLE_BASE_EXPONENT` + loanDecimals − collateralDecimals)
     //
     // As with the StableSwap oracle, this exponent is guaranteed to be
     // non-negative for the LP tokens we target, therefore the factor fits
@@ -143,7 +146,8 @@ contract CurveCryptoswapOracle is IOracle {
             token0ToUsdHeartbeats.push(_token0ToUsdHeartbeats[i]);
         }
 
-        SCALE_FACTOR = 10 ** (36 + IERC20Metadata(_loanAsset).decimals() - IERC20Metadata(_collateralToken).decimals());
+        SCALE_FACTOR = 10
+            ** (ORACLE_BASE_EXPONENT + IERC20Metadata(_loanAsset).decimals() - IERC20Metadata(_collateralToken).decimals());
     }
 
     /// @notice Price of 1 LP token in the loan asset, scaled to 1e36.

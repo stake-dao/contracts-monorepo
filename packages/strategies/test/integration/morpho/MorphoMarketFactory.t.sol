@@ -4,16 +4,14 @@ pragma solidity >=0.8.28;
 import {Test} from "forge-std/src/Test.sol";
 import {CurveMainnetIntegrationTest} from "test/integration/curve/mainnet/CurveMainnetIntegration.t.sol";
 import {MorphoMarketFactory} from "src/integrations/morpho/MorphoMarketFactory.sol";
+import {CurveLendingMarketFactory} from "src/integrations/curve/lending/CurveLendingMarketFactory.sol";
 import {RewardVault} from "src/RewardVault.sol";
 import {Common} from "@address-book/src/CommonEthereum.sol";
-import {MarketParamsLib} from "shared/src/morpho/MarketParamsLib.sol";
 import {IERC20Metadata, IERC20} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {IOracle as IMorphoOracle} from "shared/src/morpho/IOracle.sol";
 import {
     IMorpho,
     Market as MorphoMarketState,
     Id as MorphoId,
-    MarketParams as MorphoMarketParams,
     Position as MorphoPosition
 } from "shared/src/morpho/IMorpho.sol";
 
@@ -120,10 +118,30 @@ contract MorphoMarketFactoryIntegrationTest is CurveMainnetIntegrationTest {
         uint256 baseFeedHeartbeat,
         RewardVault rewardVault
     ) internal {
+        // Deploy the Curve lending market factory
+        vm.prank(position.account);
+        CurveLendingMarketFactory curveLendingMarketFactory = new CurveLendingMarketFactory(address(protocolController));
+        vm.label(address(curveLendingMarketFactory), "CurveLendingMarketFactory");
+
         // Deploy the Morpho market factory
         vm.prank(position.account);
-        morphoMarketFactory = new MorphoMarketFactory(address(MORPHO), address(protocolController));
+        morphoMarketFactory = new MorphoMarketFactory(address(MORPHO));
         vm.label(address(morphoMarketFactory), "MorphoMarketFactory");
+
+        // Setup the market parameters
+        CurveLendingMarketFactory.MarketParams memory marketParams =
+            CurveLendingMarketFactory.MarketParams({irm: Common.MORPHO_ADAPTIVE_CURVE_IRM, lltv: lltv});
+
+        // Setup the oracle parameters
+        CurveLendingMarketFactory.StableswapOracleParams memory oracleParams = CurveLendingMarketFactory
+            .StableswapOracleParams({
+            loanAsset: Common.USDC,
+            loanAssetFeed: Common.CHAINLINK_USDC_USD_PRICE_FEED,
+            loanAssetFeedHeartbeat: 86_400,
+            baseFeed: baseFeed,
+            baseFeedHeartbeat: baseFeedHeartbeat
+        });
+        vm.label(Common.CHAINLINK_USDC_USD_PRICE_FEED, "USDC/USD Chainlink Feed");
 
         // Deposit some Curve LP tokens into the reward vault
         deposit(rewardVault, position.account, position.baseAmount);
@@ -134,58 +152,46 @@ contract MorphoMarketFactoryIntegrationTest is CurveMainnetIntegrationTest {
         uint256 loanInitialBalance = 10 ** IERC20Metadata(loanAsset).decimals();
         deal(loanAsset, position.account, loanInitialBalance);
 
-        // Approve the morpho factory to spend the USDC
+        // Approve the curve lending factory to spend the USDC
         vm.prank(position.account);
-        IERC20(loanAsset).approve(address(morphoMarketFactory), loanInitialBalance);
+        IERC20(loanAsset).approve(address(curveLendingMarketFactory), loanInitialBalance);
 
-        // Approve the morpho factory to spend the reward vault shares
+        // Approve the curve lending factory to spend the reward vault shares
         vm.prank(position.account);
-        rewardVault.approve(address(morphoMarketFactory), position.baseAmount);
+        rewardVault.approve(address(curveLendingMarketFactory), position.baseAmount);
 
-        // Setup the market parameters
-        MorphoMarketFactory.MorphoMarketParams memory marketParams = MorphoMarketFactory.MorphoMarketParams({
-            loanAsset: loanAsset,
-            irm: Common.MORPHO_ADAPTIVE_CURVE_IRM,
-            lltv: lltv
-        });
-
-        // Setup the oracle parameters
-        MorphoMarketFactory.StableswapOracleParams memory oracleParams = MorphoMarketFactory.StableswapOracleParams({
-            loanAssetFeed: Common.CHAINLINK_USDC_USD_PRICE_FEED,
-            loanAssetFeedHeartbeat: 86_400,
-            baseFeed: baseFeed,
-            baseFeedHeartbeat: baseFeedHeartbeat
-        });
-        vm.label(Common.CHAINLINK_USDC_USD_PRICE_FEED, "USDC/USD Chainlink Feed");
-
-        // Authorize the morpho factory to manages user's positions
+        // Authorize the curve lending factory to manages user's positions
         vm.prank(position.account);
-        MORPHO.setAuthorization(address(morphoMarketFactory), true);
+        MORPHO.setAuthorization(address(curveLendingMarketFactory), true);
 
-        // Create the Morpho market
+        // Deploy the market
         vm.prank(position.account);
-        (MorphoMarketParams memory morphoMarketParams,,) =
-            morphoMarketFactory.createStableswapMarket(rewardVault, oracleParams, marketParams);
+        (,, bytes memory data) =
+            curveLendingMarketFactory.deploy(rewardVault, oracleParams, marketParams, morphoMarketFactory);
 
         assertEq(
             IERC20(loanAsset).balanceOf(position.account), uint256(9 * 10 ** IERC20Metadata(loanAsset).decimals()) / 10
         );
 
-        MorphoId marketID = MarketParamsLib.id(morphoMarketParams);
-        MorphoMarketState memory market = MORPHO.market(marketID);
-        assertEq(market.totalSupplyAssets, 10 ** IERC20Metadata(loanAsset).decimals());
-        assertGt(market.totalSupplyShares, 0);
-        assertEq(market.totalBorrowAssets, (10 ** IERC20Metadata(loanAsset).decimals() * 9) / 10);
-        assertEq(market.lastUpdate, block.timestamp);
+        MorphoId marketID = abi.decode(data, (MorphoId));
+        {
+            MorphoMarketState memory market = MORPHO.market(marketID);
+            assertEq(market.totalSupplyAssets, 10 ** IERC20Metadata(loanAsset).decimals());
+            assertGt(market.totalSupplyShares, 0);
+            assertEq(market.totalBorrowAssets, (10 ** IERC20Metadata(loanAsset).decimals() * 9) / 10);
+            assertEq(market.lastUpdate, block.timestamp);
+        }
 
         MorphoPosition memory morphoPosition = MORPHO.position(marketID, address(position.account));
-        assertEq(market.totalBorrowShares, morphoPosition.borrowShares);
-        assertEq(morphoPosition.supplyShares - morphoPosition.borrowShares, morphoPosition.supplyShares / 10); // 90%
+        {
+            assertEq(MORPHO.market(marketID).totalBorrowShares, morphoPosition.borrowShares);
+            assertEq(morphoPosition.supplyShares - morphoPosition.borrowShares, morphoPosition.supplyShares / 10); // 90%
 
-        morphoPosition = MORPHO.position(marketID, address(morphoMarketFactory));
-        assertEq(morphoPosition.supplyShares, 0);
-        assertEq(morphoPosition.borrowShares, 0);
-        assertEq(morphoPosition.collateral, 0);
+            morphoPosition = MORPHO.position(marketID, address(morphoMarketFactory));
+            assertEq(morphoPosition.supplyShares, 0);
+            assertEq(morphoPosition.borrowShares, 0);
+            assertEq(morphoPosition.collateral, 0);
+        }
     }
 
     function test_create_cryptoswap_markets() external {
@@ -238,10 +244,30 @@ contract MorphoMarketFactoryIntegrationTest is CurveMainnetIntegrationTest {
         uint256[] memory token0ToUsdHeartbeats,
         RewardVault rewardVault
     ) internal {
+        // Deploy the Curve lending market factory
+        vm.prank(position.account);
+        CurveLendingMarketFactory curveLendingMarketFactory = new CurveLendingMarketFactory(address(protocolController));
+        vm.label(address(curveLendingMarketFactory), "CurveLendingMarketFactory");
+
         // Deploy the Morpho market factory
         vm.prank(position.account);
-        morphoMarketFactory = new MorphoMarketFactory(address(MORPHO), address(protocolController));
+        morphoMarketFactory = new MorphoMarketFactory(address(MORPHO));
         vm.label(address(morphoMarketFactory), "MorphoMarketFactory");
+
+        // Setup the market parameters
+        CurveLendingMarketFactory.MarketParams memory marketParams =
+            CurveLendingMarketFactory.MarketParams({irm: Common.MORPHO_ADAPTIVE_CURVE_IRM, lltv: lltv});
+
+        // Setup the oracle parameters
+        CurveLendingMarketFactory.CryptoswapOracleParams memory oracleParams = CurveLendingMarketFactory
+            .CryptoswapOracleParams({
+            loanAsset: Common.USDC,
+            loanAssetFeed: Common.CHAINLINK_USDC_USD_PRICE_FEED,
+            loanAssetFeedHeartbeat: 86_400,
+            token0ToUsdFeeds: token0ToUsdFeeds,
+            token0ToUsdHeartbeats: token0ToUsdHeartbeats
+        });
+        vm.label(Common.CHAINLINK_USDC_USD_PRICE_FEED, "USDC/USD Chainlink Feed");
 
         // Deposit some Curve LP tokens into the reward vault
         deposit(rewardVault, position.account, position.baseAmount);
@@ -252,62 +278,43 @@ contract MorphoMarketFactoryIntegrationTest is CurveMainnetIntegrationTest {
         uint256 loanInitialBalance = 10 ** IERC20Metadata(loanAsset).decimals();
         deal(loanAsset, position.account, loanInitialBalance);
 
-        // Approve the morpho factory to spend the USDC
+        // Approve the curve lending factory to spend the USDC
         vm.prank(position.account);
-        IERC20(loanAsset).approve(address(morphoMarketFactory), loanInitialBalance);
+        IERC20(loanAsset).approve(address(curveLendingMarketFactory), loanInitialBalance);
 
-        // Approve the morpho factory to spend the reward vault shares
+        // Approve the curve lending factory to spend the reward vault shares
         vm.prank(position.account);
-        rewardVault.approve(address(morphoMarketFactory), position.baseAmount);
+        rewardVault.approve(address(curveLendingMarketFactory), position.baseAmount);
 
-        // Setup the market parameters
-        MorphoMarketFactory.MorphoMarketParams memory marketParams = MorphoMarketFactory.MorphoMarketParams({
-            loanAsset: loanAsset,
-            irm: Common.MORPHO_ADAPTIVE_CURVE_IRM,
-            lltv: lltv
-        });
-
-        // Setup the oracle parameters
-        MorphoMarketFactory.CryptoswapOracleParams memory oracleParams = MorphoMarketFactory.CryptoswapOracleParams({
-            loanAssetFeed: Common.CHAINLINK_USDC_USD_PRICE_FEED,
-            loanAssetFeedHeartbeat: 86_400,
-            token0ToUsdFeeds: token0ToUsdFeeds,
-            token0ToUsdHeartbeats: token0ToUsdHeartbeats
-        });
-        vm.label(Common.CHAINLINK_USDC_USD_PRICE_FEED, "USDC/USD Chainlink Feed");
-
-        // Authorize the morpho factory to manages user's positions
+        // Authorize the curve lending factory to manages user's positions
         vm.prank(position.account);
-        MORPHO.setAuthorization(address(morphoMarketFactory), true);
+        MORPHO.setAuthorization(address(curveLendingMarketFactory), true);
 
-        // Create the Morpho market
+        // Deploy the market
         vm.prank(position.account);
-        (MorphoMarketParams memory morphoMarketParams,,) =
-            morphoMarketFactory.createCryptoswapMarket(rewardVault, oracleParams, marketParams);
-
-        emit log_named_uint(
-            string.concat("YOOO", " ", IERC20Metadata(morphoMarketParams.collateralToken).name()),
-            IMorphoOracle(morphoMarketParams.oracle).price()
-        );
+        (,, bytes memory data) =
+            curveLendingMarketFactory.deploy(rewardVault, oracleParams, marketParams, morphoMarketFactory);
 
         assertEq(
             IERC20(loanAsset).balanceOf(position.account), uint256(9 * 10 ** IERC20Metadata(loanAsset).decimals()) / 10
         );
 
-        MorphoId marketID = MarketParamsLib.id(morphoMarketParams);
-        MorphoMarketState memory market = MORPHO.market(marketID);
-        assertEq(market.totalSupplyAssets, 10 ** IERC20Metadata(loanAsset).decimals());
-        assertGt(market.totalSupplyShares, 0);
-        assertEq(market.totalBorrowAssets, (10 ** IERC20Metadata(loanAsset).decimals() * 9) / 10);
-        assertEq(market.lastUpdate, block.timestamp);
-
+        MorphoId marketID = abi.decode(data, (MorphoId));
         MorphoPosition memory morphoPosition = MORPHO.position(marketID, address(position.account));
-        assertEq(market.totalBorrowShares, morphoPosition.borrowShares);
-        assertEq(morphoPosition.supplyShares - morphoPosition.borrowShares, morphoPosition.supplyShares / 10); // 90%
+        MorphoMarketState memory market = MORPHO.market(marketID);
+        {
+            assertEq(market.totalSupplyAssets, 10 ** IERC20Metadata(loanAsset).decimals());
+            assertGt(market.totalSupplyShares, 0);
+            assertEq(market.totalBorrowAssets, (10 ** IERC20Metadata(loanAsset).decimals() * 9) / 10);
+            assertEq(market.lastUpdate, block.timestamp);
 
-        morphoPosition = MORPHO.position(marketID, address(morphoMarketFactory));
-        assertEq(morphoPosition.supplyShares, 0);
-        assertEq(morphoPosition.borrowShares, 0);
-        assertEq(morphoPosition.collateral, 0);
+            assertEq(market.totalBorrowShares, morphoPosition.borrowShares);
+            assertEq(morphoPosition.supplyShares - morphoPosition.borrowShares, morphoPosition.supplyShares / 10); // 90%
+
+            morphoPosition = MORPHO.position(marketID, address(morphoMarketFactory));
+            assertEq(morphoPosition.supplyShares, 0);
+            assertEq(morphoPosition.borrowShares, 0);
+            assertEq(morphoPosition.collateral, 0);
+        }
     }
 }
