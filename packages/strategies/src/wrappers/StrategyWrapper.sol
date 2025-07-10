@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
+import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
@@ -9,19 +10,18 @@ import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
-import {IMorphoStrategyWrapper} from "src/interfaces/IMorphoStrategyWrapper.sol";
+import {IStrategyWrapper} from "src/interfaces/IStrategyWrapper.sol";
 
-/// @title Stake DAO Morpho Strategy Wrapper
-/// @notice ERC20 wrapper for Stake DAO RewardVault shares, designed for use as non-transferable collateral in Morpho lending markets.
-/// @dev Handles reward claiming and distribution for the initial owner while shares are locked as collateral
-/// @dev   - Allows users to deposit RewardVault shares and receive non-transferable tokens (1:1)
-///        - While the ERC20 tokens are held (even as collateral in Morpho), users can claim both main protocol rewards and extra rewards
+/// @title Stake DAO Strategy Wrapper
+/// @notice Non-transferable ERC20 wrapper for Stake DAO RewardVault shares. It is designed for use as collateral in lending markets.
+/// @dev   - Allows users to deposit RewardVault shares or underlying LP tokens, and receive non-transferable tokens (1:1 ratio)
+///        - While the ERC20 tokens are held (even as collateral in lending markets), users can claim both main protocol rewards and extra rewards
 ///        - Handles the edge case where the main reward token is also listed as an extra reward
 ///        - Integrates with Stake DAO's reward and checkpointing logic to ensure users always receive the correct rewards, regardless of the custody
 /// @author Stake DAO
 /// @custom:contact contact@stakedao.org
 /// @custom:github https://github.com/stake-dao/contracts-monorepo
-contract MorphoStrategyWrapper is ERC20, IMorphoStrategyWrapper, ReentrancyGuardTransient {
+contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGuardTransient {
     ///////////////////////////////////////////////////////////////
     // --- IMMUTABLES
     ///////////////////////////////////////////////////////////////
@@ -46,15 +46,8 @@ contract MorphoStrategyWrapper is ERC20, IMorphoStrategyWrapper, ReentrancyGuard
     /// @notice The address of the accountant contract
     IAccountant public immutable ACCOUNTANT;
 
-    /// @notice The Morpho market contract address
-    address public immutable MORPHO;
-
     /// @dev Precision used by Accountant.integral (usually 1e27)
     uint128 public immutable ACCOUNTANT_SCALING_FACTOR;
-
-    ///////////////////////////////////////////////////////////////
-    // --- STATE
-    ///////////////////////////////////////////////////////////////
 
     /// @notice Tracks user deposit data and reward checkpoints
     /// @param balance User's wrapped-share balance
@@ -90,9 +83,6 @@ contract MorphoStrategyWrapper is ERC20, IMorphoStrategyWrapper, ReentrancyGuard
     /// @dev Emitted when a user withdraws shares for themselves or for another user
     event Withdrawn(address indexed user, address indexed receiver, uint256 amount);
 
-    /// @dev Thrown when non-Morpho tries to transfer wrapped tokens
-    error OnlyMorpho();
-
     /// @dev Thrown when a given amount is zero
     error ZeroAmount();
 
@@ -102,18 +92,16 @@ contract MorphoStrategyWrapper is ERC20, IMorphoStrategyWrapper, ReentrancyGuard
     /// @dev Thrown when the provided token list is empty
     error InvalidTokens();
 
-    /// @param rewardVault The address of the reward vault contract
-    /// @param morpho The address of the Morpho contract
-    /// @custom:reverts ZeroAddress if the reward vault or Morpho address is the zero address
-    constructor(IRewardVault rewardVault, address morpho) ERC20("", "") {
-        require(address(rewardVault) != address(0) && morpho != address(0), ZeroAddress());
+    /// @param rewardVault The reward vault contract
+    /// @custom:reverts ZeroAddress if the reward vault or _admin address is the zero address
+    constructor(IRewardVault rewardVault) ERC20("", "") Ownable(msg.sender) {
+        require(address(rewardVault) != address(0), ZeroAddress());
 
         IAccountant accountant = rewardVault.ACCOUNTANT();
 
         // Store the immutable variables
         GAUGE = rewardVault.gauge();
         ACCOUNTANT = accountant;
-        MORPHO = morpho;
         REWARD_VAULT = rewardVault;
         MAIN_REWARD_TOKEN = IERC20(accountant.REWARD_TOKEN());
         ACCOUNTANT_SCALING_FACTOR = accountant.SCALING_FACTOR();
@@ -123,34 +111,67 @@ contract MorphoStrategyWrapper is ERC20, IMorphoStrategyWrapper, ReentrancyGuard
     // --- DEPOSIT
     ///////////////////////////////////////////////////////////////
 
-    /// @notice Deposits all the RewardVault shares and mints wrapped tokens for the caller
-    function deposit() external {
-        deposit(REWARD_VAULT.balanceOf(msg.sender));
+    /// @notice Wrap **all** RewardVault shares owned by the caller into wrapper tokens (1:1 ratio)
+    /// @dev Use this when you ALREADY hold RewardVault shares
+    /// @custom:reverts ZeroAmount If the caller's share balance is zero
+    function depositShares() external {
+        depositShares(REWARD_VAULT.balanceOf(msg.sender));
     }
 
-    /// @notice Deposits `amount` RewardVault shares and mints the same amount of wrapper tokens to the caller
-    /// @param amount Amount of shares to deposit
-    /// @custom:reverts ZeroAmount if the given amount is zero
-    function deposit(uint256 amount) public {
+    /// @notice Wrap `amount` RewardVault shares into wrapper tokens (1:1 ratio)
+    /// @param amount Number of RewardVault shares the caller wants to wrap
+    /// @dev Use this when you ALREADY hold RewardVault shares and wish to wrap a specific portion of them
+    /// @custom:reverts ZeroAmount If `amount` is zero
+    function depositShares(uint256 amount) public nonReentrant {
         require(amount > 0, ZeroAmount());
 
-        // 1. Transfer caller's shares to this contract (trigger the checkpoint action in the RewardVault)
+        // 1. Transfer caller's shares to this contract (checkpoint)
         SafeERC20.safeTransferFrom(IERC20(address(REWARD_VAULT)), msg.sender, address(this), amount);
 
-        // 2. Update the internal user checkpoint
+        _deposit(amount);
+    }
+
+    /// @notice Convert **all** underlying LP tokens owned by the caller into RewardVault
+    ///         shares and immediately wrap those shares into wrapper tokens (LP → share → wrapper)
+    /// @dev Use this when you DO NOT own RewardVault shares yet, only the raw LP tokens
+    /// @custom:reverts ZeroAmount If the caller's LP balance is zero
+    function depositAssets() external {
+        depositAssets(IERC20(REWARD_VAULT.asset()).balanceOf(msg.sender));
+    }
+
+    /// @notice Convert `amount` underlying LP tokens into RewardVault shares and
+    ///         immediately wrap those shares into wrapper tokens (LP → share → wrapper)
+    /// @param amount Amount of underlying LP tokens provided by the caller
+    /// @dev Use this when you DO NOT own RewardVault shares yet, only the raw LP tokens,
+    ///      and wish to wrap a specific portion of them
+    /// @custom:reverts ZeroAmount If `amount` is zero
+    function depositAssets(uint256 amount) public nonReentrant {
+        require(amount > 0, ZeroAmount());
+
+        // 1. Get RewardVault's shares by depositing the underlying protocol LP tokens (checkpoint)
+        SafeERC20.safeTransferFrom(IERC20(REWARD_VAULT.asset()), msg.sender, address(this), amount);
+        uint256 shares = REWARD_VAULT.deposit(amount, address(this), address(this));
+
+        _deposit(shares);
+    }
+
+    /// @notice Wraps `amount` RewardVault shares into wrapper tokens (1:1 ratio)
+    /// @param amount Number of RewardVault shares the caller wants to wrap
+    function _deposit(uint256 amount) internal {
+        // 1. Update the internal user checkpoint
         UserCheckpoint storage checkpoint = userCheckpoints[msg.sender];
         checkpoint.balance += amount;
 
-        // 3. Keep track of the Main reward token checkpoint
+        // 2. Keep track of the Main reward token checkpoint
         checkpoint.rewardPerTokenPaid[MAIN_REWARD_TOKEN_SLOT] = _getGlobalIntegral();
 
-        // 4. Keep track of the Extra reward tokens checkpoints at deposit time
+        // 3. Keep track of the Extra reward tokens checkpoints at deposit time
         address[] memory rewardTokens = REWARD_VAULT.getRewardTokens();
         for (uint256 i; i < rewardTokens.length; i++) {
             checkpoint.rewardPerTokenPaid[rewardTokens[i]] = extraRewardPerToken[rewardTokens[i]];
         }
 
-        // 5. Mint wrapped tokens (1:1) for the caller
+        // 4. Mint wrapped tokens (1:1) for the caller
         _mint(msg.sender, amount);
 
         emit Deposited(msg.sender, amount);
@@ -343,32 +364,6 @@ contract MorphoStrategyWrapper is ERC20, IMorphoStrategyWrapper, ReentrancyGuard
         integral = ACCOUNTANT.vaults(address(REWARD_VAULT)).integral;
     }
 
-    ///////////////////////////////////////////////////////////////
-    // --- ERC-20 OVERRIDEN FUNCTIONS
-    ///////////////////////////////////////////////////////////////
-
-    /// @notice Restricts the transfer to Morpho only
-    /// @dev Only Morpho can transfer the wrapped tokens. The token isn't liquid.
-    /// @param to The address to transfer the tokens to
-    /// @param amount The amount of tokens to transfer
-    /// @return True if the transfer is successful
-    /// @custom:reverts OnlyMorpho if the sender is not Morpho
-    function transfer(address to, uint256 amount) public override(IERC20, ERC20) returns (bool) {
-        require(msg.sender == MORPHO, OnlyMorpho());
-        return super.transfer(to, amount);
-    }
-
-    /// @notice Restricts the transferFrom to Morpho only
-    /// @dev Only Morpho can transfer the wrapped tokens. The token isn't liquid.
-    /// @param from The address to transfer the tokens from
-    /// @param to The address to transfer the tokens to
-    /// @param amount The amount of tokens to transfer
-    /// @return True if the transfer is successful
-    /// @custom:reverts OnlyMorpho if the sender is not Morpho
-    function transferFrom(address from, address to, uint256 amount) public override(IERC20, ERC20) returns (bool) {
-        require(msg.sender == MORPHO, OnlyMorpho());
-        return super.transferFrom(from, to, amount);
-    }
 
     ///////////////////////////////////////////////////////////////
     // --- GETTERS
@@ -418,12 +413,12 @@ contract MorphoStrategyWrapper is ERC20, IMorphoStrategyWrapper, ReentrancyGuard
 
     /// @dev Get the name of the token
     function name() public view override(IERC20Metadata, ERC20) returns (string memory) {
-        return string.concat(REWARD_VAULT.name(), " Morpho");
+        return string.concat(REWARD_VAULT.name(), " wrapped");
     }
 
     /// @dev Get the symbol of the token
     function symbol() public view override(IERC20Metadata, ERC20) returns (string memory) {
-        return string.concat(REWARD_VAULT.symbol(), "-morpho");
+        return string.concat(REWARD_VAULT.symbol(), "-wrapped");
     }
 
     /// @notice Returns the current version of this contract.

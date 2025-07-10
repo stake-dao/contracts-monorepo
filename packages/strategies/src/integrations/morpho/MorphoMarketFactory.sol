@@ -5,15 +5,23 @@ import {IERC20Metadata, IERC20} from "@openzeppelin/contracts/token/ERC20/extens
 import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {MorphoCurveStableswapOracle} from "src/integrations/morpho/MorphoCurveStableswapOracle.sol";
-import {MorphoCurveCryptoswapOracle} from "src/integrations/morpho/MorphoCurveCryptoswapOracle.sol";
-import {MorphoStrategyWrapper} from "src/integrations/morpho/MorphoStrategyWrapper.sol";
-import {IMorphoStrategyWrapper} from "src/interfaces/IMorphoStrategyWrapper.sol";
-import {IMorphoOracle} from "src/interfaces/IMorphoOracle.sol";
 import {IMorpho, MarketParams} from "shared/src/morpho/IMorpho.sol";
+import {CurveStableswapOracle} from "src/integrations/curve/oracles/CurveStableswapOracle.sol";
+import {CurveCryptoswapOracle} from "src/integrations/curve/oracles/CurveCryptoswapOracle.sol";
+import {RestrictedStrategyWrapper} from "src/wrappers/RestrictedStrategyWrapper.sol";
+import {IStrategyWrapper} from "src/interfaces/IStrategyWrapper.sol";
+import {IOracle} from "src/interfaces/IOracle.sol";
 import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
+/// @title Morpho Market Factory
+/// @notice Factory for creating Morpho markets for a given reward vault linked to a Curve pool.
+/// @dev   - Allows users to create Morpho markets for a given reward vault linked to a Curve pool.
+///        - Uses a stableswap oracle to price the collateral token.
+///        - Uses a cryptoswap oracle to price the collateral token.
+///        - Uses a RestrictedStrategyWrapper to wrap the reward vault shares.
+/// @author Stake DAO
+/// @custom:contact contact@stakedao.org
 contract MorphoMarketFactory is Ownable2Step {
     using SafeERC20 for IERC20;
     using SafeERC20 for IRewardVault;
@@ -100,13 +108,13 @@ contract MorphoMarketFactory is Ownable2Step {
         external
         onlyOwner
         verifyParams(rewardVault, marketParams)
-        returns (MarketParams memory morphoMarketParams, IMorphoOracle oracle, IMorphoStrategyWrapper wrapper)
+        returns (MarketParams memory morphoMarketParams, IOracle oracle, IStrategyWrapper wrapper)
     {
         // 1. Deploy the token that wraps the reward vault for Morpho Blue compatibility
-        wrapper = new MorphoStrategyWrapper(rewardVault, address(MORPHO_BLUE));
+        wrapper = new RestrictedStrategyWrapper(rewardVault, address(MORPHO_BLUE));
 
         // 2. Deploy the oracle
-        oracle = new MorphoCurveStableswapOracle(
+        oracle = new CurveStableswapOracle(
             rewardVault.asset(), // The curve pool associated with the reward vault
             address(wrapper),
             marketParams.loanAsset,
@@ -116,8 +124,8 @@ contract MorphoMarketFactory is Ownable2Step {
             oracleParams.baseFeedHeartbeat
         );
 
-        // 2. Deploy and setup the Morpho Market
-        morphoMarketParams = _deploySetupMarket(rewardVault, marketParams, wrapper, oracle);
+        // 3. Deploy and setup the Morpho Market
+        morphoMarketParams = _deployMorphoMarket(rewardVault, marketParams, wrapper, oracle);
     }
 
     /// @notice Creates a Morpho market for a given reward vault and market parameters using a cryptoswap oracle
@@ -132,13 +140,13 @@ contract MorphoMarketFactory is Ownable2Step {
         external
         onlyOwner
         verifyParams(rewardVault, marketParams)
-        returns (MarketParams memory morphoMarketParams, IMorphoOracle oracle, IMorphoStrategyWrapper wrapper)
+        returns (MarketParams memory morphoMarketParams, IOracle oracle, IStrategyWrapper wrapper)
     {
         // 1. Deploy the token that wraps the reward vault for Morpho Blue compatibility
-        wrapper = new MorphoStrategyWrapper(rewardVault, address(MORPHO_BLUE));
+        wrapper = new RestrictedStrategyWrapper(rewardVault, address(MORPHO_BLUE));
 
         // 2. Deploy the oracle
-        oracle = new MorphoCurveCryptoswapOracle(
+        oracle = new CurveCryptoswapOracle(
             rewardVault.asset(), // The curve pool associated with the reward vault
             address(wrapper),
             marketParams.loanAsset,
@@ -149,7 +157,7 @@ contract MorphoMarketFactory is Ownable2Step {
         );
 
         // 2. Deploy and setup the Morpho Market
-        morphoMarketParams = _deploySetupMarket(rewardVault, marketParams, wrapper, oracle);
+        morphoMarketParams = _deployMorphoMarket(rewardVault, marketParams, wrapper, oracle);
     }
 
     ///////////////////////////////////////////////////////////////
@@ -165,11 +173,11 @@ contract MorphoMarketFactory is Ownable2Step {
         _;
     }
 
-    function _deploySetupMarket(
+    function _deployMorphoMarket(
         IRewardVault rewardVault,
         MorphoMarketParams calldata marketParams,
-        IMorphoStrategyWrapper wrapper,
-        IMorphoOracle oracle
+        IStrategyWrapper wrapper,
+        IOracle oracle
     ) internal returns (MarketParams memory morphoMarketParams) {
         // 1. Create the Morpho Blue market
         morphoMarketParams = MarketParams({
@@ -226,7 +234,7 @@ contract MorphoMarketFactory is Ownable2Step {
         // while remaining economically negligible (≈ 0.005 USDC for a ETH/USDC for example).
         // ------------------------------------------------------------------
         uint256 collateralToSupply = Math.mulDiv(
-            Math.mulDiv(borrowAmount, ORACLE_PRICE_SCALE, IMorphoOracle(address(oracle)).price(), Math.Rounding.Ceil),
+            Math.mulDiv(borrowAmount, ORACLE_PRICE_SCALE, IOracle(address(oracle)).price(), Math.Rounding.Ceil),
             1e18,
             marketParams.lltv,
             Math.Rounding.Ceil
@@ -237,7 +245,7 @@ contract MorphoMarketFactory is Ownable2Step {
         // Transfer the LP tokens from the caller and wrap
         rewardVault.safeTransferFrom(msg.sender, address(this), collateralToSupply);
         rewardVault.approve(address(wrapper), collateralToSupply);
-        wrapper.deposit(collateralToSupply);
+        wrapper.depositShares(collateralToSupply);
         wrapper.approve(address(MORPHO_BLUE), collateralToSupply);
         MORPHO_BLUE.supplyCollateral({
             marketParams: morphoMarketParams,
@@ -256,7 +264,7 @@ contract MorphoMarketFactory is Ownable2Step {
             receiver: msg.sender
         });
 
-        // 4. Trigger the deployment event
+        // 3. Trigger the deployment event
         emit MarketDeployed(
             marketParams.loanAsset, address(wrapper), address(oracle), marketParams.lltv, marketParams.irm
         );
