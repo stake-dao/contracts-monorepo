@@ -5,15 +5,15 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IChainlinkFeed} from "src/interfaces/IChainlinkFeed.sol";
 import {ICurveStableSwapPool} from "src/interfaces/ICurvePool.sol";
-import {IMorphoOracle} from "src/interfaces/IMorphoOracle.sol";
+import {IOracle} from "src/interfaces/IOracle.sol";
 
 /**
- * @title  MorphoCurveStableswapOracle
+ * @title  CurveStableswapOracle
  * @notice Read-only price oracle that returns the **USD value (18 decimals)** of one Curve
  *         StableSwap LP token (or any token that is strictly pegged 1:1 to that LP token).
  *
- *         The oracle is designed for Morpho markets where the LP token is used as collateral
- *         and the "loan asset" (e.g. USDC, crvUSD) is the unit in which debts are denominated.
+ *         The oracle is intended for lending markets (Morpho etc.) where the LP token is used as
+ *         collateral and the "loan asset" (e.g. USDC, crvUSD) is the unit in which debts are denominated.
  *
  *         Supported pool families: classic **StableSwap** pools and the **patched StableSwap-NG**
  *         implementation. Legacy NG pools listed in Curve's public spreadsheet are incompatible
@@ -32,7 +32,7 @@ import {IMorphoOracle} from "src/interfaces/IMorphoOracle.sol";
  *
  *         A Chainlink feed providing *Peg/USD* is required when `Peg != USD`; otherwise the
  *         the peg price is assumed to be 1 USD. The loan-asset feed **must always be X/USD**
- *         where X is the loan token used in the Morpho market.
+ *         where X is the loan token used in the lending market.
  *
  *         Flash-manipulation caveat (single-block virtual_price spikes)
  *         -----------------------------------------------------------
@@ -59,7 +59,7 @@ import {IMorphoOracle} from "src/interfaces/IMorphoOracle.sol";
  *         20 pools are known to be affected by this bug, all networks combined.
  *         This oracle is not intended for these pools.
  */
-contract MorphoCurveStableswapOracle is IMorphoOracle {
+contract CurveStableswapOracle is IOracle {
     ///////////////////////////////////////////////////////////////
     // --- IMMUTABLES
     ///////////////////////////////////////////////////////////////
@@ -67,10 +67,10 @@ contract MorphoCurveStableswapOracle is IMorphoOracle {
     /// @notice Address of the Curve StableSwap pool.
     ICurveStableSwapPool public immutable CURVE_POOL;
 
-    /// @notice Address of the loan asset of the Morpho market (e.g., USDC/crvUSD).
+    /// @notice Address of the loan asset of the lending market (e.g., USDC/crvUSD).
     IERC20Metadata public immutable LOAN_ASSET;
 
-    /// @notice Address of the Chainlink price feed for the loan asset of the Morpho market (e.g., USDC/crvUSD).
+    /// @notice Address of the Chainlink price feed for the loan asset of the lending market (e.g., USDC/crvUSD).
     IChainlinkFeed public immutable LOAN_ASSET_FEED;
 
     /// @notice Decimals of the loan asset's price feed (e.g., 8 for Chainlink USD feeds).
@@ -89,7 +89,7 @@ contract MorphoCurveStableswapOracle is IMorphoOracle {
     /// @notice Maximum seconds between two updates of the base peg feed.
     uint256 public immutable BASE_FEED_HEARTBEAT;
 
-    /// @notice Pre-computed factor that scales the oracle output to 1e36 as required by Morpho Blue.
+    /// @notice Pre-computed factor that scales the oracle output to 1e36.
     uint256 public immutable SCALE_FACTOR;
 
     ///////////////////////////////////////////////////////////////
@@ -106,13 +106,13 @@ contract MorphoCurveStableswapOracle is IMorphoOracle {
     error InvalidPrice();
 
     /// @param _curvePool The address of the Curve pool for the LP token collateral.
-    /// @param _collateralToken The address of the collateral token of the Morpho market.
-    /// @param _loanAsset The address of the loan token of the Morpho market (e.g., USDC/crvUSD).
-    /// @param _loanAssetFeed The address of the Chainlink feed for the loan token of the Morpho market (e.g., USDC/crvUSD).
+    /// @param _collateralToken The address of the collateral token of the lending market.
+    /// @param _loanAsset The address of the loan token of the lending market (e.g., USDC/crvUSD).
+    /// @param _loanAssetFeed The address of the Chainlink feed for the loan token of the lending market (e.g., USDC/crvUSD).
     /// @param _loanAssetFeedHeartbeat The maximum number of seconds since the last update of the loan asset feed.
     /// @param _baseFeed The address of the Chainlink feed for the pool's underlying peg (e.g., ETH/USD). Pass address(0) if the peg is USD.
     /// @param _baseFeedHeartbeat The maximum number of seconds since the last update of the base feed.
-    /// @dev Given a LP/USDC Morpho market, where LP is the LP token of a Curve Stableswap Pool (or a token strictly pegged to it):
+    /// @dev Given a LP/USDC lending market, where LP is the LP token of a Curve Stableswap Pool (or a token strictly pegged to it):
     //       - The `baseFeed` must be Peg/USD where Peg is the unit of account used in the stableswap pool
     //         - If the unit of account of the pool is USD, the given `baseFeed` must be address(0) (e.g., USDC/crvUSD pool)
     //         - If the unit of account of the pool is ETH, the given `baseFeed` must track ETH/USD (e.g., wstETH/wETH pool)
@@ -161,7 +161,7 @@ contract MorphoCurveStableswapOracle is IMorphoOracle {
         // ---------------------------------------------------------------------
         // SCALE FACTOR
         // ---------------------------------------------------------------------
-        // Morpho Blue requires the oracle to return:
+        // Lending protocols such as Morpho Blue require the oracle to return:
         //   realPrice * 1e36 * 10^(loanTokenDecimals - collateralTokenDecimals)
         //
         // The raw ratio we compute is:
@@ -233,7 +233,7 @@ contract MorphoCurveStableswapOracle is IMorphoOracle {
     }
 
     function identifier() external pure returns (string memory) {
-        return type(MorphoCurveStableswapOracle).name;
+        return type(CurveStableswapOracle).name;
     }
 }
 
@@ -242,7 +242,7 @@ EXAMPLES – choosing the `baseFeed` parameter
 ─────────────────────────────────────────────────────────────────────────────
 Constructor signature
 
-    MorphoCurveStableswapOracle(
+    CurveStableswapOracle(
         curvePool,
         loanAsset,                 // USDC in the examples below
         loanAssetFeed,             // USDC/USD Chainlink feed

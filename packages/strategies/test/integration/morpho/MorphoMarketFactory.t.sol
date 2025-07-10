@@ -2,9 +2,9 @@
 pragma solidity >=0.8.28;
 
 import {Test} from "forge-std/src/Test.sol";
+import {CurveMainnetIntegrationTest} from "test/integration/curve/mainnet/CurveMainnetIntegration.t.sol";
 import {MorphoMarketFactory} from "src/integrations/morpho/MorphoMarketFactory.sol";
 import {RewardVault} from "src/RewardVault.sol";
-import {CurveMainnetIntegrationTest} from "test/integration/curve/mainnet/CurveMainnetIntegration.t.sol";
 import {Common} from "@address-book/src/CommonEthereum.sol";
 import {MarketParamsLib} from "shared/src/morpho/MarketParamsLib.sol";
 import {IERC20Metadata, IERC20} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";

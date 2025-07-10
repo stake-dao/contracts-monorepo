@@ -5,16 +5,16 @@ import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IER
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IChainlinkFeed} from "src/interfaces/IChainlinkFeed.sol";
 import {ICurveCryptoSwapPool} from "src/interfaces/ICurvePool.sol";
-import {IMorphoOracle} from "src/interfaces/IMorphoOracle.sol";
+import {IOracle} from "src/interfaces/IOracle.sol";
 
 /**
- * @title  MorphoCurveCryptoswapOracle
+ * @title  CurveCryptoswapOracle
  * @notice Read-only price oracle that returns the value (18-decimals) of one
  *         Curve **Crypto-swap** LP token expressed in an arbitrary **loan
  *         asset** (USDC, crvUSD, USDT, …).
  *
- *         The oracle is intended for Morpho markets where the LP token is used
- *         as collateral and the loan asset is the unit in which debts are
+ *         The oracle is intended for lending markets (Morpho etc.) where the LP token is
+ *         used as collateral and the loan asset is the unit in which debts are
  *         denominated.
  *
  *         Supported pool families: **Crypto Pool**, **TwoCrypto-NG**, and **TriCrypto-NG**
@@ -52,7 +52,7 @@ import {IMorphoOracle} from "src/interfaces/IMorphoOracle.sol";
  *         in the constructor. If a feed's heartbeat or address changes, deploy
  *         a new oracle.
  */
-contract MorphoCurveCryptoswapOracle is IMorphoOracle {
+contract CurveCryptoswapOracle is IOracle {
     ///////////////////////////////////////////////////////////////
     // --- IMMUTABLES & STORAGE
     ///////////////////////////////////////////////////////////////
@@ -73,14 +73,14 @@ contract MorphoCurveCryptoswapOracle is IMorphoOracle {
     // ---------------------------------------------------------------------
     // SCALE FACTOR
     // ---------------------------------------------------------------------
-    // Morpho Blue requires oracle prices to be scaled by 1e36 and adjusted
-    // for the difference in token decimals between the loan asset (debt
-    // unit) and the collateral asset (wrapped Curve LP token).
+    // Lending protocols such as Morpho Blue require oracle prices to be scaled
+    // by 1e36 and adjusted for the difference in token decimals between the
+    // loan asset (debt unit) and the collateral asset (wrapped Curve LP token).
     //
     // The raw price we compute below (named `basePrice`) returns the value
     // of **1 LP token** expressed in **1 unit of the loan asset** with
     // 18 decimals of precision (WAD). To rescale it to the format expected
-    // by Morpho Blue we must multiply by:
+    // by the lending protocol we must multiply by:
     //   10^(36 + loanDecimals − collateralDecimals)
     //
     // As with the StableSwap oracle, this exponent is guaranteed to be
@@ -143,27 +143,10 @@ contract MorphoCurveCryptoswapOracle is IMorphoOracle {
             token0ToUsdHeartbeats.push(_token0ToUsdHeartbeats[i]);
         }
 
-        // ---------------------------------------------------------------------
-        // SCALE FACTOR
-        // ---------------------------------------------------------------------
-        // Morpho Blue requires oracle prices to be scaled by 1e36 and adjusted
-        // for the difference in token decimals between the loan asset (debt
-        // unit) and the collateral asset (wrapped Curve LP token).
-        //
-        // The raw price we compute below (named `basePrice`) returns the value
-        // of **1 LP token** expressed in **1 unit of the loan asset** with
-        // 18 decimals of precision (WAD). To rescale it to the format expected
-        // by Morpho Blue we must multiply by:
-        //   10^(36 + loanDecimals − collateralDecimals)
-        //
-        // As with the StableSwap oracle, this exponent is guaranteed to be
-        // non-negative for the LP tokens we target, therefore the factor fits
-        // in a `uint256` and can be pre-computed once in the constructor.
-        // ---------------------------------------------------------------------
         SCALE_FACTOR = 10 ** (36 + IERC20Metadata(_loanAsset).decimals() - IERC20Metadata(_collateralToken).decimals());
     }
 
-    /// @notice Price of 1 LP token in the loan asset, scaled to 1e36 as required by Morpho Blue.
+    /// @notice Price of 1 LP token in the loan asset, scaled to 1e36.
     function price() external view returns (uint256) {
         // Step 1: fetch the price of the LP token denominated in token0 (1e18 decimals)
         uint256 lpInToken0 = CURVE_POOL.lp_price();
@@ -190,7 +173,7 @@ contract MorphoCurveCryptoswapOracle is IMorphoOracle {
         uint256 basePrice = Math.mulDiv(lpUsd, 10 ** LOAN_ASSET_FEED_DECIMALS, loanAssetUsd);
         //      (18 decimals)            └─ 18-dec  · 10^loanFeedDec  /  loanAssetUsd(loanFeedDec)
 
-        // Scale to 1e36 and adjust for token-decimal difference as expected by Morpho
+        // Scale to 1e36 and adjust for token-decimal difference
         return Math.mulDiv(basePrice, SCALE_FACTOR, 1e18);
     }
 
@@ -226,7 +209,7 @@ contract MorphoCurveCryptoswapOracle is IMorphoOracle {
     }
 
     function identifier() external pure returns (string memory) {
-        return type(MorphoCurveCryptoswapOracle).name;
+        return type(CurveCryptoswapOracle).name;
     }
 }
 
@@ -241,7 +224,7 @@ The critical constructor inputs are the two *parallel* arrays:
 
 Each element `feeds[i]` converts the *output* of the previous hop into the
 *input* of the next hop, until the value is finally expressed in **USD**. For
-Morpho markets that borrow **USDC**, you then pass the USDC/USD feed via the
+lending markets that borrow **USDC**, you then pass the USDC/USD feed via the
 dedicated `loanAssetFeed` parameter.
 
 Below are three example pools that highlight when to use a **real feed** and

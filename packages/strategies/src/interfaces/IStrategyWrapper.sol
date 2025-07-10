@@ -4,13 +4,14 @@ pragma solidity 0.8.28;
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 
-/// @title IMorphoStrategyWrapper
-/// @notice ERC-20–compatible wrapper for Stake DAO RewardVault shares,
-///         exposing the extra deposit/withdraw/claim helpers used by Morpho.
-interface IMorphoStrategyWrapper is IERC20, IERC20Metadata {
-    // Deposit RewardVault shares and mint wrapper tokens (1:1)
-    function deposit() external;
-    function deposit(uint256 amount) external;
+interface IStrategyWrapper is IERC20, IERC20Metadata {
+    // Deposit RewardVault shares
+    function depositShares() external;
+    function depositShares(uint256 amount) external;
+
+    // Deposit RewardVault assets
+    function depositAssets() external;
+    function depositAssets(uint256 amount) external;
 
     // Withdraw underlying shares and burn wrapper tokens
     function withdraw() external;

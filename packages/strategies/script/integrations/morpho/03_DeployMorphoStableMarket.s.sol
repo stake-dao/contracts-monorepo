@@ -7,8 +7,8 @@ import {MorphoMarketFactory} from "src/integrations/morpho/MorphoMarketFactory.s
 import {Common} from "@address-book/src/CommonEthereum.sol";
 import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {MarketParams, Id} from "shared/src/morpho/IMorpho.sol";
-import {IMorphoOracle} from "src/interfaces/IMorphoOracle.sol";
-import {IMorphoStrategyWrapper} from "src/interfaces/IMorphoStrategyWrapper.sol";
+import {IOracle} from "src/interfaces/IOracle.sol";
+import {IStrategyWrapper} from "src/interfaces/IStrategyWrapper.sol";
 import {IChainlinkFeed} from "src/interfaces/IChainlinkFeed.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {ICurvePool} from "src/interfaces/ICurvePool.sol";
@@ -53,37 +53,35 @@ contract DeployMorphoStableMarketScript is Script {
         });
 
         _validationPrompt(IRewardVault(rewardVault), marketParams, oracleParams);
-
         vm.startBroadcast();
 
-        (MarketParams memory morphoMarketParams, IMorphoOracle oracle, IMorphoStrategyWrapper wrapper) =
+        (MarketParams memory morphoMarketParams, IOracle oracle, IStrategyWrapper wrapper) =
             MorphoMarketFactory(factory).createStableswapMarket(IRewardVault(rewardVault), oracleParams, marketParams);
-
-        {
-            uint256 priceWei = oracle.price() / 10 ** (36 + IERC20Metadata(loanAsset).decimals() - wrapper.decimals());
-            console.log(
-                "The LP token is priced %d.%d %s.",
-                priceWei / 10 ** IERC20Metadata(loanAsset).decimals(),
-                priceWei % 10 ** IERC20Metadata(loanAsset).decimals(),
-                IERC20Metadata(loanAsset).symbol()
-            );
-            string memory answer = vm.prompt("Does it make sense to you? (y/n)");
-            if (
-                keccak256(bytes(answer)) != keccak256(bytes("y")) && keccak256(bytes(answer)) != keccak256(bytes("yes"))
-            ) {
-                revert("Deployment cancelled by user");
-            }
-
-            console.log("--------------------------------");
-            console.log("The market is deployed. You can now start borrowing from it.");
-            console.log("Oracle: %s", address(oracle));
-            console.log("Wrapper: %s", address(wrapper));
-            console.log("--------------------------------");
-        }
 
         vm.stopBroadcast();
 
+        _confirmationPrompt(loanAsset, oracle, wrapper);
+        console.log("--------------------------------");
+        console.log("The market is deployed. You can now start borrowing from it.");
+        console.log("Oracle: %s", address(oracle));
+        console.log("Wrapper: %s", address(wrapper));
+        console.log("--------------------------------");
+
         return MarketParamsLib.id(morphoMarketParams);
+    }
+
+    function _confirmationPrompt(address loanAsset, IOracle oracle, IStrategyWrapper wrapper) internal {
+        uint256 priceWei = oracle.price() / 10 ** (36 + IERC20Metadata(loanAsset).decimals() - wrapper.decimals());
+        console.log(
+            "The LP token is priced %d.%d %s.",
+            priceWei / 10 ** IERC20Metadata(loanAsset).decimals(),
+            priceWei % 10 ** IERC20Metadata(loanAsset).decimals(),
+            IERC20Metadata(loanAsset).symbol()
+        );
+        string memory answer = vm.prompt("Does it make sense to you? (y/n)");
+        if (keccak256(bytes(answer)) != keccak256(bytes("y")) && keccak256(bytes(answer)) != keccak256(bytes("yes"))) {
+            revert("Deployment cancelled by user");
+        }
     }
 
     function _validationPrompt(

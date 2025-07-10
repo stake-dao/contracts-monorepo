@@ -1,16 +1,15 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity >=0.8.28;
 
-import {Test} from "forge-std/src/Test.sol";
 import {CurveMainnetIntegrationTest} from "test/integration/curve/mainnet/CurveMainnetIntegration.t.sol";
 import {RewardVault} from "src/RewardVault.sol";
-import {MorphoStrategyWrapper} from "src/integrations/morpho/MorphoStrategyWrapper.sol";
+import {RestrictedStrategyWrapper} from "src/wrappers/RestrictedStrategyWrapper.sol";
 import {Common} from "@address-book/src/CommonEthereum.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
-contract MorphoStrategyWrapperIntegrationTest is CurveMainnetIntegrationTest {
-    MorphoStrategyWrapper internal wrapper;
+contract StrategyWrapperIntegrationTest is CurveMainnetIntegrationTest {
+    RestrictedStrategyWrapper internal wrapper;
     MorphoMock internal morpho;
 
     constructor() CurveMainnetIntegrationTest() {}
@@ -21,7 +20,7 @@ contract MorphoStrategyWrapperIntegrationTest is CurveMainnetIntegrationTest {
     }
 
     // @dev Only use one Curve pool for our test
-    function poolIds() public view override returns (uint256[] memory) {
+    function poolIds() public pure override returns (uint256[] memory) {
         uint256[] memory _poolIds = new uint256[](1);
         _poolIds[0] = 68;
         return _poolIds;
@@ -51,7 +50,7 @@ contract MorphoStrategyWrapperIntegrationTest is CurveMainnetIntegrationTest {
         morpho = new MorphoMock();
 
         // Deploy the Morpho Strategy Wrapper and store the reward vault
-        wrapper = new MorphoStrategyWrapper(rewardVault, address(morpho));
+        wrapper = new RestrictedStrategyWrapper(rewardVault, address(morpho));
         vm.label(address(wrapper), "MorphoWrapper");
 
         // Add an extra reward token to the reward vault
@@ -241,7 +240,7 @@ contract MorphoStrategyWrapperIntegrationTest is CurveMainnetIntegrationTest {
         rewardVault.approve(address(wrapper), amount);
 
         // 3. Deposit the shares token into the wrapper
-        wrapper.deposit();
+        wrapper.depositShares();
         vm.stopPrank();
     }
 
