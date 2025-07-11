@@ -84,7 +84,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     uint128 internal constant DEFAULT_PROTOCOL_FEE = 0.15e18;
 
     /// @notice Default harvest fee paid to harvesters (0.1%)
-    /// @dev Expressed as 0.001 in decimal form (0.001 * 100% = 0.1%)
+    /// @dev Expressed as 0.001e18, which represents 0.1% when scaled by 1e18
     /// @dev Compensates for gas costs when calling harvest() function
     uint128 internal constant DEFAULT_HARVEST_FEE = 0.001e18;
 
@@ -382,7 +382,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @param amount The amount of tokens being transferred/minted/burned.
     /// @param pendingRewards New rewards to be distributed to the vault.
     /// @param policy The harvest policy to use.
-    /// @param referrer The address of the referrer.
+    /// @param referrer The address of the referrer who referred this deposit.
     /// @custom:throws OnlyVault If caller is not the registered vault for the gauge.
     function checkpoint(
         address gauge,
@@ -467,6 +467,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     /// @param _harvestData Protocol-specific data for harvesting each gauge
     /// @param _receiver Address that will receive the harvest fee as compensation
     /// @custom:throws InvalidHarvestDataLength If array lengths don't match
+    /// @custom:throws OnlyAllowed If caller is not authorized (when using onlyAllowed modifier)
     function harvest(address[] calldata _gauges, bytes[] calldata _harvestData, address _receiver) external {
         require(_gauges.length == _harvestData.length, InvalidHarvestDataLength());
         _harvest(_gauges, _harvestData, _receiver);
