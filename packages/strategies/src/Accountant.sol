@@ -598,7 +598,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         // emit the harvest event before updating the storage pointer
         emit HarvestFeePercentSet(currentFees.harvestFeePercent, newHarvestFeePercent);
 
-        // set the new protocol fee percent
+        // set the new harvest fee
         feesParams.harvestFeePercent = newHarvestFeePercent;
     }
 
@@ -629,17 +629,6 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         }
 
         _claim({_gauges: _gauges, account: msg.sender, receiver: receiver});
-    }
-
-    /// @notice Claims multiple vault rewards on behalf of an account.
-    /// @param _gauges Array of gauges to claim rewards from.
-    /// @param account Address to claim rewards for.
-    /// @param harvestData Optional harvest data for each gauge. Empty bytes for gauges that don't need harvesting.
-    /// @dev expected to be called by authorized accounts only
-    /// @custom:throws OnlyAllowed If caller is not allowed to claim on behalf of others.
-    /// @custom:throws NoPendingRewards If there are no rewards to claim.
-    function claim(address[] calldata _gauges, address account, bytes[] calldata harvestData) external {
-        claim(_gauges, account, harvestData, account);
     }
 
     /// @notice Claims multiple vault rewards on behalf of an account and sends them to a specific address.
