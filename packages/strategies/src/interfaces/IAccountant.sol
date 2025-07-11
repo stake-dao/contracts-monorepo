@@ -28,7 +28,6 @@ interface IAccountant {
 
     function claim(address[] calldata _vaults, bytes[] calldata harvestData) external;
     function claim(address[] calldata _vaults, bytes[] calldata harvestData, address receiver) external;
-    function claim(address[] calldata _vaults, address account, bytes[] calldata harvestData) external;
     function claim(address[] calldata _vaults, address account, bytes[] calldata harvestData, address receiver)
         external;
 
