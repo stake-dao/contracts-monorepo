@@ -72,4 +72,4 @@ jobs:
 
       - name: Run tests
         working-directory: packages/lockers
-        run: forge test
+        run: forge test -v
