@@ -54,4 +54,6 @@ interface IRewardVault is IERC4626 {
     function ACCOUNTANT() external view returns (IAccountant);
 
     function checkpoint(address account) external;
+
+    function PROTOCOL_ID() external view returns (bytes4);
 }

@@ -30,6 +30,9 @@ contract CurveLendingMarketFactory is Ownable2Step {
     /// @dev Thrown when the reward vault is not registered in the protocol controller.
     error InvalidRewardVault();
 
+    /// @dev Thrown when the reward vault is not a Curve reward vault.
+    error InvalidProtocolId();
+
     /// @dev Thrown when the delegate call fails.
     error MarketCreationFailed();
 
@@ -131,6 +134,7 @@ contract CurveLendingMarketFactory is Ownable2Step {
         ILendingFactory lendingFactory
     ) external onlyOwner returns (IStrategyWrapper, IOracle, bytes memory) {
         require(PROTOCOL_CONTROLLER.vaults(rewardVault.gauge()) == address(rewardVault), InvalidRewardVault());
+        require(rewardVault.PROTOCOL_ID() == bytes4(keccak256("CURVE")), InvalidProtocolId());
 
         // 1. Deploy the collateral token
         IStrategyWrapper wrapper = new RestrictedStrategyWrapper(rewardVault, lendingFactory.protocol(), owner());
