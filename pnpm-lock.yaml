@@ -19,10 +19,10 @@ importers:
         version: 3.0.99(@openzeppelin/contracts-upgradeable@4.9.6)(@openzeppelin/contracts@5.2.0)(hardhat-deploy@0.10.6(@ethersproject/hardware-wallets@5.8.0)(hardhat@2.24.0))(solidity-bytes-utils@0.8.4)
       '@layerzerolabs/oapp-evm':
         specifier: ^0.3.2
-        version: 0.3.2(makdgu6dzffseigbqjv6jsaxjy)
+        version: 0.3.2(ii7olhq3wde4buqree7l6kvipy)
       '@layerzerolabs/oft-evm':
         specifier: ^3.1.4
-        version: 3.1.4(mmibx7voyz6c3gw7u5jbccir5i)
+        version: 3.1.4(j2hp4pc5s7ea6kphdpiamykf4y)
       '@layerzerolabs/solidity-examples':
         specifier: github:LayerZero-Labs/endpoint-v1-solidity-examples
         version: https://codeload.github.com/LayerZero-Labs/endpoint-v1-solidity-examples/tar.gz/cdc93994911829b1348f6ac18000000a43432ef1(@ethersproject/hardware-wallets@5.8.0)(@nomiclabs/hardhat-ethers@2.2.3(ethers@6.15.0)(hardhat@2.24.0))(@nomiclabs/hardhat-etherscan@3.1.8(hardhat@2.24.0))(ethers@6.15.0)
