@@ -35,6 +35,9 @@ importers:
       '@openzeppelin/contracts-upgradeable-v4':
         specifier: npm:@openzeppelin/contracts-upgradeable@4.9.3
         version: '@openzeppelin/contracts-upgradeable@4.9.3'
+      '@openzeppelin/contracts-v4':
+        specifier: npm:@openzeppelin/contracts@4.9.3
+        version: '@openzeppelin/contracts@4.9.3'
       '@pendle/v2-sy':
         specifier: github:pendle-finance/Pendle-SY-Public
         version: https://codeload.github.com/pendle-finance/Pendle-SY-Public/tar.gz/f3275e6659e2cd2aa346893428830bbba42b0c65

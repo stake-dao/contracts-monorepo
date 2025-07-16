@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 import {PendleLocker, PendleProtocol} from "@address-book/src/PendleEthereum.sol";
 import {Test} from "forge-std/src/Test.sol";
-import {IERC20} from "openzeppelin-contracts/token/ERC20/IERC20.sol";
+import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IDepositor} from "src/interfaces/IDepositor.sol";
 import {ILiquidityGauge} from "src/interfaces/ILiquidityGauge.sol";
 import {ILocker} from "src/interfaces/ILocker.sol";
