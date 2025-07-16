@@ -43,8 +43,14 @@ contract CurveFraxtalIntegrationTest is CurveL2Integration {
         vaults = new RewardVault[](gauges.length);
         receivers = new RewardReceiver[](gauges.length);
 
+        IL2Booster booster = IL2Booster(CurveProtocol.CONVEX_BOOSTER);
+
         for (uint256 i = 0; i < poolIds.length; i++) {
             uint256 poolId = poolIds[i];
+            
+            // Get gauge for this pool and set up extra rewards
+            (, address gauge,,,) = booster.poolInfo(poolId);
+            _setupGaugeExtraRewards(gauge);
 
             /// Deploy the vault and receiver.
             (address vault, address receiver,) = CurveFactory(factory).create(poolId);
