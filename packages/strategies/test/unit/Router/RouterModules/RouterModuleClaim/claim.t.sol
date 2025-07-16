@@ -12,6 +12,7 @@ import {RouterModuleClaim} from "src/router/RouterModuleClaim.sol";
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 import {RewardVaultHarness} from "test/RewardVaultBaseTest.sol";
 import {RouterModulesTest} from "test/unit/Router/RouterModules/RouterModulesTest.t.sol";
+import {RouterIdentifierMapping} from "src/router/RouterIdentifierMapping.sol";
 
 contract RouterModuleClaim__claim is RouterModulesTest {
     RouterModuleClaim internal module;
@@ -64,9 +65,11 @@ contract RouterModuleClaim__claim is RouterModulesTest {
     {
         // it claims rewards from the reward vault
 
+        uint256 balanceBefore = IERC20(address(rewardToken)).balanceOf(receiver);
+
         // Construct the data to call the deposit router module
         bytes memory dataModule = bytes.concat(
-            bytes1(uint8(2)),
+            bytes1(RouterIdentifierMapping.CLAIM),
             abi.encodeWithSelector(
                 bytes4(keccak256("claim(address,address[],address)")), address(cloneRewardVault), tokens, receiver
             )
@@ -80,7 +83,7 @@ contract RouterModuleClaim__claim is RouterModulesTest {
 
         // assert the rewards are transferred to the receiver
         uint256[] memory amounts = abi.decode(moduleReturn[0], (uint256[]));
-        assertEq(IERC20(address(rewardToken)).balanceOf(receiver), amounts[0]);
+        assertEq(IERC20(address(rewardToken)).balanceOf(receiver), balanceBefore + amounts[0]);
     }
 
     modifier setup_claim(address account, address receiver) {
@@ -134,9 +137,6 @@ contract RouterModuleClaim__claim is RouterModulesTest {
 
         // move time forward for a few days
         vm.warp(4 days);
-
-        // assert the receiver has no rewards before calling the claim function
-        assertEq(IERC20(address(rewardToken)).balanceOf(receiver), 0);
 
         _;
     }
