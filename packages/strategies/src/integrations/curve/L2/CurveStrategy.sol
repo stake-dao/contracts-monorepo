@@ -134,11 +134,26 @@ contract CurveStrategy is Strategy {
 
         /// 3. Calculate the reward amount.
         rewardAmount = IERC20(REWARD_TOKEN).balanceOf(address(LOCKER)) - _before;
-
-        /// 4. Transfer the rewards to the accountant.
-        _claimExtraRewards(gauge);
     }
 
+    /// @notice Override base _harvest to trigger reward distribution after all claims
+    /// @dev This ensures both gauge and sidecar rewards are distributed together on L2s
+    function _harvest(address gauge, bytes memory extraData, bool deferRewards)
+        internal
+        override
+        returns (IStrategy.PendingRewards memory pendingRewards)
+    {
+        // Call parent harvest which handles both locker and sidecar claims
+        pendingRewards = super._harvest(gauge, extraData, deferRewards);
+
+        /// Claim extra rewards from the gauge on Locker side.
+        _claimExtraRewards(gauge);
+
+        return pendingRewards;
+    }
+
+    /// @notice Claims extra rewards from a Curve gauge
+    /// @dev This function is called after the main rewards have been claimed
     function _claimExtraRewards(address gauge) internal {
         /// 1. Get the reward receiver address.
         address rewardReceiver = PROTOCOL_CONTROLLER.rewardReceiver(gauge);

@@ -11,7 +11,7 @@ contract CurveFraxtalIntegrationTest is CurveL2Integration {
     Config public _config = Config({
         base: BaseConfig({
             chain: "frax",
-            blockNumber: 21_461_626,
+            blockNumber: 22_939_857,
             rewardToken: CurveProtocol.CRV,
             locker: address(0),
             protocolId: bytes4(keccak256("CURVE")),
@@ -30,7 +30,7 @@ contract CurveFraxtalIntegrationTest is CurveL2Integration {
     });
 
     // All pool IDs from the old tests
-    uint256[] public poolIds = [9];
+    uint256[] public poolIds = [9, 18, 13, 15];
 
     constructor() CurveL2Integration(_config) {}
 
