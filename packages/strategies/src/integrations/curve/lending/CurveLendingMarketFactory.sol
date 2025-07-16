@@ -24,6 +24,9 @@ contract CurveLendingMarketFactory is Ownable2Step {
     // --- EVENTS & ERRORS
     ///////////////////////////////////////////////////////////////
 
+    event CollateralDeployed(address collateral);
+    event OracleDeployed(address oracle);
+
     /// @dev Thrown when the given address is zero.
     error AddressZero();
 
@@ -92,6 +95,7 @@ contract CurveLendingMarketFactory is Ownable2Step {
 
         // 1. Deploy the collateral token
         IStrategyWrapper collateral = new RestrictedStrategyWrapper(rewardVault, lendingFactory.protocol(), owner());
+        emit CollateralDeployed(address(collateral));
 
         // 2. Deploy the oracle
         IOracle oracle = new CurveStableswapOracle(
@@ -103,6 +107,7 @@ contract CurveLendingMarketFactory is Ownable2Step {
             oracleParams.baseFeed,
             oracleParams.baseFeedHeartbeat
         );
+        emit OracleDeployed(address(oracle));
 
         // 3. Create the lending market
         (bool success, bytes memory data) = address(lendingFactory).delegatecall(
@@ -137,24 +142,26 @@ contract CurveLendingMarketFactory is Ownable2Step {
         require(rewardVault.PROTOCOL_ID() == bytes4(keccak256("CURVE")), InvalidProtocolId());
 
         // 1. Deploy the collateral token
-        IStrategyWrapper wrapper = new RestrictedStrategyWrapper(rewardVault, lendingFactory.protocol(), owner());
+        IStrategyWrapper collateral = new RestrictedStrategyWrapper(rewardVault, lendingFactory.protocol(), owner());
+        emit CollateralDeployed(address(collateral));
 
         // 2. Deploy the oracle
         IOracle oracle = new CurveCryptoswapOracle(
             rewardVault.asset(),
-            address(wrapper),
+            address(collateral),
             oracleParams.loanAsset,
             oracleParams.loanAssetFeed,
             oracleParams.loanAssetFeedHeartbeat,
             oracleParams.token0ToUsdFeeds,
             oracleParams.token0ToUsdHeartbeats
         );
+        emit OracleDeployed(address(oracle));
 
         // 3. Create the lending market
         (bool success, bytes memory data) = address(lendingFactory).delegatecall(
             abi.encodeWithSelector(
                 lendingFactory.create.selector,
-                address(wrapper),
+                address(collateral),
                 oracleParams.loanAsset,
                 address(oracle),
                 marketParams.irm,
@@ -163,7 +170,7 @@ contract CurveLendingMarketFactory is Ownable2Step {
         );
         require(success, MarketCreationFailed());
 
-        return (wrapper, oracle, data);
+        return (collateral, oracle, data);
     }
 
     ///////////////////////////////////////////////////////////////
