@@ -4,7 +4,11 @@ pragma solidity 0.8.28;
 import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 import {IMinter} from "@interfaces/curve/IMinter.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+
 import "src/Strategy.sol";
+
+import {IRewardVault} from "src/interfaces/IRewardVault.sol";
+import {IRewardReceiver} from "src/interfaces/IRewardReceiver.sol";
 
 /// @title CurveStrategy - Curve Protocol Integration Strategy
 /// @notice A strategy implementation for interacting with Curve protocol gauges
@@ -29,6 +33,9 @@ contract CurveStrategy is Strategy {
 
     /// @notice Error thrown when the checkpoint fails.
     error CheckpointFailed();
+
+    /// @notice Error thrown when the extra rewards claim fails.
+    error ClaimExtraRewards();
 
     //////////////////////////////////////////////////////
     // --- CONSTRUCTOR
@@ -127,5 +134,27 @@ contract CurveStrategy is Strategy {
 
         /// 3. Calculate the reward amount.
         rewardAmount = IERC20(REWARD_TOKEN).balanceOf(address(LOCKER)) - _before;
+
+        /// 4. Transfer the rewards to the accountant.
+        _claimExtraRewards(gauge);
+    }
+
+    function _claimExtraRewards(address gauge) internal {
+        /// 1. Get the reward receiver address.
+        address rewardReceiver = PROTOCOL_CONTROLLER.rewardReceiver(gauge);
+
+        /// 2. Claim extra rewards from the gauge to the reward receiver.
+        bytes memory data = abi.encodeWithSignature("claim_rewards(address)", address(rewardReceiver));
+        require(_executeTransaction(gauge, data), ClaimExtraRewards());
+
+        address rewardVault = PROTOCOL_CONTROLLER.vaults(gauge);
+        address[] memory rewardTokens = IRewardVault(rewardVault).getRewardTokens();
+
+        if (rewardTokens.length == 0) {
+            return;
+        }
+
+        /// 4. Trigger distribute in the reward receiver.
+        IRewardReceiver(rewardReceiver).distributeRewards();
     }
 }
