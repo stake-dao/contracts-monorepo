@@ -35,6 +35,20 @@ contract CurveBaseIntegrationTest is CurveL2Integration {
 
         CurveFactory(factory).setChildLiquidityGaugeFactories(childLiquidityGaugeFactories);
     }
+    
+    function deployRewardVaults()
+        internal
+        override
+        returns (RewardVault[] memory vaults, RewardReceiver[] memory receivers)
+    {
+        // Set up extra rewards for all gauges before vault deployment
+        for (uint256 i = 0; i < gauges.length; i++) {
+            _setupGaugeExtraRewards(gauges[i]);
+        }
+        
+        // Call parent implementation
+        return super.deployRewardVaults();
+    }
 
     function getGauges() internal override returns (address[] memory) {
         gauges = new address[](3);
