@@ -106,11 +106,6 @@ abstract contract BaseDeploy is Script {
             )
         );
 
-        /// 5. Deploy Reward Receiver Implementation.
-        rewardReceiverImplementation = RewardReceiver(
-            _deployWithCreate3(type(RewardReceiver).name, abi.encodePacked(type(RewardReceiver).creationCode))
-        );
-
         owners = new address[](1);
         owners[0] = admin;
 
