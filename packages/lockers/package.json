@@ -7,6 +7,7 @@
 		"@layerzerolabs/oft-evm": "^3.1.4",
 		"@layerzerolabs/solidity-examples": "github:LayerZero-Labs/endpoint-v1-solidity-examples",
 		"@openzeppelin/contracts": "5.2.0",
+		"@openzeppelin/contracts-v4": "npm:@openzeppelin/contracts@4.9.3",
 		"@openzeppelin/contracts-upgradeable": "^5.3.0",
 		"@openzeppelin/contracts-upgradeable-v4": "npm:@openzeppelin/contracts-upgradeable@4.9.3",
 		"@pendle/v2-sy": "github:pendle-finance/Pendle-SY-Public",

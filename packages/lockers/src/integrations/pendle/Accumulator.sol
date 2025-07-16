@@ -3,7 +3,7 @@ pragma solidity 0.8.28;
 
 import {Common} from "@address-book/src/CommonEthereum.sol";
 import {PendleLocker, PendleProtocol} from "@address-book/src/PendleEthereum.sol";
-import {IFeeReceiver} from "common/interfaces/IFeeReceiver.sol";
+import {IFeeReceiver} from "@common/interfaces/IFeeReceiver.sol";
 import {ERC20} from "solady/src/tokens/ERC20.sol";
 import {SafeTransferLib} from "solady/src/utils/SafeTransferLib.sol";
 import {AccumulatorDripping} from "src/AccumulatorDripping.sol";

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.28;
 
-import {Governance} from "common/governance/Governance.sol";
+import {Governance} from "@common/governance/Governance.sol";
 
 contract VoterPermissionManager is Governance {
     ////////////////////////////////////////////////////////////////

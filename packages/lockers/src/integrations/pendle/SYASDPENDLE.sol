@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import {PendleERC4626SYV2} from "@pendle/v2-sy/StandardizedYield/implementations/PendleERC4626SYV2.sol";
-import {PendleLocker} from "address-book/src/PendleEthereum.sol";
+import {PendleLocker} from "@address-book/src/PendleEthereum.sol";
 import {IASDPendle} from "src/interfaces/IASDPendle.sol";
 
 /// @title SY-asdPENDLE – Pendle Standardized Yield Adapter for asdPENDLE

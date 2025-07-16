@@ -4,7 +4,7 @@ pragma solidity ^0.8.28;
 import {console} from "forge-std/src/Test.sol";
 import {IERC4626} from "@pendle/v2-sy/StandardizedYield/implementations/PendleERC4626SYV2.sol";
 import {IStandardizedYield} from "@pendle/v2-sy/../interfaces/IStandardizedYield.sol";
-import {PendleLocker} from "address-book/src/PendleEthereum.sol";
+import {PendleLocker} from "@address-book/src/PendleEthereum.sol";
 import {SYASDPENDLE} from "src/integrations/pendle/SYASDPENDLE.sol";
 import {PMath} from "@pendle/v2-sy/libraries/math/PMath.sol";
 import {IERC20, IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
