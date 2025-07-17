@@ -48,7 +48,7 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
 
     /// @notice The configuration for the test.
     Config public config;
-    
+
     /// @notice Mapping to store extra reward tokens for each gauge
     mapping(address => address[]) public gaugeExtraTokens;
 
@@ -128,15 +128,13 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
     }
 
     /// @notice Override to properly simulate extra rewards for L2 Curve gauges
-    function _simulateExtraRewardForToken(
-        RewardVault vault,
-        address gauge,
-        address token,
-        uint256 amount
-    ) internal override {
+    function _simulateExtraRewardForToken(RewardVault, address gauge, address token, uint256 amount)
+        internal
+        override
+    {
         // For L2 Curve gauges, we need to properly set up the reward distribution
         address rewardReceiver = protocolController.rewardReceiver(gauge);
-        
+
         // Try to add the reward token to the gauge using actual gauge functions
         // First check if we can call add_reward (some gauges have this function)
         try ILiquidityGauge(gauge).add_reward(token, rewardReceiver) {
@@ -148,57 +146,53 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
             } catch {
                 // If neither work, we'll need to be the admin/owner or mock the distributor
                 // Let's mock being able to set the distributor
-                vm.mockCall(
-                    gauge,
-                    abi.encodeWithSelector(ILiquidityGauge.admin.selector),
-                    abi.encode(address(this))
-                );
-                
+                vm.mockCall(gauge, abi.encodeWithSelector(ILiquidityGauge.admin.selector), abi.encode(address(this)));
+
                 // Now try to set ourselves as distributor temporarily
                 try ILiquidityGauge(gauge).set_reward_distributor(token, address(this)) {} catch {}
             }
         }
-        
+
         // Now deposit the reward tokens to the gauge
         deal(token, address(this), amount);
         IERC20(token).approve(gauge, amount);
-        
+
         try ILiquidityGauge(gauge).deposit_reward_token(token, amount) {
             // Successfully deposited rewards
         } catch {
             // If deposit_reward_token doesn't work, transfer directly and mock the reward data
             IERC20(token).transfer(gauge, amount);
-            
+
             // Mock the reward data to show active distribution
             uint256 rate = amount / 7 days;
             uint256 periodFinish = block.timestamp + 7 days;
-            
+
             vm.mockCall(
                 gauge,
                 abi.encodeWithSelector(ILiquidityGauge.reward_data.selector, token),
                 abi.encode(
-                    token,           // token
-                    rewardReceiver,  // distributor
-                    periodFinish,    // period_finish
-                    rate,            // rate
+                    token, // token
+                    rewardReceiver, // distributor
+                    periodFinish, // period_finish
+                    rate, // rate
                     block.timestamp, // last_update
-                    0                // integral
+                    0 // integral
                 )
             );
         }
-        
+
         // Ensure the reward receiver can claim by mocking claimable amount
         vm.mockCall(
             gauge,
             abi.encodeWithSelector(ILiquidityGauge.claimable_reward.selector, rewardReceiver, token),
             abi.encode(amount)
         );
-        
+
         // When claim_rewards is called, ensure tokens are transferred
         // We'll mint directly to receiver to simulate the claim
         // Use deal instead of pranking to avoid prank conflicts
         deal(token, rewardReceiver, IERC20(token).balanceOf(rewardReceiver) + amount);
-        
+
         // If there's a Convex sidecar, also set up CVX rewards properly
         if (config.convex.isOnlyBoost && token == config.convex.cvx && sidecarFactory != address(0)) {
             address sidecar = L2ConvexSidecarFactory(sidecarFactory).sidecar(gauge);
@@ -213,15 +207,15 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
     function _setupGaugeExtraRewards(address gauge) internal virtual {
         // For Base and Fraxtal, we'll set up some common reward tokens
         // This will be called before vault deployment so the factory can discover them
-        
+
         // Deploy mock ERC20 tokens for extra rewards
         address[] memory extraTokens = new address[](2);
         extraTokens[0] = _deployMockERC20("Balancer", "BAL", 18);
         extraTokens[1] = _deployMockERC20("Lido", "LDO", 18);
-        
+
         // Store tokens for later use
         gaugeExtraTokens[gauge] = extraTokens;
-        
+
         // Try to add reward tokens using gauge functions if possible
         // First mock ourselves as admin to add rewards
         address originalAdmin;
@@ -230,19 +224,15 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
         } catch {
             originalAdmin = address(0);
         }
-        
+
         // Mock admin to be this contract
-        vm.mockCall(
-            gauge,
-            abi.encodeWithSelector(ILiquidityGauge.admin.selector),
-            abi.encode(address(this))
-        );
-        
+        vm.mockCall(gauge, abi.encodeWithSelector(ILiquidityGauge.admin.selector), abi.encode(address(this)));
+
         // Try to add rewards through gauge functions
         for (uint256 i = 0; i < extraTokens.length; i++) {
             address token = extraTokens[i];
             address distributor = makeAddr(string.concat("Distributor", vm.toString(i)));
-            
+
             // Try add_reward first (avoid nested pranks)
             try ILiquidityGauge(gauge).add_reward(token, distributor) {
                 // Success - reward added
@@ -250,47 +240,37 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
                 // If that fails, we'll mock the reward data
             }
         }
-        
+
         // Now mock the reward_tokens and reward_data for factory discovery
         for (uint256 i = 0; i < extraTokens.length; i++) {
             vm.mockCall(
-                gauge,
-                abi.encodeWithSelector(ILiquidityGauge.reward_tokens.selector, i),
-                abi.encode(extraTokens[i])
+                gauge, abi.encodeWithSelector(ILiquidityGauge.reward_tokens.selector, i), abi.encode(extraTokens[i])
             );
-            
+
             // Mock active reward period so factory adds them
             vm.mockCall(
                 gauge,
                 abi.encodeWithSelector(ILiquidityGauge.reward_data.selector, extraTokens[i]),
                 abi.encode(
-                    extraTokens[i],              // token
-                    makeAddr(string.concat("Distributor", vm.toString(i))),  // distributor
-                    block.timestamp + 1 days,    // period_finish (active so factory adds it)
-                    1e18,                        // rate
-                    block.timestamp,             // last_update
-                    0                            // integral
+                    extraTokens[i], // token
+                    makeAddr(string.concat("Distributor", vm.toString(i))), // distributor
+                    block.timestamp + 1 days, // period_finish (active so factory adds it)
+                    1e18, // rate
+                    block.timestamp, // last_update
+                    0 // integral
                 )
             );
         }
-        
+
         // Mock empty token for index 2 to signal end of list
-        vm.mockCall(
-            gauge,
-            abi.encodeWithSelector(ILiquidityGauge.reward_tokens.selector, 2),
-            abi.encode(address(0))
-        );
-        
+        vm.mockCall(gauge, abi.encodeWithSelector(ILiquidityGauge.reward_tokens.selector, 2), abi.encode(address(0)));
+
         // Restore original admin if needed
         if (originalAdmin != address(0)) {
-            vm.mockCall(
-                gauge,
-                abi.encodeWithSelector(ILiquidityGauge.admin.selector),
-                abi.encode(originalAdmin)
-            );
+            vm.mockCall(gauge, abi.encodeWithSelector(ILiquidityGauge.admin.selector), abi.encode(originalAdmin));
         }
     }
-    
+
     /// @notice Deploy a mock ERC20 token for testing
     function _deployMockERC20(string memory name, string memory symbol, uint8 decimals) internal returns (address) {
         // Deploy a minimal ERC20 mock

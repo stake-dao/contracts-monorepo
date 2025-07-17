@@ -84,6 +84,10 @@ contract MockRegistry is IProtocolController {
         return address(0);
     }
 
+    function factory(bytes4) external pure override returns (address) {
+        return address(0);
+    }
+
     function allowed(address, address, bytes4) external view returns (bool) {
         return _isAllowed;
     }

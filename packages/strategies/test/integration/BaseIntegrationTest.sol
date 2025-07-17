@@ -91,7 +91,7 @@ abstract contract BaseIntegrationTest is BaseSetup {
 
             /// 6. Simulate rewards.
             simulateRewards(rewardVault, _rewards[i]);
-            
+
             /// 6a. Simulate extra rewards
             simulateExtraRewards(rewardVault, _rewards[i]);
 
@@ -173,7 +173,7 @@ abstract contract BaseIntegrationTest is BaseSetup {
                 0.01e18,
                 "12. Expected protocol fees accrued to be greater than 0 after harvest with a 1% error"
             );
-            
+
             /// 17. Verify extra rewards were claimed if applicable
             for (uint256 i = 0; i < rewardVaults.length; i++) {
                 if (rewardVaults[i].getRewardTokens().length > 0) {
@@ -244,7 +244,7 @@ abstract contract BaseIntegrationTest is BaseSetup {
                 0,
                 "14. Expected pending rewards to be 0 after claiming"
             );
-            
+
             /// 17a. Verify user received extra rewards if applicable
             if (rewardVault.getRewardTokens().length > 0) {
                 verifyUserExtraRewards(accountPosition.account, rewardVault);
@@ -280,7 +280,7 @@ abstract contract BaseIntegrationTest is BaseSetup {
             /// 19. Simulate additional rewards for share transfer test
             uint256 additionalRewards = _rewards[i] / 2;
             simulateRewards(rewardVault, additionalRewards);
-            
+
             /// 19a. Simulate additional extra rewards
             simulateExtraRewards(rewardVault, additionalRewards);
 
@@ -512,17 +512,17 @@ abstract contract BaseIntegrationTest is BaseSetup {
     function simulateExtraRewards(RewardVault vault, uint256 baseAmount) internal virtual {
         address gauge = vault.gauge();
         address[] memory extraTokens = vault.getRewardTokens();
-        
+
         // Skip if no extra tokens configured
         if (extraTokens.length == 0) return;
-        
+
         // For each extra token, simulate rewards
         for (uint256 i = 0; i < extraTokens.length; i++) {
             address token = extraTokens[i];
-            
+
             // Calculate proportional extra rewards (10-30% of base amount)
             uint256 extraAmount = baseAmount.mulDiv(10 + i * 10, 100);
-            
+
             // Simulate the extra rewards based on the protocol
             _simulateExtraRewardForToken(vault, gauge, token, extraAmount);
         }
@@ -533,12 +533,10 @@ abstract contract BaseIntegrationTest is BaseSetup {
     /// @param gauge The gauge address
     /// @param token The extra reward token
     /// @param amount The amount to simulate
-    function _simulateExtraRewardForToken(
-        RewardVault vault,
-        address gauge,
-        address token,
-        uint256 amount
-    ) internal virtual {
+    function _simulateExtraRewardForToken(RewardVault vault, address gauge, address token, uint256 amount)
+        internal
+        virtual
+    {
         // Override in specific integration tests
     }
 
@@ -606,12 +604,12 @@ abstract contract BaseIntegrationTest is BaseSetup {
     /// @notice Verifies extra rewards were properly claimed and distributed
     /// @param vault The reward vault to check
     /// @param receiver The reward receiver to check
-    function verifyExtraRewardsClaimed(RewardVault vault, RewardReceiver receiver) internal {
+    function verifyExtraRewardsClaimed(RewardVault vault, RewardReceiver receiver) internal view {
         address[] memory extraTokens = vault.getRewardTokens();
-        
+
         for (uint256 i = 0; i < extraTokens.length; i++) {
             address token = extraTokens[i];
-            
+
             // Skip CVX on mainnet as it comes from Convex sidecars, not gauge rewards
             // CVX address on mainnet: 0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B
             if (token == address(0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B)) {
@@ -620,23 +618,21 @@ abstract contract BaseIntegrationTest is BaseSetup {
                 assertEq(distributor, address(receiver), "CVX distributor should be the reward receiver");
                 continue;
             }
-            
+
             // Check vault received tokens (balance should be > 0 after distribution)
             uint256 vaultBalance = IERC20(token).balanceOf(address(vault));
             assertGt(
-                vaultBalance,
-                0,
-                string.concat("Vault should have received extra reward token: ", vm.toString(token))
+                vaultBalance, 0, string.concat("Vault should have received extra reward token: ", vm.toString(token))
             );
-            
+
             // Check reward data was updated
             uint256 periodFinish = vault.getPeriodFinish(token);
             assertGt(periodFinish, block.timestamp, "Reward period should be active");
-            
+
             // Check reward rate is set
             uint128 rewardRate = vault.getRewardRate(token);
             assertGt(rewardRate, 0, "Reward rate should be greater than 0");
-            
+
             // Check rewards distributor is set correctly
             address distributor = vault.getRewardsDistributor(token);
             assertEq(distributor, address(receiver), "Reward distributor should be the reward receiver");
@@ -648,26 +644,26 @@ abstract contract BaseIntegrationTest is BaseSetup {
     /// @param vault The reward vault
     function verifyUserExtraRewards(address user, RewardVault vault) internal {
         address[] memory extraTokens = vault.getRewardTokens();
-        
+
         if (extraTokens.length == 0) return;
-        
+
         // First, claim the extra rewards from the vault
         vm.prank(user);
         vault.claim(extraTokens, user);
-        
+
         // Now verify the user received the tokens
         bool hasNonCvxRewards = false;
         for (uint256 i = 0; i < extraTokens.length; i++) {
             address token = extraTokens[i];
-            
+
             // Skip CVX on mainnet as it comes from Convex sidecars
             // CVX address on mainnet: 0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B
             if (token == address(0x4e3FBD56CD56c3e72c1403e103b45Db9da5B9D2B)) {
                 continue;
             }
-            
+
             hasNonCvxRewards = true;
-            
+
             // Check if there's an active reward period
             uint256 periodFinish = vault.getPeriodFinish(token);
             if (periodFinish > block.timestamp) {
@@ -688,7 +684,7 @@ abstract contract BaseIntegrationTest is BaseSetup {
                 }
             }
         }
-        
+
         // Only assert if there were non-CVX rewards to check
         if (!hasNonCvxRewards) {
             // All rewards were CVX, which is handled separately

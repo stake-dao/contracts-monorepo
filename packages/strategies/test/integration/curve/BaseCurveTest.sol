@@ -145,6 +145,9 @@ abstract contract BaseCurveTest is BaseSetup {
         /// 3. Setup the strategy in the protocol controller.
         protocolController.setStrategy(PROTOCOL_ID, address(curveStrategy));
 
+        /// 4. Set the Factory in the protocol controller.
+        protocolController.setFactory(PROTOCOL_ID, address(curveFactory));
+
         /// 4. Setup the factory in the protocol controller.
         protocolController.setRegistrar(address(curveFactory), true);
         protocolController.setRegistrar(address(convexSidecarFactory), true);
