@@ -94,7 +94,7 @@ contract PreLaunchLocker__constructor is PreLaunchLockerTest {
         // it sets the default value given no custom force cancel delay
 
         LockerPreLaunch locker = new LockerPreLaunch(makeAddr("token"), address(sdToken), address(gauge), 0);
-        assertEq(locker.FORCE_CANCEL_DELAY(), 3 * 30 days);
+        assertEq(locker.FORCE_CANCEL_DELAY(), 6 * 30 days);
     }
 
     function test_SetsTheCustomForceCancelDelayIfProvided(uint256 customForceCancelDelay) external {

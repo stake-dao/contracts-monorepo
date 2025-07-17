@@ -8,7 +8,7 @@ contract PreLaunchLocker__getters is PreLaunchLockerTest {
     function test_ExposesTheForceCancelDelay() external view {
         // it exposes the force cancel delay
 
-        assertEq(locker.FORCE_CANCEL_DELAY(), 3 * 30 days);
+        assertEq(locker.FORCE_CANCEL_DELAY(), 6 * 30 days);
     }
 
     function test_ExposesTheToken() external view {
