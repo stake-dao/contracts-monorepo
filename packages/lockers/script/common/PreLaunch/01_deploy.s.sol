@@ -31,8 +31,6 @@ contract PreLaunchDeploy is Script {
         internal
         returns (address sdToken, address gauge, address preLaunchLocker, address locker)
     {
-        vm.startBroadcast();
-
         // 1. set the unique salt that will be used to deploy the locker
         uint256 salt = uint256(uint160(token));
 
@@ -64,11 +62,9 @@ contract PreLaunchDeploy is Script {
 
         // 6. set LockerPreLaunch as the sdToken operator
         SdToken(sdToken).setOperator(address(preLaunchLocker));
-
-        vm.stopBroadcast();
     }
 
-    function run() external returns (address sdToken, address gauge, address preLaunchLocker, address locker) {
+    function run() external virtual returns (address sdToken, address gauge, address preLaunchLocker, address locker) {
         // @dev: Mandatory env variable that specify the address of the initial token.
         address token = vm.envAddress("TOKEN");
 
