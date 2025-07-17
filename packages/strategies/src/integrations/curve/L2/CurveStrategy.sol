@@ -163,7 +163,7 @@ contract CurveStrategy is Strategy {
         address rewardReceiver = PROTOCOL_CONTROLLER.rewardReceiver(gauge);
 
         /// 2. Claim extra rewards from the gauge to the reward receiver.
-        bytes memory data = abi.encodeWithSignature("claim_rewards(address)", address(rewardReceiver));
+        bytes memory data = abi.encodeWithSignature("claim_rewards(address,address)", address(LOCKER), address(rewardReceiver));
         require(_executeTransaction(gauge, data), ClaimExtraRewards());
 
         address rewardVault = PROTOCOL_CONTROLLER.vaults(gauge);

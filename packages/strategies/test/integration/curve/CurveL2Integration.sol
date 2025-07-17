@@ -5,13 +5,15 @@ import {SafeLibrary} from "test/utils/SafeLibrary.sol";
 import {IMinter} from "@interfaces/curve/IMinter.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {CurveFactory} from "src/integrations/curve/L2/CurveFactory.sol";
-import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
+import {ILiquidityGauge, IL2LiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 import {CurveStrategy} from "src/integrations/curve/L2/CurveStrategy.sol";
 import {L2ConvexSidecar} from "src/integrations/curve/L2/L2ConvexSidecar.sol";
 import {OnlyBoostAllocator} from "src/integrations/curve/OnlyBoostAllocator.sol";
 import {L2ConvexSidecarFactory} from "src/integrations/curve/L2/L2ConvexSidecarFactory.sol";
 import {IL2Booster} from "@interfaces/convex/IL2Booster.sol";
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
+import {IChildLiquidityGaugeFactory} from "@interfaces/curve/IChildLiquidityGaugeFactory.sol";
+import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 
 import "test/integration/BaseIntegrationTest.sol";
 
@@ -216,58 +218,26 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
         // Store tokens for later use
         gaugeExtraTokens[gauge] = extraTokens;
 
-        // Try to add reward tokens using gauge functions if possible
-        // First mock ourselves as admin to add rewards
-        address originalAdmin;
-        try ILiquidityGauge(gauge).admin() returns (address admin) {
-            originalAdmin = admin;
-        } catch {
-            originalAdmin = address(0);
-        }
-
-        // Mock admin to be this contract
-        vm.mockCall(gauge, abi.encodeWithSelector(ILiquidityGauge.admin.selector), abi.encode(address(this)));
-
-        // Try to add rewards through gauge functions
+        // On L2s, the factory owner can add rewards
+        address gaugeFactory = ILiquidityGauge(gauge).factory();
+        address factoryOwner = Ownable(gaugeFactory).owner();
+        
+        // Add rewards through gauge functions
         for (uint256 i = 0; i < extraTokens.length; i++) {
             address token = extraTokens[i];
             address distributor = makeAddr(string.concat("Distributor", vm.toString(i)));
 
-            // Try add_reward first (avoid nested pranks)
-            try ILiquidityGauge(gauge).add_reward(token, distributor) {
-                // Success - reward added
-            } catch {
-                // If that fails, we'll mock the reward data
-            }
-        }
-
-        // Now mock the reward_tokens and reward_data for factory discovery
-        for (uint256 i = 0; i < extraTokens.length; i++) {
-            vm.mockCall(
-                gauge, abi.encodeWithSelector(ILiquidityGauge.reward_tokens.selector, i), abi.encode(extraTokens[i])
-            );
-
-            // Mock active reward period so factory adds them
-            vm.mockCall(
-                gauge,
-                abi.encodeWithSelector(ILiquidityGauge.reward_data.selector, extraTokens[i]),
-                abi.encode(
-                    extraTokens[i], // token
-                    makeAddr(string.concat("Distributor", vm.toString(i))), // distributor
-                    block.timestamp + 1 days, // period_finish (active so factory adds it)
-                    1e18, // rate
-                    block.timestamp, // last_update
-                    0 // integral
-                )
-            );
-        }
-
-        // Mock empty token for index 2 to signal end of list
-        vm.mockCall(gauge, abi.encodeWithSelector(ILiquidityGauge.reward_tokens.selector, 2), abi.encode(address(0)));
-
-        // Restore original admin if needed
-        if (originalAdmin != address(0)) {
-            vm.mockCall(gauge, abi.encodeWithSelector(ILiquidityGauge.admin.selector), abi.encode(originalAdmin));
+            vm.prank(factoryOwner);
+            ILiquidityGauge(gauge).add_reward(token, distributor);
+            
+            // Deposit some initial rewards
+            uint256 rewardAmount = 1000e18;
+            deal(token, distributor, rewardAmount);
+            
+            vm.startPrank(distributor);
+            IERC20(token).approve(gauge, rewardAmount);
+            ILiquidityGauge(gauge).deposit_reward_token(token, rewardAmount);
+            vm.stopPrank();
         }
     }
 
@@ -294,5 +264,83 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
             data = abi.encodeWithSignature("transfer(address,uint256)", burnAddress, balance);
             SafeLibrary.execOnLocker(payable(gateway), config.base.locker, lpToken, data, signatures);
         }
+    }
+
+    /// @notice Test that new reward tokens added to gauge after vault creation are automatically synced during harvest
+    function test_automatic_sync_new_reward_tokens() public {
+        // Deploy vaults normally (with initial extra rewards from _setupGaugeExtraRewards)
+        (rewardVaults, rewardReceivers) = deployRewardVaults();
+        
+        RewardVault vault = rewardVaults[0];
+        address gauge = vault.gauge();
+        
+        // Verify we have the initial extra rewards from _setupGaugeExtraRewards
+        address[] memory initialTokens = vault.getRewardTokens();
+        uint256 initialTokenCount = initialTokens.length;
+        assertGe(initialTokenCount, 2, "Should have at least 2 initial extra reward tokens");
+        
+        // User deposits
+        address user = makeAddr("user");
+        deposit(vault, user, 100e18);
+        
+        // Add a THIRD reward token to the gauge (not included in initial setup)
+        address newRewardToken = _deployMockERC20("ThirdReward", "THIRD", 18);
+        
+        // On L2s, the factory owner or gauge manager can add rewards
+        address gaugeFactory = ILiquidityGauge(gauge).factory();
+        address factoryOwner = Ownable(gaugeFactory).owner();
+        
+        vm.startPrank(factoryOwner);
+
+        uint count = ILiquidityGauge(gauge).reward_count(); // Trigger any internal state updates
+        
+        // Add the new reward token with reward receiver as distributor
+        ILiquidityGauge(gauge).add_reward(newRewardToken, factoryOwner);
+
+        // Now deposit reward tokens as the distributor (reward receiver)
+        uint256 rewardAmount = 1000e18;
+        deal(newRewardToken, factoryOwner, rewardAmount);
+        
+        IERC20(newRewardToken).approve(gauge, rewardAmount);
+        ILiquidityGauge(gauge).deposit_reward_token(newRewardToken, rewardAmount);
+
+        vm.stopPrank();
+
+        assertEq(count + 1, ILiquidityGauge(gauge).reward_count(), "Should have 1 more reward token now");
+
+        // Harvest - this should sync the new token
+        harvest();
+
+        address[] memory updateTokens = vault.getRewardTokens();
+        assertGe(updateTokens.length, 3, "Should now have 3 reward tokens");
+        
+        // Check if the new token was actually added
+        bool tokenFound = false;
+        for (uint256 i = 0; i < updateTokens.length; i++) {
+            if (updateTokens[i] == newRewardToken) {
+                tokenFound = true;
+                break;
+            }
+        }
+        assertTrue(tokenFound, "New token should be in vault");
+        
+        // Skip more time to accumulate rewards
+        skip(1 days);
+        
+        // Harvest again to trigger reward distribution
+        harvest();
+
+        skip(1 days);
+        
+        // Verify rewards were distributed to vault
+        assertGt(IERC20(newRewardToken).balanceOf(address(vault)), 0, "Vault should have received the new reward tokens");
+        
+        // User can claim the new rewards
+        vm.prank(user);
+        address[] memory claimTokens = new address[](1);
+        claimTokens[0] = newRewardToken;
+        vault.claim(claimTokens, user);
+        
+        assertGt(IERC20(newRewardToken).balanceOf(user), 0, "User should have claimed the new rewards");
     }
 }
