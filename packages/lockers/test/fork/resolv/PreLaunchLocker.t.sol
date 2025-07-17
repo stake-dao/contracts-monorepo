@@ -25,7 +25,7 @@ contract PreLaunchLockerTest is BaseTest, PreLaunchDeploy {
     address internal depositor;
 
     function setUp() public virtual {
-        vm.createSelectFork("mainnet");
+        vm.createSelectFork("mainnet", 22_938_528);
 
         // fetch the gauge implementation address from the gauge proxy
         address gaugeImplementation = address(
