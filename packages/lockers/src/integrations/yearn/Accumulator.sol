@@ -115,4 +115,11 @@ contract YearnAccumulator is AccumulatorBase, SafeModule {
     function name() external view virtual override returns (string memory) {
         return type(YearnAccumulator).name;
     }
+
+    function getRewards() external view override returns (address[] memory) {
+        address[] memory rewards = new address[](2);
+        rewards[0] = token;
+        rewards[1] = rewardToken;
+        return rewards;
+    }
 }

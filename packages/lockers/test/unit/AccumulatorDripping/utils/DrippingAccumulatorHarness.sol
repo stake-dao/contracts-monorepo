@@ -27,4 +27,6 @@ contract DrippingAccumulatorHarness is AccumulatorDripping {
     function _expose_getCurrentRewardTokenBalance() external view returns (uint256) {
         return getCurrentRewardTokenBalance();
     }
+
+    function getRewards() external view virtual override returns (address[] memory) {}
 }
