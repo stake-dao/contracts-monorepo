@@ -50,7 +50,7 @@ contract PreLaunchDeploy is Script {
         bytes memory data = abi.encodeWithSelector(
             bytes4(keccak256("initialize(address,address,address,address,address,address)")),
             sdToken,
-            DAO.GOVERNANCE,
+            locker,
             DAO.SDT,
             DAO.VESDT,
             DAO.VESDT_BOOST_PROXY,

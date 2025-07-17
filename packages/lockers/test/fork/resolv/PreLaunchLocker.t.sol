@@ -19,6 +19,7 @@ contract PreLaunchLockerTest is BaseTest, PreLaunchDeploy {
     LockerPreLaunch internal PRELAUNCH_LOCKER;
     ISdToken internal SD_TOKEN;
     ILiquidityGaugeV4 internal GAUGE;
+    address internal LOCKER;
 
     address internal postPreLaunchLocker;
     address internal depositor;
@@ -32,12 +33,13 @@ contract PreLaunchLockerTest is BaseTest, PreLaunchDeploy {
         );
 
         // Call the deployment script's _run function
-        (address sdToken, address gauge, address preLaunchLocker,) =
+        (address sdToken, address gauge, address preLaunchLocker, address locker) =
             _run(address(RESOLV), "Stake DAO Resolv", "sdRESOLV", 0);
 
         SD_TOKEN = ISdToken(sdToken);
         GAUGE = ILiquidityGaugeV4(gauge);
         PRELAUNCH_LOCKER = LockerPreLaunch(preLaunchLocker);
+        LOCKER = locker;
 
         // label the important addresses for the tests
         vm.label(address(PRELAUNCH_LOCKER), "LockerPreLaunch");
@@ -59,7 +61,7 @@ contract PreLaunchLockerTest is BaseTest, PreLaunchDeploy {
 
     function test_GaugeState() external view {
         assertEq(GAUGE.staking_token(), address(SD_TOKEN));
-        assertEq(GAUGE.admin(), DAO.GOVERNANCE);
+        assertEq(GAUGE.admin(), LOCKER);
         assertEq(GAUGE.SDT(), DAO.SDT);
         assertEq(GAUGE.voting_escrow(), DAO.VESDT);
         assertEq(GAUGE.veBoost_proxy(), DAO.VESDT_BOOST_PROXY);
