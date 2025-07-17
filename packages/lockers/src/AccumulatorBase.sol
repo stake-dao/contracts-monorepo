@@ -320,4 +320,7 @@ abstract contract AccumulatorBase {
     }
 
     receive() external payable {}
+
+    /// @notice Get the rewards tokens this accumulator manages
+    function getRewards() external view virtual returns (address[] memory);
 }
