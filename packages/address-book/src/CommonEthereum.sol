@@ -21,4 +21,6 @@ library Common {
 
     // LayerZero
     address internal constant LAYERZERO_ENDPOINT = CommonUniversal.LAYERZERO_ENDPOINT;
+
+    address internal constant LIQUIDITY_GAUGE_V4_IMPLEMENTATION = 0x82ABa41FcE8EdE355380F5F22D5472118Aff0410;
 }

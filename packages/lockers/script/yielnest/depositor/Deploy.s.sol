@@ -3,8 +3,8 @@ pragma solidity 0.8.28;
 
 import {DAO} from "@address-book/src/DaoEthereum.sol";
 import {DeployDepositor} from "script/common/DeployDepositor.sol";
-import {YieldnestLocker, YieldnestProtocol} from "@address-book/src/YieldnestEthereum.sol";
 import {YieldnestDepositor} from "src/integrations/yieldnest/Depositor.sol";
+import {YieldnestLocker, YieldnestProtocol} from "@address-book/src/YieldnestEthereum.sol";
 
 contract Deploy is DeployDepositor {
     function run() public {
