@@ -35,7 +35,7 @@ contract CurveBaseIntegrationTest is CurveL2Integration {
 
         CurveFactory(factory).setChildLiquidityGaugeFactories(childLiquidityGaugeFactories);
     }
-    
+
     function deployRewardVaults()
         internal
         override
@@ -45,7 +45,7 @@ contract CurveBaseIntegrationTest is CurveL2Integration {
         for (uint256 i = 0; i < gauges.length; i++) {
             _setupGaugeExtraRewards(gauges[i]);
         }
-        
+
         // Call parent implementation
         return super.deployRewardVaults();
     }

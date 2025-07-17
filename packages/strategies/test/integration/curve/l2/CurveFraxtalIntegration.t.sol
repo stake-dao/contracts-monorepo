@@ -47,7 +47,7 @@ contract CurveFraxtalIntegrationTest is CurveL2Integration {
 
         for (uint256 i = 0; i < poolIds.length; i++) {
             uint256 poolId = poolIds[i];
-            
+
             // Get gauge for this pool and set up extra rewards
             (, address gauge,,,) = booster.poolInfo(poolId);
             _setupGaugeExtraRewards(gauge);

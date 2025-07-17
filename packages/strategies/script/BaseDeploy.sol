@@ -130,6 +130,7 @@ abstract contract BaseDeploy is Script {
 
         /// 1. Set strategy in protocol controller.
         protocolController.setStrategy(protocolId, strategy);
+        protocolController.setFactory(protocolId, address(factory));
         protocolController.setAllocator(protocolId, address(allocator));
 
         /// 2. Set factory as registrar.

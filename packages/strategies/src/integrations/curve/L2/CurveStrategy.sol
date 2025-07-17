@@ -9,6 +9,7 @@ import "src/Strategy.sol";
 
 import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {IRewardReceiver} from "src/interfaces/IRewardReceiver.sol";
+import {IFactory} from "src/interfaces/IFactory.sol";
 
 /// @title CurveStrategy - Curve Protocol Integration Strategy
 /// @notice A strategy implementation for interacting with Curve protocol gauges
@@ -143,6 +144,9 @@ contract CurveStrategy is Strategy {
         override
         returns (IStrategy.PendingRewards memory pendingRewards)
     {
+        // Sync reward tokens if new ones were added to the gauge
+        _syncRewardTokensIfNeeded(gauge);
+
         // Call parent harvest which handles both locker and sidecar claims
         pendingRewards = super._harvest(gauge, extraData, deferRewards);
 
@@ -171,5 +175,16 @@ contract CurveStrategy is Strategy {
 
         /// 4. Trigger distribute in the reward receiver.
         IRewardReceiver(rewardReceiver).distributeRewards();
+    }
+
+    /// @notice Syncs reward tokens with the factory if needed
+    /// @dev Calls the factory to check and add any new reward tokens from the gauge
+    function _syncRewardTokensIfNeeded(address gauge) internal {
+        address factoryAddress = PROTOCOL_CONTROLLER.factory(PROTOCOL_ID);
+
+        // Only sync if factory is set
+        if (factoryAddress != address(0)) {
+            IFactory(factoryAddress).syncRewardTokens(gauge);
+        }
     }
 }
