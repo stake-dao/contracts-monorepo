@@ -5,7 +5,7 @@ import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
-import {IERC20, IERC20Metadata, IERC4626} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
+import {IERC20, IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC4626.sol";
 
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IAllocator} from "src/interfaces/IAllocator.sol";
@@ -21,7 +21,7 @@ import {ImmutableArgsParser} from "src/libraries/ImmutableArgsParser.sol";
 ///      - Main protocol rewards (CRV) are handled by Accountant
 ///      - Routes deposits/withdrawals through Strategy and Allocator
 ///      - Maintains ERC4626 compliance for composability
-contract RewardVault is IRewardVault, IERC4626, ERC20 {
+contract RewardVault is IRewardVault, ERC20 {
     using Math for uint256;
     using SafeCast for uint256;
     using SafeERC20 for IERC20;

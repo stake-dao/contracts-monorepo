@@ -7,3 +7,5 @@ out/
 broadcast/
 .DS_Store
 temp/
+*.local.*
+.cursor/
