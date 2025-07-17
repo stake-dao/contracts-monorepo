@@ -91,4 +91,5 @@ contract CurveBaseIntegrationTest is CurveL2Integration {
             abi.encode(newIntegrateFraction)
         );
     }
+
 }
