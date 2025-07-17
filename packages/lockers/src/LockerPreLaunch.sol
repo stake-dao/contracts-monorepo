@@ -54,7 +54,10 @@ contract LockerPreLaunch is IPreLaunchLocker {
 
     /// @notice The delay after which the locker can be force canceled by anyone.
     uint256 public immutable FORCE_CANCEL_DELAY;
-    uint256 internal constant DEFAULT_FORCE_CANCEL_DELAY = 3 * 30 days;
+
+    /// @notice The default force cancel delay if not provided during deployment. By default, it is set to 6 months.
+    uint256 internal constant DEFAULT_FORCE_CANCEL_DELAY = 6 * 30 days;
+
     /// @notice The immutable token to lock.
     address public immutable token;
     /// @notice The sdToken address.

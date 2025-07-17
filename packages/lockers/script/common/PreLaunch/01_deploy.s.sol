@@ -4,6 +4,7 @@ pragma solidity 0.8.28;
 import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {DAO} from "@address-book/src/DaoEthereum.sol";
+import {Common} from "@address-book/src/CommonEthereum.sol";
 import {Script} from "forge-std/src/Script.sol";
 import {SafeProxyFactoryLibrary} from "src/utils/SafeProxyFactoryLibrary.sol";
 import {LockerPreLaunch} from "src/LockerPreLaunch.sol";
@@ -44,10 +45,8 @@ contract PreLaunchDeploy is Script {
         sdToken = address(new SdToken(name, symbol));
 
         // 4. deploy the gauge behind a proxy
-        // TODO: We must deploy it once and store it in the address book.
-        //       The implementation here is a slight variation of the original as this one
-        //       allows null-address as distributor for the SDT token.
-        address gaugeImplementation = deployCode("GaugeLiquidityV4.vy");
+        address gaugeImplementation = Common.LIQUIDITY_GAUGE_V4_IMPLEMENTATION;
+
         bytes memory data = abi.encodeWithSelector(
             bytes4(keccak256("initialize(address,address,address,address,address,address)")),
             sdToken,
