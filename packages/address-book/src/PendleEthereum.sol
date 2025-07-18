@@ -10,6 +10,7 @@ library PendleProtocol {
 library PendleLocker {
     address internal constant TOKEN = 0x808507121B80c02388fAd14726482e061B8da827;
     address internal constant SDTOKEN = 0x5Ea630e00D6eE438d3deA1556A110359ACdc10A9;
+    address internal constant ASDTOKEN = 0x606462126E4Bd5c4D153Fe09967e4C46C9c7FeCf;
     address internal constant LOCKER = 0xD8fa8dC5aDeC503AcC5e026a98F32Ca5C1Fa289A;
     address internal constant DEPOSITOR = 0x7F5c485D24fB1832A14f122C8722ef15C158Acb5;
     address internal constant GAUGE = 0x50DC9aE51f78C593d4138263da7088A973b8184E;
