@@ -26,7 +26,8 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
                 strategy: strategy,
                 allocator: address(0),
                 accountant: address(0),
-                feeReceiver: address(0)
+                feeReceiver: address(0),
+                factory: address(0)
             })
         );
 
@@ -44,7 +45,8 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
                 strategy: address(0),
                 allocator: allocator,
                 accountant: address(0),
-                feeReceiver: address(0)
+                feeReceiver: address(0),
+                factory: address(0)
             })
         );
 
@@ -62,7 +64,8 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
                 strategy: address(0),
                 allocator: address(0),
                 accountant: accountant,
-                feeReceiver: address(0)
+                feeReceiver: address(0),
+                factory: address(0)
             })
         );
 
@@ -80,7 +83,8 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
                 strategy: address(0),
                 allocator: address(0),
                 accountant: address(0),
-                feeReceiver: feeReceiver
+                feeReceiver: feeReceiver,
+                factory: address(0)
             })
         );
 
@@ -206,7 +210,8 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
                 strategy: address(0),
                 allocator: address(0),
                 accountant: address(0),
-                feeReceiver: address(0)
+                feeReceiver: address(0),
+                factory: address(0)
             })
         );
         assertEq(protocolControllerHarness.isShutdown(gauge), true);

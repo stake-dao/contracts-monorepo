@@ -20,6 +20,8 @@ contract ProtocolController__shutdown is ProtocolControllerBaseTest {
     function test_ShutsDownAGauge(address gauge) external {
         // it shuts down a gauge
 
+        vm.assume(gauge != address(0));
+
         protocolController.registerVault({
             _gauge: gauge,
             _vault: address(vault),
@@ -34,6 +36,8 @@ contract ProtocolController__shutdown is ProtocolControllerBaseTest {
     }
 
     function test_EmitsAGaugeShutdownEvent(address gauge) external {
+        vm.assume(gauge != address(0));
+
         protocolController.registerVault({
             _gauge: gauge,
             _vault: address(vault),

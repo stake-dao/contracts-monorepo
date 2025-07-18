@@ -120,9 +120,12 @@ contract CurveFactory is Factory, Ownable2Step {
         for (uint8 i = 0; i < 8; i++) {
             /// Get the extra reward token address.
             address _extraRewardToken = IL2LiquidityGauge(_gauge).reward_tokens(i);
-            (, uint256 periodFinish,,,) = IL2LiquidityGauge(_gauge).reward_data(_extraRewardToken);
+            /// (, uint256 periodFinish,,,) = IL2LiquidityGauge(_gauge).reward_data(_extraRewardToken);
+
             /// If the reward data is not active, skip.
-            if (periodFinish < block.timestamp) continue;
+            /// We remove the check for periodFinish < block.timestamp on L2s.
+            /// if (periodFinish < block.timestamp) continue;
+
             /// If the address is 0, it means there are no more extra reward tokens.
             if (_extraRewardToken == address(0)) break;
             /// If the extra reward token is already in the vault, skip.

@@ -11,7 +11,7 @@ contract CurveFraxtalIntegrationTest is CurveL2Integration {
     Config public _config = Config({
         base: BaseConfig({
             chain: "frax",
-            blockNumber: 21_461_626,
+            blockNumber: 22_939_857,
             rewardToken: CurveProtocol.CRV,
             locker: address(0),
             protocolId: bytes4(keccak256("CURVE")),
@@ -30,7 +30,7 @@ contract CurveFraxtalIntegrationTest is CurveL2Integration {
     });
 
     // All pool IDs from the old tests
-    uint256[] public poolIds = [9];
+    uint256[] public poolIds = [9, 18, 13, 15];
 
     constructor() CurveL2Integration(_config) {}
 
@@ -43,8 +43,14 @@ contract CurveFraxtalIntegrationTest is CurveL2Integration {
         vaults = new RewardVault[](gauges.length);
         receivers = new RewardReceiver[](gauges.length);
 
+        IL2Booster booster = IL2Booster(CurveProtocol.CONVEX_BOOSTER);
+
         for (uint256 i = 0; i < poolIds.length; i++) {
             uint256 poolId = poolIds[i];
+
+            // Get gauge for this pool and set up extra rewards
+            (, address gauge,,,) = booster.poolInfo(poolId);
+            _setupGaugeExtraRewards(gauge);
 
             /// Deploy the vault and receiver.
             (address vault, address receiver,) = CurveFactory(factory).create(poolId);

@@ -23,6 +23,7 @@ contract ProtocolController is IProtocolController, Ownable2Step {
         address allocator;
         address accountant;
         address feeReceiver;
+        address factory;
     }
 
     /// @notice Links a gauge to its associated vault and protocol
@@ -278,6 +279,16 @@ contract ProtocolController is IProtocolController, Ownable2Step {
         emit ProtocolComponentSet(protocolId, "FeeReceiver", _feeReceiver);
     }
 
+    /// @notice Sets a protocol factory
+    /// @param protocolId The protocol identifier
+    /// @param _factory The factory address
+    /// @custom:reverts ZeroAddress if the factory address is zero
+    function setFactory(bytes4 protocolId, address _factory) external onlyOwner {
+        require(_factory != address(0), ZeroAddress());
+        _protocolComponents[protocolId].factory = _factory;
+        emit ProtocolComponentSet(protocolId, "Factory", _factory);
+    }
+
     //////////////////////////////////////////////////////
     // --- VAULT REGISTRATION & SHUTDOWN
     //////////////////////////////////////////////////////
@@ -411,6 +422,13 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @return _ The fee receiver address
     function feeReceiver(bytes4 protocolId) external view returns (address) {
         return _protocolComponents[protocolId].feeReceiver;
+    }
+
+    /// @notice Returns the factory address for a protocol
+    /// @param protocolId The protocol identifier
+    /// @return _ The factory address
+    function factory(bytes4 protocolId) external view returns (address) {
+        return _protocolComponents[protocolId].factory;
     }
 
     /// @notice Checks if an address is an authorized registrar

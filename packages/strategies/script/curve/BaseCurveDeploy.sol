@@ -8,6 +8,8 @@ import {OnlyBoostAllocator} from "src/integrations/curve/OnlyBoostAllocator.sol"
 
 import {CurveFactory as L2CurveFactory} from "src/integrations/curve/L2/CurveFactory.sol";
 import {CurveStrategy as L2CurveStrategy} from "src/integrations/curve/L2/CurveStrategy.sol";
+
+import {RewardReceiverL2} from "src/RewardReceiverL2.sol";
 import {L2ConvexSidecar} from "src/integrations/curve/L2/L2ConvexSidecar.sol";
 import {L2ConvexSidecarFactory} from "src/integrations/curve/L2/L2ConvexSidecarFactory.sol";
 
@@ -114,6 +116,15 @@ abstract contract BaseCurveDeploy is BaseDeploy {
                 )
             );
         }
+
+        /// 5. Deploy Reward Receiver Implementation.
+        isL2
+            ? rewardReceiverImplementation = RewardReceiver(
+                _deployWithCreate3(type(RewardReceiverL2).name, abi.encodePacked(type(RewardReceiverL2).creationCode))
+            )
+            : rewardReceiverImplementation = RewardReceiver(
+                _deployWithCreate3(type(RewardReceiver).name, abi.encodePacked(type(RewardReceiver).creationCode))
+            );
 
         bytes memory factoryParams = isL2
             ? abi.encode(

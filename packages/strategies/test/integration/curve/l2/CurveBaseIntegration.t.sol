@@ -36,6 +36,20 @@ contract CurveBaseIntegrationTest is CurveL2Integration {
         CurveFactory(factory).setChildLiquidityGaugeFactories(childLiquidityGaugeFactories);
     }
 
+    function deployRewardVaults()
+        internal
+        override
+        returns (RewardVault[] memory vaults, RewardReceiver[] memory receivers)
+    {
+        // Set up extra rewards for all gauges before vault deployment
+        for (uint256 i = 0; i < gauges.length; i++) {
+            _setupGaugeExtraRewards(gauges[i]);
+        }
+
+        // Call parent implementation
+        return super.deployRewardVaults();
+    }
+
     function getGauges() internal override returns (address[] memory) {
         gauges = new address[](3);
         gauges[0] = 0x9da8420dbEEBDFc4902B356017610259ef7eeDD8;
@@ -77,4 +91,5 @@ contract CurveBaseIntegrationTest is CurveL2Integration {
             abi.encode(newIntegrateFraction)
         );
     }
+
 }

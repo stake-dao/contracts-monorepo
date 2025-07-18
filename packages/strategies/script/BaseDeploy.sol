@@ -106,11 +106,6 @@ abstract contract BaseDeploy is Script {
             )
         );
 
-        /// 5. Deploy Reward Receiver Implementation.
-        rewardReceiverImplementation = RewardReceiver(
-            _deployWithCreate3(type(RewardReceiver).name, abi.encodePacked(type(RewardReceiver).creationCode))
-        );
-
         owners = new address[](1);
         owners[0] = admin;
 
@@ -135,6 +130,7 @@ abstract contract BaseDeploy is Script {
 
         /// 1. Set strategy in protocol controller.
         protocolController.setStrategy(protocolId, strategy);
+        protocolController.setFactory(protocolId, address(factory));
         protocolController.setAllocator(protocolId, address(allocator));
 
         /// 2. Set factory as registrar.

@@ -4,7 +4,12 @@ pragma solidity 0.8.28;
 import {ILiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 import {IMinter} from "@interfaces/curve/IMinter.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
+
 import "src/Strategy.sol";
+
+import {IRewardVault} from "src/interfaces/IRewardVault.sol";
+import {IRewardReceiver} from "src/interfaces/IRewardReceiver.sol";
+import {IFactory} from "src/interfaces/IFactory.sol";
 
 /// @title CurveStrategy - Curve Protocol Integration Strategy
 /// @notice A strategy implementation for interacting with Curve protocol gauges
@@ -29,6 +34,9 @@ contract CurveStrategy is Strategy {
 
     /// @notice Error thrown when the checkpoint fails.
     error CheckpointFailed();
+
+    /// @notice Error thrown when the extra rewards claim fails.
+    error ClaimExtraRewards();
 
     //////////////////////////////////////////////////////
     // --- CONSTRUCTOR
@@ -127,5 +135,56 @@ contract CurveStrategy is Strategy {
 
         /// 3. Calculate the reward amount.
         rewardAmount = IERC20(REWARD_TOKEN).balanceOf(address(LOCKER)) - _before;
+    }
+
+    /// @notice Override base _harvest to trigger reward distribution after all claims
+    /// @dev This ensures both gauge and sidecar rewards are distributed together on L2s
+    function _harvest(address gauge, bytes memory extraData, bool deferRewards)
+        internal
+        override
+        returns (IStrategy.PendingRewards memory pendingRewards)
+    {
+        // Sync reward tokens if new ones were added to the gauge
+        _syncRewardTokensIfNeeded(gauge);
+
+        // Call parent harvest which handles both locker and sidecar claims
+        pendingRewards = super._harvest(gauge, extraData, deferRewards);
+
+        /// Claim extra rewards from the gauge on Locker side.
+        _claimExtraRewards(gauge);
+
+        return pendingRewards;
+    }
+
+    /// @notice Claims extra rewards from a Curve gauge
+    /// @dev This function is called after the main rewards have been claimed
+    function _claimExtraRewards(address gauge) internal {
+        /// 1. Get the reward receiver address.
+        address rewardReceiver = PROTOCOL_CONTROLLER.rewardReceiver(gauge);
+
+        /// 2. Claim extra rewards from the gauge to the reward receiver.
+        bytes memory data = abi.encodeWithSignature("claim_rewards(address,address)", address(LOCKER), address(rewardReceiver));
+        require(_executeTransaction(gauge, data), ClaimExtraRewards());
+
+        address rewardVault = PROTOCOL_CONTROLLER.vaults(gauge);
+        address[] memory rewardTokens = IRewardVault(rewardVault).getRewardTokens();
+
+        if (rewardTokens.length == 0) {
+            return;
+        }
+
+        /// 4. Trigger distribute in the reward receiver.
+        IRewardReceiver(rewardReceiver).distributeRewards();
+    }
+
+    /// @notice Syncs reward tokens with the factory if needed
+    /// @dev Calls the factory to check and add any new reward tokens from the gauge
+    function _syncRewardTokensIfNeeded(address gauge) internal {
+        address factoryAddress = PROTOCOL_CONTROLLER.factory(PROTOCOL_ID);
+
+        // Only sync if factory is set
+        if (factoryAddress != address(0)) {
+            IFactory(factoryAddress).syncRewardTokens(gauge);
+        }
     }
 }

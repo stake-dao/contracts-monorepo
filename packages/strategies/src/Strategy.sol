@@ -335,6 +335,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @return pendingRewards Total and fee-subject reward amounts
     function _harvest(address gauge, bytes memory extraData, bool deferRewards)
         internal
+        virtual
         returns (IStrategy.PendingRewards memory pendingRewards)
     {
         address[] memory targets = _getAllocationTargets(gauge);
