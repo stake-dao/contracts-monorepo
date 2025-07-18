@@ -8,8 +8,11 @@ import {PendleLocker} from "@address-book/src/PendleEthereum.sol";
 import {SYASDPENDLE} from "src/integrations/pendle/SYASDPENDLE.sol";
 import {PMath} from "@pendle/v2-sy/libraries/math/PMath.sol";
 import {IERC20, IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
-import {ITransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 import {BaseTest} from "test/BaseTest.t.sol";
+import {
+    TransparentUpgradeableProxy,
+    ITransparentUpgradeableProxy
+} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 abstract contract SYTestFoundation is BaseTest {
     address public deployer;
@@ -29,6 +32,28 @@ abstract contract SYTestFoundation is BaseTest {
 
         setUpFork();
         deploySY();
+    }
+
+    function setUpFork() internal virtual {
+        vm.createSelectFork("mainnet", 22_717_485);
+    }
+
+    function deploySY() internal virtual {
+        vm.startPrank(deployer);
+
+        address syImplementation = address(new SYASDPENDLE());
+        bytes memory data = abi.encodeWithSelector(
+            bytes4(keccak256("initialize(string,string)")),
+            "", // name - unused
+            "" // symbol - unused
+        );
+        sy = IStandardizedYield(address(new TransparentUpgradeableProxy(syImplementation, makeAddr("admin"), data)));
+        vm.stopPrank();
+
+        vm.label(address(sy), "SYASDPENDLE");
+        vm.label(PendleLocker.ASDTOKEN, "ASDPENDLE");
+        vm.label(PendleLocker.SDTOKEN, "SDPENDLE");
+        startToken = IERC4626(PendleLocker.ASDTOKEN).asset();
     }
 
     function refAmountFor(address token) internal view virtual returns (uint256) {
@@ -67,13 +92,6 @@ abstract contract SYTestFoundation is BaseTest {
         vm.prank(wallet);
         amountTokenOut = sy.redeem(wallet, amountSharesIn, tokenOut, 0, false);
     }
-
-    //////////////////////////////////////////////////////
-    // --- VIRTUALS
-    //////////////////////////////////////////////////////
-    function setUpFork() internal virtual;
-    function deploySY() internal virtual;
-    function initializeSY() internal virtual {}
 }
 
 abstract contract DepositRedeemTest is SYTestFoundation {
@@ -219,10 +237,6 @@ abstract contract PreviewTest is SYTestFoundation {
 }
 
 contract SYASDPENDLETest is DepositRedeemTest, MetadataTest, PreviewTest {
-    function setUpFork() internal override {
-        vm.createSelectFork("mainnet", 22_717_485);
-    }
-
     //////////////////////////////////////////////////////
     // --- TESTS
     //////////////////////////////////////////////////////
@@ -266,18 +280,6 @@ contract SYASDPENDLETest is DepositRedeemTest, MetadataTest, PreviewTest {
     //////////////////////////////////////////////////////
     // --- UTILS
     //////////////////////////////////////////////////////
-
-    function deploySY() internal override {
-        vm.startPrank(deployer);
-
-        sy = IStandardizedYield(address(new SYASDPENDLE()));
-        vm.stopPrank();
-
-        vm.label(address(sy), "SYASDPENDLE");
-        vm.label(PendleLocker.ASDTOKEN, "ASDPENDLE");
-        vm.label(PendleLocker.SDTOKEN, "SDPENDLE");
-        startToken = IERC4626(PendleLocker.ASDTOKEN).asset();
-    }
 
     function getTokensInForDepositRedeemTest() internal view override returns (address[] memory) {
         return sy.getTokensIn();

@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
-import {PendleERC4626SYV2} from "@pendle/v2-sy/StandardizedYield/implementations/PendleERC4626SYV2.sol";
+import {PendleERC4626UpgSYV2} from "@pendle/v2-sy/StandardizedYield/implementations/PendleERC4626UpgSYV2.sol";
 import {PendleLocker} from "@address-book/src/PendleEthereum.sol";
 import {IASDPendle} from "src/interfaces/IASDPendle.sol";
 
@@ -35,14 +35,22 @@ import {IASDPendle} from "src/interfaces/IASDPendle.sol";
 ///
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-contract SYASDPENDLE is PendleERC4626SYV2 {
+contract SYASDPENDLE is PendleERC4626UpgSYV2 {
     address public constant SDPENDLE = PendleLocker.SDTOKEN;
     IASDPendle public constant ASDPENDLE = IASDPendle(PendleLocker.ASDTOKEN);
 
     /// @notice Initialize the SY contract
     /// @dev The name and the token of the SY contract are hardcoded in the function.
     ///      This function give infinite approval on the SDPENDLE and ASDPENDLE tokens to the SY contract
-    constructor() PendleERC4626SYV2("Standardized Yield asdPENDLE", "SY-asdPENDLE", PendleLocker.ASDTOKEN) {
+    constructor() PendleERC4626UpgSYV2(PendleLocker.ASDTOKEN) {}
+
+    /// @notice Initialize the SY contract
+    /// @param [unused] The hardcoded value is used internally
+    /// @param [SY-asdPENDLE] The hardcoded value is used internally
+    function initialize(string memory, string memory) external override initializer {
+        __SYBaseUpg_init("Standardized Yield asdPENDLE", "SY-asdPENDLE");
+
+        // Give infinite approval on the SDPENDLE to the ASDPENDLE
         _safeApproveInf(SDPENDLE, address(ASDPENDLE));
     }
 
