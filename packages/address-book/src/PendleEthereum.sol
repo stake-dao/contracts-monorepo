@@ -5,6 +5,7 @@ library PendleProtocol {
     address internal constant PENDLE = 0x808507121B80c02388fAd14726482e061B8da827;
     address internal constant VEPENDLE = 0x4f30A9D41B80ecC5B94306AB4364951AE3170210;
     address internal constant FEE_DISTRIBUTOR = 0x8C237520a8E14D658170A633D96F8e80764433b9;
+    address internal constant GAUGE_CONTROLLER = 0x47D74516B33eD5D70ddE7119A40839f6Fcc24e57;
 }
 
 library PendleLocker {
