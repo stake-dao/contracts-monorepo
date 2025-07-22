@@ -11,15 +11,21 @@ import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
-/// @title Accountant - Reward Distribution and Accounting System
-/// @notice Central accounting system that tracks user balances and distributes rewards across all vaults
-/// @dev Uses integral-based accounting for gas-efficient reward distribution:
-///      - Rewards are tracked as integrals (cumulative reward per token)
-///      - User rewards = (current integral - last user integral) * user balance
-///      Two reward distribution policies:
-///      - HARVEST: Claims rewards from gauge on every user action
-///      - CHECKPOINT: Accumulates rewards in gauge until manual harvest, but users can claim
-///                   from the shared reward pool if tokens are available (cross-vault rewards)
+/// @title Accountant.
+/// @author Stake DAO
+/// @custom:github @stake-dao
+/// @custom:contact contact@stakedao.org
+
+/// @notice Accountant is the core accounting system that manages reward distribution across all vaults for a specific protocol integration.
+///         It uses integral-based accounting for gas-efficient reward distribution, where rewards are tracked as integrals (cumulative reward per token).
+///         User rewards are calculated as: (current integral - last user integral) × user balance.
+///         
+///         The system supports two reward distribution policies:
+///         - HARVEST: Claims rewards from the gauge on every user action, charging only protocol fees
+///         - CHECKPOINT: Accumulates rewards in the gauge until manual harvest, reserving both protocol and harvest fees
+///         
+///         In CHECKPOINT mode, users can still claim their accrued rewards if tokens are available in the contract,
+///         enabling cross-vault reward sharing and immediate access to rewards without waiting for harvest.
 contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     using Math for uint256;
     using Math for uint128;
@@ -30,8 +36,9 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     // --- STORAGE STRUCTURES
     //////////////////////////////////////////////////////
 
-    /// @notice Tracks reward and supply data for each vault
-    /// @dev Packed struct to minimize storage costs (3 storage slots)
+    /// @notice Tracks reward and supply data for each vault.
+    /// @dev    Packed struct to minimize storage costs (3 storage slots).
+    ///         This structure maintains the core accounting state for reward distribution.
     struct VaultData {
         uint256 integral; // Cumulative reward per token (scaled by SCALING_FACTOR)
         uint128 supply; // Total supply of vault tokens
@@ -42,68 +49,70 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         uint128 reservedProtocolFee; // Protocol fees reserved but not yet accrued
     }
 
-    /// @notice Tracks individual user positions within a vault
-    /// @dev Integral tracking enables O(1) reward calculations
+    /// @notice Tracks individual user positions within a vault.
+    /// @dev    Integral tracking enables O(1) reward calculations by storing the last known integral
+    ///         value for each user, allowing efficient computation of rewards earned since last update.
     struct AccountData {
         uint128 balance; // User's token balance in the vault
         uint256 integral; // Last integral value when user's rewards were updated
         uint256 pendingRewards; // Rewards earned but not yet claimed
     }
 
-    /// @notice Struct that defines the fees parameters.
+    /// @notice Defines the fee parameters for the protocol.
+    /// @dev    Both fees are scaled by 1e18 (e.g., 0.15e18 = 15%).
     struct FeesParams {
-        uint128 protocolFeePercent;
-        uint128 harvestFeePercent;
+        uint128 protocolFeePercent; // Fee charged on rewards for protocol revenue
+        uint128 harvestFeePercent; // Fee paid to harvesters as gas compensation
     }
 
     //////////////////////////////////////////////////////
     // --- CONSTANTS & IMMUTABLES
     //////////////////////////////////////////////////////
 
-    /// @notice Precision multiplier for integral calculations (1e27 for maximum precision)
-    /// @dev Higher precision prevents rounding errors in reward distribution
+    /// @notice Precision multiplier for integral calculations (1e27 for maximum precision).
+    /// @dev    Higher precision prevents rounding errors in reward distribution calculations.
     uint128 public constant SCALING_FACTOR = 1e27;
 
-    /// @notice Maximum combined fee percentage to protect users (40%)
+    /// @notice Maximum combined fee percentage to protect users (40%).
     uint128 public constant MAX_FEE_PERCENT = 0.4e18;
 
-    /// @notice Minimum rewards threshold to update integrals in CHECKPOINT mode
-    /// @dev Prevents precision loss from tiny reward amounts
+    /// @notice Minimum rewards threshold to update integrals in CHECKPOINT mode.
+    /// @dev    Prevents precision loss from tiny reward amounts and gas inefficiency.
     uint128 public constant MIN_MEANINGFUL_REWARDS = 1e18;
 
-    /// @notice Central registry for protocol components
+    /// @notice Central registry for protocol components.
     IProtocolController public immutable PROTOCOL_CONTROLLER;
 
-    /// @notice The reward token distributed by this accountant (e.g., CRV)
+    /// @notice The reward token distributed by this accountant (e.g., CRV, BAL).
     address public immutable REWARD_TOKEN;
 
-    /// @notice Protocol identifier this accountant manages
+    /// @notice Protocol identifier this accountant manages.
     bytes4 public immutable PROTOCOL_ID;
 
-    /// @notice Default protocol fee charged on rewards (15%)
+    /// @notice Default protocol fee charged on rewards (15%).
     uint128 internal constant DEFAULT_PROTOCOL_FEE = 0.15e18;
 
-    /// @notice Default harvest fee paid to harvesters (0.1%)
-    /// @dev Expressed as 0.001e18, which represents 0.1% when scaled by 1e18
-    /// @dev Compensates for gas costs when calling harvest() function
+    /// @notice Default harvest fee paid to harvesters (0.1%).
+    /// @dev    Expressed as 0.001e18, which represents 0.1% when scaled by 1e18.
+    ///         Compensates for gas costs when calling harvest() function.
     uint128 internal constant DEFAULT_HARVEST_FEE = 0.001e18;
 
     //////////////////////////////////////////////////////
     // --- STATE VARIABLES
     //////////////////////////////////////////////////////
 
-    /// @notice The feesParams struct.
+    /// @notice Current fee parameters for the protocol.
     FeesParams public feesParams;
 
-    /// @notice The total protocol fees collected but not yet claimed.
+    /// @notice Total protocol fees collected but not yet claimed.
     uint256 public protocolFeesAccrued;
 
-    /// @notice Supply of vaults.
-    /// @dev Vault address -> VaultData.
+    /// @notice Stores vault-specific accounting data including supply and reward integrals.
+    /// @dev    Maps vault address to its VaultData struct.
     mapping(address vault => VaultData vaultData) public vaults;
 
-    /// @notice Balances of accounts per vault.
-    /// @dev Vault address -> Account address -> AccountData.
+    /// @notice Stores user positions and reward data for each vault.
+    /// @dev    Maps vault address -> account address -> AccountData struct.
     mapping(address vault => mapping(address account => AccountData accountData)) public accounts;
 
     //////////////////////////////////////////////////////
@@ -159,10 +168,17 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     // --- EVENTS
     //////////////////////////////////////////////////////
 
-    /// @notice Emitted when protocol fees are claimed.
+    /// @notice Emitted when protocol fees are claimed by the fee receiver.
+    /// @param  amount The amount of protocol fees claimed.
     event ProtocolFeesClaimed(uint256 amount);
 
-    /// @notice Emitted when a vault harvests rewards.
+    /// @notice Emitted when rewards are harvested from a vault.
+    /// @param  vault The vault address that was harvested.
+    /// @param  integral The updated reward integral after harvest.
+    /// @param  supply The total supply of vault tokens.
+    /// @param  amount The total amount of rewards harvested.
+    /// @param  protocolFee The protocol fee amount deducted.
+    /// @param  harvesterFee The harvester fee amount paid.
     event Harvest(
         address indexed vault,
         uint256 integral,
@@ -172,7 +188,14 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         uint256 harvesterFee
     );
 
-    /// @notice Emitted when a checkpoint is made.
+    /// @notice Emitted when a vault checkpoint occurs during token operations.
+    /// @param  vault The vault address being checkpointed.
+    /// @param  from The source address (address(0) for minting).
+    /// @param  to The destination address (address(0) for burning).
+    /// @param  amount The amount of tokens transferred/minted/burned.
+    /// @param  integral The current reward integral.
+    /// @param  supply The updated total supply after the operation.
+    /// @param  policy The harvest policy used for this checkpoint.
     event Checkpoint(
         address indexed vault,
         address indexed from,
@@ -183,24 +206,37 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         IStrategy.HarvestPolicy policy
     );
 
-    /// @notice Emitted when an account checkpoint is made.
+    /// @notice Emitted when an account's reward state is updated.
+    /// @param  vault The vault address.
+    /// @param  account The account address being updated.
+    /// @param  balance The account's current balance in the vault.
+    /// @param  integral The current reward integral.
+    /// @param  pendingRewards The account's pending rewards after update.
     event AccountCheckpoint(
         address indexed vault, address indexed account, uint128 balance, uint256 integral, uint256 pendingRewards
     );
 
-    /// @notice Emitted when a user claims rewards.
+    /// @notice Emitted when a user claims their accumulated rewards.
+    /// @param  vault The vault address from which rewards were claimed.
+    /// @param  account The account that earned the rewards.
+    /// @param  receiver The address that received the claimed rewards.
+    /// @param  amount The amount of rewards claimed.
     event RewardsClaimed(address indexed vault, address indexed account, address receiver, uint256 amount);
 
-    /// @notice Emitted when the protocol fee percent is updated.
+    /// @notice Emitted when the protocol fee percentage is updated.
+    /// @param  oldProtocolFeePercent The previous protocol fee percentage.
+    /// @param  newProtocolFeePercent The new protocol fee percentage.
     event ProtocolFeePercentSet(uint128 oldProtocolFeePercent, uint128 newProtocolFeePercent);
 
-    /// @notice Emitted when the harvest fee percent is updated.
+    /// @notice Emitted when the harvest fee percentage is updated.
+    /// @param  oldHarvestFeePercent The previous harvest fee percentage.
+    /// @param  newHarvestFeePercent The new harvest fee percentage.
     event HarvestFeePercentSet(uint128 oldHarvestFeePercent, uint128 newHarvestFeePercent);
 
-    /// @notice Emitted when a deposit is made via a referrer
-    /// @param referrer The address of the referrer
-    /// @param referree The address of the referree (the address that receives the shares)
-    /// @param assets The amount of assets deposited (1:1 with shares)
+    /// @notice Emitted when a deposit is made via a referrer.
+    /// @param  referrer The address of the referrer.
+    /// @param  referree The address of the referree (the address that receives the shares).
+    /// @param  assets The amount of assets deposited (1:1 with shares).
     event Referrer(address indexed referrer, address referree, uint128 assets);
 
     //////////////////////////////////////////////////////
@@ -219,13 +255,13 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     //////////////////////////////////////////////////////
 
     /// @notice Initializes the Accountant contract with owner, registry, and reward token.
-    /// @param _owner The address of the contract owner.
-    /// @param _registry The address of the registry contract.
-    /// @param _rewardToken The address of the reward token.
-    /// @param _protocolId The bytes4 ID of the protocol
-    /// @custom:throws OwnableInvalidOwner If the owner is the zero address.
-    /// @custom:throws InvalidProtocolController If the protocol controller is the zero address.
-    /// @custom:throws InvalidRewardToken If the reward token is the zero address.
+    /// @param  _owner The address of the contract owner.
+    /// @param  _registry The address of the ProtocolController contract.
+    /// @param  _rewardToken The address of the reward token to be distributed.
+    /// @param  _protocolId The protocol identifier for this accountant.
+    /// @custom:reverts InvalidProtocolController If the registry address is zero.
+    /// @custom:reverts InvalidRewardToken If the reward token address is zero.
+    /// @custom:reverts InvalidProtocolId If the protocol ID is empty.
     constructor(address _owner, address _registry, address _rewardToken, bytes4 _protocolId) Ownable(_owner) {
         require(_registry != address(0), InvalidProtocolController());
         require(_rewardToken != address(0), InvalidRewardToken());
@@ -246,26 +282,27 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     // --- CHECKPOINT OPERATIONS
     //////////////////////////////////////////////////////
 
-    /// @notice Updates user balances and distributes rewards on every vault action
-    /// @dev Core accounting function called by vaults during transfers, mints, and burns
-    ///
-    ///      Token Operations:
-    ///      - Mint (from = 0): Increases supply, updates receiver's reward integral
-    ///      - Burn (to = 0): Decreases supply, updates sender's reward integral
-    ///      - Transfer: Updates both sender and receiver integrals
-    ///
-    ///      Reward Distribution Policies:
-    ///      - HARVEST: Claims rewards on every action, only protocol fee charged
-    ///      - CHECKPOINT: Accumulates rewards until harvest(), both fees charged
-    ///        In CHECKPOINT, fees are reserved (not immediately accrued) to ensure
-    ///        the harvester receives proper compensation when they eventually harvest
-    /// @param gauge The underlying gauge address of the vault.
-    /// @param from The source address (address(0) for minting).
-    /// @param to The destination address (address(0) for burning).
-    /// @param amount The amount of tokens being transferred/minted/burned.
-    /// @param pendingRewards New rewards to be distributed to the vault.
-    /// @param policy The harvest policy to use.
-    /// @custom:throws OnlyVault If caller is not the registered vault for the gauge.
+    /// @notice Updates user balances and distributes rewards on every vault action.
+    /// @dev    Core accounting function called by vaults during transfers, mints, and burns.
+    ///         
+    ///         Token Operations:
+    ///         - Mint (from = 0): Increases supply, updates receiver's reward integral
+    ///         - Burn (to = 0): Decreases supply, updates sender's reward integral
+    ///         - Transfer: Updates both sender and receiver integrals
+    ///         
+    ///         Reward Distribution Policies:
+    ///         - HARVEST: Claims rewards on every action, only protocol fee charged
+    ///         - CHECKPOINT: Accumulates rewards until harvest(), both fees charged
+    ///           In CHECKPOINT, fees are reserved (not immediately accrued) to ensure
+    ///           the harvester receives proper compensation when they eventually harvest
+    /// @param  gauge The underlying gauge address of the vault.
+    /// @param  from The source address (address(0) for minting).
+    /// @param  to The destination address (address(0) for burning).
+    /// @param  amount The amount of tokens being transferred/minted/burned.
+    /// @param  pendingRewards New rewards to be distributed to the vault.
+    /// @param  policy The harvest policy to use.
+    /// @custom:reverts OnlyVault If caller is not the registered vault for the gauge.
+    /// @custom:reverts FeesExceedRewards If fee-subject amount exceeds total rewards.
     function checkpoint(
         address gauge,
         address from,
@@ -374,16 +411,16 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         emit Checkpoint(msg.sender, from, to, amount, integral, supply, policy);
     }
 
-    /// @notice Checkpoints the state of the vault on every account action.
-    /// @dev This function is a wrapper of `checkpoint` that emits the `Referrer` event.
-    /// @param gauge The underlying gauge address of the vault.
-    /// @param from The source address (address(0) for minting).
-    /// @param to The destination address (address(0) for burning).
-    /// @param amount The amount of tokens being transferred/minted/burned.
-    /// @param pendingRewards New rewards to be distributed to the vault.
-    /// @param policy The harvest policy to use.
-    /// @param referrer The address of the referrer who referred this deposit.
-    /// @custom:throws OnlyVault If caller is not the registered vault for the gauge.
+    /// @notice Checkpoints the state of the vault on every account action with referrer tracking.
+    /// @dev    This function is a wrapper of `checkpoint` that emits the `Referrer` event.
+    /// @param  gauge The underlying gauge address of the vault.
+    /// @param  from The source address (address(0) for minting).
+    /// @param  to The destination address (address(0) for burning).
+    /// @param  amount The amount of tokens being transferred/minted/burned.
+    /// @param  pendingRewards New rewards to be distributed to the vault.
+    /// @param  policy The harvest policy to use.
+    /// @param  referrer The address of the referrer who referred this deposit.
+    /// @custom:reverts OnlyVault If caller is not the registered vault for the gauge.
     function checkpoint(
         address gauge,
         address from,
@@ -400,12 +437,12 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         if (referrer != address(0)) emit Referrer(referrer, to, amount);
     }
 
-    /// @dev Updates account state during operations.
-    /// @param vault The vault address.
-    /// @param account The account to update.
-    /// @param amount The amount to add/subtract.
-    /// @param isDecrease Whether to decrease (true) or increase (false) the balance.
-    /// @param currentIntegral The current reward integral to checkpoint against.
+    /// @dev    Updates account state during token operations.
+    /// @param  vault The vault address.
+    /// @param  account The account to update.
+    /// @param  amount The amount to add/subtract from balance.
+    /// @param  isDecrease Whether to decrease (true) or increase (false) the balance.
+    /// @param  currentIntegral The current reward integral to checkpoint against.
     function _updateAccountState(
         address vault,
         address account,
@@ -428,31 +465,31 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     }
 
     /// @notice Returns the total supply of tokens in a vault.
-    /// @param vault The vault address to query.
-    /// @return _ The total supply of tokens in the vault.
+    /// @param  vault The vault address to query.
+    /// @return The total supply of tokens in the vault.
     function totalSupply(address vault) external view returns (uint128) {
         return vaults[vault].supply;
     }
 
     /// @notice Returns the token balance of an account in a vault.
-    /// @param vault The vault address to query.
-    /// @param account The account address to check.
-    /// @return _ The account's token balance in the vault.
+    /// @param  vault The vault address to query.
+    /// @param  account The account address to check.
+    /// @return The account's token balance in the vault.
     function balanceOf(address vault, address account) external view returns (uint128) {
         return accounts[vault][account].balance;
     }
 
-    /// @notice Returns the pending rewards for a vault.
-    /// @param vault The vault address to query.
-    /// @return The pending rewards for the vault.
+    /// @notice Returns the total pending rewards for a vault.
+    /// @param  vault The vault address to query.
+    /// @return The total pending rewards amount for the vault.
     function getPendingRewards(address vault) external view returns (uint128) {
         return vaults[vault].totalAmount;
     }
 
-    /// @notice Returns the pending rewards for an account in a vault.
-    /// @param vault The vault address to query.
-    /// @param account The account address to check.
-    /// @return _ The pending rewards for the account in the vault.
+    /// @notice Returns the pending rewards for a specific account in a vault.
+    /// @param  vault The vault address to query.
+    /// @param  account The account address to check.
+    /// @return The pending rewards for the account in the vault.
     function getPendingRewards(address vault, address account) external view returns (uint256) {
         return accounts[vault][account].pendingRewards;
     }
@@ -461,23 +498,25 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     // --- HARVEST OPERATIONS
     //////////////////////////////////////////////////////
 
-    /// @notice Harvests rewards from multiple gauges and distributes them to vaults
-    /// @dev Called by harvesters to claim rewards from external protocols and update integrals
-    /// @param _gauges Array of gauges to harvest from
-    /// @param _harvestData Protocol-specific data for harvesting each gauge
-    /// @param _receiver Address that will receive the harvest fee as compensation
-    /// @custom:throws InvalidHarvestDataLength If array lengths don't match
-    /// @custom:throws OnlyAllowed If caller is not authorized (when using onlyAllowed modifier)
+    /// @notice Harvests rewards from multiple gauges and distributes them to vaults.
+    /// @dev    Called by harvesters to claim rewards from external protocols and update integrals.
+    /// @param  _gauges Array of gauges to harvest from.
+    /// @param  _harvestData Protocol-specific data for harvesting each gauge.
+    /// @param  _receiver Address that will receive the harvest fee as compensation.
+    /// @custom:reverts InvalidHarvestDataLength If array lengths don't match.
     function harvest(address[] calldata _gauges, bytes[] calldata _harvestData, address _receiver) external {
         require(_gauges.length == _harvestData.length, InvalidHarvestDataLength());
         _harvest(_gauges, _harvestData, _receiver);
     }
 
-    /// @dev Batch harvests rewards and updates vault integrals
-    /// @dev Gas optimizations:
-    ///      1. Single strategy.flush() call at the end for all rewards
-    ///      2. One token transfer for all harvested rewards
-    ///      3. Defers rewards using transient storage during harvest
+    /// @dev    Batch harvests rewards and updates vault integrals.
+    ///         Gas optimizations:
+    ///         1. Single strategy.flush() call at the end for all rewards
+    ///         2. One token transfer for all harvested rewards
+    ///         3. Defers rewards using transient storage during harvest
+    /// @param  _gauges Array of gauges to harvest from.
+    /// @param  harvestData Protocol-specific data for each gauge.
+    /// @param  receiver Address that will receive the harvest fee.
     function _harvest(address[] memory _gauges, bytes[] memory harvestData, address receiver) internal nonReentrant {
         // Cache strategy to avoid multiple SLOADs
         address strategy = PROTOCOL_CONTROLLER.strategy(PROTOCOL_ID);
@@ -581,14 +620,14 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     }
 
     /// @notice Returns the current harvest fee percentage.
-    /// @return _ The harvest fee percentage.
+    /// @return The harvest fee percentage (scaled by 1e18).
     function getHarvestFeePercent() public view returns (uint128) {
         return feesParams.harvestFeePercent;
     }
 
     /// @notice Updates the harvest fee percentage.
-    /// @param newHarvestFeePercent New harvest fee percentage (scaled by 1e18).
-    /// @custom:throws FeeExceedsMaximum If fee would exceed maximum.
+    /// @param  newHarvestFeePercent New harvest fee percentage (scaled by 1e18).
+    /// @custom:reverts FeeExceedsMaximum If combined fees would exceed maximum allowed.
     function setHarvestFeePercent(uint128 newHarvestFeePercent) external onlyOwner {
         FeesParams storage currentFees = feesParams;
 
@@ -607,21 +646,22 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     // --- CLAIM OPERATIONS
     //////////////////////////////////////////////////////
 
-    /// @notice Claims rewards from multiple vaults for the caller
-    /// @dev In CHECKPOINT mode, can claim if rewards are available in the contract
-    /// @param _gauges Array of gauges to claim rewards from
-    /// @param harvestData Optional: triggers harvest before claim if provided
-    /// @custom:throws NoPendingRewards If there are no rewards to claim
+    /// @notice Claims rewards from multiple vaults for the caller.
+    /// @dev    In CHECKPOINT mode, can claim if rewards are available in the contract.
+    /// @param  _gauges Array of gauges to claim rewards from.
+    /// @param  harvestData Optional: triggers harvest before claim if provided.
+    /// @custom:reverts NoPendingRewards If there are no rewards to claim.
     function claim(address[] calldata _gauges, bytes[] calldata harvestData) external {
         claim(_gauges, harvestData, msg.sender);
     }
 
-    /// @notice Claims rewards and sends to a specific receiver
-    /// @dev Optionally harvests first if harvestData is provided
-    /// @param _gauges Array of gauges to claim rewards from
-    /// @param harvestData Optional harvest data (empty array to skip harvest)
-    /// @param receiver Address that will receive the claimed rewards
-    /// @custom:throws NoPendingRewards If there are no rewards to claim
+    /// @notice Claims rewards and sends to a specific receiver.
+    /// @dev    Optionally harvests first if harvestData is provided.
+    /// @param  _gauges Array of gauges to claim rewards from.
+    /// @param  harvestData Optional harvest data (empty array to skip harvest).
+    /// @param  receiver Address that will receive the claimed rewards.
+    /// @custom:reverts NoPendingRewards If there are no rewards to claim.
+    /// @custom:reverts InvalidHarvestDataLength If harvest data length doesn't match gauges.
     function claim(address[] calldata _gauges, bytes[] calldata harvestData, address receiver) public {
         require(harvestData.length == 0 || harvestData.length == _gauges.length, InvalidHarvestDataLength());
 
@@ -633,13 +673,14 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     }
 
     /// @notice Claims multiple vault rewards on behalf of an account and sends them to a specific address.
-    /// @param _gauges Array of gauges to claim rewards from.
-    /// @param account Address to claim rewards for.
-    /// @param harvestData Optional harvest data for each gauge. Empty bytes for gauges that don't need harvesting.
-    /// @param receiver Address that will receive the claimed rewards.
-    /// @dev expected to be called by authorized accounts only
-    /// @custom:throws OnlyAllowed If caller is not allowed to claim on behalf of others.
-    /// @custom:throws NoPendingRewards If there are no rewards to claim.
+    /// @param  _gauges Array of gauges to claim rewards from.
+    /// @param  account Address to claim rewards for.
+    /// @param  harvestData Optional harvest data for each gauge. Empty bytes for gauges that don't need harvesting.
+    /// @param  receiver Address that will receive the claimed rewards.
+    /// @dev    Expected to be called by authorized accounts only (e.g., routers).
+    /// @custom:reverts OnlyAllowed If caller is not allowed to claim on behalf of others.
+    /// @custom:reverts NoPendingRewards If there are no rewards to claim.
+    /// @custom:reverts InvalidHarvestDataLength If harvest data length doesn't match gauges.
     function claim(address[] calldata _gauges, address account, bytes[] calldata harvestData, address receiver)
         public
         onlyAllowed
@@ -653,11 +694,12 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         _claim({_gauges: _gauges, account: account, receiver: receiver});
     }
 
-    /// @dev Internal implementation of claim functionality.
-    /// @param _gauges Array of gauges to claim rewards from.
-    /// @param account Address to claim rewards for.
-    /// @param receiver Address that will receive the claimed rewards.
-    /// @custom:throws NoPendingRewards If the total claimed amount is zero.
+    /// @dev    Internal implementation of claim functionality.
+    /// @param  _gauges Array of gauges to claim rewards from.
+    /// @param  account Address to claim rewards for.
+    /// @param  receiver Address that will receive the claimed rewards.
+    /// @custom:reverts NoPendingRewards If the total claimed amount is zero.
+    /// @custom:reverts InvalidVault If a gauge has no registered vault.
     function _claim(address[] calldata _gauges, address account, address receiver) internal nonReentrant {
         uint256 totalAmount;
 
@@ -714,14 +756,14 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     //////////////////////////////////////////////////////
 
     /// @notice Returns the current protocol fee percentage.
-    /// @return _ The protocol fee percentage.
+    /// @return The protocol fee percentage (scaled by 1e18).
     function getProtocolFeePercent() public view returns (uint128) {
         return feesParams.protocolFeePercent;
     }
 
     /// @notice Updates the protocol fee percentage.
-    /// @param newProtocolFeePercent New protocol fee percentage (scaled by 1e18).
-    /// @custom:throws FeeExceedsMaximum If fee would exceed maximum.
+    /// @param  newProtocolFeePercent New protocol fee percentage (scaled by 1e18).
+    /// @custom:reverts FeeExceedsMaximum If combined fees would exceed maximum allowed.
     function setProtocolFeePercent(uint128 newProtocolFeePercent) external onlyOwner {
         FeesParams storage currentFees = feesParams;
 
@@ -737,8 +779,8 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     }
 
     /// @notice Claims accumulated protocol fees.
-    /// @dev Transfers fees to the configured fee receiver.
-    /// @custom:throws NoFeeReceiver If the fee receiver is not set.
+    /// @dev    Transfers fees to the configured fee receiver.
+    /// @custom:reverts NoFeeReceiver If the fee receiver is not set in ProtocolController.
     function claimProtocolFees() external nonReentrant {
         // get the fee receiver from the protocol controller and check that it is valid
         address feeReceiver = PROTOCOL_CONTROLLER.feeReceiver(PROTOCOL_ID);
@@ -754,7 +796,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     }
 
     /// @notice Returns the total fee percentage (protocol + harvest).
-    /// @return _ The total fee percentage.
+    /// @return The total fee percentage (scaled by 1e18).
     function getTotalFeePercent() external view returns (uint128) {
         return feesParams.protocolFeePercent + feesParams.harvestFeePercent;
     }
