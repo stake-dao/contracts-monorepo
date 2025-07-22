@@ -36,7 +36,7 @@ abstract contract CurveFactoryTest is BaseCurveTest {
 
         vm.mockCall(
             address(protocolController),
-            abi.encodeWithSelector(IProtocolController.vaults.selector, gauge),
+            abi.encodeWithSelector(IProtocolController.vault.selector, gauge),
             abi.encode(nonNullAddress)
         );
 

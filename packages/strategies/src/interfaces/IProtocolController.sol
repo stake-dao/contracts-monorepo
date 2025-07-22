@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 interface IProtocolController {
-    function vaults(address) external view returns (address);
+    function vault(address) external view returns (address);
     function asset(address) external view returns (address);
     function rewardReceiver(address) external view returns (address);
 

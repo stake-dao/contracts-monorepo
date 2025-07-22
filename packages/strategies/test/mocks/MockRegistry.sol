@@ -60,7 +60,7 @@ contract MockRegistry is IProtocolController {
         return false;
     }
 
-    function vaults(address) external view returns (address) {
+    function vault(address) external view returns (address) {
         return _vault;
     }
 

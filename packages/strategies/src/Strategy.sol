@@ -82,7 +82,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
 
     /// @notice Restricts functions to the vault associated with the gauge
     modifier onlyVault(address gauge) {
-        require(PROTOCOL_CONTROLLER.vaults(gauge) == msg.sender, OnlyVault());
+        require(PROTOCOL_CONTROLLER.vault(gauge) == msg.sender, OnlyVault());
         _;
     }
 
@@ -95,16 +95,6 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @notice Restricts harvest flush operations to the accountant
     modifier onlyAccountant() {
         require(ACCOUNTANT == msg.sender, OnlyAccountant());
-        _;
-    }
-
-    /// @notice Allows authorized addresses OR anyone if gauge is shutdown
-    /// @dev Enables permissionless emergency withdrawals during shutdowns
-    modifier onlyAllowed(address gauge) {
-        require(
-            PROTOCOL_CONTROLLER.allowed(address(this), msg.sender, msg.sig) || PROTOCOL_CONTROLLER.isShutdown(gauge),
-            OnlyAllowed()
-        );
         _;
     }
 
@@ -216,7 +206,7 @@ abstract contract Strategy is IStrategy, ProtocolContext {
     /// @param gauge The gauge to withdraw all funds from
     /// @custom:throws AlreadyShutdown If already fully withdrawn
     function shutdown(address gauge) public onlyProtocolController {
-        address vault = PROTOCOL_CONTROLLER.vaults(gauge);
+        address vault = PROTOCOL_CONTROLLER.vault(gauge);
         address asset = IERC4626(vault).asset();
         address[] memory targets = _getAllocationTargets(gauge);
 

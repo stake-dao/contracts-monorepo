@@ -106,7 +106,10 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
 
         assertEq(protocolController.isRegistrar(registrar), false);
         _cheat_override_storage(
-            address(protocolController), "registrar(address)", bytes32(abi.encode(true)), bytes32(abi.encode(registrar))
+            address(protocolController),
+            "registrar(address)",
+            bytes32(abi.encode(true)),
+            bytes32(abi.encode(registrar))
         );
         assertEq(protocolController.isRegistrar(registrar), true);
     }
@@ -128,7 +131,7 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
             })
         );
 
-        assertEq(protocolControllerHarness.vaults(gauge), vault);
+        assertEq(protocolControllerHarness.vault(gauge), vault);
     }
 
     function test_ReturnsTheRewardReceiverAddressForAGauge(address gauge, address rewardReceiver) external {
