@@ -11,7 +11,7 @@ contract Accountant__checkpoint is AccountantBaseTest {
     function test_RevertIfNotCalledByTheVault(address caller) external {
         // it revert if not called by the vault
 
-        vm.assume(caller != registry.vaults(address(stakingToken)));
+        vm.assume(caller != registry.vault(address(stakingToken)));
 
         vm.prank(caller);
         vm.expectRevert(abi.encodeWithSelector(Accountant.OnlyVault.selector));
@@ -44,7 +44,7 @@ contract Accountant__checkpoint is AccountantBaseTest {
         // - The maliciousERC20 will call the accountant.checkpoint() function again in the same tx
         // - The accountant.checkpoint() function MUST revert to ensure we are safe from reentrancy
         vm.mockFunction(
-            address(registry), address(maliciousRegistry), abi.encodeWithSelector(MaliciousRegistry.vaults.selector)
+            address(registry), address(maliciousRegistry), abi.encodeWithSelector(MaliciousRegistry.vault.selector)
         );
 
         vm.expectRevert(abi.encodeWithSelector(ReentrancyGuardTransient.ReentrancyGuardReentrantCall.selector));
@@ -343,7 +343,7 @@ contract Accountant__checkpoint is AccountantBaseTest {
         // mock the call to the registry.vaults and force it to revert
         vm.mockCallRevert(
             address(registry),
-            abi.encodeWithSelector(MockRegistry.vaults.selector, address(stakingToken)),
+            abi.encodeWithSelector(MockRegistry.vault.selector, address(stakingToken)),
             "UNCONTROLLED_SD_ERROR"
         );
 
@@ -387,7 +387,7 @@ contract MaliciousRegistry {
     }
 
     // this is a malicious transfer() function that will recall accountant.claimProtocolFees()
-    function vaults(address) public returns (address) {
+    function vault(address) public returns (address) {
         Accountant(msg.sender).checkpoint(
             attackData.asset,
             attackData.from,

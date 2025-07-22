@@ -50,7 +50,7 @@ abstract contract StrategyBaseTest is BaseTest {
         // Mock the vault function of the IProtocolController interface
         vm.mockCall(
             address(registry),
-            abi.encodeWithSelector(IProtocolController.vaults.selector, gauge),
+            abi.encodeWithSelector(IProtocolController.vault.selector, gauge),
             abi.encode(address(vault))
         );
 

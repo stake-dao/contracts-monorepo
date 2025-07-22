@@ -274,7 +274,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         IStrategy.PendingRewards calldata pendingRewards,
         IStrategy.HarvestPolicy policy
     ) public nonReentrant {
-        require(PROTOCOL_CONTROLLER.vaults(gauge) == msg.sender, OnlyVault());
+        require(PROTOCOL_CONTROLLER.vault(gauge) == msg.sender, OnlyVault());
 
         VaultData storage _vault = vaults[msg.sender];
         uint128 supply = _vault.supply;
@@ -491,7 +491,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         // First pass: harvest all gauges and update vault states
         for (uint256 i; i < _gauges.length; i++) {
             address gauge = _gauges[i];
-            address vault = PROTOCOL_CONTROLLER.vaults(gauge);
+            address vault = PROTOCOL_CONTROLLER.vault(gauge);
             require(vault != address(0), InvalidVault());
 
             VaultData storage _vault = vaults[vault];
@@ -664,7 +664,7 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
         address vault;
         // For each gauge, check if the account has any rewards to claim
         for (uint256 i; i < _gauges.length; i++) {
-            vault = PROTOCOL_CONTROLLER.vaults(_gauges[i]);
+            vault = PROTOCOL_CONTROLLER.vault(_gauges[i]);
             require(vault != address(0), InvalidVault());
 
             // Get the account data for this gauge

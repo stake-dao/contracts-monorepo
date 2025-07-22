@@ -362,7 +362,7 @@ contract Accountant__claim is AccountantBaseTest {
 
         /// Mock the registry `vaults` used to fetch which vault is associated to a gauge and returns
         /// the vaults instead.
-        vm.mockCalls(address(registry), abi.encodeWithSelector(MockRegistry.vaults.selector), mocks);
+        vm.mockCalls(address(registry), abi.encodeWithSelector(MockRegistry.vault.selector), mocks);
 
         AccountantHarness accountantHarness = AccountantHarness(address(accountant));
         deal(address(rewardToken), address(accountantHarness), type(uint256).max);

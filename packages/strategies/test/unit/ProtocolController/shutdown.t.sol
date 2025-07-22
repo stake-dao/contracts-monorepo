@@ -23,11 +23,11 @@ contract ProtocolController__shutdown is ProtocolControllerBaseTest {
         vm.assume(gauge != address(0));
 
         protocolController.registerVault({
-            _gauge: gauge,
-            _vault: address(vault),
-            _asset: address(stakingToken),
-            _rewardReceiver: address(this),
-            _protocolId: protocolId
+            gauge_: gauge,
+            vault: address(vault),
+            asset: address(stakingToken),
+            rewardReceiver: address(this),
+            protocolId: protocolId
         });
 
         assertEq(protocolController.isShutdown(gauge), false);
@@ -39,11 +39,11 @@ contract ProtocolController__shutdown is ProtocolControllerBaseTest {
         vm.assume(gauge != address(0));
 
         protocolController.registerVault({
-            _gauge: gauge,
-            _vault: address(vault),
-            _asset: address(stakingToken),
-            _rewardReceiver: address(this),
-            _protocolId: protocolId
+            gauge_: gauge,
+            vault: address(vault),
+            asset: address(stakingToken),
+            rewardReceiver: address(this),
+            protocolId: protocolId
         });
 
         vm.expectEmit(true, true, true, true);
