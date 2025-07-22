@@ -19,6 +19,8 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @notice Stores the core components for each protocol integration
     /// @dev Each protocol (Curve, Balancer, etc.) has its own set of components
     struct ProtocolComponents {
+        address locker;
+        address gateway;
         address strategy;
         address allocator;
         address accountant;
@@ -289,6 +291,26 @@ contract ProtocolController is IProtocolController, Ownable2Step {
         emit ProtocolComponentSet(protocolId, "Factory", _factory);
     }
 
+    /// @notice Sets a protocol locker
+    /// @param protocolId The protocol identifier
+    /// @param _locker The locker address
+    /// @custom:reverts ZeroAddress if the factory address is zero
+    function setLocker(bytes4 protocolId, address _locker) external onlyOwner {
+        require(_locker != address(0), ZeroAddress());
+        _protocolComponents[protocolId].locker = _locker;
+        emit ProtocolComponentSet(protocolId, "Locker", _locker);
+    }
+
+    /// @notice Sets a protocol gateway
+    /// @param protocolId The protocol identifier
+    /// @param _gateway The gateway address
+    /// @custom:reverts ZeroAddress if the gateway address is zero
+    function setGateway(bytes4 protocolId, address _gateway) external onlyOwner {
+        require(_gateway != address(0), ZeroAddress());
+        _protocolComponents[protocolId].gateway = _gateway;
+        emit ProtocolComponentSet(protocolId, "Gateway", _gateway);
+    }
+
     //////////////////////////////////////////////////////
     // --- VAULT REGISTRATION & SHUTDOWN
     //////////////////////////////////////////////////////
@@ -429,6 +451,20 @@ contract ProtocolController is IProtocolController, Ownable2Step {
     /// @return _ The factory address
     function factory(bytes4 protocolId) external view returns (address) {
         return _protocolComponents[protocolId].factory;
+    }
+
+    /// @notice Returns the locker for a given protocol ID
+    /// @param protocolId The protocol identifier
+    /// @return _ The locker address
+    function locker(bytes4 protocolId) external view returns (address) {
+        return _protocolComponents[protocolId].locker;
+    }
+
+    /// @notice Returns the gateway for a given protocol ID
+    /// @param protocolId The protocol identifier
+    /// @return _ The locker address
+    function gateway(bytes4 protocolId) external view returns (address) {
+        return _protocolComponents[protocolId].gateway;
     }
 
     /// @notice Checks if an address is an authorized registrar

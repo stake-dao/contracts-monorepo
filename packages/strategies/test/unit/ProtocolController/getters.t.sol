@@ -23,6 +23,8 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
         protocolControllerHarness._cheat_override_protocol_components(
             PROTOCOL_ID,
             ProtocolController.ProtocolComponents({
+                locker: address(0),
+                gateway: address(0),
                 strategy: strategy,
                 allocator: address(0),
                 accountant: address(0),
@@ -42,6 +44,8 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
         protocolControllerHarness._cheat_override_protocol_components(
             PROTOCOL_ID,
             ProtocolController.ProtocolComponents({
+                locker: address(0),
+                gateway: address(0),
                 strategy: address(0),
                 allocator: allocator,
                 accountant: address(0),
@@ -61,6 +65,8 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
         protocolControllerHarness._cheat_override_protocol_components(
             PROTOCOL_ID,
             ProtocolController.ProtocolComponents({
+                locker: address(0),
+                gateway: address(0),
                 strategy: address(0),
                 allocator: address(0),
                 accountant: accountant,
@@ -80,6 +86,8 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
         protocolControllerHarness._cheat_override_protocol_components(
             PROTOCOL_ID,
             ProtocolController.ProtocolComponents({
+                locker: address(0),
+                gateway: address(0),
                 strategy: address(0),
                 allocator: address(0),
                 accountant: address(0),
@@ -207,6 +215,8 @@ contract ProtocolController__getters is ProtocolControllerBaseTest {
         protocolControllerHarness._cheat_override_protocol_components(
             PROTOCOL_ID,
             ProtocolController.ProtocolComponents({
+                locker: address(0),
+                gateway: address(0),
                 strategy: address(0),
                 allocator: address(0),
                 accountant: address(0),
