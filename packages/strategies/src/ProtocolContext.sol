@@ -6,10 +6,12 @@ import {IModuleManager} from "@interfaces/safe/IModuleManager.sol";
 import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
-/// @title ProtocolContext
+/// @title ProtocolContext.
 /// @author Stake DAO
-/// @notice Base contract providing shared protocol configuration and transaction execution
-/// @dev Inherited by Strategy and other protocol-specific contracts to ensure consistent configuration
+/// @custom:github @stake-dao
+/// @custom:contact contact@stakedao.org
+
+/// @notice Base contract providing shared protocol configuration and transaction execution.
 contract ProtocolContext {
     //////////////////////////////////////////////////////
     // --- IMMUTABLES

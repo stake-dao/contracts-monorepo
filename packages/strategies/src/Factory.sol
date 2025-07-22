@@ -4,14 +4,15 @@ pragma solidity 0.8.28;
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {ProtocolContext} from "src/ProtocolContext.sol";
 
-/// @title Factory - Abstract Base Factory Contract
-/// @notice A base contract for implementing protocol-specific vault factories
-/// @dev Provides core functionality for creating and managing vaults across different protocols
-///      Key responsibilities:
-///      - Deploys vaults and reward receivers for protocol gauges
-///      - Validates gauges and tokens
-///      - Registers vaults with the protocol controller
-///      - Sets up reward tokens for vaults
+/// @title Factory.
+/// @author Stake DAO
+/// @custom:github @stake-dao
+/// @custom:contact contact@stakedao.org
+
+/// @notice Factory is an abstract base contract for implementing protocol-specific vault factories.
+///         It provides core functionality for creating and managing vaults across different protocols,
+///         including deploying vaults and reward receivers for protocol gauges, validating gauges and tokens,
+///         registering vaults with the protocol controller, and setting up reward tokens for vaults.
 abstract contract Factory is ProtocolContext {
     //////////////////////////////////////////////////////
     // --- IMMUTABLES

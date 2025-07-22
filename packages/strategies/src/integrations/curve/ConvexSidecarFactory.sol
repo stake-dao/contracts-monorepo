@@ -6,9 +6,12 @@ import {IBooster} from "@interfaces/convex/IBooster.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
 
-/// @title ConvexSidecarFactory
-/// @notice Factory contract for deploying ConvexSidecar instances
-/// @dev Creates deterministic minimal proxies for ConvexSidecar implementation
+/// @title ConvexSidecarFactory.
+/// @author Stake DAO
+/// @custom:github @stake-dao
+/// @custom:contact contact@stakedao.org
+
+/// @notice Factory contract for deploying ConvexSidecar instances.
 contract ConvexSidecarFactory is SidecarFactory {
     /// @notice The bytes4 ID of the Convex protocol
     /// @dev Used to identify the Convex protocol in the registry

@@ -11,13 +11,16 @@ import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {IRewardReceiver} from "src/interfaces/IRewardReceiver.sol";
 import {IFactory} from "src/interfaces/IFactory.sol";
 
-/// @title CurveStrategy - Curve Protocol Integration Strategy
-/// @notice A strategy implementation for interacting with Curve protocol gauges
-/// @dev Extends the base Strategy contract with Curve-specific functionality
-///      Key responsibilities:
-///      - Syncs and tracks pending rewards from Curve gauges and Sidecar contracts
-///      - Handles deposits and withdrawals through Curve liquidity gauges and Sidecar contracts
-///      - Executes transactions through a gateway/module manager pattern
+/// @title CurveStrategyL2.
+/// @author Stake DAO
+/// @custom:github @stake-dao
+/// @custom:contact contact@stakedao.org
+
+/// @notice CurveStrategyL2 is a specialized implementation for interacting with Curve protocol gauges on Layer 2 networks.
+///         
+///         Key differences from mainnet CurveStrategy:
+///         - No MINTER immutable - uses gauge.factory() as the minter
+///         - Includes extra rewards claiming functionality via claim_rewards()
 contract CurveStrategyL2 is Strategy {
     using SafeCast for uint256;
 

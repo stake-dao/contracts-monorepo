@@ -6,9 +6,16 @@ import {IL2Booster} from "@interfaces/convex/IL2Booster.sol";
 import {Clones} from "@openzeppelin/contracts/proxy/Clones.sol";
 import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
 
-/// @title ConvexSidecarFactory
-/// @notice Factory contract for deploying ConvexSidecar instances
-/// @dev Creates deterministic minimal proxies for ConvexSidecar implementation
+/// @title ConvexSidecarFactoryL2.
+/// @author Stake DAO
+/// @custom:github @stake-dao
+/// @custom:contact contact@stakedao.org
+
+/// @notice ConvexSidecarFactoryL2 is a specialized factory for deploying ConvexSidecar instances on Layer 2 networks.
+///         It creates deterministic minimal proxies for the ConvexSidecarL2 implementation.
+///         
+///         Key differences from mainnet ConvexSidecarFactory:
+///         - Uses IL2Booster interface instead of IBooster
 contract ConvexSidecarFactoryL2 is SidecarFactory {
     /// @notice The bytes4 ID of the Convex protocol
     /// @dev Used to identify the Convex protocol in the registry

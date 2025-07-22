@@ -6,13 +6,15 @@ import {IMinter} from "@interfaces/curve/IMinter.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 import "src/Strategy.sol";
 
-/// @title CurveStrategy - Curve Protocol Integration Strategy
-/// @notice A strategy implementation for interacting with Curve protocol gauges
-/// @dev Extends the base Strategy contract with Curve-specific functionality
-///      Key responsibilities:
-///      - Syncs and tracks pending rewards from Curve gauges and Sidecar contracts
-///      - Handles deposits and withdrawals through Curve liquidity gauges and Sidecar contracts
-///      - Executes transactions through a gateway/module manager pattern
+/// @title CurveStrategy.
+/// @author Stake DAO
+/// @custom:github @stake-dao
+/// @custom:contact contact@stakedao.org
+
+/// @notice CurveStrategy is a specialized implementation for interacting with Curve protocol gauges.
+///         It extends the base Strategy contract with Curve-specific functionality to sync and track
+///         pending rewards from Curve gauges and Sidecar contracts, handle deposits and withdrawals
+///         through Curve liquidity gauges, and execute transactions via the gateway pattern.
 contract CurveStrategy is Strategy {
     using SafeCast for uint256;
 
