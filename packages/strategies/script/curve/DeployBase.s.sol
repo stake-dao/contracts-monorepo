@@ -52,11 +52,11 @@ contract DeployBase is BaseCurveDeploy {
         factories[0] = IChildLiquidityGaugeFactory(config.base.gaugeController);
         factories[1] = IChildLiquidityGaugeFactory(0xabC000d88f23Bb45525E447528DBF656A9D55bf5);
 
-        L2CurveFactory(factory).setChildLiquidityGaugeFactories(factories);
+        CurveFactoryL2(factory).setChildLiquidityGaugeFactories(factories);
         super._afterSetup();
 
         for (uint256 i = 0; i < gauges.length; i++) {
-            CurveFactory(factory).createVault(gauges[i]);
+            CurveFactoryL2(factory).createVault(gauges[i]);
         }
     }
 

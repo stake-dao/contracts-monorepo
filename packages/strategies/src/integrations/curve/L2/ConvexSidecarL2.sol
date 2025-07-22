@@ -11,7 +11,7 @@ import {Sidecar} from "src/Sidecar.sol";
 
 /// @notice Sidecar for Convex.
 /// @dev For each PID, a minimal proxy is deployed using this contract as implementation.
-contract L2ConvexSidecar is Sidecar {
+contract ConvexSidecarL2 is Sidecar {
     using SafeERC20 for IERC20;
     using ImmutableArgsParser for address;
 

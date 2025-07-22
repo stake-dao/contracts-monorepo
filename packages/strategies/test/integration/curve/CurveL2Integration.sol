@@ -4,12 +4,12 @@ pragma solidity 0.8.28;
 import {SafeLibrary} from "test/utils/SafeLibrary.sol";
 import {IMinter} from "@interfaces/curve/IMinter.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
-import {CurveFactory} from "src/integrations/curve/L2/CurveFactory.sol";
+import {CurveFactoryL2} from "src/integrations/curve/L2/CurveFactoryL2.sol";
 import {ILiquidityGauge, IL2LiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
-import {CurveStrategy} from "src/integrations/curve/L2/CurveStrategy.sol";
-import {L2ConvexSidecar} from "src/integrations/curve/L2/L2ConvexSidecar.sol";
+import {CurveStrategyL2} from "src/integrations/curve/L2/CurveStrategyL2.sol";
+import {ConvexSidecarL2} from "src/integrations/curve/L2/ConvexSidecarL2.sol";
 import {OnlyBoostAllocator} from "src/integrations/curve/OnlyBoostAllocator.sol";
-import {L2ConvexSidecarFactory} from "src/integrations/curve/L2/L2ConvexSidecarFactory.sol";
+import {ConvexSidecarFactoryL2} from "src/integrations/curve/L2/ConvexSidecarFactoryL2.sol";
 import {IL2Booster} from "@interfaces/convex/IL2Booster.sol";
 import {ERC20Mock} from "test/mocks/ERC20Mock.sol";
 import {IChildLiquidityGaugeFactory} from "@interfaces/curve/IChildLiquidityGaugeFactory.sol";
@@ -75,7 +75,7 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
 
         /// 2. Deploy the Curve Strategy contract.
         strategy = address(
-            new CurveStrategy({
+            new CurveStrategyL2({
                 _registry: address(protocolController),
                 _locker: config.base.locker,
                 _gateway: address(gateway)
@@ -86,7 +86,7 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
         if (config.convex.isOnlyBoost) {
             /// 3a. Deploy the Convex Sidecar implementation.
             sidecarImplementation = address(
-                new L2ConvexSidecar({
+                new ConvexSidecarL2({
                     _accountant: address(accountant),
                     _protocolController: address(protocolController),
                     _cvx: config.convex.cvx,
@@ -96,7 +96,7 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
 
             /// 3b. Deploy the Convex Sidecar factory.
             sidecarFactory = address(
-                new L2ConvexSidecarFactory({
+                new ConvexSidecarFactoryL2({
                     _implementation: address(sidecarImplementation),
                     _protocolController: address(protocolController),
                     _booster: config.convex.booster
@@ -114,7 +114,7 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
         }
 
         factory = address(
-            new CurveFactory(
+            new CurveFactoryL2(
                 admin,
                 address(protocolController),
                 address(rewardVaultImplementation),
@@ -197,9 +197,9 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
 
         // If there's a Convex sidecar, also set up CVX rewards properly
         if (config.convex.isOnlyBoost && token == config.convex.cvx && sidecarFactory != address(0)) {
-            address sidecar = L2ConvexSidecarFactory(sidecarFactory).sidecar(gauge);
+            address sidecar = ConvexSidecarFactoryL2(sidecarFactory).sidecar(gauge);
             if (sidecar != address(0)) {
-                address baseRewardPool = address(L2ConvexSidecar(sidecar).baseRewardPool());
+                address baseRewardPool = address(ConvexSidecarL2(sidecar).baseRewardPool());
                 deal(token, baseRewardPool, IERC20(token).balanceOf(baseRewardPool) + amount);
             }
         }
@@ -221,7 +221,7 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
         // On L2s, the factory owner can add rewards
         address gaugeFactory = ILiquidityGauge(gauge).factory();
         address factoryOwner = Ownable(gaugeFactory).owner();
-        
+
         // Add rewards through gauge functions
         for (uint256 i = 0; i < extraTokens.length; i++) {
             address token = extraTokens[i];
@@ -229,11 +229,11 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
 
             vm.prank(factoryOwner);
             ILiquidityGauge(gauge).add_reward(token, distributor);
-            
+
             // Deposit some initial rewards
             uint256 rewardAmount = 1000e18;
             deal(token, distributor, rewardAmount);
-            
+
             vm.startPrank(distributor);
             IERC20(token).approve(gauge, rewardAmount);
             ILiquidityGauge(gauge).deposit_reward_token(token, rewardAmount);
@@ -270,37 +270,37 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
     function test_automatic_sync_new_reward_tokens() public {
         // Deploy vaults normally (with initial extra rewards from _setupGaugeExtraRewards)
         (rewardVaults, rewardReceivers) = deployRewardVaults();
-        
+
         RewardVault vault = rewardVaults[0];
         address gauge = vault.gauge();
-        
+
         // Verify we have the initial extra rewards from _setupGaugeExtraRewards
         address[] memory initialTokens = vault.getRewardTokens();
         uint256 initialTokenCount = initialTokens.length;
         assertGe(initialTokenCount, 2, "Should have at least 2 initial extra reward tokens");
-        
+
         // User deposits
         address user = makeAddr("user");
         deposit(vault, user, 100e18);
-        
+
         // Add a THIRD reward token to the gauge (not included in initial setup)
         address newRewardToken = _deployMockERC20("ThirdReward", "THIRD", 18);
-        
+
         // On L2s, the factory owner or gauge manager can add rewards
         address gaugeFactory = ILiquidityGauge(gauge).factory();
         address factoryOwner = Ownable(gaugeFactory).owner();
-        
+
         vm.startPrank(factoryOwner);
 
-        uint count = ILiquidityGauge(gauge).reward_count(); // Trigger any internal state updates
-        
+        uint256 count = ILiquidityGauge(gauge).reward_count(); // Trigger any internal state updates
+
         // Add the new reward token with reward receiver as distributor
         ILiquidityGauge(gauge).add_reward(newRewardToken, factoryOwner);
 
         // Now deposit reward tokens as the distributor (reward receiver)
         uint256 rewardAmount = 1000e18;
         deal(newRewardToken, factoryOwner, rewardAmount);
-        
+
         IERC20(newRewardToken).approve(gauge, rewardAmount);
         ILiquidityGauge(gauge).deposit_reward_token(newRewardToken, rewardAmount);
 
@@ -313,7 +313,7 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
 
         address[] memory updateTokens = vault.getRewardTokens();
         assertGe(updateTokens.length, 3, "Should now have 3 reward tokens");
-        
+
         // Check if the new token was actually added
         bool tokenFound = false;
         for (uint256 i = 0; i < updateTokens.length; i++) {
@@ -323,24 +323,26 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
             }
         }
         assertTrue(tokenFound, "New token should be in vault");
-        
+
         // Skip more time to accumulate rewards
         skip(1 days);
-        
+
         // Harvest again to trigger reward distribution
         harvest();
 
         skip(1 days);
-        
+
         // Verify rewards were distributed to vault
-        assertGt(IERC20(newRewardToken).balanceOf(address(vault)), 0, "Vault should have received the new reward tokens");
-        
+        assertGt(
+            IERC20(newRewardToken).balanceOf(address(vault)), 0, "Vault should have received the new reward tokens"
+        );
+
         // User can claim the new rewards
         vm.prank(user);
         address[] memory claimTokens = new address[](1);
         claimTokens[0] = newRewardToken;
         vault.claim(claimTokens, user);
-        
+
         assertGt(IERC20(newRewardToken).balanceOf(user), 0, "User should have claimed the new rewards");
     }
 }

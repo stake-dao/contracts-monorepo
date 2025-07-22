@@ -18,7 +18,7 @@ import {IFactory} from "src/interfaces/IFactory.sol";
 ///      - Syncs and tracks pending rewards from Curve gauges and Sidecar contracts
 ///      - Handles deposits and withdrawals through Curve liquidity gauges and Sidecar contracts
 ///      - Executes transactions through a gateway/module manager pattern
-contract CurveStrategy is Strategy {
+contract CurveStrategyL2 is Strategy {
     using SafeCast for uint256;
 
     //////////////////////////////////////////////////////
@@ -163,7 +163,8 @@ contract CurveStrategy is Strategy {
         address rewardReceiver = PROTOCOL_CONTROLLER.rewardReceiver(gauge);
 
         /// 2. Claim extra rewards from the gauge to the reward receiver.
-        bytes memory data = abi.encodeWithSignature("claim_rewards(address,address)", address(LOCKER), address(rewardReceiver));
+        bytes memory data =
+            abi.encodeWithSignature("claim_rewards(address,address)", address(LOCKER), address(rewardReceiver));
         require(_executeTransaction(gauge, data), ClaimExtraRewards());
 
         address rewardVault = PROTOCOL_CONTROLLER.vaults(gauge);

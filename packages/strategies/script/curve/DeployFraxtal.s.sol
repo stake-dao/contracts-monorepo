@@ -46,7 +46,7 @@ contract DeployFraxtal is BaseCurveDeploy {
         factories[0] = IChildLiquidityGaugeFactory(0xeF672bD94913CB6f1d2812a6e18c1fFdEd8eFf5c);
         factories[1] = IChildLiquidityGaugeFactory(0x0B8D6B6CeFC7Aa1C2852442e518443B1b22e1C52);
 
-        L2CurveFactory(factory).setChildLiquidityGaugeFactories(factories);
+        CurveFactoryL2(factory).setChildLiquidityGaugeFactories(factories);
 
         super._afterSetup();
 
@@ -54,7 +54,7 @@ contract DeployFraxtal is BaseCurveDeploy {
         uint256 size = booster.poolLength();
 
         for (uint256 i = 0; i < size; i++) {
-            CurveFactory(factory).create(i);
+            CurveFactoryL2(factory).create(i);
         }
     }
 
