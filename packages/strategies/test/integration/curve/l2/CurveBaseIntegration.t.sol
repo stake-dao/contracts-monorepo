@@ -5,7 +5,7 @@ import "test/integration/curve/CurveL2Integration.sol";
 import {IL2Booster} from "@interfaces/convex/IL2Booster.sol";
 import {CurveProtocol} from "@address-book/src/CurveBase.sol";
 import {IChildLiquidityGaugeFactory} from "@interfaces/curve/IChildLiquidityGaugeFactory.sol";
-import {CurveFactory as L2CurveFactory} from "src/integrations/curve/L2/CurveFactory.sol";
+import {CurveFactoryL2} from "src/integrations/curve/L2/CurveFactoryL2.sol";
 
 contract CurveBaseIntegrationTest is CurveL2Integration {
     Config public _config = Config({
@@ -33,7 +33,7 @@ contract CurveBaseIntegrationTest is CurveL2Integration {
         childLiquidityGaugeFactories[0] = IChildLiquidityGaugeFactory(config.base.gaugeController);
         childLiquidityGaugeFactories[1] = IChildLiquidityGaugeFactory(0xabC000d88f23Bb45525E447528DBF656A9D55bf5);
 
-        CurveFactory(factory).setChildLiquidityGaugeFactories(childLiquidityGaugeFactories);
+        CurveFactoryL2(factory).setChildLiquidityGaugeFactories(childLiquidityGaugeFactories);
     }
 
     function deployRewardVaults()
@@ -91,5 +91,4 @@ contract CurveBaseIntegrationTest is CurveL2Integration {
             abi.encode(newIntegrateFraction)
         );
     }
-
 }

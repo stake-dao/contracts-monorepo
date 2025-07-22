@@ -17,9 +17,9 @@ import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 ///      - Rewards are tracked as integrals (cumulative reward per token)
 ///      - User rewards = (current integral - last user integral) * user balance
 ///      Two reward distribution policies:
-///      - HARVEST: Claims rewards from gauge on every user action (higher gas, immediate rewards)
+///      - HARVEST: Claims rewards from gauge on every user action
 ///      - CHECKPOINT: Accumulates rewards in gauge until manual harvest, but users can claim
-///                   from the shared reward pool if tokens are available (cross-vault liquidity)
+///                   from the shared reward pool if tokens are available (cross-vault rewards)
 contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
     using Math for uint256;
     using Math for uint128;

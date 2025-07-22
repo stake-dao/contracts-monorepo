@@ -9,7 +9,7 @@ import {IL2LiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {IChildLiquidityGaugeFactory} from "@interfaces/curve/IChildLiquidityGaugeFactory.sol";
 
-contract CurveFactory is Factory, Ownable2Step {
+contract CurveFactoryL2 is Factory, Ownable2Step {
     /// @notice The bytes4 ID of the Curve protocol
     /// @dev Used to identify the Curve protocol in the registry
     bytes4 private constant CURVE_PROTOCOL_ID = bytes4(keccak256("CURVE"));

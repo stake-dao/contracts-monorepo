@@ -5,7 +5,7 @@ import "test/integration/curve/CurveL2Integration.sol";
 import {IL2Booster} from "@interfaces/convex/IL2Booster.sol";
 import {CurveProtocol} from "@address-book/src/CurveFraxtal.sol";
 import {IChildLiquidityGaugeFactory} from "@interfaces/curve/IChildLiquidityGaugeFactory.sol";
-import {CurveFactory as L2CurveFactory} from "src/integrations/curve/L2/CurveFactory.sol";
+import {CurveFactoryL2} from "src/integrations/curve/L2/CurveFactoryL2.sol";
 
 contract CurveFraxtalIntegrationTest is CurveL2Integration {
     Config public _config = Config({
@@ -53,7 +53,7 @@ contract CurveFraxtalIntegrationTest is CurveL2Integration {
             _setupGaugeExtraRewards(gauge);
 
             /// Deploy the vault and receiver.
-            (address vault, address receiver,) = CurveFactory(factory).create(poolId);
+            (address vault, address receiver,) = CurveFactoryL2(factory).create(poolId);
 
             vaults[i] = RewardVault(vault);
             receivers[i] = RewardReceiver(receiver);
@@ -66,7 +66,7 @@ contract CurveFraxtalIntegrationTest is CurveL2Integration {
         IChildLiquidityGaugeFactory[] memory childLiquidityGaugeFactories = new IChildLiquidityGaugeFactory[](1);
         childLiquidityGaugeFactories[0] = IChildLiquidityGaugeFactory(config.base.gaugeController);
 
-        CurveFactory(factory).setChildLiquidityGaugeFactories(childLiquidityGaugeFactories);
+        CurveFactoryL2(factory).setChildLiquidityGaugeFactories(childLiquidityGaugeFactories);
     }
 
     function getGauges() internal view override returns (address[] memory) {

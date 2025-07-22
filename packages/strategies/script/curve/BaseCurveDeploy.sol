@@ -6,12 +6,12 @@ import "script/BaseDeploy.sol";
 import {IStrategy} from "src/interfaces/IStrategy.sol";
 import {OnlyBoostAllocator} from "src/integrations/curve/OnlyBoostAllocator.sol";
 
-import {CurveFactory as L2CurveFactory} from "src/integrations/curve/L2/CurveFactory.sol";
-import {CurveStrategy as L2CurveStrategy} from "src/integrations/curve/L2/CurveStrategy.sol";
+import {CurveFactoryL2} from "src/integrations/curve/L2/CurveFactoryL2.sol";
+import {CurveStrategyL2} from "src/integrations/curve/L2/CurveStrategyL2.sol";
 
 import {RewardReceiverL2} from "src/RewardReceiverL2.sol";
-import {L2ConvexSidecar} from "src/integrations/curve/L2/L2ConvexSidecar.sol";
-import {L2ConvexSidecarFactory} from "src/integrations/curve/L2/L2ConvexSidecarFactory.sol";
+import {ConvexSidecarL2} from "src/integrations/curve/L2/ConvexSidecarL2.sol";
+import {ConvexSidecarFactoryL2} from "src/integrations/curve/L2/ConvexSidecarFactoryL2.sol";
 
 import {CurveFactory} from "src/integrations/curve/CurveFactory.sol";
 import {CurveStrategy} from "src/integrations/curve/CurveStrategy.sol";
@@ -65,9 +65,9 @@ abstract contract BaseCurveDeploy is BaseDeploy {
         /// 2. Deploy the Curve Strategy contract.
         strategy = address(
             _deployWithCreate3(
-                isL2 ? type(L2CurveStrategy).name : type(CurveStrategy).name,
+                isL2 ? type(CurveStrategyL2).name : type(CurveStrategy).name,
                 abi.encodePacked(
-                    isL2 ? type(L2CurveStrategy).creationCode : type(CurveStrategy).creationCode,
+                    isL2 ? type(CurveStrategyL2).creationCode : type(CurveStrategy).creationCode,
                     abi.encode(address(protocolController), config.base.locker, address(gateway))
                 )
             )
@@ -78,9 +78,9 @@ abstract contract BaseCurveDeploy is BaseDeploy {
             /// 3a. Deploy the Convex Sidecar implementation.
             sidecarImplementation = address(
                 _deployWithCreate3(
-                    isL2 ? type(L2ConvexSidecar).name : type(ConvexSidecar).name,
+                    isL2 ? type(ConvexSidecarL2).name : type(ConvexSidecar).name,
                     abi.encodePacked(
-                        isL2 ? type(L2ConvexSidecar).creationCode : type(ConvexSidecar).creationCode,
+                        isL2 ? type(ConvexSidecarL2).creationCode : type(ConvexSidecar).creationCode,
                         abi.encode(
                             address(accountant), address(protocolController), config.convex.cvx, config.convex.booster
                         )
@@ -91,9 +91,9 @@ abstract contract BaseCurveDeploy is BaseDeploy {
             /// 3b. Deploy the Convex Sidecar factory.
             sidecarFactory = address(
                 _deployWithCreate3(
-                    isL2 ? type(L2ConvexSidecarFactory).name : type(ConvexSidecarFactory).name,
+                    isL2 ? type(ConvexSidecarFactoryL2).name : type(ConvexSidecarFactory).name,
                     abi.encodePacked(
-                        isL2 ? type(L2ConvexSidecarFactory).creationCode : type(ConvexSidecarFactory).creationCode,
+                        isL2 ? type(ConvexSidecarFactoryL2).creationCode : type(ConvexSidecarFactory).creationCode,
                         abi.encode(address(sidecarImplementation), address(protocolController), config.convex.booster)
                     )
                 )
@@ -149,9 +149,9 @@ abstract contract BaseCurveDeploy is BaseDeploy {
 
         factory = address(
             _deployWithCreate3(
-                isL2 ? type(L2CurveFactory).name : type(CurveFactory).name,
+                isL2 ? type(CurveFactoryL2).name : type(CurveFactory).name,
                 abi.encodePacked(
-                    isL2 ? type(L2CurveFactory).creationCode : type(CurveFactory).creationCode, factoryParams
+                    isL2 ? type(CurveFactoryL2).creationCode : type(CurveFactory).creationCode, factoryParams
                 )
             )
         );
