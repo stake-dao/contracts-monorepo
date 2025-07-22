@@ -106,4 +106,32 @@ contract ProtocolContext {
             );
         }
     }
+
+    /// @notice Executes privileged transactions through the Safe module system
+    /// @dev Handles two execution patterns:
+    ///      - Mainnet: Gateway -> Locker -> Target (locker holds funds and executes)
+    ///      - L2: Gateway acts as locker and executes directly on target
+    /// @param target The address of the contract to interact with
+    /// @param data The calldata to send to the target
+    /// @return success Whether the transaction executed successfully
+    function _executeTransactionReturnData(address target, bytes memory data)
+        internal
+        returns (bool success, bytes memory returnData)
+    {
+        if (LOCKER == GATEWAY) {
+            // L2 pattern: Gateway holds funds and executes directly
+            (success, returnData) = IModuleManager(GATEWAY).execTransactionFromModuleReturnData(
+                target, 0, data, IModuleManager.Operation.Call
+            );
+        } else {
+            // Mainnet pattern: Gateway instructs locker (which holds funds) to execute
+            // The locker contract has the necessary approvals and balances
+            (success, returnData) = IModuleManager(GATEWAY).execTransactionFromModuleReturnData(
+                LOCKER,
+                0,
+                abi.encodeWithSignature("execute(address,uint256,bytes)", target, 0, data),
+                IModuleManager.Operation.Call
+            );
+        }
+    }
 }
