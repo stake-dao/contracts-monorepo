@@ -16,8 +16,12 @@ import {IERC20, SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeE
 import {Sidecar} from "src/Sidecar.sol";
 import {ImmutableArgsParser} from "src/libraries/ImmutableArgsParser.sol";
 
-/// @notice Sidecar for Convex.
-/// @dev For each PID, a minimal proxy is deployed using this contract as implementation.
+/// @title ConvexSidecar.
+/// @author Stake DAO
+/// @custom:github @stake-dao
+/// @custom:contact contact@stakedao.org
+
+/// @notice Sidecar for managing Convex rewards and deposits.
 contract ConvexSidecar is Sidecar {
     using SafeERC20 for IERC20;
     using ImmutableArgsParser for address;

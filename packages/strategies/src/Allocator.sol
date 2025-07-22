@@ -3,12 +3,15 @@ pragma solidity 0.8.28;
 
 import {IAllocator} from "src/interfaces/IAllocator.sol";
 
-/// @title Allocator
+/// @title Allocator.
 /// @author Stake DAO
-/// @notice Determines where to deploy capital for optimal yield
-/// @dev Base implementation sends everything to locker. Protocol-specific allocators
-///      (e.g., OnlyBoostAllocator) override to split between locker and sidecars
-///      based on yield optimization strategies
+/// @custom:github @stake-dao
+/// @custom:contact contact@stakedao.org
+
+/// @notice Allocator determines where to deploy capital for optimal yield generation.
+///         The base implementation sends everything to the locker, while protocol-specific allocators
+///         (e.g., OnlyBoostAllocator) can override to split funds between locker and sidecars
+///         based on yield optimization strategies.
 contract Allocator is IAllocator {
     /// @notice The locker that holds and stakes protocol tokens (e.g., veCRV holder)
     address public immutable LOCKER;

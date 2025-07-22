@@ -7,13 +7,15 @@ import {ISidecar} from "src/interfaces/ISidecar.sol";
 import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
-/// @title Sidecar - Alternative yield source manager alongside main locker
-/// @notice Base contract for protocol-specific yield sources that complement the main locker strategy
-/// @dev Design rationale:
-///      - Enables yield diversification beyond the main protocol locker (e.g., Convex alongside veCRV)
-///      - Protocol-agnostic base allows extension for any yield source
-///      - Managed by Strategy for unified deposit/withdraw/harvest operations
-///      - Rewards flow through Accountant for consistent distribution
+/// @title Sidecar.
+/// @author Stake DAO
+/// @custom:github @stake-dao
+/// @custom:contact contact@stakedao.org
+
+/// @notice Sidecar is an abstract base contract for protocol-specific yield sources that complement the main locker strategy.
+///         It enables yield diversification beyond the main protocol locker (e.g., Convex alongside veCRV) and provides
+///         a protocol-agnostic base that can be extended for any yield source. Sidecars are managed by the Strategy
+///         for unified deposit/withdraw/harvest operations, with rewards flowing through the Accountant for consistent distribution.
 abstract contract Sidecar is ISidecar {
     using SafeERC20 for IERC20;
 

@@ -9,6 +9,16 @@ import {IL2LiquidityGauge} from "@interfaces/curve/ILiquidityGauge.sol";
 import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {IChildLiquidityGaugeFactory} from "@interfaces/curve/IChildLiquidityGaugeFactory.sol";
 
+/// @title CurveFactoryL2.
+/// @author Stake DAO
+/// @custom:github @stake-dao
+/// @custom:contact contact@stakedao.org
+
+/// @notice CurveFactoryL2 is a specialized factory for deploying Curve vaults on Layer 2 networks.
+///         
+///         Key differences from mainnet CurveFactory:
+///         - Integrates with Convex L2 Booster for sidecar deployment
+///         - Uses ChildLiquidityGaugeFactory array to validate gauges
 contract CurveFactoryL2 is Factory, Ownable2Step {
     /// @notice The bytes4 ID of the Curve protocol
     /// @dev Used to identify the Curve protocol in the registry

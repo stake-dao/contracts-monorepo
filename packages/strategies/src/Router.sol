@@ -7,11 +7,14 @@ import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
 import {IRouter} from "src/interfaces/IRouter.sol";
 import {IRouterModule} from "src/interfaces/IRouterModule.sol";
 
-/**
- * @title Staking Router
- * @notice One single entry point for all Staking V2 instances.
- * @dev This contract allows for the execution of arbitrary delegate calls to registered modules.
- */
+/// @title Router.
+/// @author Stake DAO
+/// @custom:github @stake-dao
+/// @custom:contact contact@stakedao.org
+
+/// @notice Router serves as the single entry point for all Staking V2 operations.
+///         It allows for the execution of arbitrary delegate calls to registered modules,
+///         enabling modular functionality extension while maintaining a unified interface.
 contract Router is IRouter, Ownable {
     ///////////////////////////////////////////////////////////////
     // --- CONSTANTS

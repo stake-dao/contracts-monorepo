@@ -9,8 +9,18 @@ import {CurveProtocol} from "@address-book/src/CurveEthereum.sol";
 import {ImmutableArgsParser} from "src/libraries/ImmutableArgsParser.sol";
 import {Sidecar} from "src/Sidecar.sol";
 
-/// @notice Sidecar for Convex.
-/// @dev For each PID, a minimal proxy is deployed using this contract as implementation.
+/// @title ConvexSidecarL2.
+/// @author Stake DAO
+/// @custom:github @stake-dao
+/// @custom:contact contact@stakedao.org
+
+/// @notice ConvexSidecarL2 is a specialized sidecar implementation for Convex integration on Layer 2 networks.
+///         For each PID, a minimal proxy is deployed using this contract as implementation.
+///         
+///         Key differences from mainnet ConvexSidecar:
+///         - Uses L2-specific interfaces (IL2Booster, IL2BaseRewardPool)
+///         - No extra reward differentiation, all rewards are claimed and sent to the
+///           good reward receiver, either the RewardReceiver or the Accountant.
 contract ConvexSidecarL2 is Sidecar {
     using SafeERC20 for IERC20;
     using ImmutableArgsParser for address;
