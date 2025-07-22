@@ -14,13 +14,16 @@ import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {ImmutableArgsParser} from "src/libraries/ImmutableArgsParser.sol";
 
-/// @title RewardVault - User-facing ERC4626 vault for yield aggregation
-/// @notice Entry point for users to deposit LP tokens and earn rewards
-/// @dev Core responsibilities:
-///      - Manages extra reward tokens from gauges (e.g., LDO, BAL)
-///      - Main protocol rewards (CRV) are handled by Accountant
-///      - Routes deposits/withdrawals through Strategy and Allocator
-///      - Maintains ERC4626 compliance for composability
+/// @title RewardVault.
+/// @author Stake DAO
+/// @custom:github @stake-dao
+/// @custom:contact contact@stakedao.org
+
+/// @notice RewardVault is the user-facing ERC4626 vault for yield aggregation, serving as the entry point
+///         for users to deposit LP tokens and earn rewards. It manages extra reward tokens from gauges
+///         (e.g., LDO, BAL) while main protocol rewards (CRV) are handled by the Accountant. The vault
+///         routes deposits and withdrawals through the Strategy and Allocator, maintaining full ERC4626
+///         compliance for composability.
 contract RewardVault is IRewardVault, IERC4626, ERC20 {
     using Math for uint256;
     using SafeCast for uint256;

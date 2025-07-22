@@ -10,6 +10,12 @@ import {Factory} from "src/Factory.sol";
 import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
 
+/// @title CurveFactory.
+/// @author Stake DAO
+/// @custom:github @stake-dao
+/// @custom:contact contact@stakedao.org
+
+/// @notice Factory contract for deploying Curve strategies.
 contract CurveFactory is Factory {
     /// @notice The bytes4 ID of the Curve protocol
     /// @dev Used to identify the Curve protocol in the registry

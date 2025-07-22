@@ -4,9 +4,14 @@ pragma solidity 0.8.28;
 import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
-/// @title SidecarFactory
-/// @notice Base factory contract for deploying protocol-specific sidecar instances
-/// @dev Creates deterministic minimal proxies for sidecar implementations
+/// @title SidecarFactory.
+/// @author Stake DAO
+/// @custom:github @stake-dao
+/// @custom:contact contact@stakedao.org
+
+/// @notice SidecarFactory is an abstract base factory contract for deploying protocol-specific sidecar instances.
+///         It creates deterministic minimal proxies for sidecar implementations, enabling efficient deployment
+///         of multiple sidecars with minimal gas costs.
 abstract contract SidecarFactory is ISidecarFactory {
     /// @notice The protocol ID
     bytes4 public immutable PROTOCOL_ID;

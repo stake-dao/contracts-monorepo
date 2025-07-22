@@ -8,13 +8,16 @@ import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {IRewardReceiver} from "src/interfaces/IRewardReceiver.sol";
 import {ImmutableArgsParser} from "src/libraries/ImmutableArgsParser.sol";
 
-/// @title RewardReceiverL2 - Reward Distribution Intermediary
-/// @notice A contract that receives rewards from gauges and forwards them to a reward vault.
-/// @dev Implements a minimal proxy pattern because each reward vault is associated with its reward receiver.
-///      Key responsibilities:
-///      - Receives extra reward tokens from gauges.
-///      - Forwards rewards to reward vault.
-///      - Validates reward tokens against the vault's accepted tokens.
+/// @title RewardReceiverL2.
+/// @author Stake DAO
+/// @custom:github @stake-dao
+/// @custom:contact contact@stakedao.org
+
+/// @notice RewardReceiverL2 acts as a reward distribution intermediary that receives rewards from gauges
+///         and forwards them to the associated reward vault on Layer 2 networks.
+///         
+///         Key differences from mainnet RewardReceiver:
+///         - No check for active distribution period - allows rewards to be deposited anytime
 contract RewardReceiverL2 is IRewardReceiver {
     using ImmutableArgsParser for address;
     using SafeCast for uint256;

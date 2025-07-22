@@ -11,13 +11,15 @@ import {ProtocolContext} from "src/ProtocolContext.sol";
 import {IStrategy, IAllocator} from "src/interfaces/IStrategy.sol";
 import {IBalanceProvider} from "src/interfaces/IBalanceProvider.sol";
 
-/// @title Strategy - Protocol-agnostic yield strategy orchestrator
-/// @notice Manages deposits/withdrawals across multiple yield sources (locker + sidecars)
-/// @dev Abstract base that protocol-specific strategies inherit from. Key features:
-///      - Routes funds between locker and sidecars based on allocator decisions
-///      - Handles reward harvesting with transient storage for gas optimization
-///      - Emergency shutdown transfers all funds back to vault
-///      - Rebalancing redistributes funds when allocations change
+/// @title Strategy.
+/// @author Stake DAO
+/// @custom:github @stake-dao
+/// @custom:contact contact@stakedao.org
+
+/// @notice Strategy is a protocol-agnostic yield strategy orchestrator that manages deposits and withdrawals
+///         across multiple yield sources (locker and sidecars). It routes funds based on allocator decisions,
+///         handles reward harvesting with transient storage for gas optimization, supports emergency shutdown
+///         to transfer all funds back to vaults, and enables rebalancing when allocations change.
 abstract contract Strategy is IStrategy, ProtocolContext {
     using SafeCast for uint256;
     using SafeERC20 for IERC20;

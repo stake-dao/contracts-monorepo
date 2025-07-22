@@ -8,8 +8,12 @@ import {IBalanceProvider} from "src/interfaces/IBalanceProvider.sol";
 import {ISidecar} from "src/interfaces/ISidecar.sol";
 import {ISidecarFactory} from "src/interfaces/ISidecarFactory.sol";
 
-/// @title OnlyBoostAllocator
-/// @notice Contract that calculates the optimal LP token allocation for Stake DAO Locker and Convex
+/// @title OnlyBoostAllocator.
+/// @author Stake DAO
+/// @custom:github @stake-dao
+/// @custom:contact contact@stakedao.org
+
+/// @notice Calculates the optimal LP token allocation for Stake DAO Locker and Convex.
 contract OnlyBoostAllocator is Allocator {
     using Math for uint256;
 
