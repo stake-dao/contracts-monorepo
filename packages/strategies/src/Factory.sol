@@ -99,7 +99,7 @@ abstract contract Factory is ProtocolContext {
         /// Perform checks on the gauge to make sure it's valid and can be used
         require(_isValidGauge(gauge), InvalidGauge());
         require(_isValidDeployment(gauge), InvalidDeployment());
-        require(PROTOCOL_CONTROLLER.vaults(gauge) == address(0), AlreadyDeployed());
+        require(PROTOCOL_CONTROLLER.vault(gauge) == address(0), AlreadyDeployed());
 
         /// Get the asset address from the gauge
         address asset = _getAsset(gauge);
@@ -148,7 +148,7 @@ abstract contract Factory is ProtocolContext {
     /// @param gauge Address of the gauge
     /// @custom:throws InvalidGauge If the gauge is not valid or has no associated vault
     function syncRewardTokens(address gauge) external {
-        address vault = PROTOCOL_CONTROLLER.vaults(gauge);
+        address vault = PROTOCOL_CONTROLLER.vault(gauge);
         require(vault != address(0), InvalidGauge());
 
         _setupRewardTokens(vault, gauge, PROTOCOL_CONTROLLER.rewardReceiver(gauge));

@@ -167,7 +167,7 @@ contract CurveStrategyL2 is Strategy {
             abi.encodeWithSignature("claim_rewards(address,address)", address(LOCKER), address(rewardReceiver));
         require(_executeTransaction(gauge, data), ClaimExtraRewards());
 
-        address rewardVault = PROTOCOL_CONTROLLER.vaults(gauge);
+        address rewardVault = PROTOCOL_CONTROLLER.vault(gauge);
         address[] memory rewardTokens = IRewardVault(rewardVault).getRewardTokens();
 
         if (rewardTokens.length == 0) {
