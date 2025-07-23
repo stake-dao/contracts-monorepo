@@ -16,7 +16,7 @@ import {Sidecar} from "src/Sidecar.sol";
 
 /// @notice ConvexSidecarL2 is a specialized sidecar implementation for Convex integration on Layer 2 networks.
 ///         For each PID, a minimal proxy is deployed using this contract as implementation.
-///         
+///
 ///         Key differences from mainnet ConvexSidecar:
 ///         - Uses L2-specific interfaces (IL2Booster, IL2BaseRewardPool)
 ///         - No extra reward differentiation, all rewards are claimed and sent to the

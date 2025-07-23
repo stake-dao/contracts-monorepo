@@ -17,7 +17,7 @@ import {IFactory} from "src/interfaces/IFactory.sol";
 /// @custom:contact contact@stakedao.org
 
 /// @notice CurveStrategyL2 is a specialized implementation for interacting with Curve protocol gauges on Layer 2 networks.
-///         
+///
 ///         Key differences from mainnet CurveStrategy:
 ///         - No MINTER immutable - uses gauge.factory() as the minter
 ///         - Includes extra rewards claiming functionality via claim_rewards()

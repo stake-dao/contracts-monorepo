@@ -15,7 +15,7 @@ import {IChildLiquidityGaugeFactory} from "@interfaces/curve/IChildLiquidityGaug
 /// @custom:contact contact@stakedao.org
 
 /// @notice CurveFactoryL2 is a specialized factory for deploying Curve vaults on Layer 2 networks.
-///         
+///
 ///         Key differences from mainnet CurveFactory:
 ///         - Integrates with Convex L2 Booster for sidecar deployment
 ///         - Uses ChildLiquidityGaugeFactory array to validate gauges

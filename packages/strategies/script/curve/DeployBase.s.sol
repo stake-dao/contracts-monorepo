@@ -63,4 +63,8 @@ contract DeployBase is BaseCurveDeploy {
     function _deployGateway() internal pure override returns (Safe) {
         return Safe(payable(CurveLocker.LOCKER));
     }
+
+    function _getSalt(string memory contractType) internal view override returns (bytes32) {
+        return keccak256(abi.encodePacked(BASE_SALT, ".", protocolId, ".", contractType, ".V1.0.1"));
+    }
 }
