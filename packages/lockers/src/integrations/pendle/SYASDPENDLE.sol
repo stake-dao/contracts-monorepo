@@ -155,21 +155,4 @@ contract SYASDPENDLE is PendleERC4626UpgSYV2 {
     function isValidTokenOut(address token) public pure override returns (bool) {
         return token == SDPENDLE || token == address(ASDPENDLE);
     }
-
-    /// @notice This function contains information to interpret what the asset is
-    /// @return assetType the type of the asset
-    ///         - 0 for ERC20 tokens
-    ///         - 1 for AMM liquidity tokens
-    ///         - 2 for bridged yield bearing tokens like wstETH, rETH on Arbi whose the underlying
-    ///           asset doesn't exist on the chain
-    /// @return assetAddress the address of the asset
-    /// @return assetDecimals the decimals of the asset
-    function assetInfo()
-        external
-        view
-        override
-        returns (AssetType assetType, address assetAddress, uint8 assetDecimals)
-    {
-        return (AssetType.TOKEN, address(ASDPENDLE), ASDPENDLE.decimals());
-    }
 }

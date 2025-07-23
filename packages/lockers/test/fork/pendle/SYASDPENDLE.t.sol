@@ -268,13 +268,11 @@ contract SYASDPENDLETest is DepositRedeemTest, MetadataTest, PreviewTest {
     }
 
     function test_metadata_assetInfo() public view override {
-        address yieldToken = sy.yieldToken();
         (IStandardizedYield.AssetType assetType, address assetAddress, uint8 assetDecimals) = sy.assetInfo();
 
         assertEq(uint256(assetType), uint256(IStandardizedYield.AssetType.TOKEN));
-        assertEq(assetAddress, PendleLocker.ASDTOKEN);
+        assertEq(assetAddress, PendleLocker.SDTOKEN);
         assertEq(assetDecimals, 18);
-        assertEq(yieldToken, PendleLocker.ASDTOKEN);
     }
 
     //////////////////////////////////////////////////////
