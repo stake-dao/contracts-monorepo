@@ -241,7 +241,7 @@ contract SYASDPENDLETest is DepositRedeemTest, MetadataTest, PreviewTest {
     // --- TESTS
     //////////////////////////////////////////////////////
 
-    function test_token_exchangeRate() public {
+    function test_token_exchangeRate() public view {
         // @dev: initial exchange rate on the block 22717485
         assertEq(sy.exchangeRate(), 1_030_314_074_784_136_540);
     }
