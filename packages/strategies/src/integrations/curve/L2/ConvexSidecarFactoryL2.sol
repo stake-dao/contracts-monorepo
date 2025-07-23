@@ -13,7 +13,7 @@ import {ConvexSidecar} from "src/integrations/curve/ConvexSidecar.sol";
 
 /// @notice ConvexSidecarFactoryL2 is a specialized factory for deploying ConvexSidecar instances on Layer 2 networks.
 ///         It creates deterministic minimal proxies for the ConvexSidecarL2 implementation.
-///         
+///
 ///         Key differences from mainnet ConvexSidecarFactory:
 ///         - Uses IL2Booster interface instead of IBooster
 contract ConvexSidecarFactoryL2 is SidecarFactory {

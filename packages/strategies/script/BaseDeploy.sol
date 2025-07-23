@@ -132,7 +132,13 @@ abstract contract BaseDeploy is Script {
         protocolController.setStrategy(protocolId, strategy);
         protocolController.setFactory(protocolId, address(factory));
         protocolController.setAllocator(protocolId, address(allocator));
-        protocolController.setLocker(protocolId, locker);
+
+        if (locker == address(0)) {
+            protocolController.setLocker(protocolId, address(gateway));
+        } else {
+            protocolController.setLocker(protocolId, locker);
+        }
+
         protocolController.setGateway(protocolId, address(gateway));
 
         /// 2. Set factory as registrar.
@@ -164,13 +170,6 @@ abstract contract BaseDeploy is Script {
         SafeLibrary.simpleExec({
             _safe: payable(gateway),
             _target: address(accountant),
-            _data: abi.encodeWithSelector(Ownable2Step.acceptOwnership.selector),
-            _signatures: signatures
-        });
-
-        SafeLibrary.simpleExec({
-            _safe: payable(gateway),
-            _target: address(protocolController),
             _data: abi.encodeWithSelector(Ownable2Step.acceptOwnership.selector),
             _signatures: signatures
         });
@@ -272,7 +271,7 @@ abstract contract BaseDeploy is Script {
     /// @notice Generates a deterministic salt for CREATE3 deployments
     /// @param contractType The type of contract being deployed (e.g., "STRATEGY", "CONTROLLER")
     /// @return The generated salt
-    function _getSalt(string memory contractType) internal view returns (bytes32) {
+    function _getSalt(string memory contractType) internal view virtual returns (bytes32) {
         return keccak256(abi.encodePacked(BASE_SALT, ".", protocolId, ".", contractType, ".V1.0.0"));
     }
 

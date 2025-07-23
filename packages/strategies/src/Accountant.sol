@@ -19,11 +19,11 @@ import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 /// @notice Accountant is the core accounting system that manages reward distribution across all vaults for a specific protocol integration.
 ///         It uses integral-based accounting for gas-efficient reward distribution, where rewards are tracked as integrals (cumulative reward per token).
 ///         User rewards are calculated as: (current integral - last user integral) × user balance.
-///         
+///
 ///         The system supports two reward distribution policies:
 ///         - HARVEST: Claims rewards from the gauge on every user action, charging only protocol fees
 ///         - CHECKPOINT: Accumulates rewards in the gauge until manual harvest, reserving both protocol and harvest fees
-///         
+///
 ///         In CHECKPOINT mode, users can still claim their accrued rewards if tokens are available in the contract,
 ///         enabling cross-vault reward sharing and immediate access to rewards without waiting for harvest.
 contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
@@ -284,12 +284,12 @@ contract Accountant is ReentrancyGuardTransient, Ownable2Step, IAccountant {
 
     /// @notice Updates user balances and distributes rewards on every vault action.
     /// @dev    Core accounting function called by vaults during transfers, mints, and burns.
-    ///         
+    ///
     ///         Token Operations:
     ///         - Mint (from = 0): Increases supply, updates receiver's reward integral
     ///         - Burn (to = 0): Decreases supply, updates sender's reward integral
     ///         - Transfer: Updates both sender and receiver integrals
-    ///         
+    ///
     ///         Reward Distribution Policies:
     ///         - HARVEST: Claims rewards on every action, only protocol fee charged
     ///         - CHECKPOINT: Accumulates rewards until harvest(), both fees charged

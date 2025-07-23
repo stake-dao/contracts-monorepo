@@ -15,7 +15,7 @@ import {ImmutableArgsParser} from "src/libraries/ImmutableArgsParser.sol";
 
 /// @notice RewardReceiverL2 acts as a reward distribution intermediary that receives rewards from gauges
 ///         and forwards them to the associated reward vault on Layer 2 networks.
-///         
+///
 ///         Key differences from mainnet RewardReceiver:
 ///         - No check for active distribution period - allows rewards to be deposited anytime
 contract RewardReceiverL2 is IRewardReceiver {
