@@ -33,7 +33,7 @@ contract GetLocker is Script {
         console.log("Target nonce:", NONCE_TARGET);
         console.log("Expected locker address:", address(CurveLocker.LOCKER));
 
-        vm.createSelectFork("base-sepolia");
+        vm.createSelectFork("sonic");
         vm.startBroadcast(DEPLOYER);
 
         // Prepare owners array
