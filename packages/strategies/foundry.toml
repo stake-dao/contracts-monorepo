@@ -32,9 +32,10 @@ optimism = { key = "${ETHERSCAN_KEY}", chain = 10 }
 zksync = { key = "${ETHERSCAN_KEY}", chain = 324 }
 polygon = { key = "${ETHERSCAN_KEY}", chain = 137 }
 polygonzkevm = { key = "${ETHERSCAN_KEY}", chain = 1101 }
-
+sonic = { key = "${ETHERSCAN_KEY}", chain = 146 }
 
 [rpc_endpoints]
+sonic = "https://sonic.gateway.tenderly.co"
 bnb = "https://bnb-mainnet.g.alchemy.com/v2/${ALCHEMY_KEY}"
 frax = "https://fraxtal.gateway.tenderly.co"
 sepolia = "https://sepolia.gateway.tenderly.co"
