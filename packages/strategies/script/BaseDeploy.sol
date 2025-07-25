@@ -265,7 +265,7 @@ abstract contract BaseDeploy is Script {
     }
 
     function _deployGateway() internal virtual returns (Safe) {
-        return SafeLibrary.deploySafe({_owners: owners, _threshold: 1, _saltNonce: uint256(uint32(protocolId))});
+        return SafeLibrary.deploySafeL2({_owners: owners, _threshold: 1, _saltNonce: uint256(uint32(protocolId))});
     }
 
     /// @notice Generates a deterministic salt for CREATE3 deployments
