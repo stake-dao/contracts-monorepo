@@ -129,4 +129,10 @@ contract FraxAccumulator is AccumulatorBase, FXTLDelegation, SafeModule {
     function name() external view virtual override returns (string memory) {
         return type(FraxAccumulator).name;
     }
+
+    function getRewards() external view override returns (address[] memory) {
+        address[] memory rewards = new address[](1);
+        rewards[0] = rewardToken;
+        return rewards;
+    }
 }

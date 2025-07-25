@@ -15,4 +15,7 @@ contract BaseAccumulatorHarness is AccumulatorBase {
     function _expose_chargeFee(address _token, uint256 _amount) external returns (uint256 _charged) {
         return _chargeFee(_token, _amount);
     }
+
+    /// @notice Get the rewards tokens this accumulator manages
+    function getRewards() external view virtual override returns (address[] memory) {}
 }
