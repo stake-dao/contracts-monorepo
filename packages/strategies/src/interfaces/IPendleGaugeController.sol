@@ -19,4 +19,8 @@ interface IPendleGaugeController {
     function rewardData(address pool) external view returns (uint128 pendlePerSec, uint128, uint128, uint128);
 
     function isValidMarket(address market) external view returns (bool);
+
+    function updateVotingResults(uint128 wTime, address[] memory markets, uint256[] memory pendleSpeeds) external;
+
+    function votingController() external view returns (address);
 }
