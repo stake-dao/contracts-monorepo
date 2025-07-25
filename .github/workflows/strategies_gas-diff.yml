@@ -50,19 +50,22 @@ jobs:
       - name: Check out the repo
         uses: actions/checkout@v4
 
-      - uses: pnpm/action-setup@v4
-        name: Install pnpm
-        with:
-          run_install: false
+      - name: Enable Corepack & pin versions
+        run: |
+          corepack enable
+          corepack prepare pnpm@8 --activate
+          corepack prepare yarn@3.6.4 --activate
 
-      - name: Install Node.js
-        uses: actions/setup-node@v4
+      - name: Cache pnpm store
+        uses: actions/cache@v3
         with:
-          node-version: 21.4
-          cache: "pnpm"
+          path: ~/.pnpm-store # Corepack’s pnpm store location
+          key: ${{ runner.os }}-pnpm-store-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-store-
 
       - name: Install dependencies
-        run: pnpm install
+        run: pnpm install --filter ./packages/strategies --ignore-scripts
 
       - name: Install Foundry
         uses: foundry-rs/foundry-toolchain@v1

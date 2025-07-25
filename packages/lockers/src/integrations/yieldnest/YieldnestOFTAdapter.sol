@@ -2,7 +2,7 @@
 pragma solidity 0.8.28;
 
 import {OFTAdapter} from "@layerzerolabs/oft-evm/contracts/OFTAdapter.sol";
-import {Ownable} from "@openzeppelin/contracts/access/Ownable.sol";
+import {Ownable} from "@layerzerolabs/oapp-evm/contracts/oapp/OAppCore.sol";
 import {Common} from "@address-book/src/CommonEthereum.sol";
 
 /// @title asdYND Yieldnest OFTAdapter
@@ -31,7 +31,7 @@ contract YieldnestOFTAdapter is OFTAdapter {
     /// @param _delegate The admin for LayerZero configuration.
     /// @param _owner The owner of the contract
     constructor(address _token, address _delegate, address _owner)
-        OFTAdapter(_token, Common.LAYERZERO_ENDPOINT, _delegate)
         Ownable(_owner)
+        OFTAdapter(_token, Common.LAYERZERO_ENDPOINT, _delegate)
     {}
 }
