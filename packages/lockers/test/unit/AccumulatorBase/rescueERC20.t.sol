@@ -51,6 +51,7 @@ contract BaseAccumulator__rescueERC20 is BaseAccumulatorTest {
 
         vm.assume(amount <= balance);
         vm.assume(recipient != address(0));
+        vm.assume(recipient != address(baseAccumulator));
 
         vm.prank(baseAccumulator.governance());
         baseAccumulator.rescueERC20(address(randomToken), amount, recipient);
