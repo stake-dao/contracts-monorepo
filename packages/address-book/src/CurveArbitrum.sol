@@ -12,6 +12,10 @@ library CurveProtocol {
     address internal constant CONVEX_PROXY = 0x989AEb4d175e16225E39E87d0D97A3360524AD80;
 }
 
+library CurveLocker {
+    address internal constant LOCKER = 0x0000000000000000000000000000000000000000;
+}
+
 library CurveVotemarket {
     address internal constant PLATFORM = 0x8c2c5A295450DDFf4CB360cA73FCCC12243D14D9;
 }
