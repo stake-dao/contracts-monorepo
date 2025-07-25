@@ -129,82 +129,6 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
         _clearLockerBalances();
     }
 
-    /// @notice Override to properly simulate extra rewards for L2 Curve gauges
-    function _simulateExtraRewardForToken(RewardVault, address gauge, address token, uint256 amount)
-        internal
-        override
-    {
-        // For L2 Curve gauges, we need to properly set up the reward distribution
-        address rewardReceiver = protocolController.rewardReceiver(gauge);
-
-        // Try to add the reward token to the gauge using actual gauge functions
-        // First check if we can call add_reward (some gauges have this function)
-        try ILiquidityGauge(gauge).add_reward(token, rewardReceiver) {
-            // Successfully added the reward token
-        } catch {
-            // If add_reward doesn't exist or fails, try set_reward_distributor
-            try ILiquidityGauge(gauge).set_reward_distributor(token, rewardReceiver) {
-                // Successfully set the distributor
-            } catch {
-                // If neither work, we'll need to be the admin/owner or mock the distributor
-                // Let's mock being able to set the distributor
-                vm.mockCall(gauge, abi.encodeWithSelector(ILiquidityGauge.admin.selector), abi.encode(address(this)));
-
-                // Now try to set ourselves as distributor temporarily
-                try ILiquidityGauge(gauge).set_reward_distributor(token, address(this)) {} catch {}
-            }
-        }
-
-        // Now deposit the reward tokens to the gauge
-        deal(token, address(this), amount);
-        IERC20(token).approve(gauge, amount);
-
-        try ILiquidityGauge(gauge).deposit_reward_token(token, amount) {
-            // Successfully deposited rewards
-        } catch {
-            // If deposit_reward_token doesn't work, transfer directly and mock the reward data
-            IERC20(token).transfer(gauge, amount);
-
-            // Mock the reward data to show active distribution
-            uint256 rate = amount / 7 days;
-            uint256 periodFinish = block.timestamp + 7 days;
-
-            vm.mockCall(
-                gauge,
-                abi.encodeWithSelector(ILiquidityGauge.reward_data.selector, token),
-                abi.encode(
-                    token, // token
-                    rewardReceiver, // distributor
-                    periodFinish, // period_finish
-                    rate, // rate
-                    block.timestamp, // last_update
-                    0 // integral
-                )
-            );
-        }
-
-        // Ensure the reward receiver can claim by mocking claimable amount
-        vm.mockCall(
-            gauge,
-            abi.encodeWithSelector(ILiquidityGauge.claimable_reward.selector, rewardReceiver, token),
-            abi.encode(amount)
-        );
-
-        // When claim_rewards is called, ensure tokens are transferred
-        // We'll mint directly to receiver to simulate the claim
-        // Use deal instead of pranking to avoid prank conflicts
-        deal(token, rewardReceiver, IERC20(token).balanceOf(rewardReceiver) + amount);
-
-        // If there's a Convex sidecar, also set up CVX rewards properly
-        if (config.convex.isOnlyBoost && token == config.convex.cvx && sidecarFactory != address(0)) {
-            address sidecar = ConvexSidecarFactoryL2(sidecarFactory).sidecar(gauge);
-            if (sidecar != address(0)) {
-                address baseRewardPool = address(ConvexSidecarL2(sidecar).baseRewardPool());
-                deal(token, baseRewardPool, IERC20(token).balanceOf(baseRewardPool) + amount);
-            }
-        }
-    }
-
     /// @notice Mock extra reward tokens on gauges before vault deployment
     function _setupGaugeExtraRewards(address gauge) internal virtual {
         // For Base and Fraxtal, we'll set up some common reward tokens
@@ -235,7 +159,7 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
             deal(token, distributor, rewardAmount);
 
             vm.startPrank(distributor);
-            IERC20(token).approve(gauge, rewardAmount);
+            IERC20(token).approve(gauge, type(uint256).max);
             ILiquidityGauge(gauge).deposit_reward_token(token, rewardAmount);
             vm.stopPrank();
         }
@@ -301,7 +225,7 @@ abstract contract CurveL2Integration is BaseIntegrationTest {
         uint256 rewardAmount = 1000e18;
         deal(newRewardToken, factoryOwner, rewardAmount);
 
-        IERC20(newRewardToken).approve(gauge, rewardAmount);
+        IERC20(newRewardToken).approve(gauge, type(uint256).max);
         ILiquidityGauge(gauge).deposit_reward_token(newRewardToken, rewardAmount);
 
         vm.stopPrank();
