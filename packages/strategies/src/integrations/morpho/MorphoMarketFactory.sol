@@ -78,15 +78,19 @@ contract MorphoMarketFactory is ILendingFactory {
     /// @param oracle The oracle to use for the market
     /// @param irm The Interest Rate Model
     /// @param lltv The Liquidation Loan-To-Value
+    /// @param initialLoanSupply The initial amount of loan token to seed the market with
     /// @return id The identifier of the freshly created market
     /// @custom:throws InvalidLLTV if the LLTV is invalid
     /// @custom:throws InvalidIRM if the IRM is invalid
     /// @custom:throws InvalidAuthorized if this is not authorized to supply/borrow on behalf of the caller
-    function create(IStrategyWrapper collateral, IERC20Metadata loan, IOracle oracle, address irm, uint256 lltv)
-        external
-        onlyDelegateCall
-        returns (Id id)
-    {
+    function create(
+        IStrategyWrapper collateral,
+        IERC20Metadata loan,
+        IOracle oracle,
+        address irm,
+        uint256 lltv,
+        uint256 initialLoanSupply
+    ) external onlyDelegateCall returns (Id id) {
         require(MORPHO_BLUE.isLltvEnabled(lltv), InvalidLLTV());
         require(MORPHO_BLUE.isIrmEnabled(irm), InvalidIRM());
         require(MORPHO_BLUE.isAuthorized(msg.sender, address(this)), InvalidAuthorized());
@@ -101,71 +105,49 @@ contract MorphoMarketFactory is ILendingFactory {
         });
         MORPHO_BLUE.createMarket(morphoMarketParams);
 
-        // 2. Prevent Zero Utilization Rate Decay at Deployment by supplying and borrowing
-        // https://docs.morpho.org/curation/tutorials/creating-market#fill-all-attributes
+        // 2. Trigger the deployment event
+        emit MarketDeployed(address(MORPHO_BLUE), address(collateral), address(loan), address(oracle), lltv, irm);
+        id = MarketParamsLib.id(morphoMarketParams);
 
-        // ------------------------------------------------------------------
+        // 3. Pre-seed the market if needed
+        if (initialLoanSupply != 0) _preSeedMarket(initialLoanSupply, morphoMarketParams);
+    }
+
+    /// @notice Pre-seeds the market with the given amount of loan token
+    /// @dev Prevent Zero Utilization Rate Decay at Deployment by supplying and borrowing
+    function _preSeedMarket(uint256 initialLoanSupply, MarketParams memory morphoMarketParams) internal {
         // Provide initial loan token liquidity to the freshly created market
-        // ------------------------------------------------------------------
-
-        // Feed the market with exactly 1 token so that there is available liquidity for the subsequent borrow.
-        uint256 loanToSupply = 10 ** loan.decimals();
-        loan.safeTransferFrom(msg.sender, address(this), loanToSupply);
-        loan.forceApprove(address(MORPHO_BLUE), loanToSupply);
+        IERC20Metadata(morphoMarketParams.loanToken).safeTransferFrom(msg.sender, address(this), initialLoanSupply);
+        IERC20Metadata(morphoMarketParams.loanToken).forceApprove(address(MORPHO_BLUE), initialLoanSupply);
         MORPHO_BLUE.supply({
             marketParams: morphoMarketParams,
-            assets: loanToSupply,
+            assets: initialLoanSupply,
             shares: 0,
             onBehalf: msg.sender,
             data: hex""
         });
 
-        // Supply the collateral token to Morpho. Just enough to allow borrowing 90% of the supplied loan asset.
-        uint256 borrowAmount = (loanToSupply * 9) / 10; // 90% of supplied liquidity
-
-        // ------------------------------------------------------------------
-        // Determine the minimal amount of collateral (LP tokens) required so
-        // that the position remains healthy right after borrowing
-        //
-        // maxBorrow = collateral * price / ORACLE_BASE_EXPONENT * LLTV
-        //           ⇒ collateral = borrowAmount * ORACLE_BASE_EXPONENT / price / LLTV
-        //
-        // # Add deterministic buffer: 2 loan-wei expressed in LP-wei
-        //
-        // Morpho Blue's health-check can discard at most TWO loan-wei of value
-        // because of the successive "round-down" operations it performs.
-        // If we are short by ≥ 2 loan-wei the position may be flagged as
-        // unhealthy. To make the deployment fully deterministic we therefore
-        // add exactly two smallest units of the *loan* token, converted into
-        // collateral units.
-        //
-        // loan-wei → LP-wei conversion: 1 loan-wei corresponds to
-        // 10^(collDec-loanDec) wei of the collateral token (because the oracle
-        // scales with 10^(loanDec-collDec)). Multiplying that by 2 gives the
-        // minimal amount that always offsets the worst-case rounding loss,
-        // while remaining economically negligible (≈ 0.005 USDC for a ETH/USDC for example).
-        // ------------------------------------------------------------------
-        // Size the collateral so the position opens at 95% of the liquidation
-        // threshold instead of sitting right on the edge. This buffer prevents
-        // an immediate liquidation that could arise from a single interest-
-        // accrual block or a small price movement.
-        // ------------------------------------------------------------------
+        // Bootstrap utilisation: supply `initialLoanSupply` LOAN tokens
+        uint256 borrowAmount = (initialLoanSupply * 9) / 10; // 90% of supplied liquidity
         uint256 collateralToSupply = Math.mulDiv(
-            Math.mulDiv(borrowAmount, 10 ** oracle.ORACLE_BASE_EXPONENT(), oracle.price(), Math.Rounding.Ceil),
+            Math.mulDiv(
+                borrowAmount,
+                10 ** IOracle(morphoMarketParams.oracle).ORACLE_BASE_EXPONENT(),
+                IOracle(morphoMarketParams.oracle).price(),
+                Math.Rounding.Ceil
+            ),
             1e18,
-            Math.mulDiv(lltv, 9_500, 10_000), // 95% of LLTV
+            Math.mulDiv(morphoMarketParams.lltv, 9_500, 10_000), // 95 % of LLTV
             Math.Rounding.Ceil
         );
-        uint256 buffer = 2 * (10 ** (collateral.decimals() - loan.decimals()));
-        collateralToSupply += buffer; // guarantees health-check passes
 
-        // Transfer the shares of the vault and deposit them into the strategy wrapper
-        // before supplying the given collateral to Morpho.
-        IRewardVault vault = collateral.REWARD_VAULT();
+        IRewardVault vault = IStrategyWrapper(morphoMarketParams.collateralToken).REWARD_VAULT();
         vault.safeTransferFrom(msg.sender, address(this), collateralToSupply);
-        vault.approve(address(collateral), collateralToSupply);
-        collateral.depositShares(collateralToSupply);
-        collateral.approve(address(MORPHO_BLUE), collateralToSupply);
+        vault.approve(morphoMarketParams.collateralToken, collateralToSupply);
+
+        // Bootstrap utilisation: post enough collateral to reach 95 % of LLTV
+        IStrategyWrapper(morphoMarketParams.collateralToken).depositShares(collateralToSupply);
+        IStrategyWrapper(morphoMarketParams.collateralToken).approve(address(MORPHO_BLUE), collateralToSupply);
         MORPHO_BLUE.supplyCollateral({
             marketParams: morphoMarketParams,
             assets: collateralToSupply,
@@ -173,8 +155,7 @@ contract MorphoMarketFactory is ILendingFactory {
             data: hex""
         });
 
-        // Borrow 90 % of the supplied loan asset back to put the utilization rate in the expected range.
-        // This loan is covered by the collateral supplied before.
+        // Bootstrap utilisation: borrow 90 % of that
         MORPHO_BLUE.borrow({
             marketParams: morphoMarketParams,
             assets: borrowAmount,
@@ -182,11 +163,6 @@ contract MorphoMarketFactory is ILendingFactory {
             onBehalf: msg.sender,
             receiver: msg.sender
         });
-
-        // 3. Trigger the deployment event
-        emit MarketDeployed(address(MORPHO_BLUE), address(collateral), address(loan), address(oracle), lltv, irm);
-
-        id = MarketParamsLib.id(morphoMarketParams);
     }
 
     ///////////////////////////////////////////////////////////////
