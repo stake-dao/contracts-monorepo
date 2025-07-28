@@ -111,7 +111,7 @@ contract MorphoMarketFactory is ILendingFactory {
         // Feed the market with exactly 1 token so that there is available liquidity for the subsequent borrow.
         uint256 loanToSupply = 10 ** loan.decimals();
         loan.safeTransferFrom(msg.sender, address(this), loanToSupply);
-        loan.approve(address(MORPHO_BLUE), loanToSupply);
+        loan.forceApprove(address(MORPHO_BLUE), loanToSupply);
         MORPHO_BLUE.supply({
             marketParams: morphoMarketParams,
             assets: loanToSupply,
