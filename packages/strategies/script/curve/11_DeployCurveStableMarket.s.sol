@@ -38,7 +38,7 @@ contract DeployCurveStableMarketScript is Script {
         require(lendingFactory.code.length > 0, "LendingFactory not deployed");
 
         CurveLendingMarketFactory.MarketParams memory marketParams =
-            CurveLendingMarketFactory.MarketParams({irm: irm, lltv: lltv});
+            CurveLendingMarketFactory.MarketParams(irm, lltv, vm.envUint("INITIAL_SUPPLY"));
 
         CurveLendingMarketFactory.StableswapOracleParams memory oracleParams = CurveLendingMarketFactory
             .StableswapOracleParams({

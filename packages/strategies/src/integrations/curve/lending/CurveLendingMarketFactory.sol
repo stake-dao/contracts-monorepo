@@ -68,6 +68,8 @@ contract CurveLendingMarketFactory is Ownable2Step {
         address irm;
         /// The pre-approved Liquidation Loan-To-Value
         uint256 lltv;
+        /// The initial amount of collateral to supply to the market
+        uint256 initialSupply;
     }
 
     constructor(address _protocolController, address _metaRegistry) Ownable(msg.sender) {
@@ -103,8 +105,7 @@ contract CurveLendingMarketFactory is Ownable2Step {
         ILendingFactory lendingFactory
     ) external onlyOwner isValidDeployment(rewardVault) returns (IStrategyWrapper, IOracle, bytes memory) {
         // 1. Deploy the collateral token
-        IStrategyWrapper collateral = new RestrictedStrategyWrapper(rewardVault, lendingFactory.protocol(), owner());
-        emit CollateralDeployed(address(collateral));
+        IStrategyWrapper collateral = _deployCollateral(rewardVault, lendingFactory);
 
         // 2. Deploy the oracle
         IOracle oracle = new CurveStableswapOracle(
@@ -119,18 +120,7 @@ contract CurveLendingMarketFactory is Ownable2Step {
         emit OracleDeployed(address(oracle));
 
         // 3. Create the lending market
-        (bool success, bytes memory data) = address(lendingFactory).delegatecall(
-            abi.encodeWithSelector(
-                lendingFactory.create.selector,
-                address(collateral),
-                oracleParams.loanAsset,
-                address(oracle),
-                marketParams.irm,
-                marketParams.lltv
-            )
-        );
-        require(success, MarketCreationFailed());
-
+        bytes memory data = _createMarket(collateral, oracle, oracleParams.loanAsset, lendingFactory, marketParams);
         return (collateral, oracle, data);
     }
 
@@ -148,8 +138,7 @@ contract CurveLendingMarketFactory is Ownable2Step {
         ILendingFactory lendingFactory
     ) external onlyOwner isValidDeployment(rewardVault) returns (IStrategyWrapper, IOracle, bytes memory) {
         // 1. Deploy the collateral token
-        IStrategyWrapper collateral = new RestrictedStrategyWrapper(rewardVault, lendingFactory.protocol(), owner());
-        emit CollateralDeployed(address(collateral));
+        IStrategyWrapper collateral = _deployCollateral(rewardVault, lendingFactory);
 
         // 2. Deploy the oracle
         IOracle oracle = new CurveCryptoswapOracle(
@@ -164,19 +153,45 @@ contract CurveLendingMarketFactory is Ownable2Step {
         emit OracleDeployed(address(oracle));
 
         // 3. Create the lending market
+        bytes memory data = _createMarket(collateral, oracle, oracleParams.loanAsset, lendingFactory, marketParams);
+        return (collateral, oracle, data);
+    }
+
+    ///////////////////////////////////////////////////////////////
+    // --- INTERNAL FUNCTIONS
+    ///////////////////////////////////////////////////////////////
+
+    function _deployCollateral(IRewardVault rewardVault, ILendingFactory lendingFactory)
+        internal
+        returns (IStrategyWrapper)
+    {
+        IStrategyWrapper collateral = new RestrictedStrategyWrapper(rewardVault, lendingFactory.protocol(), owner());
+        emit CollateralDeployed(address(collateral));
+
+        return collateral;
+    }
+
+    function _createMarket(
+        IStrategyWrapper collateral,
+        IOracle oracle,
+        address loanAsset,
+        ILendingFactory lendingFactory,
+        MarketParams calldata marketParams
+    ) internal returns (bytes memory) {
         (bool success, bytes memory data) = address(lendingFactory).delegatecall(
             abi.encodeWithSelector(
                 lendingFactory.create.selector,
                 address(collateral),
-                oracleParams.loanAsset,
+                loanAsset,
                 address(oracle),
                 marketParams.irm,
-                marketParams.lltv
+                marketParams.lltv,
+                marketParams.initialSupply
             )
         );
         require(success, MarketCreationFailed());
 
-        return (collateral, oracle, data);
+        return data;
     }
 
     ///////////////////////////////////////////////////////////////

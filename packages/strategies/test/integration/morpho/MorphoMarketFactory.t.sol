@@ -131,8 +131,11 @@ contract MorphoMarketFactoryIntegrationTest is CurveMainnetIntegrationTest {
         vm.label(address(morphoMarketFactory), "MorphoMarketFactory");
 
         // Setup the market parameters
-        CurveLendingMarketFactory.MarketParams memory marketParams =
-            CurveLendingMarketFactory.MarketParams({irm: Common.MORPHO_ADAPTIVE_CURVE_IRM, lltv: lltv});
+        CurveLendingMarketFactory.MarketParams memory marketParams = CurveLendingMarketFactory.MarketParams({
+            irm: Common.MORPHO_ADAPTIVE_CURVE_IRM,
+            lltv: lltv,
+            initialSupply: 10 ** IERC20Metadata(Common.USDC).decimals()
+        });
 
         // Setup the oracle parameters
         CurveLendingMarketFactory.StableswapOracleParams memory oracleParams = CurveLendingMarketFactory
@@ -258,8 +261,11 @@ contract MorphoMarketFactoryIntegrationTest is CurveMainnetIntegrationTest {
         vm.label(address(morphoMarketFactory), "MorphoMarketFactory");
 
         // Setup the market parameters
-        CurveLendingMarketFactory.MarketParams memory marketParams =
-            CurveLendingMarketFactory.MarketParams({irm: Common.MORPHO_ADAPTIVE_CURVE_IRM, lltv: lltv});
+        CurveLendingMarketFactory.MarketParams memory marketParams = CurveLendingMarketFactory.MarketParams({
+            irm: Common.MORPHO_ADAPTIVE_CURVE_IRM,
+            lltv: lltv,
+            initialSupply: 10 ** IERC20Metadata(Common.USDC).decimals()
+        });
 
         // Setup the oracle parameters
         CurveLendingMarketFactory.CryptoswapOracleParams memory oracleParams = CurveLendingMarketFactory

@@ -8,7 +8,13 @@ import {Id} from "shared/src/morpho/IMorpho.sol";
 
 interface ILendingFactory {
     function protocol() external view returns (address);
-    function create(IStrategyWrapper collateral, IERC20Metadata loan, IOracle oracle, address irm, uint256 lltv)
-        external
-        returns (Id);
+
+    function create(
+        IStrategyWrapper collateral,
+        IERC20Metadata loan,
+        IOracle oracle,
+        address irm,
+        uint256 lltv,
+        uint256 initialLoanSupply
+    ) external returns (Id);
 }
