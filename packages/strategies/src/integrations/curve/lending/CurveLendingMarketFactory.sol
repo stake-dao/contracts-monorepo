@@ -76,6 +76,12 @@ contract CurveLendingMarketFactory is Ownable2Step {
         META_REGISTRY = IMetaRegistry(_metaRegistry);
     }
 
+    modifier isValidDeployment(IRewardVault rewardVault) {
+        require(PROTOCOL_CONTROLLER.vaults(rewardVault.gauge()) == address(rewardVault), InvalidRewardVault());
+        require(rewardVault.PROTOCOL_ID() == bytes4(keccak256("CURVE")), InvalidProtocolId());
+        _;
+    }
+
     ///////////////////////////////////////////////////////////////
     // --- MARKET CREATION
     ///////////////////////////////////////////////////////////////
@@ -95,9 +101,7 @@ contract CurveLendingMarketFactory is Ownable2Step {
         StableswapOracleParams calldata oracleParams,
         MarketParams calldata marketParams,
         ILendingFactory lendingFactory
-    ) external onlyOwner returns (IStrategyWrapper, IOracle, bytes memory) {
-        require(PROTOCOL_CONTROLLER.vaults(rewardVault.gauge()) == address(rewardVault), InvalidRewardVault());
-
+    ) external onlyOwner isValidDeployment(rewardVault) returns (IStrategyWrapper, IOracle, bytes memory) {
         // 1. Deploy the collateral token
         IStrategyWrapper collateral = new RestrictedStrategyWrapper(rewardVault, lendingFactory.protocol(), owner());
         emit CollateralDeployed(address(collateral));
@@ -142,10 +146,7 @@ contract CurveLendingMarketFactory is Ownable2Step {
         CryptoswapOracleParams calldata oracleParams,
         MarketParams calldata marketParams,
         ILendingFactory lendingFactory
-    ) external onlyOwner returns (IStrategyWrapper, IOracle, bytes memory) {
-        require(PROTOCOL_CONTROLLER.vaults(rewardVault.gauge()) == address(rewardVault), InvalidRewardVault());
-        require(rewardVault.PROTOCOL_ID() == bytes4(keccak256("CURVE")), InvalidProtocolId());
-
+    ) external onlyOwner isValidDeployment(rewardVault) returns (IStrategyWrapper, IOracle, bytes memory) {
         // 1. Deploy the collateral token
         IStrategyWrapper collateral = new RestrictedStrategyWrapper(rewardVault, lendingFactory.protocol(), owner());
         emit CollateralDeployed(address(collateral));
