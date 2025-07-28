@@ -191,7 +191,7 @@ contract CurveCryptoswapOracle is IOracle {
 
     /// @return _name The name of the oracle.
     function name() external view returns (string memory _name) {
-        _name = string.concat(CURVE_POOL.name(), "-", LOAN_ASSET.symbol(), " Crypto Oracle");
+        _name = string.concat(CURVE_POOL.lp_token().symbol(), "-", LOAN_ASSET.symbol(), " Crypto Oracle");
     }
 
     /// @notice Returns the path created by the stored feeds (hop-by-hop)

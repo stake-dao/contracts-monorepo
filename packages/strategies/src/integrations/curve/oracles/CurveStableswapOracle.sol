@@ -226,7 +226,7 @@ contract CurveStableswapOracle is IOracle {
     }
 
     function name() external view returns (string memory _name) {
-        _name = string.concat(CURVE_POOL.name(), "-", LOAN_ASSET.symbol(), " Stable Oracle");
+        _name = string.concat(CURVE_POOL.lp_token().symbol(), "-", LOAN_ASSET.symbol(), " Stable Oracle");
     }
 
     /// @notice Returns the current version of this oracle.

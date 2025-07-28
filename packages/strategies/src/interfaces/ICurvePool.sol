@@ -1,10 +1,13 @@
 // SPDX-License-Identifier: MIT
 pragma solidity >=0.8.0 <0.9.0;
 
+import {IERC20Metadata} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+
 interface ICurvePool {
     function name() external view returns (string memory);
     function decimals() external view returns (uint8);
     function coins(uint256 index) external view returns (address);
+    function lp_token() external view returns (IERC20Metadata);
 }
 
 interface ICurveStableSwapPool is ICurvePool {
