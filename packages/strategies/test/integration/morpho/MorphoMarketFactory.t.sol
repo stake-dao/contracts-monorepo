@@ -7,6 +7,7 @@ import {MorphoMarketFactory} from "src/integrations/morpho/MorphoMarketFactory.s
 import {CurveLendingMarketFactory} from "src/integrations/curve/lending/CurveLendingMarketFactory.sol";
 import {RewardVault} from "src/RewardVault.sol";
 import {Common} from "@address-book/src/CommonEthereum.sol";
+import {CurveProtocol} from "@address-book/src/CurveEthereum.sol";
 import {IERC20Metadata, IERC20} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {
     IMorpho,
@@ -120,7 +121,8 @@ contract MorphoMarketFactoryIntegrationTest is CurveMainnetIntegrationTest {
     ) internal {
         // Deploy the Curve lending market factory
         vm.prank(position.account);
-        CurveLendingMarketFactory curveLendingMarketFactory = new CurveLendingMarketFactory(address(protocolController));
+        CurveLendingMarketFactory curveLendingMarketFactory =
+            new CurveLendingMarketFactory(address(protocolController), CurveProtocol.META_REGISTRY);
         vm.label(address(curveLendingMarketFactory), "CurveLendingMarketFactory");
 
         // Deploy the Morpho market factory
@@ -246,7 +248,8 @@ contract MorphoMarketFactoryIntegrationTest is CurveMainnetIntegrationTest {
     ) internal {
         // Deploy the Curve lending market factory
         vm.prank(position.account);
-        CurveLendingMarketFactory curveLendingMarketFactory = new CurveLendingMarketFactory(address(protocolController));
+        CurveLendingMarketFactory curveLendingMarketFactory =
+            new CurveLendingMarketFactory(address(protocolController), CurveProtocol.META_REGISTRY);
         vm.label(address(curveLendingMarketFactory), "CurveLendingMarketFactory");
 
         // Deploy the Morpho market factory

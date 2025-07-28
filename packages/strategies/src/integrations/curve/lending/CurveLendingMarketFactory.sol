@@ -10,6 +10,7 @@ import {IOracle} from "src/interfaces/IOracle.sol";
 import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {ILendingFactory} from "src/interfaces/ILendingFactory.sol";
+import {IMetaRegistry} from "@interfaces/curve/IMetaRegistry.sol";
 
 /// @title Curve Lending Market Factory
 /// @notice Creates a lending market for Curve-associated Stake DAO reward vaults on the given lending protocol
@@ -19,6 +20,9 @@ contract CurveLendingMarketFactory is Ownable2Step {
     /// @dev The address of the Stake DAO Staking v2 protocol controller
     ///      Used to check if the reward vault is genuine
     IProtocolController public immutable PROTOCOL_CONTROLLER;
+
+    /// @dev The address of the Curve meta registry
+    IMetaRegistry public immutable META_REGISTRY;
 
     ///////////////////////////////////////////////////////////////
     // --- EVENTS & ERRORS
@@ -66,9 +70,10 @@ contract CurveLendingMarketFactory is Ownable2Step {
         uint256 lltv;
     }
 
-    constructor(address _protocolController) Ownable(msg.sender) {
+    constructor(address _protocolController, address _metaRegistry) Ownable(msg.sender) {
         require(_protocolController != address(0), AddressZero());
         PROTOCOL_CONTROLLER = IProtocolController(_protocolController);
+        META_REGISTRY = IMetaRegistry(_metaRegistry);
     }
 
     ///////////////////////////////////////////////////////////////
@@ -99,7 +104,7 @@ contract CurveLendingMarketFactory is Ownable2Step {
 
         // 2. Deploy the oracle
         IOracle oracle = new CurveStableswapOracle(
-            rewardVault.asset(),
+            META_REGISTRY.get_pool_from_lp_token(rewardVault.asset()),
             address(collateral),
             oracleParams.loanAsset,
             oracleParams.loanAssetFeed,
@@ -147,7 +152,7 @@ contract CurveLendingMarketFactory is Ownable2Step {
 
         // 2. Deploy the oracle
         IOracle oracle = new CurveCryptoswapOracle(
-            rewardVault.asset(),
+            META_REGISTRY.get_pool_from_lp_token(rewardVault.asset()),
             address(collateral),
             oracleParams.loanAsset,
             oracleParams.loanAssetFeed,
