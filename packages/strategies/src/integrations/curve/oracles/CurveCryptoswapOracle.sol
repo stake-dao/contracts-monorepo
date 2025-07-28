@@ -32,14 +32,11 @@ import {IOracle} from "src/interfaces/IOracle.sol";
  *           by hop, convert *token0* into USD. Each element consumes the output
  *           of the previous hop.
  *
- *         Identity hops (address(0))
- *         --------------------------------
- *         Passing `address(0)` **skips** a hop by hard-coding a 1:1 ratio.
- *         Use this **only** when the relationship is mathematically fixed
- *         (e.g. frxETH ↔︎ ETH) or when *token0* is itself USD-denominated. For
- *         market-traded stables such as **USDT, USDC, DAI** you **MUST** provide
- *         a real Chainlink price feed so that de-peg events propagate to the
- *         LP valuation.
+ *         Each element of `token0ToUsdFeeds` **must be** a real Chainlink price
+ *         feed. Zero-address "identity hops" are no longer accepted; if the
+ *         previous hop already outputs the desired unit (e.g. token0 is USDC
+ *         and you want USD) simply omit the hop instead of inserting a
+ *         placeholder.
  *
  *         Flash-manipulation caveat (single-block `lp_price()` spikes)
  *         -----------------------------------------------------------
@@ -140,7 +137,9 @@ contract CurveCryptoswapOracle is IOracle {
 
         // store the conversion feeds required to denominate token0 in loan asset (hop-by-hop) and their heartbeats
         for (uint256 i; i < _token0ToUsdFeeds.length; i++) {
-            if (_token0ToUsdFeeds[i] != address(0) && _token0ToUsdHeartbeats[i] == 0) revert ZeroUint256();
+            // Each hop must be a real Chainlink feed and have a non-zero heartbeat
+            if (_token0ToUsdFeeds[i] == address(0)) revert ZeroAddress();
+            if (_token0ToUsdHeartbeats[i] == 0) revert ZeroUint256();
 
             token0ToUsdFeeds.push(IChainlinkFeed(_token0ToUsdFeeds[i]));
             token0ToUsdHeartbeats.push(_token0ToUsdHeartbeats[i]);
@@ -160,8 +159,6 @@ contract CurveCryptoswapOracle is IOracle {
         uint256 length = token0ToUsdFeeds.length;
         for (uint256 i; i < length; i++) {
             IChainlinkFeed feed = token0ToUsdFeeds[i];
-            if (address(feed) == address(0)) continue; // no-op hop
-
             uint256 feedPrice = _fetchFeedPrice(feed, token0ToUsdHeartbeats[i]);
             uint8 feedDecimals = feed.decimals();
             token0Usd = Math.mulDiv(token0Usd, feedPrice, 10 ** feedDecimals);
@@ -231,9 +228,6 @@ Each element `feeds[i]` converts the *output* of the previous hop into the
 lending markets that borrow **USDC**, you then pass the USDC/USD feed via the
 dedicated `loanAssetFeed` parameter.
 
-Below are three example pools that highlight when to use a **real feed** and
-when the `address(0)` *identity hop* is acceptable.
-
 ---------------------------------------------------------------------
 1.  TriCrypto-USDT pool  (USDT / wBTC / WETH)   → token0 = USDT
 ---------------------------------------------------------------------
@@ -246,8 +240,7 @@ Constructor parameters:
     token0ToUsdHeartbeats  = [ 1 days ]            // whatever defined by the chainlink feed
     loanAssetFeed          = USDC/USD feed
 
-Why **not** `address(0)`: you *want* the oracle to detect a de-peg; therefore
-you must multiply by the live Chainlink USDT/USD price.
+The USDT/USD feed is mandatory so the oracle reacts to any USDT de-peg.
 
 ---------------------------------------------------------------------
 2.  TriCrypto-USDC pool  → token0 = USDC
@@ -266,12 +259,13 @@ par (e.g., 0.97 USD) the LP/USDC price increases proportionally.
 3.  WETH / RSUP pool  → token0 = wETH
 ---------------------------------------------------------------------
 • WETH is a **1:1 non-rebasing wrapper** around ETH.
-• Safe to treat `WETH → ETH` as an identity hop.
+• Because WETH unwraps 1:1 into ETH, you **omit** that hop and use the
+  ETH/USD feed directly.
 
 Constructor parameters:
 
     token0ToUsdFeeds       = [ ETH/USD feed ]
-    token0ToUsdHeartbeats  = [ 1 days       ]   // whatever defined by the chainlink feed
+    token0ToUsdHeartbeats  = [ 1 days       ]   // heartbeat defined by the feed
     loanAssetFeed          = USDC/USD feed
 
 Because WETH unwraps 1:1 into ETH, the single ETH/USD feed already converts
