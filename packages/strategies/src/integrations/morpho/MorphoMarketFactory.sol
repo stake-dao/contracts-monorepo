@@ -135,20 +135,25 @@ contract MorphoMarketFactory is ILendingFactory {
         // Morpho Blue's health-check can discard at most TWO loan-wei of value
         // because of the successive "round-down" operations it performs.
         // If we are short by ≥ 2 loan-wei the position may be flagged as
-        // unhealthy.  To make the deployment fully deterministic we therefore
+        // unhealthy. To make the deployment fully deterministic we therefore
         // add exactly two smallest units of the *loan* token, converted into
         // collateral units.
         //
         // loan-wei → LP-wei conversion: 1 loan-wei corresponds to
         // 10^(collDec-loanDec) wei of the collateral token (because the oracle
-        // scales with 10^(loanDec-collDec)).  Multiplying that by 2 gives the
+        // scales with 10^(loanDec-collDec)). Multiplying that by 2 gives the
         // minimal amount that always offsets the worst-case rounding loss,
         // while remaining economically negligible (≈ 0.005 USDC for a ETH/USDC for example).
+        // ------------------------------------------------------------------
+        // Size the collateral so the position opens at 95% of the liquidation
+        // threshold instead of sitting right on the edge. This buffer prevents
+        // an immediate liquidation that could arise from a single interest-
+        // accrual block or a small price movement.
         // ------------------------------------------------------------------
         uint256 collateralToSupply = Math.mulDiv(
             Math.mulDiv(borrowAmount, 10 ** oracle.ORACLE_BASE_EXPONENT(), oracle.price(), Math.Rounding.Ceil),
             1e18,
-            lltv,
+            Math.mulDiv(lltv, 9_500, 10_000), // 95% of LLTV
             Math.Rounding.Ceil
         );
         uint256 buffer = 2 * (10 ** (collateral.decimals() - loan.decimals()));
