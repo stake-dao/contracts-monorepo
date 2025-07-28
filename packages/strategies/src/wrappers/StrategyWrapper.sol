@@ -106,6 +106,9 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
         REWARD_VAULT = rewardVault;
         MAIN_REWARD_TOKEN = IERC20(accountant.REWARD_TOKEN());
         ACCOUNTANT_SCALING_FACTOR = accountant.SCALING_FACTOR();
+
+        // Approve the asset token to the reward vault
+        SafeERC20.forceApprove(IERC20(rewardVault.asset()), address(rewardVault), type(uint256).max);
     }
 
     ///////////////////////////////////////////////////////////////
