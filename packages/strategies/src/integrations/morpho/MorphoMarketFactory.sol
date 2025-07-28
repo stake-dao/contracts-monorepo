@@ -103,11 +103,12 @@ contract MorphoMarketFactory is ILendingFactory {
             irm: irm,
             lltv: lltv
         });
-        MORPHO_BLUE.createMarket(morphoMarketParams);
+        id = MarketParamsLib.id(morphoMarketParams);
+        // prevent a DoS attack that would prevent us for deploying the market
+        if (MORPHO_BLUE.market(id).lastUpdate == 0) MORPHO_BLUE.createMarket(morphoMarketParams);
 
         // 2. Trigger the deployment event
         emit MarketDeployed(address(MORPHO_BLUE), address(collateral), address(loan), address(oracle), lltv, irm);
-        id = MarketParamsLib.id(morphoMarketParams);
 
         // 3. Pre-seed the market if needed
         if (initialLoanSupply != 0) _preSeedMarket(initialLoanSupply, morphoMarketParams);
