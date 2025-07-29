@@ -48,6 +48,13 @@ import {IOracle} from "src/interfaces/IOracle.sol";
  *         The contract is **fully immutable** – all external parameters are set
  *         in the constructor. If a feed's heartbeat or address changes, deploy
  *         a new oracle.
+ *
+ *         Limitations – Layer 2 sequencer availability
+ *         -------------------------------------------
+ *         This oracle lacks sequencer uptime validation for Layer 2 networks. Chainlink
+ *         feeds on L2s can become stale if the sequencer goes down. For L2 deployments,
+ *         consider wrapping this oracle to include Sequencer Uptime Data Feed checks.
+ *         https://docs.chain.link/data-feeds/l2-sequencer-feeds
  */
 contract CurveCryptoswapOracle is IOracle {
     ///////////////////////////////////////////////////////////////

@@ -58,6 +58,13 @@ import {IOracle} from "src/interfaces/IOracle.sol";
  *
  *         20 pools are known to be affected by this bug, all networks combined.
  *         This oracle is not intended for these pools.
+ *
+ *         Limitations – Layer 2 sequencer availability
+ *         -------------------------------------------
+ *         This oracle lacks sequencer uptime validation for Layer 2 networks. Chainlink
+ *         feeds on L2s can become stale if the sequencer goes down. For L2 deployments,
+ *         consider wrapping this oracle to include Sequencer Uptime Data Feed checks.
+ *         https://docs.chain.link/data-feeds/l2-sequencer-feeds
  */
 contract CurveStableswapOracle is IOracle {
     ///////////////////////////////////////////////////////////////
