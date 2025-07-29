@@ -89,15 +89,11 @@ contract CurveStableswapOracle is IOracle {
     /// @notice Maximum seconds between two updates of the loan asset feed.
     uint256 public immutable LOAN_ASSET_FEED_HEARTBEAT;
 
-    /// @notice Address of the Chainlink price feed for the pool's base peg (e.g., ETH/USD).
-    /// @dev If the pool's peg is USD, this must be the zero address.
-    IChainlinkFeed public immutable BASE_FEED;
+    /// @notice Chainlink feeds for each asset in the pool (all priced in USD)
+    IChainlinkFeed[] public poolAssetFeeds;
 
-    /// @notice Decimals of the base peg's price feed.
-    uint8 public immutable BASE_FEED_DECIMALS;
-
-    /// @notice Maximum seconds between two updates of the base peg feed.
-    uint256 public immutable BASE_FEED_HEARTBEAT;
+    /// @notice Heartbeats for each pool asset feed
+    uint256[] public poolAssetHeartbeats;
 
     /// @notice Pre-computed factor that scales the oracle output to `ORACLE_BASE_EXPONENT`.
     uint256 public immutable SCALE_FACTOR;
@@ -106,39 +102,38 @@ contract CurveStableswapOracle is IOracle {
     // --- ERRORS
     ///////////////////////////////////////////////////////////////
 
-    /// @dev Thrown when a provided address is the zero address.
-    error ZeroAddress();
-
-    /// @dev Thrown when a provided uint256 is zero.
-    error ZeroUint256();
-
     /// @dev Thrown when the Chainlink feed returns a stale or invalid price.
     error InvalidPrice();
+    error ZeroAddress();
+    error ZeroUint256();
+    error ArrayLengthMismatch();
+    error InvalidDecimals();
 
     /// @param _curvePool The address of the Curve pool for the LP token collateral.
     /// @param _collateralToken The address of the collateral token of the lending market.
     /// @param _loanAsset The address of the loan token of the lending market (e.g., USDC/crvUSD).
     /// @param _loanAssetFeed The address of the Chainlink feed for the loan token of the lending market (e.g., USDC/crvUSD).
     /// @param _loanAssetFeedHeartbeat The maximum number of seconds since the last update of the loan asset feed.
-    /// @param _baseFeed The address of the Chainlink feed for the pool's underlying peg (e.g., ETH/USD). Pass address(0) if the peg is USD.
-    /// @param _baseFeedHeartbeat The maximum number of seconds since the last update of the base feed.
-    /// @dev Given a LP/USDC lending market, where LP is the LP token of a Curve Stableswap Pool (or a token strictly pegged to it):
-    //       - The `baseFeed` must be Peg/USD where Peg is the unit of account used in the stableswap pool
-    //         - If the unit of account of the pool is USD, the given `baseFeed` must be address(0) (e.g., USDC/crvUSD pool)
-    //         - If the unit of account of the pool is ETH, the given `baseFeed` must track ETH/USD (e.g., wstETH/wETH pool)
-    //         - If the unit of account of the pool is BTC, the given `baseFeed` must track BTC/USD (e.g., wBTC/tBTC pool)
+    /// @param _poolAssetFeeds Array of Chainlink feeds for each asset in the pool (all priced in USD)
+    /// @param _poolAssetHeartbeats Array of heartbeats for each pool asset feed
+    /// @dev Given a LP/USDC lending market, where LP is the LP token of a Curve Stableswap Pool:
+    //       - `_poolAssetFeeds` must contain one USD-denominated feed per pool asset for conservative pricing
+    //         - For USDC/USDT pool: [USDC/USD, USDT/USD] feeds
+    //         - For wstETH/wETH pool: [wstETH/USD, wETH/USD] feeds
+    //         - For wBTC/tBTC pool: [wBTC/USD, tBTC/USD] feeds
     //       - The `loanAssetFeed` must track the price of the loan asset. In this case, it is USDC/USD. For LP/crvUSD, it would be crvUSD/USD.
     /// @custom:reverts ZeroAddress if `_curvePool`, `_collateralToken`, `_loanAsset`, or `_loanAssetFeed` is the zero address.
-    /// @custom:reverts ZeroUint256 if `_loanAssetFeedHeartbeat` is zero.
-    /// @custom:reverts ZeroUint256 if `_baseFeedHeartbeat` is zero when `_baseFeed` is provided.
+    /// @custom:reverts ZeroUint256 if `_loanAssetFeedHeartbeat` is zero or if no pool asset feeds are provided.
+    /// @custom:reverts ArrayLengthMismatch if feed and heartbeat arrays have different lengths.
+    /// @custom:reverts InvalidDecimals if any pool asset feed doesn't have 8 decimals.
     constructor(
         address _curvePool,
         address _collateralToken,
         address _loanAsset,
         address _loanAssetFeed,
         uint256 _loanAssetFeedHeartbeat,
-        address _baseFeed,
-        uint256 _baseFeedHeartbeat
+        address[] memory _poolAssetFeeds,
+        uint256[] memory _poolAssetHeartbeats
     ) {
         require(
             _curvePool != address(0) && _collateralToken != address(0) && _loanAsset != address(0)
@@ -146,7 +141,8 @@ contract CurveStableswapOracle is IOracle {
             ZeroAddress()
         );
         require(_loanAssetFeedHeartbeat > 0, ZeroUint256());
-        if (_baseFeed != address(0)) require(_baseFeedHeartbeat > 0, ZeroUint256());
+        require(_poolAssetFeeds.length > 0, ZeroUint256());
+        require(_poolAssetFeeds.length == _poolAssetHeartbeats.length, ArrayLengthMismatch());
 
         CURVE_POOL = ICurveStableSwapPool(_curvePool);
 
@@ -155,17 +151,17 @@ contract CurveStableswapOracle is IOracle {
         LOAN_ASSET_FEED_DECIMALS = LOAN_ASSET_FEED.decimals();
         LOAN_ASSET_FEED_HEARTBEAT = _loanAssetFeedHeartbeat;
 
-        // If the "unit of account" of the pool is not USD, we need to use a base feed to convert the "unit of account" to USD.
-        if (_baseFeed != address(0)) {
-            BASE_FEED = IChainlinkFeed(_baseFeed);
-            BASE_FEED_HEARTBEAT = _baseFeedHeartbeat;
-            BASE_FEED_DECIMALS = BASE_FEED.decimals();
-        } else {
-            BASE_FEED = IChainlinkFeed(address(0));
-            BASE_FEED_HEARTBEAT = 0;
-            // If no base feed is provided, we assume the "unit of account" is USD, so the price is 1.
-            // We use 18 decimals as a convention for a normalized price of 1.
-            BASE_FEED_DECIMALS = 18;
+        // Store pool asset feeds (each asset priced in USD)
+        uint256 length = _poolAssetFeeds.length;
+        for (uint256 i; i < length; i++) {
+            require(_poolAssetFeeds[i] != address(0), ZeroAddress());
+            require(_poolAssetHeartbeats[i] > 0, ZeroUint256());
+
+            // Ensure all USD feeds are 8 decimals
+            IChainlinkFeed feed = IChainlinkFeed(_poolAssetFeeds[i]);
+            require(feed.decimals() == 8, InvalidDecimals());
+            poolAssetFeeds.push(feed);
+            poolAssetHeartbeats.push(_poolAssetHeartbeats[i]);
         }
 
         // ---------------------------------------------------------------------
@@ -188,8 +184,8 @@ contract CurveStableswapOracle is IOracle {
         SCALE_FACTOR = 10
             ** (
                 ORACLE_BASE_EXPONENT + LOAN_ASSET.decimals() + LOAN_ASSET_FEED_DECIMALS
-                    - IERC20Metadata(_collateralToken).decimals() - BASE_FEED_DECIMALS
-            );
+                    - IERC20Metadata(_collateralToken).decimals() - 8
+            ); // Chainlink USD feeds are 8 decimals
     }
 
     /// @dev Math.mulDiv rounds toward zero (truncates) so the returned price is lower bound
@@ -199,26 +195,33 @@ contract CurveStableswapOracle is IOracle {
     /// @return price the price of 1 asset of collateral token quoted in 1 asset of loan token, scaled by 1e36.
     /// @custom:reverts InvalidPrice if the price fetched from the Chainlink feeds are invalid (negative or 0)
     function price() external view returns (uint256) {
-        // 1. Get the price of the LP token in its "unit of account" (e.g., USD for USDC/crvUSD or ETH for wstETH/wETH).
-        // This value always has 18 decimals.
+        // 1. Get the price of the LP token in its "unit of account" (assumes all assets are equal)
         uint256 priceLpInPeg = CURVE_POOL.get_virtual_price();
 
-        // 2. Get the price of the "unit of account" in USD from the base feed.
-        uint256 pricePegInUsd;
-        if (address(BASE_FEED) != address(0)) {
-            pricePegInUsd = _fetchFeedPrice(BASE_FEED, BASE_FEED_HEARTBEAT);
-        } else {
-            // If no base feed, "unit of account" is USD. The price is 1, represented with `BASE_FEED_DECIMALS` (18) precision.
-            pricePegInUsd = 10 ** uint256(BASE_FEED_DECIMALS);
-        }
+        // 2. Get the minimum asset price in USD
+        uint256 minAssetPriceUsd = _getMinimumAssetPrice();
 
         // 3. Get the price of the loan asset in USD from its Chainlink feed.
         uint256 priceLoanInUsd = _fetchFeedPrice(LOAN_ASSET_FEED, LOAN_ASSET_FEED_HEARTBEAT);
 
         // 4. Aggregate and scale to 1e36 using the pre-computed SCALE_FACTOR.
-        // Formula: price(LP/Loan) = (priceLpInPeg * pricePegInUsd / priceLoanInUsd) * SCALE_FACTOR
-        uint256 baseRatio = Math.mulDiv(priceLpInPeg, pricePegInUsd, priceLoanInUsd);
+        // Formula: price(LP/Loan) = (priceLpInPeg * minAssetPriceUsd / priceLoanInUsd) * SCALE_FACTOR
+        uint256 baseRatio = Math.mulDiv(priceLpInPeg, minAssetPriceUsd, priceLoanInUsd);
         return Math.mulDiv(baseRatio, SCALE_FACTOR, 1e18);
+    }
+
+    /// @notice Gets the minimum USD price among all pool assets (conservative pricing)
+    /// @return minPrice The minimum asset price in USD (8 decimals, Chainlink standard)
+    function _getMinimumAssetPrice() internal view returns (uint256) {
+        uint256 length = poolAssetFeeds.length;
+        uint256 minPrice = type(uint256).max;
+
+        for (uint256 i; i < length; i++) {
+            uint256 assetPrice = _fetchFeedPrice(poolAssetFeeds[i], poolAssetHeartbeats[i]);
+            if (assetPrice < minPrice) minPrice = assetPrice;
+        }
+
+        return minPrice;
     }
 
     /// @notice Fetches the price from a Chainlink feed.
@@ -234,44 +237,56 @@ contract CurveStableswapOracle is IOracle {
 }
 
 /*───────────────────────────────────────────────────────────────────────────
-EXAMPLES – choosing the `baseFeed` parameter
+EXAMPLES – configuring pool asset feeds for conservative pricing
 ─────────────────────────────────────────────────────────────────────────────
 Constructor signature
 
     CurveStableswapOracle(
         curvePool,
+        collateralToken,           // LP token or wrapper
         loanAsset,                 // USDC in the examples below
         loanAssetFeed,             // USDC/USD Chainlink feed
         loanAssetHeartbeat,
-        baseFeed,                  // Peg/USD feed (or address(0) if peg = USD)
-        baseFeedHeartbeat
+        poolAssetFeeds,            // Array of USD feeds for each pool asset
+        poolAssetHeartbeats        // Array of heartbeats for each feed
     )
 
----------------------------------------------------------------------
-1.  weETH / wETH  **StableSwap-NG** pool (token0 = wETH)
----------------------------------------------------------------------
-• Unit-of-account (peg) = **ETH**.
-• You must supply a live **ETH/USD** Chainlink feed so that the oracle can
-  convert the LP's ETH-denominated `get_virtual_price()` into USD.
-
-      baseFeed             = ETH/USD feed
-      baseFeedHeartbeat    = 1 days      // whatever the feed docs specify
-
-The loan-asset parameters remain the same as usual (USDC + USDC/USD feed).
+IMPORTANT: The oracle uses MINIMUM pricing among pool assets to prevent
+overvaluation during asset depegs. Each pool asset requires a direct USD feed.
 
 ---------------------------------------------------------------------
-2.  Curve.fi Strategic USD Reserves  pool (USDC / USDT) (token0 = USDC)
+1.  wstETH / wETH  **StableSwap-NG** pool
 ---------------------------------------------------------------------
-• Unit-of-account = **USD** (all constituents are USD-pegged stables).
-• Set `baseFeed = address(0)` to tell the oracle that 1 peg-unit = 1 USD.
+• Pool assets: wstETH, wETH
+• Both assets are ETH derivatives that can trade at different prices
+• Conservative approach: use the lower of the two USD prices
 
-      baseFeed             = address(0)  // no conversion needed
-      baseFeedHeartbeat    = 0           // ignored when baseFeed is zero
+      poolAssetFeeds       = [wstETH/USD feed, wETH/USD feed]
+      poolAssetHeartbeats  = [1 days, 1 days]
 
-With `baseFeed` omitted, the formula collapses to
+If wstETH trades at $2,420 and wETH at $2,400, the oracle uses $2,400.
 
-    Price(LP / USDC) = get_virtual_price() / (USDC/USD)
+---------------------------------------------------------------------
+2.  USDC / USDT  **StableSwap** pool
+---------------------------------------------------------------------
+• Pool assets: USDC, USDT
+• Both are USD stablecoins that can depeg independently
+• Conservative approach: use the lower USD price
 
-which automatically reflects any USDC de-peg while avoiding an unnecessary
-feed call.
+      poolAssetFeeds       = [USDC/USD feed, USDT/USD feed]
+      poolAssetHeartbeats  = [1 days, 1 days]
+
+If USDC = $1.000 and USDT = $0.998, the oracle uses $0.998.
+
+---------------------------------------------------------------------
+3.  cbBTC / wBTC  **StableSwap** pool
+---------------------------------------------------------------------
+• Pool assets: cbBTC, wBTC
+• Both are BTC derivatives with potential basis risk
+• Conservative approach: prevents overvaluation if cbBTC depegs
+
+      poolAssetFeeds       = [cbBTC/USD feed, wBTC/USD feed]
+      poolAssetHeartbeats  = [1 days, 1 days]
+
+If cbBTC = $58,800 and wBTC = $60,000, the oracle uses $58,800.
 */
