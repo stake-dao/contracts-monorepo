@@ -40,25 +40,25 @@ contract CurveLendingMarketFactory is Ownable2Step {
     /// @dev Thrown when the reward vault is not a Curve reward vault.
     error InvalidProtocolId();
 
+    /// @dev Thrown when the oracle type is invalid.
+    error InvalidOracleType();
+
     /// @dev Thrown when the delegate call fails.
     error MarketCreationFailed();
 
-    /// @dev The parameters for creating a Curve stableswap oracle.
-    struct StableswapOracleParams {
-        address loanAsset;
-        address loanAssetFeed;
-        uint256 loanAssetFeedHeartbeat;
-        address baseFeed;
-        uint256 baseFeedHeartbeat;
+    enum OracleType {
+        UNKNOWN, // safeguard against using the default value
+        STABLESWAP,
+        CRYPTOSWAP
     }
 
-    /// @dev The parameters for creating a Curve cryptoswap oracle.
-    struct CryptoswapOracleParams {
+    /// @dev The parameters for creating a Curve oracle (both stableswap and cryptoswap).
+    struct OracleParams {
         address loanAsset;
         address loanAssetFeed;
         uint256 loanAssetFeedHeartbeat;
-        address[] token0ToUsdFeeds;
-        uint256[] token0ToUsdHeartbeats;
+        address[] chainlinkFeeds; // For stableswap: pool asset feeds. For cryptoswap: token0→USD feeds
+        uint256[] chainlinkFeedHeartbeats;
     }
 
     /// @dev The parameters needed for the market creation
@@ -78,9 +78,10 @@ contract CurveLendingMarketFactory is Ownable2Step {
         META_REGISTRY = IMetaRegistry(_metaRegistry);
     }
 
-    modifier isValidDeployment(IRewardVault rewardVault) {
+    modifier isValidDeployment(IRewardVault rewardVault, OracleType oracleType) {
         require(PROTOCOL_CONTROLLER.vaults(rewardVault.gauge()) == address(rewardVault), InvalidRewardVault());
         require(rewardVault.PROTOCOL_ID() == bytes4(keccak256("CURVE")), InvalidProtocolId());
+        require(oracleType != OracleType.UNKNOWN, InvalidOracleType());
         _;
     }
 
@@ -88,69 +89,28 @@ contract CurveLendingMarketFactory is Ownable2Step {
     // --- MARKET CREATION
     ///////////////////////////////////////////////////////////////
 
-    /// @notice Creates a Stake DAO market on Curve using a stableswap oracle
+    /// @notice Creates a Stake DAO market on Curve with the specified oracle type
     /// @dev The lending factory must be trusted!
     ///      The ownership of this contract is propagated to the lending factory
     /// @param rewardVault The reward vault to use for the market
-    /// @param oracleParams The parameters for the stableswap oracle
-    /// @param marketParams The parameters for the market
-    /// @param lendingFactory The factory to use for the market
-    /// @return collateral The wrapper for the collateral token
-    /// @return oracle The oracle for the market
-    /// @return data The data returned by the lending factory
-    function deploy(
-        IRewardVault rewardVault,
-        StableswapOracleParams calldata oracleParams,
-        MarketParams calldata marketParams,
-        ILendingFactory lendingFactory
-    ) external onlyOwner isValidDeployment(rewardVault) returns (IStrategyWrapper, IOracle, bytes memory) {
-        // 1. Deploy the collateral token
-        IStrategyWrapper collateral = _deployCollateral(rewardVault, lendingFactory);
-
-        // 2. Deploy the oracle
-        IOracle oracle = new CurveStableswapOracle(
-            META_REGISTRY.get_pool_from_lp_token(rewardVault.asset()),
-            address(collateral),
-            oracleParams.loanAsset,
-            oracleParams.loanAssetFeed,
-            oracleParams.loanAssetFeedHeartbeat,
-            oracleParams.baseFeed,
-            oracleParams.baseFeedHeartbeat
-        );
-        emit OracleDeployed(address(oracle));
-
-        // 3. Create the lending market
-        bytes memory data = _createMarket(collateral, oracle, oracleParams.loanAsset, lendingFactory, marketParams);
-        return (collateral, oracle, data);
-    }
-
-    /// @notice Creates a Stake DAO market on Curve using a cryptoswap oracle
-    /// @dev The lending factory must be trusted!
-    ///      The ownership of this contract is propagated to the lending factory
-    /// @param rewardVault The reward vault to use for the market
-    /// @param oracleParams The parameters for the cryptoswap oracle
+    /// @param oracleType The type of oracle to deploy (STABLESWAP =1 or CRYPTOSWAP =2)
+    /// @param oracleParams The parameters for the oracle (structure works for both types)
     /// @param marketParams The parameters for the market
     /// @param lendingFactory The factory to use for the market
     function deploy(
         IRewardVault rewardVault,
-        CryptoswapOracleParams calldata oracleParams,
+        OracleType oracleType,
+        OracleParams calldata oracleParams,
         MarketParams calldata marketParams,
         ILendingFactory lendingFactory
-    ) external onlyOwner isValidDeployment(rewardVault) returns (IStrategyWrapper, IOracle, bytes memory) {
+    ) external onlyOwner isValidDeployment(rewardVault, oracleType) returns (IStrategyWrapper, IOracle, bytes memory) {
         // 1. Deploy the collateral token
         IStrategyWrapper collateral = _deployCollateral(rewardVault, lendingFactory);
 
         // 2. Deploy the oracle
-        IOracle oracle = new CurveCryptoswapOracle(
-            META_REGISTRY.get_pool_from_lp_token(rewardVault.asset()),
-            address(collateral),
-            oracleParams.loanAsset,
-            oracleParams.loanAssetFeed,
-            oracleParams.loanAssetFeedHeartbeat,
-            oracleParams.token0ToUsdFeeds,
-            oracleParams.token0ToUsdHeartbeats
+        IOracle oracle = _deployOracle(
+            collateral, META_REGISTRY.get_pool_from_lp_token(rewardVault.asset()), oracleType, oracleParams
         );
-        emit OracleDeployed(address(oracle));
 
         // 3. Create the lending market
         bytes memory data = _createMarket(collateral, oracle, oracleParams.loanAsset, lendingFactory, marketParams);
@@ -169,6 +129,40 @@ contract CurveLendingMarketFactory is Ownable2Step {
         emit CollateralDeployed(address(collateral));
 
         return collateral;
+    }
+
+    function _deployOracle(
+        IStrategyWrapper collateral,
+        address curvePool,
+        OracleType oracleType,
+        OracleParams calldata oracleParams
+    ) internal returns (IOracle oracle) {
+        if (oracleType == OracleType.CRYPTOSWAP) {
+            oracle = new CurveCryptoswapOracle(
+                curvePool,
+                address(collateral),
+                oracleParams.loanAsset,
+                oracleParams.loanAssetFeed,
+                oracleParams.loanAssetFeedHeartbeat,
+                oracleParams.chainlinkFeeds,
+                oracleParams.chainlinkFeedHeartbeats
+            );
+        } else if (oracleType == OracleType.STABLESWAP) {
+            oracle = new CurveStableswapOracle(
+                curvePool,
+                address(collateral),
+                oracleParams.loanAsset,
+                oracleParams.loanAssetFeed,
+                oracleParams.loanAssetFeedHeartbeat,
+                oracleParams.chainlinkFeeds,
+                oracleParams.chainlinkFeedHeartbeats
+            );
+        } else {
+            revert InvalidOracleType();
+        }
+        emit OracleDeployed(address(oracle));
+
+        return oracle;
     }
 
     function _createMarket(
