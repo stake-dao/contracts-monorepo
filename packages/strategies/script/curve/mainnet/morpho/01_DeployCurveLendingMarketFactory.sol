@@ -10,6 +10,7 @@ import {CurveLendingMarketFactory} from "src/integrations/curve/lending/CurveLen
 contract DeployCurveLendingMarketFactoryScript is Script {
     function run() external returns (CurveLendingMarketFactory curveLendingMarketFactory) {
         address protocolController = vm.envAddress("PROTOCOL_CONTROLLER");
+        // optional override for the governance address
         address governance = vm.envOr("OVERRIDE_GOVERNANCE", DAO.GOVERNANCE);
 
         require(protocolController.code.length > 0, "ProtocolController not deployed");

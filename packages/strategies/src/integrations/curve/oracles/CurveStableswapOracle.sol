@@ -185,7 +185,7 @@ contract CurveStableswapOracle is IOracle {
             ** (
                 ORACLE_BASE_EXPONENT + LOAN_ASSET.decimals() + LOAN_ASSET_FEED_DECIMALS
                     - IERC20Metadata(_collateralToken).decimals() - 8
-            ); // Chainlink USD feeds are 8 decimals
+            );
     }
 
     /// @dev Math.mulDiv rounds toward zero (truncates) so the returned price is lower bound
