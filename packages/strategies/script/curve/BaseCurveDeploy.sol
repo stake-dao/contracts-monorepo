@@ -156,6 +156,9 @@ abstract contract BaseCurveDeploy is BaseDeploy {
             )
         );
 
+        /// 17%
+        accountant.setProtocolFeePercent(0.17e18);
+
         if (isL2) {
             accountant.setHarvestFeePercent(0);
         }
