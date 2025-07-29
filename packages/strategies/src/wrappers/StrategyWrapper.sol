@@ -116,7 +116,9 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
     ///////////////////////////////////////////////////////////////
 
     /// @notice Wrap **all** RewardVault shares owned by the caller into wrapper tokens (1:1 ratio)
-    /// @dev Use this when you ALREADY hold RewardVault shares
+    /// @dev Use this when you ALREADY hold RewardVault shares.
+    ///      If you already have wrapped tokens, any pending main and extra rewards will be
+    ///      automatically claimed before the new deposit to prevent reward loss.
     /// @custom:reverts ZeroAmount If the caller's share balance is zero
     function depositShares() external {
         depositShares(REWARD_VAULT.balanceOf(msg.sender));
@@ -124,7 +126,9 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
 
     /// @notice Wrap `amount` RewardVault shares into wrapper tokens (1:1 ratio)
     /// @param amount Number of RewardVault shares the caller wants to wrap
-    /// @dev Use this when you ALREADY hold RewardVault shares and wish to wrap a specific portion of them
+    /// @dev Use this when you ALREADY hold RewardVault shares and wish to wrap a specific portion of them.
+    ///      If you already have wrapped tokens, any pending main and extra rewards will be
+    ///      automatically claimed before the new deposit to prevent reward loss.
     /// @custom:reverts ZeroAmount If `amount` is zero
     function depositShares(uint256 amount) public nonReentrant {
         require(amount > 0, ZeroAmount());
@@ -137,7 +141,9 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
 
     /// @notice Convert **all** underlying LP tokens owned by the caller into RewardVault
     ///         shares and immediately wrap those shares into wrapper tokens (LP → share → wrapper)
-    /// @dev Use this when you DO NOT own RewardVault shares yet, only the raw LP tokens
+    /// @dev Use this when you DO NOT own RewardVault shares yet, only the raw LP tokens.
+    ///      If you already have wrapped tokens, any pending main and extra rewards will be
+    ///      automatically claimed before the new deposit to prevent reward loss.
     /// @custom:reverts ZeroAmount If the caller's LP balance is zero
     function depositAssets() external {
         depositAssets(IERC20(REWARD_VAULT.asset()).balanceOf(msg.sender));
@@ -147,7 +153,9 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
     ///         immediately wrap those shares into wrapper tokens (LP → share → wrapper)
     /// @param amount Amount of underlying LP tokens provided by the caller
     /// @dev Use this when you DO NOT own RewardVault shares yet, only the raw LP tokens,
-    ///      and wish to wrap a specific portion of them
+    ///      and wish to wrap a specific portion of them.
+    ///      If you already have wrapped tokens, any pending main and extra rewards will be
+    ///      automatically claimed before the new deposit to prevent reward loss.
     /// @custom:reverts ZeroAmount If `amount` is zero
     function depositAssets(uint256 amount) public nonReentrant {
         require(amount > 0, ZeroAmount());
@@ -159,11 +167,10 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
         _deposit(shares);
     }
 
-    /// @notice Wraps `amount` RewardVault shares into wrapper tokens (1:1 ratio)
-    /// @param amount Number of RewardVault shares the caller wants to wrap
     function _deposit(uint256 amount) internal {
         // 1. Update the internal user checkpoint
         UserCheckpoint storage checkpoint = userCheckpoints[msg.sender];
+        if (checkpoint.balance != 0) _claimAllRewards(msg.sender);
         checkpoint.balance += amount;
 
         // 2. Keep track of the Main reward token checkpoint
@@ -195,17 +202,14 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
     /// @param receiver The address to receive the underlying reward vault shares
     /// @custom:reverts ZeroAmount if the given amount is zero
     /// @custom:reverts ZeroAddress if the receiver address is the zero address
-    function withdraw(uint256 amount, address receiver) public {
+    function withdraw(uint256 amount, address receiver) public nonReentrant {
         require(amount > 0, ZeroAmount());
         require(receiver != address(0), ZeroAddress());
 
-        // 1. Claim main rewards for the receiver
-        claim(receiver);
+        // 1. Claim all the pending rewards (main + extra) for the receiver
+        _claimAllRewards(receiver);
 
-        // 2. Claim all the pending extra rewards for the receiver
-        claimExtraRewards(REWARD_VAULT.getRewardTokens(), receiver);
-
-        // 3. Update the internal user checkpoint
+        // 2. Update the internal user checkpoint
         UserCheckpoint storage checkpoint = userCheckpoints[msg.sender];
         checkpoint.balance -= amount;
 
@@ -219,20 +223,24 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
     }
 
     ///////////////////////////////////////////////////////////////
-    // --- CLAIM MAIN REWARDS
+    // --- REWARDS
     ///////////////////////////////////////////////////////////////
 
     /// @notice Claims the caller's main reward token for himself
     /// @return amount Amount of main reward tokens claimed
-    function claim() external returns (uint256 amount) {
-        return claim(msg.sender);
+    function claim() external nonReentrant returns (uint256 amount) {
+        return _claim(msg.sender);
     }
 
     /// @notice Claims the caller's main reward token for the receiver
     /// @param receiver The address to receive the main reward tokens
     /// @return amount Amount of main reward tokens claimed
     /// @custom:reverts ZeroAddress if the receiver address is the zero address
-    function claim(address receiver) public nonReentrant returns (uint256 amount) {
+    function claim(address receiver) external nonReentrant returns (uint256 amount) {
+        return _claim(receiver);
+    }
+
+    function _claim(address receiver) internal returns (uint256 amount) {
         require(receiver != address(0), ZeroAddress());
 
         // 1. Pull the latest data from the Accountant and the total supply of the wrapper
@@ -261,21 +269,17 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
         }
     }
 
-    ///////////////////////////////////////////////////////////////
-    // --- CLAIM EXTRA REWARDS
-    ///////////////////////////////////////////////////////////////
-
     /// @notice Claims all the caller's extra reward tokens for himself
     /// @return amounts Array of claimed amounts
-    function claimExtraRewards() external returns (uint256[] memory amounts) {
-        return claimExtraRewards(REWARD_VAULT.getRewardTokens(), msg.sender);
+    function claimExtraRewards() external nonReentrant returns (uint256[] memory amounts) {
+        return _claimExtraRewards(REWARD_VAULT.getRewardTokens(), msg.sender);
     }
 
     /// @notice Claims the rewards for the given extra reward tokens for the caller
     /// @param tokens Array of extra reward tokens to claim
     /// @return amounts Array of claimed amounts
-    function claimExtraRewards(address[] calldata tokens) public returns (uint256[] memory amounts) {
-        return claimExtraRewards(tokens, msg.sender);
+    function claimExtraRewards(address[] calldata tokens) external nonReentrant returns (uint256[] memory amounts) {
+        return _claimExtraRewards(tokens, msg.sender);
     }
 
     /// @notice Claims the rewards for the given extra reward tokens for the receiver
@@ -284,9 +288,16 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
     /// @return amounts Array of claimed amounts
     /// @custom:reverts InvalidTokens if the provided token list is empty
     /// @custom:reverts ZeroAddress if the receiver address is the zero address
-    function claimExtraRewards(address[] memory tokens, address receiver)
-        public
+    function claimExtraRewards(address[] calldata tokens, address receiver)
+        external
         nonReentrant
+        returns (uint256[] memory amounts)
+    {
+        return _claimExtraRewards(tokens, receiver);
+    }
+
+    function _claimExtraRewards(address[] memory tokens, address receiver)
+        internal
         returns (uint256[] memory amounts)
     {
         require(tokens.length > 0, InvalidTokens());
@@ -313,6 +324,15 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
         }
 
         return amounts;
+    }
+
+    /// @dev Claims pending main + extra rewards for the caller
+    function _claimAllRewards(address receiver) internal {
+        // Claim main rewards – will internally pull from Accountant only if needed
+        _claim(receiver);
+
+        // Claim all extra rewards
+        _claimExtraRewards(REWARD_VAULT.getRewardTokens(), receiver);
     }
 
     ///////////////////////////////////////////////////////////////

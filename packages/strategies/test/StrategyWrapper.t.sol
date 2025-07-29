@@ -231,6 +231,71 @@ contract StrategyWrapperIntegrationTest is CurveMainnetIntegrationTest {
         assertEq(IERC20(Common.WETH).balanceOf(wrapperUser), wrapperUserRealExtraRewardBalance);
     }
 
+    /// @notice Test that re-depositing into the wrapper automatically claims pending rewards to prevent loss
+    function test_reDepositAutoClaimsRewards() external {
+        ///////////////////////////////////////////////////////////////
+        // --- SETUP
+        ///////////////////////////////////////////////////////////////
+
+        // Generate test data
+        (AccountPosition[] memory _accountPositions, uint256[] memory _rewards) = _generateAccountPositionsAndRewards();
+        AccountPosition memory position = _accountPositions[0];
+        uint256 rewardAmount = _rewards[0];
+
+        address user = position.account;
+        uint256 initialDeposit = position.baseAmount;
+        uint256 additionalDeposit = position.additionalAmount;
+
+        // Deploy vault and wrapper
+        (RewardVault[] memory vaults,) = deployRewardVaults();
+        RewardVault rewardVault = vaults[0];
+        wrapper = new RestrictedStrategyWrapper(rewardVault, address(this), address(this));
+
+        // Add extra reward token
+        vm.mockCall(
+            address(protocolController),
+            abi.encodeWithSelector(IProtocolController.isRegistrar.selector, address(this)),
+            abi.encode(true)
+        );
+        rewardVault.addRewardToken(Common.WETH, address(this));
+
+        ///////////////////////////////////////////////////////////////
+        // --- TEST EXECUTION
+        ///////////////////////////////////////////////////////////////
+
+        // 1. User makes initial deposit into wrapper
+        _depositIntoWrapper(rewardVault, user, initialDeposit);
+        assertEq(wrapper.balanceOf(user), initialDeposit, "Initial deposit should succeed");
+
+        // 2. Simulate rewards accumulation
+        uint128 extraRewardAmount = 1e20;
+        deal(Common.WETH, address(this), extraRewardAmount);
+        IERC20(Common.WETH).approve(address(rewardVault), extraRewardAmount);
+        rewardVault.depositRewards(Common.WETH, extraRewardAmount);
+
+        simulateRewards(rewardVault, rewardAmount);
+        deal(address(rewardToken), address(accountant), rewardAmount);
+        skip(2 days);
+        harvest();
+
+        // 3. Record balances before re-deposit (don't check pending - it may be stale)
+        uint256 mainTokenBalanceBefore = _balanceOf(rewardToken, user);
+        uint256 extraTokenBalanceBefore = IERC20(Common.WETH).balanceOf(user);
+
+        // 4. User makes additional deposit (this should auto-claim pending rewards)
+        _depositIntoWrapper(rewardVault, user, additionalDeposit);
+
+        // 5. Verify rewards were automatically claimed during re-deposit
+        uint256 mainTokenBalanceAfter = _balanceOf(rewardToken, user);
+        uint256 extraTokenBalanceAfter = IERC20(Common.WETH).balanceOf(user);
+
+        // 6. Verify substantial amounts were claimed (not just dust)
+        assertGt(mainTokenBalanceAfter, mainTokenBalanceBefore, "Main rewards should be auto-claimed");
+        assertGt(extraTokenBalanceAfter, extraTokenBalanceBefore, "Extra rewards should be auto-claimed");
+        assertGt(mainTokenBalanceAfter - mainTokenBalanceBefore, 1e18, "Significant main rewards claimed");
+        assertGt(extraTokenBalanceAfter - extraTokenBalanceBefore, 1e16, "Significant extra rewards claimed");
+    }
+
     function _depositIntoWrapper(RewardVault rewardVault, address account, uint256 amount) internal {
         // 1. Mint the shares token by depositing into the reward vault
         deposit(rewardVault, account, amount);
