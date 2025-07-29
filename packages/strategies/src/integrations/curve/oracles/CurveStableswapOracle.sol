@@ -224,20 +224,6 @@ contract CurveStableswapOracle is IOracle {
         require(latestPrice > 0 && updatedAt > block.timestamp - maxStale, InvalidPrice());
         return uint256(latestPrice);
     }
-
-    function name() external view returns (string memory _name) {
-        _name = string.concat(CURVE_POOL.lp_token().symbol(), "-", LOAN_ASSET.symbol(), " Stable Oracle");
-    }
-
-    /// @notice Returns the current version of this oracle.
-    /// @return version The version of the oracle.
-    function version() external pure returns (string memory) {
-        return "1.0.0";
-    }
-
-    function identifier() external pure returns (string memory) {
-        return type(CurveStableswapOracle).name;
-    }
 }
 
 /*───────────────────────────────────────────────────────────────────────────

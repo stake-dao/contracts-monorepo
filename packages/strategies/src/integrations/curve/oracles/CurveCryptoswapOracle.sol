@@ -188,30 +188,6 @@ contract CurveCryptoswapOracle is IOracle {
         require(latestPrice > 0 && updatedAt > block.timestamp - maxStale, InvalidPrice());
         return uint256(latestPrice);
     }
-
-    /// @return _name The name of the oracle.
-    function name() external view returns (string memory _name) {
-        _name = string.concat(CURVE_POOL.lp_token().symbol(), "-", LOAN_ASSET.symbol(), " Crypto Oracle");
-    }
-
-    /// @notice Returns the path created by the stored feeds (hop-by-hop)
-    /// @return path The user-friendly path of the token0 to USD feeds as stored in the contract.
-    function getConversionPath() external view returns (string memory path) {
-        uint256 length = token0ToUsdFeeds.length;
-        for (uint256 i; i < length; i++) {
-            path = string.concat(path, token0ToUsdFeeds[i].description(), " -> ");
-        }
-        path = string.concat(path, " -> ", LOAN_ASSET_FEED.description());
-    }
-
-    /// @return version The version of the oracle.
-    function version() external pure returns (string memory) {
-        return "1.0.0";
-    }
-
-    function identifier() external pure returns (string memory) {
-        return type(CurveCryptoswapOracle).name;
-    }
 }
 
 /*
