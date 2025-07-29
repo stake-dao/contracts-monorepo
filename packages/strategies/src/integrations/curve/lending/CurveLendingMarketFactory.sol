@@ -193,18 +193,4 @@ contract CurveLendingMarketFactory is Ownable2Step {
 
         return data;
     }
-
-    ///////////////////////////////////////////////////////////////
-    // --- GETTERS
-    ///////////////////////////////////////////////////////////////
-
-    /// @return version The version of the factory.
-    function version() external pure returns (string memory) {
-        return "1.0.0";
-    }
-
-    /// @return identifier The identifier of the factory.
-    function identifier() external pure returns (string memory) {
-        return type(CurveLendingMarketFactory).name;
-    }
 }
