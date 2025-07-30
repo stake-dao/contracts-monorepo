@@ -38,16 +38,13 @@ import {IOracle} from "src/interfaces/IOracle.sol";
  *         and you want USD) simply omit the hop instead of inserting a
  *         placeholder.
  *
- *         Flash-manipulation caveat (single-block `lp_price()` spikes)
- *         -----------------------------------------------------------
- *         A flash deposit/withdrawal can move `lp_price()` for one block. The
- *         oracle therefore reports a one-block spot price. Protocols should
- *         mitigate this via conservative collateral factors or by wrapping the
- *         oracle output in a TWAP layer.
- *
- *         The contract is **fully immutable** – all external parameters are set
- *         in the constructor. If a feed's heartbeat or address changes, deploy
- *         a new oracle.
+ *         Flash-manipulation caveat
+ *         -------------------------------------------
+ *         This oracle implements conservative minimum pricing across all pool assets
+ *         and is intended for high-TVL, curated pools only. While `get_virtual_price()`
+ *         could theoretically be manipulated, the multi-layer protections and economic
+ *         barriers make such attacks practically infeasible for the target deployment.
+ *         Conservative LLTV settings are still recommended for additional safety.
  *
  *         Limitations – Layer 2 sequencer availability
  *         -------------------------------------------
