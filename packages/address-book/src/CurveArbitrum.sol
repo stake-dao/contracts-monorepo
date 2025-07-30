@@ -25,7 +25,7 @@ library CurveStrategy {
     address internal constant PROTOCOL_CONTROLLER = 0x2d8BcE1FaE00a959354aCD9eBf9174337A64d4fb;
     address internal constant GATEWAY = 0xe5d6D047DF95c6627326465cB27B64A8b77A8b91;
 
-    address internal constant STRATEGY = 0x021C3A83333a51d3c956F5c9748C384c897C8E14;
+    address internal constant STRATEGY = 0xDeD96cC511d96BDa66f4ae65723db99Cd8798308;
 
     address internal constant CONVEX_SIDECAR_IMPLEMENTATION = 0x735A969463967578Fcc17cEB9bba32893d00f71d;
     address internal constant CONVEX_SIDECAR_FACTORY = 0xf368a89e1731b9362670786d36866910c5334477;
