@@ -3,13 +3,13 @@ pragma solidity >=0.8.28;
 
 import {CurveMainnetIntegrationTest} from "test/integration/curve/mainnet/CurveMainnetIntegration.t.sol";
 import {RewardVault} from "src/RewardVault.sol";
-import {RestrictedStrategyWrapper} from "src/wrappers/RestrictedStrategyWrapper.sol";
+import {StrategyWrapper} from "src/wrappers/StrategyWrapper.sol";
 import {Common} from "@address-book/src/CommonEthereum.sol";
 import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 
 contract StrategyWrapperIntegrationTest is CurveMainnetIntegrationTest {
-    RestrictedStrategyWrapper internal wrapper;
+    StrategyWrapper internal wrapper;
     MorphoMock internal morpho;
 
     constructor() CurveMainnetIntegrationTest() {}
@@ -50,7 +50,7 @@ contract StrategyWrapperIntegrationTest is CurveMainnetIntegrationTest {
         morpho = new MorphoMock();
 
         // Deploy the Morpho Strategy Wrapper and store the reward vault
-        wrapper = new RestrictedStrategyWrapper(rewardVault, address(morpho), address(this));
+        wrapper = new StrategyWrapper(rewardVault, address(morpho), address(this));
         vm.label(address(wrapper), "MorphoWrapper");
 
         // Add an extra reward token to the reward vault
@@ -249,7 +249,7 @@ contract StrategyWrapperIntegrationTest is CurveMainnetIntegrationTest {
         // Deploy vault and wrapper
         (RewardVault[] memory vaults,) = deployRewardVaults();
         RewardVault rewardVault = vaults[0];
-        wrapper = new RestrictedStrategyWrapper(rewardVault, address(this), address(this));
+        wrapper = new StrategyWrapper(rewardVault, address(this), address(this));
 
         // Add extra reward token
         vm.mockCall(

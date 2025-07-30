@@ -30,19 +30,19 @@ contract MorphoMarketFactoryIntegrationTest is CurveMainnetIntegrationTest {
     }
 
     function poolIds() public view virtual override returns (uint256[] memory) {
-        uint256[] memory poolIds = new uint256[](_stableSwapPools().length + _cryptoSwapPools().length);
+        uint256[] memory _poolIds = new uint256[](_stableSwapPools().length + _cryptoSwapPools().length);
 
         uint256 stableLength = _stableSwapPools().length;
         for (uint256 i; i < stableLength; i++) {
-            poolIds[i] = _stableSwapPools()[i];
+            _poolIds[i] = _stableSwapPools()[i];
         }
 
         uint256 cryptoLength = _cryptoSwapPools().length;
         for (uint256 i; i < cryptoLength; i++) {
-            poolIds[i + stableLength] = _cryptoSwapPools()[i];
+            _poolIds[i + stableLength] = _cryptoSwapPools()[i];
         }
 
-        return poolIds;
+        return _poolIds;
     }
 
     function _stableSwapPools() internal pure returns (uint256[] memory) {

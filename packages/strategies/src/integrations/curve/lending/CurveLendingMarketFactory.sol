@@ -4,7 +4,7 @@ pragma solidity 0.8.28;
 import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {CurveStableswapOracle} from "src/integrations/curve/oracles/CurveStableswapOracle.sol";
 import {CurveCryptoswapOracle} from "src/integrations/curve/oracles/CurveCryptoswapOracle.sol";
-import {RestrictedStrategyWrapper} from "src/wrappers/RestrictedStrategyWrapper.sol";
+import {StrategyWrapper} from "src/wrappers/StrategyWrapper.sol";
 import {IStrategyWrapper} from "src/interfaces/IStrategyWrapper.sol";
 import {IOracle} from "src/interfaces/IOracle.sol";
 import {IRewardVault} from "src/interfaces/IRewardVault.sol";
@@ -125,7 +125,7 @@ contract CurveLendingMarketFactory is Ownable2Step {
         internal
         returns (IStrategyWrapper)
     {
-        IStrategyWrapper collateral = new RestrictedStrategyWrapper(rewardVault, lendingFactory.protocol(), owner());
+        IStrategyWrapper collateral = new StrategyWrapper(rewardVault, lendingFactory.protocol(), owner());
         emit CollateralDeployed(address(collateral));
 
         return collateral;

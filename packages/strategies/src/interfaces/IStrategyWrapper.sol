@@ -22,14 +22,10 @@ interface IStrategyWrapper is IERC20, IERC20Metadata {
 
     // Claim main reward token (e.g. CRV)
     function claim() external returns (uint256 amount);
-    function claim(address receiver) external returns (uint256 amount);
 
     // Claim extra reward tokens
     function claimExtraRewards() external returns (uint256[] memory amounts);
     function claimExtraRewards(address[] calldata tokens) external returns (uint256[] memory amounts);
-    function claimExtraRewards(address[] calldata tokens, address receiver)
-        external
-        returns (uint256[] memory amounts);
 
     /*──────────────────────────────────────────
       VIEW HELPERS
@@ -40,4 +36,7 @@ interface IStrategyWrapper is IERC20, IERC20Metadata {
 
     // Metadata
     function version() external pure returns (string memory);
+
+    function claimLiquidation(address liquidator, address victim, uint256 liquidatedAmount) external;
+    function addMarket(bytes32 marketId) external;
 }
