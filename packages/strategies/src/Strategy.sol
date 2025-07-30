@@ -232,12 +232,12 @@ abstract contract Strategy is IStrategy, ProtocolContext {
         uint256 currentBalance = balanceOf(gauge);
         address[] memory targets = _getAllocationTargets(gauge);
 
-        // Withdraw everything to this contract
-        _withdrawFromAllTargets(address(asset), gauge, targets, address(this));
-
         // Get new allocation from allocator
         IAllocator.Allocation memory allocation =
             IAllocator(allocator).getRebalancedAllocation(address(asset), gauge, currentBalance);
+
+        // Withdraw everything to this contract
+        _withdrawFromAllTargets(address(asset), gauge, targets, address(this));
 
         uint256 allocationLength = allocation.targets.length;
         require(allocationLength > 1, RebalanceNotNeeded());
