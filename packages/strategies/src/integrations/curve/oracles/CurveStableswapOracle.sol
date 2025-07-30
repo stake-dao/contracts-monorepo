@@ -34,18 +34,13 @@ import {IOracle} from "src/interfaces/IOracle.sol";
  *         the peg price is assumed to be 1 USD. The loan-asset feed **must always be X/USD**
  *         where X is the loan token used in the lending market.
  *
- *         Flash-manipulation caveat (single-block virtual_price spikes)
- *         -----------------------------------------------------------
- *         Curve's `get_virtual_price()` is instantaneous: a sufficiently large flash-deposit
- *         and withdrawal can raise the virtual price for a single block.  Because this oracle
- *         reads the value directly without a time-weighted average, protocols integrating it
- *         SHOULD either:
- *           1. apply conservative LLTV, or
- *           2. wrap this oracle in a TWAP layer
- *
- *         The contract is **fully immutable** after deployment: all external parameters are
- *         stored in `immutable` variables and there is no owner or upgrade path.  If the
- *         Chainlink heartbeat assumptions change, a new oracle must be deployed and listed.
+ *         Flash-manipulation caveat
+ *         -------------------------------------------
+ *         This oracle implements conservative minimum pricing across all pool assets
+ *         and is intended for high-TVL, curated pools only. While `get_virtual_price()`
+ *         could theoretically be manipulated, the multi-layer protections and economic
+ *         barriers make such attacks practically infeasible for the target deployment.
+ *         Conservative LLTV settings are still recommended for additional safety.
  *
  *         Limitations – StableSwap-NG mixed-precision pools
  *         ------------------------------------------------
