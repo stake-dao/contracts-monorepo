@@ -306,6 +306,7 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
 
         // 3. Keep track of the Extra reward tokens checkpoints at deposit time
         address[] memory rewardTokens = REWARD_VAULT.getRewardTokens();
+        _updateExtraRewardState(rewardTokens);
         for (uint256 i; i < rewardTokens.length; i++) {
             checkpoint.rewardPerTokenPaid[rewardTokens[i]] = extraRewardPerToken[rewardTokens[i]];
         }

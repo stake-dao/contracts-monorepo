@@ -296,6 +296,57 @@ contract StrategyWrapperIntegrationTest is CurveMainnetIntegrationTest {
         assertGt(extraTokenBalanceAfter - extraTokenBalanceBefore, 1e16, "Significant extra rewards claimed");
     }
 
+    // @dev Test the extra rewards distribution is fair between users (second user gets 0)
+    function test_extraRewardsFairDistribution() public {
+        address firstUser = makeAddr("firstUser");
+        address secondUser = makeAddr("secondUser");
+
+        (RewardVault[] memory vaults,) = deployRewardVaults();
+        RewardVault rewardVault = vaults[0];
+
+        wrapper = new StrategyWrapper(rewardVault, address(new MorphoMock()), address(this));
+
+        vm.mockCall(
+            address(protocolController),
+            abi.encodeWithSelector(IProtocolController.isRegistrar.selector, address(this)),
+            abi.encode(true)
+        );
+        rewardVault.addRewardToken(Common.WETH, address(this));
+
+        // 1. First user deposits to the vault
+        _depositIntoWrapper(rewardVault, firstUser, 1e18);
+
+        // 2. Deposit some extra reward token into the reward vault
+        uint128 extraRewardAmount = 1e20;
+        deal(Common.WETH, address(this), extraRewardAmount);
+        IERC20(Common.WETH).approve(address(rewardVault), extraRewardAmount);
+        rewardVault.depositRewards(Common.WETH, extraRewardAmount);
+
+        // 3. Second user deposits to the vault after 1 week
+        skip(7 days);
+        _depositIntoWrapper(rewardVault, secondUser, 100_000e18);
+
+        // 4. Second user withdraws immediately after depositing
+        _withdrawFromWrapper(secondUser, 100_000e18);
+
+        // 5. First user claims extra rewards
+        _claimExtraRewardsFromWrapper(firstUser);
+
+        // The second user received nothing while the first one received all the extra reward tokens
+        assertApproxEqRel(
+            IERC20(Common.WETH).balanceOf(firstUser),
+            extraRewardAmount,
+            1e15, // 0.1% (rounding)
+            "First user: should have the expected extra reward token balance"
+        );
+        assertApproxEqRel(
+            IERC20(Common.WETH).balanceOf(secondUser),
+            0,
+            1e15, // 0.1% (rounding)
+            "Second user: should have no extra reward token balance"
+        );
+    }
+
     function _depositIntoWrapper(RewardVault rewardVault, address account, uint256 amount) internal {
         // 1. Mint the shares token by depositing into the reward vault
         deposit(rewardVault, account, amount);
