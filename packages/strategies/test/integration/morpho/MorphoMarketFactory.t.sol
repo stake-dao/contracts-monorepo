@@ -9,6 +9,8 @@ import {RewardVault} from "src/RewardVault.sol";
 import {Common} from "@address-book/src/CommonEthereum.sol";
 import {CurveProtocol} from "@address-book/src/CurveEthereum.sol";
 import {IERC20Metadata, IERC20} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
+import {IStrategyWrapper} from "src/interfaces/IStrategyWrapper.sol";
+import {StrategyWrapper} from "src/wrappers/StrategyWrapper.sol";
 import {
     IMorpho,
     Market as MorphoMarketState,
@@ -70,7 +72,8 @@ contract MorphoMarketFactoryIntegrationTest is CurveMainnetIntegrationTest {
     constructor() CurveMainnetIntegrationTest() {
         vm.label(Common.MORPHO_ADAPTIVE_CURVE_IRM, "IRM");
         vm.label(Common.USDC, "USDC");
-        vm.label(address(morphoMarketFactory), "MorphoBlue");
+        vm.label(address(morphoMarketFactory), "MorphoMarketFactory");
+        vm.label(address(MORPHO), "Morpho");
 
         vm.label(0x4f493B7dE8aAC7d55F71853688b1F7C8F0243C85, "USDC/USDT");
         vm.label(0x839d6bDeDFF886404A6d7a788ef241e4e28F4802, "cbBTC/wBTC");
@@ -190,14 +193,15 @@ contract MorphoMarketFactoryIntegrationTest is CurveMainnetIntegrationTest {
         RewardVault rewardVault,
         CurveLendingMarketFactory.OracleType oracleType
     ) internal {
+        address deployer = position.account;
         // Deploy the Curve lending market factory
-        vm.prank(position.account);
+        vm.prank(deployer);
         CurveLendingMarketFactory curveLendingMarketFactory =
             new CurveLendingMarketFactory(address(protocolController), CurveProtocol.META_REGISTRY);
         vm.label(address(curveLendingMarketFactory), "CurveLendingMarketFactory");
 
         // Deploy the Morpho market factory
-        vm.prank(position.account);
+        vm.prank(deployer);
         morphoMarketFactory = new MorphoMarketFactory(address(MORPHO));
         vm.label(address(morphoMarketFactory), "MorphoMarketFactory");
 
@@ -219,56 +223,64 @@ contract MorphoMarketFactoryIntegrationTest is CurveMainnetIntegrationTest {
         vm.label(Common.CHAINLINK_USDC_USD_PRICE_FEED, "USDC/USD Chainlink Feed");
 
         // Deposit some Curve LP tokens into the reward vault
-        deposit(rewardVault, position.account, position.baseAmount);
-        assertEq(rewardVault.balanceOf(position.account), position.baseAmount);
+        deposit(rewardVault, deployer, position.baseAmount);
+        assertEq(rewardVault.balanceOf(deployer), position.baseAmount);
 
         // Deal $1 of USDC (loan asset) to the user
         address loanAsset = Common.USDC;
         {
             uint256 loanInitialBalance = 10 ** IERC20Metadata(loanAsset).decimals();
-            deal(loanAsset, position.account, loanInitialBalance);
+            deal(loanAsset, deployer, loanInitialBalance);
 
             // Approve the curve lending factory to spend the USDC
-            vm.prank(position.account);
+            vm.prank(deployer);
             IERC20(loanAsset).approve(address(curveLendingMarketFactory), loanInitialBalance);
 
             // Approve the curve lending factory to spend the reward vault shares
-            vm.prank(position.account);
+            vm.prank(deployer);
             rewardVault.approve(address(curveLendingMarketFactory), position.baseAmount);
-
-            // Authorize the curve lending factory to manages user's positions
-            vm.prank(position.account);
-            MORPHO.setAuthorization(address(curveLendingMarketFactory), true);
-
-            // Deploy the market using the unified factory method
-            vm.prank(position.account);
         }
+
+        // Deploy the collateral token and set the owner to the lending market factory (needed to initialize it)
+        IStrategyWrapper collateral =
+            new StrategyWrapper(rewardVault, address(MORPHO), address(curveLendingMarketFactory));
+
+        // Deploy the market
+        vm.prank(deployer);
         (,, bytes memory data) =
-            curveLendingMarketFactory.deploy(rewardVault, oracleType, oracleParams, marketParams, morphoMarketFactory);
+            curveLendingMarketFactory.deploy(collateral, oracleType, oracleParams, marketParams, morphoMarketFactory);
 
         // Verify loan asset balance after pre-seeding (should have 90% of initial balance left)
         assertEq(
-            IERC20(loanAsset).balanceOf(position.account), uint256(9 * 10 ** IERC20Metadata(loanAsset).decimals()) / 10
+            IERC20(loanAsset).balanceOf(deployer),
+            uint256(9 * 10 ** IERC20Metadata(loanAsset).decimals()) / 10,
+            "Account's loan asset balance after pre-seeding"
         );
 
         // Verify market state
         MorphoId marketID = abi.decode(data, (MorphoId));
-        MorphoPosition memory morphoPosition = MORPHO.position(marketID, address(position.account));
-        MorphoMarketState memory market = MORPHO.market(marketID);
         {
-            assertEq(market.totalSupplyAssets, 10 ** IERC20Metadata(loanAsset).decimals());
-            assertGt(market.totalSupplyShares, 0);
-            assertEq(market.totalBorrowAssets, (10 ** IERC20Metadata(loanAsset).decimals() * 9) / 10);
-            assertEq(market.lastUpdate, block.timestamp);
+            MorphoPosition memory deployerMorphoPosition = MORPHO.position(marketID, deployer);
+            MorphoPosition memory factoryMorphoPosition = MORPHO.position(marketID, address(curveLendingMarketFactory));
+            MorphoMarketState memory market = MORPHO.market(marketID);
 
-            assertEq(market.totalBorrowShares, morphoPosition.borrowShares);
-            assertEq(morphoPosition.supplyShares - morphoPosition.borrowShares, morphoPosition.supplyShares / 10); // 90%
+            assertEq(market.lastUpdate, block.timestamp, "Last update");
+            assertEq(market.totalSupplyAssets, 10 ** IERC20Metadata(loanAsset).decimals(), "Total supply assets");
+            assertEq(
+                market.totalBorrowAssets, (10 ** IERC20Metadata(loanAsset).decimals() * 9) / 10, "Total borrow assets"
+            );
+            assertGt(market.totalSupplyShares, 0, "Total supply shares");
+            assertApproxEqRel(
+                market.totalSupplyShares - market.totalBorrowShares,
+                market.totalSupplyShares / 10,
+                1e15, // 0.1%
+                "90% of total supply shares borrowed"
+            );
 
-            // Verify factory position is clean
-            morphoPosition = MORPHO.position(marketID, address(morphoMarketFactory));
-            assertEq(morphoPosition.supplyShares, 0);
-            assertEq(morphoPosition.borrowShares, 0);
-            assertEq(morphoPosition.collateral, 0);
+            // Verify the positions are as expected
+            assertEq(market.totalBorrowShares, factoryMorphoPosition.borrowShares, "Total borrow shares");
+            assertEq(market.totalSupplyShares, deployerMorphoPosition.supplyShares, "Total supply shares");
+            assertEq(MORPHO.isAuthorized(address(curveLendingMarketFactory), deployer), true);
         }
     }
 }

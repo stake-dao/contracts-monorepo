@@ -6,9 +6,9 @@ import {ERC20} from "@openzeppelin/contracts/token/ERC20/ERC20.sol";
 import {IERC20} from "@openzeppelin/contracts/interfaces/IERC20.sol";
 import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.sol";
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
+import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {IAccountant} from "src/interfaces/IAccountant.sol";
-import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {IStrategyWrapper} from "src/interfaces/IStrategyWrapper.sol";
 import {IMorpho, Id} from "shared/src/morpho/IMorpho.sol";
@@ -24,7 +24,7 @@ import {IMorpho, Id} from "shared/src/morpho/IMorpho.sol";
 /// @custom:github https://github.com/stake-dao/contracts-monorepo
 contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGuardTransient {
     ///////////////////////////////////////////////////////////////
-    // --- IMMUTABLES
+    // --- IMMUTABLES/CONSTANTS
     ///////////////////////////////////////////////////////////////
 
     /// @notice The slot of the main reward token in the user checkpoint
@@ -61,25 +61,32 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
         mapping(address token => uint256 amount) rewardPerTokenPaid;
     }
 
-    /// @notice The list of authorized market IDs this token is expected to interact with
-    bytes32[] public authorizedMarketIds;
+    /// @notice The ID of the lending market this token is expected to interact with
+    bytes32 public lendingMarketId;
 
     /// @notice User checkpoint data including his deposit balance and the amount of rewards he has claimed for each token
     ///         Both the main reward token and the extra reward tokens are tracked in the same mapping.
     /// @dev    The main reward token is tracked in `rewardPerTokenPaid[address(0)]`
-    mapping(address user => UserCheckpoint checkpoint) public userCheckpoints;
+    mapping(address user => UserCheckpoint checkpoint) private userCheckpoints;
 
     /// @notice Accumulated rewards per token. Track the extra reward tokens only.
     /// @dev    The main reward token is tracked by fetching the latest value from the Accountant.
     mapping(address token => uint256 amount) public extraRewardPerToken;
+
+    /// @dev The purpose of this transient variable is to ensure that this token can only be
+    /// used as collateral in the predefined lending market. When this variable is set to
+    /// false (the default value), transfers to the lending protocol are unauthorized.
+    /// The only way to change this variable to true is by entering the flow of the deposit
+    /// functions in this contract.
+    bool private transient depositUnlocked;
 
     ///////////////////////////////////////////////////////////////
     // --- EVENTS/ERRORS
     ///////////////////////////////////////////////////////////////
 
     event Claimed(address indexed token, address indexed account, uint256 amount);
-    event Deposited(address indexed user, uint256 amount);
-    event Withdrawn(address indexed user, address indexed receiver, uint256 amount);
+    event Deposited(address indexed user, uint256 amount, bytes32 marketId);
+    event Withdrawn(address indexed user, uint256 amount);
     event Liquidated(address indexed liquidator, address indexed victim, uint256 amount);
     event MarketAdded(bytes32 marketId);
 
@@ -87,6 +94,15 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
     error ZeroAddress();
     error InvalidTokens();
     error InvalidMarket();
+    error MarketAlreadySet();
+    error WrapperNotInitialized();
+    error InvalidLiquidation();
+    /// @dev Only the lending protocol can transfer in/out the wrapped tokens
+    error TransferUnauthorized();
+    /// @dev Deposit collateral to the lending protocol is only allowed through the StrategyWrapperContract
+    ///      Do not interact directly with the lending protocol to deposit collateral. Instead, call one of the `deposit`
+    ///      functions defined in the StrategyWrapperContract instead.
+    error InvalidDepositFlow();
 
     /// @param rewardVault The reward vault contract
     /// @param lendingProtocol The lending protocol contract
@@ -107,8 +123,36 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
         ACCOUNTANT_SCALING_FACTOR = accountant.SCALING_FACTOR();
         LENDING_PROTOCOL = lendingProtocol;
 
-        // Approve the asset token to the reward vault
+        // Approve the asset token to the reward vault and the wrapped token to the lending protocol
         SafeERC20.forceApprove(IERC20(rewardVault.asset()), address(rewardVault), type(uint256).max);
+        _approve(address(this), lendingProtocol, type(uint256).max, true);
+    }
+
+    ///////////////////////////////////////////////////////////////
+    // --- INITIALIZATION
+    ///////////////////////////////////////////////////////////////
+
+    /// @notice Set the market ID for the wrapper
+    /// @param marketId The ID of the market to set
+    /// @custom:reverts MarketAlreadySet if the market ID is already set
+    /// @custom:reverts InvalidMarket if the market ID is the invalid
+    function initialize(bytes32 marketId) external onlyOwner {
+        require(lendingMarketId == bytes32(0), MarketAlreadySet());
+        require(marketId != bytes32(0), InvalidMarket());
+
+        // Check that this contract is the collateral of the given market
+        require(
+            IMorpho(LENDING_PROTOCOL).idToMarketParams(Id.wrap(marketId)).collateralToken == address(this),
+            InvalidMarket()
+        );
+
+        lendingMarketId = marketId;
+        emit MarketAdded(marketId);
+    }
+
+    modifier onlyInitialized() {
+        require(lendingMarketId != bytes32(0), WrapperNotInitialized());
+        _;
     }
 
     ///////////////////////////////////////////////////////////////
@@ -130,13 +174,13 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
     ///      If you already have wrapped tokens, any pending main and extra rewards will be
     ///      automatically claimed before the new deposit to prevent reward loss.
     /// @custom:reverts ZeroAmount If `amount` is zero
-    function depositShares(uint256 amount) public nonReentrant {
+    function depositShares(uint256 amount) public nonReentrant onlyInitialized {
         require(amount > 0, ZeroAmount());
 
         // 1. Transfer caller's shares to this contract (checkpoint)
         SafeERC20.safeTransferFrom(IERC20(address(REWARD_VAULT)), msg.sender, address(this), amount);
 
-        _deposit(amount);
+        _deposit(msg.sender, amount);
     }
 
     /// @notice Convert **all** underlying LP tokens owned by the caller into RewardVault
@@ -157,24 +201,31 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
     ///      If you already have wrapped tokens, any pending main and extra rewards will be
     ///      automatically claimed before the new deposit to prevent reward loss.
     /// @custom:reverts ZeroAmount If `amount` is zero
-    function depositAssets(uint256 amount) public nonReentrant {
+    function depositAssets(uint256 amount) public nonReentrant onlyInitialized {
         require(amount > 0, ZeroAmount());
 
         // 1. Get RewardVault's shares by depositing the underlying protocol LP tokens (checkpoint)
         SafeERC20.safeTransferFrom(IERC20(REWARD_VAULT.asset()), msg.sender, address(this), amount);
         uint256 shares = REWARD_VAULT.deposit(amount, address(this), address(this));
 
-        _deposit(shares);
+        _deposit(msg.sender, shares);
     }
 
-    function _deposit(uint256 amount) internal {
+    function _deposit(address account, uint256 amount) internal {
         // 1. Update the user checkpoint
-        _updateUserCheckpoint(msg.sender, amount);
+        _updateUserCheckpoint(account, amount);
 
-        // 2. Mint wrapped tokens (1:1) for the caller
-        _mint(msg.sender, amount);
+        // 2. Mint wrapped tokens (1:1)
+        _update(address(0), address(this), amount);
 
-        emit Deposited(msg.sender, amount);
+        // 3. Supply the minted tokens as collateral to the expected lending market
+        depositUnlocked = true;
+        IMorpho(LENDING_PROTOCOL).supplyCollateral(
+            IMorpho(LENDING_PROTOCOL).idToMarketParams(Id.wrap(lendingMarketId)), amount, account, ""
+        );
+        depositUnlocked = false;
+
+        emit Deposited(account, amount, lendingMarketId);
     }
 
     ///////////////////////////////////////////////////////////////
@@ -183,20 +234,17 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
 
     /// @notice Withdraws all the assets and claims pending rewards for the caller
     function withdraw() external {
-        withdraw(balanceOf(msg.sender), msg.sender);
+        withdraw(balanceOf(msg.sender));
     }
 
-    /// @notice Withdraws the given amount of assets and claims main/extra pending rewards for the receiver
+    /// @notice Withdraws the given amount of assets and claims main/extra pending rewards
     /// @param amount Amount of wrapped tokens to burn
-    /// @param receiver The address to receive the underlying reward vault shares
     /// @custom:reverts ZeroAmount if the given amount is zero
-    /// @custom:reverts ZeroAddress if the receiver address is the zero address
-    function withdraw(uint256 amount, address receiver) public nonReentrant {
+    function withdraw(uint256 amount) public nonReentrant {
         require(amount > 0, ZeroAmount());
-        require(receiver != address(0), ZeroAddress());
 
-        // 1. Claim all the pending rewards (main + extra) for the receiver
-        _claimAllRewards(receiver);
+        // 1. Claim all the pending rewards (main + extra)
+        _claimAllRewards(msg.sender);
 
         // 2. Update the internal user checkpoint
         UserCheckpoint storage checkpoint = userCheckpoints[msg.sender];
@@ -205,10 +253,10 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
         // 4. Burn caller's wrapped tokens
         _burn(msg.sender, amount);
 
-        // 5. Transfer the underlying RewardVault shares back to the receiver
-        SafeERC20.safeTransfer(IERC20(address(REWARD_VAULT)), receiver, amount);
+        // 5. Transfer the underlying RewardVault shares back to the caller
+        SafeERC20.safeTransfer(IERC20(address(REWARD_VAULT)), msg.sender, amount);
 
-        emit Withdrawn(msg.sender, receiver, amount);
+        emit Withdrawn(msg.sender, amount);
     }
 
     ///////////////////////////////////////////////////////////////
@@ -233,7 +281,7 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
         uint256 claimable =
             wrapper.pendingRewards + Math.mulDiv(supply, globalIntegral - wrapper.integral, ACCOUNTANT_SCALING_FACTOR);
 
-        // 3. If there are pending rewards, claim them
+        // 3. If there are some pending rewards, claim them
         if (claimable > 0) {
             address[] memory gauges = new address[](1);
             gauges[0] = GAUGE;
@@ -245,7 +293,8 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
         amount = _calculatePendingRewards(userCheckpoint);
         if (amount != 0) {
             userCheckpoint.rewardPerTokenPaid[MAIN_REWARD_TOKEN_SLOT] = globalIntegral;
-            SafeERC20.safeTransfer(MAIN_REWARD_TOKEN, account, amount); // TODO: not blocking actions
+            // ! safeTransfer would allow the account to block liquidation
+            MAIN_REWARD_TOKEN.transfer(account, amount);
             emit Claimed(address(MAIN_REWARD_TOKEN), account, amount);
         }
     }
@@ -282,12 +331,19 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
             if (reward > 0) {
                 checkpoint.rewardPerTokenPaid[token] = extraRewardPerToken[token];
                 amounts[i] = reward; // Store the claimed amount
-                SafeERC20.safeTransfer(IERC20(token), account, reward); // TODO: not blocking actions
+                // ! safeTransfer would allow the account to block liquidation
+                ERC20(token).transfer(account, reward);
                 emit Claimed(token, account, reward);
             }
         }
 
         return amounts;
+    }
+
+    /// @notice Claims pending main + extra rewards for the account
+    function _claimAllRewards(address account) internal {
+        _claim(account);
+        _claimExtraRewards(REWARD_VAULT.getRewardTokens(), account);
     }
 
     ///////////////////////////////////////////////////////////////
@@ -311,16 +367,10 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
             checkpoint.rewardPerTokenPaid[rewardTokens[i]] = extraRewardPerToken[rewardTokens[i]];
         }
     }
-
-    /// @notice Claims pending main + extra rewards for the account
-    function _claimAllRewards(address account) internal {
-        _claim(account);
-        _claimExtraRewards(REWARD_VAULT.getRewardTokens(), account);
-    }
-
     /// @notice Calculates the pending amount of main reward token for a user
     /// @param checkpoint The user checkpoint
     /// @return The amount of pending main reward token
+
     function _calculatePendingRewards(UserCheckpoint storage checkpoint) internal view returns (uint256) {
         uint256 globalIntegral = _getGlobalIntegral();
         uint256 userRewardPerTokenPaid = checkpoint.rewardPerTokenPaid[MAIN_REWARD_TOKEN_SLOT];
@@ -337,9 +387,14 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
         view
         returns (uint256)
     {
-        uint256 currentRewardPerToken = extraRewardPerToken[token];
-        uint256 userRewardPerTokenPaid = checkpoint.rewardPerTokenPaid[token];
+        uint256 supply = totalSupply();
+        if (supply == 0) return 0;
 
+        uint256 currentRewardPerToken = extraRewardPerToken[token];
+        uint256 newRewards = uint256(REWARD_VAULT.earned(address(this), token));
+        if (newRewards > 0) currentRewardPerToken += Math.mulDiv(newRewards, 1e18, supply);
+
+        uint256 userRewardPerTokenPaid = checkpoint.rewardPerTokenPaid[token];
         return Math.mulDiv(checkpoint.balance, currentRewardPerToken - userRewardPerTokenPaid, 1e18);
     }
 
@@ -368,47 +423,27 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
     }
 
     ///////////////////////////////////////////////////////////////
-    // --- OWNER
-    ///////////////////////////////////////////////////////////////
-
-    /// @notice Add a market to the list of authorized markets
-    /// @param marketId The ID of the market to add
-    /// @custom:reverts InvalidMarket if the market is not authorized
-    function addMarket(bytes32 marketId) external onlyOwner {
-        // 1. Check that the market has the correct collateral token
-        require(
-            IMorpho(LENDING_PROTOCOL).idToMarketParams(Id.wrap(marketId)).collateralToken == address(this),
-            InvalidMarket()
-        );
-
-        // 2. Check that the market is not already authorized
-        uint256 length = authorizedMarketIds.length;
-        for (uint256 i; i < length; i++) {
-            require(authorizedMarketIds[i] != marketId, InvalidMarket());
-        }
-
-        authorizedMarketIds.push(marketId);
-        emit MarketAdded(marketId);
-    }
-
-    ///////////////////////////////////////////////////////////////
     // --- TRANSFER
     ///////////////////////////////////////////////////////////////
 
-    /// @dev Only the lending protocol can transfer the wrapped tokens
+    /// @dev Only the lending protocol can transfer in/out the wrapped tokens
     function transfer(address to, uint256 value) public virtual override(IERC20, ERC20) returns (bool) {
-        require(msg.sender == LENDING_PROTOCOL);
+        require(msg.sender == LENDING_PROTOCOL, TransferUnauthorized());
         return super.transfer(to, value);
     }
 
-    /// @dev Only the lending protocol can transfer the wrapped tokens
+    /// @dev Only the lending protocol can transfer in/out the wrapped tokens
     function transferFrom(address from, address to, uint256 value)
         public
         virtual
         override(IERC20, ERC20)
         returns (bool)
     {
-        require(msg.sender == LENDING_PROTOCOL);
+        require(msg.sender == LENDING_PROTOCOL, TransferUnauthorized());
+
+        // Only authorize deposits to the lending protocol when the deposit is made through this contract
+        if (to == LENDING_PROTOCOL) require(depositUnlocked == true, InvalidDepositFlow());
+
         return super.transferFrom(from, to, value);
     }
 
@@ -417,26 +452,35 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
     ///////////////////////////////////////////////////////////////
 
     /// @notice Claims liquidation rights after receiving tokens from a liquidation event on the lending protocol
-    /// @dev This function MUST be called by liquidators after receiving wrapped tokens from a liquidation to:
-    ///      1. Gain the ability to withdraw these tokens back to underlying assets
-    ///      2. Start earning rewards on the liquidated tokens
-    ///
-    ///      Without calling this function, liquidators will:
-    ///      - Be unable to withdraw tokens (will revert due to insufficient internal balance)
-    ///      - Earn no rewards on liquidated tokens
-    ///      - Leave the victim earning rewards on tokens they no longer own
-    ///
     /// @param liquidator The address that received the liquidated tokens from Morpho
     /// @param victim The address whose position was liquidated
     /// @param liquidatedAmount The exact amount of tokens that were seized during liquidation
     ///
-    /// @custom:example
-    ///   // 1. Alice has 1000 wrapped tokens used as collateral in Morpho
-    ///   // 2. Bob liquidates Alice's position, receiving 300 tokens from Morpho
-    ///   // 3. Bob's state: ERC20 balance = 300, internal balance = 0 (off-track!)
-    ///   // 4. Bob calls: claimLiquidation(bob, alice, 300)
-    ///   // 5. Result: Bob can now withdraw tokens and earn rewards, Alice stops earning on liquidated amount
-    function claimLiquidation(address liquidator, address victim, uint256 liquidatedAmount) external {
+    /// @dev This function MUST be called by liquidators after receiving wrapped tokens from a liquidation to receive
+    ///      the liquidated amount of underlying RewardVault shares.
+    ///      Without calling this function, liquidators will:
+    ///      - Be unable to withdraw tokens (will revert due to insufficient internal balance)
+    ///      - Leave the victim earning rewards on tokens they no longer own
+    /// Example:
+    ///   1. Alice has 1000 wrapped tokens used as collateral in Morpho
+    ///   2. Bob liquidates Alice's position, receiving 300 tokens from Morpho
+    ///   3. Bob's state: ERC20 balance = 300, internal balance = 0 (off-track!)
+    ///   4. Bob calls: claimLiquidation(bob, alice, 300)
+    ///   5. Result: Bob received 300 underlying RewardVault shares, Alice stops earning on liquidated amount
+    ///
+    /// @dev This function must also be called if you withdraw your collateral on the lending protocol to a
+    /// different receiver. We advise against this scenario and recommend withdrawing your collateral to the
+    /// same receiver who deposited it. However, if you choose to proceed, you must call this function to
+    /// re-synchronize the internal accountability. In this case, the liquidator will be the receiver of
+    /// the collateral, while the victim will be the one who deposited it. From the perspective of this
+    /// contract, withdrawing to a different receiver is equivalent to liquidation.
+    /// Example:
+    ///   1. Alice has 1000 wrapped tokens used as collateral in Morpho
+    ///   2. Alice withdraws her collateral to Bob, receiving 1000 tokens from Morpho
+    ///   3. Bob's state: ERC20 balance = 1000, internal balance = 0 (off-track!)
+    ///   4. Bob calls: claimLiquidation(bob, alice, 1000)
+    ///   5. Result: Bob received 1000 underlying RewardVault shares, Alice stops earning on liquidated amount
+    function claimLiquidation(address liquidator, address victim, uint256 liquidatedAmount) external nonReentrant {
         require(liquidator != address(0) && victim != address(0), ZeroAddress());
         require(liquidatedAmount > 0, ZeroAmount());
 
@@ -444,30 +488,28 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
         //    Because token is untransferable (except by the lending protocol), the only way
         //    to have an off-track balance is to get it from liquidation executed by the lending protocol.
         //    We have to be sure the claimed amount is off-track, otherwise any holders will be able to liquidate any positions.
-        require(balanceOf(liquidator) >= userCheckpoints[liquidator].balance + liquidatedAmount);
+        require(balanceOf(liquidator) >= userCheckpoints[liquidator].balance + liquidatedAmount, InvalidLiquidation());
 
         // 2. Check that the victim has enough tokens registered internally
         uint256 internalVictimBalance = userCheckpoints[victim].balance;
-        require(internalVictimBalance >= liquidatedAmount);
+        require(internalVictimBalance >= liquidatedAmount, InvalidLiquidation());
 
         // 3. Check that the victim as a real holding hole of at least the claimed amount
-        //    This is done by summing up the collateral of the victim across all authorized markets
-        //    with the balance he holds.
+        //    This is done by summing up the collateral supplied by the victim with his balance.
         //    Because token is untransferable (except by the lending protocol), the only way
         //    to have an off-track balance is to get liquidated.
-        uint256 totalMorphoBalance;
-        uint256 length = authorizedMarketIds.length;
-        for (uint256 i; i < length; i++) {
-            totalMorphoBalance += IMorpho(LENDING_PROTOCOL).position(Id.wrap(authorizedMarketIds[i]), victim).collateral;
-        }
-        require(internalVictimBalance - (balanceOf(victim) + totalMorphoBalance) >= liquidatedAmount);
+        uint256 victimBalance =
+            balanceOf(victim) + IMorpho(LENDING_PROTOCOL).position(Id.wrap(lendingMarketId), victim).collateral;
+        require(internalVictimBalance - victimBalance >= liquidatedAmount, InvalidLiquidation());
 
         // 4. Claim the accrued rewards for the victim and reduce his internal balance
         _claimAllRewards(victim);
         userCheckpoints[victim].balance -= liquidatedAmount;
 
-        // 5. Set the correct value of `userCheckpoints` for the liquidator
-        _updateUserCheckpoint(liquidator, liquidatedAmount);
+        // 5. Burn the liquidated amount and transfer the underlying RewardVault shares back to the liquidator
+        _burn(liquidator, liquidatedAmount);
+        SafeERC20.safeTransfer(IERC20(address(REWARD_VAULT)), liquidator, liquidatedAmount);
+
         emit Liquidated(liquidator, victim, liquidatedAmount);
     }
 
@@ -518,18 +560,16 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
     }
 
     /// @dev Get the name of the token
-    function name() public view override(IERC20Metadata, ERC20) returns (string memory) {
-        return string.concat(REWARD_VAULT.name(), " wrapped");
+    function name() public view override(IERC20Metadata, ERC20) onlyInitialized returns (string memory) {
+        IERC20Metadata loanToken =
+            IERC20Metadata(IMorpho(LENDING_PROTOCOL).idToMarketParams(Id.wrap(lendingMarketId)).loanToken);
+        return string.concat(REWARD_VAULT.name(), " wrapped for", loanToken.name());
     }
 
     /// @dev Get the symbol of the token
-    function symbol() public view override(IERC20Metadata, ERC20) returns (string memory) {
-        return string.concat(REWARD_VAULT.symbol(), "-wrapped");
-    }
-
-    /// @notice Returns the current version of this contract.
-    /// @return version The version of the contract.
-    function version() external pure returns (string memory) {
-        return "1.0.0";
+    function symbol() public view override(IERC20Metadata, ERC20) onlyInitialized returns (string memory) {
+        IERC20Metadata loanToken =
+            IERC20Metadata(IMorpho(LENDING_PROTOCOL).idToMarketParams(Id.wrap(lendingMarketId)).loanToken);
+        return string.concat(REWARD_VAULT.symbol(), "-wrapped-", loanToken.symbol());
     }
 }
