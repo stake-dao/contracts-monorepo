@@ -12,6 +12,7 @@ import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.
 import {ICurvePool} from "src/interfaces/ICurvePool.sol";
 import {ILendingFactory} from "src/interfaces/ILendingFactory.sol";
 import {CurveLendingMarketFactory} from "src/integrations/curve/lending/CurveLendingMarketFactory.sol";
+import {StrategyWrapper} from "src/wrappers/StrategyWrapper.sol";
 
 abstract contract CurveMorphoMarketDeployer is Script {
     struct Inputs {
@@ -48,14 +49,15 @@ abstract contract CurveMorphoMarketDeployer is Script {
         // 2. Validate with the deployer the parameters before deploying
         _validateParameters(IRewardVault(inputs.rewardVault), marketParams, oracleParams, oracleType);
 
+        // 2. Deploy the collateral token and set the owner to the the lending market factory (needed to initialize it)
+        IStrategyWrapper wrapper = new StrategyWrapper(
+            IRewardVault(inputs.rewardVault), ILendingFactory(inputs.lendingFactory).protocol(), inputs.factory
+        );
+
         // 3. Deploy the market
         vm.startBroadcast();
-        (IStrategyWrapper wrapper, IOracle oracle, bytes memory data) = CurveLendingMarketFactory(inputs.factory).deploy(
-            IRewardVault(inputs.rewardVault),
-            oracleType,
-            oracleParams,
-            marketParams,
-            ILendingFactory(inputs.lendingFactory)
+        (, IOracle oracle, bytes memory data) = CurveLendingMarketFactory(inputs.factory).deploy(
+            wrapper, oracleType, oracleParams, marketParams, ILendingFactory(inputs.lendingFactory)
         );
         vm.stopBroadcast();
 

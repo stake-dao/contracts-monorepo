@@ -49,9 +49,6 @@ contract MorphoMarketFactory is ILendingFactory {
     /// @dev Thrown when the IRM is invalid
     error InvalidIRM();
 
-    /// @dev Thrown when the factory is not authorized to supply/borrow on behalf of the caller.
-    error InvalidAuthorized();
-
     /// @dev Thrown when the factory is not called with a delegate call.
     error DelegateCallOnly();
 
@@ -82,7 +79,6 @@ contract MorphoMarketFactory is ILendingFactory {
     /// @return id The identifier of the freshly created market
     /// @custom:throws InvalidLLTV if the LLTV is invalid
     /// @custom:throws InvalidIRM if the IRM is invalid
-    /// @custom:throws InvalidAuthorized if this is not authorized to supply/borrow on behalf of the caller
     function create(
         IStrategyWrapper collateral,
         IERC20Metadata loan,
@@ -93,7 +89,6 @@ contract MorphoMarketFactory is ILendingFactory {
     ) external onlyDelegateCall returns (Id id) {
         require(MORPHO_BLUE.isLltvEnabled(lltv), InvalidLLTV());
         require(MORPHO_BLUE.isIrmEnabled(irm), InvalidIRM());
-        require(MORPHO_BLUE.isAuthorized(msg.sender, address(this)), InvalidAuthorized());
 
         // 1. Create the Morpho Blue market
         MarketParams memory morphoMarketParams = MarketParams({
@@ -107,7 +102,9 @@ contract MorphoMarketFactory is ILendingFactory {
         // prevent a DoS attack that would prevent us for deploying the market
         if (MORPHO_BLUE.market(id).lastUpdate == 0) MORPHO_BLUE.createMarket(morphoMarketParams);
 
-        // 2. Trigger the deployment event
+        // 2. Initialize the collateral by setting the approved market ID
+        collateral.initialize(Id.unwrap(id));
+
         emit MarketDeployed(address(MORPHO_BLUE), address(collateral), address(loan), address(oracle), lltv, irm);
 
         // 3. Pre-seed the market if needed
@@ -128,7 +125,7 @@ contract MorphoMarketFactory is ILendingFactory {
             data: hex""
         });
 
-        // Bootstrap utilisation: supply `initialLoanSupply` LOAN tokens
+        // Provide initial collateral to the market
         uint256 borrowAmount = (initialLoanSupply * 9) / 10; // 90% of supplied liquidity
         uint256 collateralToSupply = Math.mulDiv(
             Math.mulDiv(
@@ -148,22 +145,18 @@ contract MorphoMarketFactory is ILendingFactory {
 
         // Bootstrap utilisation: post enough collateral to reach 95 % of LLTV
         IStrategyWrapper(morphoMarketParams.collateralToken).depositShares(collateralToSupply);
-        IStrategyWrapper(morphoMarketParams.collateralToken).approve(address(MORPHO_BLUE), collateralToSupply);
-        MORPHO_BLUE.supplyCollateral({
-            marketParams: morphoMarketParams,
-            assets: collateralToSupply,
-            onBehalf: msg.sender,
-            data: hex""
-        });
 
         // Bootstrap utilisation: borrow 90 % of that
         MORPHO_BLUE.borrow({
             marketParams: morphoMarketParams,
             assets: borrowAmount,
             shares: 0,
-            onBehalf: msg.sender,
+            onBehalf: address(this),
             receiver: msg.sender
         });
+
+        // Authorize the caller to manage the position
+        MORPHO_BLUE.setAuthorization(msg.sender, true);
     }
 
     ///////////////////////////////////////////////////////////////

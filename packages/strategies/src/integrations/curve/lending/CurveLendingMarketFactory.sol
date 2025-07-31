@@ -4,7 +4,6 @@ pragma solidity 0.8.28;
 import {Ownable2Step, Ownable} from "@openzeppelin/contracts/access/Ownable2Step.sol";
 import {CurveStableswapOracle} from "src/integrations/curve/oracles/CurveStableswapOracle.sol";
 import {CurveCryptoswapOracle} from "src/integrations/curve/oracles/CurveCryptoswapOracle.sol";
-import {StrategyWrapper} from "src/wrappers/StrategyWrapper.sol";
 import {IStrategyWrapper} from "src/interfaces/IStrategyWrapper.sol";
 import {IOracle} from "src/interfaces/IOracle.sol";
 import {IRewardVault} from "src/interfaces/IRewardVault.sol";
@@ -46,6 +45,9 @@ contract CurveLendingMarketFactory is Ownable2Step {
     /// @dev Thrown when the delegate call fails.
     error MarketCreationFailed();
 
+    /// @dev Thrown when the collateral and the lending factory are not compatible.
+    error InvalidLendingProtocol();
+
     enum OracleType {
         UNKNOWN, // safeguard against using the default value
         STABLESWAP,
@@ -78,13 +80,6 @@ contract CurveLendingMarketFactory is Ownable2Step {
         META_REGISTRY = IMetaRegistry(_metaRegistry);
     }
 
-    modifier isValidDeployment(IRewardVault rewardVault, OracleType oracleType) {
-        require(PROTOCOL_CONTROLLER.vaults(rewardVault.gauge()) == address(rewardVault), InvalidRewardVault());
-        require(rewardVault.PROTOCOL_ID() == bytes4(keccak256("CURVE")), InvalidProtocolId());
-        require(oracleType != OracleType.UNKNOWN, InvalidOracleType());
-        _;
-    }
-
     ///////////////////////////////////////////////////////////////
     // --- MARKET CREATION
     ///////////////////////////////////////////////////////////////
@@ -92,20 +87,24 @@ contract CurveLendingMarketFactory is Ownable2Step {
     /// @notice Creates a Stake DAO market on Curve with the specified oracle type
     /// @dev The lending factory must be trusted!
     ///      The ownership of this contract is propagated to the lending factory
-    /// @param rewardVault The reward vault to use for the market
+    /// @param collateral The collateral to use for the market
     /// @param oracleType The type of oracle to deploy (STABLESWAP =1 or CRYPTOSWAP =2)
     /// @param oracleParams The parameters for the oracle (structure works for both types)
     /// @param marketParams The parameters for the market
     /// @param lendingFactory The factory to use for the market
     function deploy(
-        IRewardVault rewardVault,
+        IStrategyWrapper collateral,
         OracleType oracleType,
         OracleParams calldata oracleParams,
         MarketParams calldata marketParams,
         ILendingFactory lendingFactory
-    ) external onlyOwner isValidDeployment(rewardVault, oracleType) returns (IStrategyWrapper, IOracle, bytes memory) {
-        // 1. Deploy the collateral token
-        IStrategyWrapper collateral = _deployCollateral(rewardVault, lendingFactory);
+    ) external onlyOwner returns (IStrategyWrapper, IOracle, bytes memory data) {
+        // 1. Check if the deployment is valid
+        IRewardVault rewardVault = collateral.REWARD_VAULT();
+        require(collateral.LENDING_PROTOCOL() == lendingFactory.protocol(), InvalidLendingProtocol());
+        require(PROTOCOL_CONTROLLER.vaults(rewardVault.gauge()) == address(rewardVault), InvalidRewardVault());
+        require(rewardVault.PROTOCOL_ID() == bytes4(keccak256("CURVE")), InvalidProtocolId());
+        require(oracleType != OracleType.UNKNOWN, InvalidOracleType());
 
         // 2. Deploy the oracle
         IOracle oracle = _deployOracle(
@@ -113,23 +112,18 @@ contract CurveLendingMarketFactory is Ownable2Step {
         );
 
         // 3. Create the lending market
-        bytes memory data = _createMarket(collateral, oracle, oracleParams.loanAsset, lendingFactory, marketParams);
+        data = _createMarket(collateral, oracle, oracleParams.loanAsset, lendingFactory, marketParams);
+
+        // 4. Transfer ownership of the collateral from this contract to the owner of this contract
+        (bool success,) = address(collateral).call(abi.encodeWithSignature("transferOwnership(address)", owner()));
+        require(success, "Failed to transfer ownership");
+
         return (collateral, oracle, data);
     }
 
     ///////////////////////////////////////////////////////////////
     // --- INTERNAL FUNCTIONS
     ///////////////////////////////////////////////////////////////
-
-    function _deployCollateral(IRewardVault rewardVault, ILendingFactory lendingFactory)
-        internal
-        returns (IStrategyWrapper)
-    {
-        IStrategyWrapper collateral = new StrategyWrapper(rewardVault, lendingFactory.protocol(), owner());
-        emit CollateralDeployed(address(collateral));
-
-        return collateral;
-    }
 
     function _deployOracle(
         IStrategyWrapper collateral,
