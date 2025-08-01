@@ -60,6 +60,13 @@ import {IOracle} from "src/interfaces/IOracle.sol";
  *         feeds on L2s can become stale if the sequencer goes down. For L2 deployments,
  *         consider wrapping this oracle to include Sequencer Uptime Data Feed checks.
  *         https://docs.chain.link/data-feeds/l2-sequencer-feeds
+ *
+ *         Feed availability and adapter pattern
+ *         ------------------------------------
+ *         All pool asset feeds must provide prices denominated in USD with 8 decimals
+ *         to ensure proper price aggregation. When direct USD feeds are unavailable for
+ *         certain assets, custom adapter contracts should be deployed that implement the
+ *         Chainlink `IChainlinkFeed` interface and internally compose multiple feeds.
  */
 contract CurveStableswapOracle is IOracle {
     ///////////////////////////////////////////////////////////////
