@@ -152,9 +152,6 @@ abstract contract BaseDeploy is Script {
         if (sidecarFactory != address(0)) {
             /// Allow sidecar factory to be used as a registrar.
             protocolController.setRegistrar(address(sidecarFactory), true);
-
-            /// Enable sidecar factory.
-            _enableModule(address(sidecarFactory));
         }
 
         /// 5. Transfer ownership of all contracts to GATEWAY and GATEWAY to GOVERNANCE.

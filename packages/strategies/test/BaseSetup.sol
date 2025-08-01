@@ -137,9 +137,6 @@ abstract contract BaseSetup is Test {
         if (sidecarFactory != address(0)) {
             /// Allow sidecar factory to be used as a registrar.
             protocolController.setRegistrar(address(sidecarFactory), true);
-
-            /// Enable sidecar factory.
-            _enableModule(address(sidecarFactory));
         }
     }
 
