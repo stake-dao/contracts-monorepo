@@ -126,4 +126,12 @@ contract BalancerAccumulator is AccumulatorDelegable, SafeModule {
     function name() external view virtual override returns (string memory) {
         return type(BalancerAccumulator).name;
     }
+
+    /// @notice Get the rewards tokens this accumulator manages
+    function getRewards() external view override returns (address[] memory) {
+        address[] memory rewards = new address[](2);
+        rewards[0] = rewardToken;
+        rewards[1] = token;
+        return rewards;
+    }
 }

@@ -31,4 +31,6 @@ contract DelegableAccumulatorHarness is AccumulatorDelegable {
     function _expose_shareWithDelegation() external returns (uint256 delegationShare) {
         return _shareWithDelegation();
     }
+
+    function getRewards() external view virtual override returns (address[] memory) {}
 }
