@@ -101,4 +101,11 @@ contract ZeroLendAccumulator is AccumulatorBase {
     function name() external pure override returns (string memory) {
         return "ZERO Accumulator";
     }
+
+    function getRewards() external pure override returns (address[] memory) {
+        address[] memory rewards = new address[](2);
+        rewards[0] = ZERO;
+        rewards[1] = WETH;
+        return rewards;
+    }
 }

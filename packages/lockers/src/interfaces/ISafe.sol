@@ -12,6 +12,13 @@ interface ISafe {
     function enableModule(address module) external;
 
     /**
+     * @notice Disables the module `module` for the Safe.
+     * @dev This can only be done via a Safe transaction.
+     * @param module Module to be disabled.
+     */
+    function disableModule(address module) external;
+
+    /**
      * @notice Execute `operation` (0: Call, 1: DelegateCall) to `to` with `value` (Native Token)
      * @dev Function is virtual to allow overriding for L2 singleton to emit an event for indexing.
      * @param to Destination address of module transaction.

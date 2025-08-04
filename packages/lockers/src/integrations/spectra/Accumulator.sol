@@ -69,4 +69,10 @@ contract Accumulator is AccumulatorBase {
     function name() external pure override returns (string memory) {
         return "SPECTRA Accumulator";
     }
+
+    function getRewards() external view override returns (address[] memory) {
+        address[] memory rewards = new address[](1);
+        rewards[0] = sdSPECTRA;
+        return rewards;
+    }
 }
