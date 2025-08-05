@@ -176,6 +176,7 @@ abstract contract BaseIntegrationTest is BaseSetup {
 
             /// 17. Verify extra rewards were claimed if applicable
             for (uint256 i = 0; i < rewardVaults.length; i++) {
+                emit log_named_uint("YOO Reward tokens length", rewardVaults[i].getRewardTokens().length);
                 if (rewardVaults[i].getRewardTokens().length > 0) {
                     verifyExtraRewardsClaimed(rewardVaults[i], rewardReceivers[i]);
                 }

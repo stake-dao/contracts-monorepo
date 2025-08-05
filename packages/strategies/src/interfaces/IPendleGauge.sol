@@ -16,4 +16,5 @@ interface IPendleGauge {
     function activeBalance(address user) external view returns (uint256);
     function userReward(address token, address user) external view returns (UserReward memory);
     function rewardState(address token) external view returns (RewardState memory);
+    function readTokens() external view returns (address sy, address pt, address yt);
 }

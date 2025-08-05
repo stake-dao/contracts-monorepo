@@ -5,6 +5,7 @@ import {IERC20} from "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import {Strategy} from "src/Strategy.sol";
 import {IPendleGauge} from "src/interfaces/IPendleGauge.sol";
 import {IPendleMarket} from "src/interfaces/IPendleMarket.sol";
+import {IRewardReceiver} from "src/interfaces/IRewardReceiver.sol";
 import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 
 /// @title PendleStrategy
@@ -98,7 +99,6 @@ contract PendleStrategy is Strategy {
     function _harvestLocker(address gauge, bytes memory) internal override returns (uint256 rewardAmount) {
         uint256[] memory harvestedAmounts = IPendleMarket(gauge).redeemRewards(LOCKER);
 
-        // Forward the extra (non-PENDLE) rewards to rewardReceiver
         address[] memory rewardTokens = IPendleMarket(gauge).getRewardTokens();
         uint256 nbOfRewardTokens = rewardTokens.length;
         require(nbOfRewardTokens == harvestedAmounts.length, PendleRewardArraysLengthMismatch());
@@ -106,6 +106,8 @@ contract PendleStrategy is Strategy {
         address rewardReceiver = PROTOCOL_CONTROLLER.rewardReceiver(gauge);
         require(rewardReceiver != address(0), RewardReceiverNotSet());
 
+        // Forward the extra (non-PENDLE) rewards to rewardReceiver
+        bool hasExtraRewards;
         for (uint256 i; i < nbOfRewardTokens; i++) {
             address rewardToken = rewardTokens[i];
             uint256 harvested = harvestedAmounts[i];
@@ -117,7 +119,11 @@ contract PendleStrategy is Strategy {
             } else {
                 bytes memory data = abi.encodeWithSelector(IERC20.transfer.selector, rewardReceiver, harvested);
                 require(_executeTransaction(rewardToken, data), HarvestFailed());
+                hasExtraRewards = true;
             }
         }
+
+        // Tell the reward receiver to distribute the rewards
+        if (hasExtraRewards) IRewardReceiver(rewardReceiver).distributeRewards();
     }
 }
