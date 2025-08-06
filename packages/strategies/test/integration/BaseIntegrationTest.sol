@@ -176,6 +176,7 @@ abstract contract BaseIntegrationTest is BaseSetup {
 
             /// 17. Verify extra rewards were claimed if applicable
             for (uint256 i = 0; i < rewardVaults.length; i++) {
+                emit log_named_uint("YOO Reward tokens length", rewardVaults[i].getRewardTokens().length);
                 if (rewardVaults[i].getRewardTokens().length > 0) {
                     verifyExtraRewardsClaimed(rewardVaults[i], rewardReceivers[i]);
                 }
@@ -223,12 +224,12 @@ abstract contract BaseIntegrationTest is BaseSetup {
             assertEq(
                 _balanceOf(rewardToken, accountPosition.account),
                 0,
-                "Expected reward token balance to be 0 before claiming"
+                "13. Expected reward token balance to be 0 before claiming"
             );
             assertGt(
                 accountant.getPendingRewards(address(rewardVault), accountPosition.account),
                 0,
-                "Expected pending rewards to be greater than 0 before claiming"
+                "14. Expected pending rewards to be greater than 0 before claiming"
             );
 
             /// Claim the rewards.
@@ -237,12 +238,12 @@ abstract contract BaseIntegrationTest is BaseSetup {
             assertGt(
                 _balanceOf(rewardToken, accountPosition.account),
                 0,
-                "13. Expected reward token balance to be greater than 0 after claiming"
+                "15. Expected reward token balance to be greater than 0 after claiming"
             );
             assertEq(
                 accountant.getPendingRewards(address(rewardVault), accountPosition.account),
                 0,
-                "14. Expected pending rewards to be 0 after claiming"
+                "16. Expected pending rewards to be 0 after claiming"
             );
 
             /// 17a. Verify user received extra rewards if applicable
@@ -258,23 +259,23 @@ abstract contract BaseIntegrationTest is BaseSetup {
             assertGt(
                 rewardVault.balanceOf(accountPosition.account),
                 0,
-                "15. Expected reward vault balance to be greater than 0 after partial withdraw"
+                "17. Expected reward vault balance to be greater than 0 after partial withdraw"
             );
 
             assertEq(
                 rewardVault.balanceOf(accountPosition.account),
                 accountPosition.baseAmount + accountPosition.additionalAmount - accountPosition.partialWithdrawAmount,
-                "16. Expected reward vault balance to be equal to base amount plus additional amount minus partial withdraw amount"
+                "18. Expected reward vault balance to be equal to base amount plus additional amount minus partial withdraw amount"
             );
             assertEq(
                 rewardVault.totalSupply(),
                 totalSupply - accountPosition.partialWithdrawAmount,
-                "17. Expected reward vault total supply to be equal to total supply minus partial withdraw amount"
+                "19. Expected reward vault total supply to be equal to total supply minus partial withdraw amount"
             );
             assertEq(
                 IStrategy(strategy).balanceOf(gauge),
                 rewardVault.totalSupply(),
-                "18. Expected strategy balance to be equal to total supply after partial withdraw"
+                "20. Expected strategy balance to be equal to total supply after partial withdraw"
             );
 
             /// 19. Simulate additional rewards for share transfer test
@@ -698,7 +699,6 @@ abstract contract BaseIntegrationTest is BaseSetup {
 
     function _generateAccountPositionsAndRewards() internal returns (AccountPosition[] memory, uint256[] memory) {
         uint256 length = bound(uint256(keccak256(abi.encode("length"))), 1, MAX_ACCOUNT_POSITIONS);
-
         uint256[] memory rewards = new uint256[](length);
         AccountPosition[] memory positions = new AccountPosition[](length);
 
