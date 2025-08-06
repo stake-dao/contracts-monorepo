@@ -26,7 +26,7 @@ contract DeployBase is BasePendleDeploy {
     }
 
     function getGauges() internal pure override returns (address[] memory gauges) {
-        gauges = new address[](10);
+        gauges = new address[](11);
         gauges[0] = 0x4EaE2e40C6612005214ea919cc7653dA853Ed409; // LBTC
         gauges[1] = 0xD5dD84c7b8919DceB09536a0FEf6db9046805127; // rETH
         gauges[2] = 0x483f2e223c58a5eF19c4B32fbC6dE57709749cb3; // cbETH
@@ -36,7 +36,8 @@ contract DeployBase is BasePendleDeploy {
         gauges[6] = 0xA6b8cFE75Ca5e1b2A527AA255d10521FAaF24b61; // yvBal-GHO-USR
         gauges[7] = 0x715509Bde846104cF2cCeBF6fdF7eF1BB874Bc45; // USR
         gauges[8] = 0xd7C3CEce4bd8FF41aDE50D59ecE7bc91DC2545c1; // USDz
-        gauges[9] = 0x53fb20ff03Ef94EF224557CC6262e0f11c20f718; // sKAITO
+        gauges[9] = 0x44e2B05B2C17A12b37F11De18000922E64E23faa; // yoUSD
+        gauges[10] = 0x53fb20ff03Ef94EF224557CC6262e0f11c20f718; // sKAITO
 
         return gauges;
     }

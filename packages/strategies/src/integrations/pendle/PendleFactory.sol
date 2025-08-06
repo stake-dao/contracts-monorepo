@@ -7,6 +7,10 @@ import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {IPendleGaugeController} from "src/interfaces/IPendleGaugeController.sol";
 import {IPendleMarket} from "src/interfaces/IPendleMarket.sol";
 
+/// @title PendleFactory.
+/// @author Stake DAO
+/// @custom:github @stake-dao
+/// @custom:contact contact@stakedao.org
 contract PendleFactory is Factory {
     /// @notice Bytes-4 protocol identifier for Pendle
     bytes4 private constant PENDLE_PROTOCOL_ID = bytes4(keccak256("PENDLE"));

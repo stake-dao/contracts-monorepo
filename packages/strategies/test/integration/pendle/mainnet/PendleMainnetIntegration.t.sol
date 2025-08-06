@@ -85,7 +85,7 @@ contract PendleMainnetIntegrationTest is PendleIntegration {
         _cheat_rewards(gauge, _config.base.rewardToken, amount);
     }
 
-    function _simulateExtraRewardForToken(RewardVault vault, address gauge, address token, uint256 amount)
+    function _simulateExtraRewardForToken(RewardVault, address gauge, address token, uint256 amount)
         internal
         override
     {

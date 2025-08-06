@@ -16,6 +16,9 @@ import {SafeCast} from "@openzeppelin/contracts/utils/math/SafeCast.sol";
 ///        1. Moving LP tokens out of the Locker on withdrawals.
 ///        2. Triggering `redeemRewards` to harvest *all* rewards.
 ///        3. Reporting harvested amounts to the Accountant.
+/// @author Stake DAO
+/// @custom:github @stake-dao
+/// @custom:contact contact@stakedao.org
 contract PendleStrategy is Strategy {
     using SafeCast for uint256;
 
