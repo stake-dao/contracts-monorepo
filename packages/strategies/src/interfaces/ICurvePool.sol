@@ -15,6 +15,8 @@ interface ICurveStableSwapPool is ICurvePool {
     ///      and divides it by the total supply of LP tokens. The returned value is scaled up by 1e18.
     ///      The value is always denominated in the pool's "unit of account" (e.g., USD for a DAI/USDC/USDT pool).
     function get_virtual_price() external view returns (uint256);
+    function price_oracle() external view returns (uint256);
+    function price_oracle(uint256 i) external view returns (uint256);
 }
 
 interface ICurveCryptoSwapPool is ICurvePool {

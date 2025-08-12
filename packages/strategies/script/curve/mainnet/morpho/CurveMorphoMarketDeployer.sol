@@ -18,6 +18,7 @@ abstract contract CurveMorphoMarketDeployer is Script {
     struct Inputs {
         address factory;
         address rewardVault;
+        address curvePool;
         address irm;
         uint256 lltv;
         address loanAsset;
@@ -57,7 +58,7 @@ abstract contract CurveMorphoMarketDeployer is Script {
         // 3. Deploy the market
         vm.startBroadcast();
         (, IOracle oracle, bytes memory data) = CurveLendingMarketFactory(inputs.factory).deploy(
-            wrapper, oracleType, oracleParams, marketParams, ILendingFactory(inputs.lendingFactory)
+            wrapper, inputs.curvePool, oracleType, oracleParams, marketParams, ILendingFactory(inputs.lendingFactory)
         );
         vm.stopBroadcast();
 
@@ -74,6 +75,7 @@ abstract contract CurveMorphoMarketDeployer is Script {
     {
         inputs.factory = vm.envAddress("CURVE_LENDING_MARKET_FACTORY");
         inputs.rewardVault = vm.envAddress("REWARD_VAULT");
+        inputs.curvePool = vm.envAddress("CURVE_POOL");
         inputs.irm = vm.envAddress("IRM");
         inputs.lltv = vm.envUint("LLTV");
         inputs.loanAsset = vm.envAddress("LOAN_ASSET");
@@ -86,6 +88,7 @@ abstract contract CurveMorphoMarketDeployer is Script {
 
         require(inputs.factory.code.length > 0, "CurveLendingMarketFactory not deployed");
         require(inputs.rewardVault.code.length > 0, "RewardVault not deployed");
+        require(inputs.curvePool.code.length > 0, "Curve Pool not deployed");
         require(inputs.loanAsset != address(0), "Invalid loan asset");
         require(inputs.loanAssetFeed.code.length > 0, "Invalid Loan Asset Feed");
         require(inputs.loanAssetFeedHeartbeat > 0, "Invalid Loan Asset Heartbeat");
