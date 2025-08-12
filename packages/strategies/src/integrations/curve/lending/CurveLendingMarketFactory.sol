@@ -9,7 +9,6 @@ import {IOracle} from "src/interfaces/IOracle.sol";
 import {IRewardVault} from "src/interfaces/IRewardVault.sol";
 import {IProtocolController} from "src/interfaces/IProtocolController.sol";
 import {ILendingFactory} from "src/interfaces/ILendingFactory.sol";
-import {IMetaRegistry} from "@interfaces/curve/IMetaRegistry.sol";
 
 /// @title Curve Lending Market Factory
 /// @notice Creates a lending market for Curve-associated Stake DAO reward vaults on the given lending protocol
@@ -18,10 +17,7 @@ import {IMetaRegistry} from "@interfaces/curve/IMetaRegistry.sol";
 contract CurveLendingMarketFactory is Ownable2Step {
     /// @dev The address of the Stake DAO Staking v2 protocol controller
     ///      Used to check if the reward vault is genuine
-    IProtocolController public immutable PROTOCOL_CONTROLLER;
-
-    /// @dev The address of the Curve meta registry
-    IMetaRegistry public immutable META_REGISTRY;
+    IProtocolController private immutable PROTOCOL_CONTROLLER;
 
     ///////////////////////////////////////////////////////////////
     // --- EVENTS & ERRORS
@@ -74,10 +70,9 @@ contract CurveLendingMarketFactory is Ownable2Step {
         uint256 initialSupply;
     }
 
-    constructor(address _protocolController, address _metaRegistry) Ownable(msg.sender) {
+    constructor(address _protocolController) Ownable(msg.sender) {
         require(_protocolController != address(0), AddressZero());
         PROTOCOL_CONTROLLER = IProtocolController(_protocolController);
-        META_REGISTRY = IMetaRegistry(_metaRegistry);
     }
 
     ///////////////////////////////////////////////////////////////
@@ -88,12 +83,14 @@ contract CurveLendingMarketFactory is Ownable2Step {
     /// @dev The lending factory must be trusted!
     ///      The ownership of this contract is propagated to the lending factory
     /// @param collateral The collateral to use for the market
+    /// @param curvePool The Curve pool to use for the market
     /// @param oracleType The type of oracle to deploy (STABLESWAP =1 or CRYPTOSWAP =2)
     /// @param oracleParams The parameters for the oracle (structure works for both types)
     /// @param marketParams The parameters for the market
     /// @param lendingFactory The factory to use for the market
     function deploy(
         IStrategyWrapper collateral,
+        address curvePool,
         OracleType oracleType,
         OracleParams calldata oracleParams,
         MarketParams calldata marketParams,
@@ -107,9 +104,7 @@ contract CurveLendingMarketFactory is Ownable2Step {
         require(oracleType != OracleType.UNKNOWN, InvalidOracleType());
 
         // 2. Deploy the oracle
-        IOracle oracle = _deployOracle(
-            collateral, META_REGISTRY.get_pool_from_lp_token(rewardVault.asset()), oracleType, oracleParams
-        );
+        IOracle oracle = _deployOracle(collateral, curvePool, oracleType, oracleParams);
 
         // 3. Create the lending market
         data = _createMarket(collateral, oracle, oracleParams.loanAsset, lendingFactory, marketParams);

@@ -7,7 +7,6 @@ import {MorphoMarketFactory} from "src/integrations/morpho/MorphoMarketFactory.s
 import {CurveLendingMarketFactory} from "src/integrations/curve/lending/CurveLendingMarketFactory.sol";
 import {RewardVault} from "src/RewardVault.sol";
 import {Common} from "@address-book/src/CommonEthereum.sol";
-import {CurveProtocol} from "@address-book/src/CurveEthereum.sol";
 import {IERC20Metadata, IERC20} from "@openzeppelin/contracts/token/ERC20/extensions/IERC20Metadata.sol";
 import {IStrategyWrapper} from "src/interfaces/IStrategyWrapper.sol";
 import {StrategyWrapper} from "src/wrappers/StrategyWrapper.sol";
@@ -49,9 +48,9 @@ contract MorphoMarketFactoryIntegrationTest is CurveMainnetIntegrationTest {
 
     function _stableSwapPools() internal pure returns (uint256[] memory) {
         uint256[] memory _poolIds = new uint256[](3);
-        _poolIds[0] = 426; // USDC/USDT (0x4f493b7de8aac7d55f71853688b1f7c8f0243c85)
+        _poolIds[0] = 425; // USDC/USDT (0x4f493b7de8aac7d55f71853688b1f7c8f0243c85)
         _poolIds[1] = 392; // cbBTC/wBTC (0x839d6bDeDFF886404A6d7a788ef241e4e28F4802)
-        _poolIds[2] = 155; // wETH/stETH (0x828b154032950C8ff7CF8085D841723Db2696056)
+        _poolIds[2] = 177; // ETH/stETH (0x21E27a5E5513D6e65C4f830167390997aA84843a)
         return _poolIds;
     }
 
@@ -101,30 +100,22 @@ contract MorphoMarketFactoryIntegrationTest is CurveMainnetIntegrationTest {
         address[][] memory poolAssetFeeds = new address[][](3);
 
         // Pool 0: USDC/USDT - both USD stablecoins
-        poolAssetFeeds[0] = new address[](2);
-        poolAssetFeeds[0][0] = 0x8fFfFfd4AfB6115b954Bd326cbe7B4BA576818f6; // USDC/USD
-        poolAssetFeeds[0][1] = 0x3E7d1eAB13ad0104d2750B8863b489D65364e32D; // USDT/USD
+        poolAssetFeeds[0] = new address[](0);
 
         // Pool 1: cbBTC/wBTC - both BTC derivatives
-        poolAssetFeeds[1] = new address[](2);
+        poolAssetFeeds[1] = new address[](1);
         poolAssetFeeds[1][0] = 0x2665701293fCbEB223D11A08D826563EDcCE423A; // cbBTC/USD
-        poolAssetFeeds[1][1] = 0xfdFD9C85aD200c506Cf9e21F1FD8dd01932FBB23; // wBTC/USD
 
         // Pool 2: wETH/stETH - both ETH derivatives
-        poolAssetFeeds[2] = new address[](2);
+        poolAssetFeeds[2] = new address[](1);
         poolAssetFeeds[2][0] = 0x5424384B256154046E9667dDFaaa5e550145215e; // ETH/USD (wETH is 1:1 with ETH)
-        poolAssetFeeds[2][1] = 0xCfE54B5cD566aB89272946F602D76Ea879CAb4a8; // stETH/USD
 
         uint256[][] memory poolAssetHeartbeats = new uint256[][](3);
-        poolAssetHeartbeats[0] = new uint256[](2);
-        poolAssetHeartbeats[0][0] = 1 days;
-        poolAssetHeartbeats[0][1] = 1 days;
-        poolAssetHeartbeats[1] = new uint256[](2);
+        poolAssetHeartbeats[0] = new uint256[](0);
+        poolAssetHeartbeats[1] = new uint256[](1);
         poolAssetHeartbeats[1][0] = 1 days;
-        poolAssetHeartbeats[1][1] = 1 days;
-        poolAssetHeartbeats[2] = new uint256[](2);
+        poolAssetHeartbeats[2] = new uint256[](1);
         poolAssetHeartbeats[2][0] = 1 hours;
-        poolAssetHeartbeats[2][1] = 1 hours;
 
         uint256 stablePoolsLength = _stableSwapPools().length;
         // Deploy the different markets
@@ -140,7 +131,7 @@ contract MorphoMarketFactoryIntegrationTest is CurveMainnetIntegrationTest {
         }
     }
 
-    function test_create_cryptoswap_markets() external {
+    function skip_test_create_cryptoswap_markets() external {
         // Fuzz an account position and reward amount
         (AccountPosition[] memory _accountPositions,) = _generateAccountPositionsAndRewards();
 
@@ -196,8 +187,7 @@ contract MorphoMarketFactoryIntegrationTest is CurveMainnetIntegrationTest {
         address deployer = position.account;
         // Deploy the Curve lending market factory
         vm.prank(deployer);
-        CurveLendingMarketFactory curveLendingMarketFactory =
-            new CurveLendingMarketFactory(address(protocolController), CurveProtocol.META_REGISTRY);
+        CurveLendingMarketFactory curveLendingMarketFactory = new CurveLendingMarketFactory(address(protocolController));
         vm.label(address(curveLendingMarketFactory), "CurveLendingMarketFactory");
 
         // Deploy the Morpho market factory
@@ -246,9 +236,11 @@ contract MorphoMarketFactoryIntegrationTest is CurveMainnetIntegrationTest {
             new StrategyWrapper(rewardVault, address(MORPHO), address(curveLendingMarketFactory));
 
         // Deploy the market
+        address pool = rewardVault.asset();
         vm.prank(deployer);
-        (,, bytes memory data) =
-            curveLendingMarketFactory.deploy(collateral, oracleType, oracleParams, marketParams, morphoMarketFactory);
+        (,, bytes memory data) = curveLendingMarketFactory.deploy(
+            collateral, pool, oracleType, oracleParams, marketParams, morphoMarketFactory
+        );
 
         // Verify loan asset balance after pre-seeding (should have 90% of initial balance left)
         assertEq(

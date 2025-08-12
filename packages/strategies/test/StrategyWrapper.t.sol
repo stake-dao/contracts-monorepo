@@ -39,7 +39,7 @@ contract StrategyWrapperIntegrationTest is CurveMainnetIntegrationTest {
     // @dev Only use one Curve pool for our test
     function poolIds() public pure override returns (uint256[] memory) {
         uint256[] memory _poolIds = new uint256[](1);
-        _poolIds[0] = 426; // USDC/USDT (0x4f493b7de8aac7d55f71853688b1f7c8f0243c85)
+        _poolIds[0] = 425; // USDC/USDT (0x4f493b7de8aac7d55f71853688b1f7c8f0243c85)
         return _poolIds;
     }
 
@@ -57,8 +57,7 @@ contract StrategyWrapperIntegrationTest is CurveMainnetIntegrationTest {
         vm.label(rewardVault, "RewardVault");
 
         // 3. Deploy the lending market factory
-        curveLendingMarketFactory =
-            new CurveLendingMarketFactory(address(protocolController), CurveProtocol.META_REGISTRY);
+        curveLendingMarketFactory = new CurveLendingMarketFactory(address(protocolController));
         vm.label(address(factory), "CurveLendingMarketFactory");
 
         // 4. Deploy the Morpho Market Factory
@@ -68,45 +67,33 @@ contract StrategyWrapperIntegrationTest is CurveMainnetIntegrationTest {
         // 5. Deploy the collateral token and set the owner to the lending market factory (needed to initialize it)
         IStrategyWrapper _wrapper =
             new StrategyWrapper(IRewardVault(rewardVault), address(morpho), address(curveLendingMarketFactory));
-
         // 5. Deploy the lending market
         CurveLendingMarketFactory.MarketParams memory marketParams = CurveLendingMarketFactory.MarketParams({
             irm: Common.MORPHO_ADAPTIVE_CURVE_IRM,
             lltv: 945 * 1e15,
-            initialSupply: 0
+            initialSupply: 0 // 1 USDC to prevent zero utilization rate decay
         });
-        address[] memory chainlinkFeeds = new address[](2);
-        chainlinkFeeds[0] = Common.CHAINLINK_USDC_USD_PRICE_FEED;
-        chainlinkFeeds[1] = Common.CHAINLINK_USDT_USD_PRICE_FEED;
-        uint256[] memory chainlinkFeedHeartbeats = new uint256[](2);
-        chainlinkFeedHeartbeats[0] = 1 days;
-        chainlinkFeedHeartbeats[1] = 1 days;
         CurveLendingMarketFactory.OracleParams memory oracleParams = CurveLendingMarketFactory.OracleParams({
             loanAsset: Common.USDC,
-            loanAssetFeed: Common.CHAINLINK_USDC_USD_PRICE_FEED,
-            loanAssetFeedHeartbeat: 86_400,
-            chainlinkFeeds: chainlinkFeeds,
-            chainlinkFeedHeartbeats: chainlinkFeedHeartbeats
+            loanAssetFeed: address(0),
+            loanAssetFeedHeartbeat: 0,
+            chainlinkFeeds: new address[](0),
+            chainlinkFeedHeartbeats: new uint256[](0)
         });
         (, IOracle _oracle, bytes memory data) = curveLendingMarketFactory.deploy(
-            _wrapper, CurveLendingMarketFactory.OracleType.STABLESWAP, oracleParams, marketParams, morphoMarketFactory
+            _wrapper,
+            IRewardVault(rewardVault).asset(),
+            CurveLendingMarketFactory.OracleType.STABLESWAP,
+            oracleParams,
+            marketParams,
+            morphoMarketFactory
         );
+
         wrapper = StrategyWrapper(address(_wrapper));
         vm.label(address(_wrapper), "StrategyWrapper");
         vm.label(address(_oracle), "Oracle");
         vm.label(address(morpho), "Morpho");
-
         lendingMarketId = abi.decode(data, (bytes32));
-        MarketParams memory market = morpho.idToMarketParams(Id.wrap(wrapper.lendingMarketId()));
-
-        // 6. Supply some liquidity to the market
-        address supplier = makeAddr("supplier");
-        uint256 supplyAmount = 100_000e6;
-        deal(market.loanToken, supplier, supplyAmount);
-        vm.startPrank(supplier);
-        IERC20(market.loanToken).approve(address(morpho), supplyAmount);
-        morpho.supply({marketParams: market, assets: supplyAmount, shares: 0, onBehalf: supplier, data: hex""});
-        vm.stopPrank();
     }
 
     // @dev Test the complete protocol lifecycle with one account interacting directly with the protocol and one interacting with the morpho wrapper
@@ -289,6 +276,7 @@ contract StrategyWrapperIntegrationTest is CurveMainnetIntegrationTest {
             abi.encode(true)
         );
         rewardVault.addRewardToken(Common.WETH, address(this));
+        uint256 initialMorphoBalance = wrapper.balanceOf(address(morpho));
 
         ///////////////////////////////////////////////////////////////
         // --- TEST EXECUTION
@@ -297,7 +285,9 @@ contract StrategyWrapperIntegrationTest is CurveMainnetIntegrationTest {
         // 1. User makes initial deposit into wrapper
         _depositIntoWrapper(rewardVault, user, initialDeposit);
         assertEq(wrapper.balanceOf(user), 0, "Initial deposit should succeed");
-        assertEq(wrapper.balanceOf(address(morpho)), initialDeposit, "Initial deposit should succeed");
+        assertEq(
+            wrapper.balanceOf(address(morpho)), initialDeposit + initialMorphoBalance, "Initial deposit should succeed"
+        );
 
         // 2. Simulate rewards accumulation
         uint128 extraRewardAmount = 1e20;
@@ -333,6 +323,7 @@ contract StrategyWrapperIntegrationTest is CurveMainnetIntegrationTest {
         RewardVault rewardVault = RewardVault(address(wrapper.REWARD_VAULT()));
         address firstUser = makeAddr("firstUser");
         address secondUser = makeAddr("secondUser");
+        uint256 initialMorphoBalance = wrapper.balanceOf(address(morpho));
 
         vm.mockCall(
             address(protocolController),
@@ -390,11 +381,22 @@ contract StrategyWrapperIntegrationTest is CurveMainnetIntegrationTest {
         );
         rewardVault.addRewardToken(Common.WETH, address(this));
 
+        // 0. Add liquidity to the market
+        MarketParams memory marketParams = morpho.idToMarketParams(Id.wrap(wrapper.lendingMarketId()));
+        {
+            address supplier = makeAddr("supplier");
+            uint256 supplyAmount = 1_000_000e6;
+            deal(marketParams.loanToken, supplier, supplyAmount);
+            vm.startPrank(supplier);
+            IERC20(marketParams.loanToken).approve(address(morpho), supplyAmount);
+            morpho.supply({marketParams: marketParams, assets: supplyAmount, shares: 0, onBehalf: supplier, data: hex""});
+            vm.stopPrank();
+        }
+
         // 1. User deposits
         _depositIntoWrapper(rewardVault, user, position.baseAmount);
 
         // 2. User borrow
-        MarketParams memory marketParams = morpho.idToMarketParams(Id.wrap(wrapper.lendingMarketId()));
         Position memory _position = morpho.position(Id.wrap(wrapper.lendingMarketId()), user);
         uint256 collateralPrice = IOracle(marketParams.oracle).price();
         uint256 maxBorrow = uint256(_position.collateral).mulDivDown(collateralPrice, 1e36).wMulDown(marketParams.lltv);
@@ -486,6 +488,8 @@ contract StrategyWrapperIntegrationTest is CurveMainnetIntegrationTest {
 
         RewardVault rewardVault = RewardVault(address(wrapper.REWARD_VAULT()));
 
+        uint256 initialMorphoBalance = wrapper.balanceOf(address(morpho));
+
         // 1. User deposits
         _depositIntoWrapper(rewardVault, user, position.baseAmount);
 
@@ -527,11 +531,15 @@ contract StrategyWrapperIntegrationTest is CurveMainnetIntegrationTest {
         // 8. Receiver exit the contract by "liquidating" the original holder
         vm.prank(receiver);
         wrapper.claimLiquidation(receiver, user, position.baseAmount);
-        assertEq(wrapper.balanceOf(user), 0);
-        assertEq(wrapper.balanceOf(receiver), 0);
-        assertEq(wrapper.balanceOf(address(morpho)), 0);
-        assertEq(wrapper.REWARD_VAULT().balanceOf(user), 0);
-        assertEq(wrapper.REWARD_VAULT().balanceOf(receiver), position.baseAmount);
+        assertEq(wrapper.balanceOf(user), 0, "User: should have no wrapper balance");
+        assertEq(wrapper.balanceOf(receiver), 0, "Receiver: should have no wrapper balance");
+        assertEq(wrapper.balanceOf(address(morpho)) - initialMorphoBalance, 0, "Morpho: should have no extra balance");
+        assertEq(wrapper.REWARD_VAULT().balanceOf(user), 0, "User: should have no reward vault balance");
+        assertEq(
+            wrapper.REWARD_VAULT().balanceOf(receiver),
+            position.baseAmount,
+            "Receiver: should have the correct reward vault balance"
+        );
     }
 
     function test_depositRestrictions(address _to) external {
@@ -544,6 +552,7 @@ contract StrategyWrapperIntegrationTest is CurveMainnetIntegrationTest {
         vm.label(user, "user");
 
         RewardVault rewardVault = RewardVault(address(wrapper.REWARD_VAULT()));
+        uint256 initialMorphoBalance = wrapper.balanceOf(address(morpho));
 
         // 1. User deposits
         _depositIntoWrapper(rewardVault, user, position.baseAmount);
@@ -581,9 +590,13 @@ contract StrategyWrapperIntegrationTest is CurveMainnetIntegrationTest {
         // 7. User can withdraw from the wrapper contract
         vm.prank(user);
         wrapper.withdraw();
-        assertEq(wrapper.balanceOf(user), 0);
-        assertEq(wrapper.REWARD_VAULT().balanceOf(user), position.baseAmount);
-        assertEq(wrapper.balanceOf(address(morpho)), 0);
+        assertEq(wrapper.balanceOf(user), 0, "User: should have no wrapper balance");
+        assertEq(
+            wrapper.REWARD_VAULT().balanceOf(user),
+            position.baseAmount,
+            "User: should have the correct reward vault balance"
+        );
+        assertEq(wrapper.balanceOf(address(morpho)) - initialMorphoBalance, 0, "Morpho: should have no extra balance");
     }
 
     ///////////////////////////////////////////////////////////////

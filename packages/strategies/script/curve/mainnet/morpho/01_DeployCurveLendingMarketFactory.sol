@@ -4,7 +4,6 @@ pragma solidity 0.8.28;
 import {Script} from "forge-std/src/Script.sol";
 import {console} from "forge-std/src/console.sol";
 import {DAO} from "@address-book/src/DaoEthereum.sol";
-import {CurveProtocol} from "@address-book/src/CurveEthereum.sol";
 import {CurveLendingMarketFactory} from "src/integrations/curve/lending/CurveLendingMarketFactory.sol";
 
 contract DeployCurveLendingMarketFactoryScript is Script {
@@ -18,7 +17,7 @@ contract DeployCurveLendingMarketFactoryScript is Script {
 
         vm.startBroadcast();
 
-        curveLendingMarketFactory = new CurveLendingMarketFactory(protocolController, CurveProtocol.META_REGISTRY);
+        curveLendingMarketFactory = new CurveLendingMarketFactory(protocolController);
         curveLendingMarketFactory.transferOwnership(governance);
 
         vm.stopBroadcast();
