@@ -1,0 +1,685 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>StrategyWrapper - Stake DAO Staking v2</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../../../favicon.svg">
+        <link rel="shortcut icon" href="../../../favicon.png">
+        <link rel="stylesheet" href="../../../css/variables.css">
+        <link rel="stylesheet" href="../../../css/general.css">
+        <link rel="stylesheet" href="../../../css/chrome.css">
+        <link rel="stylesheet" href="../../../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../../../highlight.css">
+        <link rel="stylesheet" href="../../../tomorrow-night.css">
+        <link rel="stylesheet" href="../../../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../../../book.css">
+
+        <!-- MathJax -->
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../../../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../../../index.html">README</a></li><li class="chapter-item expanded "><a href="../../../src/integrations/index.html"><strong aria-hidden="true">1.</strong> integrations</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../src/integrations/curve/index.html"><strong aria-hidden="true">1.1.</strong> curve</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../src/integrations/curve/L2/index.html"><strong aria-hidden="true">1.1.1.</strong> L2</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../src/integrations/curve/L2/ConvexSidecarFactoryL2.sol/contract.ConvexSidecarFactoryL2.html"><strong aria-hidden="true">1.1.1.1.</strong> ConvexSidecarFactoryL2</a></li><li class="chapter-item expanded "><a href="../../../src/integrations/curve/L2/ConvexSidecarL2.sol/contract.ConvexSidecarL2.html"><strong aria-hidden="true">1.1.1.2.</strong> ConvexSidecarL2</a></li><li class="chapter-item expanded "><a href="../../../src/integrations/curve/L2/CurveFactoryL2.sol/contract.CurveFactoryL2.html"><strong aria-hidden="true">1.1.1.3.</strong> CurveFactoryL2</a></li><li class="chapter-item expanded "><a href="../../../src/integrations/curve/L2/CurveStrategyL2.sol/contract.CurveStrategyL2.html"><strong aria-hidden="true">1.1.1.4.</strong> CurveStrategyL2</a></li></ol></li><li class="chapter-item expanded "><a href="../../../src/integrations/curve/lending/index.html"><strong aria-hidden="true">1.1.2.</strong> lending</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../src/integrations/curve/lending/CurveLendingMarketFactory.sol/contract.CurveLendingMarketFactory.html"><strong aria-hidden="true">1.1.2.1.</strong> CurveLendingMarketFactory</a></li></ol></li><li class="chapter-item expanded "><a href="../../../src/integrations/curve/oracles/index.html"><strong aria-hidden="true">1.1.3.</strong> oracles</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../src/integrations/curve/oracles/BaseOracle.sol/abstract.BaseOracle.html"><strong aria-hidden="true">1.1.3.1.</strong> BaseOracle</a></li><li class="chapter-item expanded "><a href="../../../src/integrations/curve/oracles/CurveCryptoswapOracle.sol/contract.CurveCryptoswapOracle.html"><strong aria-hidden="true">1.1.3.2.</strong> CurveCryptoswapOracle</a></li><li class="chapter-item expanded "><a href="../../../src/integrations/curve/oracles/CurveStableswapOracle.sol/contract.CurveStableswapOracle.html"><strong aria-hidden="true">1.1.3.3.</strong> CurveStableswapOracle</a></li></ol></li><li class="chapter-item expanded "><a href="../../../src/integrations/curve/ConvexSidecar.sol/contract.ConvexSidecar.html"><strong aria-hidden="true">1.1.4.</strong> ConvexSidecar</a></li><li class="chapter-item expanded "><a href="../../../src/integrations/curve/ConvexSidecarFactory.sol/contract.ConvexSidecarFactory.html"><strong aria-hidden="true">1.1.5.</strong> ConvexSidecarFactory</a></li><li class="chapter-item expanded "><a href="../../../src/integrations/curve/CurveFactory.sol/contract.CurveFactory.html"><strong aria-hidden="true">1.1.6.</strong> CurveFactory</a></li><li class="chapter-item expanded "><a href="../../../src/integrations/curve/CurveStrategy.sol/contract.CurveStrategy.html"><strong aria-hidden="true">1.1.7.</strong> CurveStrategy</a></li><li class="chapter-item expanded "><a href="../../../src/integrations/curve/OnlyBoostAllocator.sol/contract.OnlyBoostAllocator.html"><strong aria-hidden="true">1.1.8.</strong> OnlyBoostAllocator</a></li></ol></li><li class="chapter-item expanded "><a href="../../../src/integrations/morpho/index.html"><strong aria-hidden="true">1.2.</strong> morpho</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../src/integrations/morpho/MorphoMarketFactory.sol/contract.MorphoMarketFactory.html"><strong aria-hidden="true">1.2.1.</strong> MorphoMarketFactory</a></li></ol></li><li class="chapter-item expanded "><a href="../../../src/integrations/pendle/index.html"><strong aria-hidden="true">1.3.</strong> pendle</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../src/integrations/pendle/PendleAllocator.sol/contract.PendleAllocator.html"><strong aria-hidden="true">1.3.1.</strong> PendleAllocator</a></li><li class="chapter-item expanded "><a href="../../../src/integrations/pendle/PendleFactory.sol/contract.PendleFactory.html"><strong aria-hidden="true">1.3.2.</strong> PendleFactory</a></li><li class="chapter-item expanded "><a href="../../../src/integrations/pendle/PendleStrategy.sol/contract.PendleStrategy.html"><strong aria-hidden="true">1.3.3.</strong> PendleStrategy</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../../../src/interfaces/index.html"><strong aria-hidden="true">2.</strong> interfaces</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../src/interfaces/IAccountant.sol/interface.IAccountant.html"><strong aria-hidden="true">2.1.</strong> IAccountant</a></li><li class="chapter-item expanded "><a href="../../../src/interfaces/IAllocator.sol/interface.IAllocator.html"><strong aria-hidden="true">2.2.</strong> IAllocator</a></li><li class="chapter-item expanded "><a href="../../../src/interfaces/IBalanceProvider.sol/interface.IBalanceProvider.html"><strong aria-hidden="true">2.3.</strong> IBalanceProvider</a></li><li class="chapter-item expanded "><a href="../../../src/interfaces/IChainlinkFeed.sol/interface.IChainlinkFeed.html"><strong aria-hidden="true">2.4.</strong> IChainlinkFeed</a></li><li class="chapter-item expanded "><a href="../../../src/interfaces/ICurvePool.sol/interface.ICurvePool.html"><strong aria-hidden="true">2.5.</strong> ICurvePool</a></li><li class="chapter-item expanded "><a href="../../../src/interfaces/ICurvePool.sol/interface.ICurveStableSwapPool.html"><strong aria-hidden="true">2.6.</strong> ICurveStableSwapPool</a></li><li class="chapter-item expanded "><a href="../../../src/interfaces/ICurvePool.sol/interface.ICurveCryptoSwapPool.html"><strong aria-hidden="true">2.7.</strong> ICurveCryptoSwapPool</a></li><li class="chapter-item expanded "><a href="../../../src/interfaces/IFactory.sol/interface.IFactory.html"><strong aria-hidden="true">2.8.</strong> IFactory</a></li><li class="chapter-item expanded "><a href="../../../src/interfaces/ILendingFactory.sol/interface.ILendingFactory.html"><strong aria-hidden="true">2.9.</strong> ILendingFactory</a></li><li class="chapter-item expanded "><a href="../../../src/interfaces/IOracle.sol/interface.IOracle.html"><strong aria-hidden="true">2.10.</strong> IOracle</a></li><li class="chapter-item expanded "><a href="../../../src/interfaces/IPendleGauge.sol/interface.IPendleGauge.html"><strong aria-hidden="true">2.11.</strong> IPendleGauge</a></li><li class="chapter-item expanded "><a href="../../../src/interfaces/IPendleGaugeController.sol/interface.IPendleGaugeController.html"><strong aria-hidden="true">2.12.</strong> IPendleGaugeController</a></li><li class="chapter-item expanded "><a href="../../../src/interfaces/IPendleMarket.sol/interface.IPendleMarket.html"><strong aria-hidden="true">2.13.</strong> IPendleMarket</a></li><li class="chapter-item expanded "><a href="../../../src/interfaces/IProtocolController.sol/interface.IProtocolController.html"><strong aria-hidden="true">2.14.</strong> IProtocolController</a></li><li class="chapter-item expanded "><a href="../../../src/interfaces/IRewardReceiver.sol/interface.IRewardReceiver.html"><strong aria-hidden="true">2.15.</strong> IRewardReceiver</a></li><li class="chapter-item expanded "><a href="../../../src/interfaces/IRewardVault.sol/interface.IRewardVault.html"><strong aria-hidden="true">2.16.</strong> IRewardVault</a></li><li class="chapter-item expanded "><a href="../../../src/interfaces/IRouter.sol/interface.IRouter.html"><strong aria-hidden="true">2.17.</strong> IRouter</a></li><li class="chapter-item expanded "><a href="../../../src/interfaces/IRouterModule.sol/interface.IRouterModule.html"><strong aria-hidden="true">2.18.</strong> IRouterModule</a></li><li class="chapter-item expanded "><a href="../../../src/interfaces/ISidecar.sol/interface.ISidecar.html"><strong aria-hidden="true">2.19.</strong> ISidecar</a></li><li class="chapter-item expanded "><a href="../../../src/interfaces/ISidecarFactory.sol/interface.ISidecarFactory.html"><strong aria-hidden="true">2.20.</strong> ISidecarFactory</a></li><li class="chapter-item expanded "><a href="../../../src/interfaces/IStrategy.sol/interface.IStrategy.html"><strong aria-hidden="true">2.21.</strong> IStrategy</a></li><li class="chapter-item expanded "><a href="../../../src/interfaces/IStrategyWrapper.sol/interface.IStrategyWrapper.html"><strong aria-hidden="true">2.22.</strong> IStrategyWrapper</a></li></ol></li><li class="chapter-item expanded "><a href="../../../src/libraries/index.html"><strong aria-hidden="true">3.</strong> libraries</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../src/libraries/ImmutableArgsParser.sol/library.ImmutableArgsParser.html"><strong aria-hidden="true">3.1.</strong> ImmutableArgsParser</a></li></ol></li><li class="chapter-item expanded "><a href="../../../src/merkl/index.html"><strong aria-hidden="true">4.</strong> merkl</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../src/merkl/UniversalBoostRegistry.sol/contract.UniversalBoostRegistry.html"><strong aria-hidden="true">4.1.</strong> UniversalBoostRegistry</a></li></ol></li><li class="chapter-item expanded "><a href="../../../src/router/index.html"><strong aria-hidden="true">5.</strong> router</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../src/router/RouterIdentifierMapping.sol/library.RouterIdentifierMapping.html"><strong aria-hidden="true">5.1.</strong> RouterIdentifierMapping</a></li><li class="chapter-item expanded "><a href="../../../src/router/RouterModuleClaim.sol/contract.RouterModuleClaim.html"><strong aria-hidden="true">5.2.</strong> RouterModuleClaim</a></li><li class="chapter-item expanded "><a href="../../../src/router/RouterModuleDeposit.sol/contract.RouterModuleDeposit.html"><strong aria-hidden="true">5.3.</strong> RouterModuleDeposit</a></li><li class="chapter-item expanded "><a href="../../../src/router/RouterModuleMigrationCurve.sol/contract.RouterModuleMigrationCurve.html"><strong aria-hidden="true">5.4.</strong> RouterModuleMigrationCurve</a></li><li class="chapter-item expanded "><a href="../../../src/router/RouterModuleMigrationStakeDAOV1.sol/interface.IVault.html"><strong aria-hidden="true">5.5.</strong> IVault</a></li><li class="chapter-item expanded "><a href="../../../src/router/RouterModuleMigrationStakeDAOV1.sol/contract.RouterModuleMigrationStakeDAOV1.html"><strong aria-hidden="true">5.6.</strong> RouterModuleMigrationStakeDAOV1</a></li><li class="chapter-item expanded "><a href="../../../src/router/RouterModuleMigrationYearn.sol/contract.RouterModuleMigrationYearn.html"><strong aria-hidden="true">5.7.</strong> RouterModuleMigrationYearn</a></li><li class="chapter-item expanded "><a href="../../../src/router/RouterModuleMigrationYearn.sol/interface.IYearnVault.html"><strong aria-hidden="true">5.8.</strong> IYearnVault</a></li><li class="chapter-item expanded "><a href="../../../src/router/RouterModuleWithdraw.sol/contract.RouterModuleWithdraw.html"><strong aria-hidden="true">5.9.</strong> RouterModuleWithdraw</a></li></ol></li><li class="chapter-item expanded "><a href="../../../src/wrappers/index.html"><strong aria-hidden="true">6.</strong> wrappers</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../src/wrappers/StrategyWrapper.sol/interface.IAccountant.html"><strong aria-hidden="true">6.1.</strong> IAccountant</a></li><li class="chapter-item expanded "><a href="../../../src/wrappers/StrategyWrapper.sol/contract.StrategyWrapper.html" class="active"><strong aria-hidden="true">6.2.</strong> StrategyWrapper</a></li></ol></li><li class="chapter-item expanded "><a href="../../../src/Accountant.sol/contract.Accountant.html"><strong aria-hidden="true">7.</strong> Accountant</a></li><li class="chapter-item expanded "><a href="../../../src/Allocator.sol/contract.Allocator.html"><strong aria-hidden="true">8.</strong> Allocator</a></li><li class="chapter-item expanded "><a href="../../../src/Factory.sol/abstract.Factory.html"><strong aria-hidden="true">9.</strong> Factory</a></li><li class="chapter-item expanded "><a href="../../../src/ProtocolContext.sol/contract.ProtocolContext.html"><strong aria-hidden="true">10.</strong> ProtocolContext</a></li><li class="chapter-item expanded "><a href="../../../src/ProtocolController.sol/contract.ProtocolController.html"><strong aria-hidden="true">11.</strong> ProtocolController</a></li><li class="chapter-item expanded "><a href="../../../src/RewardReceiver.sol/contract.RewardReceiver.html"><strong aria-hidden="true">12.</strong> RewardReceiver</a></li><li class="chapter-item expanded "><a href="../../../src/RewardReceiverL2.sol/contract.RewardReceiverL2.html"><strong aria-hidden="true">13.</strong> RewardReceiverL2</a></li><li class="chapter-item expanded "><a href="../../../src/RewardVault.sol/contract.RewardVault.html"><strong aria-hidden="true">14.</strong> RewardVault</a></li><li class="chapter-item expanded "><a href="../../../src/Router.sol/contract.Router.html"><strong aria-hidden="true">15.</strong> Router</a></li><li class="chapter-item expanded "><a href="../../../src/Sidecar.sol/abstract.Sidecar.html"><strong aria-hidden="true">16.</strong> Sidecar</a></li><li class="chapter-item expanded "><a href="../../../src/SidecarFactory.sol/abstract.SidecarFactory.html"><strong aria-hidden="true">17.</strong> SidecarFactory</a></li><li class="chapter-item expanded "><a href="../../../src/Strategy.sol/abstract.Strategy.html"><strong aria-hidden="true">18.</strong> Strategy</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Stake DAO Staking v2</h1>
+
+                    <div class="right-buttons">
+                        <a href="../../../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/stake-dao/contracts-monorepo" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="strategywrapper"><a class="header" href="#strategywrapper">StrategyWrapper</a></h1>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/9a4c9de69bee6b7286696bc8c1a56182a06d565f/src/wrappers/StrategyWrapper.sol">Git Source</a></p>
+<p><strong>Inherits:</strong>
+ERC20, <a href="/src/interfaces/IStrategyWrapper.sol/interface.IStrategyWrapper.html">IStrategyWrapper</a>, Ownable2Step, ReentrancyGuardTransient</p>
+<p><strong>Author:</strong>
+Stake DAO</p>
+<p>Non-transferable ERC20 wrapper for Stake DAO RewardVault shares. It is designed for use as collateral in lending markets.</p>
+<p>*- Allows users to deposit RewardVault shares or underlying LP tokens, and receive non-transferable tokens (1:1 ratio)</p>
+<ul>
+<li>While the ERC20 tokens are held (even as collateral in lending markets), users can claim both main protocol rewards and extra rewards</li>
+<li>Handles the edge case where the main reward token is also listed as an extra reward</li>
+<li>Integrates with Stake DAO's reward and checkpointing logic to ensure users always receive the correct rewards, regardless of the custody*</li>
+</ul>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>
+<p>contact: contact@stakedao.org</p>
+</li>
+<li>
+<p>github: https://github.com/stake-dao/contracts-monorepo</p>
+</li>
+</ul>
+<h2 id="state-variables"><a class="header" href="#state-variables">State Variables</a></h2>
+<h3 id="main_reward_token_slot"><a class="header" href="#main_reward_token_slot">MAIN_REWARD_TOKEN_SLOT</a></h3>
+<p>The slot of the main reward token in the user checkpoint</p>
+<p><em>In order to optimize the storage, the main reward token is tracked in the same
+mapping as the extra reward tokens by using the <code>address(0)</code> slot.
+This internal value that is never supposed to be exposed must be used to read/write
+the main reward token state.</em></p>
+<p><em><code>address(0)</code> has been chosen to avoid collisions with the extra reward tokens.</em></p>
+<pre><code class="language-solidity">address internal constant MAIN_REWARD_TOKEN_SLOT = address(0);
+</code></pre>
+<h3 id="gauge"><a class="header" href="#gauge">GAUGE</a></h3>
+<p>Gauge backing the wrapped RewardVault</p>
+<pre><code class="language-solidity">address internal immutable GAUGE;
+</code></pre>
+<h3 id="accountant"><a class="header" href="#accountant">ACCOUNTANT</a></h3>
+<p>The address of the accountant contract</p>
+<pre><code class="language-solidity">IAccountant internal immutable ACCOUNTANT;
+</code></pre>
+<h3 id="accountant_scaling_factor"><a class="header" href="#accountant_scaling_factor">ACCOUNTANT_SCALING_FACTOR</a></h3>
+<p><em>Precision used by Accountant.integral (usually 1e27)</em></p>
+<pre><code class="language-solidity">uint128 internal immutable ACCOUNTANT_SCALING_FACTOR;
+</code></pre>
+<h3 id="reward_vault"><a class="header" href="#reward_vault">REWARD_VAULT</a></h3>
+<p>The address of the token that is being wrapped</p>
+<pre><code class="language-solidity">IRewardVault public immutable REWARD_VAULT;
+</code></pre>
+<h3 id="lending_protocol"><a class="header" href="#lending_protocol">LENDING_PROTOCOL</a></h3>
+<p>The address of the lending protocol</p>
+<pre><code class="language-solidity">address public immutable LENDING_PROTOCOL;
+</code></pre>
+<h3 id="main_reward_token"><a class="header" href="#main_reward_token">MAIN_REWARD_TOKEN</a></h3>
+<p>Reward token emitted by the Accountant (e.g. CRV)</p>
+<pre><code class="language-solidity">IERC20 public immutable MAIN_REWARD_TOKEN;
+</code></pre>
+<h3 id="lendingmarketid"><a class="header" href="#lendingmarketid">lendingMarketId</a></h3>
+<p>The ID of the lending market this token is expected to interact with</p>
+<pre><code class="language-solidity">bytes32 public lendingMarketId;
+</code></pre>
+<h3 id="usercheckpoints"><a class="header" href="#usercheckpoints">userCheckpoints</a></h3>
+<p>User checkpoint data including his deposit balance and the amount of rewards he has claimed for each token
+Both the main reward token and the extra reward tokens are tracked in the same mapping.</p>
+<p><em>The main reward token is tracked in <code>rewardPerTokenPaid[address(0)]</code></em></p>
+<pre><code class="language-solidity">mapping(address user =&gt; UserCheckpoint checkpoint) private userCheckpoints;
+</code></pre>
+<h3 id="extrarewardpertoken"><a class="header" href="#extrarewardpertoken">extraRewardPerToken</a></h3>
+<p>Accumulated rewards per token. Track the extra reward tokens only.</p>
+<p><em>The main reward token is tracked by fetching the latest value from the Accountant.</em></p>
+<pre><code class="language-solidity">mapping(address token =&gt; uint256 amount) public extraRewardPerToken;
+</code></pre>
+<h3 id="depositunlocked"><a class="header" href="#depositunlocked">depositUnlocked</a></h3>
+<p><em>The purpose of this transient variable is to ensure that this token can only be
+used as collateral in the predefined lending market. When this variable is set to
+false (the default value), transfers to the lending protocol are unauthorized.
+The only way to change this variable to true is by entering the flow of the deposit
+functions in this contract.</em></p>
+<pre><code class="language-solidity">bool private transient depositUnlocked;
+</code></pre>
+<h2 id="functions"><a class="header" href="#functions">Functions</a></h2>
+<h3 id="constructor"><a class="header" href="#constructor">constructor</a></h3>
+<p><strong>Note:</strong>
+reverts: ZeroAddress if the reward vault or _owner address are the zero address</p>
+<pre><code class="language-solidity">constructor(IRewardVault rewardVault, address lendingProtocol, address _owner) ERC20(&quot;&quot;, &quot;&quot;) Ownable(_owner);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>rewardVault</code></td><td><code>IRewardVault</code></td><td>The reward vault contract</td></tr>
+<tr><td><code>lendingProtocol</code></td><td><code>address</code></td><td>The lending protocol contract</td></tr>
+<tr><td><code>_owner</code></td><td><code>address</code></td><td>The owner of the contract</td></tr>
+</tbody></table>
+</div>
+<h3 id="initialize"><a class="header" href="#initialize">initialize</a></h3>
+<p>Set the market ID for the wrapper</p>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>
+<p>reverts: MarketAlreadySet if the market ID is already set</p>
+</li>
+<li>
+<p>reverts: InvalidMarket if the market ID is the invalid</p>
+</li>
+</ul>
+<pre><code class="language-solidity">function initialize(bytes32 marketId) external onlyOwner;
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>marketId</code></td><td><code>bytes32</code></td><td>The ID of the market to set</td></tr>
+</tbody></table>
+</div>
+<h3 id="onlyinitialized"><a class="header" href="#onlyinitialized">onlyInitialized</a></h3>
+<pre><code class="language-solidity">modifier onlyInitialized();
+</code></pre>
+<h3 id="depositshares"><a class="header" href="#depositshares">depositShares</a></h3>
+<p>Wrap <strong>all</strong> RewardVault shares owned by the caller into wrapper tokens (1:1 ratio)</p>
+<p><em>Use this when you ALREADY hold RewardVault shares.
+If you already have wrapped tokens, any pending main and extra rewards will be
+automatically claimed before the new deposit to prevent reward loss.</em></p>
+<p><strong>Note:</strong>
+reverts: ZeroAmount If the caller's share balance is zero</p>
+<pre><code class="language-solidity">function depositShares() external;
+</code></pre>
+<h3 id="depositshares-1"><a class="header" href="#depositshares-1">depositShares</a></h3>
+<p>Wrap <code>amount</code> RewardVault shares into wrapper tokens (1:1 ratio)</p>
+<p><em>Use this when you ALREADY hold RewardVault shares and wish to wrap a specific portion of them.
+If you already have wrapped tokens, any pending main and extra rewards will be
+automatically claimed before the new deposit to prevent reward loss.</em></p>
+<p><strong>Note:</strong>
+reverts: ZeroAmount If <code>amount</code> is zero</p>
+<pre><code class="language-solidity">function depositShares(uint256 amount) public nonReentrant onlyInitialized;
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>amount</code></td><td><code>uint256</code></td><td>Number of RewardVault shares the caller wants to wrap</td></tr>
+</tbody></table>
+</div>
+<h3 id="depositassets"><a class="header" href="#depositassets">depositAssets</a></h3>
+<p>Convert <strong>all</strong> underlying LP tokens owned by the caller into RewardVault
+shares and immediately wrap those shares into wrapper tokens (LP → share → wrapper)</p>
+<p><em>Use this when you DO NOT own RewardVault shares yet, only the raw LP tokens.
+If you already have wrapped tokens, any pending main and extra rewards will be
+automatically claimed before the new deposit to prevent reward loss.</em></p>
+<p><strong>Note:</strong>
+reverts: ZeroAmount If the caller's LP balance is zero</p>
+<pre><code class="language-solidity">function depositAssets() external;
+</code></pre>
+<h3 id="depositassets-1"><a class="header" href="#depositassets-1">depositAssets</a></h3>
+<p>Convert <code>amount</code> underlying LP tokens into RewardVault shares and
+immediately wrap those shares into wrapper tokens (LP → share → wrapper)</p>
+<p><em>Use this when you DO NOT own RewardVault shares yet, only the raw LP tokens,
+and wish to wrap a specific portion of them.
+If you already have wrapped tokens, any pending main and extra rewards will be
+automatically claimed before the new deposit to prevent reward loss.</em></p>
+<p><strong>Note:</strong>
+reverts: ZeroAmount If <code>amount</code> is zero</p>
+<pre><code class="language-solidity">function depositAssets(uint256 amount) public nonReentrant onlyInitialized;
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>amount</code></td><td><code>uint256</code></td><td>Amount of underlying LP tokens provided by the caller</td></tr>
+</tbody></table>
+</div>
+<h3 id="_deposit"><a class="header" href="#_deposit">_deposit</a></h3>
+<pre><code class="language-solidity">function _deposit(address account, uint256 amount) internal;
+</code></pre>
+<h3 id="withdraw"><a class="header" href="#withdraw">withdraw</a></h3>
+<p>Withdraws all the assets and claims pending rewards for the caller</p>
+<pre><code class="language-solidity">function withdraw() external;
+</code></pre>
+<h3 id="withdraw-1"><a class="header" href="#withdraw-1">withdraw</a></h3>
+<p>Withdraws the given amount of assets and claims main/extra pending rewards</p>
+<p><strong>Note:</strong>
+reverts: ZeroAmount if the given amount is zero</p>
+<pre><code class="language-solidity">function withdraw(uint256 amount) public nonReentrant;
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>amount</code></td><td><code>uint256</code></td><td>Amount of wrapped tokens to burn</td></tr>
+</tbody></table>
+</div>
+<h3 id="claim"><a class="header" href="#claim">claim</a></h3>
+<p>Claims the caller's main reward token for himself</p>
+<pre><code class="language-solidity">function claim() external nonReentrant returns (uint256 amount);
+</code></pre>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>amount</code></td><td><code>uint256</code></td><td>Amount of main reward tokens claimed</td></tr>
+</tbody></table>
+</div>
+<h3 id="_claim"><a class="header" href="#_claim">_claim</a></h3>
+<pre><code class="language-solidity">function _claim(address account) internal returns (uint256 amount);
+</code></pre>
+<h3 id="claimextrarewards"><a class="header" href="#claimextrarewards">claimExtraRewards</a></h3>
+<p>Claims all the caller's extra reward tokens for himself</p>
+<pre><code class="language-solidity">function claimExtraRewards() external nonReentrant returns (uint256[] memory amounts);
+</code></pre>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>amounts</code></td><td><code>uint256[]</code></td><td>Array of claimed amounts</td></tr>
+</tbody></table>
+</div>
+<h3 id="claimextrarewards-1"><a class="header" href="#claimextrarewards-1">claimExtraRewards</a></h3>
+<p>Claims the rewards for the given extra reward tokens for the caller</p>
+<pre><code class="language-solidity">function claimExtraRewards(address[] calldata tokens) external nonReentrant returns (uint256[] memory amounts);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>tokens</code></td><td><code>address[]</code></td><td>Array of extra reward tokens to claim</td></tr>
+</tbody></table>
+</div>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>amounts</code></td><td><code>uint256[]</code></td><td>Array of claimed amounts</td></tr>
+</tbody></table>
+</div>
+<h3 id="_claimextrarewards"><a class="header" href="#_claimextrarewards">_claimExtraRewards</a></h3>
+<pre><code class="language-solidity">function _claimExtraRewards(address[] memory tokens, address account) internal returns (uint256[] memory amounts);
+</code></pre>
+<h3 id="_claimallrewards"><a class="header" href="#_claimallrewards">_claimAllRewards</a></h3>
+<p>Claims pending main + extra rewards for the account</p>
+<pre><code class="language-solidity">function _claimAllRewards(address account) internal;
+</code></pre>
+<h3 id="_updateusercheckpoint"><a class="header" href="#_updateusercheckpoint">_updateUserCheckpoint</a></h3>
+<p>Updates the user checkpoint with the new deposit amount</p>
+<pre><code class="language-solidity">function _updateUserCheckpoint(address account, uint256 amount) internal;
+</code></pre>
+<h3 id="_calculatependingrewards"><a class="header" href="#_calculatependingrewards">_calculatePendingRewards</a></h3>
+<p>Calculates the pending amount of main reward token for a user</p>
+<pre><code class="language-solidity">function _calculatePendingRewards(UserCheckpoint storage checkpoint) internal view returns (uint256);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>checkpoint</code></td><td><code>UserCheckpoint</code></td><td>The user checkpoint</td></tr>
+</tbody></table>
+</div>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>&lt;none&gt;</code></td><td><code>uint256</code></td><td>The amount of pending main reward token</td></tr>
+</tbody></table>
+</div>
+<h3 id="_calculatependingextrarewards"><a class="header" href="#_calculatependingextrarewards">_calculatePendingExtraRewards</a></h3>
+<p>Calculates the pending amount of a specific extra reward token for a user</p>
+<pre><code class="language-solidity">function _calculatePendingExtraRewards(UserCheckpoint storage checkpoint, address token)
+    internal
+    view
+    returns (uint256);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>checkpoint</code></td><td><code>UserCheckpoint</code></td><td>The user checkpoint</td></tr>
+<tr><td><code>token</code></td><td><code>address</code></td><td>The address of the extra reward token</td></tr>
+</tbody></table>
+</div>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>&lt;none&gt;</code></td><td><code>uint256</code></td><td>The amount of pending extra reward token</td></tr>
+</tbody></table>
+</div>
+<h3 id="_updateextrarewardstate"><a class="header" href="#_updateextrarewardstate">_updateExtraRewardState</a></h3>
+<p>Updates the reward state for all the extra reward tokens</p>
+<p><em>Sweeping hypothetical sleeping rewards would require supply to be non-zero due to the safe early return</em></p>
+<pre><code class="language-solidity">function _updateExtraRewardState(address[] memory tokens) internal;
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>tokens</code></td><td><code>address[]</code></td><td>Array of extra reward tokens to update</td></tr>
+</tbody></table>
+</div>
+<h3 id="_getglobalintegral"><a class="header" href="#_getglobalintegral">_getGlobalIntegral</a></h3>
+<p>Get the global integral from the Accountant</p>
+<pre><code class="language-solidity">function _getGlobalIntegral() internal view returns (uint256 integral);
+</code></pre>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>integral</code></td><td><code>uint256</code></td><td>The global integral for the RewardVault as stored in the Accountant</td></tr>
+</tbody></table>
+</div>
+<h3 id="transfer"><a class="header" href="#transfer">transfer</a></h3>
+<p><em>Only the lending protocol can transfer in/out the wrapped tokens</em></p>
+<pre><code class="language-solidity">function transfer(address to, uint256 value) public virtual override(IERC20, ERC20) returns (bool);
+</code></pre>
+<h3 id="transferfrom"><a class="header" href="#transferfrom">transferFrom</a></h3>
+<p><em>Only the lending protocol can transfer in/out the wrapped tokens</em></p>
+<pre><code class="language-solidity">function transferFrom(address from, address to, uint256 value) public virtual override(IERC20, ERC20) returns (bool);
+</code></pre>
+<h3 id="claimliquidation"><a class="header" href="#claimliquidation">claimLiquidation</a></h3>
+<p>Claims liquidation rights after receiving tokens from a liquidation event on the lending protocol</p>
+<p>*This function MUST be called by liquidators after receiving wrapped tokens from a liquidation to receive
+the liquidated amount of underlying RewardVault shares.
+Without calling this function, liquidators will:</p>
+<ul>
+<li>Be unable to withdraw tokens (will revert due to insufficient internal balance)</li>
+<li>Leave the victim earning rewards on tokens they no longer own
+Example:</li>
+</ul>
+<ol>
+<li>Alice has 1000 wrapped tokens used as collateral in Morpho</li>
+<li>Bob liquidates Alice's position, receiving 300 tokens from Morpho</li>
+<li>Bob's state: ERC20 balance = 300, internal balance = 0 (off-track!)</li>
+<li>Bob calls: claimLiquidation(bob, alice, 300)</li>
+<li>Result: Bob received 300 underlying RewardVault shares, Alice stops earning on liquidated amount*</li>
+</ol>
+<p>*This function must also be called if you withdraw your collateral on the lending protocol to a
+different receiver. We advise against this scenario and recommend withdrawing your collateral to the
+same receiver who deposited it. However, if you choose to proceed, you must call this function to
+re-synchronize the internal accountability. In this case, the liquidator will be the receiver of
+the collateral, while the victim will be the one who deposited it. From the perspective of this
+contract, withdrawing to a different receiver is equivalent to liquidation.
+Example:</p>
+<ol>
+<li>Alice has 1000 wrapped tokens used as collateral in Morpho</li>
+<li>Alice withdraws her collateral to Bob, receiving 1000 tokens from Morpho</li>
+<li>Bob's state: ERC20 balance = 1000, internal balance = 0 (off-track!)</li>
+<li>Bob calls: claimLiquidation(bob, alice, 1000)</li>
+<li>Result: Bob received 1000 underlying RewardVault shares, Alice stops earning on liquidated amount*</li>
+</ol>
+<pre><code class="language-solidity">function claimLiquidation(address liquidator, address victim, uint256 liquidatedAmount) external nonReentrant;
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>liquidator</code></td><td><code>address</code></td><td>The address that received the liquidated tokens from Morpho</td></tr>
+<tr><td><code>victim</code></td><td><code>address</code></td><td>The address whose position was liquidated</td></tr>
+<tr><td><code>liquidatedAmount</code></td><td><code>uint256</code></td><td>The exact amount of tokens that were seized during liquidation</td></tr>
+</tbody></table>
+</div>
+<h3 id="getpendingrewards"><a class="header" href="#getpendingrewards">getPendingRewards</a></h3>
+<p>Calculate the pending amount of main reward token for a user</p>
+<pre><code class="language-solidity">function getPendingRewards(address user) external view returns (uint256 rewards);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>user</code></td><td><code>address</code></td><td>The address of the user</td></tr>
+</tbody></table>
+</div>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>rewards</code></td><td><code>uint256</code></td><td>The amount of pending main reward token</td></tr>
+</tbody></table>
+</div>
+<h3 id="getpendingextrarewards"><a class="header" href="#getpendingextrarewards">getPendingExtraRewards</a></h3>
+<p>Calculate the pending amount of all the extra reward tokens for a user.</p>
+<pre><code class="language-solidity">function getPendingExtraRewards(address user) external view returns (uint256[] memory rewards);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>user</code></td><td><code>address</code></td><td>The address of the user</td></tr>
+</tbody></table>
+</div>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>rewards</code></td><td><code>uint256[]</code></td><td>The amount of pending rewards</td></tr>
+</tbody></table>
+</div>
+<h3 id="getpendingextrarewards-1"><a class="header" href="#getpendingextrarewards-1">getPendingExtraRewards</a></h3>
+<p>Calculate the pending amount of a specific extra reward token for a user.
+If you're looking for the pending amount of the main reward token, call <code>getPendingRewards</code> instead.</p>
+<p><em>The only reason to pass the address of the main reward token to this function is if
+the main reward token is also listed as an extra reward token. It can happen in some cases.</em></p>
+<p><strong>Note:</strong>
+reverts: ZeroAddress if the token address is the main reward token address (address(0))</p>
+<pre><code class="language-solidity">function getPendingExtraRewards(address user, address token) external view returns (uint256 rewards);
+</code></pre>
+<p><strong>Parameters</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>user</code></td><td><code>address</code></td><td>The address of the user</td></tr>
+<tr><td><code>token</code></td><td><code>address</code></td><td>The address of the extra reward token</td></tr>
+</tbody></table>
+</div>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>rewards</code></td><td><code>uint256</code></td><td>The amount of pending rewards</td></tr>
+</tbody></table>
+</div>
+<h3 id="decimals"><a class="header" href="#decimals">decimals</a></h3>
+<p>Get the decimals of the wrapped token</p>
+<pre><code class="language-solidity">function decimals() public view override(IERC20Metadata, ERC20) returns (uint8);
+</code></pre>
+<p><strong>Returns</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>&lt;none&gt;</code></td><td><code>uint8</code></td><td>The decimals of the wrapped token</td></tr>
+</tbody></table>
+</div>
+<h3 id="name"><a class="header" href="#name">name</a></h3>
+<p><em>Get the name of the token</em></p>
+<pre><code class="language-solidity">function name() public view override(IERC20Metadata, ERC20) onlyInitialized returns (string memory);
+</code></pre>
+<h3 id="symbol"><a class="header" href="#symbol">symbol</a></h3>
+<p><em>Get the symbol of the token</em></p>
+<pre><code class="language-solidity">function symbol() public view override(IERC20Metadata, ERC20) onlyInitialized returns (string memory);
+</code></pre>
+<h2 id="events"><a class="header" href="#events">Events</a></h2>
+<h3 id="claimed"><a class="header" href="#claimed">Claimed</a></h3>
+<pre><code class="language-solidity">event Claimed(address indexed token, address indexed account, uint256 amount);
+</code></pre>
+<h3 id="deposited"><a class="header" href="#deposited">Deposited</a></h3>
+<pre><code class="language-solidity">event Deposited(address indexed user, uint256 amount, bytes32 marketId);
+</code></pre>
+<h3 id="withdrawn"><a class="header" href="#withdrawn">Withdrawn</a></h3>
+<pre><code class="language-solidity">event Withdrawn(address indexed user, uint256 amount);
+</code></pre>
+<h3 id="liquidated"><a class="header" href="#liquidated">Liquidated</a></h3>
+<pre><code class="language-solidity">event Liquidated(address indexed liquidator, address indexed victim, uint256 amount);
+</code></pre>
+<h3 id="marketadded"><a class="header" href="#marketadded">MarketAdded</a></h3>
+<pre><code class="language-solidity">event MarketAdded(bytes32 marketId);
+</code></pre>
+<h2 id="errors"><a class="header" href="#errors">Errors</a></h2>
+<h3 id="zeroamount"><a class="header" href="#zeroamount">ZeroAmount</a></h3>
+<pre><code class="language-solidity">error ZeroAmount();
+</code></pre>
+<h3 id="zeroaddress"><a class="header" href="#zeroaddress">ZeroAddress</a></h3>
+<pre><code class="language-solidity">error ZeroAddress();
+</code></pre>
+<h3 id="invalidtokens"><a class="header" href="#invalidtokens">InvalidTokens</a></h3>
+<pre><code class="language-solidity">error InvalidTokens();
+</code></pre>
+<h3 id="invalidmarket"><a class="header" href="#invalidmarket">InvalidMarket</a></h3>
+<pre><code class="language-solidity">error InvalidMarket();
+</code></pre>
+<h3 id="marketalreadyset"><a class="header" href="#marketalreadyset">MarketAlreadySet</a></h3>
+<pre><code class="language-solidity">error MarketAlreadySet();
+</code></pre>
+<h3 id="wrappernotinitialized"><a class="header" href="#wrappernotinitialized">WrapperNotInitialized</a></h3>
+<pre><code class="language-solidity">error WrapperNotInitialized();
+</code></pre>
+<h3 id="invalidliquidation"><a class="header" href="#invalidliquidation">InvalidLiquidation</a></h3>
+<pre><code class="language-solidity">error InvalidLiquidation();
+</code></pre>
+<h3 id="transferunauthorized"><a class="header" href="#transferunauthorized">TransferUnauthorized</a></h3>
+<p><em>Only the lending protocol can transfer in/out the wrapped tokens</em></p>
+<pre><code class="language-solidity">error TransferUnauthorized();
+</code></pre>
+<h3 id="invaliddepositflow"><a class="header" href="#invaliddepositflow">InvalidDepositFlow</a></h3>
+<p><em>Deposit collateral to the lending protocol is only allowed through the StrategyWrapperContract
+Do not interact directly with the lending protocol to deposit collateral. Instead, call one of the <code>deposit</code>
+functions defined in the StrategyWrapperContract instead.</em></p>
+<pre><code class="language-solidity">error InvalidDepositFlow();
+</code></pre>
+<h2 id="structs"><a class="header" href="#structs">Structs</a></h2>
+<h3 id="usercheckpoint"><a class="header" href="#usercheckpoint">UserCheckpoint</a></h3>
+<p>Tracks user deposit data and reward checkpoints</p>
+<pre><code class="language-solidity">struct UserCheckpoint {
+    uint256 balance;
+    mapping(address token =&gt; uint256 amount) rewardPerTokenPaid;
+}
+</code></pre>
+<p><strong>Properties</strong></p>
+<div class="table-wrapper"><table><thead><tr><th>Name</th><th>Type</th><th>Description</th></tr></thead><tbody>
+<tr><td><code>balance</code></td><td><code>uint256</code></td><td>User's wrapped-share balance</td></tr>
+<tr><td><code>rewardPerTokenPaid</code></td><td><code>mapping(address token =&gt; uint256 amount)</code></td><td>Last per-token accumulator seen</td></tr>
+</tbody></table>
+</div>
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../../src/wrappers/StrategyWrapper.sol/interface.IAccountant.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../../../src/Accountant.sol/contract.Accountant.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../../src/wrappers/StrategyWrapper.sol/interface.IAccountant.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../../../src/Accountant.sol/contract.Accountant.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../../../elasticlunr.min.js"></script>
+        <script src="../../../mark.min.js"></script>
+        <script src="../../../searcher.js"></script>
+
+        <script src="../../../clipboard.min.js"></script>
+        <script src="../../../highlight.js"></script>
+        <script src="../../../book.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../../../solidity.min.js"></script>
+
+
+    </div>
+    </body>
+</html>
