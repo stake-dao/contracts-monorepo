@@ -8,10 +8,39 @@ import {IERC20Metadata} from "@openzeppelin/contracts/interfaces/IERC20Metadata.
 import {SafeERC20} from "@openzeppelin/contracts/token/ERC20/utils/SafeERC20.sol";
 import {Math} from "@openzeppelin/contracts/utils/math/Math.sol";
 import {IRewardVault} from "src/interfaces/IRewardVault.sol";
-import {IAccountant} from "src/interfaces/IAccountant.sol";
 import {ReentrancyGuardTransient} from "@openzeppelin/contracts/utils/ReentrancyGuardTransient.sol";
 import {IStrategyWrapper} from "src/interfaces/IStrategyWrapper.sol";
 import {IMorpho, Id} from "shared/src/morpho/IMorpho.sol";
+
+interface IAccountant {
+    /// @notice Tracks reward and supply data for each vault.
+    /// @dev    Packed struct to minimize storage costs (3 storage slots).
+    ///         This structure maintains the core accounting state for reward distribution.
+    struct VaultData {
+        uint256 integral; // Cumulative reward per token (scaled by SCALING_FACTOR)
+        uint128 supply; // Total supply of vault tokens
+        uint128 feeSubjectAmount; // Amount of rewards subject to fees
+        uint128 totalAmount; // Total reward amount including fee-exempt rewards
+        uint128 netCredited; // Net rewards already credited to users (after fees)
+        uint128 reservedHarvestFee; // Harvest fees reserved but not yet paid out
+        uint128 reservedProtocolFee; // Protocol fees reserved but not yet accrued
+    }
+
+    /// @notice Tracks individual user positions within a vault.
+    /// @dev    Integral tracking enables O(1) reward calculations by storing the last known integral
+    ///         value for each user, allowing efficient computation of rewards earned since last update.
+    struct AccountData {
+        uint128 balance; // User's token balance in the vault
+        uint256 integral; // Last integral value when user's rewards were updated
+        uint256 pendingRewards; // Rewards earned but not yet claimed
+    }
+
+    function claim(address[] calldata _gauges, bytes[] calldata harvestData) external;
+    function vaults(address vault) external view returns (VaultData memory);
+    function accounts(address vault, address account) external view returns (AccountData memory);
+    function REWARD_TOKEN() external view returns (address);
+    function SCALING_FACTOR() external view returns (uint128);
+}
 
 /// @title Stake DAO Strategy Wrapper
 /// @notice Non-transferable ERC20 wrapper for Stake DAO RewardVault shares. It is designed for use as collateral in lending markets.
@@ -113,7 +142,7 @@ contract StrategyWrapper is ERC20, IStrategyWrapper, Ownable2Step, ReentrancyGua
             address(rewardVault) != address(0) && lendingProtocol != address(0) && _owner != address(0), ZeroAddress()
         );
 
-        IAccountant accountant = rewardVault.ACCOUNTANT();
+        IAccountant accountant = IAccountant(address(rewardVault.ACCOUNTANT()));
 
         // Store the immutable variables
         GAUGE = rewardVault.gauge();

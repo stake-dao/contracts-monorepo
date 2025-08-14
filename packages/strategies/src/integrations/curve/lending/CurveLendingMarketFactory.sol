@@ -99,7 +99,7 @@ contract CurveLendingMarketFactory is Ownable2Step {
         // 1. Check if the deployment is valid
         IRewardVault rewardVault = collateral.REWARD_VAULT();
         require(collateral.LENDING_PROTOCOL() == lendingFactory.protocol(), InvalidLendingProtocol());
-        require(PROTOCOL_CONTROLLER.vaults(rewardVault.gauge()) == address(rewardVault), InvalidRewardVault());
+        require(PROTOCOL_CONTROLLER.vault(rewardVault.gauge()) == address(rewardVault), InvalidRewardVault());
         require(rewardVault.PROTOCOL_ID() == bytes4(keccak256("CURVE")), InvalidProtocolId());
         require(oracleType != OracleType.UNKNOWN, InvalidOracleType());
 
