@@ -1,0 +1,296 @@
+<!DOCTYPE HTML>
+<html lang="en" class="light" dir="ltr">
+    <head>
+        <!-- Book generated using mdBook -->
+        <meta charset="UTF-8">
+        <title>PendleFactory - Stake DAO Staking v2</title>
+
+
+        <!-- Custom HTML head -->
+        
+        <meta name="description" content="">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <meta name="theme-color" content="#ffffff">
+
+        <link rel="icon" href="../../../../favicon.svg">
+        <link rel="shortcut icon" href="../../../../favicon.png">
+        <link rel="stylesheet" href="../../../../css/variables.css">
+        <link rel="stylesheet" href="../../../../css/general.css">
+        <link rel="stylesheet" href="../../../../css/chrome.css">
+        <link rel="stylesheet" href="../../../../css/print.css" media="print">
+
+        <!-- Fonts -->
+        <link rel="stylesheet" href="../../../../FontAwesome/css/font-awesome.css">
+        <link rel="stylesheet" href="../../../../fonts/fonts.css">
+
+        <!-- Highlight.js Stylesheets -->
+        <link rel="stylesheet" href="../../../../highlight.css">
+        <link rel="stylesheet" href="../../../../tomorrow-night.css">
+        <link rel="stylesheet" href="../../../../ayu-highlight.css">
+
+        <!-- Custom theme stylesheets -->
+        <link rel="stylesheet" href="../../../../book.css">
+
+        <!-- MathJax -->
+        <script async src="https://cdnjs.cloudflare.com/ajax/libs/mathjax/2.7.1/MathJax.js?config=TeX-AMS-MML_HTMLorMML"></script>
+    </head>
+    <body class="sidebar-visible no-js">
+    <div id="body-container">
+        <!-- Provide site root to javascript -->
+        <script>
+            var path_to_root = "../../../../";
+            var default_theme = window.matchMedia("(prefers-color-scheme: dark)").matches ? "navy" : "light";
+        </script>
+
+        <!-- Work around some values being stored in localStorage wrapped in quotes -->
+        <script>
+            try {
+                var theme = localStorage.getItem('mdbook-theme');
+                var sidebar = localStorage.getItem('mdbook-sidebar');
+
+                if (theme.startsWith('"') && theme.endsWith('"')) {
+                    localStorage.setItem('mdbook-theme', theme.slice(1, theme.length - 1));
+                }
+
+                if (sidebar.startsWith('"') && sidebar.endsWith('"')) {
+                    localStorage.setItem('mdbook-sidebar', sidebar.slice(1, sidebar.length - 1));
+                }
+            } catch (e) { }
+        </script>
+
+        <!-- Set the theme before any content is loaded, prevents flash -->
+        <script>
+            var theme;
+            try { theme = localStorage.getItem('mdbook-theme'); } catch(e) { }
+            if (theme === null || theme === undefined) { theme = default_theme; }
+            var html = document.querySelector('html');
+            html.classList.remove('light')
+            html.classList.add(theme);
+            var body = document.querySelector('body');
+            body.classList.remove('no-js')
+            body.classList.add('js');
+        </script>
+
+        <input type="checkbox" id="sidebar-toggle-anchor" class="hidden">
+
+        <!-- Hide / unhide sidebar before it is displayed -->
+        <script>
+            var body = document.querySelector('body');
+            var sidebar = null;
+            var sidebar_toggle = document.getElementById("sidebar-toggle-anchor");
+            if (document.body.clientWidth >= 1080) {
+                try { sidebar = localStorage.getItem('mdbook-sidebar'); } catch(e) { }
+                sidebar = sidebar || 'visible';
+            } else {
+                sidebar = 'hidden';
+            }
+            sidebar_toggle.checked = sidebar === 'visible';
+            body.classList.remove('sidebar-visible');
+            body.classList.add("sidebar-" + sidebar);
+        </script>
+
+        <nav id="sidebar" class="sidebar" aria-label="Table of contents">
+            <div class="sidebar-scrollbox">
+                <ol class="chapter"><li class="chapter-item expanded affix "><a href="../../../../index.html">README</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/index.html"><strong aria-hidden="true">1.</strong> integrations</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../../src/integrations/curve/index.html"><strong aria-hidden="true">1.1.</strong> curve</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../../src/integrations/curve/L2/index.html"><strong aria-hidden="true">1.1.1.</strong> L2</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../../src/integrations/curve/L2/ConvexSidecarFactoryL2.sol/contract.ConvexSidecarFactoryL2.html"><strong aria-hidden="true">1.1.1.1.</strong> ConvexSidecarFactoryL2</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/curve/L2/ConvexSidecarL2.sol/contract.ConvexSidecarL2.html"><strong aria-hidden="true">1.1.1.2.</strong> ConvexSidecarL2</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/curve/L2/CurveFactoryL2.sol/contract.CurveFactoryL2.html"><strong aria-hidden="true">1.1.1.3.</strong> CurveFactoryL2</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/curve/L2/CurveStrategyL2.sol/contract.CurveStrategyL2.html"><strong aria-hidden="true">1.1.1.4.</strong> CurveStrategyL2</a></li></ol></li><li class="chapter-item expanded "><a href="../../../../src/integrations/curve/ConvexSidecar.sol/contract.ConvexSidecar.html"><strong aria-hidden="true">1.1.2.</strong> ConvexSidecar</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/curve/ConvexSidecarFactory.sol/contract.ConvexSidecarFactory.html"><strong aria-hidden="true">1.1.3.</strong> ConvexSidecarFactory</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/curve/CurveFactory.sol/contract.CurveFactory.html"><strong aria-hidden="true">1.1.4.</strong> CurveFactory</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/curve/CurveStrategy.sol/contract.CurveStrategy.html"><strong aria-hidden="true">1.1.5.</strong> CurveStrategy</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/curve/OnlyBoostAllocator.sol/contract.OnlyBoostAllocator.html"><strong aria-hidden="true">1.1.6.</strong> OnlyBoostAllocator</a></li></ol></li><li class="chapter-item expanded "><a href="../../../../src/integrations/pendle/index.html"><strong aria-hidden="true">1.2.</strong> pendle</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../../src/integrations/pendle/PendleAllocator.sol/contract.PendleAllocator.html"><strong aria-hidden="true">1.2.1.</strong> PendleAllocator</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/pendle/PendleFactory.sol/contract.PendleFactory.html" class="active"><strong aria-hidden="true">1.2.2.</strong> PendleFactory</a></li><li class="chapter-item expanded "><a href="../../../../src/integrations/pendle/PendleStrategy.sol/contract.PendleStrategy.html"><strong aria-hidden="true">1.2.3.</strong> PendleStrategy</a></li></ol></li></ol></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/index.html"><strong aria-hidden="true">2.</strong> interfaces</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../../src/interfaces/IAccountant.sol/interface.IAccountant.html"><strong aria-hidden="true">2.1.</strong> IAccountant</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IAllocator.sol/interface.IAllocator.html"><strong aria-hidden="true">2.2.</strong> IAllocator</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IBalanceProvider.sol/interface.IBalanceProvider.html"><strong aria-hidden="true">2.3.</strong> IBalanceProvider</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IFactory.sol/interface.IFactory.html"><strong aria-hidden="true">2.4.</strong> IFactory</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IPendleGauge.sol/interface.IPendleGauge.html"><strong aria-hidden="true">2.5.</strong> IPendleGauge</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IPendleGaugeController.sol/interface.IPendleGaugeController.html"><strong aria-hidden="true">2.6.</strong> IPendleGaugeController</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IPendleMarket.sol/interface.IPendleMarket.html"><strong aria-hidden="true">2.7.</strong> IPendleMarket</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IProtocolController.sol/interface.IProtocolController.html"><strong aria-hidden="true">2.8.</strong> IProtocolController</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IRewardReceiver.sol/interface.IRewardReceiver.html"><strong aria-hidden="true">2.9.</strong> IRewardReceiver</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IRewardVault.sol/interface.IRewardVault.html"><strong aria-hidden="true">2.10.</strong> IRewardVault</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IRouter.sol/interface.IRouter.html"><strong aria-hidden="true">2.11.</strong> IRouter</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IRouterModule.sol/interface.IRouterModule.html"><strong aria-hidden="true">2.12.</strong> IRouterModule</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ISidecar.sol/interface.ISidecar.html"><strong aria-hidden="true">2.13.</strong> ISidecar</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/ISidecarFactory.sol/interface.ISidecarFactory.html"><strong aria-hidden="true">2.14.</strong> ISidecarFactory</a></li><li class="chapter-item expanded "><a href="../../../../src/interfaces/IStrategy.sol/interface.IStrategy.html"><strong aria-hidden="true">2.15.</strong> IStrategy</a></li></ol></li><li class="chapter-item expanded "><a href="../../../../src/libraries/index.html"><strong aria-hidden="true">3.</strong> libraries</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../../src/libraries/ImmutableArgsParser.sol/library.ImmutableArgsParser.html"><strong aria-hidden="true">3.1.</strong> ImmutableArgsParser</a></li></ol></li><li class="chapter-item expanded "><a href="../../../../src/merkl/index.html"><strong aria-hidden="true">4.</strong> merkl</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../../src/merkl/UniversalBoostRegistry.sol/contract.UniversalBoostRegistry.html"><strong aria-hidden="true">4.1.</strong> UniversalBoostRegistry</a></li></ol></li><li class="chapter-item expanded "><a href="../../../../src/router/index.html"><strong aria-hidden="true">5.</strong> router</a></li><li><ol class="section"><li class="chapter-item expanded "><a href="../../../../src/router/RouterIdentifierMapping.sol/library.RouterIdentifierMapping.html"><strong aria-hidden="true">5.1.</strong> RouterIdentifierMapping</a></li><li class="chapter-item expanded "><a href="../../../../src/router/RouterModuleClaim.sol/contract.RouterModuleClaim.html"><strong aria-hidden="true">5.2.</strong> RouterModuleClaim</a></li><li class="chapter-item expanded "><a href="../../../../src/router/RouterModuleDeposit.sol/contract.RouterModuleDeposit.html"><strong aria-hidden="true">5.3.</strong> RouterModuleDeposit</a></li><li class="chapter-item expanded "><a href="../../../../src/router/RouterModuleMigrationCurve.sol/contract.RouterModuleMigrationCurve.html"><strong aria-hidden="true">5.4.</strong> RouterModuleMigrationCurve</a></li><li class="chapter-item expanded "><a href="../../../../src/router/RouterModuleMigrationStakeDAOV1.sol/interface.IVault.html"><strong aria-hidden="true">5.5.</strong> IVault</a></li><li class="chapter-item expanded "><a href="../../../../src/router/RouterModuleMigrationStakeDAOV1.sol/contract.RouterModuleMigrationStakeDAOV1.html"><strong aria-hidden="true">5.6.</strong> RouterModuleMigrationStakeDAOV1</a></li><li class="chapter-item expanded "><a href="../../../../src/router/RouterModuleMigrationYearn.sol/contract.RouterModuleMigrationYearn.html"><strong aria-hidden="true">5.7.</strong> RouterModuleMigrationYearn</a></li><li class="chapter-item expanded "><a href="../../../../src/router/RouterModuleMigrationYearn.sol/interface.IYearnVault.html"><strong aria-hidden="true">5.8.</strong> IYearnVault</a></li><li class="chapter-item expanded "><a href="../../../../src/router/RouterModuleWithdraw.sol/contract.RouterModuleWithdraw.html"><strong aria-hidden="true">5.9.</strong> RouterModuleWithdraw</a></li></ol></li><li class="chapter-item expanded "><a href="../../../../src/Accountant.sol/contract.Accountant.html"><strong aria-hidden="true">6.</strong> Accountant</a></li><li class="chapter-item expanded "><a href="../../../../src/Allocator.sol/contract.Allocator.html"><strong aria-hidden="true">7.</strong> Allocator</a></li><li class="chapter-item expanded "><a href="../../../../src/Factory.sol/abstract.Factory.html"><strong aria-hidden="true">8.</strong> Factory</a></li><li class="chapter-item expanded "><a href="../../../../src/ProtocolContext.sol/contract.ProtocolContext.html"><strong aria-hidden="true">9.</strong> ProtocolContext</a></li><li class="chapter-item expanded "><a href="../../../../src/ProtocolController.sol/contract.ProtocolController.html"><strong aria-hidden="true">10.</strong> ProtocolController</a></li><li class="chapter-item expanded "><a href="../../../../src/RewardReceiver.sol/contract.RewardReceiver.html"><strong aria-hidden="true">11.</strong> RewardReceiver</a></li><li class="chapter-item expanded "><a href="../../../../src/RewardReceiverL2.sol/contract.RewardReceiverL2.html"><strong aria-hidden="true">12.</strong> RewardReceiverL2</a></li><li class="chapter-item expanded "><a href="../../../../src/RewardVault.sol/contract.RewardVault.html"><strong aria-hidden="true">13.</strong> RewardVault</a></li><li class="chapter-item expanded "><a href="../../../../src/Router.sol/contract.Router.html"><strong aria-hidden="true">14.</strong> Router</a></li><li class="chapter-item expanded "><a href="../../../../src/Sidecar.sol/abstract.Sidecar.html"><strong aria-hidden="true">15.</strong> Sidecar</a></li><li class="chapter-item expanded "><a href="../../../../src/SidecarFactory.sol/abstract.SidecarFactory.html"><strong aria-hidden="true">16.</strong> SidecarFactory</a></li><li class="chapter-item expanded "><a href="../../../../src/Strategy.sol/abstract.Strategy.html"><strong aria-hidden="true">17.</strong> Strategy</a></li></ol>
+            </div>
+            <div id="sidebar-resize-handle" class="sidebar-resize-handle">
+                <div class="sidebar-resize-indicator"></div>
+            </div>
+        </nav>
+
+        <!-- Track and set sidebar scroll position -->
+        <script>
+            var sidebarScrollbox = document.querySelector('#sidebar .sidebar-scrollbox');
+            sidebarScrollbox.addEventListener('click', function(e) {
+                if (e.target.tagName === 'A') {
+                    sessionStorage.setItem('sidebar-scroll', sidebarScrollbox.scrollTop);
+                }
+            }, { passive: true });
+            var sidebarScrollTop = sessionStorage.getItem('sidebar-scroll');
+            sessionStorage.removeItem('sidebar-scroll');
+            if (sidebarScrollTop) {
+                // preserve sidebar scroll position when navigating via links within sidebar
+                sidebarScrollbox.scrollTop = sidebarScrollTop;
+            } else {
+                // scroll sidebar to current active section when navigating via "next/previous chapter" buttons
+                var activeSection = document.querySelector('#sidebar .active');
+                if (activeSection) {
+                    activeSection.scrollIntoView({ block: 'center' });
+                }
+            }
+        </script>
+
+        <div id="page-wrapper" class="page-wrapper">
+
+            <div class="page">
+                                <div id="menu-bar-hover-placeholder"></div>
+                <div id="menu-bar" class="menu-bar sticky">
+                    <div class="left-buttons">
+                        <label id="sidebar-toggle" class="icon-button" for="sidebar-toggle-anchor" title="Toggle Table of Contents" aria-label="Toggle Table of Contents" aria-controls="sidebar">
+                            <i class="fa fa-bars"></i>
+                        </label>
+                        <button id="theme-toggle" class="icon-button" type="button" title="Change theme" aria-label="Change theme" aria-haspopup="true" aria-expanded="false" aria-controls="theme-list">
+                            <i class="fa fa-paint-brush"></i>
+                        </button>
+                        <ul id="theme-list" class="theme-popup" aria-label="Themes" role="menu">
+                            <li role="none"><button role="menuitem" class="theme" id="light">Light</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="rust">Rust</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="coal">Coal</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="navy">Navy</button></li>
+                            <li role="none"><button role="menuitem" class="theme" id="ayu">Ayu</button></li>
+                        </ul>
+                        <button id="search-toggle" class="icon-button" type="button" title="Search. (Shortkey: s)" aria-label="Toggle Searchbar" aria-expanded="false" aria-keyshortcuts="S" aria-controls="searchbar">
+                            <i class="fa fa-search"></i>
+                        </button>
+                    </div>
+
+                    <h1 class="menu-title">Stake DAO Staking v2</h1>
+
+                    <div class="right-buttons">
+                        <a href="../../../../print.html" title="Print this book" aria-label="Print this book">
+                            <i id="print-button" class="fa fa-print"></i>
+                        </a>
+                        <a href="https://github.com/stake-dao/contracts-monorepo" title="Git repository" aria-label="Git repository">
+                            <i id="git-repository-button" class="fa fa-github"></i>
+                        </a>
+
+                    </div>
+                </div>
+
+                <div id="search-wrapper" class="hidden">
+                    <form id="searchbar-outer" class="searchbar-outer">
+                        <input type="search" id="searchbar" name="searchbar" placeholder="Search this book ..." aria-controls="searchresults-outer" aria-describedby="searchresults-header">
+                    </form>
+                    <div id="searchresults-outer" class="searchresults-outer hidden">
+                        <div id="searchresults-header" class="searchresults-header"></div>
+                        <ul id="searchresults">
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Apply ARIA attributes after the sidebar and the sidebar toggle button are added to the DOM -->
+                <script>
+                    document.getElementById('sidebar-toggle').setAttribute('aria-expanded', sidebar === 'visible');
+                    document.getElementById('sidebar').setAttribute('aria-hidden', sidebar !== 'visible');
+                    Array.from(document.querySelectorAll('#sidebar a')).forEach(function(link) {
+                        link.setAttribute('tabIndex', sidebar === 'visible' ? 0 : -1);
+                    });
+                </script>
+
+                <div id="content" class="content">
+                    <main>
+                        <h1 id="pendlefactory"><a class="header" href="#pendlefactory">PendleFactory</a></h1>
+<p><a href="https://github.com/stake-dao/contracts-monorepo/blob/650929efdb1dbd8f261d334e7770df499dba1e2f/src/integrations/pendle/PendleFactory.sol">Git Source</a></p>
+<p><strong>Inherits:</strong>
+<a href="/src/Factory.sol/abstract.Factory.html">Factory</a></p>
+<p><strong>Author:</strong>
+Stake DAO</p>
+<p><strong>Notes:</strong></p>
+<ul>
+<li>
+<p>github: @stake-dao</p>
+</li>
+<li>
+<p>contact: contact@stakedao.org</p>
+</li>
+</ul>
+<h2 id="state-variables"><a class="header" href="#state-variables">State Variables</a></h2>
+<h3 id="pendle_protocol_id"><a class="header" href="#pendle_protocol_id">PENDLE_PROTOCOL_ID</a></h3>
+<p>Bytes-4 protocol identifier for Pendle</p>
+<pre><code class="language-solidity">bytes4 private constant PENDLE_PROTOCOL_ID = bytes4(keccak256(&quot;PENDLE&quot;));
+</code></pre>
+<h3 id="gauge_controller"><a class="header" href="#gauge_controller">GAUGE_CONTROLLER</a></h3>
+<p>Pendle Gauge Controller</p>
+<pre><code class="language-solidity">address public immutable GAUGE_CONTROLLER;
+</code></pre>
+<h3 id="old_strategy"><a class="header" href="#old_strategy">OLD_STRATEGY</a></h3>
+<p>Address of the old strategy.</p>
+<pre><code class="language-solidity">address public immutable OLD_STRATEGY;
+</code></pre>
+<h2 id="functions"><a class="header" href="#functions">Functions</a></h2>
+<h3 id="constructor"><a class="header" href="#constructor">constructor</a></h3>
+<pre><code class="language-solidity">constructor(
+    address gaugeController,
+    address oldStrategy,
+    address protocolController,
+    address vaultImplementation,
+    address rewardReceiverImplementation,
+    address locker,
+    address gateway
+) Factory(protocolController, vaultImplementation, rewardReceiverImplementation, PENDLE_PROTOCOL_ID, locker, gateway);
+</code></pre>
+<h3 id="_isvalidgauge"><a class="header" href="#_isvalidgauge">_isValidGauge</a></h3>
+<p>Check if the gauge is valid</p>
+<pre><code class="language-solidity">function _isValidGauge(address _gauge) internal view virtual override returns (bool);
+</code></pre>
+<h3 id="_isvaliddeployment"><a class="header" href="#_isvaliddeployment">_isValidDeployment</a></h3>
+<p>Check that the gauge is no longer attached to the old strategy</p>
+<pre><code class="language-solidity">function _isValidDeployment(address _gauge) internal view virtual override returns (bool);
+</code></pre>
+<h3 id="_getasset"><a class="header" href="#_getasset">_getAsset</a></h3>
+<p><em>In Pendle the LP token is the gauge share token.</em></p>
+<pre><code class="language-solidity">function _getAsset(address _gauge) internal view virtual override returns (address);
+</code></pre>
+<h3 id="_setuprewardtokens"><a class="header" href="#_setuprewardtokens">_setupRewardTokens</a></h3>
+<pre><code class="language-solidity">function _setupRewardTokens(address _vault, address _gauge, address _rewardReceiver) internal virtual override;
+</code></pre>
+<h3 id="_setrewardreceiver"><a class="header" href="#_setrewardreceiver">_setRewardReceiver</a></h3>
+<pre><code class="language-solidity">function _setRewardReceiver(address _gauge, address _rewardReceiver) internal override;
+</code></pre>
+<h3 id="_initializevault"><a class="header" href="#_initializevault">_initializeVault</a></h3>
+<p><em>No need to approve the assets for the gauge.</em></p>
+<pre><code class="language-solidity">function _initializeVault(address, address, address) internal override;
+</code></pre>
+
+                    </main>
+
+                    <nav class="nav-wrapper" aria-label="Page navigation">
+                        <!-- Mobile navigation buttons -->
+                            <a rel="prev" href="../../../../src/integrations/pendle/PendleAllocator.sol/contract.PendleAllocator.html" class="mobile-nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                                <i class="fa fa-angle-left"></i>
+                            </a>
+
+                            <a rel="next prefetch" href="../../../../src/integrations/pendle/PendleStrategy.sol/contract.PendleStrategy.html" class="mobile-nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                                <i class="fa fa-angle-right"></i>
+                            </a>
+
+                        <div style="clear: both"></div>
+                    </nav>
+                </div>
+            </div>
+
+            <nav class="nav-wide-wrapper" aria-label="Page navigation">
+                    <a rel="prev" href="../../../../src/integrations/pendle/PendleAllocator.sol/contract.PendleAllocator.html" class="nav-chapters previous" title="Previous chapter" aria-label="Previous chapter" aria-keyshortcuts="Left">
+                        <i class="fa fa-angle-left"></i>
+                    </a>
+
+                    <a rel="next prefetch" href="../../../../src/integrations/pendle/PendleStrategy.sol/contract.PendleStrategy.html" class="nav-chapters next" title="Next chapter" aria-label="Next chapter" aria-keyshortcuts="Right">
+                        <i class="fa fa-angle-right"></i>
+                    </a>
+            </nav>
+
+        </div>
+
+
+
+
+        <script>
+            window.playground_copyable = true;
+        </script>
+
+
+        <script src="../../../../elasticlunr.min.js"></script>
+        <script src="../../../../mark.min.js"></script>
+        <script src="../../../../searcher.js"></script>
+
+        <script src="../../../../clipboard.min.js"></script>
+        <script src="../../../../highlight.js"></script>
+        <script src="../../../../book.js"></script>
+
+        <!-- Custom JS scripts -->
+        <script src="../../../../solidity.min.js"></script>
+
+
+    </div>
+    </body>
+</html>
