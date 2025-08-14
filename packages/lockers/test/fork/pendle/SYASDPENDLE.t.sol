@@ -30,15 +30,20 @@ abstract contract SYTestFoundation is BaseTest {
         wallets.push(makeAddr("david"));
         wallets.push(makeAddr("eve"));
 
-        setUpFork();
-        deploySY();
+        _setUpFork();
+        sy = _deploySY();
+
+        vm.label(address(sy), "SYASD");
+        vm.label(asdToken(), "ASDTOKEN");
+        vm.label(sdToken(), "SDTOKEN");
+        startToken = IERC4626(asdToken()).asset();
     }
 
-    function setUpFork() internal virtual {
+    function _setUpFork() internal virtual {
         vm.createSelectFork("mainnet", 22_717_485);
     }
 
-    function deploySY() internal virtual {
+    function _deploySY() internal virtual returns (IStandardizedYield _sy) {
         vm.startPrank(deployer);
 
         address syImplementation = address(new SYASDPENDLE());
@@ -47,24 +52,13 @@ abstract contract SYTestFoundation is BaseTest {
             "", // name - unused
             "" // symbol - unused
         );
-        sy = IStandardizedYield(address(new TransparentUpgradeableProxy(syImplementation, makeAddr("admin"), data)));
+        _sy = IStandardizedYield(address(new TransparentUpgradeableProxy(syImplementation, makeAddr("admin"), data)));
         vm.stopPrank();
-
-        vm.label(address(sy), "SYASDPENDLE");
-        vm.label(PendleLocker.ASDTOKEN, "ASDPENDLE");
-        vm.label(PendleLocker.SDTOKEN, "SDPENDLE");
-        startToken = IERC4626(PendleLocker.ASDTOKEN).asset();
     }
 
     function refAmountFor(address token) internal view virtual returns (uint256) {
         if (token == NATIVE) return 1 ether;
         else return 10 ** IERC20Metadata(token).decimals();
-    }
-
-    function upgradeExistingProxy(address proxy, address newImplementation, bytes memory data) internal virtual {
-        vm.startPrank(0xA28c08f165116587D4F3E708743B4dEe155c5E64);
-        ITransparentUpgradeableProxy(proxy).upgradeToAndCall(newImplementation, data);
-        vm.stopPrank();
     }
 
     function deposit(address wallet, address tokenIn, uint256 amountTokenIn)
@@ -92,6 +86,14 @@ abstract contract SYTestFoundation is BaseTest {
         vm.prank(wallet);
         amountTokenOut = sy.redeem(wallet, amountSharesIn, tokenOut, 0, false);
     }
+
+    function sdToken() public pure virtual returns (address) {
+        return PendleLocker.SDTOKEN;
+    }
+
+    function asdToken() public pure virtual returns (address) {
+        return PendleLocker.ASDTOKEN;
+    }
 }
 
 abstract contract DepositRedeemTest is SYTestFoundation {
@@ -109,7 +111,7 @@ abstract contract DepositRedeemTest is SYTestFoundation {
             uint256 n = wallets.length;
             uint256 refAmount = refAmountFor(tokenIn);
             for (uint256 i = 0; i < n; ++i) {
-                uint256 expectedSyBalance = getExpectedSyOut(tokenIn, refAmount);
+                uint256 expectedSyBalance = _getExpectedSyReceived(tokenIn, refAmount);
 
                 fundToken(wallets[i], tokenIn, refAmount);
                 deposit(wallets[i], tokenIn, refAmount);
@@ -122,7 +124,7 @@ abstract contract DepositRedeemTest is SYTestFoundation {
     // --- VIRTUALS
     //////////////////////////////////////////////////////
     function getTokensInForDepositRedeemTest() internal view virtual returns (address[] memory);
-    function getExpectedSyOut(address tokenIn, uint256 amountIn) internal view virtual returns (uint256);
+    function _getExpectedSyReceived(address tokenIn, uint256 amountIn) internal view virtual returns (uint256);
 }
 
 abstract contract MetadataTest is SYTestFoundation {
@@ -241,25 +243,25 @@ contract SYASDPENDLETest is DepositRedeemTest, MetadataTest, PreviewTest {
     // --- TESTS
     //////////////////////////////////////////////////////
 
-    function test_token_exchangeRate() public view {
+    function test_token_exchangeRate() public view virtual {
         // @dev: initial exchange rate on the block 22717485
         assertEq(sy.exchangeRate(), 1_030_314_074_784_136_540);
     }
 
-    function test_metadata_getTokensIn() public view override {
+    function test_metadata_getTokensIn() public view virtual override {
         address[] memory tokens = sy.getTokensIn();
         assertEq(tokens.length, 2);
         assertNotEq(tokens[0], tokens[1]);
-        assertTrue(tokens[0] == PendleLocker.ASDTOKEN || tokens[0] == PendleLocker.SDTOKEN);
-        assertTrue(tokens[1] == PendleLocker.ASDTOKEN || tokens[1] == PendleLocker.SDTOKEN);
+        assertTrue(tokens[0] == asdToken() || tokens[0] == sdToken());
+        assertTrue(tokens[1] == asdToken() || tokens[1] == sdToken());
     }
 
     function test_metadata_getTokensOut() public view override {
         address[] memory tokens = sy.getTokensOut();
         assertEq(tokens.length, 2);
         assertNotEq(tokens[0], tokens[1]);
-        assertTrue(tokens[0] == PendleLocker.ASDTOKEN || tokens[0] == PendleLocker.SDTOKEN);
-        assertTrue(tokens[1] == PendleLocker.ASDTOKEN || tokens[1] == PendleLocker.SDTOKEN);
+        assertTrue(tokens[0] == asdToken() || tokens[0] == sdToken());
+        assertTrue(tokens[1] == asdToken() || tokens[1] == sdToken());
     }
 
     function test_metadata_getRewardTokens() public view override {
@@ -271,7 +273,7 @@ contract SYASDPENDLETest is DepositRedeemTest, MetadataTest, PreviewTest {
         (IStandardizedYield.AssetType assetType, address assetAddress, uint8 assetDecimals) = sy.assetInfo();
 
         assertEq(uint256(assetType), uint256(IStandardizedYield.AssetType.TOKEN));
-        assertEq(assetAddress, PendleLocker.SDTOKEN);
+        assertEq(assetAddress, sdToken());
         assertEq(assetDecimals, 18);
     }
 
@@ -283,14 +285,15 @@ contract SYASDPENDLETest is DepositRedeemTest, MetadataTest, PreviewTest {
         return sy.getTokensIn();
     }
 
-    function getExpectedSyOut(address tokenIn, uint256 amountIn)
+    function _getExpectedSyReceived(address tokenIn, uint256 amountIn)
         internal
         view
+        virtual
         override
         returns (uint256 expectedSYOut)
     {
-        if (tokenIn == PendleLocker.ASDTOKEN) expectedSYOut = amountIn;
-        else if (tokenIn == PendleLocker.SDTOKEN) expectedSYOut = sy.previewDeposit(tokenIn, amountIn);
+        if (tokenIn == asdToken()) expectedSYOut = amountIn;
+        else if (tokenIn == sdToken()) expectedSYOut = sy.previewDeposit(tokenIn, amountIn);
         else revert("UNEXPECTED_TOKEN_IN");
     }
 }
