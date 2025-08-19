@@ -1,7 +1,8 @@
 // SPDX-License-Identifier: BUSL-1.1
 pragma solidity 0.8.28;
 
-import {PendleERC4626UpgSYV2} from "@pendle/v2-sy/StandardizedYield/implementations/PendleERC4626UpgSYV2.sol";
+import {PendleERC4626WithAdapterSY} from
+    "@pendle/v2-sy/StandardizedYield/implementations/Adapter/extensions/PendleERC4626WithAdapterSY.sol";
 import {PendleLocker} from "@address-book/src/PendleEthereum.sol";
 
 /// @title SY-asdPENDLE – Pendle Standardized Yield Adapter for asdPENDLE
@@ -34,16 +35,17 @@ import {PendleLocker} from "@address-book/src/PendleEthereum.sol";
 ///
 /// @author StakeDAO
 /// @custom:contact contact@stakedao.org
-contract SYASDPENDLE is PendleERC4626UpgSYV2 {
-    constructor() PendleERC4626UpgSYV2(PendleLocker.ASDTOKEN) {}
+contract SYASDPENDLE is PendleERC4626WithAdapterSY {
+    constructor() PendleERC4626WithAdapterSY(PendleLocker.ASDTOKEN) {}
 
     /// @notice Initialize the SY contract
     /// @param [unused] A hardcoded value is used
     /// @param [SY-asdPENDLE] A hardcoded value is used
-    function initialize(string memory, string memory) external override initializer {
+    function initialize(string memory, string memory, address _adapter) external override initializer {
         __SYBaseUpg_init("Standardized Yield asdPENDLE", "SY-asdPENDLE");
 
         // Give infinite approval on the asset (SDPENDLE) to the yield token (ASDPENDLE)
         _safeApproveInf(asset, yieldToken);
+        _setAdapter(_adapter);
     }
 }

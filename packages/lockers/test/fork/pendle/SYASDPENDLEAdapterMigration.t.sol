@@ -8,14 +8,14 @@ import {SYASDPENDLEAdapter} from "src/integrations/pendle/SYASDPENDLEAdapter.sol
 import {SYASDPENDLETest} from "test/fork/pendle/SYASDPENDLE.t.sol";
 import {PendleERC4626WithAdapterSY} from
     "@pendle/v2-sy/StandardizedYield/implementations/Adapter/extensions/PendleERC4626WithAdapterSY.sol";
-import {TransparentUpgradeableProxy} from "@openzeppelin/contracts/proxy/transparent/TransparentUpgradeableProxy.sol";
 
 interface IProxyAdmin {
     function owner() external view returns (address);
     function upgradeAndCall(address proxy, address implementation, bytes memory data) external;
 }
 
-/// @notice This test is used to test the SYASPENDLEAdapter contract
+/// @notice This test is used to test the migration of the SYASPENDLE contract
+///         to the SYASDPENDLEAdapter variant.
 contract SYASDPENDLEAdapterTest is SYASDPENDLETest {
     IProxyAdmin internal constant PROXY_ADMIN = IProxyAdmin(0xA28c08f165116587D4F3E708743B4dEe155c5E64);
 
@@ -30,20 +30,27 @@ contract SYASDPENDLEAdapterTest is SYASDPENDLETest {
     ///////////////////////////////////////////////////////////////
 
     function _setUpFork() internal override {
-        vm.createSelectFork("mainnet", 23_175_750);
+        vm.createSelectFork("mainnet", 23_124_262);
     }
 
     function _deploySY() internal override returns (IStandardizedYield _sy) {
         vm.startPrank(deployer);
+        address adapter = address(new SYASDPENDLEAdapter());
+        address syNewImplementation = address(new PendleERC4626WithAdapterSY(PendleLocker.ASDTOKEN));
+        vm.stopPrank();
 
-        address syImplementation = address(new SYASDPENDLE());
-        bytes memory data = abi.encodeWithSelector(
-            bytes4(keccak256("initialize(string,string,address)")),
-            "", // name - unused
-            "", // symbol - unused
-            PendleLocker.ASDTOKEN_ADAPTER
-        );
-        _sy = IStandardizedYield(address(new TransparentUpgradeableProxy(syImplementation, makeAddr("admin"), data)));
+        _upgradeExistingProxy(PendleLocker.SYASDTOKEN, syNewImplementation);
+
+        vm.startPrank(IProxyAdmin(PendleLocker.SYASDTOKEN).owner());
+        PendleERC4626WithAdapterSY(payable(PendleLocker.SYASDTOKEN)).setAdapter(adapter);
+        vm.stopPrank();
+
+        _sy = IStandardizedYield(PendleLocker.SYASDTOKEN);
+    }
+
+    function _upgradeExistingProxy(address proxy, address newImplementation) internal virtual {
+        vm.startPrank(PROXY_ADMIN.owner());
+        PROXY_ADMIN.upgradeAndCall(proxy, newImplementation, "");
         vm.stopPrank();
     }
 
@@ -62,8 +69,8 @@ contract SYASDPENDLEAdapterTest is SYASDPENDLETest {
     ///////////////////////////////////////////////////////////////
 
     function test_token_exchangeRate() public view override {
-        // @dev: initial exchange rate on the block 23175750
-        assertEq(sy.exchangeRate(), 106_5011_184_054_819_589);
+        // @dev: initial exchange rate on the block 23124262
+        assertEq(sy.exchangeRate(), 1_063_920_148_768_376_544);
     }
 
     function test_metadata_getTokensIn() public view override {

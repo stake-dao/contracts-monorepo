@@ -48,9 +48,10 @@ abstract contract SYTestFoundation is BaseTest {
 
         address syImplementation = address(new SYASDPENDLE());
         bytes memory data = abi.encodeWithSelector(
-            bytes4(keccak256("initialize(string,string)")),
+            bytes4(keccak256("initialize(string,string,address)")),
             "", // name - unused
-            "" // symbol - unused
+            "", // symbol - unused
+            address(0)
         );
         _sy = IStandardizedYield(address(new TransparentUpgradeableProxy(syImplementation, makeAddr("admin"), data)));
         vm.stopPrank();
