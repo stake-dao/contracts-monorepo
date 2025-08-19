@@ -3,7 +3,7 @@ BalancerAccumulator__constructor
 ├── it sets USDC as the reward token
 ├── it sets the given locker
 ├── it sets the given governance
-├── it sets BAL as the token
+├── it sets BAL as the reward token and delegatable token
 ├── it sets veBAL as the veToken
 ├── it sets the correct veBoost contract
 ├── it sets the correct veBoost delegation contract
