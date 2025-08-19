@@ -29,6 +29,7 @@ library CurveLocker {
     address internal constant TOKEN = 0xD533a949740bb3306d119CC777fa900bA034cd52;
     address internal constant SDTOKEN = 0xD1b5651E55D4CeeD36251c61c50C889B36F6abB5;
     address internal constant ASDTOKEN = 0x43E54C2E7b3e294De3A155785F52AB49d87B9922;
+    address internal constant ASDTOKEN_ADAPTER = 0x42a16876C2Db53a04Af2017B6Fb77E70672ff015;
     address internal constant SYASDTOKEN = 0x18C11b1DC74cAB82AD18d5034FDe93FE90a41D99;
     address internal constant LOCKER = 0x52f541764E6e90eeBc5c21Ff570De0e2D63766B6;
     address internal constant DEPOSITOR = 0x88C88Aa6a9cedc2aff9b4cA6820292F39cc64026;
