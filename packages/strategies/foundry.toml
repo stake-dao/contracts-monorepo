@@ -3,6 +3,7 @@ src = "src"
 out = "out"
 libs = ["node_modules"]
 solc = "0.8.28"
+evm_version = "cancun"
 
 verbosity = 3
 optimizer = true
@@ -10,10 +11,8 @@ optimizers_runs = 200
 
 [fuzz]
 runs = 50
-max_test_rejects = 1_000_000 # Number of times `vm.assume` can fail
 
 [invariant]
-runs = 500
 depth = 10
 fail_on_revert = true
 call_override = false

@@ -26,7 +26,7 @@ jobs:
       - name: Enable Corepack & pin versions
         run: |
           corepack enable
-          corepack prepare pnpm@8 --activate
+          corepack prepare pnpm@9.4 --activate
           corepack prepare yarn@3.6.4 --activate
 
       - name: Cache pnpm store

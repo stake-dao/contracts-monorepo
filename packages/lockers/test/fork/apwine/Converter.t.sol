@@ -17,7 +17,7 @@ contract ConverterTest is Test {
     address internal bob = makeAddr("bob");
 
     function setUp() public virtual {
-        vm.createSelectFork(vm.rpcUrl("mainnet"));
+        vm.createSelectFork(vm.rpcUrl("mainnet"), 23_182_908);
 
         sdToken = ERC20(SpectraLocker.SDTOKEN);
         sdTokenGauge = ERC20(SpectraLocker.GAUGE);

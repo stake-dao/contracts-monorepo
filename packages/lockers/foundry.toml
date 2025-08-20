@@ -6,6 +6,7 @@ solc = "0.8.28"
 evm_version = "cancun"
 
 verbosity = 3
+optimizer = true
 optimizers_runs = 200
 
 [etherscan]

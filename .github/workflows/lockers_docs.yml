@@ -29,12 +29,12 @@ jobs:
       - name: Install Node.js
         uses: actions/setup-node@v4
         with:
-          node-version: 21.4
+          node-version: 22.18.0
 
       - name: Enable Corepack & pin versions
         run: |
           corepack enable
-          corepack prepare pnpm@8 --activate
+          corepack prepare pnpm@9.4 --activate
           corepack prepare yarn@3.6.4 --activate
 
       - name: Cache pnpm store

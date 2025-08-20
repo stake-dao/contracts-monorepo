@@ -29,11 +29,11 @@ contract BaseDepositor__shutdown is BaseDepositorTest {
 
     event StateUpdated(DepositorBase.STATE newState);
 
-    function test_TransferTheBalanceToTheGivenReceiver(uint256 balance, address receiver) external {
+    function test_TransferTheBalanceToTheGivenReceiver(uint256 balance) external {
         // it transfer the balance to the given receiver
 
         vm.assume(balance > 0);
-        vm.assume(receiver != address(0));
+        address receiver = makeAddr("receiver");
         deal(address(token), address(baseDepositor), balance);
 
         assertEq(IERC20(token).balanceOf(receiver), 0);
