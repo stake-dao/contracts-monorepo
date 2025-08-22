@@ -44,6 +44,21 @@ import {ICurveStableSwapPool} from "src/interfaces/ICurvePool.sol";
  *         Each hop in the chain can return prices in any denomination - the chain composition
  *         determines the final USD conversion.
  *
+ *         Read-Only Reentrancy Attack
+ *         ------------------------------------------------------
+ *         This oracle relies on Curve's `get_virtual_price()` function which is vulnerable
+ *         to read-only reentrancy attacks when the pool contains native ETH or ERC-777 tokens.
+ *         The attack occurs when the token is sent to a malicious contract that reenters
+ *         `get_virtual_price()` while the pool state is inconsistent (balances not yet updated
+ *         but LP supply already decreased).
+ *
+ *         Mitigation:
+ *         • Only use pools where `get_virtual_price()` is protected with a `@nonreentrant` modifier
+ *
+ *         References:
+ *         • https://www.chainsecurity.com/blog/curve-lp-oracle-manipulation-post-mortem
+ *         • https://www.chainsecurity.com/blog/heartbreaks-curve-lp-oracles
+ *
  *         Optional Loan Asset Feed
  *         ------------------------------------
  *         When coin0 = loan asset, no external feeds are required and the oracle
