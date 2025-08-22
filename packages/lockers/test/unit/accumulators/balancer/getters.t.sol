@@ -16,7 +16,7 @@ contract BalancerAccumulator__getters is AccumulatorTest {
     function test_ReturnsTheVersion() external view {
         // it returns the version
 
-        assertEq(BalancerAccumulator(accumulator).version(), "4.0.0");
+        assertEq(BalancerAccumulator(accumulator).version(), "4.1.0");
     }
 
     function test_ReturnsTheName() external view {

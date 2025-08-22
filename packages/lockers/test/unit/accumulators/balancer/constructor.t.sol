@@ -47,16 +47,17 @@ contract BalancerAccumulator__constructor is AccumulatorTest {
         assertEq(balancerAccumulator.governance(), _governance);
     }
 
-    function test_SetsBALAsTheToken() external view {
-        // it sets BAL as the token
+    function test_SetsBALAsTheRewardTokenAndDelegatableToken() external view {
+        // it sets BAL as the reward token and delegatable token
 
-        assertEq(BalancerAccumulator(accumulator).token(), BalancerProtocol.BAL);
+        assertEq(BalancerAccumulator(accumulator).rewardTokens(1), BalancerProtocol.BAL);
+        assertEq(BalancerAccumulator(accumulator).DELEGATABLE_TOKEN(), BalancerProtocol.BAL);
     }
 
     function test_SetsVeBALAsTheVeToken() external view {
         // it sets veBAL as the veToken
 
-        assertEq(BalancerAccumulator(accumulator).veToken(), BalancerProtocol.VEBAL);
+        assertEq(BalancerAccumulator(accumulator).VE_TOKEN(), BalancerProtocol.VEBAL);
     }
 
     function test_SetsTheCorrectVeBoostContract() external view {
