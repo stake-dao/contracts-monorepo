@@ -7,7 +7,8 @@ interface ICurvePool {
     function name() external view returns (string memory);
     function decimals() external view returns (uint8);
     function coins(uint256 index) external view returns (address);
-    function lp_token() external view returns (IERC20Metadata);
+    function lp_token() external view returns (IERC20Metadata); // Oldest pools
+    function token() external view returns (address);
 }
 
 interface ICurveStableSwapPool is ICurvePool {

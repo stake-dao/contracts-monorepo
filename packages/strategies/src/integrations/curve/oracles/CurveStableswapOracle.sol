@@ -53,7 +53,7 @@ import {ICurveStableSwapPool} from "src/interfaces/ICurvePool.sol";
  *         but LP supply already decreased).
  *
  *         Mitigation:
- *         • Only use pools where `get_virtual_price()` is protected with a `@nonreentrant` modifier
+ *         • Only use pools where `get_virtual_price()` is protected with a nonreentrant modifier
  *
  *         References:
  *         • https://www.chainsecurity.com/blog/curve-lp-oracle-manipulation-post-mortem
@@ -97,19 +97,8 @@ contract CurveStableswapOracle is BaseOracle {
     error PoolDoesNotSupportPriceOracle();
     error PoolIncompatiblePriceOracleImplementation();
 
-    /// @param _curvePool The address of the Curve pool for the LP token collateral.
-    /// @param _collateralToken The address of the collateral token of the lending market.
-    /// @param _loanAsset The address of the loan token of the lending market (e.g., USDC/crvUSD).
-    /// @param _loanAssetFeed The address of the Chainlink feed for the loan token of the lending market (e.g., USDC/crvUSD).
-    /// @param _loanAssetFeedHeartbeat The maximum number of seconds since the last update of the loan asset feed.
-    /// @param _token0ToUsdFeeds Ordered feeds to convert token0 to USD.
-    /// @param _token0ToUsdHeartbeats Max seconds between two updates of each feed.
-    /// @custom:reverts ZeroAddress if `_curvePool`, `_collateralToken`, `_loanAsset`, or `_loanAssetFeed` is the zero address.
-    /// @custom:reverts ZeroUint256 if `_loanAssetFeedHeartbeat` is zero or if no pool asset feeds are provided.
-    /// @custom:reverts ArrayLengthMismatch if feed and heartbeat arrays have different lengths.
     constructor(
         address _curvePool,
-        address _collateralToken,
         address _loanAsset,
         address _loanAssetFeed,
         uint256 _loanAssetFeedHeartbeat,
@@ -118,7 +107,6 @@ contract CurveStableswapOracle is BaseOracle {
     )
         BaseOracle(
             _curvePool,
-            _collateralToken,
             _loanAsset,
             _loanAssetFeed,
             _loanAssetFeedHeartbeat,
