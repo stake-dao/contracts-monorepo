@@ -54,6 +54,7 @@ abstract contract BaseOracle is IOracle {
     ///////////////////////////////////////////////////////////////
 
     error InvalidPrice();
+    error InvalidDecimals();
     error ZeroAddress();
     error ZeroUint256();
     error ArrayLengthMismatch();
@@ -64,20 +65,18 @@ abstract contract BaseOracle is IOracle {
     ///////////////////////////////////////////////////////////////
 
     /// @param _curvePool Address of the Crypto-swap pool.
-    /// @param _collateralToken Address of the collateral token.
     /// @param _loanAsset Address of the loan asset.
     /// @param _loanAssetFeed Chainlink feed for the loan asset if needed (e.g., USDC/USD, crvUSD/USD, USDT/USD, etc.).
     /// @param _loanAssetFeedHeartbeat Max seconds between two updates of the loan asset feed.
     /// @param _token0ToUsdFeeds Ordered feeds to convert token0 to USD.
     /// @param _token0ToUsdHeartbeats Max seconds between two updates of each feed.
-    /// @custom:reverts ZeroAddress if `_curvePool`, `_collateralToken`, `_loanAsset` is the zero address.
+    /// @custom:reverts ZeroAddress if `_curvePool`, `_loanAsset` is the zero address.
     /// @custom:reverts ZeroUint256 if `_loanAssetFeedHeartbeat` is zero.
     /// @custom:reverts ArrayLengthMismatch if `_token0ToUsdFeeds` and `_token0ToUsdHeartbeats` have different lengths.
     /// @dev If `_loanAssetFeed` is the zero address, it means that the loan asset is the coins0 of the pool.
     ///      In this case, there is no need to set up the loan asset feed data (_loanAssetFeed, _loanAssetFeedDecimals, _loanAssetFeedHeartbeat).
     constructor(
         address _curvePool,
-        address _collateralToken,
         address _loanAsset,
         address _loanAssetFeed,
         uint256 _loanAssetFeedHeartbeat,
@@ -85,7 +84,6 @@ abstract contract BaseOracle is IOracle {
         uint256[] memory _token0ToUsdHeartbeats
     ) {
         require(_curvePool != address(0), ZeroAddress());
-        require(_collateralToken != address(0), ZeroAddress());
         require(_loanAsset != address(0), ZeroAddress());
         require(_token0ToUsdFeeds.length == _token0ToUsdHeartbeats.length, ArrayLengthMismatch());
 
@@ -94,7 +92,6 @@ abstract contract BaseOracle is IOracle {
 
         // Calculate the total decimals of the token0ToUsdFeeds for the calculation of the scale factor
         // and set up the loan asset feed data if needed
-        uint256 totalToken0FeedDecimals;
         bool isCoin0LoanAsset = (_loanAssetFeed == address(0) && _loanAssetFeedHeartbeat == 0);
         if (isCoin0LoanAsset) {
             // Validate that coin0 actually equals loan asset. If so, we can avoid setting up the loan asset feed data
@@ -106,11 +103,19 @@ abstract contract BaseOracle is IOracle {
             LOAN_ASSET_FEED = IChainlinkFeed(_loanAssetFeed);
             LOAN_ASSET_FEED_DECIMALS = IChainlinkFeed(_loanAssetFeed).decimals();
             LOAN_ASSET_FEED_HEARTBEAT = _loanAssetFeedHeartbeat;
-
-            for (uint256 i; i < _token0ToUsdFeeds.length; i++) {
-                totalToken0FeedDecimals += IChainlinkFeed(_token0ToUsdFeeds[i]).decimals();
-            }
         }
+
+        // Fetch it either by requesting the pool or his associated LP token when different
+        uint256 collateralDecimals;
+        try IERC20Metadata(_curvePool).decimals() returns (uint8 decimals) {
+            collateralDecimals = decimals;
+        } catch {
+            collateralDecimals = IERC20Metadata(ICurvePool(_curvePool).token()).decimals();
+        }
+        require(collateralDecimals > 0, InvalidDecimals());
+
+        uint256 loanDecimals = IERC20Metadata(_loanAsset).decimals();
+        require(loanDecimals > 0, InvalidDecimals());
 
         // Scale factor calculation following Morpho's exact approach:
         // Morpho's formula: SCALE_FACTOR = 1e(36 + dQ1 + fpQ1 + fpQ2 - dB1 - fpB1 - fpB2)
@@ -122,12 +127,8 @@ abstract contract BaseOracle is IOracle {
         // - dB1 = collateral token decimals
         // - fpB1, fpB2, etc. = token0ToUsdFeeds decimals (base feeds)
         //
-        // SCALE_FACTOR = 1e(36 + loanDecimals + loanFeedDecimals - collateralDecimals - sum(token0FeedDecimals))
-        SCALE_FACTOR = 10
-            ** (
-                ORACLE_BASE_EXPONENT + IERC20Metadata(_loanAsset).decimals() + LOAN_ASSET_FEED_DECIMALS
-                    - IERC20Metadata(_collateralToken).decimals() - totalToken0FeedDecimals
-            );
+        // SCALE_FACTOR = 1e(36 + loanDecimals + loanFeedDecimals - collateralDecimals)
+        SCALE_FACTOR = 10 ** (ORACLE_BASE_EXPONENT + loanDecimals + LOAN_ASSET_FEED_DECIMALS - collateralDecimals);
 
         // Set the conversion feeds required to denominate token0 in loan asset (hop-by-hop) if needed
         for (uint256 i; i < _token0ToUsdFeeds.length; i++) {
@@ -154,7 +155,8 @@ abstract contract BaseOracle is IOracle {
         uint256 length = token0ToUsdFeeds.length;
         for (uint256 i; i < length; i++) {
             uint256 feedPrice = _fetchFeedPrice(token0ToUsdFeeds[i], token0ToUsdHeartbeats[i]);
-            numerator = numerator * feedPrice;
+            uint256 feedDecimals = token0ToUsdFeeds[i].decimals();
+            numerator = Math.mulDiv(numerator, feedPrice, 10 ** feedDecimals);
         }
 
         // Denominator: loan asset feed price (USD per loan asset)

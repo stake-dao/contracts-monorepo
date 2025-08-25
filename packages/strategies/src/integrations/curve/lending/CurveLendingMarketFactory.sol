@@ -104,7 +104,7 @@ contract CurveLendingMarketFactory is Ownable2Step {
         require(oracleType != OracleType.UNKNOWN, InvalidOracleType());
 
         // 2. Deploy the oracle
-        IOracle oracle = _deployOracle(collateral, curvePool, oracleType, oracleParams);
+        IOracle oracle = _deployOracle(curvePool, oracleType, oracleParams);
 
         // 3. Create the lending market
         data = _createMarket(collateral, oracle, oracleParams.loanAsset, lendingFactory, marketParams);
@@ -120,16 +120,13 @@ contract CurveLendingMarketFactory is Ownable2Step {
     // --- INTERNAL FUNCTIONS
     ///////////////////////////////////////////////////////////////
 
-    function _deployOracle(
-        IStrategyWrapper collateral,
-        address curvePool,
-        OracleType oracleType,
-        OracleParams calldata oracleParams
-    ) internal returns (IOracle oracle) {
+    function _deployOracle(address curvePool, OracleType oracleType, OracleParams calldata oracleParams)
+        internal
+        returns (IOracle oracle)
+    {
         if (oracleType == OracleType.CRYPTOSWAP) {
             oracle = new CurveCryptoswapOracle(
                 curvePool,
-                address(collateral),
                 oracleParams.loanAsset,
                 oracleParams.loanAssetFeed,
                 oracleParams.loanAssetFeedHeartbeat,
@@ -139,7 +136,6 @@ contract CurveLendingMarketFactory is Ownable2Step {
         } else if (oracleType == OracleType.STABLESWAP) {
             oracle = new CurveStableswapOracle(
                 curvePool,
-                address(collateral),
                 oracleParams.loanAsset,
                 oracleParams.loanAssetFeed,
                 oracleParams.loanAssetFeedHeartbeat,
