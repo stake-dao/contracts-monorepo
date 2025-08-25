@@ -92,7 +92,6 @@ abstract contract BaseOracle is IOracle {
 
         // Calculate the total decimals of the token0ToUsdFeeds for the calculation of the scale factor
         // and set up the loan asset feed data if needed
-        uint256 totalToken0FeedDecimals;
         bool isCoin0LoanAsset = (_loanAssetFeed == address(0) && _loanAssetFeedHeartbeat == 0);
         if (isCoin0LoanAsset) {
             // Validate that coin0 actually equals loan asset. If so, we can avoid setting up the loan asset feed data
@@ -104,10 +103,6 @@ abstract contract BaseOracle is IOracle {
             LOAN_ASSET_FEED = IChainlinkFeed(_loanAssetFeed);
             LOAN_ASSET_FEED_DECIMALS = IChainlinkFeed(_loanAssetFeed).decimals();
             LOAN_ASSET_FEED_HEARTBEAT = _loanAssetFeedHeartbeat;
-
-            for (uint256 i; i < _token0ToUsdFeeds.length; i++) {
-                totalToken0FeedDecimals += IChainlinkFeed(_token0ToUsdFeeds[i]).decimals();
-            }
         }
 
         // Fetch it either by requesting the pool or his associated LP token when different
@@ -132,12 +127,8 @@ abstract contract BaseOracle is IOracle {
         // - dB1 = collateral token decimals
         // - fpB1, fpB2, etc. = token0ToUsdFeeds decimals (base feeds)
         //
-        // SCALE_FACTOR = 1e(36 + loanDecimals + loanFeedDecimals - collateralDecimals - sum(token0FeedDecimals))
-        SCALE_FACTOR = 10
-            ** (
-                ORACLE_BASE_EXPONENT + loanDecimals + LOAN_ASSET_FEED_DECIMALS - collateralDecimals
-                    - totalToken0FeedDecimals
-            );
+        // SCALE_FACTOR = 1e(36 + loanDecimals + loanFeedDecimals - collateralDecimals)
+        SCALE_FACTOR = 10 ** (ORACLE_BASE_EXPONENT + loanDecimals + LOAN_ASSET_FEED_DECIMALS - collateralDecimals);
 
         // Set the conversion feeds required to denominate token0 in loan asset (hop-by-hop) if needed
         for (uint256 i; i < _token0ToUsdFeeds.length; i++) {
@@ -164,7 +155,8 @@ abstract contract BaseOracle is IOracle {
         uint256 length = token0ToUsdFeeds.length;
         for (uint256 i; i < length; i++) {
             uint256 feedPrice = _fetchFeedPrice(token0ToUsdFeeds[i], token0ToUsdHeartbeats[i]);
-            numerator = numerator * feedPrice;
+            uint256 feedDecimals = token0ToUsdFeeds[i].decimals();
+            numerator = Math.mulDiv(numerator, feedPrice, 10 ** feedDecimals);
         }
 
         // Denominator: loan asset feed price (USD per loan asset)
